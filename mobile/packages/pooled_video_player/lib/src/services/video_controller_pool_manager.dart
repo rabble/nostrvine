@@ -15,12 +15,36 @@ typedef VideoControllerFactory =
       File? cachedFile,
     });
 
-/// Wraps a [VideoPlayerController] with pool metadata.
+/// Represents the initialization phase of a pooled video controller.
+///
+/// Two-phase initialization provides instant visual feedback:
+/// - [none]: Controller not yet created
+/// - [firstFrame]: First frame available for display (fast)
+/// - [buffered]: Buffering complete, ready for smooth playback
+enum ControllerPhase {
+  /// Controller not yet created.
+  none,
+
+  /// First frame is available for display.
+  /// The controller is initialized and seeked to frame 0.
+  /// Widget can display the first frame immediately.
+  firstFrame,
+
+  /// Buffering is complete, ready for smooth playback.
+  buffered,
+}
+
+/// Wraps a [VideoPlayerController] with pool metadata and initialization phase.
+///
+/// The [phase] tracks the two-phase initialization progress:
+/// 1. [ControllerPhase.firstFrame] - First frame available for instant display
+/// 2. [ControllerPhase.buffered] - Ready for smooth playback
 class PooledController {
   /// Creates a pooled controller wrapper.
   PooledController({
     required this.controller,
     required this.videoId,
+    this.phase = ControllerPhase.none,
   });
 
   /// The underlying video player controller.
@@ -29,8 +53,22 @@ class PooledController {
   /// Unique identifier for this video in the pool.
   final String videoId;
 
+  /// Current initialization phase.
+  ///
+  /// Starts at [ControllerPhase.none], transitions to
+  /// [ControllerPhase.firstFrame] when the first frame is available for
+  /// display, then to [ControllerPhase.buffered] when buffering is complete.
+  ControllerPhase phase;
+
+  /// Whether the first frame is available for display.
+  bool get hasFirstFrame =>
+      phase == ControllerPhase.firstFrame || phase == ControllerPhase.buffered;
+
+  /// Whether buffering is complete and ready for smooth playback.
+  bool get isBuffered => phase == ControllerPhase.buffered;
+
   @override
-  String toString() => 'PooledController(videoId: $videoId)';
+  String toString() => 'PooledController(videoId: $videoId, phase: $phase)';
 }
 
 /// Manages a fixed pool of [VideoPlayerController] instances with LRU eviction.
@@ -147,6 +185,10 @@ class VideoControllerPoolManager {
     _instance = null;
   }
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // Configuration
+  // ══════════════════════════════════════════════════════════════════════════
+
   /// Maximum number of controllers maintained in the pool.
   final int poolSize;
 
@@ -154,11 +196,29 @@ class VideoControllerPoolManager {
   /// When null, controllers are created using the default implementation.
   final VideoControllerFactory? _controllerFactory;
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // Pool Storage
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Video ID → PooledController mapping for all controllers in the pool.
   final Map<String, PooledController> _pool = {};
+
+  /// Video ID → last access time for LRU eviction ordering.
   final LinkedHashMap<String, DateTime> _lruMap = LinkedHashMap();
 
+  // ══════════════════════════════════════════════════════════════════════════
+  // Active/Prewarm State
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Currently visible/playing video ID. Never evicted.
   String? _activeVideoId;
+
+  /// Video IDs marked for prewarming. Protected from eviction unless necessary.
   final Set<String> _prewarmVideoIds = {};
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Distance-Aware Eviction
+  // ══════════════════════════════════════════════════════════════════════════
 
   /// Current scroll position for distance-aware eviction.
   int? _currentScrollIndex;
@@ -166,18 +226,34 @@ class VideoControllerPoolManager {
   /// Maps video IDs to their feed indices for distance calculation.
   final Map<String, int> _videoIndexMap = {};
 
-  bool _isDisposed = false;
+  // ══════════════════════════════════════════════════════════════════════════
+  // Concurrency Control
+  // ══════════════════════════════════════════════════════════════════════════
 
-  final Set<VoidCallback> _listeners = <VoidCallback>{};
-  final Queue<Completer<void>> _waitQueue = Queue<Completer<void>>();
-
+  /// Number of controllers currently being initialized.
   int _activeInitializations = 0;
+
+  /// Queue of waiters blocked on max concurrent initializations.
+  final Queue<Completer<void>> _waitQueue = Queue<Completer<void>>();
 
   /// Video IDs whose acquisition has been cancelled.
   final Set<String> _cancelledVideoIds = <String>{};
 
-  /// Video IDs currently being initialized (in-flight requests).
-  final Set<String> _inFlightVideoIds = <String>{};
+  /// Pending acquisition Futures for deduplication.
+  ///
+  /// When multiple callers request the same videoId concurrently, they share
+  /// the same Future instead of creating duplicate network requests.
+  final Map<String, Future<PooledController?>> _pendingAcquisitions = {};
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // Lifecycle
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Whether the pool manager has been disposed.
+  bool _isDisposed = false;
+
+  /// Pool change listeners for reactive updates.
+  final Set<VoidCallback> _listeners = <VoidCallback>{};
 
   // Public API
 
@@ -188,7 +264,8 @@ class VideoControllerPoolManager {
   Set<String> get prewarmVideoIds => Set.unmodifiable(_prewarmVideoIds);
 
   /// IDs of videos currently being initialized (in-flight requests).
-  Set<String> get inFlightVideoIds => Set.unmodifiable(_inFlightVideoIds);
+  Set<String> get inFlightVideoIds =>
+      Set.unmodifiable(_pendingAcquisitions.keys.toSet());
 
   /// Read-only map of video IDs to their assigned pooled controllers.
   Map<String, PooledController> get assignedControllers =>
@@ -197,6 +274,18 @@ class VideoControllerPoolManager {
   /// Returns the controller for [videoId], or null if not in pool.
   VideoPlayerController? getController(String videoId) {
     return _pool[videoId]?.controller;
+  }
+
+  /// Returns the pooled controller (with phase info) for [videoId].
+  ///
+  /// Use this to check the initialization phase for instant visual feedback.
+  PooledController? getPooledController(String videoId) {
+    return _pool[videoId];
+  }
+
+  /// Returns the current phase of the controller for [videoId].
+  ControllerPhase getControllerPhase(String videoId) {
+    return _pool[videoId]?.phase ?? ControllerPhase.none;
   }
 
   /// Register a video's position in the feed for distance-aware eviction.
@@ -219,7 +308,7 @@ class VideoControllerPoolManager {
 
   /// Cancel a pending acquisition for [videoId].
   void cancelAcquisition(String videoId) {
-    if (_inFlightVideoIds.contains(videoId)) {
+    if (_pendingAcquisitions.containsKey(videoId)) {
       _cancelledVideoIds.add(videoId);
     }
   }
@@ -228,7 +317,7 @@ class VideoControllerPoolManager {
   void cancelDistantInFlightRequests(int currentIndex) {
     final videosToCancel = <String>[];
 
-    for (final videoId in _inFlightVideoIds) {
+    for (final videoId in _pendingAcquisitions.keys) {
       if (videoId == _activeVideoId) continue;
 
       final index = _videoIndexMap[videoId];
@@ -244,6 +333,9 @@ class VideoControllerPoolManager {
   }
 
   /// Acquire a controller for [videoId]. Uses LRU eviction when pool is full.
+  ///
+  /// Concurrent requests for the same videoId return the same Future,
+  /// preventing duplicate network requests.
   Future<PooledController?> acquireController({
     required String videoId,
     required String videoUrl,
@@ -258,16 +350,35 @@ class VideoControllerPoolManager {
       return _pool[videoId];
     }
 
-    // Track this video as in-flight
-    _inFlightVideoIds.add(videoId);
-
-    // Wait if at max concurrent initializations
-    if (_activeInitializations >= PoolConstants.maxConcurrentInitializations) {
-      final waiter = Completer<void>();
-      _waitQueue.add(waiter);
-      await waiter.future;
+    // Return existing pending acquisition if already in-flight (deduplication)
+    if (_pendingAcquisitions.containsKey(videoId)) {
+      return _pendingAcquisitions[videoId];
     }
-    _activeInitializations++;
+
+    // Create and track the acquisition Future
+    final acquisitionFuture = _executeAcquisition(
+      videoId: videoId,
+      videoUrl: videoUrl,
+      getCachedFile: getCachedFile,
+    );
+
+    _pendingAcquisitions[videoId] = acquisitionFuture;
+
+    try {
+      return await acquisitionFuture;
+    } finally {
+      // Remove from pending map - the Future value is intentionally discarded
+      unawaited(_pendingAcquisitions.remove(videoId));
+    }
+  }
+
+  /// Execute the actual controller acquisition logic.
+  Future<PooledController?> _executeAcquisition({
+    required String videoId,
+    required String videoUrl,
+    File? Function(String videoId)? getCachedFile,
+  }) async {
+    await _waitForInitializationSlot();
 
     try {
       // Check if acquisition was cancelled while waiting
@@ -281,38 +392,15 @@ class VideoControllerPoolManager {
       }
 
       // Evict if pool is full
-      var evictionAttempts = 0;
-      const maxEvictionAttempts = 3;
-      while (_pool.length >= poolSize) {
-        final evicted = await _evictLRU();
-        if (!evicted) {
-          evictionAttempts++;
-          if (evictionAttempts >= maxEvictionAttempts) return null;
-          await Future<void>.delayed(const Duration(milliseconds: 10));
-        }
-      }
+      if (!await _makeRoomInPool()) return null;
 
-      // Create controller
-      final cachedFile = getCachedFile?.call(videoId);
-      final VideoPlayerController controller;
-
-      if (_controllerFactory != null) {
-        // Use injected factory (for testing)
-        final factoryController = await _controllerFactory(
-          videoUrl,
-          cachedFile: cachedFile,
-        );
-        if (factoryController == null) return null;
-        controller = factoryController;
-      } else {
-        // coverage:ignore-start
-        // Default implementation - requires real video files/network
-        controller = cachedFile != null
-            ? VideoPlayerController.file(cachedFile)
-            : VideoPlayerController.networkUrl(Uri.parse(videoUrl));
-        await controller.initialize();
-        // coverage:ignore-end
-      }
+      // Create and initialize controller
+      final controller = await _createController(
+        videoId: videoId,
+        videoUrl: videoUrl,
+        getCachedFile: getCachedFile,
+      );
+      if (controller == null) return null;
 
       // Check if cancelled during creation
       // coverage:ignore-start
@@ -326,24 +414,101 @@ class VideoControllerPoolManager {
       }
       // coverage:ignore-end
 
-      final pooled = PooledController(
-        controller: controller,
-        videoId: videoId,
-      );
+      // Initialize for first frame display
+      final pooled = await _initializeForFirstFrame(controller, videoId);
 
       _pool[videoId] = pooled;
       _updateLRU(videoId);
       _notifyListeners();
+
+      // Phase 2: Complete buffering in background (non-blocking)
+      unawaited(_completeBufferingPhase(pooled));
+
       return pooled;
     } finally {
-      _inFlightVideoIds.remove(videoId);
       _cancelledVideoIds.remove(videoId);
-      _activeInitializations--;
+      _releaseInitializationSlot();
+    }
+  }
 
-      if (_waitQueue.isNotEmpty) {
-        _waitQueue.removeFirst().complete();
+  /// Waits for a slot in the concurrent initialization queue.
+  Future<void> _waitForInitializationSlot() async {
+    if (_activeInitializations >= PoolConstants.maxConcurrentInitializations) {
+      final waiter = Completer<void>();
+      _waitQueue.add(waiter);
+      await waiter.future;
+    }
+    _activeInitializations++;
+  }
+
+  /// Signals completion of an initialization, releasing the slot.
+  void _releaseInitializationSlot() {
+    _activeInitializations--;
+    if (_waitQueue.isNotEmpty) {
+      _waitQueue.removeFirst().complete();
+    }
+  }
+
+  /// Evicts controllers until there's room in the pool.
+  ///
+  /// Returns true if room was made, false if eviction failed after max attempts.
+  Future<bool> _makeRoomInPool() async {
+    var evictionAttempts = 0;
+    const maxEvictionAttempts = 3;
+
+    while (_pool.length >= poolSize) {
+      final evicted = await _evictFurthestController();
+      if (!evicted) {
+        evictionAttempts++;
+        if (evictionAttempts >= maxEvictionAttempts) return false;
+        await Future<void>.delayed(const Duration(milliseconds: 10));
       }
     }
+    return true;
+  }
+
+  /// Creates a video controller for the given URL.
+  ///
+  /// Uses the injected factory for testing, or default implementation.
+  Future<VideoPlayerController?> _createController({
+    required String videoId,
+    required String videoUrl,
+    File? Function(String videoId)? getCachedFile,
+  }) async {
+    final cachedFile = getCachedFile?.call(videoId);
+
+    if (_controllerFactory != null) {
+      // Use injected factory (for testing)
+      return _controllerFactory(videoUrl, cachedFile: cachedFile);
+    }
+
+    // coverage:ignore-start
+    // Default implementation - requires real video files/network
+    final controller = cachedFile != null
+        ? VideoPlayerController.file(cachedFile)
+        : VideoPlayerController.networkUrl(Uri.parse(videoUrl));
+    await controller.initialize();
+    return controller;
+    // coverage:ignore-end
+  }
+
+  /// Phase 1: Seek to beginning and pause for instant first frame display.
+  Future<PooledController> _initializeForFirstFrame(
+    VideoPlayerController controller,
+    String videoId,
+  ) async {
+    try {
+      await controller.seekTo(Duration.zero);
+      await controller.pause();
+    } on Exception {
+      // Seek/pause may fail on some platforms - continue anyway
+    }
+
+    return PooledController(
+      controller: controller,
+      videoId: videoId,
+      phase: ControllerPhase.firstFrame,
+    );
   }
 
   /// Release controller back to pool (pauses but keeps for reuse).
@@ -417,7 +582,7 @@ class VideoControllerPoolManager {
     var released = 0;
     for (final id in sortedIds) {
       if (released >= releaseCount) break;
-      await _evictController(id);
+      await _disposeAndRemoveController(id);
       released++;
     }
 
@@ -454,8 +619,45 @@ class VideoControllerPoolManager {
     // coverage:ignore-end
   }
 
-  /// Distance-aware eviction: evict videos furthest from current position.
-  Future<bool> _evictLRU() async {
+  // ══════════════════════════════════════════════════════════════════════════
+  // TWO-PHASE INITIALIZATION
+  // Phase 1: firstFrame - Seek to 0, pause (instant visual feedback)
+  // Phase 2: buffered - Set playback speed to fill buffer (smooth playback)
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Phase 2 of two-phase initialization: complete buffering for smooth
+  /// playback.
+  ///
+  /// Called after the first frame is available. Triggers buffering by
+  /// ensuring playback speed is set, then marks the controller as buffered.
+  Future<void> _completeBufferingPhase(PooledController pooled) async {
+    if (pooled.phase != ControllerPhase.firstFrame) return;
+    if (!_isControllerValid(pooled.controller)) return;
+
+    try {
+      // Setting playback speed ensures the buffer starts filling
+      await pooled.controller.setPlaybackSpeed(1);
+      pooled.phase = ControllerPhase.buffered;
+      _notifyListeners();
+    } on Exception {
+      // Buffering errors are non-fatal - first frame is still available
+    }
+  }
+
+  // ══════════════════════════════════════════════════════════════════════════
+  // DISTANCE-AWARE EVICTION
+  // Priority: Active (never) > Prewarmed > Cached, then by distance from
+  // current. Videos furthest from scroll position are evicted first.
+  // ══════════════════════════════════════════════════════════════════════════
+
+  /// Distance-aware eviction: evict the video furthest from current position.
+  ///
+  /// Eviction priority:
+  /// 1. Active video is never evicted
+  /// 2. Prewarmed videos are protected but can be evicted if no other option
+  /// 3. Among remaining videos, the one furthest from current scroll position
+  ///    is evicted first
+  Future<bool> _evictFurthestController() async {
     if (_lruMap.isEmpty) return false;
 
     String? victimId;
@@ -490,17 +692,27 @@ class VideoControllerPoolManager {
 
     if (victimId == null) return false;
 
-    await _evictController(victimId);
+    await _disposeAndRemoveController(victimId);
     return true;
   }
 
+  /// Large distance for videos without registered indices.
+  /// These should be prioritized for eviction over videos with known positions.
+  static const int _unknownIndexDistance = 1000;
+
   int _getDistanceFromCurrent(String videoId) {
     final index = _videoIndexMap[videoId];
-    if (index == null || _currentScrollIndex == null) return 0;
+    if (index == null || _currentScrollIndex == null) {
+      return _unknownIndexDistance;
+    }
     return (index - _currentScrollIndex!).abs();
   }
 
-  Future<void> _evictController(String videoId) async {
+  /// Disposes a controller and removes it from all tracking structures.
+  ///
+  /// Pauses playback if currently playing, disposes the controller,
+  /// and removes from pool, LRU map, and prewarm set.
+  Future<void> _disposeAndRemoveController(String videoId) async {
     final pooled = _pool.remove(videoId);
     if (pooled == null) return;
 
@@ -546,7 +758,7 @@ class VideoControllerPoolManager {
     _currentScrollIndex = null;
     _videoIndexMap.clear();
     _cancelledVideoIds.clear();
-    _inFlightVideoIds.clear();
+    _pendingAcquisitions.clear();
   }
 
   List<String> _getSortedByPriority() {

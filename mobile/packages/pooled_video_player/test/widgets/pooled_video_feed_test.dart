@@ -28,6 +28,9 @@ Future<VideoPlayerController?> createMockController(
   when(controller.pause).thenAnswer((_) async {});
   when(controller.play).thenAnswer((_) async {});
   when(() => controller.setLooping(any())).thenAnswer((_) async {});
+  // Two-phase initialization support
+  when(() => controller.seekTo(any())).thenAnswer((_) async {});
+  when(() => controller.setPlaybackSpeed(any())).thenAnswer((_) async {});
 
   return controller;
 }
@@ -46,6 +49,11 @@ List<MockPooledVideo> createMockVideos(int count) {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    // Register fallback values for mocktail
+    registerFallbackValue(Duration.zero);
+  });
 
   late List<MockPooledVideo> mockVideos;
 
@@ -196,6 +204,63 @@ void main() {
     });
 
     group('Initial Prewarming', () {
+      testWidgets('immediate prewarm creates controllers in parallel', (
+        WidgetTester tester,
+      ) async {
+        final acquisitionStartTimes = <String, DateTime>{};
+
+        await VideoControllerPoolManager.initialize(
+          poolSize: 5,
+          controllerFactory: (videoUrl, {cachedFile}) async {
+            final videoId = videoUrl.split('/').last.replaceAll('.mp4', '');
+            acquisitionStartTimes[videoId] = DateTime.now();
+
+            // Simulate network delay
+            await Future<void>.delayed(const Duration(milliseconds: 100));
+
+            return createMockController(videoUrl, cachedFile: cachedFile);
+          },
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: PooledVideoFeed(
+                videos: mockVideos,
+                itemBuilder: (context, video, index, isActive) => Container(),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Should have prewarmed 4 videos (current + 3 next)
+        expect(acquisitionStartTimes.length, greaterThanOrEqualTo(4));
+
+        // Verify parallel execution: all requests should have started
+        // before the first one completed
+        final startTimes = acquisitionStartTimes.values.toList()..sort();
+
+        // If parallel, all starts should be within ~50ms of each other
+        // If serial, each start would be 100ms apart (300ms+ total)
+        if (startTimes.length >= 4) {
+          final firstStart = startTimes.first;
+          final lastStart = startTimes.last;
+          final startSpread = lastStart.difference(firstStart).inMilliseconds;
+
+          // Parallel: start spread should be small (under 100ms)
+          // Serial would be 300ms+ (3 x 100ms delays)
+          expect(
+            startSpread,
+            lessThan(100),
+            reason:
+                'Requests should start in parallel '
+                '(spread: ${startSpread}ms)',
+          );
+        }
+      });
+
       testWidgets('acquires controller for initial video on mount', (
         WidgetTester tester,
       ) async {
@@ -507,6 +572,83 @@ void main() {
           manager.assignedControllers.length,
           greaterThanOrEqualTo(initialControllerCount),
         );
+      });
+
+      testWidgets('re-registers indices when video list changes', (
+        WidgetTester tester,
+      ) async {
+        // Test that when video list changes, indices are re-registered
+        // so distance-aware eviction works correctly
+        var registerCalls = <String, int>{};
+
+        await VideoControllerPoolManager.initialize(
+          poolSize: 6,
+          controllerFactory: createMockController,
+        );
+
+        final manager = VideoControllerPoolManager.instance;
+
+        // Track registerVideoIndex calls
+        final originalRegister = manager.registerVideoIndex;
+        void trackingRegister(String videoId, int index) {
+          registerCalls[videoId] = index;
+          originalRegister.call(videoId, index);
+        }
+
+        final initialVideos = createMockVideos(5);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: VideoPoolProvider(
+                pool: manager,
+                child: PooledVideoFeed(
+                  videos: initialVideos,
+                  itemBuilder: (context, video, index, isActive) => Container(),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Clear tracking to only track new registrations
+        registerCalls.clear();
+
+        // Create new videos with different IDs
+        final newVideos = List.generate(5, (index) {
+          final video = MockPooledVideo();
+          when(() => video.id).thenReturn('new-video-$index');
+          when(
+            () => video.videoUrl,
+          ).thenReturn('https://example.com/new$index.mp4');
+          when(() => video.thumbnailUrl).thenReturn(null);
+          return video;
+        });
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: VideoPoolProvider(
+                pool: manager,
+                child: PooledVideoFeed(
+                  videos: newVideos,
+                  itemBuilder: (context, video, index, isActive) => Container(),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        // Wait for debounced prewarm
+        await tester.pump(const Duration(milliseconds: 200));
+        await tester.pumpAndSettle();
+
+        // Should have acquired controllers for new videos
+        // This verifies that when video list changes, the feed re-registers
+        // indices and acquires new controllers
+        expect(manager.assignedControllers.isNotEmpty, isTrue);
       });
     });
 

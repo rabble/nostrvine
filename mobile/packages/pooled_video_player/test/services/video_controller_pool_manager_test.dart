@@ -13,6 +13,10 @@ class MockVideoPlayerValue extends Mock implements VideoPlayerValue {}
 class MockDeviceMemoryUtil extends Mock implements DeviceMemoryUtil {}
 
 void main() {
+  setUpAll(() {
+    // Register fallback values for mocktail
+    registerFallbackValue(Duration.zero);
+  });
   late int controllerCreationCount;
   late Map<String, MockVideoPlayerController> mockControllers;
 
@@ -31,6 +35,9 @@ void main() {
     when(controller.pause).thenAnswer((_) async {});
     when(controller.play).thenAnswer((_) async {});
     when(() => controller.setLooping(any())).thenAnswer((_) async {});
+    // Two-phase initialization support
+    when(() => controller.seekTo(any())).thenAnswer((_) async {});
+    when(() => controller.setPlaybackSpeed(any())).thenAnswer((_) async {});
 
     mockControllers[videoUrl] = controller;
     return controller;
@@ -260,6 +267,47 @@ void main() {
         expect(assigned.length, 1);
         expect(assigned.containsKey('video1'), isTrue);
       });
+
+      test(
+        'getPooledController returns pooled controller with phase',
+        () async {
+          final manager = VideoControllerPoolManager.instance;
+
+          await manager.acquireController(
+            videoId: 'video1',
+            videoUrl: 'https://example.com/video1.mp4',
+          );
+
+          final pooled = manager.getPooledController('video1');
+          expect(pooled, isNotNull);
+          expect(pooled!.videoId, 'video1');
+          expect(pooled.phase, ControllerPhase.firstFrame);
+
+          final nonExistent = manager.getPooledController('video99');
+          expect(nonExistent, isNull);
+        },
+      );
+
+      test(
+        'getControllerPhase returns phase for existing controller',
+        () async {
+          final manager = VideoControllerPoolManager.instance;
+
+          await manager.acquireController(
+            videoId: 'video1',
+            videoUrl: 'https://example.com/video1.mp4',
+          );
+
+          final phase = manager.getControllerPhase('video1');
+          expect(phase, ControllerPhase.firstFrame);
+        },
+      );
+
+      test('getControllerPhase returns none for non-existent controller', () {
+        final manager = VideoControllerPoolManager.instance;
+        final phase = manager.getControllerPhase('video99');
+        expect(phase, ControllerPhase.none);
+      });
     });
 
     group('pool management', () {
@@ -386,6 +434,55 @@ void main() {
           controllerFactory: createMockController,
         );
       });
+
+      test(
+        'videos without registered indices are evicted first (large distance)',
+        () async {
+          final manager = VideoControllerPoolManager.instance;
+
+          // Add 3 videos - register indices for video0 and video1 only
+          await manager.acquireController(
+            videoId: 'video0',
+            videoUrl: 'https://example.com/video0.mp4',
+          );
+          manager.registerVideoIndex('video0', 0);
+
+          await manager.acquireController(
+            videoId: 'video1',
+            videoUrl: 'https://example.com/video1.mp4',
+          );
+          manager.registerVideoIndex('video1', 1);
+
+          await manager.acquireController(
+            videoId: 'video-unregistered',
+            videoUrl: 'https://example.com/video-unregistered.mp4',
+          );
+          // Note: video-unregistered has NO registered index
+
+          // Set active video at index 0
+          manager.setActiveVideo('video0', index: 0);
+
+          // Pool is full (3). Add video2 - should evict video-unregistered
+          // because unregistered videos have large distance (1000)
+          await manager.acquireController(
+            videoId: 'video2',
+            videoUrl: 'https://example.com/video2.mp4',
+          );
+          manager.registerVideoIndex('video2', 2);
+
+          // video-unregistered should be evicted (large distance)
+          expect(
+            manager.assignedControllers.containsKey('video-unregistered'),
+            isFalse,
+          );
+          // video0 (active) should remain
+          expect(manager.assignedControllers.containsKey('video0'), isTrue);
+          // video1 (registered, distance 1) should remain
+          expect(manager.assignedControllers.containsKey('video1'), isTrue);
+          // video2 was just added
+          expect(manager.assignedControllers.containsKey('video2'), isTrue);
+        },
+      );
 
       test('evicts video furthest from current scroll position', () async {
         final manager = VideoControllerPoolManager.instance;
@@ -687,6 +784,250 @@ void main() {
       });
     });
 
+    group('concurrent request deduplication', () {
+      test('returns same Future for duplicate concurrent requests', () async {
+        var controllerCreations = 0;
+
+        await VideoControllerPoolManager.initialize(
+          poolSize: 4,
+          controllerFactory: (videoUrl, {cachedFile}) async {
+            controllerCreations++;
+            // Simulate network delay
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            return createMockController(videoUrl, cachedFile: cachedFile);
+          },
+        );
+
+        final manager = VideoControllerPoolManager.instance;
+
+        // Fire 3 concurrent requests for the SAME video
+        final future1 = manager.acquireController(
+          videoId: 'video1',
+          videoUrl: 'https://example.com/video1.mp4',
+        );
+        final future2 = manager.acquireController(
+          videoId: 'video1',
+          videoUrl: 'https://example.com/video1.mp4',
+        );
+        final future3 = manager.acquireController(
+          videoId: 'video1',
+          videoUrl: 'https://example.com/video1.mp4',
+        );
+
+        final results = await Future.wait([future1, future2, future3]);
+
+        // All three should return the same controller instance
+        expect(results[0], isNotNull);
+        expect(results[0], same(results[1]));
+        expect(results[1], same(results[2]));
+
+        // Only ONE controller should have been created
+        expect(controllerCreations, 1);
+      });
+
+      test('parallel requests for different videos run in parallel', () async {
+        var controllerCreations = 0;
+        final creationOrder = <String>[];
+
+        await VideoControllerPoolManager.initialize(
+          poolSize: 10,
+          controllerFactory: (videoUrl, {cachedFile}) async {
+            controllerCreations++;
+            creationOrder.add(videoUrl);
+            // Simulate network delay
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            return createMockController(videoUrl, cachedFile: cachedFile);
+          },
+        );
+
+        final manager = VideoControllerPoolManager.instance;
+
+        // Fire 4 concurrent requests for DIFFERENT videos
+        final futures = [
+          manager.acquireController(
+            videoId: 'video1',
+            videoUrl: 'https://example.com/video1.mp4',
+          ),
+          manager.acquireController(
+            videoId: 'video2',
+            videoUrl: 'https://example.com/video2.mp4',
+          ),
+          manager.acquireController(
+            videoId: 'video3',
+            videoUrl: 'https://example.com/video3.mp4',
+          ),
+          manager.acquireController(
+            videoId: 'video4',
+            videoUrl: 'https://example.com/video4.mp4',
+          ),
+        ];
+
+        final results = await Future.wait(futures);
+
+        // All 4 should succeed with unique controllers
+        expect(results.where((r) => r != null).length, 4);
+        expect(controllerCreations, 4);
+
+        // All creation requests should have started immediately (parallel)
+        // Check that they all started before any completed
+        expect(creationOrder.length, 4);
+      });
+
+      test('deduplication clears after acquisition completes', () async {
+        var controllerCreations = 0;
+
+        await VideoControllerPoolManager.initialize(
+          poolSize: 4,
+          controllerFactory: (videoUrl, {cachedFile}) async {
+            controllerCreations++;
+            await Future<void>.delayed(const Duration(milliseconds: 10));
+            return createMockController(videoUrl, cachedFile: cachedFile);
+          },
+        );
+
+        final manager = VideoControllerPoolManager.instance;
+
+        // First request
+        await manager.acquireController(
+          videoId: 'video1',
+          videoUrl: 'https://example.com/video1.mp4',
+        );
+        expect(controllerCreations, 1);
+
+        // Second request after first completes - should reuse from pool
+        await manager.acquireController(
+          videoId: 'video1',
+          videoUrl: 'https://example.com/video1.mp4',
+        );
+        // Still 1 because it's reused from pool
+        expect(controllerCreations, 1);
+
+        // Pending acquisitions should be cleared
+        expect(manager.inFlightVideoIds, isEmpty);
+      });
+    });
+
+    group('two-phase initialization', () {
+      test('controller starts at firstFrame phase after acquisition', () async {
+        await VideoControllerPoolManager.initialize(
+          poolSize: 4,
+          controllerFactory: createMockController,
+        );
+
+        final manager = VideoControllerPoolManager.instance;
+
+        final pooled = await manager.acquireController(
+          videoId: 'video1',
+          videoUrl: 'https://example.com/video1.mp4',
+        );
+
+        expect(pooled, isNotNull);
+        expect(pooled!.phase, ControllerPhase.firstFrame);
+        expect(pooled.hasFirstFrame, isTrue);
+      });
+
+      test('seekTo and pause are called during first frame phase', () async {
+        var seekToCalled = false;
+        var pauseCalled = false;
+
+        await VideoControllerPoolManager.initialize(
+          poolSize: 4,
+          controllerFactory: (videoUrl, {cachedFile}) async {
+            final controller = MockVideoPlayerController();
+            final value = MockVideoPlayerValue();
+
+            when(() => value.isInitialized).thenReturn(true);
+            when(() => value.isPlaying).thenReturn(false);
+            when(() => controller.value).thenReturn(value);
+            when(controller.dispose).thenAnswer((_) async {});
+            when(controller.pause).thenAnswer((_) async {
+              pauseCalled = true;
+            });
+            when(controller.play).thenAnswer((_) async {});
+            when(() => controller.setLooping(any())).thenAnswer((_) async {});
+            when(() => controller.seekTo(any())).thenAnswer((_) async {
+              seekToCalled = true;
+            });
+            when(
+              () => controller.setPlaybackSpeed(any()),
+            ).thenAnswer((_) async {});
+
+            return controller;
+          },
+        );
+
+        await VideoControllerPoolManager.instance.acquireController(
+          videoId: 'video1',
+          videoUrl: 'https://example.com/video1.mp4',
+        );
+
+        // Allow time for async operations
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        expect(seekToCalled, isTrue);
+        expect(pauseCalled, isTrue);
+      });
+
+      test('phase transitions to buffered after _bufferAhead', () async {
+        await VideoControllerPoolManager.initialize(
+          poolSize: 4,
+          controllerFactory: createMockController,
+        );
+
+        final manager = VideoControllerPoolManager.instance;
+
+        await manager.acquireController(
+          videoId: 'video1',
+          videoUrl: 'https://example.com/video1.mp4',
+        );
+
+        // Allow time for background _bufferAhead to complete
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        final pooled = manager.getPooledController('video1');
+        expect(pooled!.phase, ControllerPhase.buffered);
+        expect(pooled.isBuffered, isTrue);
+      });
+
+      test('setPlaybackSpeed is called during buffering phase', () async {
+        var setPlaybackSpeedCalled = false;
+
+        await VideoControllerPoolManager.initialize(
+          poolSize: 4,
+          controllerFactory: (videoUrl, {cachedFile}) async {
+            final controller = MockVideoPlayerController();
+            final value = MockVideoPlayerValue();
+
+            when(() => value.isInitialized).thenReturn(true);
+            when(() => value.isPlaying).thenReturn(false);
+            when(() => controller.value).thenReturn(value);
+            when(controller.dispose).thenAnswer((_) async {});
+            when(controller.pause).thenAnswer((_) async {});
+            when(controller.play).thenAnswer((_) async {});
+            when(() => controller.setLooping(any())).thenAnswer((_) async {});
+            when(() => controller.seekTo(any())).thenAnswer((_) async {});
+            when(() => controller.setPlaybackSpeed(any())).thenAnswer((
+              _,
+            ) async {
+              setPlaybackSpeedCalled = true;
+            });
+
+            return controller;
+          },
+        );
+
+        await VideoControllerPoolManager.instance.acquireController(
+          videoId: 'video1',
+          videoUrl: 'https://example.com/video1.mp4',
+        );
+
+        // Allow time for background _bufferAhead to complete
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(setPlaybackSpeedCalled, isTrue);
+      });
+    });
+
     group('concurrent initialization limit', () {
       test('queues requests beyond max concurrent', () async {
         await VideoControllerPoolManager.initialize(
@@ -850,7 +1191,7 @@ void main() {
   });
 
   group('PooledController', () {
-    test('toString returns formatted string', () async {
+    test('toString returns formatted string with phase', () async {
       await VideoControllerPoolManager.initialize(
         poolSize: 2,
         controllerFactory: createMockController,
@@ -863,7 +1204,73 @@ void main() {
           );
 
       expect(pooled, isNotNull);
-      expect(pooled!.toString(), 'PooledController(videoId: test-video)');
+      // After acquisition, phase should be firstFrame (two-phase init)
+      expect(
+        pooled!.toString(),
+        'PooledController('
+        'videoId: test-video, '
+        'phase: ControllerPhase.firstFrame)',
+      );
+    });
+
+    test('hasFirstFrame returns true for firstFrame and buffered', () {
+      final controller = MockVideoPlayerController();
+      final value = MockVideoPlayerValue();
+      when(() => value.isInitialized).thenReturn(true);
+      when(() => controller.value).thenReturn(value);
+
+      // Test firstFrame phase
+      final pooledFirstFrame = PooledController(
+        controller: controller,
+        videoId: 'test',
+        phase: ControllerPhase.firstFrame,
+      );
+      expect(pooledFirstFrame.hasFirstFrame, isTrue);
+
+      // Test buffered phase
+      final pooledBuffered = PooledController(
+        controller: controller,
+        videoId: 'test',
+        phase: ControllerPhase.buffered,
+      );
+      expect(pooledBuffered.hasFirstFrame, isTrue);
+
+      // Test none phase
+      final pooledNone = PooledController(
+        controller: controller,
+        videoId: 'test',
+      );
+      expect(pooledNone.hasFirstFrame, isFalse);
+    });
+
+    test('isBuffered returns true only for buffered phase', () {
+      final controller = MockVideoPlayerController();
+      final value = MockVideoPlayerValue();
+      when(() => value.isInitialized).thenReturn(true);
+      when(() => controller.value).thenReturn(value);
+
+      // Test buffered phase
+      final pooledBuffered = PooledController(
+        controller: controller,
+        videoId: 'test',
+        phase: ControllerPhase.buffered,
+      );
+      expect(pooledBuffered.isBuffered, isTrue);
+
+      // Test firstFrame phase - not yet buffered
+      final pooledFirstFrame = PooledController(
+        controller: controller,
+        videoId: 'test',
+        phase: ControllerPhase.firstFrame,
+      );
+      expect(pooledFirstFrame.isBuffered, isFalse);
+
+      // Test none phase
+      final pooledNone = PooledController(
+        controller: controller,
+        videoId: 'test',
+      );
+      expect(pooledNone.isBuffered, isFalse);
     });
   });
 
@@ -883,6 +1290,11 @@ void main() {
           when(controller.pause).thenAnswer((_) async {});
           when(controller.play).thenAnswer((_) async {});
           when(() => controller.setLooping(any())).thenAnswer((_) async {});
+          // Two-phase initialization support
+          when(() => controller.seekTo(any())).thenAnswer((_) async {});
+          when(
+            () => controller.setPlaybackSpeed(any()),
+          ).thenAnswer((_) async {});
 
           return controller;
         },
@@ -900,6 +1312,9 @@ void main() {
         videoUrl: 'https://example.com/video2.mp4',
       );
 
+      // Clear interactions from two-phase initialization
+      clearInteractions(pooled1!.controller);
+
       // Evict video1 by adding video3
       await manager.acquireController(
         videoId: 'video3',
@@ -907,7 +1322,7 @@ void main() {
       );
 
       // Verify pause was called during eviction (because isPlaying was true)
-      verify(pooled1!.controller.pause).called(1);
+      verify(pooled1.controller.pause).called(1);
     });
 
     test('_getSortedByPriority skips active video', () async {

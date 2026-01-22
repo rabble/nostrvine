@@ -30,12 +30,20 @@ Future<VideoPlayerController?> createMockController(
   when(controller.pause).thenAnswer((_) async {});
   when(controller.play).thenAnswer((_) async {});
   when(() => controller.setLooping(any())).thenAnswer((_) async {});
+  // Two-phase initialization support
+  when(() => controller.seekTo(any())).thenAnswer((_) async {});
+  when(() => controller.setPlaybackSpeed(any())).thenAnswer((_) async {});
 
   return controller;
 }
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    // Register fallback values for mocktail
+    registerFallbackValue(Duration.zero);
+  });
 
   late MockPooledVideo mockVideo;
 
@@ -334,6 +342,9 @@ void main() {
         // Simulate playing state
         final value = controller!.value as MockVideoPlayerValue;
         when(() => value.isPlaying).thenReturn(true);
+
+        // Clear interactions from two-phase initialization
+        clearInteractions(controller!);
 
         // Update to autoPlay=false
         await tester.pumpWidget(
@@ -648,6 +659,9 @@ void main() {
         await tester.pumpAndSettle();
         expect(controller, isNotNull);
 
+        // Clear interactions from two-phase initialization
+        clearInteractions(controller!);
+
         // Simulate playing state
         final value = controller!.value as MockVideoPlayerValue;
         when(() => value.isPlaying).thenReturn(true);
@@ -704,13 +718,16 @@ void main() {
         await tester.pumpAndSettle();
         expect(controller, isNotNull);
 
+        // Clear invocations from initialization (two-phase init calls pause)
+        clearInteractions(controller!);
+
         // Tap - should not affect playback since enableTapToPause is false
         await tester.tap(find.byKey(const Key('video-container')));
         await tester.pump();
 
-        // No pause/play calls
+        // No pause/play calls after the tap
         verifyNever(controller!.pause);
-        // play may have been called during initialization if autoPlay was true
+        verifyNever(controller!.play);
       });
     });
 

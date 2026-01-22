@@ -88,28 +88,15 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
     _immediatePrewarm(_currentIndex);
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _updatePoolState(_currentIndex);
-      }
+      if (!mounted) return;
+      _setActiveVideoImmediate(_currentIndex);
+      _prewarmAdjacentVideos(_currentIndex);
     });
   }
 
   /// Prewarm current + next 3 videos on mount.
   void _immediatePrewarm(int index) {
-    if (_pool == null || widget.videos.isEmpty) return;
-
-    final videos = widget.videos;
-
-    for (var i = index; i <= index + 3 && i < videos.length; i++) {
-      _pool!.registerVideoIndex(videos[i].id, i);
-      unawaited(
-        _pool!.acquireController(
-          videoId: videos[i].id,
-          videoUrl: videos[i].videoUrl,
-          getCachedFile: widget.getCachedFile,
-        ),
-      );
-    }
+    _prewarmRange(startIndex: index, endIndex: index + 3);
   }
 
   void _onPageChanged(int index) {
@@ -135,47 +122,52 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
   void _prewarmAdjacentVideos(int index) {
     if (_pool == null || index >= widget.videos.length) return;
 
-    final videos = widget.videos;
     final prewarmIds = <String>[];
 
     // Prewarm next 3 videos
-    for (var i = 1; i <= 3; i++) {
-      final nextIndex = index + i;
-      if (nextIndex < videos.length) {
-        final nextVideo = videos[nextIndex];
-        _pool!.registerVideoIndex(nextVideo.id, nextIndex);
-        prewarmIds.add(nextVideo.id);
-        unawaited(
-          _pool!.acquireController(
-            videoId: nextVideo.id,
-            videoUrl: nextVideo.videoUrl,
-            getCachedFile: widget.getCachedFile,
-          ),
-        );
-      }
-    }
+    _prewarmRange(
+      startIndex: index + 1,
+      endIndex: index + 3,
+      prewarmIds: prewarmIds,
+    );
 
     // Prewarm 1 previous video
-    if (index - 1 >= 0) {
-      final prevIndex = index - 1;
-      final prevVideo = videos[prevIndex];
-      _pool!.registerVideoIndex(prevVideo.id, prevIndex);
-      prewarmIds.add(prevVideo.id);
-      unawaited(
-        _pool!.acquireController(
-          videoId: prevVideo.id,
-          videoUrl: prevVideo.videoUrl,
-          getCachedFile: widget.getCachedFile,
-        ),
-      );
-    }
+    _prewarmRange(
+      startIndex: index - 1,
+      endIndex: index - 1,
+      prewarmIds: prewarmIds,
+    );
 
     _pool!.setPrewarmVideos(prewarmIds, currentIndex: index);
   }
 
-  void _updatePoolState(int index) {
-    _setActiveVideoImmediate(index);
-    _prewarmAdjacentVideos(index);
+  /// Acquires controllers for videos in the given index range.
+  ///
+  /// Registers each video's index and starts controller acquisition.
+  /// If [prewarmIds] is provided, adds each video ID to the list.
+  void _prewarmRange({
+    required int startIndex,
+    required int endIndex,
+    List<String>? prewarmIds,
+  }) {
+    if (_pool == null || widget.videos.isEmpty) return;
+
+    final videos = widget.videos;
+    final start = startIndex.clamp(0, videos.length - 1);
+    final end = endIndex.clamp(0, videos.length - 1);
+
+    for (var i = start; i <= end; i++) {
+      final video = videos[i];
+      _pool!.registerVideoIndex(video.id, i);
+      prewarmIds?.add(video.id);
+      unawaited(
+        _pool!.acquireController(
+          videoId: video.id,
+          videoUrl: video.videoUrl,
+          getCachedFile: widget.getCachedFile,
+        ),
+      );
+    }
   }
 
   @override
@@ -183,10 +175,29 @@ class _PooledVideoFeedState extends State<PooledVideoFeed> {
     super.didUpdateWidget(oldWidget);
 
     if (_hasVideoListChanged(oldWidget.videos, widget.videos)) {
+      // Re-register indices for videos near current position so distance-aware
+      // eviction works correctly with the new video list.
+      _registerNearbyVideoIndices(_currentIndex);
+
       _debounceTimer?.cancel();
       _debounceTimer = Timer(_prewarmDebounce, () {
         _prewarmAdjacentVideos(_currentIndex);
       });
+    }
+  }
+
+  /// Registers indices for videos near the current position.
+  ///
+  /// This ensures distance-aware eviction works correctly after video list
+  /// changes by keeping index mappings up-to-date.
+  void _registerNearbyVideoIndices(int centerIndex) {
+    if (_pool == null || widget.videos.isEmpty) return;
+
+    final start = (centerIndex - 1).clamp(0, widget.videos.length - 1);
+    final end = (centerIndex + 3).clamp(0, widget.videos.length - 1);
+
+    for (var i = start; i <= end; i++) {
+      _pool!.registerVideoIndex(widget.videos[i].id, i);
     }
   }
 

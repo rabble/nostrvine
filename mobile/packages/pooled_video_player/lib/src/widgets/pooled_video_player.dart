@@ -166,18 +166,13 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
   @override
   void initState() {
     super.initState();
-    // Defer pool initialization to didChangeDependencies to access context
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _initializePool();
-      }
-    });
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Initialize pool if not yet done (first call after initState)
+    // Initialize pool on first call (didChangeDependencies is called after
+    // initState, and context is available here for InheritedWidget access)
     if (_pool == null) {
       _initializePool();
     }
@@ -203,25 +198,53 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
 
     _unsubscribe = _pool!.addPoolChangeListener(_onPoolStateChanged);
 
-    // Synchronously check if controller already exists in pool (prewarmed).
-    // This avoids the black frame that occurs when waiting for async callback.
-    final existingController = _pool!.getController(widget.video.id);
-    if (existingController != null && existingController.value.isInitialized) {
-      // Controller already ready - set it directly before first build
-      _controller = existingController;
+    // Try to use prewarmed controller synchronously to avoid black frame
+    if (_tryUsePrewarmedController(scheduleCallbacks: true)) {
+      return;
+    }
+    // Not in pool or not initialized - request async
+    _requestController();
+  }
+
+  /// Attempts to use a prewarmed controller from the pool.
+  ///
+  /// Returns true if a ready controller was found and set, false otherwise.
+  /// When [scheduleCallbacks] is true, callbacks are scheduled via
+  /// `addPostFrameCallback` (used during initial build). Otherwise,
+  /// callbacks are invoked immediately.
+  bool _tryUsePrewarmedController({required bool scheduleCallbacks}) {
+    final pooled = _pool?.getPooledController(widget.video.id);
+    if (pooled == null ||
+        !pooled.controller.value.isInitialized ||
+        !pooled.hasFirstFrame) {
+      return false;
+    }
+
+    // Controller is ready - use it
+    _controller = pooled.controller;
+
+    if (scheduleCallbacks) {
       // Schedule callbacks for after first build
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted && _controller != null) {
-          unawaited(_controller!.setLooping(widget.looping));
-          widget.onVideoReady?.call(_controller!);
-          if (widget.autoPlay) {
-            unawaited(_controller!.play());
-          }
+          _onControllerReady(_controller!);
         }
       });
     } else {
-      // Not in pool or not initialized - request async
-      _requestController();
+      // Invoke callbacks immediately (setState already called or not needed)
+      _onControllerReady(pooled.controller);
+    }
+    return true;
+  }
+
+  /// Called when a controller becomes ready for use.
+  ///
+  /// Configures looping, notifies callbacks, and starts playback if autoPlay.
+  void _onControllerReady(VideoPlayerController controller) {
+    unawaited(controller.setLooping(widget.looping));
+    widget.onVideoReady?.call(controller);
+    if (widget.autoPlay) {
+      unawaited(controller.play());
     }
   }
 
@@ -242,6 +265,7 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
               );
               return;
             }
+            // Two-phase init: Controller is ready with first frame
             _setController(pooled.controller);
           })
           .catchError((Object error) {
@@ -265,21 +289,19 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
     }
     // coverage:ignore-end
 
-    setState(() => _controller = controller);
+    setState(() {
+      _controller = controller;
+    });
 
     if (_controller!.value.isInitialized) {
-      unawaited(_controller!.setLooping(widget.looping));
-      widget.onVideoReady?.call(_controller!);
-      if (widget.autoPlay) {
-        unawaited(_controller!.play());
-      }
+      _onControllerReady(_controller!);
     }
   }
 
   void _onPoolStateChanged() {
-    final controller = _pool?.getController(widget.video.id);
-    if (controller != null) {
-      _setController(controller);
+    final pooled = _pool?.getPooledController(widget.video.id);
+    if (pooled != null && pooled.hasFirstFrame) {
+      _setController(pooled.controller);
     }
   }
 
@@ -300,20 +322,16 @@ class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
     }
 
     if (widget.video.id != oldWidget.video.id) {
-      // Check synchronously if new video's controller is already in pool
-      final existingController = _pool?.getController(widget.video.id);
-      if (existingController != null &&
-          existingController.value.isInitialized) {
-        setState(() => _controller = existingController);
-        unawaited(existingController.setLooping(widget.looping));
-        widget.onVideoReady?.call(existingController);
-        if (widget.autoPlay) {
-          unawaited(existingController.play());
-        }
-      } else {
-        setState(() => _controller = null);
-        _requestController();
+      // Try to use prewarmed controller synchronously
+      if (_tryUsePrewarmedController(scheduleCallbacks: false)) {
+        setState(() {}); // Trigger rebuild with new controller
+        return;
       }
+      // Not in pool - clear and request async
+      setState(() {
+        _controller = null;
+      });
+      _requestController();
     }
   }
 
