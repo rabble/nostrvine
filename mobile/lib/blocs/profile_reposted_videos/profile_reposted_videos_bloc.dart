@@ -6,6 +6,8 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_sdk/aid.dart';
+import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:reposts_repository/reposts_repository.dart';
@@ -319,11 +321,14 @@ class ProfileRepostedVideosBloc
 
   /// Compute the addressable ID for a video event.
   ///
-  /// Format: `34236:<pubkey>:<d-tag>`
+  /// Format: `kind:pubkey:d-tag`
   /// Returns null if the video doesn't have a d-tag (vineId).
   String? _computeAddressableId(VideoEvent video) {
     if (video.vineId == null) return null;
-    // NIP-71 addressable short video kind
-    return '34236:${video.pubkey}:${video.vineId}';
+    return AId(
+      kind: EventKind.videoVertical,
+      pubkey: video.pubkey,
+      dTag: video.vineId!,
+    ).toAString();
   }
 }
