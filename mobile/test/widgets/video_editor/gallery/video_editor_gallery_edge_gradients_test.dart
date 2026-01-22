@@ -16,10 +16,7 @@ void main() {
               height: 300,
               child: Stack(
                 children: [
-                  ClipGalleryEdgeGradients(
-                    opacity: 1,
-                    isReordering: false,
-                  ),
+                  ClipGalleryEdgeGradients(opacity: 1, isReordering: false),
                 ],
               ),
             ),
@@ -35,10 +32,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ClipGalleryEdgeGradients(
-              opacity: 1,
-              isReordering: false,
-            ),
+            body: ClipGalleryEdgeGradients(opacity: 1, isReordering: false),
           ),
         ),
       );
@@ -56,10 +50,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ClipGalleryEdgeGradients(
-              opacity: 1,
-              isReordering: false,
-            ),
+            body: ClipGalleryEdgeGradients(opacity: 1, isReordering: false),
           ),
         ),
       );
@@ -73,10 +64,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ClipGalleryEdgeGradients(
-              opacity: 0,
-              isReordering: false,
-            ),
+            body: ClipGalleryEdgeGradients(opacity: 0, isReordering: false),
           ),
         ),
       );
@@ -91,10 +79,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ClipGalleryEdgeGradients(
-              opacity: 1,
-              isReordering: false,
-            ),
+            body: ClipGalleryEdgeGradients(opacity: 1, isReordering: false),
           ),
         ),
       );
@@ -113,10 +98,7 @@ void main() {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ClipGalleryEdgeGradients(
-              opacity: 1,
-              isReordering: true,
-            ),
+            body: ClipGalleryEdgeGradients(opacity: 1, isReordering: true),
           ),
         ),
       );

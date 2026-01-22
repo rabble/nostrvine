@@ -146,34 +146,28 @@ class _PageViewState extends ConsumerState<VideoEditorGalleryPageView> {
               ExtendedSliverFillViewport(
                 viewportFraction: VideoEditorGalleryConstants.viewportFraction,
                 preloadPaintCount: widget.isReordering ? 2 : 0,
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final calculations = GalleryCalculationsScope.of(context);
-                    final reorderCtrl = widget.reorderController;
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final calculations = GalleryCalculationsScope.of(context);
+                  final reorderCtrl = widget.reorderController;
 
-                    final scale = calculations.calculateScale(index);
-                    final targetXOffset = widget.isReordering
-                        ? 0.0
-                        : calculations.calculateXOffset(index);
-                    final reorderOffset = _calculateReorderOffset(index);
-                    final targetOffset = Offset(
-                      targetXOffset + reorderOffset,
-                      0,
-                    );
+                  final scale = calculations.calculateScale(index);
+                  final targetXOffset = widget.isReordering
+                      ? 0.0
+                      : calculations.calculateXOffset(index);
+                  final reorderOffset = _calculateReorderOffset(index);
+                  final targetOffset = Offset(targetXOffset + reorderOffset, 0);
 
-                    return _AnimatedGalleryItem(
-                      clip: widget.clips[index],
-                      index: index,
-                      page: widget.page,
-                      scale: scale,
-                      targetOffset: targetOffset,
-                      enableTweenOffset: reorderCtrl.enableTweenOffset,
-                      canStartReorder: _canStartReorder(index),
-                      onTap: () => _handleItemTap(index),
-                    );
-                  },
-                  childCount: widget.clips.length,
-                ),
+                  return _AnimatedGalleryItem(
+                    clip: widget.clips[index],
+                    index: index,
+                    page: widget.page,
+                    scale: scale,
+                    targetOffset: targetOffset,
+                    enableTweenOffset: reorderCtrl.enableTweenOffset,
+                    canStartReorder: _canStartReorder(index),
+                    onTap: () => _handleItemTap(index),
+                  );
+                }, childCount: widget.clips.length),
               ),
             ],
           );
