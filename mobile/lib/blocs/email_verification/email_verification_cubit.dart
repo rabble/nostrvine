@@ -232,6 +232,13 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         final session = KeycastSession.fromTokenResponse(tokenResponse);
         await _authService.signInWithDivineOAuth(session);
 
+        // Verify sign-in actually succeeded (signInWithDivineOAuth catches
+        // errors internally and sets state to unauthenticated without throwing)
+        if (_authService.isAnonymous) {
+          // Sign-in failed silently - treat as network error and retry
+          throw Exception('Sign-in failed - auth service reports anonymous');
+        }
+
         Log.info(
           'Successfully signed in after email verification',
           name: 'EmailVerificationCubit',
