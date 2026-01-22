@@ -85,8 +85,7 @@ class _LikedVideosScreenRouterState
             icon: const Icon(Icons.arrow_back, color: Colors.white),
             onPressed: () {
               // Navigate to own profile grid
-              final container = ProviderScope.containerOf(context, listen: false);
-              final authService = container.read(authServiceProvider);
+              final authService = ref.read(authServiceProvider);
               final currentUserHex = authService.currentPublicKeyHex;
               if (currentUserHex != null) {
                 final npub = NostrKeyUtils.encodePubKey(currentUserHex);
@@ -209,7 +208,8 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
           videoList: videos,
           contextTitle: 'Liked Videos',
           startingIndex: safeIndex,
-          onNavigate: (index) => context.go(LikedVideosScreenRouter.pathForIndex(index)),
+          onNavigate: (index) =>
+              context.go(LikedVideosScreenRouter.pathForIndex(index)),
         );
       },
     );

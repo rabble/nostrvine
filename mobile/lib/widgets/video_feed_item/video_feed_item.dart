@@ -664,36 +664,29 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
               final pageContext = ref.read(pageContextProvider);
               pageContext.whenData((ctx) {
                 // Build new route with same type but different index
-                final String routePath;
-                switch (ctx.type) {
-                  case RouteType.home:
-                    routePath = HomeScreenRouter.pathForIndex(widget.index);
-                  case RouteType.explore:
-                    routePath = ExploreScreen.pathForIndex(widget.index);
-                  case RouteType.notifications:
-                    routePath = NotificationsScreen.pathForIndex(widget.index);
-                  case RouteType.profile:
-                    routePath = ProfileScreenRouter.pathForIndex(
-                      ctx.npub ?? 'me',
-                      widget.index,
-                    );
-                  case RouteType.hashtag:
-                    routePath = HashtagScreenRouter.pathForTag(
-                      ctx.hashtag ?? '',
-                      index: widget.index,
-                    );
-                  case RouteType.likedVideos:
-                    routePath = LikedVideosScreenRouter.pathForIndex(
-                      widget.index,
-                    );
-                  case RouteType.search:
-                    routePath = SearchScreenPure.pathForTerm(
-                      term: ctx.searchTerm,
-                      index: widget.index,
-                    );
-                  default:
-                    routePath = ExploreScreen.pathForIndex(widget.index);
-                }
+                final routePath = switch (ctx.type) {
+                  RouteType.home => HomeScreenRouter.pathForIndex(widget.index),
+                  RouteType.explore => ExploreScreen.pathForIndex(widget.index),
+                  RouteType.notifications => NotificationsScreen.pathForIndex(
+                    widget.index,
+                  ),
+                  RouteType.profile => ProfileScreenRouter.pathForIndex(
+                    ctx.npub ?? 'me',
+                    widget.index,
+                  ),
+                  RouteType.hashtag => HashtagScreenRouter.pathForTag(
+                    ctx.hashtag ?? '',
+                    index: widget.index,
+                  ),
+                  RouteType.likedVideos => LikedVideosScreenRouter.pathForIndex(
+                    widget.index,
+                  ),
+                  RouteType.search => SearchScreenPure.pathForTerm(
+                    term: ctx.searchTerm,
+                    index: widget.index,
+                  ),
+                  _ => ExploreScreen.pathForIndex(widget.index),
+                };
 
                 Log.info(
                   '🎯 Navigating to route: $routePath',

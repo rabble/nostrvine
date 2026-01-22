@@ -158,7 +158,12 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                 widget.onVideoTap ??
                 (videos, index) {
                   // Default behavior: navigate to hashtag feed mode using GoRouter
-                  context.go(HashtagScreenRouter.pathForTag(widget.hashtag, index: index));
+                  context.go(
+                    HashtagScreenRouter.pathForTag(
+                      widget.hashtag,
+                      index: index,
+                    ),
+                  );
                 },
             onRefresh: () async {
               Log.info(
@@ -226,7 +231,12 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
               return GestureDetector(
                 onTap: () {
                   // Navigate to hashtag feed mode using GoRouter
-                  context.go(HashtagScreenRouter.pathForTag(widget.hashtag, index: index));
+                  context.go(
+                    HashtagScreenRouter.pathForTag(
+                      widget.hashtag,
+                      index: index,
+                    ),
+                  );
                 },
                 child: SizedBox(
                   height: MediaQuery.of(context).size.height,

@@ -116,7 +116,8 @@ class _HashtagScreenRouterState extends ConsumerState<HashtagScreenRouter>
           // Add pagination callback
           onLoadMore: () => ref.read(hashtagFeedProvider.notifier).loadMore(),
           // Add navigation callback to keep hashtag context when swiping
-          onNavigate: (index) => context.go(HashtagScreenRouter.pathForTag(hashtag, index: index)),
+          onNavigate: (index) =>
+              context.go(HashtagScreenRouter.pathForTag(hashtag, index: index)),
         );
       },
     );

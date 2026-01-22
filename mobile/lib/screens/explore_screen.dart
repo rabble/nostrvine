@@ -797,9 +797,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               disposeAllVideoControllers(ref);
               context.push(
                 CuratedListFeedScreen.pathForId(curatedList.id),
-                extra: CuratedListRouteExtra(
-                  listName: curatedList.name,
-                ),
+                extra: CuratedListRouteExtra(listName: curatedList.name),
               );
             },
           ),

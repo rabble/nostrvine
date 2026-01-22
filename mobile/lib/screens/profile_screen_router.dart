@@ -387,7 +387,9 @@ class _MeProfileRedirect extends ConsumerWidget {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Use direct GoRouter calls to properly handle null videoIndex (grid mode)
       if (videoIndex != null) {
-        context.go(ProfileScreenRouter.pathForIndex(currentUserNpub, videoIndex!));
+        context.go(
+          ProfileScreenRouter.pathForIndex(currentUserNpub, videoIndex!),
+        );
       } else {
         context.go(ProfileScreenRouter.pathForNpub(currentUserNpub));
       }
@@ -495,7 +497,8 @@ class _ProfileViewSwitcher extends StatelessWidget {
         isOwnProfile: isOwnProfile,
         videos: videos,
         videoIndex: videoIndex!,
-        onPageChanged: (newIndex) => context.go(ProfileScreenRouter.pathForIndex(npub, newIndex)),
+        onPageChanged: (newIndex) =>
+            context.go(ProfileScreenRouter.pathForIndex(npub, newIndex)),
       );
     }
 

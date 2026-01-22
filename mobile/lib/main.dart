@@ -969,27 +969,21 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       // For notifications: go to index 0 (notifications always has an index)
       // For other routes: go to grid mode (null index)
       if (ctx.videoIndex != null && ctx.videoIndex != 0) {
-        String newRoute;
-        if (ctx.type == RouteType.notifications) {
+        final String newRoute = switch (ctx.type) {
           // Notifications always has an index, go to index 0
-          newRoute = NotificationsScreen.pathForIndex(0);
-        } else {
-          // For explore, profile, and other routes, go to grid mode (null index)
-          switch (ctx.type) {
-            case RouteType.explore:
-              newRoute = ExploreScreen.path;
-            case RouteType.profile:
-              newRoute = ProfileScreenRouter.pathForNpub(ctx.npub ?? 'me');
-            case RouteType.hashtag:
-              newRoute = HashtagScreenRouter.pathForTag(ctx.hashtag ?? '');
-            case RouteType.search:
-              newRoute = SearchScreenPure.path;
-            case RouteType.home:
-              newRoute = HomeScreenRouter.pathForIndex(0);
-            default:
-              newRoute = ExploreScreen.path;
-          }
-        }
+          RouteType.notifications => NotificationsScreen.pathForIndex(0),
+          RouteType.explore => ExploreScreen.path,
+          RouteType.profile => ProfileScreenRouter.pathForNpub(
+            ctx.npub ?? 'me',
+          ),
+          RouteType.hashtag => HashtagScreenRouter.pathForTag(
+            ctx.hashtag ?? '',
+          ),
+          RouteType.search => SearchScreenPure.path,
+          RouteType.home => HomeScreenRouter.pathForIndex(0),
+          _ => ExploreScreen.path,
+        };
+
         router.go(newRoute);
         return true; // Handled
       }

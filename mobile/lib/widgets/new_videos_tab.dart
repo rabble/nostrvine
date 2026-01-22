@@ -187,13 +187,12 @@ class _NewVideosContent extends ConsumerWidget {
         context.push(
           FullscreenVideoFeedScreen.path,
           extra: FullscreenVideoFeedArgs(
-            source: StaticFeedSource(
-              videoList,
-              onLoadMore: () =>
-                  ref.read(popularNowFeedProvider.notifier).loadMore(),
-            ),
             initialIndex: index,
             contextTitle: 'New Videos',
+            source: StaticFeedSource(
+              videoList,
+              onLoadMore: ref.read(popularNowFeedProvider.notifier).loadMore,
+            ),
           ),
         );
       },
@@ -204,7 +203,7 @@ class _NewVideosContent extends ConsumerWidget {
         );
         await ref.read(popularNowFeedProvider.notifier).refresh();
       },
-      emptyBuilder: () => const _NewVideosEmptyState(),
+      emptyBuilder: _NewVideosEmptyState.new,
     );
   }
 }
