@@ -10,9 +10,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
-import 'package:openvine/widgets/auth/auth_gradient_background.dart';
-import 'package:openvine/widgets/auth/auth_submit_button.dart';
-import 'package:openvine/widgets/auth/auth_text_field.dart';
 import 'package:openvine/widgets/error_message.dart';
 
 /// Mode for the auth screen
@@ -198,136 +195,204 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     return null;
   }
 
+  InputDecoration _buildInputDecoration({
+    required String label,
+    required IconData icon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+      suffixIcon: suffixIcon,
+    );
+  }
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: AuthGradientBackground(
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Header with back button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => context.pop(),
-                  ),
-                  const Spacer(),
-                ],
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [VineTheme.vineGreen, Color(0xFF2D8B6F)],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header with back button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => context.pop(),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
               ),
-            ),
 
-            // Tab bar
-            TabBar(
-              controller: _tabController,
-              indicatorColor: Colors.white,
-              labelColor: Colors.white,
-              unselectedLabelColor: Colors.white60,
-              tabs: const [
-                Tab(text: 'Log In'),
-                Tab(text: 'Create Account'),
-              ],
-              onTap: (_) {
-                // Clear error when switching tabs
-                setState(() => _errorMessage = null);
-              },
-            ),
+              // Tab bar
+              TabBar(
+                controller: _tabController,
+                indicatorColor: Colors.white,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white60,
+                tabs: const [
+                  Tab(text: 'Log In'),
+                  Tab(text: 'Create Account'),
+                ],
+                onTap: (_) {
+                  // Clear error when switching tabs
+                  setState(() => _errorMessage = null);
+                },
+              ),
 
-            // Form
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 32),
+              // Form
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 32),
 
-                      // Email field
-                      AuthTextField(
-                        controller: _emailController,
-                        label: 'Email',
-                        icon: Icons.email_outlined,
-                        keyboardType: TextInputType.emailAddress,
-                        autocorrect: false,
-                        validator: Validators.validateEmail,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Password field
-                      AuthTextField(
-                        controller: _passwordController,
-                        label: 'Password',
-                        icon: Icons.lock_outlined,
-                        obscureText: _obscurePassword,
-                        onToggleObscure: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
+                        // Email field
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          autocorrect: false,
+                          decoration: _buildInputDecoration(
+                            label: 'Email',
+                            icon: Icons.email_outlined,
+                          ),
+                          validator: Validators.validateEmail,
                         ),
-                        validator: Validators.validatePassword,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Confirm password (register only)
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 200),
-                        child: _tabController.index == 1
-                            ? Column(
-                                children: [
-                                  AuthTextField(
-                                    controller: _confirmPasswordController,
-                                    label: 'Confirm Password',
-                                    icon: Icons.lock_outlined,
-                                    obscureText: _obscureConfirmPassword,
-                                    onToggleObscure: () => setState(
-                                      () => _obscureConfirmPassword =
-                                          !_obscureConfirmPassword,
-                                    ),
-                                    validator: _validateConfirmPassword,
-                                  ),
-                                  const SizedBox(height: 16),
-                                ],
-                              )
-                            : const SizedBox.shrink(),
-                      ),
-
-                      // Error message
-                      if (_errorMessage != null) ...[
-                        ErrorMessage(message: _errorMessage),
                         const SizedBox(height: 16),
-                      ],
 
-                      // Submit button
-                      AuthSubmitButton(
-                        isLoading: _isLoading,
-                        label: _tabController.index == 0
-                            ? 'Log In'
-                            : 'Create Account',
-                        onPressed: _handleSubmit,
-                      ),
+                        // Password field
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          decoration: _buildInputDecoration(
+                            label: 'Password',
+                            icon: Icons.lock_outlined,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: Colors.white60,
+                              ),
+                              onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
+                            ),
+                          ),
+                          validator: Validators.validatePassword,
+                        ),
+                        const SizedBox(height: 16),
 
-                      const SizedBox(height: 24),
+                        // Confirm password (register only)
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 200),
+                          child: _tabController.index == 1
+                              ? Column(
+                                  children: [
+                                    TextFormField(
+                                      controller: _confirmPasswordController,
+                                      obscureText: _obscureConfirmPassword,
+                                      decoration: _buildInputDecoration(
+                                        label: 'Confirm Password',
+                                        icon: Icons.lock_outlined,
+                                        suffixIcon: IconButton(
+                                          icon: Icon(
+                                            _obscureConfirmPassword
+                                                ? Icons.visibility_off
+                                                : Icons.visibility,
+                                            color: Colors.white60,
+                                          ),
+                                          onPressed: () => setState(
+                                            () => _obscureConfirmPassword =
+                                                !_obscureConfirmPassword,
+                                          ),
+                                        ),
+                                      ),
+                                      validator: _validateConfirmPassword,
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
+                                )
+                              : const SizedBox.shrink(),
+                        ),
 
-                      // Forgot password (login only)
-                      if (_tabController.index == 0)
-                        TextButton(
-                          onPressed: _showForgotPasswordDialog,
-                          child: const Text(
-                            'Forgot Password?',
-                            style: TextStyle(color: Colors.white70),
+                        // Error message
+                        if (_errorMessage != null) ...[
+                          ErrorMessage(message: _errorMessage),
+                          const SizedBox(height: 16),
+                        ],
+
+                        // Submit button
+                        SizedBox(
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _handleSubmit,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: VineTheme.vineGreen,
+                              disabledBackgroundColor: Colors.white60,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: VineTheme.vineGreen,
+                                    ),
+                                  )
+                                : Text(
+                                    _tabController.index == 0
+                                        ? 'Log In'
+                                        : 'Create Account',
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
                           ),
                         ),
-                    ],
+
+                        const SizedBox(height: 24),
+
+                        // Forgot password (login only)
+                        if (_tabController.index == 0)
+                          TextButton(
+                            onPressed: _showForgotPasswordDialog,
+                            child: const Text(
+                              'Forgot Password?',
+                              style: TextStyle(color: Colors.white70),
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 
   void _showForgotPasswordDialog() {
     // Pre-fill from the main email controller
@@ -355,12 +420,14 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                   style: TextStyle(color: Colors.grey[400], fontSize: 14),
                 ),
                 const SizedBox(height: 20),
-                AuthTextField(
+                TextFormField(
                   controller: resetEmailController,
-                  label: 'Email Address',
-                  icon: Icons.email_outlined,
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
+                  decoration: _buildInputDecoration(
+                    label: 'Email Address',
+                    icon: Icons.email_outlined,
+                  ),
                   validator: Validators.validateEmail,
                 ),
               ],

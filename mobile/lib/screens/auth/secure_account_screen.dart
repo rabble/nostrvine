@@ -1,6 +1,7 @@
 // ABOUTME: Native email/password registration screen for diVine
 // ABOUTME: Handles registration with nsec and email verification flow
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,9 +9,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
-import 'package:openvine/widgets/auth/auth_gradient_background.dart';
-import 'package:openvine/widgets/auth/auth_submit_button.dart';
-import 'package:openvine/widgets/auth/auth_text_field.dart';
 import 'package:openvine/widgets/error_message.dart';
 
 class SecureAccountScreen extends ConsumerStatefulWidget {
@@ -65,7 +63,10 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       final email = _emailController.text.trim();
       final password = _passwordController.text;
 
-      ref.read(authServiceProvider).currentKeyContainer?.withNsec((nsec) async {
+      ref
+          .read(authServiceProvider)
+          .currentKeyContainer
+          ?.withNsec((nsec) async {
         final (result, verifier) = await oauth.headlessRegister(
           email: email,
           nsec: nsec,
@@ -114,97 +115,165 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
     return null;
   }
 
+  InputDecoration _buildInputDecoration({
+    required String label,
+    required IconData icon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+      suffixIcon: suffixIcon,
+    );
+  }
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    body: AuthGradientBackground(
-      child: SafeArea(
-        child: Column(
-          children: [
-            // Header with back button
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => context.pop(),
-                  ),
-                  const Spacer(),
-                ],
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [VineTheme.vineGreen, Color(0xFF2D8B6F)],
+          ),
+        ),
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Header with back button
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                child: Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => context.pop(),
+                    ),
+                    const Spacer(),
+                  ],
+                ),
               ),
-            ),
 
-            // Form
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 32),
+              // Form
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(24),
+                  child: Form(
+                    key: _formKey,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const SizedBox(height: 32),
 
-                      // Email field
-                      AuthTextField(
-                        controller: _emailController,
-                        label: 'Email',
-                        icon: Icons.email_outlined,
-                        keyboardType: TextInputType.emailAddress,
-                        autocorrect: false,
-                        validator: Validators.validateEmail,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Password field
-                      AuthTextField(
-                        controller: _passwordController,
-                        label: 'Password',
-                        icon: Icons.lock_outlined,
-                        obscureText: _obscurePassword,
-                        onToggleObscure: () => setState(
-                          () => _obscurePassword = !_obscurePassword,
+                        // Email field
+                        TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          autocorrect: false,
+                          decoration: _buildInputDecoration(
+                            label: 'Email',
+                            icon: Icons.email_outlined,
+                          ),
+                          validator: Validators.validateEmail,
                         ),
-                        validator: Validators.validatePassword,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Confirm password
-                      AuthTextField(
-                        controller: _confirmPasswordController,
-                        label: 'Confirm Password',
-                        icon: Icons.lock_outlined,
-                        obscureText: _obscureConfirmPassword,
-                        onToggleObscure: () => setState(
-                          () => _obscureConfirmPassword =
-                              !_obscureConfirmPassword,
-                        ),
-                        validator: _validateConfirmPassword,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // Error message
-                      if (_errorMessage != null) ...[
-                        ErrorMessage(message: _errorMessage),
                         const SizedBox(height: 16),
+
+                        // Password field
+                        TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          decoration: _buildInputDecoration(
+                            label: 'Password',
+                            icon: Icons.lock_outlined,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: Colors.white60,
+                              ),
+                              onPressed: () => setState(
+                                () => _obscurePassword = !_obscurePassword,
+                              ),
+                            ),
+                          ),
+                          validator: Validators.validatePassword,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Confirm password
+                        TextFormField(
+                          controller: _confirmPasswordController,
+                          obscureText: _obscureConfirmPassword,
+                          decoration: _buildInputDecoration(
+                            label: 'Confirm Password',
+                            icon: Icons.lock_outlined,
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscureConfirmPassword
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                                color: Colors.white60,
+                              ),
+                              onPressed: () => setState(
+                                () => _obscureConfirmPassword =
+                                    !_obscureConfirmPassword,
+                              ),
+                            ),
+                          ),
+                          validator: _validateConfirmPassword,
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Error message
+                        if (_errorMessage != null) ...[
+                          ErrorMessage(message: _errorMessage),
+                          const SizedBox(height: 16),
+                        ],
+
+                        // Submit button
+                        SizedBox(
+                          height: 50,
+                          child: ElevatedButton(
+                            onPressed: _isLoading ? null : _handleSubmit,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              foregroundColor: VineTheme.vineGreen,
+                              disabledBackgroundColor: Colors.white60,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: _isLoading
+                                ? const SizedBox(
+                                    width: 24,
+                                    height: 24,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: VineTheme.vineGreen,
+                                    ),
+                                  )
+                                : const Text(
+                                    'Create Account',
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
                       ],
-
-                      // Submit button
-                      AuthSubmitButton(
-                        isLoading: _isLoading,
-                        label: 'Create Account',
-                        onPressed: _handleSubmit,
-                      ),
-
-                      const SizedBox(height: 24),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }
