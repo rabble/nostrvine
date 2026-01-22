@@ -227,6 +227,20 @@ class _VideoClipPreviewState extends ConsumerState<VideoClipPreview> {
                 width: 4,
                 strokeAlign: BorderSide.strokeAlignOutside,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Color(0x51000000),
+                  blurRadius: 3,
+                  offset: Offset(0, 1),
+                  spreadRadius: 0,
+                ),
+                BoxShadow(
+                  color: Color(0x28000000),
+                  blurRadius: 8,
+                  offset: Offset(0, 4),
+                  spreadRadius: 3,
+                ),
+              ],
             ),
             child: ClipRRect(
               borderRadius: .circular(16),
@@ -257,39 +271,7 @@ class _VideoClipPreviewState extends ConsumerState<VideoClipPreview> {
                         (_controller != null && _controller!.value.isPlaying) ||
                             _hadPlayed
                         ? const SizedBox.shrink()
-                        : widget.clip.thumbnailPath != null
-                        ?
-                          // Show the thumbnail when the clip is not playing
-                          // or initialized.
-                          // Since the thumbnail may change when splitting a
-                          // clip, we use an AnimatedSwitcher to ensure a
-                          // smoother transition.
-                          AnimatedSwitcher(
-                            duration: Duration(milliseconds: 150),
-                            layoutBuilder: (current, preview) => Stack(
-                              alignment: .center,
-                              fit: .expand,
-                              children: <Widget>[...preview, ?current],
-                            ),
-                            child: Image.file(
-                              File(widget.clip.thumbnailPath!),
-                              key: ValueKey(
-                                '${widget.clip.id}-'
-                                '${widget.clip.thumbnailPath}',
-                              ),
-                              fit: .cover,
-                            ),
-                          )
-                        :
-                          // Video thumbnail placeholder
-                          Container(
-                            color: Colors.grey.shade400,
-                            child: const Icon(
-                              Icons.play_circle_outline,
-                              size: 64,
-                              color: Colors.white,
-                            ),
-                          ),
+                        : _ClipThumbnail(clip: widget.clip),
                   ),
 
                   VideoEditorClipProcessingOverlay(
@@ -301,6 +283,45 @@ class _VideoClipPreviewState extends ConsumerState<VideoClipPreview> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Displays thumbnail for a clip with animated transitions.
+///
+/// Shows the thumbnail image when available, otherwise displays a placeholder.
+/// Uses AnimatedSwitcher for smooth transitions when thumbnail changes
+/// (e.g., after splitting a clip).
+class _ClipThumbnail extends StatelessWidget {
+  const _ClipThumbnail({required this.clip});
+
+  final RecordingClip clip;
+
+  @override
+  Widget build(BuildContext context) {
+    if (clip.thumbnailPath == null) {
+      return Container(
+        color: Colors.grey.shade400,
+        child: const Icon(
+          Icons.play_circle_outline,
+          size: 64,
+          color: Colors.white,
+        ),
+      );
+    }
+
+    return AnimatedSwitcher(
+      duration: Duration(milliseconds: 150),
+      layoutBuilder: (current, previous) => Stack(
+        alignment: .center,
+        fit: .expand,
+        children: <Widget>[...previous, ?current],
+      ),
+      child: Image.file(
+        File(clip.thumbnailPath!),
+        key: ValueKey('${clip.id}-${clip.thumbnailPath}'),
+        fit: .cover,
       ),
     );
   }

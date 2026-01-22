@@ -11,54 +11,36 @@ class ClipGalleryEdgeGradients extends StatelessWidget {
   /// Creates edge gradient overlays.
   const ClipGalleryEdgeGradients({
     required this.opacity,
-    required this.gradientWidth,
     super.key,
+    required this.isReordering,
   });
 
   /// Opacity of the gradients (0.0-1.0).
   final double opacity;
 
-  /// Width of each gradient overlay.
-  final double gradientWidth;
+  /// Whether the gallery is in reordering mode.
+  ///
+  /// When true, the center transparent area is removed for a solid gradient.
+  final bool isReordering;
 
   @override
   Widget build(BuildContext context) {
-    const gradientColors = [Color(0xFF000A06), Colors.transparent];
-
     return IgnorePointer(
       child: Opacity(
-        opacity: opacity,
-        child: Stack(
-          children: [
-            // Left gradient
-            Positioned(
-              left: 0,
-              top: 0,
-              bottom: 0,
-              width: gradientWidth,
-              child: const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(colors: gradientColors),
-                ),
-              ),
+        opacity: opacity * 0.65,
+        child: AnimatedContainer(
+          duration: Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: .centerLeft,
+              end: .centerRight,
+              colors: [
+                const Color(0xFF000A06),
+                if (!isReordering) const Color(0x00000A06),
+                const Color(0xFF000A06),
+              ],
             ),
-            // Right gradient
-            Positioned(
-              right: 0,
-              top: 0,
-              bottom: 0,
-              width: gradientWidth,
-              child: const DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: .centerRight,
-                    end: .centerLeft,
-                    colors: gradientColors,
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

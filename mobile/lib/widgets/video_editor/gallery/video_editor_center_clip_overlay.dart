@@ -86,19 +86,8 @@ class VideoEditorCenterClipOverlay extends StatelessWidget {
               child: Transform(
                 transform: transformMatrix,
                 alignment: .center,
-                child: Container(
+                child: SizedBox(
                   width: maxWidth * 0.8,
-                  decoration: BoxDecoration(
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(
-                          alpha: 0.32 * shadowOpacity,
-                        ),
-                        blurRadius: 8,
-                        spreadRadius: 10,
-                      ),
-                    ],
-                  ),
                   child: VideoClipPreview(
                     key: ValueKey('Video-Clip-Preview-${clip.id}'),
                     clip: clip,

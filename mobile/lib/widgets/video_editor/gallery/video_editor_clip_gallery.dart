@@ -348,9 +348,9 @@ class _GalleryViewer extends ConsumerWidget {
               final centerIndex = page.round();
               final difference = (centerIndex - page).abs();
               final showCenterOverlay =
-                  difference < 0.2 && centerIndex < clips.length;
+                  difference < 0.5 && centerIndex < clips.length;
               final shadowOpacity = showCenterOverlay
-                  ? 1.0 - (difference / 0.2)
+                  ? 1.0 - (difference / 0.5)
                   : 0.0;
 
               return _ScrollStack(
@@ -579,6 +579,12 @@ class _ScrollStackState extends ConsumerState<_ScrollStack> {
             calculateXOffset: _calculateXOffset,
           ),
 
+        // Gradient overlays on sides
+        ClipGalleryEdgeGradients(
+          opacity: widget.shadowOpacity,
+          isReordering: state.isReordering,
+        ),
+
         if (widget.showCenterOverlay) ...[
           // Center clip overlay which rendered on top,
           // which imitate a higher z-index.
@@ -599,12 +605,6 @@ class _ScrollStackState extends ConsumerState<_ScrollStack> {
               scale: _calculateScale(widget.centerIndex),
               xOffset: _calculateXOffset(widget.centerIndex),
             ),
-          ),
-
-          // Gradient overlays on sides
-          ClipGalleryEdgeGradients(
-            opacity: widget.shadowOpacity,
-            gradientWidth: widget.constraints.maxWidth * 0.1,
           ),
         ],
       ],
