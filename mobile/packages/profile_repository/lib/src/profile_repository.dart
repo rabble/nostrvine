@@ -54,18 +54,23 @@ class ProfileRepository {
     return UserProfile.fromNostrEvent(profileEvent);
   }
 
-  /// Searches for user profiles matching the query via NIP-50.
+  /// Searches for user profiles matching the query.
   ///
+  /// Fetches profiles via NIP-50 and filters by bestDisplayName.
   /// Returns list of [UserProfile] matching the search query.
   /// Returns empty list if query is empty or no results found.
   Future<List<UserProfile>> searchUsers({
     required String query,
-    int limit = 50,
+    int limit = 200,
   }) async {
     if (query.trim().isEmpty) return [];
 
     final events = await _nostrClient.queryUsers(query, limit: limit);
+    final profiles = events.map(UserProfile.fromNostrEvent).toList();
+    final queryLower = query.toLowerCase();
 
-    return events.map(UserProfile.fromNostrEvent).toList();
+    return profiles.where((profile) {
+      return profile.bestDisplayName.toLowerCase().contains(queryLower);
+    }).toList();
   }
 }
