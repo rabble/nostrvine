@@ -8,6 +8,8 @@ environment:
   sdk: ^3.10.0
 
 dependencies:
+  db_client:
+    path: ../db_client
   equatable: ^2.0.5
   meta: ^1.16.0
   nostr_client:

@@ -25,6 +25,7 @@ const _notificationRetentionDays = 7;
     Notifications,
     PendingUploads,
     PersonalReactions,
+    PersonalReposts,
   ],
   daos: [
     UserProfilesDao,
@@ -35,6 +36,7 @@ const _notificationRetentionDays = 7;
     NotificationsDao,
     PendingUploadsDao,
     PersonalReactionsDao,
+    PersonalRepostsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
