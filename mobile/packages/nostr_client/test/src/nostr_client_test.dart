@@ -1432,8 +1432,9 @@ void main() {
     });
 
     group('sendGenericRepost', () {
-      const addressableId =
-          '34236:82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2:unique-identifier';
+      const addressableId = '''
+34236:82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2
+:unique-identifier''';
       const targetKind = 34236;
       const authorPubkey =
           '82341f882b6eabcd2ba7f1ef90aad961cf074af15b9ef44a09f9d2a8fbfbe6a2';
@@ -1562,12 +1563,15 @@ void main() {
 
         // Verify tags are in correct order: k, a, p
         expect(captured.tags.length, equals(3));
-        expect(captured.tags[0][0], equals('k'));
-        expect(captured.tags[0][1], equals('$targetKind'));
-        expect(captured.tags[1][0], equals('a'));
-        expect(captured.tags[1][1], equals(addressableId));
-        expect(captured.tags[2][0], equals('p'));
-        expect(captured.tags[2][1], equals(authorPubkey));
+        final tag0 = captured.tags[0] as List<dynamic>;
+        final tag1 = captured.tags[1] as List<dynamic>;
+        final tag2 = captured.tags[2] as List<dynamic>;
+        expect(tag0[0], equals('k'));
+        expect(tag0[1], equals('$targetKind'));
+        expect(tag1[0], equals('a'));
+        expect(tag1[1], equals(addressableId));
+        expect(tag2[0], equals('p'));
+        expect(tag2[1], equals(authorPubkey));
       });
     });
 

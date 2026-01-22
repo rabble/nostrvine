@@ -777,8 +777,10 @@ class NostrClient {
   /// like videos (Kind 34236) using the 'a' tag instead of 'e' tag.
   ///
   /// Parameters:
-  /// - [addressableId]: The addressable event identifier (e.g., "34236:pubkey:d-tag")
-  /// - [targetKind]: The kind of the event being reposted (e.g., 34236 for videos)
+  /// - [addressableId]: The addressable event identifier
+  ///   (e.g., "34236:pubkey:d-tag")
+  /// - [targetKind]: The kind of the event being reposted
+  ///   (e.g., 34236 for videos)
   /// - [authorPubkey]: The public key of the original event author
   /// - [content]: Optional content for the repost (usually empty)
   ///

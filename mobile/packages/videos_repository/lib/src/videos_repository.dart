@@ -6,7 +6,6 @@
 
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/aid.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:videos_repository/src/video_content_filter.dart';
 import 'package:videos_repository/src/video_event_filter.dart';
