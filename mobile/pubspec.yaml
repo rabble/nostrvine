@@ -35,6 +35,7 @@ workspace:
   - packages/nostr_gateway
   - packages/nostr_key_manager
   - packages/permissions_service
+  - packages/pooled_video_player
   - packages/profile_repository
   - packages/videos_repository
   

@@ -93,9 +93,14 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       final cursor = state.videos.last.createdAt;
       final newVideos = await _fetchVideosForMode(state.mode, until: cursor);
 
+      // Filter out videos without valid URLs
+      final validNewVideos = newVideos
+          .where((v) => v.videoUrl != null)
+          .toList();
+
       emit(
         state.copyWith(
-          videos: [...state.videos, ...newVideos],
+          videos: [...state.videos, ...validNewVideos],
           hasMore: newVideos.length == _pageSize,
           isLoadingMore: false,
         ),
@@ -132,9 +137,12 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     try {
       final videos = await _fetchVideosForMode(mode);
 
+      // Filter out videos without valid URLs
+      final validVideos = videos.where((v) => v.videoUrl != null).toList();
+
       // Check for empty home feed due to no followed users
       if (mode == FeedMode.home &&
-          videos.isEmpty &&
+          validVideos.isEmpty &&
           _followRepository.followingPubkeys.isEmpty) {
         emit(
           state.copyWith(
@@ -150,8 +158,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       emit(
         state.copyWith(
           status: VideoFeedStatus.success,
-          videos: videos,
-          hasMore: videos.length == _pageSize,
+          videos: validVideos,
+          hasMore: validVideos.length == _pageSize,
           clearError: true,
         ),
       );

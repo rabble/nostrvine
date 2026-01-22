@@ -7,5 +7,7 @@
 library;
 
 export 'src/db_video_local_storage.dart';
+export 'src/video_content_filter.dart';
+export 'src/video_event_filter.dart';
 export 'src/video_local_storage.dart';
 export 'src/videos_repository.dart';

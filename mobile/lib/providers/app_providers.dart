@@ -2,13 +2,13 @@
 // ABOUTME: Replaces Provider MultiProvider setup with pure Riverpod dependency injection
 
 import 'dart:async';
+import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:likes_repository/likes_repository.dart';
-import 'package:videos_repository/videos_repository.dart';
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
@@ -17,6 +17,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/repositories/username_repository.dart';
+import 'package:profile_repository/profile_repository.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/analytics_service.dart';
@@ -25,6 +26,7 @@ import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
+import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/bookmark_service.dart';
@@ -48,6 +50,7 @@ import 'package:openvine/services/nip05_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
+import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';
@@ -71,6 +74,7 @@ import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 part 'app_providers.g.dart';
 
@@ -613,6 +617,25 @@ FollowRepository followRepository(Ref ref) {
   return repository;
 }
 
+/// Provider for ProfileRepository instance
+///
+/// Creates a ProfileRepository for managing user profiles (Kind 0 metadata).
+/// Requires authentication.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+@Riverpod(keepAlive: true)
+ProfileRepository profileRepository(Ref ref) {
+  final nostrClient = ref.watch(nostrServiceProvider);
+
+  assert(
+    nostrClient.hasKeys,
+    'ProfileRepository accessed without authentication',
+  );
+
+  return ProfileRepository(nostrClient: nostrClient);
+}
+
 // ProfileStatsProvider is now handled by profile_stats_provider.dart with pure Riverpod
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
@@ -1046,10 +1069,19 @@ CommentsRepository commentsRepository(Ref ref) {
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - ContentBlocklistService for filtering blocked/muted users
+/// - AgeVerificationService for filtering NSFW content based on user preference
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
-  return VideosRepository(nostrClient: nostrClient);
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final ageVerificationService = ref.watch(ageVerificationServiceProvider);
+
+  return VideosRepository(
+    nostrClient: nostrClient,
+    blockFilter: createBlocklistFilter(blocklistService),
+    contentFilter: createNsfwFilter(ageVerificationService),
+  );
 }
 
 // =============================================================================
