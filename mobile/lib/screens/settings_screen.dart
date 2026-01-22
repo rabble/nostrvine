@@ -82,7 +82,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final authService = ref.watch(authServiceProvider);
     final authStateAsync = ref.watch(authStateStreamProvider);
     final isAuthenticated = authStateAsync.when(
-      data: (state) => state == AuthState.authenticated,
+      data: (state) {
+        Log.debug(
+          '👨‍💻 authStateAsync when $state',
+          name: 'SettingsScreen',
+          category: LogCategory.ui,
+        );
+
+        return state == AuthState.authenticated;
+      },
       loading: () => false,
       error: (_, __) => false,
     );

@@ -18,9 +18,12 @@ final routeNormalizationProvider = Provider<void>((ref) {
   // Set up listener on router delegate to detect navigation changes
   void listener() {
     final loc = router.routeInformationProvider.value.uri.toString();
+    // Skip normalization for auth-related routes
+    // EmailVerificationScreen supports both token mode (?token=) and polling mode (?deviceCode=)
+    // Use contains() to handle both path-only and full URL formats (deep links include host)
     if (loc.startsWith(WelcomeScreen.path) ||
         loc.contains('${ResetPasswordScreen.path}?token=') ||
-        loc.contains('${EmailVerificationScreen.path}?token=')) {
+        loc.contains('${EmailVerificationScreen.path}?')) {
       Log.info(
         '🔄 RouteNormalizationProvider: skipping normalization for $loc',
         name: 'RouteNormalizationProvider',

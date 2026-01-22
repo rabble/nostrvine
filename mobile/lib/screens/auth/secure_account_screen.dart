@@ -4,8 +4,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/mixins/email_verification_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_gradient_background.dart';
@@ -27,8 +27,7 @@ class SecureAccountScreen extends ConsumerStatefulWidget {
       _SecureAccountScreenState();
 }
 
-class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
-    with EmailVerificationMixin {
+class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -39,8 +38,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
 
-  @override
-  void setErrorMessage(String? message) {
+  void _setErrorMessage(String? message) {
     if (mounted) {
       setState(() => _errorMessage = message);
     }
@@ -51,7 +49,6 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    disposeVerification();
     super.dispose();
   }
 
@@ -77,25 +74,23 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
         );
 
         if (!result.success) {
-          setErrorMessage(result.error ?? 'Registration failed');
+          _setErrorMessage(result.error ?? 'Registration failed');
           return;
         }
 
         if (result.verificationRequired && result.deviceCode != null) {
-          // Store for polling and show verification UI
-          setPendingVerification(
-            deviceCode: result.deviceCode!,
-            verifier: verifier,
-            email: email,
-          );
-
-          startVerificationPolling(oauth);
-
+          // Navigate to email verification screen in polling mode
           if (mounted) {
-            showVerificationDialog();
+            final encodedEmail = Uri.encodeComponent(email);
+            context.go(
+              '${EmailVerificationScreen.path}'
+              '?deviceCode=${result.deviceCode}'
+              '&verifier=$verifier'
+              '&email=$encodedEmail',
+            );
           }
         } else {
-          setErrorMessage('Registration complete. Please check your email.');
+          _setErrorMessage('Registration complete. Please check your email.');
         }
       });
     } catch (e) {
@@ -104,7 +99,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
         name: 'SecureAccountScreen',
         category: LogCategory.auth,
       );
-      setErrorMessage('An unexpected error occurred. Please try again.');
+      _setErrorMessage('An unexpected error occurred. Please try again.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);

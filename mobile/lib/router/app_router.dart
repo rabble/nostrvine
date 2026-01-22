@@ -706,13 +706,20 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return '${WelcomeScreen.resetPasswordPath}?token=$token';
         },
       ),
-      // deep link route for email verification
+      // Email verification route - supports both modes:
+      // - Token mode (deep link): /verify-email?token=xyz
+      // - Polling mode (after registration): /verify-email?deviceCode=abc&verifier=def&email=user@example.com
       GoRoute(
         path: EmailVerificationScreen.path,
         name: EmailVerificationScreen.routeName,
         builder: (context, state) {
-          final token = state.uri.queryParameters['token'];
-          return EmailVerificationScreen(token: token ?? '');
+          final params = state.uri.queryParameters;
+          return EmailVerificationScreen(
+            token: params['token'],
+            deviceCode: params['deviceCode'],
+            verifier: params['verifier'],
+            email: params['email'],
+          );
         },
       ),
 

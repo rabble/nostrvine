@@ -5,9 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
-import 'package:openvine/mixins/email_verification_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/auth/auth_gradient_background.dart';
@@ -35,7 +35,7 @@ class DivineAuthScreen extends ConsumerStatefulWidget {
 }
 
 class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
-    with SingleTickerProviderStateMixin, EmailVerificationMixin {
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
@@ -47,8 +47,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
 
-  @override
-  void setErrorMessage(String? message) {
+  void _setErrorMessage(String? message) {
     if (mounted) {
       setState(() => _errorMessage = message);
     }
@@ -70,7 +69,6 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    disposeVerification();
     super.dispose();
   }
 
@@ -101,7 +99,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
         name: 'DivineAuthScreen',
         category: LogCategory.auth,
       );
-      setErrorMessage('An unexpected error occurred. Please try again.');
+      _setErrorMessage('An unexpected error occurred. Please try again.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -121,14 +119,14 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     );
 
     if (!result.success || result.code == null) {
-      setErrorMessage(
+      _setErrorMessage(
         result.errorDescription ?? result.error ?? 'Login failed',
       );
       return;
     }
 
     // Exchange code for tokens
-    await exchangeCodeAndLogin(oauth, result.code!, verifier);
+    await _exchangeCodeAndLogin(oauth, result.code!, verifier);
   }
 
   Future<void> _handleRegister(
@@ -143,25 +141,52 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     );
 
     if (!result.success) {
-      setErrorMessage(result.error ?? 'Registration failed');
+      _setErrorMessage(result.error ?? 'Registration failed');
       return;
     }
 
     if (result.verificationRequired && result.deviceCode != null) {
-      // Store for polling and show verification UI
-      setPendingVerification(
-        deviceCode: result.deviceCode!,
-        verifier: verifier,
-        email: email,
-      );
-
-      startVerificationPolling(oauth);
-
+      // Navigate to email verification screen in polling mode
       if (mounted) {
-        showVerificationDialog();
+        final encodedEmail = Uri.encodeComponent(email);
+        context.go(
+          '${EmailVerificationScreen.path}'
+          '?deviceCode=${result.deviceCode}'
+          '&verifier=$verifier'
+          '&email=$encodedEmail',
+        );
       }
     } else {
-      setErrorMessage('Registration complete. Please check your email.');
+      _setErrorMessage('Registration complete. Please check your email.');
+    }
+  }
+
+  Future<void> _exchangeCodeAndLogin(
+    KeycastOAuth oauth,
+    String code,
+    String verifier,
+  ) async {
+    try {
+      final tokenResponse = await oauth.exchangeCode(
+        code: code,
+        verifier: verifier,
+      );
+
+      // Get the session and sign in
+      final session = KeycastSession.fromTokenResponse(tokenResponse);
+      final authService = ref.read(authServiceProvider);
+      await authService.signInWithDivineOAuth(session);
+
+      // Navigation will be handled by auth state listener
+    } on OAuthException catch (e) {
+      _setErrorMessage(e.message);
+    } catch (e) {
+      Log.error(
+        'Error exchanging code: $e',
+        name: 'DivineAuthScreen',
+        category: LogCategory.auth,
+      );
+      _setErrorMessage('Failed to complete authentication');
     }
   }
 
@@ -392,11 +417,11 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
             ),
           );
         } else {
-          setErrorMessage(result.error ?? 'Failed to send reset email.');
+          _setErrorMessage(result.error ?? 'Failed to send reset email.');
         }
       }
     } catch (e) {
-      setErrorMessage('An unexpected error occurred.');
+      _setErrorMessage('An unexpected error occurred.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
