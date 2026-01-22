@@ -140,24 +140,22 @@ Future<void> showDeleteAllContentWarningDialog({
               style: TextStyle(color: Colors.grey, fontSize: 16),
             ),
           ),
-          Flexible(
-            child: ElevatedButton(
-              onPressed: confirmationController.text == requiredText
-                  ? () {
-                      context.pop();
-                      onConfirm();
-                    }
-                  : null,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
-                foregroundColor: Colors.white,
-                disabledBackgroundColor: Colors.grey.shade800,
-                disabledForegroundColor: Colors.grey,
-              ),
-              child: const Text(
-                'Delete All Content',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              ),
+          ElevatedButton(
+            onPressed: confirmationController.text == requiredText
+                ? () {
+                    context.pop();
+                    onConfirm();
+                  }
+                : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+              disabledBackgroundColor: Colors.grey.shade800,
+              disabledForegroundColor: Colors.grey,
+            ),
+            child: const Text(
+              'Delete All Content',
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
             ),
           ),
         ],
