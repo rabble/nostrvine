@@ -1,5 +1,5 @@
 // ABOUTME: Tests for ClipGalleryEdgeGradients widget
-// ABOUTME: Verifies gradient positioning and IgnorePointer behavior
+// ABOUTME: Verifies gradient behavior and IgnorePointer behavior
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,7 +7,7 @@ import 'package:openvine/widgets/video_editor/gallery/video_editor_gallery_edge_
 
 void main() {
   group('ClipGalleryEdgeGradients', () {
-    testWidgets('should render left and right gradients', (tester) async {
+    testWidgets('should render with gradient decoration', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
@@ -16,7 +16,10 @@ void main() {
               height: 300,
               child: Stack(
                 children: [
-                  ClipGalleryEdgeGradients(opacity: 1.0, gradientWidth: 40),
+                  ClipGalleryEdgeGradients(
+                    opacity: 1,
+                    isReordering: false,
+                  ),
                 ],
               ),
             ),
@@ -24,52 +27,56 @@ void main() {
         ),
       );
 
-      // Should have two DecoratedBox widgets for left and right gradients
-      expect(find.byType(DecoratedBox), findsNWidgets(2));
+      // Should have AnimatedContainer with gradient decoration
+      expect(find.byType(AnimatedContainer), findsOneWidget);
     });
 
     testWidgets('should ignore pointer events', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ClipGalleryEdgeGradients(opacity: 1.0, gradientWidth: 40),
+            body: ClipGalleryEdgeGradients(
+              opacity: 1,
+              isReordering: false,
+            ),
           ),
         ),
       );
 
-      // Find the IgnorePointer that wraps the gradients (direct child of ClipGalleryEdgeGradients)
-      final clipGalleryEdgeGradients = find.byType(ClipGalleryEdgeGradients);
-      expect(clipGalleryEdgeGradients, findsOneWidget);
-
       final ignorePointer = tester.widget<IgnorePointer>(
-        find
-            .descendant(
-              of: clipGalleryEdgeGradients,
-              matching: find.byType(IgnorePointer),
-            )
-            .first,
+        find.descendant(
+          of: find.byType(ClipGalleryEdgeGradients),
+          matching: find.byType(IgnorePointer),
+        ),
       );
       expect(ignorePointer.ignoring, true);
     });
 
-    testWidgets('should apply opacity', (tester) async {
+    testWidgets('should apply scaled opacity', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ClipGalleryEdgeGradients(opacity: 0.5, gradientWidth: 40),
+            body: ClipGalleryEdgeGradients(
+              opacity: 1,
+              isReordering: false,
+            ),
           ),
         ),
       );
 
       final opacityWidget = tester.widget<Opacity>(find.byType(Opacity));
-      expect(opacityWidget.opacity, 0.5);
+      // Opacity is scaled by 0.65
+      expect(opacityWidget.opacity, closeTo(0.65, 0.01));
     });
 
     testWidgets('should be invisible when opacity is 0', (tester) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: ClipGalleryEdgeGradients(opacity: 0.0, gradientWidth: 40),
+            body: ClipGalleryEdgeGradients(
+              opacity: 0,
+              isReordering: false,
+            ),
           ),
         ),
       );
@@ -78,39 +85,50 @@ void main() {
       expect(opacityWidget.opacity, 0.0);
     });
 
-    testWidgets('should position gradients at edges', (tester) async {
+    testWidgets('should have center transparent area when not reordering', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: SizedBox(
-              width: 400,
-              height: 300,
-              child: Stack(
-                children: [
-                  ClipGalleryEdgeGradients(opacity: 1.0, gradientWidth: 50),
-                ],
-              ),
+            body: ClipGalleryEdgeGradients(
+              opacity: 1,
+              isReordering: false,
             ),
           ),
         ),
       );
 
-      final positionedWidgets = tester.widgetList<Positioned>(
-        find.byType(Positioned),
+      final container = tester.widget<AnimatedContainer>(
+        find.byType(AnimatedContainer),
+      );
+      final decoration = container.decoration! as BoxDecoration;
+      final gradient = decoration.gradient! as LinearGradient;
+
+      // When not reordering, should have 3 colors (with transparent center)
+      expect(gradient.colors.length, 3);
+    });
+
+    testWidgets('should have solid gradient when reordering', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: ClipGalleryEdgeGradients(
+              opacity: 1,
+              isReordering: true,
+            ),
+          ),
+        ),
       );
 
-      // Should have exactly 2 Positioned widgets
-      expect(positionedWidgets.length, 2);
+      final container = tester.widget<AnimatedContainer>(
+        find.byType(AnimatedContainer),
+      );
+      final decoration = container.decoration! as BoxDecoration;
+      final gradient = decoration.gradient! as LinearGradient;
 
-      final positionedList = positionedWidgets.toList();
-
-      // Left gradient at left: 0
-      expect(positionedList[0].left, 0);
-      expect(positionedList[0].width, 50);
-
-      // Right gradient at right: 0
-      expect(positionedList[1].right, 0);
-      expect(positionedList[1].width, 50);
+      // When reordering, should have 2 colors (no transparent center)
+      expect(gradient.colors.length, 2);
     });
   });
 }

@@ -136,7 +136,9 @@ void main() {
         ProviderScope(
           overrides: [
             videoEditorProvider.overrideWith(
-              () => TestVideoEditorNotifier(VideoEditorProviderState()),
+              () => TestVideoEditorNotifier(
+                VideoEditorProviderState(isOverDeleteZone: true),
+              ),
             ),
           ],
           child: MaterialApp(
@@ -144,7 +146,7 @@ void main() {
               body: VideoClipPreview(
                 clip: clip,
                 isCurrentClip: true,
-                isDeletionZone: true,
+                isReordering: true,
               ),
             ),
           ),

@@ -29,7 +29,6 @@ class VideoClipPreview extends ConsumerStatefulWidget {
     super.key,
     this.isCurrentClip = false,
     this.isReordering = false,
-    this.isDeletionZone = false,
     this.onTap,
     this.onLongPress,
   });
@@ -42,9 +41,6 @@ class VideoClipPreview extends ConsumerStatefulWidget {
 
   /// Whether clip reordering mode is active.
   final bool isReordering;
-
-  /// Whether the clip is being dragged over the deletion zone.
-  final bool isDeletionZone;
 
   /// Callback when the clip is tapped.
   final VoidCallback? onTap;
@@ -208,6 +204,12 @@ class _VideoClipPreviewState extends ConsumerState<VideoClipPreview> {
 
   @override
   Widget build(BuildContext context) {
+    // Only watch delete zone state for current clip to avoid unnecessary
+    // rebuilds
+    final isOverDeleteZone =
+        widget.isCurrentClip &&
+        ref.watch(videoEditorProvider.select((s) => s.isOverDeleteZone));
+
     return Center(
       child: AspectRatio(
         aspectRatio: widget.clip.aspectRatio.value,
@@ -219,20 +221,19 @@ class _VideoClipPreviewState extends ConsumerState<VideoClipPreview> {
             decoration: BoxDecoration(
               borderRadius: .circular(16),
               border: .all(
-                color: widget.isDeletionZone
+                color: isOverDeleteZone
                     ? const Color(0xFFF44336) // Red when over delete zone
                     : widget.isReordering
                     ? const Color(0xFFEBDE3B) // Yellow when reordering
                     : const Color(0x00000000), // Transparent otherwise
-                width: 4,
+                width: 6,
                 strokeAlign: BorderSide.strokeAlignOutside,
               ),
-              boxShadow: [
+              boxShadow: const [
                 BoxShadow(
                   color: Color(0x51000000),
                   blurRadius: 3,
                   offset: Offset(0, 1),
-                  spreadRadius: 0,
                 ),
                 BoxShadow(
                   color: Color(0x28000000),
@@ -312,7 +313,7 @@ class _ClipThumbnail extends StatelessWidget {
     }
 
     return AnimatedSwitcher(
-      duration: Duration(milliseconds: 150),
+      duration: const Duration(milliseconds: 150),
       layoutBuilder: (current, previous) => Stack(
         alignment: .center,
         fit: .expand,
