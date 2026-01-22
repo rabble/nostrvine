@@ -25,9 +25,9 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   EmailVerificationCubit({
     required KeycastOAuth oauthClient,
     required AuthService authService,
-  })  : _oauthClient = oauthClient,
-        _authService = authService,
-        super(const EmailVerificationState());
+  }) : _oauthClient = oauthClient,
+       _authService = authService,
+       super(const EmailVerificationState());
 
   final KeycastOAuth _oauthClient;
   final AuthService _authService;
@@ -139,10 +139,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
           );
           _pollTimer?.cancel();
           if (result.code != null && _pendingVerifier != null) {
-            await _exchangeCodeAndLogin(
-              result.code!,
-              _pendingVerifier!,
-            );
+            await _exchangeCodeAndLogin(result.code!, _pendingVerifier!);
           } else {
             // Edge case: completion detected but missing code or verifier
             Log.error(
@@ -171,7 +168,8 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
         case PollStatus.error:
           final errorMsg = result.error ?? 'Verification failed';
           // Check if this is a transient network error vs a real auth error
-          final isNetworkError = errorMsg.contains('Network error') ||
+          final isNetworkError =
+              errorMsg.contains('Network error') ||
               errorMsg.contains('SocketException') ||
               errorMsg.contains('ClientException') ||
               errorMsg.contains('host lookup');
@@ -216,10 +214,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   /// Delay between exchange retries
   static const _exchangeRetryDelay = Duration(seconds: 2);
 
-  Future<void> _exchangeCodeAndLogin(
-    String code,
-    String verifier,
-  ) async {
+  Future<void> _exchangeCodeAndLogin(String code, String verifier) async {
     for (var attempt = 1; attempt <= _maxExchangeRetries; attempt++) {
       try {
         Log.info(

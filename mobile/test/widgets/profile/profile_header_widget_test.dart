@@ -78,7 +78,6 @@ void main() {
   group('ProfileHeaderWidget', () {
     late MockFollowRepository mockFollowRepository;
     late MockNostrClient mockNostrClient;
-    late MockAuthService mockAuthService;
 
     UserProfile createTestProfile({
       String? displayName,
@@ -120,7 +119,6 @@ void main() {
     setUp(() {
       mockFollowRepository = MockFollowRepository();
       mockNostrClient = MockNostrClient();
-      mockAuthService = MockAuthService();
     });
 
     setUpAll(() async {
@@ -390,33 +388,32 @@ void main() {
         },
       );
 
-      testWidgets(
-        'secure account banner Register button is tappable',
-        (tester) async {
-          final testProfile = createTestProfile(displayName: 'Test User');
+      testWidgets('secure account banner Register button is tappable', (
+        tester,
+      ) async {
+        final testProfile = createTestProfile(displayName: 'Test User');
 
-          await tester.pumpWidget(
-            buildTestWidget(
-              userIdHex: testUserHex,
-              isOwnProfile: true,
-              profileStatsAsync: AsyncValue.data(createTestStats()),
-              profile: testProfile,
-              isAnonymous: true,
-            ),
-          );
-          await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profileStatsAsync: AsyncValue.data(createTestStats()),
+            profile: testProfile,
+            isAnonymous: true,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-          expect(find.text('Secure Your Account'), findsOneWidget);
+        expect(find.text('Secure Your Account'), findsOneWidget);
 
-          // Verify Register button exists and is an ElevatedButton
-          final registerButton = find.widgetWithText(ElevatedButton, 'Register');
-          expect(registerButton, findsOneWidget);
+        // Verify Register button exists and is an ElevatedButton
+        final registerButton = find.widgetWithText(ElevatedButton, 'Register');
+        expect(registerButton, findsOneWidget);
 
-          // Verify the button has correct styling
-          final button = tester.widget<ElevatedButton>(registerButton);
-          expect(button.onPressed, isNotNull);
-        },
-      );
+        // Verify the button has correct styling
+        final button = tester.widget<ElevatedButton>(registerButton);
+        expect(button.onPressed, isNotNull);
+      });
     });
   });
 }

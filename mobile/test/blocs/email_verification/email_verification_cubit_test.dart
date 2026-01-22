@@ -219,9 +219,7 @@ void main() {
 
       test('states with different values are not equal', () {
         expect(
-          const EmailVerificationState(
-            status: EmailVerificationStatus.polling,
-          ),
+          const EmailVerificationState(status: EmailVerificationStatus.polling),
           isNot(
             equals(
               const EmailVerificationState(
@@ -233,7 +231,9 @@ void main() {
 
         expect(
           const EmailVerificationState(pendingEmail: 'a@example.com'),
-          isNot(equals(const EmailVerificationState(pendingEmail: 'b@example.com'))),
+          isNot(
+            equals(const EmailVerificationState(pendingEmail: 'b@example.com')),
+          ),
         );
       });
     });

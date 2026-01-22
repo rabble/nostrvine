@@ -15,7 +15,6 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helpers/test_provider_overrides.dart';
-
 @GenerateMocks([KeycastOAuth, AuthService])
 import 'secure_account_screen_test.mocks.dart';
 
@@ -32,9 +31,9 @@ void main() {
       when(mockAuthService.isAuthenticated).thenReturn(true);
       when(mockAuthService.isAnonymous).thenReturn(true);
       when(mockAuthService.currentNpub).thenReturn('npub1test...');
-      when(mockAuthService.exportNsec()).thenAnswer(
-        (_) async => 'nsec1testabc123xyz',
-      );
+      when(
+        mockAuthService.exportNsec(),
+      ).thenAnswer((_) async => 'nsec1testabc123xyz');
     });
 
     setUpAll(() async {
@@ -53,9 +52,7 @@ void main() {
             oauthClient: mockOAuth,
             authService: mockAuthService,
           ),
-          child: const MaterialApp(
-            home: SecureAccountScreen(),
-          ),
+          child: const MaterialApp(home: SecureAccountScreen()),
         ),
       );
     }
@@ -288,6 +285,5 @@ void main() {
         );
       });
     });
-
   });
 }
