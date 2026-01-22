@@ -197,6 +197,161 @@ class VideosRepository {
     return videos.take(limit).toList();
   }
 
+  /// Fetches videos by their event IDs.
+  ///
+  /// This is used for fetching videos that a user has liked (Kind 7 reactions
+  /// reference videos by their event ID).
+  ///
+  /// Parameters:
+  /// - [eventIds]: List of event IDs to fetch
+  ///
+  /// Returns a list of [VideoEvent] in the same order as [eventIds].
+  /// Videos that couldn't be found or failed to parse are omitted.
+  Future<List<VideoEvent>> getVideosByIds(List<String> eventIds) async {
+    if (eventIds.isEmpty) return [];
+
+    final filter = Filter(
+      ids: eventIds,
+      kinds: NIP71VideoKinds.getAllVideoKinds(),
+    );
+
+    final events = await _nostrClient.queryEvents([filter]);
+
+    // Build a map for ordering
+    final eventMap = <String, Event>{};
+    for (final event in events) {
+      eventMap[event.id] = event;
+    }
+
+    // Transform and filter, preserving input order
+    final videos = <VideoEvent>[];
+    for (final id in eventIds) {
+      final event = eventMap[id];
+      if (event == null) continue;
+
+      final video = _tryParseAndFilter(event);
+      if (video != null) videos.add(video);
+    }
+
+    return videos;
+  }
+
+  /// Fetches videos by their addressable IDs.
+  ///
+  /// Addressable IDs follow the format: `kind:pubkey:d-tag`
+  /// This is used for fetching videos that a user has reposted (Kind 16
+  /// generic reposts reference addressable events via the 'a' tag).
+  ///
+  /// Parameters:
+  /// - [addressableIds]: List of addressable IDs in `kind:pubkey:d-tag` format
+  ///
+  /// Returns a list of [VideoEvent] in the same order as [addressableIds].
+  /// Videos that couldn't be found or failed to parse are omitted.
+  Future<List<VideoEvent>> getVideosByAddressableIds(
+    List<String> addressableIds,
+  ) async {
+    if (addressableIds.isEmpty) return [];
+
+    // Parse addressable IDs and build filters
+    final filters = <Filter>[];
+    final parsedIds = <String, _ParsedAddressableId>{};
+
+    for (final addressableId in addressableIds) {
+      final parsed = _parseAddressableId(addressableId);
+      if (parsed != null && NIP71VideoKinds.isVideoKind(parsed.kind)) {
+        parsedIds[addressableId] = parsed;
+        filters.add(
+          Filter(
+            kinds: [parsed.kind],
+            authors: [parsed.pubkey],
+            d: [parsed.dTag],
+            limit: 1,
+          ),
+        );
+      }
+    }
+
+    if (filters.isEmpty) return [];
+
+    final events = await _nostrClient.queryEvents(filters);
+
+    // Build a map keyed by addressable ID for ordering
+    final eventMap = <String, Event>{};
+    for (final event in events) {
+      final dTag = _extractDTag(event);
+      if (dTag != null) {
+        final addressableId = '${event.kind}:${event.pubkey}:$dTag';
+        eventMap[addressableId] = event;
+      }
+    }
+
+    // Transform and filter, preserving input order
+    final videos = <VideoEvent>[];
+    for (final addressableId in addressableIds) {
+      final event = eventMap[addressableId];
+      if (event == null) continue;
+
+      final video = _tryParseAndFilter(event);
+      if (video != null) videos.add(video);
+    }
+
+    return videos;
+  }
+
+  /// Attempts to parse an event into a VideoEvent and apply filters.
+  ///
+  /// Returns the [VideoEvent] if it passes all filters, or null if:
+  /// - The event kind is not a video kind
+  /// - The pubkey is blocked
+  /// - The video has no playable URL
+  /// - The video is expired (NIP-40)
+  /// - The video fails content filtering
+  VideoEvent? _tryParseAndFilter(Event event) {
+    // Skip events that aren't valid video kinds
+    if (!NIP71VideoKinds.isVideoKind(event.kind)) return null;
+
+    // Block filter - check pubkey before parsing for efficiency
+    if (_blockFilter?.call(event.pubkey) ?? false) return null;
+
+    final video = VideoEvent.fromNostrEvent(event);
+
+    // Skip videos without a playable URL
+    if (!video.hasVideo) return null;
+
+    // Skip expired videos (NIP-40)
+    if (video.isExpired) return null;
+
+    // Content filter - check parsed video (NSFW, etc.)
+    if (_contentFilter?.call(video) ?? false) return null;
+
+    return video;
+  }
+
+  /// Parses an addressable ID into its components.
+  ///
+  /// Format: `kind:pubkey:d-tag`
+  _ParsedAddressableId? _parseAddressableId(String addressableId) {
+    final parts = addressableId.split(':');
+    if (parts.length < 3) return null;
+    final kind = int.tryParse(parts[0]);
+    if (kind == null) return null;
+    return _ParsedAddressableId(
+      kind: kind,
+      pubkey: parts[1],
+      dTag: parts.sublist(2).join(':'), // Handle d-tags with colons
+    );
+  }
+
+  /// Extracts the d-tag from an event.
+  String? _extractDTag(Event event) {
+    for (final tag in event.tags) {
+      if (tag is List && tag.isNotEmpty && tag[0] == 'd' && tag.length > 1) {
+        return tag[1] as String;
+      }
+    }
+    return null;
+  }
+
   /// Transforms raw Nostr events to VideoEvents and filters invalid ones.
   ///
   /// Applies two-stage filtering:
@@ -220,25 +375,8 @@ class VideosRepository {
     final videos = <VideoEvent>[];
 
     for (final event in events) {
-      // Skip events that aren't valid video kinds
-      if (!NIP71VideoKinds.isVideoKind(event.kind)) continue;
-
-      // Stage 1: Content filter - check pubkey before parsing for efficiency
-      // Content filter - check early before parsing for efficiency
-      if (_blockFilter?.call(event.pubkey) ?? false) continue;
-
-      final video = VideoEvent.fromNostrEvent(event);
-
-      // Skip videos without a playable URL
-      if (!video.hasVideo) continue;
-
-      // Skip expired videos (NIP-40)
-      if (video.isExpired) continue;
-
-      // Stage 2: Video event filter - check parsed video (NSFW, etc.)
-      if (_contentFilter?.call(video) ?? false) continue;
-
-      videos.add(video);
+      final video = _tryParseAndFilter(event);
+      if (video != null) videos.add(video);
     }
 
     // Sort by creation time (newest first) unless preserving relay order
@@ -248,4 +386,17 @@ class VideosRepository {
 
     return videos;
   }
+}
+
+/// Parsed components of an addressable ID.
+class _ParsedAddressableId {
+  const _ParsedAddressableId({
+    required this.kind,
+    required this.pubkey,
+    required this.dTag,
+  });
+
+  final int kind;
+  final String pubkey;
+  final String dTag;
 }

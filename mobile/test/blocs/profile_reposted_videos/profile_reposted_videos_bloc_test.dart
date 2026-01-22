@@ -8,49 +8,35 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
-import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:reposts_repository/reposts_repository.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 class _MockRepostsRepository extends Mock implements RepostsRepository {}
 
-class _MockVideoEventService extends Mock implements VideoEventService {}
-
-class _MockNostrClient extends Mock implements NostrClient {}
-
-class _FakeFilter extends Fake implements Filter {}
+class _MockVideosRepository extends Mock implements VideosRepository {}
 
 void main() {
-  setUpAll(() {
-    registerFallbackValue(_FakeFilter());
-    registerFallbackValue(<Filter>[]);
-  });
-
   group('ProfileRepostedVideosBloc', () {
     late _MockRepostsRepository mockRepostsRepository;
-    late _MockVideoEventService mockVideoEventService;
-    late _MockNostrClient mockNostrClient;
+    late _MockVideosRepository mockVideosRepository;
     late StreamController<Set<String>> repostedIdsController;
 
     // 64-character hex pubkeys for testing
-    final testPubkey = 'a' * 64;
-    final otherUserPubkey = 'b' * 64;
+    const currentUserPubkey =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const otherUserPubkey =
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
     setUp(() {
       mockRepostsRepository = _MockRepostsRepository();
-      mockVideoEventService = _MockVideoEventService();
-      mockNostrClient = _MockNostrClient();
+      mockVideosRepository = _MockVideosRepository();
       repostedIdsController = StreamController<Set<String>>.broadcast();
 
       // Default stub for watchRepostedAddressableIds
       when(
         () => mockRepostsRepository.watchRepostedAddressableIds(),
       ).thenAnswer((_) => repostedIdsController.stream);
-
-      // Default stub for current user pubkey
-      when(() => mockNostrClient.publicKey).thenReturn(testPubkey);
     });
 
     tearDown(() {
@@ -60,8 +46,8 @@ void main() {
     ProfileRepostedVideosBloc createBloc({String? targetUserPubkey}) =>
         ProfileRepostedVideosBloc(
           repostsRepository: mockRepostsRepository,
-          videoEventService: mockVideoEventService,
-          nostrClient: mockNostrClient,
+          videosRepository: mockVideosRepository,
+          currentUserPubkey: currentUserPubkey,
           targetUserPubkey: targetUserPubkey,
         );
 
@@ -160,7 +146,9 @@ void main() {
       test('props includes all relevant fields', () {
         final state = ProfileRepostedVideosState(
           status: ProfileRepostedVideosStatus.success,
-          videos: [createTestVideo(id: 'e1', pubkey: testPubkey, vineId: 'd1')],
+          videos: [
+            createTestVideo(id: 'e1', pubkey: currentUserPubkey, vineId: 'd1'),
+          ],
           repostedAddressableIds: const ['34236:abc:123'],
           isLoadingMore: true,
           hasMoreContent: false,
@@ -201,18 +189,18 @@ void main() {
       );
 
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
-        'emits [syncing, loading, success] when videos found in cache',
+        'emits [syncing, loading, success] when videos found',
         setUp: () {
-          final addressableId1 = createAddressableId(testPubkey, 'd1');
-          final addressableId2 = createAddressableId(testPubkey, 'd2');
+          final addressableId1 = createAddressableId(currentUserPubkey, 'd1');
+          final addressableId2 = createAddressableId(currentUserPubkey, 'd2');
           final video1 = createTestVideo(
             id: 'e1',
-            pubkey: testPubkey,
+            pubkey: currentUserPubkey,
             vineId: 'd1',
           );
           final video2 = createTestVideo(
             id: 'e2',
-            pubkey: testPubkey,
+            pubkey: currentUserPubkey,
             vineId: 'd2',
           );
 
@@ -226,8 +214,11 @@ void main() {
             ),
           );
           when(
-            () => mockVideoEventService.getVideosByAuthor(testPubkey),
-          ).thenReturn([video1, video2]);
+            () => mockVideosRepository.getVideosByAddressableIds([
+              addressableId1,
+              addressableId2,
+            ]),
+          ).thenAnswer((_) async => [video1, video2]);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
@@ -317,22 +308,22 @@ void main() {
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
         'preserves order of reposted addressable IDs in result',
         setUp: () {
-          final addressableId1 = createAddressableId(testPubkey, 'd1');
-          final addressableId2 = createAddressableId(testPubkey, 'd2');
-          final addressableId3 = createAddressableId(testPubkey, 'd3');
+          final addressableId1 = createAddressableId(currentUserPubkey, 'd1');
+          final addressableId2 = createAddressableId(currentUserPubkey, 'd2');
+          final addressableId3 = createAddressableId(currentUserPubkey, 'd3');
           final video1 = createTestVideo(
             id: 'e1',
-            pubkey: testPubkey,
+            pubkey: currentUserPubkey,
             vineId: 'd1',
           );
           final video2 = createTestVideo(
             id: 'e2',
-            pubkey: testPubkey,
+            pubkey: currentUserPubkey,
             vineId: 'd2',
           );
           final video3 = createTestVideo(
             id: 'e3',
-            pubkey: testPubkey,
+            pubkey: currentUserPubkey,
             vineId: 'd3',
           );
 
@@ -347,9 +338,14 @@ void main() {
               addressableIdToRepostId: {},
             ),
           );
+          // VideosRepository preserves order from input
           when(
-            () => mockVideoEventService.getVideosByAuthor(testPubkey),
-          ).thenReturn([video1, video2, video3]);
+            () => mockVideosRepository.getVideosByAddressableIds([
+              addressableId3,
+              addressableId1,
+              addressableId2,
+            ]),
+          ).thenAnswer((_) async => [video3, video1, video2]);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
@@ -380,21 +376,24 @@ void main() {
     group('ProfileRepostedVideosSubscriptionRequested', () {
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
         'removes video when unreposted via stream',
-        setUp: () {
-          when(
-            () => mockVideoEventService.getVideosByAuthor(testPubkey),
-          ).thenReturn([]);
-        },
         build: createBloc,
         seed: () {
-          final addressableId1 = createAddressableId(testPubkey, 'd1');
-          final addressableId2 = createAddressableId(testPubkey, 'd2');
+          final addressableId1 = createAddressableId(currentUserPubkey, 'd1');
+          final addressableId2 = createAddressableId(currentUserPubkey, 'd2');
           return ProfileRepostedVideosState(
             status: ProfileRepostedVideosStatus.success,
             repostedAddressableIds: [addressableId1, addressableId2],
             videos: [
-              createTestVideo(id: 'e1', pubkey: testPubkey, vineId: 'd1'),
-              createTestVideo(id: 'e2', pubkey: testPubkey, vineId: 'd2'),
+              createTestVideo(
+                id: 'e1',
+                pubkey: currentUserPubkey,
+                vineId: 'd1',
+              ),
+              createTestVideo(
+                id: 'e2',
+                pubkey: currentUserPubkey,
+                vineId: 'd2',
+              ),
             ],
           );
         },
@@ -404,7 +403,9 @@ void main() {
           // Wait for subscription to be set up
           await Future<void>.delayed(const Duration(milliseconds: 50));
           // Emit stream with addressableId2 removed (unreposted)
-          repostedIdsController.add({createAddressableId(testPubkey, 'd1')});
+          repostedIdsController.add({
+            createAddressableId(currentUserPubkey, 'd1'),
+          });
         },
         wait: const Duration(milliseconds: 100),
         expect: () => [
@@ -432,7 +433,9 @@ void main() {
         act: (bloc) async {
           bloc.add(const ProfileRepostedVideosSubscriptionRequested());
           await Future<void>.delayed(const Duration(milliseconds: 50));
-          repostedIdsController.add({createAddressableId(testPubkey, 'd1')});
+          repostedIdsController.add({
+            createAddressableId(currentUserPubkey, 'd1'),
+          });
         },
         wait: const Duration(milliseconds: 100),
         expect: () => <ProfileRepostedVideosState>[],
@@ -443,14 +446,16 @@ void main() {
         build: createBloc,
         seed: () => ProfileRepostedVideosState(
           status: ProfileRepostedVideosStatus.success,
-          repostedAddressableIds: [createAddressableId(testPubkey, 'd1')],
+          repostedAddressableIds: [
+            createAddressableId(currentUserPubkey, 'd1'),
+          ],
         ),
         act: (bloc) async {
           bloc.add(const ProfileRepostedVideosSubscriptionRequested());
           await Future<void>.delayed(const Duration(milliseconds: 50));
           repostedIdsController.add({
-            createAddressableId(testPubkey, 'd1'),
-            createAddressableId(testPubkey, 'd2'),
+            createAddressableId(currentUserPubkey, 'd1'),
+            createAddressableId(currentUserPubkey, 'd2'),
           });
         },
         wait: const Duration(milliseconds: 100),
@@ -459,8 +464,8 @@ void main() {
             (s) => s.repostedAddressableIds,
             'repostedAddressableIds',
             containsAll([
-              createAddressableId(testPubkey, 'd1'),
-              createAddressableId(testPubkey, 'd2'),
+              createAddressableId(currentUserPubkey, 'd1'),
+              createAddressableId(currentUserPubkey, 'd2'),
             ]),
           ),
         ],
@@ -505,8 +510,12 @@ void main() {
         build: createBloc,
         seed: () => ProfileRepostedVideosState(
           status: ProfileRepostedVideosStatus.success,
-          videos: [createTestVideo(id: 'e1', pubkey: testPubkey, vineId: 'd1')],
-          repostedAddressableIds: [createAddressableId(testPubkey, 'd1')],
+          videos: [
+            createTestVideo(id: 'e1', pubkey: currentUserPubkey, vineId: 'd1'),
+          ],
+          repostedAddressableIds: [
+            createAddressableId(currentUserPubkey, 'd1'),
+          ],
           hasMoreContent: true,
         ),
         act: (bloc) => bloc.add(const ProfileRepostedVideosLoadMoreRequested()),
@@ -516,6 +525,49 @@ void main() {
             'hasMoreContent',
             false,
           ),
+        ],
+      );
+
+      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+        'loads next page of videos',
+        setUp: () {
+          final addressableId3 = createAddressableId(currentUserPubkey, 'd3');
+          final video3 = createTestVideo(
+            id: 'e3',
+            pubkey: currentUserPubkey,
+            vineId: 'd3',
+          );
+          when(
+            () => mockVideosRepository.getVideosByAddressableIds([
+              addressableId3,
+            ]),
+          ).thenAnswer((_) async => [video3]);
+        },
+        build: createBloc,
+        seed: () => ProfileRepostedVideosState(
+          status: ProfileRepostedVideosStatus.success,
+          repostedAddressableIds: [
+            createAddressableId(currentUserPubkey, 'd1'),
+            createAddressableId(currentUserPubkey, 'd2'),
+            createAddressableId(currentUserPubkey, 'd3'),
+          ],
+          videos: [
+            createTestVideo(id: 'e1', pubkey: currentUserPubkey, vineId: 'd1'),
+            createTestVideo(id: 'e2', pubkey: currentUserPubkey, vineId: 'd2'),
+          ],
+          hasMoreContent: true,
+        ),
+        act: (bloc) => bloc.add(const ProfileRepostedVideosLoadMoreRequested()),
+        expect: () => [
+          isA<ProfileRepostedVideosState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<ProfileRepostedVideosState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.videos.length, 'videos count', 3)
+              .having((s) => s.hasMoreContent, 'hasMoreContent', false),
         ],
       );
     });
@@ -529,7 +581,7 @@ void main() {
         // After closing, stream events should not cause errors
         expect(
           () => repostedIdsController.add({
-            createAddressableId(testPubkey, 'd1'),
+            createAddressableId(currentUserPubkey, 'd1'),
           }),
           returnsNormally,
         );
@@ -544,17 +596,9 @@ void main() {
         ).thenAnswer((_) async => <String>[]);
       });
 
-      ProfileRepostedVideosBloc createBlocForOtherUser() =>
-          ProfileRepostedVideosBloc(
-            repostsRepository: mockRepostsRepository,
-            videoEventService: mockVideoEventService,
-            nostrClient: mockNostrClient,
-            targetUserPubkey: otherUserPubkey,
-          );
-
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
         'fetches reposts via repository.fetchUserReposts for other user',
-        build: createBlocForOtherUser,
+        build: () => createBloc(targetUserPubkey: otherUserPubkey),
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
         wait: const Duration(milliseconds: 100),
         expect: () => [
@@ -580,12 +624,14 @@ void main() {
 
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
         'does not subscribe to repository stream for other user profile',
-        build: createBlocForOtherUser,
+        build: () => createBloc(targetUserPubkey: otherUserPubkey),
         act: (bloc) async {
           bloc.add(const ProfileRepostedVideosSubscriptionRequested());
           await Future<void>.delayed(const Duration(milliseconds: 50));
           // Try to emit on the reposted IDs stream
-          repostedIdsController.add({createAddressableId(testPubkey, 'd1')});
+          repostedIdsController.add({
+            createAddressableId(currentUserPubkey, 'd1'),
+          });
         },
         wait: const Duration(milliseconds: 100),
         expect: () => <ProfileRepostedVideosState>[],
@@ -598,12 +644,7 @@ void main() {
             () => mockRepostsRepository.syncUserReposts(),
           ).thenAnswer((_) async => const RepostsSyncResult.empty());
         },
-        build: () => ProfileRepostedVideosBloc(
-          repostsRepository: mockRepostsRepository,
-          videoEventService: mockVideoEventService,
-          nostrClient: mockNostrClient,
-          targetUserPubkey: testPubkey, // Same as current user
-        ),
+        build: () => createBloc(targetUserPubkey: currentUserPubkey),
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
         expect: () => [
           const ProfileRepostedVideosState(
@@ -639,10 +680,12 @@ void main() {
           ).thenAnswer((_) async => [addressableId1]);
 
           when(
-            () => mockVideoEventService.getVideosByAuthor(otherUserPubkey),
-          ).thenReturn([video1]);
+            () => mockVideosRepository.getVideosByAddressableIds([
+              addressableId1,
+            ]),
+          ).thenAnswer((_) async => [video1]);
         },
-        build: createBlocForOtherUser,
+        build: () => createBloc(targetUserPubkey: otherUserPubkey),
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
         expect: () => [
           const ProfileRepostedVideosState(

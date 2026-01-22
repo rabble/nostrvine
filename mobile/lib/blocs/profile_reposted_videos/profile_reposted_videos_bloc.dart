@@ -1,18 +1,15 @@
 // ABOUTME: BLoC for managing profile reposted videos grid
-// ABOUTME: Syncs repost records and fetches video data from cache/relays
-
-import 'dart:async';
+// ABOUTME: Coordinates between RepostsRepository (for IDs) and VideosRepository
+// ABOUTME: (for video data)
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:reposts_repository/reposts_repository.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 part 'profile_reposted_videos_event.dart';
 part 'profile_reposted_videos_state.dart';
@@ -22,9 +19,14 @@ const _pageSize = 18;
 
 /// BLoC for managing profile reposted videos.
 ///
+/// Coordinates between:
+/// - [RepostsRepository]: Provides reposted addressable IDs (sync for own,
+///   fetch for other)
+/// - [VideosRepository]: Fetches actual video data by addressable IDs
+///
 /// Handles:
 /// - Syncing repost records from RepostsRepository
-/// - Resolving addressable IDs to VideoEvents from cache/relays
+/// - Resolving addressable IDs to VideoEvents via VideosRepository
 /// - Filtering: excludes unsupported video formats
 /// - Listening for repost changes to update the list
 /// - Pagination: loads videos in batches of [_pageSize]
@@ -32,12 +34,12 @@ class ProfileRepostedVideosBloc
     extends Bloc<ProfileRepostedVideosEvent, ProfileRepostedVideosState> {
   ProfileRepostedVideosBloc({
     required RepostsRepository repostsRepository,
-    required VideoEventService videoEventService,
-    required NostrClient nostrClient,
+    required VideosRepository videosRepository,
+    required String currentUserPubkey,
     String? targetUserPubkey,
   }) : _repostsRepository = repostsRepository,
-       _videoEventService = videoEventService,
-       _nostrClient = nostrClient,
+       _videosRepository = videosRepository,
+       _currentUserPubkey = currentUserPubkey,
        _targetUserPubkey = targetUserPubkey,
        super(const ProfileRepostedVideosState()) {
     on<ProfileRepostedVideosSyncRequested>(_onSyncRequested);
@@ -46,17 +48,17 @@ class ProfileRepostedVideosBloc
   }
 
   final RepostsRepository _repostsRepository;
-  final VideoEventService _videoEventService;
-  final NostrClient _nostrClient;
+  final VideosRepository _videosRepository;
+  final String _currentUserPubkey;
 
   /// The pubkey of the user whose reposts to display.
-  /// If null or same as current user, uses RepostsRepository.
+  /// If null or same as current user, uses RepostsRepository sync.
   /// If different, fetches reposts directly from Nostr relays.
   final String? _targetUserPubkey;
 
   /// Whether we're viewing another user's profile (not our own).
   bool get _isOtherUserProfile =>
-      _targetUserPubkey != null && _targetUserPubkey != _nostrClient.publicKey;
+      _targetUserPubkey != null && _targetUserPubkey != _currentUserPubkey;
 
   /// Handle sync request - syncs repost records from repository then loads
   /// videos.
@@ -80,8 +82,8 @@ class ProfileRepostedVideosBloc
       // Get repost addressable IDs - either from repository (own) or relays
       // (other)
       final addressableIds = _isOtherUserProfile
-          ? await _fetchOtherUserRepostedAddressableIds()
-          : await _fetchOwnRepostedAddressableIds();
+          ? await _repostsRepository.fetchUserReposts(_targetUserPubkey!)
+          : (await _repostsRepository.syncUserReposts()).orderedAddressableIds;
 
       Log.info(
         'ProfileRepostedVideosBloc: Synced ${addressableIds.length} repost '
@@ -166,20 +168,6 @@ class ProfileRepostedVideosBloc
         ),
       );
     }
-  }
-
-  /// Fetch reposted addressable IDs for the current user via RepostsRepository.
-  Future<List<String>> _fetchOwnRepostedAddressableIds() async {
-    final syncResult = await _repostsRepository.syncUserReposts();
-    return syncResult.orderedAddressableIds;
-  }
-
-  /// Fetch reposted addressable IDs for another user via RepostsRepository.
-  ///
-  /// Delegates to [RepostsRepository.fetchUserReposts] which queries relays
-  /// for Kind 16 reposts authored by the target user.
-  Future<List<String>> _fetchOtherUserRepostedAddressableIds() async {
-    return _repostsRepository.fetchUserReposts(_targetUserPubkey!);
   }
 
   /// Subscribe to reposted IDs changes and update the video list reactively.
@@ -314,93 +302,19 @@ class ProfileRepostedVideosBloc
     }
   }
 
-  /// Fetch videos for the given addressable IDs.
+  /// Fetch videos for the given addressable IDs via VideosRepository.
   ///
-  /// 1. Parse addressable IDs to extract pubkey and d-tag
-  /// 2. Check cache first
-  /// 3. Fetch missing videos from relays
-  /// 4. Return ordered list matching the input order
+  /// The repository handles:
+  /// - Fetching from Nostr relays
+  /// - Filtering out invalid/expired videos
+  /// - Preserving order based on input IDs
   Future<List<VideoEvent>> _fetchVideos(List<String> addressableIds) async {
-    final cachedVideosMap = <String, VideoEvent>{};
-    final missingIds = <String>[];
-
-    // Check cache first
-    for (final addressableId in addressableIds) {
-      final cached = _findCachedVideoByAddressable(addressableId);
-      if (cached != null) {
-        cachedVideosMap[addressableId] = cached;
-      } else {
-        missingIds.add(addressableId);
-      }
-    }
-
-    Log.info(
-      'ProfileRepostedVideosBloc: Found ${cachedVideosMap.length} in cache, '
-      '${missingIds.length} need relay fetch',
-      name: 'ProfileRepostedVideosBloc',
-      category: LogCategory.video,
+    final videos = await _videosRepository.getVideosByAddressableIds(
+      addressableIds,
     );
 
-    // Fetch missing videos from relays
-    if (missingIds.isNotEmpty) {
-      final fetchedVideos = await _fetchVideosFromRelay(missingIds);
-      for (final video in fetchedVideos) {
-        final addressableId = _computeAddressableId(video);
-        if (addressableId != null) {
-          cachedVideosMap[addressableId] = video;
-        }
-      }
-
-      Log.info(
-        'ProfileRepostedVideosBloc: Fetched ${fetchedVideos.length} from relay',
-        name: 'ProfileRepostedVideosBloc',
-        category: LogCategory.video,
-      );
-    }
-
-    // Build ordered list using the recency-ordered addressable IDs
-    final orderedVideos = <VideoEvent>[];
-    for (final addressableId in addressableIds) {
-      final video = cachedVideosMap[addressableId];
-      if (video != null) {
-        orderedVideos.add(video);
-      }
-    }
-
     // Filter out unsupported videos (WebM on iOS/macOS)
-    return orderedVideos.where((v) => v.isSupportedOnCurrentPlatform).toList();
-  }
-
-  /// Find a cached video by its addressable ID.
-  ///
-  /// Parses the addressable ID format (kind:pubkey:d-tag) and searches
-  /// through cached videos from VideoEventService.
-  VideoEvent? _findCachedVideoByAddressable(String addressableId) {
-    final parsed = _parseAddressableId(addressableId);
-    if (parsed == null) return null;
-
-    // Search through author's videos for matching d-tag (vineId)
-    // Note: We use vineId instead of rawTags['d'] because vineId has a
-    // fallback to event.id when the 'd' tag is missing, ensuring consistency
-    // with how addressable IDs are computed.
-    final authorVideos = _videoEventService.getVideosByAuthor(parsed.pubkey);
-    for (final video in authorVideos) {
-      if (video.vineId == parsed.dTag) {
-        return video;
-      }
-    }
-    return null;
-  }
-
-  /// Parse addressable ID format: kind:pubkey:d-tag
-  ({int kind, String pubkey, String dTag})? _parseAddressableId(
-    String addressableId,
-  ) {
-    final parts = addressableId.split(':');
-    if (parts.length < 3) return null;
-    final kind = int.tryParse(parts[0]);
-    if (kind == null) return null;
-    return (kind: kind, pubkey: parts[1], dTag: parts[2]);
+    return videos.where((v) => v.isSupportedOnCurrentPlatform).toList();
   }
 
   /// Compute the addressable ID for a video event.
@@ -411,115 +325,5 @@ class ProfileRepostedVideosBloc
     if (video.vineId == null) return null;
     // NIP-71 addressable short video kind
     return '34236:${video.pubkey}:${video.vineId}';
-  }
-
-  /// Fetch videos from relays by their addressable IDs.
-  Future<List<VideoEvent>> _fetchVideosFromRelay(
-    List<String> addressableIds,
-  ) async {
-    if (addressableIds.isEmpty) return [];
-
-    final completer = Completer<List<VideoEvent>>();
-    final videos = <VideoEvent>[];
-    final expectedCount = addressableIds.length;
-
-    // Generate unique subscription ID for cleanup
-    final subscriptionId =
-        'reposted_videos_bloc_${DateTime.now().millisecondsSinceEpoch}';
-
-    /// Helper to clean up subscription resources
-    Future<void> cleanup() async {
-      await _nostrClient.unsubscribe(subscriptionId);
-    }
-
-    try {
-      // Build filters for addressable events
-      // Each addressable ID needs to be fetched with authors + d filter
-      final filters = <Filter>[];
-      for (final addressableId in addressableIds) {
-        final parsed = _parseAddressableId(addressableId);
-        if (parsed != null && NIP71VideoKinds.isVideoKind(parsed.kind)) {
-          filters.add(
-            Filter(
-              kinds: [parsed.kind],
-              authors: [parsed.pubkey],
-              d: [parsed.dTag],
-              limit: 1,
-            ),
-          );
-        }
-      }
-
-      if (filters.isEmpty) {
-        return [];
-      }
-
-      final eventStream = _nostrClient.subscribe(
-        filters,
-        subscriptionId: subscriptionId,
-        onEose: () {
-          // Complete when all relays finish sending stored events
-          if (!completer.isCompleted) {
-            Log.info(
-              'ProfileRepostedVideosBloc: EOSE received, completing with '
-              '${videos.length} videos',
-              name: 'ProfileRepostedVideosBloc',
-              category: LogCategory.video,
-            );
-            cleanup();
-            completer.complete(videos);
-          }
-        },
-      );
-
-      eventStream.listen(
-        (event) {
-          try {
-            final video = VideoEvent.fromNostrEvent(event);
-            videos.add(video);
-
-            // Complete early if we've received all expected videos
-            if (videos.length >= expectedCount && !completer.isCompleted) {
-              cleanup();
-              completer.complete(videos);
-            }
-          } catch (e) {
-            Log.warning(
-              'ProfileRepostedVideosBloc: Failed to parse event ${event.id}: '
-              '$e',
-              name: 'ProfileRepostedVideosBloc',
-              category: LogCategory.video,
-            );
-          }
-        },
-        onDone: () {
-          if (!completer.isCompleted) {
-            cleanup();
-            completer.complete(videos);
-          }
-        },
-        onError: (Object error) {
-          Log.error(
-            'ProfileRepostedVideosBloc: Stream error: $error',
-            name: 'ProfileRepostedVideosBloc',
-            category: LogCategory.video,
-          );
-          if (!completer.isCompleted) {
-            cleanup();
-            completer.complete(videos);
-          }
-        },
-      );
-
-      return completer.future;
-    } catch (e) {
-      Log.error(
-        'ProfileRepostedVideosBloc: Failed to fetch from relay: $e',
-        name: 'ProfileRepostedVideosBloc',
-        category: LogCategory.video,
-      );
-      await cleanup();
-      return videos;
-    }
   }
 }
