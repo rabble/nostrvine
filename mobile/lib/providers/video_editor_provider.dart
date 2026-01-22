@@ -121,6 +121,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   ///
   /// Calculates the playback offset based on previous clips' durations.
   void selectClipByIndex(int index) {
+    if (index < 0 || index >= _clips.length) return;
+
     // Calculate offset from all previous clips
     final offset = _clips
         .take(index)

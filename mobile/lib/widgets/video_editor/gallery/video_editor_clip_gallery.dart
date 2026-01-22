@@ -58,20 +58,20 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
   void _navigateToClip(int index) {
     final isReordering = ref.read(videoEditorProvider).isReordering;
 
+    final duration = const Duration(milliseconds: 300);
+    // Decelerate strongly at the end for a smooth landing effect
+    final curve = Curves.easeOutCubic;
+
     if (isReordering && _scrollController.hasClients) {
       // In reorder mode, animate the scroll controller
       _scrollController.animateTo(
-        index * MediaQuery.of(context).size.width * 0.8,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
+        index * MediaQuery.sizeOf(context).width * 0.8,
+        duration: duration,
+        curve: curve,
       );
     } else if (!isReordering && _pageController.hasClients) {
       // In swipe mode, animate the page controller
-      _pageController.animateToPage(
-        index,
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeOut,
-      );
+      _pageController.animateToPage(index, duration: duration, curve: curve);
     }
   }
 
@@ -177,8 +177,8 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
         if (_scrollController.hasClients) {
           await _scrollController.animateTo(
             newTargetIndex * constraints.maxWidth * 0.8,
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
           );
         }
       }
@@ -270,10 +270,14 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
             scrollController: _scrollController,
             pageController: _pageController,
             clips: clips,
+            dragOffsetNotifier: _dragOffsetNotifier,
             onStartReordering: _startReordering,
             onReorderCancel: _handleReorderCancel,
             onReorderEvent: _handleReorderEvent,
-            dragOffsetNotifier: _dragOffsetNotifier,
+            onPageChanged: (page) {
+              _lastClipIndex = page;
+              ref.read(videoEditorProvider.notifier).selectClipByIndex(page);
+            },
           ),
         ),
         const ClipGalleryInstructionText(),
@@ -290,6 +294,7 @@ class _GalleryViewer extends ConsumerWidget {
     required this.clips,
     required this.onStartReordering,
     required this.onReorderCancel,
+    required this.onPageChanged,
     required this.onReorderEvent,
     required this.dragOffsetNotifier,
   });
@@ -299,6 +304,7 @@ class _GalleryViewer extends ConsumerWidget {
   final List<RecordingClip> clips;
   final VoidCallback onStartReordering;
   final VoidCallback onReorderCancel;
+  final ValueChanged<int> onPageChanged;
   final void Function(PointerMoveEvent event, BoxConstraints constraints)
   onReorderEvent;
   final ValueNotifier<double> dragOffsetNotifier;
@@ -360,6 +366,7 @@ class _GalleryViewer extends ConsumerWidget {
                 shadowOpacity: shadowOpacity,
                 dragOffsetNotifier: dragOffsetNotifier,
                 onStartReordering: onStartReordering,
+                onPageChanged: onPageChanged,
               );
             },
           ),
@@ -369,11 +376,12 @@ class _GalleryViewer extends ConsumerWidget {
   }
 }
 
-class _ScrollStack extends ConsumerWidget {
+class _ScrollStack extends ConsumerStatefulWidget {
   const _ScrollStack({
     required this.scrollController,
     required this.pageController,
     required this.clips,
+    required this.onPageChanged,
     required this.onStartReordering,
     required this.dragOffsetNotifier,
     required this.isEditing,
@@ -389,6 +397,7 @@ class _ScrollStack extends ConsumerWidget {
   final PageController pageController;
 
   final ValueNotifier<double> dragOffsetNotifier;
+  final ValueChanged<int> onPageChanged;
   final VoidCallback onStartReordering;
   final BoxConstraints constraints;
 
@@ -403,16 +412,25 @@ class _ScrollStack extends ConsumerWidget {
   final bool isEditing;
   final bool showCenterOverlay;
 
+  @override
+  ConsumerState<_ScrollStack> createState() => _ScrollStackState();
+}
+
+class _ScrollStackState extends ConsumerState<_ScrollStack> {
+  Offset? _lastTapDownPosition;
+
   /// Calculates the scale factor for a clip based on its distance from center.
   ///
   /// Returns 1.0 for the centered clip and 0.85 for clips far from center,
   /// with linear interpolation in between.
   double _calculateScale(int index) {
-    if (!pageController.hasClients || !pageController.position.haveDimensions) {
-      return index == currentClipIndex ? 1 : 0.85;
+    if (!widget.pageController.hasClients ||
+        !widget.pageController.position.haveDimensions) {
+      return index == widget.currentClipIndex ? 1 : 0.85;
     }
 
-    final page = pageController.page ?? currentClipIndex.toDouble();
+    final page =
+        widget.pageController.page ?? widget.currentClipIndex.toDouble();
     final difference = (page - index).abs();
     // Scale from 1.0 (center) to 0.85 (far away)
     // difference 0.0 = scale 1.0
@@ -430,13 +448,13 @@ class _ScrollStack extends ConsumerWidget {
   /// Calculates the horizontal offset for a clip to create depth effect.
   double _calculateXOffset(int index) {
     // Get clip aspect ratio (e.g., 9/16 = 0.5625 for vertical, 1.0 for square)
-    final clipRatio = clips.first.aspectRatio.value;
+    final clipRatio = widget.clips.first.aspectRatio.value;
 
     // Each clip sits in a container that is 80% of screen width
-    final clipContainerWidth = constraints.maxWidth * 0.8;
+    final clipContainerWidth = widget.constraints.maxWidth * 0.8;
 
     // Calculate actual clip width: height * aspectRatio, clamped to container
-    final actualClipWidth = (constraints.maxHeight * clipRatio).clamp(
+    final actualClipWidth = (widget.constraints.maxHeight * clipRatio).clamp(
       0.0,
       clipContainerWidth,
     );
@@ -448,15 +466,16 @@ class _ScrollStack extends ConsumerWidget {
     final fillRatio = actualClipWidth / clipContainerWidth;
 
     // Base offset + extra offset to pull clips closer over the empty space
-    final maxOffset = (constraints.maxWidth * 0.2) + emptySpace;
+    final maxOffset = (widget.constraints.maxWidth * 0.2) + emptySpace;
 
     // During reordering, use fixed currentClipIndex (clips move discretely)
     // During normal swiping, use pageController for smooth animation
     final double page;
-    if (pageController.hasClients && pageController.position.haveDimensions) {
-      page = pageController.page ?? currentClipIndex.toDouble();
+    if (widget.pageController.hasClients &&
+        widget.pageController.position.haveDimensions) {
+      page = widget.pageController.page ?? widget.currentClipIndex.toDouble();
     } else {
-      page = currentClipIndex.toDouble();
+      page = widget.currentClipIndex.toDouble();
     }
 
     final difference = index - page;
@@ -492,8 +511,29 @@ class _ScrollStack extends ConsumerWidget {
     return -(difference.sign * scaledEased * maxOffset);
   }
 
+  /// Handles tap on the gallery background to navigate between clips.
+  ///
+  /// This is necessary because [PageView] with `viewportFraction: 0.8` only
+  /// registers gestures within the current page bounds, leaving the outer 20%
+  /// on each side unresponsive. This handler captures taps in those dead zones.
+  ///
+  /// Tapping on the left half navigates to the previous clip,
+  /// tapping on the right half navigates to the next clip.
+  void _handleBackgroundTap() {
+    final tapPosition = _lastTapDownPosition;
+    if (tapPosition == null) return;
+
+    final tappedLeft = tapPosition.dx < widget.constraints.maxWidth / 2;
+    final newIndex = widget.currentClipIndex + (tappedLeft ? -1 : 1);
+
+    // Bounds check to prevent invalid index selection
+    if (newIndex >= 0 && newIndex < widget.clips.length) {
+      ref.read(videoEditorProvider.notifier).selectClipByIndex(newIndex);
+    }
+  }
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final state = ref.watch(
       videoEditorProvider.select(
         (s) => (
@@ -508,56 +548,63 @@ class _ScrollStack extends ConsumerWidget {
     return Stack(
       clipBehavior: .none,
       children: [
+        GestureDetector(
+          behavior: .opaque,
+          onTapDown: (details) => _lastTapDownPosition = details.localPosition,
+          onTap: _handleBackgroundTap,
+        ),
+
         // Use different scroll widget based on reorder state
         if (state.isReordering)
           _ReorderingView(
-            clips: clips,
-            isEditing: isEditing,
-            constraints: constraints,
-            currentClipIndex: currentClipIndex,
-            scrollController: scrollController,
-            onStartReordering: onStartReordering,
+            clips: widget.clips,
+            isEditing: widget.isEditing,
+            constraints: widget.constraints,
+            currentClipIndex: widget.currentClipIndex,
+            scrollController: widget.scrollController,
+            onStartReordering: widget.onStartReordering,
             calculateScale: _calculateScale,
             calculateXOffset: _calculateXOffset,
           )
         else
           _SwipeView(
-            page: page,
-            clips: clips,
-            isEditing: isEditing,
-            currentClipIndex: currentClipIndex,
-            pageController: pageController,
-            onStartReordering: onStartReordering,
+            page: widget.page,
+            clips: widget.clips,
+            isEditing: widget.isEditing,
+            currentClipIndex: widget.currentClipIndex,
+            pageController: widget.pageController,
+            onStartReordering: widget.onStartReordering,
+            onPageChanged: widget.onPageChanged,
             calculateScale: _calculateScale,
             calculateXOffset: _calculateXOffset,
           ),
 
-        if (showCenterOverlay) ...[
+        if (widget.showCenterOverlay) ...[
           // Center clip overlay which rendered on top,
           // which imitate a higher z-index.
           AnimatedScale(
-            scale: state.isReordering ? 0.9 : 1,
+            scale: state.isReordering ? 0.7 : 1,
             duration: const Duration(milliseconds: 220),
             curve: Curves.easeInOut,
             child: VideoEditorCenterClipOverlay(
-              clip: clips[centerIndex],
-              centerIndex: centerIndex,
-              currentClipIndex: currentClipIndex,
-              page: page,
-              shadowOpacity: shadowOpacity,
-              maxWidth: constraints.maxWidth,
+              clip: widget.clips[widget.centerIndex],
+              centerIndex: widget.centerIndex,
+              currentClipIndex: widget.currentClipIndex,
+              page: widget.page,
+              shadowOpacity: widget.shadowOpacity,
+              maxWidth: widget.constraints.maxWidth,
               isReordering: state.isReordering,
               isOverDeleteZone: state.isOverDeleteZone,
-              dragOffsetNotifier: dragOffsetNotifier,
-              scale: _calculateScale(centerIndex),
-              xOffset: _calculateXOffset(centerIndex),
+              dragOffsetNotifier: widget.dragOffsetNotifier,
+              scale: _calculateScale(widget.centerIndex),
+              xOffset: _calculateXOffset(widget.centerIndex),
             ),
           ),
 
           // Gradient overlays on sides
           ClipGalleryEdgeGradients(
-            opacity: shadowOpacity,
-            gradientWidth: constraints.maxWidth * 0.1,
+            opacity: widget.shadowOpacity,
+            gradientWidth: widget.constraints.maxWidth * 0.1,
           ),
         ],
       ],
@@ -591,7 +638,7 @@ class _ReorderingView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return SingleChildScrollView(
       controller: scrollController,
-      scrollDirection: Axis.horizontal,
+      scrollDirection: .horizontal,
       physics: const NeverScrollableScrollPhysics(),
       child: Padding(
         padding: .symmetric(horizontal: constraints.maxWidth * 0.1),
@@ -609,12 +656,12 @@ class _ReorderingView extends ConsumerWidget {
                 scale: scale,
                 xOffset: xOffset,
                 onTap: () {
-                  if (index != currentClipIndex) {
-                    ref
-                        .read(videoEditorProvider.notifier)
-                        .selectClipByIndex(index);
+                  final notifier = ref.read(videoEditorProvider.notifier);
+
+                  if (index == currentClipIndex) {
+                    notifier.toggleClipEditing();
                   } else {
-                    ref.read(videoEditorProvider.notifier).toggleClipEditing();
+                    notifier.selectClipByIndex(index);
                   }
                 },
                 onLongPress: index == currentClipIndex && !isEditing
@@ -636,6 +683,7 @@ class _SwipeView extends ConsumerWidget {
     required this.currentClipIndex,
     required this.page,
     required this.pageController,
+    required this.onPageChanged,
     required this.onStartReordering,
     required this.calculateScale,
     required this.calculateXOffset,
@@ -646,6 +694,7 @@ class _SwipeView extends ConsumerWidget {
   final bool isEditing;
   final int currentClipIndex;
   final double page;
+  final ValueChanged<int> onPageChanged;
   final VoidCallback onStartReordering;
   final double Function(int index) calculateScale;
   final double Function(int index) calculateXOffset;
@@ -654,9 +703,8 @@ class _SwipeView extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return PageView.builder(
       controller: pageController,
-      onPageChanged: (page) {
-        ref.read(videoEditorProvider.notifier).selectClipByIndex(page);
-      },
+      onPageChanged: onPageChanged,
+      hitTestBehavior: .translucent,
       physics: isEditing ? const NeverScrollableScrollPhysics() : null,
       itemCount: clips.length,
       itemBuilder: (context, index) {
@@ -669,17 +717,12 @@ class _SwipeView extends ConsumerWidget {
           scale: scale,
           xOffset: xOffset,
           onTap: () async {
-            // TODO(@hm21): Ensure the full clip behind detect tap events.
-            if (index != currentClipIndex) {
-              if (!isEditing) {
-                await pageController.animateToPage(
-                  index,
-                  duration: const Duration(milliseconds: 300),
-                  curve: Curves.easeInOut,
-                );
-              }
-            } else {
-              ref.read(videoEditorProvider.notifier).toggleClipEditing();
+            final notifier = ref.read(videoEditorProvider.notifier);
+
+            if (index == currentClipIndex) {
+              notifier.toggleClipEditing();
+            } else if (!isEditing) {
+              notifier.selectClipByIndex(index);
             }
           },
           onLongPress: index == currentClipIndex && !isEditing
