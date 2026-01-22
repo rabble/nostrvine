@@ -5190,6 +5190,412 @@ class PersonalReactionsCompanion extends UpdateCompanion<PersonalReactionRow> {
   }
 }
 
+class $PersonalRepostsTable extends PersonalReposts
+    with TableInfo<$PersonalRepostsTable, PersonalRepostRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PersonalRepostsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _addressableIdMeta = const VerificationMeta(
+    'addressableId',
+  );
+  @override
+  late final GeneratedColumn<String> addressableId = GeneratedColumn<String>(
+    'addressable_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _repostEventIdMeta = const VerificationMeta(
+    'repostEventId',
+  );
+  @override
+  late final GeneratedColumn<String> repostEventId = GeneratedColumn<String>(
+    'repost_event_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _originalAuthorPubkeyMeta =
+      const VerificationMeta('originalAuthorPubkey');
+  @override
+  late final GeneratedColumn<String> originalAuthorPubkey =
+      GeneratedColumn<String>(
+        'original_author_pubkey',
+        aliasedName,
+        false,
+        type: DriftSqlType.string,
+        requiredDuringInsert: true,
+      );
+  static const VerificationMeta _userPubkeyMeta = const VerificationMeta(
+    'userPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> userPubkey = GeneratedColumn<String>(
+    'user_pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<int> createdAt = GeneratedColumn<int>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    addressableId,
+    repostEventId,
+    originalAuthorPubkey,
+    userPubkey,
+    createdAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'personal_reposts';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PersonalRepostRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('addressable_id')) {
+      context.handle(
+        _addressableIdMeta,
+        addressableId.isAcceptableOrUnknown(
+          data['addressable_id']!,
+          _addressableIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_addressableIdMeta);
+    }
+    if (data.containsKey('repost_event_id')) {
+      context.handle(
+        _repostEventIdMeta,
+        repostEventId.isAcceptableOrUnknown(
+          data['repost_event_id']!,
+          _repostEventIdMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_repostEventIdMeta);
+    }
+    if (data.containsKey('original_author_pubkey')) {
+      context.handle(
+        _originalAuthorPubkeyMeta,
+        originalAuthorPubkey.isAcceptableOrUnknown(
+          data['original_author_pubkey']!,
+          _originalAuthorPubkeyMeta,
+        ),
+      );
+    } else if (isInserting) {
+      context.missing(_originalAuthorPubkeyMeta);
+    }
+    if (data.containsKey('user_pubkey')) {
+      context.handle(
+        _userPubkeyMeta,
+        userPubkey.isAcceptableOrUnknown(data['user_pubkey']!, _userPubkeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userPubkeyMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {addressableId, userPubkey};
+  @override
+  PersonalRepostRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PersonalRepostRow(
+      addressableId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}addressable_id'],
+      )!,
+      repostEventId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}repost_event_id'],
+      )!,
+      originalAuthorPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}original_author_pubkey'],
+      )!,
+      userPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_pubkey'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}created_at'],
+      )!,
+    );
+  }
+
+  @override
+  $PersonalRepostsTable createAlias(String alias) {
+    return $PersonalRepostsTable(attachedDatabase, alias);
+  }
+}
+
+class PersonalRepostRow extends DataClass
+    implements Insertable<PersonalRepostRow> {
+  /// The addressable ID of the video that was reposted.
+  /// Format: `34236:<author_pubkey>:<d-tag>`
+  final String addressableId;
+
+  /// The Kind 16 repost event ID created by the user
+  final String repostEventId;
+
+  /// The pubkey of the original video author
+  final String originalAuthorPubkey;
+
+  /// The pubkey of the user who created this repost
+  final String userPubkey;
+
+  /// Unix timestamp when the repost was created
+  final int createdAt;
+  const PersonalRepostRow({
+    required this.addressableId,
+    required this.repostEventId,
+    required this.originalAuthorPubkey,
+    required this.userPubkey,
+    required this.createdAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['addressable_id'] = Variable<String>(addressableId);
+    map['repost_event_id'] = Variable<String>(repostEventId);
+    map['original_author_pubkey'] = Variable<String>(originalAuthorPubkey);
+    map['user_pubkey'] = Variable<String>(userPubkey);
+    map['created_at'] = Variable<int>(createdAt);
+    return map;
+  }
+
+  PersonalRepostsCompanion toCompanion(bool nullToAbsent) {
+    return PersonalRepostsCompanion(
+      addressableId: Value(addressableId),
+      repostEventId: Value(repostEventId),
+      originalAuthorPubkey: Value(originalAuthorPubkey),
+      userPubkey: Value(userPubkey),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory PersonalRepostRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PersonalRepostRow(
+      addressableId: serializer.fromJson<String>(json['addressableId']),
+      repostEventId: serializer.fromJson<String>(json['repostEventId']),
+      originalAuthorPubkey: serializer.fromJson<String>(
+        json['originalAuthorPubkey'],
+      ),
+      userPubkey: serializer.fromJson<String>(json['userPubkey']),
+      createdAt: serializer.fromJson<int>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'addressableId': serializer.toJson<String>(addressableId),
+      'repostEventId': serializer.toJson<String>(repostEventId),
+      'originalAuthorPubkey': serializer.toJson<String>(originalAuthorPubkey),
+      'userPubkey': serializer.toJson<String>(userPubkey),
+      'createdAt': serializer.toJson<int>(createdAt),
+    };
+  }
+
+  PersonalRepostRow copyWith({
+    String? addressableId,
+    String? repostEventId,
+    String? originalAuthorPubkey,
+    String? userPubkey,
+    int? createdAt,
+  }) => PersonalRepostRow(
+    addressableId: addressableId ?? this.addressableId,
+    repostEventId: repostEventId ?? this.repostEventId,
+    originalAuthorPubkey: originalAuthorPubkey ?? this.originalAuthorPubkey,
+    userPubkey: userPubkey ?? this.userPubkey,
+    createdAt: createdAt ?? this.createdAt,
+  );
+  PersonalRepostRow copyWithCompanion(PersonalRepostsCompanion data) {
+    return PersonalRepostRow(
+      addressableId: data.addressableId.present
+          ? data.addressableId.value
+          : this.addressableId,
+      repostEventId: data.repostEventId.present
+          ? data.repostEventId.value
+          : this.repostEventId,
+      originalAuthorPubkey: data.originalAuthorPubkey.present
+          ? data.originalAuthorPubkey.value
+          : this.originalAuthorPubkey,
+      userPubkey: data.userPubkey.present
+          ? data.userPubkey.value
+          : this.userPubkey,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PersonalRepostRow(')
+          ..write('addressableId: $addressableId, ')
+          ..write('repostEventId: $repostEventId, ')
+          ..write('originalAuthorPubkey: $originalAuthorPubkey, ')
+          ..write('userPubkey: $userPubkey, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    addressableId,
+    repostEventId,
+    originalAuthorPubkey,
+    userPubkey,
+    createdAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PersonalRepostRow &&
+          other.addressableId == this.addressableId &&
+          other.repostEventId == this.repostEventId &&
+          other.originalAuthorPubkey == this.originalAuthorPubkey &&
+          other.userPubkey == this.userPubkey &&
+          other.createdAt == this.createdAt);
+}
+
+class PersonalRepostsCompanion extends UpdateCompanion<PersonalRepostRow> {
+  final Value<String> addressableId;
+  final Value<String> repostEventId;
+  final Value<String> originalAuthorPubkey;
+  final Value<String> userPubkey;
+  final Value<int> createdAt;
+  final Value<int> rowid;
+  const PersonalRepostsCompanion({
+    this.addressableId = const Value.absent(),
+    this.repostEventId = const Value.absent(),
+    this.originalAuthorPubkey = const Value.absent(),
+    this.userPubkey = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PersonalRepostsCompanion.insert({
+    required String addressableId,
+    required String repostEventId,
+    required String originalAuthorPubkey,
+    required String userPubkey,
+    required int createdAt,
+    this.rowid = const Value.absent(),
+  }) : addressableId = Value(addressableId),
+       repostEventId = Value(repostEventId),
+       originalAuthorPubkey = Value(originalAuthorPubkey),
+       userPubkey = Value(userPubkey),
+       createdAt = Value(createdAt);
+  static Insertable<PersonalRepostRow> custom({
+    Expression<String>? addressableId,
+    Expression<String>? repostEventId,
+    Expression<String>? originalAuthorPubkey,
+    Expression<String>? userPubkey,
+    Expression<int>? createdAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (addressableId != null) 'addressable_id': addressableId,
+      if (repostEventId != null) 'repost_event_id': repostEventId,
+      if (originalAuthorPubkey != null)
+        'original_author_pubkey': originalAuthorPubkey,
+      if (userPubkey != null) 'user_pubkey': userPubkey,
+      if (createdAt != null) 'created_at': createdAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PersonalRepostsCompanion copyWith({
+    Value<String>? addressableId,
+    Value<String>? repostEventId,
+    Value<String>? originalAuthorPubkey,
+    Value<String>? userPubkey,
+    Value<int>? createdAt,
+    Value<int>? rowid,
+  }) {
+    return PersonalRepostsCompanion(
+      addressableId: addressableId ?? this.addressableId,
+      repostEventId: repostEventId ?? this.repostEventId,
+      originalAuthorPubkey: originalAuthorPubkey ?? this.originalAuthorPubkey,
+      userPubkey: userPubkey ?? this.userPubkey,
+      createdAt: createdAt ?? this.createdAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (addressableId.present) {
+      map['addressable_id'] = Variable<String>(addressableId.value);
+    }
+    if (repostEventId.present) {
+      map['repost_event_id'] = Variable<String>(repostEventId.value);
+    }
+    if (originalAuthorPubkey.present) {
+      map['original_author_pubkey'] = Variable<String>(
+        originalAuthorPubkey.value,
+      );
+    }
+    if (userPubkey.present) {
+      map['user_pubkey'] = Variable<String>(userPubkey.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<int>(createdAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PersonalRepostsCompanion(')
+          ..write('addressableId: $addressableId, ')
+          ..write('repostEventId: $repostEventId, ')
+          ..write('originalAuthorPubkey: $originalAuthorPubkey, ')
+          ..write('userPubkey: $userPubkey, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5202,6 +5608,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PendingUploadsTable pendingUploads = $PendingUploadsTable(this);
   late final $PersonalReactionsTable personalReactions =
       $PersonalReactionsTable(this);
+  late final $PersonalRepostsTable personalReposts = $PersonalRepostsTable(
+    this,
+  );
   late final UserProfilesDao userProfilesDao = UserProfilesDao(
     this as AppDatabase,
   );
@@ -5226,6 +5635,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final PersonalReactionsDao personalReactionsDao = PersonalReactionsDao(
     this as AppDatabase,
   );
+  late final PersonalRepostsDao personalRepostsDao = PersonalRepostsDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5239,6 +5651,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     notifications,
     pendingUploads,
     personalReactions,
+    personalReposts,
   ];
 }
 
@@ -7733,6 +8146,220 @@ typedef $$PersonalReactionsTableProcessedTableManager =
       PersonalReactionRow,
       PrefetchHooks Function()
     >;
+typedef $$PersonalRepostsTableCreateCompanionBuilder =
+    PersonalRepostsCompanion Function({
+      required String addressableId,
+      required String repostEventId,
+      required String originalAuthorPubkey,
+      required String userPubkey,
+      required int createdAt,
+      Value<int> rowid,
+    });
+typedef $$PersonalRepostsTableUpdateCompanionBuilder =
+    PersonalRepostsCompanion Function({
+      Value<String> addressableId,
+      Value<String> repostEventId,
+      Value<String> originalAuthorPubkey,
+      Value<String> userPubkey,
+      Value<int> createdAt,
+      Value<int> rowid,
+    });
+
+class $$PersonalRepostsTableFilterComposer
+    extends Composer<_$AppDatabase, $PersonalRepostsTable> {
+  $$PersonalRepostsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get addressableId => $composableBuilder(
+    column: $table.addressableId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get repostEventId => $composableBuilder(
+    column: $table.repostEventId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get originalAuthorPubkey => $composableBuilder(
+    column: $table.originalAuthorPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userPubkey => $composableBuilder(
+    column: $table.userPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PersonalRepostsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PersonalRepostsTable> {
+  $$PersonalRepostsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get addressableId => $composableBuilder(
+    column: $table.addressableId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get repostEventId => $composableBuilder(
+    column: $table.repostEventId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get originalAuthorPubkey => $composableBuilder(
+    column: $table.originalAuthorPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userPubkey => $composableBuilder(
+    column: $table.userPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PersonalRepostsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PersonalRepostsTable> {
+  $$PersonalRepostsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get addressableId => $composableBuilder(
+    column: $table.addressableId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get repostEventId => $composableBuilder(
+    column: $table.repostEventId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get originalAuthorPubkey => $composableBuilder(
+    column: $table.originalAuthorPubkey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get userPubkey => $composableBuilder(
+    column: $table.userPubkey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+}
+
+class $$PersonalRepostsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PersonalRepostsTable,
+          PersonalRepostRow,
+          $$PersonalRepostsTableFilterComposer,
+          $$PersonalRepostsTableOrderingComposer,
+          $$PersonalRepostsTableAnnotationComposer,
+          $$PersonalRepostsTableCreateCompanionBuilder,
+          $$PersonalRepostsTableUpdateCompanionBuilder,
+          (
+            PersonalRepostRow,
+            BaseReferences<
+              _$AppDatabase,
+              $PersonalRepostsTable,
+              PersonalRepostRow
+            >,
+          ),
+          PersonalRepostRow,
+          PrefetchHooks Function()
+        > {
+  $$PersonalRepostsTableTableManager(
+    _$AppDatabase db,
+    $PersonalRepostsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PersonalRepostsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PersonalRepostsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PersonalRepostsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> addressableId = const Value.absent(),
+                Value<String> repostEventId = const Value.absent(),
+                Value<String> originalAuthorPubkey = const Value.absent(),
+                Value<String> userPubkey = const Value.absent(),
+                Value<int> createdAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PersonalRepostsCompanion(
+                addressableId: addressableId,
+                repostEventId: repostEventId,
+                originalAuthorPubkey: originalAuthorPubkey,
+                userPubkey: userPubkey,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String addressableId,
+                required String repostEventId,
+                required String originalAuthorPubkey,
+                required String userPubkey,
+                required int createdAt,
+                Value<int> rowid = const Value.absent(),
+              }) => PersonalRepostsCompanion.insert(
+                addressableId: addressableId,
+                repostEventId: repostEventId,
+                originalAuthorPubkey: originalAuthorPubkey,
+                userPubkey: userPubkey,
+                createdAt: createdAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PersonalRepostsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PersonalRepostsTable,
+      PersonalRepostRow,
+      $$PersonalRepostsTableFilterComposer,
+      $$PersonalRepostsTableOrderingComposer,
+      $$PersonalRepostsTableAnnotationComposer,
+      $$PersonalRepostsTableCreateCompanionBuilder,
+      $$PersonalRepostsTableUpdateCompanionBuilder,
+      (
+        PersonalRepostRow,
+        BaseReferences<_$AppDatabase, $PersonalRepostsTable, PersonalRepostRow>,
+      ),
+      PersonalRepostRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -7753,4 +8380,6 @@ class $AppDatabaseManager {
       $$PendingUploadsTableTableManager(_db, _db.pendingUploads);
   $$PersonalReactionsTableTableManager get personalReactions =>
       $$PersonalReactionsTableTableManager(_db, _db.personalReactions);
+  $$PersonalRepostsTableTableManager get personalReposts =>
+      $$PersonalRepostsTableTableManager(_db, _db.personalReposts);
 }
