@@ -81,7 +81,6 @@ void main() {
         videoUrl: 'https://example.com/video.mp4',
         thumbnailUrl: 'https://example.com/thumb.jpg',
         vineId: vineId,
-        rawTags: {'d': vineId},
       );
     }
 

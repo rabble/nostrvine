@@ -379,10 +379,13 @@ class ProfileRepostedVideosBloc
     final parsed = _parseAddressableId(addressableId);
     if (parsed == null) return null;
 
-    // Search through author's videos for matching d-tag
+    // Search through author's videos for matching d-tag (vineId)
+    // Note: We use vineId instead of rawTags['d'] because vineId has a
+    // fallback to event.id when the 'd' tag is missing, ensuring consistency
+    // with how addressable IDs are computed.
     final authorVideos = _videoEventService.getVideosByAuthor(parsed.pubkey);
     for (final video in authorVideos) {
-      if (video.rawTags['d'] == parsed.dTag) {
+      if (video.vineId == parsed.dTag) {
         return video;
       }
     }
