@@ -209,6 +209,16 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
             : AppBar(
                 backgroundColor: const Color(0xFF101111),
                 foregroundColor: VineTheme.whiteText,
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    if (context.canPop()) {
+                      context.pop();
+                    } else {
+                      context.goHome();
+                    }
+                  },
+                ),
                 title: Text(_buildAppBarTitle()),
                 actions: [
                   // Clear selection button when clips are selected

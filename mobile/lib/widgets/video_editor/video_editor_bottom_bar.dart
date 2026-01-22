@@ -1,6 +1,7 @@
 // ABOUTME: Bottom bar with playback controls and time display
 // ABOUTME: Play/pause, mute, and options buttons with formatted duration
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
@@ -16,6 +17,29 @@ class VideoEditorBottomBar extends ConsumerWidget {
   /// Creates a video editor bottom bar widget.
   const VideoEditorBottomBar({super.key});
 
+  void _showSnackBar({required BuildContext context, required String message}) {
+    // TODO(@hm21): Update after new final snackbar-design is implemented.
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        shape: RoundedRectangleBorder(borderRadius: .circular(16)),
+        clipBehavior: .hardEdge,
+        content: Text(
+          message,
+          style: VineTheme.bodyFont(
+            fontSize: 14,
+            fontWeight: .w600,
+            height: 1.43,
+            letterSpacing: 0.1,
+            color: VineTheme.whiteText,
+          ),
+        ),
+        duration: Duration(seconds: 3),
+        backgroundColor: const Color(0xFF000A06),
+        behavior: .floating,
+      ),
+    );
+  }
+
   Future<void> _handleSplitClip(BuildContext context, WidgetRef ref) async {
     final splitPosition = ref.read(videoEditorProvider).splitPosition;
     final currentClipIndex = ref.read(videoEditorProvider).currentClipIndex;
@@ -29,15 +53,11 @@ class VideoEditorBottomBar extends ConsumerWidget {
 
     // Check if clip is currently processing
     if (selectedClip.isProcessing) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
+      _showSnackBar(
+        context: context,
+        message:
             // TODO(l10n): Replace with context.l10n when localization is added.
             'Cannot split clip while it is being processed. Please wait.',
-          ),
-          duration: Duration(seconds: 2),
-          behavior: .floating,
-        ),
       );
       return;
     }
@@ -48,16 +68,12 @@ class VideoEditorBottomBar extends ConsumerWidget {
       splitPosition,
     )) {
       const minDuration = VideoEditorSplitService.minClipDuration;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
+      _showSnackBar(
+        context: context,
+        message:
             // TODO(l10n): Replace with context.l10n when localization is added.
             'Split position invalid. Both clips must be at least '
             '${minDuration.inMilliseconds}ms long.',
-          ),
-          duration: const Duration(seconds: 2),
-          behavior: .floating,
-        ),
       );
       return;
     }

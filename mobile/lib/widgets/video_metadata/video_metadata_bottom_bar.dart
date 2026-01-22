@@ -1,7 +1,12 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
 
 /// Bottom bar with "Save draft" and "Post" buttons for video metadata.
 ///
@@ -87,14 +92,64 @@ class _SaveDraftButton extends ConsumerWidget {
 
     if (!context.mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
+    // Store router reference before showing SnackBar, as context may become
+    // invalid after navigate to the home page.
+    final router = GoRouter.of(context);
+
+    // TODO(@hm21): Update after new final snackbar-design is implemented.
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    scaffoldMessenger.showSnackBar(
       SnackBar(
-        // TODO(l10n): Replace with context.l10n when localization is added.
-        content: Text(success ? 'Draft saved!' : 'Failed to save draft'),
-        backgroundColor: success ? const Color(0xFF27C58B) : Colors.red,
-        duration: const Duration(seconds: 2),
+        duration: Duration(seconds: 5),
+        shape: RoundedRectangleBorder(borderRadius: .circular(16)),
+        content: Row(
+          children: [
+            Expanded(
+              child: Text(
+                // TODO(l10n): Replace with context.l10n when localization is added.
+                success ? 'Draft has been saved!' : 'Failed to save draft',
+                style: VineTheme.bodyFont(
+                  fontSize: 14,
+                  fontWeight: .w600,
+                  height: 1.43,
+                  letterSpacing: 0.1,
+                  color: VineTheme.whiteText,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                scaffoldMessenger.hideCurrentSnackBar();
+                router.push(ClipLibraryScreen.draftsPath);
+              },
+              style: TextButton.styleFrom(
+                padding: .symmetric(horizontal: 8),
+                minimumSize: .zero,
+                tapTargetSize: .shrinkWrap,
+              ),
+              child: Text(
+                // TODO(l10n): Replace with context.l10n when localization is added.
+                'Go to Library',
+                style: GoogleFonts.bricolageGrotesque(
+                  fontSize: 18,
+                  fontWeight: .w800,
+                  height: 1.33,
+                  letterSpacing: 0.15,
+                  color: VineTheme.primary,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: Color(0xFF000A06),
+        behavior: .floating,
       ),
     );
+
+    if (success) {
+      ref.read(videoPublishProvider.notifier).cleanupAfterPublish();
+      context.goHome();
+    }
   }
 }
 

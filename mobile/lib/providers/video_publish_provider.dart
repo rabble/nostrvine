@@ -50,7 +50,10 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     );
   }
 
-  void _cleanupAfterPublish() {
+  /// Resets all video-related providers after a successful publish.
+  ///
+  /// Clears recorder, editor, clip manager, sound selection, and publish state.
+  void cleanupAfterPublish() {
     ref.read(videoRecorderProvider.notifier).reset();
     ref.read(videoEditorProvider.notifier).reset();
     ref.read(clipManagerProvider.notifier).clearAll();
@@ -165,7 +168,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       // Handle result
       switch (result) {
         case PublishSuccess():
-          _cleanupAfterPublish();
+          cleanupAfterPublish();
           Log.info(
             '🎉 Video published successfully',
             name: 'VideoPublishNotifier',

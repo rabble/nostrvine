@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
@@ -213,6 +214,8 @@ extension NavX on BuildContext {
         extra: fromLibrary ? {'fromLibrary': true} : null,
       );
   Future<void> pushVideoMetadata() => push(VideoMetadataScreen.path);
+  Future<void> pushClipLibrary() => push(ClipLibraryScreen.clipsPath);
+  Future<void> pushDraftLibrary() => push(ClipLibraryScreen.draftsPath);
   Future<void> pushSettings() => push(SettingsScreen.path);
   Future<void> pushComments(VideoEvent video) =>
       CommentsScreen.show(this, video);

@@ -472,7 +472,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   ///
   /// Iterates through all clips and saves them to the persistent clip library.
   /// Continues saving remaining clips even if individual saves fail.
-  Future<void> saveClipsToLibrary() async {
+  Future<bool> saveClipsToLibrary() async {
     Log.info(
       '💾 Starting to save ${_clips.length} clips to library',
       name: 'ClipManagerNotifier',
@@ -487,6 +487,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
         name: 'ClipManagerNotifier',
         category: .video,
       );
+      return true;
     } catch (e, stackTrace) {
       Log.error(
         '❌ Failed to save clips to library: $e',
@@ -495,6 +496,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
         error: e,
         stackTrace: stackTrace,
       );
+      return false;
     }
   }
 

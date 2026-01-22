@@ -1,12 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as models;
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+/// Creates a test app with GoRouter for navigation tests.
+Widget _createTestApp(Widget child) {
+  final router = GoRouter(
+    routes: [
+      GoRoute(
+        path: '/',
+        builder: (context, state) => Scaffold(body: child),
+      ),
+    ],
+  );
+  return MaterialApp.router(routerConfig: router);
+}
 
 void main() {
   group('VideoMetadataBottomBar', () {
@@ -101,14 +115,12 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [videoEditorProvider.overrideWith(() => mockNotifier)],
-          child: const MaterialApp(
-            home: Scaffold(body: VideoMetadataBottomBar()),
-          ),
+          child: _createTestApp(const VideoMetadataBottomBar()),
         ),
       );
 
       await tester.tap(find.text('Save draft'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(saveAsDraftCalled, isTrue);
     });
@@ -134,14 +146,12 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [videoEditorProvider.overrideWith(() => mockNotifier)],
-          child: const MaterialApp(
-            home: Scaffold(body: VideoMetadataBottomBar()),
-          ),
+          child: _createTestApp(const VideoMetadataBottomBar()),
         ),
       );
 
       await tester.tap(find.text('Post'));
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(postVideoCalled, isTrue);
     });

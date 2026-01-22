@@ -112,24 +112,11 @@ class _VideoEditorMoreButtonState extends ConsumerState<VideoEditorMoreButton> {
 
     if (!mounted) return;
 
-    if (success) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          content: Text('Clip saved to library'),
-          duration: Duration(seconds: 2),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          content: Text('Failed to save clip'),
-          duration: Duration(seconds: 3),
-          backgroundColor: Color(0xFFF44336),
-        ),
-      );
-    }
+    // TODO(l10n): Replace with context.l10n when localization is added.
+    _showSnackBar(
+      message: success ? 'Clip saved to library' : 'Failed to save clip',
+      isError: !success,
+    );
   }
 
   /// Removes the current clip from the timeline.
@@ -140,14 +127,10 @@ class _VideoEditorMoreButtonState extends ConsumerState<VideoEditorMoreButton> {
     final success = clipManager.removeClipById(_currentClip.id);
 
     if (!success) {
-      // Clip not found
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          content: Text('Failed to delete clip: Clip not found'),
-          duration: Duration(seconds: 3),
-          backgroundColor: Color(0xFFF44336),
-        ),
+      // TODO(l10n): Replace with context.l10n when localization is added.
+      _showSnackBar(
+        message: 'Failed to delete clip: Clip not found',
+        isError: true,
       );
       return;
     }
@@ -166,15 +149,35 @@ class _VideoEditorMoreButtonState extends ConsumerState<VideoEditorMoreButton> {
         videoEditor.selectClipByIndex(remainingClips.length - 1);
       }
       videoEditor.stopClipEditing();
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          content: Text('Clip deleted'),
-          duration: Duration(seconds: 2),
-        ),
-      );
+      // TODO(l10n): Replace with context.l10n when localization is added.
+      _showSnackBar(message: 'Clip deleted');
     }
+  }
+
+  /// Shows a styled snackbar with the given message.
+  void _showSnackBar({required String message, bool isError = false}) {
+    // TODO(@hm21): Update after new final snackbar-design is implemented.
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        shape: RoundedRectangleBorder(borderRadius: .circular(16)),
+        clipBehavior: .hardEdge,
+        content: Text(
+          message,
+          style: VineTheme.bodyFont(
+            fontSize: 14,
+            fontWeight: .w600,
+            height: 1.43,
+            letterSpacing: 0.1,
+            color: isError ? const Color(0xFFF44336) : VineTheme.whiteText,
+          ),
+        ),
+        duration: Duration(seconds: isError ? 3 : 2),
+        backgroundColor: isError
+            ? const Color(0xFF410001)
+            : const Color(0xFF000A06),
+        behavior: .floating,
+      ),
+    );
   }
 
   /// Deletes all clips and starts over.
