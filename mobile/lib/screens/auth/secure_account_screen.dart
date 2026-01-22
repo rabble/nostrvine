@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -62,34 +63,13 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       final oauth = ref.read(oauthClientProvider);
       final email = _emailController.text.trim();
       final password = _passwordController.text;
-
       ref.read(authServiceProvider).currentKeyContainer?.withNsec((nsec) async {
-        final (result, verifier) = await oauth.headlessRegister(
+        await _handleRegister(
+          oauth: oauth,
           email: email,
-          nsec: nsec,
           password: password,
-          scope: 'policy:full',
+          nsec: nsec,
         );
-
-        if (!result.success) {
-          _setErrorMessage(result.error ?? 'Registration failed');
-          return;
-        }
-
-        if (result.verificationRequired && result.deviceCode != null) {
-          // Navigate to email verification screen in polling mode
-          if (mounted) {
-            final encodedEmail = Uri.encodeComponent(email);
-            context.go(
-              '${EmailVerificationScreen.path}'
-              '?deviceCode=${result.deviceCode}'
-              '&verifier=$verifier'
-              '&email=$encodedEmail',
-            );
-          }
-        } else {
-          _setErrorMessage('Registration complete. Please check your email.');
-        }
       });
     } catch (e) {
       Log.error(
@@ -110,6 +90,40 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       return 'Passwords do not match';
     }
     return null;
+  }
+
+  Future<void> _handleRegister({
+    required KeycastOAuth oauth,
+    required String email,
+    required String password,
+    required String nsec,
+  }) async {
+    final (result, verifier) = await oauth.headlessRegister(
+      email: email,
+      nsec: nsec,
+      password: password,
+      scope: 'policy:full',
+    );
+
+    if (!result.success) {
+      _setErrorMessage(result.error ?? 'Registration failed');
+      return;
+    }
+
+    if (result.verificationRequired && result.deviceCode != null) {
+      // Navigate to email verification screen in polling mode
+      if (mounted) {
+        final encodedEmail = Uri.encodeComponent(email);
+        context.go(
+          '${EmailVerificationScreen.path}'
+          '?deviceCode=${result.deviceCode}'
+          '&verifier=$verifier'
+          '&email=$encodedEmail',
+        );
+      }
+    } else {
+      _setErrorMessage('Registration complete. Please check your email.');
+    }
   }
 
   InputDecoration _buildInputDecoration({
