@@ -48,16 +48,21 @@ class MockAccountDeletionService extends _i1.Mock
   }
 
   @override
-  _i4.Future<_i2.DeleteAccountResult> deleteAccount({String? customReason}) =>
+  _i4.Future<_i2.DeleteAccountResult> deleteAccount({
+    String? customReason,
+    void Function(int, int)? onProgress,
+  }) =>
       (super.noSuchMethod(
             Invocation.method(#deleteAccount, [], {
               #customReason: customReason,
+              #onProgress: onProgress,
             }),
             returnValue: _i4.Future<_i2.DeleteAccountResult>.value(
               _FakeDeleteAccountResult_0(
                 this,
                 Invocation.method(#deleteAccount, [], {
                   #customReason: customReason,
+                  #onProgress: onProgress,
                 }),
               ),
             ),
@@ -254,6 +259,14 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
           as _i4.Future<void>);
+
+  @override
+  _i4.Future<(bool, String?)> deleteKeycastAccount() =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteKeycastAccount, []),
+            returnValue: _i4.Future<(bool, String?)>.value((false, null)),
+          )
+          as _i4.Future<(bool, String?)>);
 
   @override
   _i4.Future<void> signOut({bool? deleteKeys = false}) =>

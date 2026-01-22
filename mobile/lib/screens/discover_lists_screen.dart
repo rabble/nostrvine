@@ -5,12 +5,13 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -346,19 +347,38 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
     return Scaffold(
       backgroundColor: VineTheme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: VineTheme.cardBackground,
+        elevation: 0,
+        scrolledUnderElevation: 0,
+        toolbarHeight: 72,
+        leadingWidth: 80,
+        centerTitle: false,
+        titleSpacing: 0,
+        backgroundColor: VineTheme.navGreen,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
-          onPressed: context.pop,
-        ),
-        title: const Text(
-          'Discover Lists',
-          style: TextStyle(
-            color: VineTheme.whiteText,
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(),
+          icon: Container(
+            width: 48,
+            height: 48,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: VineTheme.iconButtonBackground,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: SvgPicture.asset(
+              'assets/icon/CaretLeft.svg',
+              width: 32,
+              height: 32,
+              colorFilter: const ColorFilter.mode(
+                Colors.white,
+                BlendMode.srcIn,
+              ),
+            ),
           ),
+          onPressed: context.pop,
+          tooltip: 'Back',
         ),
+        title: Text('Discover Lists', style: VineTheme.titleFont()),
       ),
       body: _buildBody(),
     );
@@ -496,11 +516,16 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
           );
           // Stop any playing videos before navigating
           disposeAllVideoControllers(ref);
-          context.pushCuratedList(
-            listId: list.id,
-            listName: list.name,
-            videoIds: list.videoEventIds,
-            authorPubkey: list.pubkey,
+          // Use Navigator directly since we're outside the go_router shell
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => CuratedListFeedScreen(
+                listId: list.id,
+                listName: list.name,
+                videoIds: list.videoEventIds,
+                authorPubkey: list.pubkey,
+              ),
+            ),
           );
         },
         borderRadius: BorderRadius.circular(8),
@@ -545,33 +570,31 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  // Subscribe/Subscribed button
-                  ElevatedButton.icon(
-                    onPressed: () => _toggleSubscription(list),
-                    icon: Icon(
-                      isSubscribed ? Icons.check : Icons.add,
-                      size: 18,
-                    ),
-                    label: Text(
-                      isSubscribed ? 'Subscribed' : 'Subscribe',
-                      style: const TextStyle(fontSize: 12),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: isSubscribed
-                          ? VineTheme.cardBackground
-                          : VineTheme.vineGreen,
-                      foregroundColor: isSubscribed
-                          ? VineTheme.vineGreen
-                          : VineTheme.backgroundColor,
-                      side: isSubscribed
-                          ? BorderSide(color: VineTheme.vineGreen, width: 1)
-                          : null,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                  // Subscribe/Subscribed button (icon-only)
+                  SizedBox(
+                    width: 40,
+                    height: 40,
+                    child: ElevatedButton(
+                      onPressed: () => _toggleSubscription(list),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isSubscribed
+                            ? VineTheme.cardBackground
+                            : VineTheme.vineGreen,
+                        foregroundColor: isSubscribed
+                            ? VineTheme.vineGreen
+                            : VineTheme.backgroundColor,
+                        side: isSubscribed
+                            ? BorderSide(color: VineTheme.vineGreen, width: 1)
+                            : null,
+                        padding: EdgeInsets.zero,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
                       ),
-                      minimumSize: Size.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      child: Icon(
+                        isSubscribed ? Icons.check : Icons.add,
+                        size: 20,
+                      ),
                     ),
                   ),
                 ],

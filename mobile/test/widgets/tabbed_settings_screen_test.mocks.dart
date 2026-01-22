@@ -258,6 +258,14 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i8.Future<void>);
 
   @override
+  _i8.Future<(bool, String?)> deleteKeycastAccount() =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteKeycastAccount, []),
+            returnValue: _i8.Future<(bool, String?)>.value((false, null)),
+          )
+          as _i8.Future<(bool, String?)>);
+
+  @override
   _i8.Future<void> signOut({bool? deleteKeys = false}) =>
       (super.noSuchMethod(
             Invocation.method(#signOut, [], {#deleteKeys: deleteKeys}),
@@ -680,6 +688,28 @@ class MockNostrClient extends _i1.Mock implements _i12.NostrClient {
                 #targetRelays: targetRelays,
               },
             ),
+            returnValue: _i8.Future<_i11.Event?>.value(),
+          )
+          as _i8.Future<_i11.Event?>);
+
+  @override
+  _i8.Future<_i11.Event?> sendGenericRepost({
+    required String? addressableId,
+    required int? targetKind,
+    required String? authorPubkey,
+    String? content = '',
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendGenericRepost, [], {
+              #addressableId: addressableId,
+              #targetKind: targetKind,
+              #authorPubkey: authorPubkey,
+              #content: content,
+              #tempRelays: tempRelays,
+              #targetRelays: targetRelays,
+            }),
             returnValue: _i8.Future<_i11.Event?>.value(),
           )
           as _i8.Future<_i11.Event?>);

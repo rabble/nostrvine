@@ -3,12 +3,13 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/user_list_service.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -34,27 +35,47 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen> {
       backgroundColor: VineTheme.backgroundColor,
       appBar: _activeVideoIndex == null
           ? AppBar(
-              backgroundColor: VineTheme.cardBackground,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              toolbarHeight: 72,
+              leadingWidth: 80,
+              centerTitle: false,
+              titleSpacing: 0,
+              backgroundColor: VineTheme.navGreen,
               leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: VineTheme.whiteText),
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Container(
+                  width: 48,
+                  height: 48,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: VineTheme.iconButtonBackground,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: SvgPicture.asset(
+                    'assets/icon/CaretLeft.svg',
+                    width: 32,
+                    height: 32,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
                 onPressed: context.pop,
+                tooltip: 'Back',
               ),
               title: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    widget.userList.name,
-                    style: const TextStyle(
-                      color: VineTheme.whiteText,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  Text(widget.userList.name, style: VineTheme.titleFont()),
                   if (widget.userList.description != null)
                     Text(
                       widget.userList.description!,
                       style: TextStyle(
-                        color: VineTheme.secondaryText,
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 12,
                       ),
                       maxLines: 1,

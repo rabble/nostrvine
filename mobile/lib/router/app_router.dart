@@ -153,11 +153,9 @@ int tabIndexFromLocation(String loc) {
     case 'profile-view':
     case 'sound':
     case 'new-video-feed':
-      return -1; // Non-tab routes - no bottom nav
     case 'list':
-      return 1; // List keeps explore tab active (like hashtag)
     case 'discover-lists':
-      return 1; // Discover lists keeps explore tab active
+      return -1; // Non-tab routes - no bottom nav (outside shell)
     default:
       return 0; // fallback to home
   }
@@ -612,40 +610,42 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               ),
             ),
           ),
-
-          // CURATED LIST route (NIP-51 kind 30005 video lists)
-          GoRoute(
-            path: CuratedListFeedScreen.path,
-            name: CuratedListFeedScreen.routeName,
-            builder: (ctx, st) {
-              final listId = st.pathParameters['listId'];
-              if (listId == null || listId.isEmpty) {
-                return Scaffold(
-                  appBar: AppBar(title: const Text('Error')),
-                  body: const Center(child: Text('Invalid list ID')),
-                );
-              }
-              // Extra data contains listName, videoIds, authorPubkey
-              final extra = st.extra as CuratedListRouteExtra?;
-              return CuratedListFeedScreen(
-                listId: listId,
-                listName: extra?.listName ?? 'List',
-                videoIds: extra?.videoIds,
-                authorPubkey: extra?.authorPubkey,
-              );
-            },
-          ),
-
-          // DISCOVER LISTS route (browse public NIP-51 kind 30005 lists)
-          GoRoute(
-            path: DiscoverListsScreen.path,
-            name: DiscoverListsScreen.routeName,
-            builder: (ctx, st) => const DiscoverListsScreen(),
-          ),
         ],
       ),
 
       // Non-tab routes outside the shell (camera/settings/editor/video/welcome)
+
+      // CURATED LIST route (NIP-51 kind 30005 video lists)
+      // Outside shell so the screen's own AppBar is shown without the shell AppBar
+      GoRoute(
+        path: '/list/:listId',
+        name: 'list',
+        builder: (ctx, st) {
+          final listId = st.pathParameters['listId'];
+          if (listId == null || listId.isEmpty) {
+            return Scaffold(
+              appBar: AppBar(title: const Text('Error')),
+              body: const Center(child: Text('Invalid list ID')),
+            );
+          }
+          // Extra data contains listName, videoIds, authorPubkey
+          final extra = st.extra as CuratedListRouteExtra?;
+          return CuratedListFeedScreen(
+            listId: listId,
+            listName: extra?.listName ?? 'List',
+            videoIds: extra?.videoIds,
+            authorPubkey: extra?.authorPubkey,
+          );
+        },
+      ),
+
+      // DISCOVER LISTS route (browse public NIP-51 kind 30005 lists)
+      // Outside shell so the screen's own AppBar is shown without the shell AppBar
+      GoRoute(
+        path: DiscoverListsScreen.path,
+        name: DiscoverListsScreen.routeName,
+        builder: (ctx, st) => const DiscoverListsScreen(),
+      ),
       GoRoute(
         path: WelcomeScreen.path,
         name: WelcomeScreen.routeName,

@@ -1,8 +1,17 @@
 // ABOUTME: Aspect ratio options for video recording
-// ABOUTME: Used to configure camera preview and FFmpeg crop filters
+// ABOUTME: Used to configure camera preview and pro_video_editor crop filters
 
 /// Aspect ratio options for video recording
 enum AspectRatio {
-  square, // 1:1 (classic Vine)
-  vertical, // 9:16 (default, modern vertical video)
+  /// 1:1 (classic Vine)
+  square,
+
+  /// 9:16 (default, modern vertical video)
+  vertical
+  ;
+
+  double get value => switch (this) {
+    .square => 1,
+    .vertical => 9 / 16,
+  };
 }

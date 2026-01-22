@@ -771,6 +771,52 @@ class NostrClient {
     return repostEvent;
   }
 
+  /// Sends a generic repost (Kind 16) for addressable events.
+  ///
+  /// Generic reposts (NIP-18) are used for reposting addressable events
+  /// like videos (Kind 34236) using the 'a' tag instead of 'e' tag.
+  ///
+  /// Parameters:
+  /// - [addressableId]: The addressable event identifier
+  ///   (e.g., "34236:pubkey:d-tag")
+  /// - [targetKind]: The kind of the event being reposted
+  ///   (e.g., 34236 for videos)
+  /// - [authorPubkey]: The public key of the original event author
+  /// - [content]: Optional content for the repost (usually empty)
+  ///
+  /// Successfully sent events are cached locally with 1-day expiry.
+  Future<Event?> sendGenericRepost({
+    required String addressableId,
+    required int targetKind,
+    required String authorPubkey,
+    String content = '',
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+  }) async {
+    final event = Event(
+      publicKey,
+      EventKind.genericRepost,
+      [
+        ['k', '$targetKind'],
+        ['a', addressableId],
+        ['p', authorPubkey],
+      ],
+      content,
+    );
+
+    final sentEvent = await _nostr.sendEvent(
+      event,
+      tempRelays: tempRelays,
+      targetRelays: targetRelays,
+    );
+
+    if (sentEvent != null) {
+      _cacheEvent(sentEvent);
+    }
+
+    return sentEvent;
+  }
+
   /// Deletes an event
   ///
   /// Sends a NIP-09 deletion event (Kind 5) and removes the target event

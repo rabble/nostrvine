@@ -11,7 +11,7 @@ import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import '../helpers/test_provider_overrides.dart';
 
 void main() {

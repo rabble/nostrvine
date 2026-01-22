@@ -36,16 +36,23 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   ) async {
     emit(state.copyWith(status: ProfileEditorStatus.loading));
 
+    final displayName = event.displayName.trim();
+    final about = (event.about?.trim().isEmpty ?? true) ? null : event.about;
+    final username = (event.username?.trim().isEmpty ?? true)
+        ? null
+        : event.username;
+    final picture = (event.picture?.trim().isEmpty ?? true)
+        ? null
+        : event.picture;
+
     final currentProfile = await _profileRepository.getProfile(
       pubkey: event.pubkey,
     );
-    final nip05 = (event.username != null && event.username!.isNotEmpty)
-        ? '${event.username}@divine.video'
-        : null;
+    final nip05 = username != null ? '$username@divine.video' : null;
 
     Log.info(
-      '📝 saveProfile: displayName=${event.displayName}, '
-      'username=${event.username}, currentNip05=${currentProfile?.nip05}',
+      '📝 saveProfile: displayName=$displayName, '
+      'username=$username, currentNip05=${currentProfile?.nip05}',
       name: 'ProfileEditorBloc',
     );
 
@@ -53,10 +60,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     UserProfile savedProfile;
     try {
       savedProfile = await _profileRepository.saveProfileEvent(
-        displayName: event.displayName,
-        about: event.about,
+        displayName: displayName,
+        about: about,
         nip05: nip05,
-        picture: event.picture,
+        picture: picture,
         currentProfile: currentProfile,
       );
       Log.info(
@@ -79,7 +86,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     }
 
     // 2. No username to claim - done
-    if (event.username == null || event.username!.isEmpty) {
+    if (username == null) {
       Log.info('📝 No username to claim, SUCCESS', name: 'ProfileEditorBloc');
       emit(state.copyWith(status: ProfileEditorStatus.success));
       return;
@@ -87,12 +94,12 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
 
     // 3. Claim username
     Log.info(
-      '📝 Attempting to claim username: ${event.username}',
+      '📝 Attempting to claim username: $username',
       name: 'ProfileEditorBloc',
     );
 
     final result = await _usernameRepository.register(
-      username: event.username!,
+      username: username,
       pubkey: event.pubkey,
     );
 
@@ -116,10 +123,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     );
     try {
       final rolledBack = await _profileRepository.saveProfileEvent(
-        displayName: event.displayName,
-        about: event.about,
+        displayName: displayName,
+        about: about,
         nip05: currentProfile?.nip05,
-        picture: event.picture,
+        picture: picture,
         currentProfile: currentProfile,
       );
       final appProfile = app_models.UserProfile.fromJson(rolledBack.toJson());

@@ -12,7 +12,7 @@ import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
-import 'package:openvine/theme/vine_theme.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 
@@ -59,10 +59,10 @@ class _LikedVideosScreenRouterState
     }
 
     // Get services for ProfileLikedVideosBloc
-    final videoEventService = ref.watch(videoEventServiceProvider);
-    final nostrClient = ref.watch(nostrServiceProvider);
-
     final likesRepository = ref.watch(likesRepositoryProvider);
+    final videosRepository = ref.watch(videosRepositoryProvider);
+    final nostrService = ref.watch(nostrServiceProvider);
+    final currentUserPubkey = nostrService.publicKey;
     final videoIndex = routeCtx.videoIndex;
 
     // Grid mode: no video index
@@ -88,10 +88,10 @@ class _LikedVideosScreenRouterState
         body: BlocProvider<ProfileLikedVideosBloc>(
           create: (_) => ProfileLikedVideosBloc(
             likesRepository: likesRepository,
-            videoEventService: videoEventService,
-            nostrClient: nostrClient,
+            videosRepository: videosRepository,
+            currentUserPubkey: currentUserPubkey,
           )..add(const ProfileLikedVideosSyncRequested()),
-          child: const ProfileLikedGrid(),
+          child: const ProfileLikedGrid(isOwnProfile: true),
         ),
       );
     }
@@ -106,8 +106,8 @@ class _LikedVideosScreenRouterState
     return BlocProvider<ProfileLikedVideosBloc>(
       create: (_) => ProfileLikedVideosBloc(
         likesRepository: likesRepository,
-        videoEventService: videoEventService,
-        nostrClient: nostrClient,
+        videosRepository: videosRepository,
+        currentUserPubkey: currentUserPubkey,
       )..add(const ProfileLikedVideosSyncRequested()),
       child: _LikedVideosFeedView(videoIndex: videoIndex),
     );

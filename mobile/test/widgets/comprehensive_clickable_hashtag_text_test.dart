@@ -21,30 +21,24 @@ void main() {
     });
 
     group('Text Display and Structure', () {
-      testWidgets(
-        'renders plain text without hashtags as simple SelectableText',
-        (tester) async {
-          const plainText = 'This is plain text without hashtags';
+      testWidgets('renders plain text without hashtags as simple Text', (
+        tester,
+      ) async {
+        const plainText = 'This is plain text without hashtags';
 
-          await tester.pumpWidget(
-            MaterialApp(
-              home: Scaffold(body: ClickableHashtagText(text: plainText)),
-            ),
-          );
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(body: ClickableHashtagText(text: plainText)),
+          ),
+        );
 
-          expect(find.text(plainText), findsOneWidget);
-          expect(find.byType(SelectableText), findsOneWidget);
+        expect(find.text(plainText), findsOneWidget);
+        expect(find.byType(Text), findsOneWidget);
 
-          final selectableText = tester.widget<SelectableText>(
-            find.byType(SelectableText),
-          );
-          expect(selectableText.data, plainText);
-          expect(
-            selectableText.textSpan,
-            isNull,
-          ); // Should use data, not textSpan
-        },
-      );
+        final text = tester.widget<Text>(find.byType(Text));
+        expect(text.data, plainText);
+        expect(text.textSpan, isNull); // Should use data, not textSpan
+      });
 
       testWidgets('creates TextSpans for text with hashtags', (tester) async {
         const textWithHashtag = 'Check out this #vine video';
@@ -55,14 +49,13 @@ void main() {
           ),
         );
 
-        final selectableText = tester.widget<SelectableText>(
-          find.byType(SelectableText),
-        );
-        expect(selectableText.data, isNull); // Should use textSpan, not data
-        expect(selectableText.textSpan, isNotNull);
-        expect(selectableText.textSpan!.children, isNotNull);
+        final text = tester.widget<Text>(find.byType(Text));
+        expect(text.data, isNull); // Should use textSpan, not data
+        expect(text.textSpan, isNotNull);
+        final textSpan = text.textSpan as TextSpan;
+        expect(textSpan.children, isNotNull);
         expect(
-          selectableText.textSpan!.children!.length,
+          textSpan.children!.length,
           3,
         ); // "Check out this ", "#vine", " video"
       });
@@ -78,10 +71,9 @@ void main() {
           ),
         );
 
-        final selectableText = tester.widget<SelectableText>(
-          find.byType(SelectableText),
-        );
-        final spans = selectableText.textSpan!.children!.cast<TextSpan>();
+        final text = tester.widget<Text>(find.byType(Text));
+        final textSpan = text.textSpan as TextSpan;
+        final spans = textSpan.children!.cast<TextSpan>();
 
         expect(spans[0].text, 'Text ');
         expect(
@@ -111,10 +103,9 @@ void main() {
           ),
         );
 
-        final selectableText = tester.widget<SelectableText>(
-          find.byType(SelectableText),
-        );
-        final spans = selectableText.textSpan!.children!.cast<TextSpan>();
+        final text = tester.widget<Text>(find.byType(Text));
+        final textSpan = text.textSpan as TextSpan;
+        final spans = textSpan.children!.cast<TextSpan>();
 
         expect(spans.length, 4); // "#first", " and ", "#second", " hashtags"
         expect(spans[0].text, '#first');
@@ -136,10 +127,8 @@ void main() {
           ),
         );
 
-        final selectableText = tester.widget<SelectableText>(
-          find.byType(SelectableText),
-        );
-        expect(selectableText.style, testStyle);
+        final text = tester.widget<Text>(find.byType(Text));
+        expect(text.style, testStyle);
       });
 
       testWidgets('applies custom hashtag style', (tester) async {
@@ -156,10 +145,9 @@ void main() {
           ),
         );
 
-        final selectableText = tester.widget<SelectableText>(
-          find.byType(SelectableText),
-        );
-        final spans = selectableText.textSpan!.children!.cast<TextSpan>();
+        final text = tester.widget<Text>(find.byType(Text));
+        final textSpan = text.textSpan as TextSpan;
+        final spans = textSpan.children!.cast<TextSpan>();
         final hashtagSpan = spans.firstWhere(
           (span) => span.text!.startsWith('#'),
         );
@@ -178,10 +166,9 @@ void main() {
           ),
         );
 
-        final selectableText = tester.widget<SelectableText>(
-          find.byType(SelectableText),
-        );
-        final spans = selectableText.textSpan!.children!.cast<TextSpan>();
+        final text = tester.widget<Text>(find.byType(Text));
+        final textSpan = text.textSpan as TextSpan;
+        final spans = textSpan.children!.cast<TextSpan>();
         final hashtagSpan = spans.firstWhere(
           (span) => span.text!.startsWith('#'),
         );
@@ -207,10 +194,8 @@ void main() {
           ),
         );
 
-        final selectableText = tester.widget<SelectableText>(
-          find.byType(SelectableText),
-        );
-        expect(selectableText.maxLines, 2);
+        final text = tester.widget<Text>(find.byType(Text));
+        expect(text.maxLines, 2);
       });
     });
 
@@ -233,10 +218,9 @@ void main() {
         );
 
         // Find and tap the hashtag
-        final selectableText = tester.widget<SelectableText>(
-          find.byType(SelectableText),
-        );
-        final spans = selectableText.textSpan!.children!.cast<TextSpan>();
+        final text = tester.widget<Text>(find.byType(Text));
+        final textSpan = text.textSpan as TextSpan;
+        final spans = textSpan.children!.cast<TextSpan>();
         final hashtagSpan = spans.firstWhere(
           (span) => span.text!.startsWith('#'),
         );
@@ -260,10 +244,9 @@ void main() {
         );
 
         // Find and tap the hashtag
-        final selectableText = tester.widget<SelectableText>(
-          find.byType(SelectableText),
-        );
-        final spans = selectableText.textSpan!.children!.cast<TextSpan>();
+        final text = tester.widget<Text>(find.byType(Text));
+        final textSpan = text.textSpan as TextSpan;
+        final spans = textSpan.children!.cast<TextSpan>();
         final hashtagSpan = spans.firstWhere(
           (span) => span.text!.startsWith('#'),
         );
@@ -293,10 +276,9 @@ void main() {
           ),
         );
 
-        final selectableText = tester.widget<SelectableText>(
-          find.byType(SelectableText),
-        );
-        final spans = selectableText.textSpan!.children!.cast<TextSpan>();
+        final text = tester.widget<Text>(find.byType(Text));
+        final textSpan = text.textSpan as TextSpan;
+        final spans = textSpan.children!.cast<TextSpan>();
 
         // Tap first hashtag
         final firstHashtagSpan = spans.firstWhere(
@@ -331,7 +313,7 @@ void main() {
         );
 
         expect(find.byType(SizedBox), findsOneWidget);
-        expect(find.byType(SelectableText), findsNothing);
+        expect(find.byType(Text), findsNothing);
       });
 
       testWidgets('handles text with only spaces', (tester) async {
@@ -342,7 +324,7 @@ void main() {
         );
 
         expect(find.text('   '), findsOneWidget);
-        expect(find.byType(SelectableText), findsOneWidget);
+        expect(find.byType(Text), findsOneWidget);
       });
 
       testWidgets('handles hashtags with numbers and underscores', (
@@ -356,10 +338,9 @@ void main() {
           ),
         );
 
-        final selectableText = tester.widget<SelectableText>(
-          find.byType(SelectableText),
-        );
-        final spans = selectableText.textSpan!.children!.cast<TextSpan>();
+        final text = tester.widget<Text>(find.byType(Text));
+        final textSpan = text.textSpan as TextSpan;
+        final spans = textSpan.children!.cast<TextSpan>();
 
         expect(spans.any((span) => span.text == '#vine_2024'), isTrue);
         expect(spans.any((span) => span.text == '#test_123'), isTrue);
@@ -374,10 +355,9 @@ void main() {
           ),
         );
 
-        final selectableText = tester.widget<SelectableText>(
-          find.byType(SelectableText),
-        );
-        final spans = selectableText.textSpan!.children!.cast<TextSpan>();
+        final text = tester.widget<Text>(find.byType(Text));
+        final textSpan = text.textSpan as TextSpan;
+        final spans = textSpan.children!.cast<TextSpan>();
 
         expect(spans.any((span) => span.text == '#first'), isTrue);
         expect(spans.any((span) => span.text == '#second'), isTrue);
@@ -396,10 +376,9 @@ void main() {
 
         // This test would need enhancement of the hashtag regex to ignore URL fragments
         // Current implementation would incorrectly identify #anchor as a hashtag
-        final selectableText = tester.widget<SelectableText>(
-          find.byType(SelectableText),
-        );
-        final spans = selectableText.textSpan!.children!.cast<TextSpan>();
+        final text = tester.widget<Text>(find.byType(Text));
+        final textSpan = text.textSpan as TextSpan;
+        final spans = textSpan.children!.cast<TextSpan>();
 
         // Should have spans but #anchor should not be clickable in ideal implementation
         expect(spans.length, greaterThan(1));
@@ -415,11 +394,9 @@ void main() {
         );
 
         // Single # without word should be treated as plain text
-        final selectableText = tester.widget<SelectableText>(
-          find.byType(SelectableText),
-        );
+        final text = tester.widget<Text>(find.byType(Text));
         expect(
-          selectableText.data,
+          text.data,
           'Just a # character',
         ); // Should use data, not textSpan
       });
@@ -440,10 +417,9 @@ void main() {
           ),
         );
 
-        final selectableText = tester.widget<SelectableText>(
-          find.byType(SelectableText),
-        );
-        final spans = selectableText.textSpan!.children!.cast<TextSpan>();
+        final text = tester.widget<Text>(find.byType(Text));
+        final textSpan = text.textSpan as TextSpan;
+        final spans = textSpan.children!.cast<TextSpan>();
         final clickableSpans = spans
             .where((span) => span.recognizer != null)
             .toList();
