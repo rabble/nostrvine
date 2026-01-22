@@ -268,8 +268,11 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
         enableTapToPause: isActive,
         videoBuilder: (context, controller) =>
             _FittedVideoPlayer(controller: controller),
-        loadingBuilder: (context) =>
-            _VideoLoadingPlaceholder(thumbnailUrl: video.thumbnailUrl),
+        loadingBuilder: (context) => _VideoLoadingPlaceholder(
+          thumbnailUrl: video.thumbnailUrl,
+          // Default to portrait (cover) when dimensions unknown
+          isPortrait: video.dimensions != null ? video.isPortrait : true,
+        ),
         overlayBuilder: (context, controller) => VideoOverlayActions(
           video: video,
           isVisible: isActive,
@@ -292,40 +295,53 @@ class _FittedVideoPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final videoWidth = controller.value.size.width > 0
-        ? controller.value.size.width
-        : 1.0;
-    final videoHeight = controller.value.size.height > 0
-        ? controller.value.size.height
-        : 1.0;
+    final videoWidth = controller.value.size.width;
+    final videoHeight = controller.value.size.height;
 
-    return FittedBox(
-      fit: BoxFit.contain,
-      alignment: Alignment.center,
-      child: SizedBox(
-        width: videoWidth,
-        height: videoHeight,
-        child: VideoPlayer(controller),
+    // Determine if video is portrait (height > width)
+    final isPortrait = videoHeight > videoWidth;
+
+    // Portrait: fill height, crop sides (cover)
+    // Landscape: fit entirely, centered (contain)
+    final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
+
+    return SizedBox.expand(
+      child: FittedBox(
+        fit: boxFit,
+        alignment: Alignment.center,
+        child: SizedBox(
+          width: videoWidth > 0 ? videoWidth : 1,
+          height: videoHeight > 0 ? videoHeight : 1,
+          child: VideoPlayer(controller),
+        ),
       ),
     );
   }
 }
 
 class _VideoLoadingPlaceholder extends StatelessWidget {
-  const _VideoLoadingPlaceholder({this.thumbnailUrl});
+  const _VideoLoadingPlaceholder({this.thumbnailUrl, this.isPortrait = true});
 
   final String? thumbnailUrl;
+  final bool isPortrait;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: thumbnailUrl != null
-          ? Image.network(
-              thumbnailUrl!,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const _LoadingIndicator(),
-            )
-          : const _LoadingIndicator(),
+    if (thumbnailUrl == null) {
+      return const _LoadingIndicator();
+    }
+
+    // Portrait: fill height, crop sides (cover)
+    // Landscape: fit entirely, centered (contain)
+    final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
+
+    return SizedBox.expand(
+      child: Image.network(
+        thumbnailUrl!,
+        fit: boxFit,
+        alignment: Alignment.center,
+        errorBuilder: (_, __, ___) => const _LoadingIndicator(),
+      ),
     );
   }
 }
