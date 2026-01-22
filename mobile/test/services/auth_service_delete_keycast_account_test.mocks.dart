@@ -77,9 +77,15 @@ class _FakeResetPasswordResult_7 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
-class _FakeDeleteAccountResult_8 extends _i1.SmartFake
+class _FakeVerifyEmailResult_8 extends _i1.SmartFake
+    implements _i5.VerifyEmailResult {
+  _FakeVerifyEmailResult_8(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeDeleteAccountResult_9 extends _i1.SmartFake
     implements _i5.DeleteAccountResult {
-  _FakeDeleteAccountResult_8(Object parent, Invocation parentInvocation)
+  _FakeDeleteAccountResult_9(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -633,11 +639,24 @@ class MockKeycastOAuth extends _i1.Mock implements _i9.KeycastOAuth {
           as _i7.Future<_i5.ResetPasswordResult>);
 
   @override
+  _i7.Future<_i5.VerifyEmailResult> verifyEmail({required String? token}) =>
+      (super.noSuchMethod(
+            Invocation.method(#verifyEmail, [], {#token: token}),
+            returnValue: _i7.Future<_i5.VerifyEmailResult>.value(
+              _FakeVerifyEmailResult_8(
+                this,
+                Invocation.method(#verifyEmail, [], {#token: token}),
+              ),
+            ),
+          )
+          as _i7.Future<_i5.VerifyEmailResult>);
+
+  @override
   _i7.Future<_i5.DeleteAccountResult> deleteAccount(String? token) =>
       (super.noSuchMethod(
             Invocation.method(#deleteAccount, [token]),
             returnValue: _i7.Future<_i5.DeleteAccountResult>.value(
-              _FakeDeleteAccountResult_8(
+              _FakeDeleteAccountResult_9(
                 this,
                 Invocation.method(#deleteAccount, [token]),
               ),
