@@ -1105,9 +1105,7 @@ LikesRepository likesRepository(Ref ref) {
   // This ensures the provider rebuilds when authentication completes
   ref.watch(authStateStreamProvider);
 
-  // Repository requires authentication
-  final authenticated =
-      !authService.isAuthenticated || authService.currentPublicKeyHex == null;
+  final isAuthenticated = authService.isAuthenticated;
 
   final nostrClient = ref.watch(nostrServiceProvider);
   final db = ref.watch(databaseProvider);
@@ -1116,10 +1114,16 @@ LikesRepository likesRepository(Ref ref) {
     userPubkey: authService.currentPublicKeyHex!,
   );
 
+  // Map AuthState stream to bool stream for repository
+  final authBoolStream = authService.authStateStream.map(
+    (state) => state == AuthState.authenticated,
+  );
+
   final repository = LikesRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    isAuthenticated: authenticated,
+    authStateStream: authBoolStream,
+    isAuthenticated: isAuthenticated,
   );
 
   ref.onDispose(repository.dispose);
@@ -1142,8 +1146,14 @@ RepostsRepository repostsRepository(Ref ref) {
 
   final isAuthenticated = authService.isAuthenticated;
 
+  // Map AuthState stream to bool stream for repository
+  final authBoolStream = authService.authStateStream.map(
+    (state) => state == AuthState.authenticated,
+  );
+
   final repository = RepostsRepository(
     nostrClient: nostrClient,
+    authStateStream: authBoolStream,
     isAuthenticated: isAuthenticated,
   );
 

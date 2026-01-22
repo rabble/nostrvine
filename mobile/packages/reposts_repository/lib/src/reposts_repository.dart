@@ -5,6 +5,7 @@
 
 import 'dart:async';
 
+import 'package:meta/meta.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:reposts_repository/src/exceptions.dart';
@@ -486,6 +487,7 @@ class RepostsRepository {
   /// Whether the repository is ready for operations.
   ///
   /// Returns false if not authenticated.
+  @visibleForTesting
   bool get isAuthenticated => _isAuthenticated;
 
   /// Ensures the repository is initialized with data from storage.

@@ -1331,14 +1331,6 @@ class MockLikesRepository extends _i1.Mock implements _i3.LikesRepository {
   }
 
   @override
-  bool get isAuthenticated =>
-      (super.noSuchMethod(
-            Invocation.getter(#isAuthenticated),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
   _i8.Stream<Set<String>> watchLikedEventIds() =>
       (super.noSuchMethod(
             Invocation.method(#watchLikedEventIds, []),

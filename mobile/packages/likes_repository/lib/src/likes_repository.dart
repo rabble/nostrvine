@@ -477,11 +477,6 @@ class LikesRepository {
     }
   }
 
-  /// Whether the repository is ready for operations.
-  ///
-  /// Returns false if not authenticated.
-  bool get isAuthenticated => _isAuthenticated;
-
   /// Ensures the repository is initialized with data from storage.
   Future<void> _ensureInitialized() async {
     if (_isInitialized) return;
