@@ -50,7 +50,16 @@ class VineBottomSheetHeader extends StatelessWidget {
               alignment: Alignment.center,
               children: [
                 // Centered title
-                Center(child: title),
+                Center(
+                  child: DefaultTextStyle(
+                    style: VineTheme.titleFont(
+                      fontSize: 18,
+                      height: 1.33,
+                      letterSpacing: 0.15,
+                    ),
+                    child: title!,
+                  ),
+                ),
 
                 // Trailing widget positioned on the right
                 if (trailing != null)

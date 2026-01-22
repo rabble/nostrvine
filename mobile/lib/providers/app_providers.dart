@@ -2,6 +2,7 @@
 // ABOUTME: Replaces Provider MultiProvider setup with pure Riverpod dependency injection
 
 import 'dart:async';
+import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter/foundation.dart';
@@ -49,6 +50,7 @@ import 'package:openvine/services/nip05_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
+import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';
@@ -1068,14 +1070,17 @@ CommentsRepository commentsRepository(Ref ref) {
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - ContentBlocklistService for filtering blocked/muted users
+/// - AgeVerificationService for filtering NSFW content based on user preference
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final ageVerificationService = ref.watch(ageVerificationServiceProvider);
 
   return VideosRepository(
     nostrClient: nostrClient,
-    contentFilter: createBlocklistFilter(blocklistService),
+    blockFilter: createBlocklistFilter(blocklistService),
+    contentFilter: createNsfwFilter(ageVerificationService),
   );
 }
 
