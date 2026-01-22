@@ -63,10 +63,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       final email = _emailController.text.trim();
       final password = _passwordController.text;
 
-      ref
-          .read(authServiceProvider)
-          .currentKeyContainer
-          ?.withNsec((nsec) async {
+      ref.read(authServiceProvider).currentKeyContainer?.withNsec((nsec) async {
         final (result, verifier) = await oauth.headlessRegister(
           email: email,
           nsec: nsec,
@@ -203,28 +200,35 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
                         const SizedBox(height: 16),
 
                         // Confirm password
-                        TextFormField(
-                          controller: _confirmPasswordController,
-                          obscureText: _obscureConfirmPassword,
-                          decoration: _buildInputDecoration(
-                            label: 'Confirm Password',
-                            icon: Icons.lock_outlined,
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscureConfirmPassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                                color: Colors.white60,
+                        AnimatedSize(
+                          duration: const Duration(milliseconds: 200),
+                          child: Column(
+                            children: [
+                              TextFormField(
+                                controller: _confirmPasswordController,
+                                obscureText: _obscureConfirmPassword,
+                                decoration: _buildInputDecoration(
+                                  label: 'Confirm Password',
+                                  icon: Icons.lock_outlined,
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscureConfirmPassword
+                                          ? Icons.visibility_off
+                                          : Icons.visibility,
+                                      color: Colors.white60,
+                                    ),
+                                    onPressed: () => setState(
+                                      () => _obscureConfirmPassword =
+                                          !_obscureConfirmPassword,
+                                    ),
+                                  ),
+                                ),
+                                validator: _validateConfirmPassword,
                               ),
-                              onPressed: () => setState(
-                                () => _obscureConfirmPassword =
-                                    !_obscureConfirmPassword,
-                              ),
-                            ),
+                              const SizedBox(height: 16),
+                            ],
                           ),
-                          validator: _validateConfirmPassword,
                         ),
-                        const SizedBox(height: 16),
 
                         // Error message
                         if (_errorMessage != null) ...[
