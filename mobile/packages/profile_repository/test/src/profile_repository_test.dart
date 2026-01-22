@@ -434,5 +434,12 @@ void main() {
         },
       );
     });
+
+    group('UsernameClaimResult', () {
+      test('UsernameClaimError toString returns formatted message', () {
+        const error = UsernameClaimError('test error');
+        expect(error.toString(), equals('UsernameClaimError(test error)'));
+      });
+    });
   });
 }
