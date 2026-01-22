@@ -6,6 +6,7 @@
 
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/aid.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:videos_repository/src/video_content_filter.dart';
 import 'package:videos_repository/src/video_event_filter.dart';
@@ -254,12 +255,10 @@ class VideosRepository {
 
     // Parse addressable IDs and build filters
     final filters = <Filter>[];
-    final parsedIds = <String, _ParsedAddressableId>{};
 
     for (final addressableId in addressableIds) {
-      final parsed = _parseAddressableId(addressableId);
+      final parsed = AId.fromString(addressableId);
       if (parsed != null && NIP71VideoKinds.isVideoKind(parsed.kind)) {
-        parsedIds[addressableId] = parsed;
         filters.add(
           Filter(
             kinds: [parsed.kind],
@@ -278,8 +277,8 @@ class VideosRepository {
     // Build a map keyed by addressable ID for ordering
     final eventMap = <String, Event>{};
     for (final event in events) {
-      final dTag = _extractDTag(event);
-      if (dTag != null) {
+      final dTag = event.dTagValue;
+      if (dTag.isNotEmpty) {
         final addressableId = '${event.kind}:${event.pubkey}:$dTag';
         eventMap[addressableId] = event;
       }
@@ -327,31 +326,6 @@ class VideosRepository {
     return video;
   }
 
-  /// Parses an addressable ID into its components.
-  ///
-  /// Format: `kind:pubkey:d-tag`
-  _ParsedAddressableId? _parseAddressableId(String addressableId) {
-    final parts = addressableId.split(':');
-    if (parts.length < 3) return null;
-    final kind = int.tryParse(parts[0]);
-    if (kind == null) return null;
-    return _ParsedAddressableId(
-      kind: kind,
-      pubkey: parts[1],
-      dTag: parts.sublist(2).join(':'), // Handle d-tags with colons
-    );
-  }
-
-  /// Extracts the d-tag from an event.
-  String? _extractDTag(Event event) {
-    for (final tag in event.tags) {
-      if (tag is List && tag.isNotEmpty && tag[0] == 'd' && tag.length > 1) {
-        return tag[1] as String;
-      }
-    }
-    return null;
-  }
-
   /// Transforms raw Nostr events to VideoEvents and filters invalid ones.
   ///
   /// Applies two-stage filtering:
@@ -386,17 +360,4 @@ class VideosRepository {
 
     return videos;
   }
-}
-
-/// Parsed components of an addressable ID.
-class _ParsedAddressableId {
-  const _ParsedAddressableId({
-    required this.kind,
-    required this.pubkey,
-    required this.dTag,
-  });
-
-  final int kind;
-  final String pubkey;
-  final String dTag;
 }
