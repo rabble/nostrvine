@@ -1,18 +1,15 @@
 // ABOUTME: BLoC for managing profile liked videos grid
-// ABOUTME: Syncs liked event IDs and fetches video data from cache/relays
-
-import 'dart:async';
+// ABOUTME: Coordinates between LikesRepository (for IDs) and VideosRepository
+// ABOUTME: (for video data)
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:likes_repository/likes_repository.dart';
-import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/filter.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 part 'profile_liked_videos_event.dart';
 part 'profile_liked_videos_state.dart';
@@ -22,11 +19,13 @@ const _pageSize = 18;
 
 /// BLoC for managing profile liked videos.
 ///
+/// Coordinates between:
+/// - [LikesRepository]: Provides liked event IDs (sync for own, fetch for other)
+/// - [VideosRepository]: Fetches actual video data by IDs
+///
 /// Handles:
 /// - Syncing liked event IDs from LikesRepository
-/// - Loading video data for liked event IDs
-/// - Caching: checks VideoEventService cache first
-/// - Fetching: fetches missing videos from Nostr relays
+/// - Loading video data for liked event IDs via VideosRepository
 /// - Filtering: excludes unsupported video formats
 /// - Listening for like changes to update the list
 /// - Pagination: loads videos in batches of [_pageSize]
@@ -34,12 +33,12 @@ class ProfileLikedVideosBloc
     extends Bloc<ProfileLikedVideosEvent, ProfileLikedVideosState> {
   ProfileLikedVideosBloc({
     required LikesRepository likesRepository,
-    required VideoEventService videoEventService,
-    required NostrClient nostrClient,
+    required VideosRepository videosRepository,
+    required String currentUserPubkey,
     String? targetUserPubkey,
   }) : _likesRepository = likesRepository,
-       _videoEventService = videoEventService,
-       _nostrClient = nostrClient,
+       _videosRepository = videosRepository,
+       _currentUserPubkey = currentUserPubkey,
        _targetUserPubkey = targetUserPubkey,
        super(const ProfileLikedVideosState()) {
     on<ProfileLikedVideosSyncRequested>(_onSyncRequested);
@@ -48,17 +47,17 @@ class ProfileLikedVideosBloc
   }
 
   final LikesRepository _likesRepository;
-  final VideoEventService _videoEventService;
-  final NostrClient _nostrClient;
+  final VideosRepository _videosRepository;
+  final String _currentUserPubkey;
 
   /// The pubkey of the user whose likes to display.
-  /// If null or same as current user, uses LikesRepository.
+  /// If null or same as current user, uses LikesRepository sync.
   /// If different, fetches likes directly from Nostr relays.
   final String? _targetUserPubkey;
 
   /// Whether we're viewing another user's profile (not our own).
   bool get _isOtherUserProfile =>
-      _targetUserPubkey != null && _targetUserPubkey != _nostrClient.publicKey;
+      _targetUserPubkey != null && _targetUserPubkey != _currentUserPubkey;
 
   /// Handle sync request - syncs liked IDs from repository then loads videos.
   Future<void> _onSyncRequested(
@@ -80,8 +79,8 @@ class ProfileLikedVideosBloc
     try {
       // Get liked event IDs - either from repository (own) or relays (other)
       final likedEventIds = _isOtherUserProfile
-          ? await _fetchOtherUserLikedEventIds()
-          : await _fetchOwnLikedEventIds();
+          ? await _likesRepository.fetchUserLikes(_targetUserPubkey!)
+          : (await _likesRepository.syncUserReactions()).orderedEventIds;
 
       Log.info(
         'ProfileLikedVideosBloc: Synced ${likedEventIds.length} liked IDs',
@@ -165,20 +164,6 @@ class ProfileLikedVideosBloc
         ),
       );
     }
-  }
-
-  /// Fetch liked event IDs for the current user via LikesRepository.
-  Future<List<String>> _fetchOwnLikedEventIds() async {
-    final syncResult = await _likesRepository.syncUserReactions();
-    return syncResult.orderedEventIds;
-  }
-
-  /// Fetch liked event IDs for another user via LikesRepository.
-  ///
-  /// Delegates to [LikesRepository.fetchUserLikes] which queries relays
-  /// for Kind 7 reactions authored by the target user.
-  Future<List<String>> _fetchOtherUserLikedEventIds() async {
-    return _likesRepository.fetchUserLikes(_targetUserPubkey!);
   }
 
   /// Subscribe to liked IDs changes and update the video list reactively.
@@ -310,140 +295,16 @@ class ProfileLikedVideosBloc
     }
   }
 
-  // TODO(any): Make logic easier, export part of logic in repository
-  /// Fetch videos for the given event IDs.
+  /// Fetch videos for the given event IDs via VideosRepository.
   ///
-  /// 1. Check cache first
-  /// 2. Fetch missing videos from relays
-  /// 3. Return ordered list matching the input order
-  Future<List<VideoEvent>> _fetchVideos(List<String> likedEventIds) async {
-    final cachedVideosMap = <String, VideoEvent>{};
-    final missingIds = <String>[];
-
-    // Check cache first
-    for (final eventId in likedEventIds) {
-      final cached = _videoEventService.getVideoById(eventId);
-      if (cached != null) {
-        cachedVideosMap[eventId] = cached;
-      } else {
-        missingIds.add(eventId);
-      }
-    }
-
-    Log.info(
-      'ProfileLikedVideosBloc: Found ${cachedVideosMap.length} in cache, '
-      '${missingIds.length} need relay fetch',
-      name: 'ProfileLikedVideosBloc',
-      category: LogCategory.video,
-    );
-
-    // Fetch missing videos from relays
-    if (missingIds.isNotEmpty) {
-      final fetchedVideos = await _fetchVideosFromRelay(missingIds);
-      for (final video in fetchedVideos) {
-        cachedVideosMap[video.id] = video;
-      }
-
-      Log.info(
-        'ProfileLikedVideosBloc: Fetched ${fetchedVideos.length} from relay',
-        name: 'ProfileLikedVideosBloc',
-        category: LogCategory.video,
-      );
-    }
-
-    // Build ordered list using the recency-ordered IDs
-    final orderedVideos = <VideoEvent>[];
-    for (final eventId in likedEventIds) {
-      final video = cachedVideosMap[eventId];
-      if (video != null) {
-        orderedVideos.add(video);
-      }
-    }
+  /// The repository handles:
+  /// - Fetching from Nostr relays
+  /// - Filtering out invalid/expired videos
+  /// - Preserving order based on input IDs
+  Future<List<VideoEvent>> _fetchVideos(List<String> eventIds) async {
+    final videos = await _videosRepository.getVideosByIds(eventIds);
 
     // Filter out unsupported videos (WebM on iOS/macOS)
-    return orderedVideos.where((v) => v.isSupportedOnCurrentPlatform).toList();
-  }
-
-  /// Fetch videos from relays by their event IDs.
-  Future<List<VideoEvent>> _fetchVideosFromRelay(List<String> eventIds) async {
-    if (eventIds.isEmpty) return [];
-
-    final completer = Completer<List<VideoEvent>>();
-    final videos = <VideoEvent>[];
-
-    // Generate unique subscription ID for cleanup
-    final subscriptionId =
-        'liked_videos_bloc_${DateTime.now().millisecondsSinceEpoch}';
-
-    /// Helper to clean up subscription resources
-    Future<void> cleanup() async {
-      await _nostrClient.unsubscribe(subscriptionId);
-    }
-
-    try {
-      // Create filter for video events by ID
-      // NIP-71 kinds: 34235 (horizontal), 34236 (vertical/short)
-      final filter = Filter(ids: eventIds, kinds: [34235, 34236]);
-
-      final eventStream = _nostrClient.subscribe(
-        [filter],
-        subscriptionId: subscriptionId,
-        onEose: () {
-          // Complete when all relays finish sending stored events
-          if (!completer.isCompleted) {
-            Log.info(
-              'ProfileLikedVideosBloc: EOSE received, completing with '
-              '${videos.length} videos',
-              name: 'ProfileLikedVideosBloc',
-              category: LogCategory.video,
-            );
-            cleanup();
-            completer.complete(videos);
-          }
-        },
-      );
-
-      eventStream.listen(
-        (event) {
-          try {
-            final video = VideoEvent.fromNostrEvent(event);
-            videos.add(video);
-          } catch (e) {
-            Log.warning(
-              'ProfileLikedVideosBloc: Failed to parse event ${event.id}: $e',
-              name: 'ProfileLikedVideosBloc',
-              category: LogCategory.video,
-            );
-          }
-        },
-        onDone: () {
-          if (!completer.isCompleted) {
-            cleanup();
-            completer.complete(videos);
-          }
-        },
-        onError: (Object error) {
-          Log.error(
-            'ProfileLikedVideosBloc: Stream error: $error',
-            name: 'ProfileLikedVideosBloc',
-            category: LogCategory.video,
-          );
-          if (!completer.isCompleted) {
-            cleanup();
-            completer.complete(videos);
-          }
-        },
-      );
-
-      return completer.future;
-    } catch (e) {
-      Log.error(
-        'ProfileLikedVideosBloc: Failed to fetch from relay: $e',
-        name: 'ProfileLikedVideosBloc',
-        category: LogCategory.video,
-      );
-      await cleanup();
-      return videos;
-    }
+    return videos.where((v) => v.isSupportedOnCurrentPlatform).toList();
   }
 }
