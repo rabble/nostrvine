@@ -94,10 +94,9 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       name: 'ProfileEditorBloc',
     );
 
-    final result = await _profileRepository.claimUsername(
-      username: username,
-      pubkey: event.pubkey,
-    );
+    final result = await _profileRepository.claimUsername(username: username);
+
+    Log.info('📝 Username claim result: $result', name: 'ProfileEditorBloc');
 
     final error = switch (result) {
       UsernameClaimSuccess() => null,

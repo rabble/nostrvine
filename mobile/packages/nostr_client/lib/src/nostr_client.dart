@@ -893,6 +893,9 @@ class NostrClient {
     ];
     final nip98Event = Event(_nostr.publicKey, EventKind.httpAuth, tags, '');
     await _nostr.signEvent(nip98Event);
+
+    if (nip98Event.id.isEmpty || nip98Event.sig.isEmpty) return null;
+
     final eventJson = jsonEncode(nip98Event.toJson());
     final base64Event = base64Encode(utf8.encode(eventJson));
     return 'Nostr $base64Event';

@@ -279,7 +279,6 @@ void main() {
 
         final usernameClaimResult = await repository.claimUsername(
           username: 'username',
-          pubkey: 'pubkey',
         );
         expect(usernameClaimResult, equals(const UsernameClaimSuccess()));
       });
@@ -302,7 +301,6 @@ void main() {
 
         final usernameClaimResult = await repository.claimUsername(
           username: 'username',
-          pubkey: 'pubkey',
         );
         expect(usernameClaimResult, equals(const UsernameClaimSuccess()));
       });
@@ -325,7 +323,6 @@ void main() {
 
         final usernameClaimResult = await repository.claimUsername(
           username: 'username',
-          pubkey: 'pubkey',
         );
         expect(usernameClaimResult, equals(const UsernameClaimReserved()));
       });
@@ -348,7 +345,6 @@ void main() {
 
         final usernameClaimResult = await repository.claimUsername(
           username: 'username',
-          pubkey: 'pubkey',
         );
         expect(usernameClaimResult, equals(const UsernameClaimTaken()));
       });
@@ -371,7 +367,6 @@ void main() {
 
         final usernameClaimResult = await repository.claimUsername(
           username: 'username',
-          pubkey: 'pubkey',
         );
         expect(
           usernameClaimResult,
@@ -401,7 +396,6 @@ void main() {
 
         final usernameClaimResult = await repository.claimUsername(
           username: 'username',
-          pubkey: 'pubkey',
         );
         expect(
           usernameClaimResult,
@@ -426,7 +420,6 @@ void main() {
 
           final usernameClaimResult = await repository.claimUsername(
             username: 'username',
-            pubkey: 'pubkey',
           );
           expect(
             usernameClaimResult,

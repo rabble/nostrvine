@@ -29,4 +29,7 @@ class UsernameClaimError extends UsernameClaimResult {
 
   /// Description of what went wrong.
   final String message;
+
+  @override
+  String toString() => 'UsernameClaimError($message)';
 }

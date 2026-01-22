@@ -61,19 +61,18 @@ class ProfileRepository {
     return UserProfile.fromNostrEvent(profileEvent);
   }
 
-  /// Claims a username for the given pubkey via NIP-98 authenticated request.
+  /// Claims a username via NIP-98 authenticated request.
   ///
   /// Makes a POST request to `divine.video/api/username/claim` with the
-  /// username and pubkey, authenticated using a NIP-98 HTTP auth header.
+  /// username. The pubkey is extracted from the NIP-98 auth header by the
+  /// server.
   ///
   /// Returns a [UsernameClaimResult] indicating success or the type of failure.
   Future<UsernameClaimResult> claimUsername({
     required String username,
-    required String pubkey,
   }) async {
     final payload = jsonEncode({
-      'username': username,
-      'pubkey': pubkey,
+      'name': username,
     });
     final authHeader = await _nostrClient.createNip98AuthHeader(
       url: 'https://divine.video/api/username/claim',
