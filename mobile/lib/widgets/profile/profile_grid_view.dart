@@ -1,16 +1,16 @@
 // ABOUTME: Profile grid view with header, stats, action buttons, and tabbed content
 // ABOUTME: Reusable between own profile and others' profile screens
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:models/models.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
-import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
@@ -87,11 +87,11 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
 
   @override
   Widget build(BuildContext context) {
-    // Get services for ProfileLikedVideosBloc
-    final videoEventService = ref.watch(videoEventServiceProvider);
-    final nostrClient = ref.watch(nostrServiceProvider);
     final followRepository = ref.watch(followRepositoryProvider);
     final likesRepository = ref.watch(likesRepositoryProvider);
+    final videosRepository = ref.watch(videosRepositoryProvider);
+    final nostrService = ref.watch(nostrServiceProvider);
+    final currentUserPubkey = nostrService.publicKey;
 
     // Build the base widget with ProfileLikedVideosBloc
     // Pass userIdHex as targetUserPubkey so the BLoC knows whose likes to fetch
@@ -99,8 +99,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       create: (_) =>
           ProfileLikedVideosBloc(
               likesRepository: likesRepository,
-              videoEventService: videoEventService,
-              nostrClient: nostrClient,
+              videosRepository: videosRepository,
+              currentUserPubkey: currentUserPubkey,
               targetUserPubkey: widget.userIdHex,
             )
             ..add(const ProfileLikedVideosSubscriptionRequested())
