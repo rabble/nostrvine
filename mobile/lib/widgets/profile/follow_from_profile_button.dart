@@ -18,6 +18,7 @@ class FollowFromProfileButton extends ConsumerWidget {
     super.key,
     required this.pubkey,
     required this.displayName,
+    this.onBlockedTap,
   });
 
   /// The public key of the profile user to follow/unfollow.
@@ -25,6 +26,9 @@ class FollowFromProfileButton extends ConsumerWidget {
 
   /// The display name of the user (for unfollow confirmation).
   final String displayName;
+
+  /// Callback when the Blocked button is tapped.
+  final VoidCallback? onBlockedTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -48,6 +52,7 @@ class FollowFromProfileButton extends ConsumerWidget {
         displayName: displayName,
         currentUserPubkey: currentUserPubkey,
         isBlocked: isBlocked,
+        onBlockedTap: onBlockedTap,
       ),
     );
   }
@@ -61,6 +66,7 @@ class FollowFromProfileButtonView extends StatelessWidget {
     required this.displayName,
     required this.currentUserPubkey,
     this.isBlocked = false,
+    this.onBlockedTap,
   });
 
   /// The public key of the profile user to follow/unfollow.
@@ -75,12 +81,15 @@ class FollowFromProfileButtonView extends StatelessWidget {
   /// Whether the user is blocked.
   final bool isBlocked;
 
+  /// Callback when the Blocked button is tapped.
+  final VoidCallback? onBlockedTap;
+
   @override
   Widget build(BuildContext context) {
     // Show Blocked state if user is blocked
     if (isBlocked) {
       return OutlinedButton(
-        onPressed: null, // Disabled - use More menu to unblock
+        onPressed: onBlockedTap,
         style: OutlinedButton.styleFrom(
           backgroundColor: VineTheme.errorContainer,
           disabledBackgroundColor: VineTheme.errorContainer,

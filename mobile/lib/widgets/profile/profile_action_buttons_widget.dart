@@ -15,6 +15,7 @@ class ProfileActionButtons extends StatelessWidget {
     this.displayName,
     this.onEditProfile,
     this.onOpenClips,
+    this.onBlockedTap,
     super.key,
   });
 
@@ -25,6 +26,9 @@ class ProfileActionButtons extends StatelessWidget {
   final String? displayName;
   final VoidCallback? onEditProfile;
   final VoidCallback? onOpenClips;
+
+  /// Callback when the Blocked button is tapped.
+  final VoidCallback? onBlockedTap;
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -124,6 +128,7 @@ class ProfileActionButtons extends StatelessWidget {
             child: FollowFromProfileButton(
               pubkey: userIdHex,
               displayName: displayName ?? 'user',
+              onBlockedTap: onBlockedTap,
             ),
           ),
         ],

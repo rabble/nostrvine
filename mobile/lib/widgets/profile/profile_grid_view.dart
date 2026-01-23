@@ -29,6 +29,7 @@ class ProfileGridView extends ConsumerStatefulWidget {
     this.onSetupProfile,
     this.onEditProfile,
     this.onOpenClips,
+    this.onBlockedTap,
     this.scrollController,
     super.key,
   });
@@ -56,6 +57,9 @@ class ProfileGridView extends ConsumerStatefulWidget {
 
   /// Callback when "Clips" button is tapped (own profile only).
   final VoidCallback? onOpenClips;
+
+  /// Callback when the Blocked button is tapped (other profiles only).
+  final VoidCallback? onBlockedTap;
 
   /// Optional scroll controller for the NestedScrollView.
   final ScrollController? scrollController;
@@ -151,6 +155,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                   displayName: widget.displayName,
                   onEditProfile: widget.onEditProfile,
                   onOpenClips: widget.onOpenClips,
+                  onBlockedTap: widget.onBlockedTap,
                 ),
               ),
             ),

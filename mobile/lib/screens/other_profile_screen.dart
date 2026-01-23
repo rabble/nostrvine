@@ -138,6 +138,32 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     }
   }
 
+  Future<void> _showUnblockConfirmation(
+    String userIdHex,
+    String displayName,
+  ) async {
+    final result = await VineBottomSheet.show<String>(
+      context: context,
+      scrollable: false,
+      body: _MoreSheetContent(
+        userIdHex: userIdHex,
+        displayName: displayName,
+        isFollowing: false,
+        isBlocked: true,
+        initialMode: _MoreSheetMode.unblockConfirmation,
+      ),
+      children: const [],
+    );
+
+    if (!mounted) return;
+
+    if (result == 'unblock_confirmed') {
+      final blocklistService = ref.read(contentBlocklistServiceProvider);
+      blocklistService.unblockUser(userIdHex);
+      ref.read(blocklistVersionProvider.notifier).increment();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     Log.info(
@@ -251,6 +277,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           videos: value.videos,
           profileStatsAsync: profileStatsAsync,
           scrollController: _scrollController,
+          onBlockedTap: () => _showUnblockConfirmation(userIdHex, displayName),
         ),
       },
     );
@@ -264,12 +291,14 @@ class _MoreSheetContent extends StatefulWidget {
     required this.displayName,
     required this.isFollowing,
     required this.isBlocked,
+    this.initialMode = _MoreSheetMode.menu,
   });
 
   final String userIdHex;
   final String displayName;
   final bool isFollowing;
   final bool isBlocked;
+  final _MoreSheetMode initialMode;
 
   @override
   State<_MoreSheetContent> createState() => _MoreSheetContentState();
@@ -280,8 +309,8 @@ enum _MoreSheetMode { menu, blockConfirmation, unblockConfirmation }
 
 class _MoreSheetContentState extends State<_MoreSheetContent>
     with SingleTickerProviderStateMixin {
-  _MoreSheetMode _targetMode = _MoreSheetMode.menu;
-  _MoreSheetMode _displayedMode = _MoreSheetMode.menu;
+  late _MoreSheetMode _targetMode;
+  late _MoreSheetMode _displayedMode;
   late AnimationController _controller;
   late Animation<double> _fadeOutAnimation;
   late Animation<double> _fadeInAnimation;
@@ -289,6 +318,8 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
   @override
   void initState() {
     super.initState();
+    _targetMode = widget.initialMode;
+    _displayedMode = widget.initialMode;
     _controller = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -331,6 +362,12 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
 
   @override
   Widget build(BuildContext context) {
+    // If we started directly in a non-menu mode, show content at full opacity
+    final startedInConfirmation = widget.initialMode != _MoreSheetMode.menu;
+    if (startedInConfirmation) {
+      return _buildContent();
+    }
+
     final isTransitioning = _targetMode != _MoreSheetMode.menu;
 
     return AnimatedSize(
