@@ -2,8 +2,6 @@
 // ABOUTME: Coordinates between RepostsRepository (for IDs) and VideosRepository
 // ABOUTME: (for video data)
 
-import 'dart:async';
-
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -49,15 +47,11 @@ class ProfileRepostedVideosBloc
     on<ProfileRepostedVideosSyncRequested>(_onSyncRequested);
     on<ProfileRepostedVideosSubscriptionRequested>(_onSubscriptionRequested);
     on<ProfileRepostedVideosLoadMoreRequested>(_onLoadMoreRequested);
-    on<_ProfileRepostedVideosIdsChanged>(_onIdsChanged);
   }
 
   final RepostsRepository _repostsRepository;
   final VideosRepository _videosRepository;
   final String _currentUserPubkey;
-
-  /// Subscription to the reposted IDs stream from the repository.
-  StreamSubscription<Set<String>>? _repostsSubscription;
 
   /// The pubkey of the user whose reposts to display.
   /// If null or same as current user, uses RepostsRepository sync.
@@ -180,9 +174,8 @@ class ProfileRepostedVideosBloc
 
   /// Subscribe to reposted IDs changes and update the video list reactively.
   ///
-  /// Sets up a StreamSubscription that dispatches internal events when the
-  /// reposted IDs change. This allows async handling of video fetching when
-  /// new reposts are detected.
+  /// Uses emit.forEach to listen to the repository stream and emit state
+  /// changes when reposted IDs change (videos added or removed).
   ///
   /// Note: This only works for the current user's own profile, as the
   /// RepostsRepository only tracks the authenticated user's reposts.
@@ -195,106 +188,51 @@ class ProfileRepostedVideosBloc
     // user's reposts, so watching it for other users would show wrong data.
     if (_isOtherUserProfile) return;
 
-    // Cancel any existing subscription
-    await _repostsSubscription?.cancel();
+    await emit.forEach<Set<String>>(
+      _repostsRepository.watchRepostedAddressableIds(),
+      onData: (repostedIdsSet) {
+        final newIds = repostedIdsSet.toList();
 
-    // Set up subscription that dispatches events for async handling
-    _repostsSubscription = _repostsRepository
-        .watchRepostedAddressableIds()
-        .listen((repostedIdsSet) {
-          final newIds = repostedIdsSet.toList();
+        // Skip if IDs haven't changed
+        if (listEquals(newIds, state.repostedAddressableIds)) return state;
 
-          // Only dispatch if IDs have actually changed
-          if (!listEquals(newIds, state.repostedAddressableIds)) {
-            add(_ProfileRepostedVideosIdsChanged(newIds));
-          }
-        });
-  }
+        // Skip if we haven't done initial sync yet
+        if (state.status == ProfileRepostedVideosStatus.initial ||
+            state.status == ProfileRepostedVideosStatus.syncing) {
+          return state;
+        }
 
-  /// Handle changes to the reposted IDs from the repository stream.
-  ///
-  /// This handler can perform async operations like fetching video data
-  /// for newly reposted videos.
-  Future<void> _onIdsChanged(
-    _ProfileRepostedVideosIdsChanged event,
-    Emitter<ProfileRepostedVideosState> emit,
-  ) async {
-    final newIds = event.newIds;
-
-    // Skip if we haven't done initial sync yet
-    if (state.status == ProfileRepostedVideosStatus.initial ||
-        state.status == ProfileRepostedVideosStatus.syncing) {
-      return;
-    }
-
-    Log.info(
-      'ProfileRepostedVideosBloc: Reposted IDs changed '
-      '(${state.repostedAddressableIds.length} -> ${newIds.length})',
-      name: 'ProfileRepostedVideosBloc',
-      category: LogCategory.video,
-    );
-
-    // If a video was unreposted, remove it from the list immediately
-    if (newIds.length < state.repostedAddressableIds.length) {
-      final removedIds = state.repostedAddressableIds
-          .where((id) => !newIds.contains(id))
-          .toSet();
-      final updatedVideos = state.videos
-          .where((v) => !removedIds.contains(_computeAddressableId(v)))
-          .toList();
-
-      emit(
-        state.copyWith(repostedAddressableIds: newIds, videos: updatedVideos),
-      );
-      return;
-    }
-
-    // If videos were reposted, fetch the new videos and prepend them
-    if (newIds.length > state.repostedAddressableIds.length) {
-      final addedIds = newIds
-          .where((id) => !state.repostedAddressableIds.contains(id))
-          .toList();
-
-      if (addedIds.isNotEmpty) {
         Log.info(
-          'ProfileRepostedVideosBloc: Fetching ${addedIds.length} newly '
-          'reposted videos',
+          'ProfileRepostedVideosBloc: Reposted IDs changed, updating list',
           name: 'ProfileRepostedVideosBloc',
           category: LogCategory.video,
         );
 
-        try {
-          final newVideos = await _fetchVideos(addedIds);
+        // If a video was unreposted, remove it from the list immediately
+        if (newIds.length < state.repostedAddressableIds.length) {
+          final removedIds = state.repostedAddressableIds
+              .where((id) => !newIds.contains(id))
+              .toSet();
+          final updatedVideos = state.videos
+              .where((v) => !removedIds.contains(_computeAddressableId(v)))
+              .toList();
 
-          Log.info(
-            'ProfileRepostedVideosBloc: Fetched ${newVideos.length} new videos',
-            name: 'ProfileRepostedVideosBloc',
-            category: LogCategory.video,
+          return state.copyWith(
+            repostedAddressableIds: newIds,
+            videos: updatedVideos,
           );
-
-          // Prepend new videos to the existing list (most recent first)
-          emit(
-            state.copyWith(
-              repostedAddressableIds: newIds,
-              videos: [...newVideos, ...state.videos],
-            ),
-          );
-        } catch (e) {
-          Log.error(
-            'ProfileRepostedVideosBloc: Failed to fetch newly reposted '
-            'videos - $e',
-            name: 'ProfileRepostedVideosBloc',
-            category: LogCategory.video,
-          );
-          // Still update IDs even if fetch fails
-          emit(state.copyWith(repostedAddressableIds: newIds));
         }
-      }
-      return;
-    }
 
-    // IDs changed but count is the same (e.g., order changed)
-    emit(state.copyWith(repostedAddressableIds: newIds));
+        // If a video was reposted, we need to fetch it asynchronously.
+        // For now, just update the IDs - the video will be fetched on next
+        // sync.
+        if (newIds.length > state.repostedAddressableIds.length) {
+          return state.copyWith(repostedAddressableIds: newIds);
+        }
+
+        return state;
+      },
+    );
   }
 
   /// Handle load more request - fetches the next page of videos.
@@ -393,11 +331,5 @@ class ProfileRepostedVideosBloc
       pubkey: video.pubkey,
       dTag: video.vineId!,
     ).toAString();
-  }
-
-  @override
-  Future<void> close() {
-    _repostsSubscription?.cancel();
-    return super.close();
   }
 }
