@@ -49,6 +49,9 @@ class OtherProfileScreen extends ConsumerStatefulWidget {
 class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   final ScrollController _scrollController = ScrollController();
 
+  /// Derived userIdHex from widget.npub - null if invalid npub.
+  String? get _userIdHex => npubToHexOrNull(widget.npub);
+
   @override
   void initState() {
     super.initState();
@@ -62,7 +65,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   }
 
   void _fetchProfileIfNeeded() {
-    final userIdHex = npubToHexOrNull(widget.npub);
+    final userIdHex = _userIdHex;
     if (userIdHex == null) return;
 
     final userProfileService = ref.read(userProfileServiceProvider);
@@ -76,7 +79,9 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     userProfileService.fetchProfile(userIdHex);
   }
 
-  Future<void> _more(String userIdHex) async {
+  Future<void> _more() async {
+    final userIdHex = _userIdHex!;
+
     final blocklistService = ref.read(contentBlocklistServiceProvider);
     final isBlocked = blocklistService.isBlocked(userIdHex);
 
@@ -110,7 +115,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         final npub = NostrKeyUtils.encodePubKey(userIdHex);
         await ClipboardUtils.copyPubkey(context, npub);
       case MoreSheetResult.unfollow:
-        await _unfollowUser(userIdHex, displayName);
+        await _unfollowUser();
       case MoreSheetResult.blockConfirmed:
         final blocklistService = ref.read(contentBlocklistServiceProvider);
         blocklistService.blockUser(userIdHex);
@@ -124,7 +129,11 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     }
   }
 
-  Future<void> _unfollowUser(String userIdHex, String displayName) async {
+  Future<void> _unfollowUser() async {
+    final userIdHex = _userIdHex!;
+    final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
+    final displayName = profile?.bestDisplayName ?? 'user';
+
     final followRepository = ref.read(followRepositoryProvider);
     await followRepository.toggleFollow(userIdHex);
 
@@ -135,10 +144,11 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     }
   }
 
-  Future<void> _showUnblockConfirmation(
-    String userIdHex,
-    String displayName,
-  ) async {
+  Future<void> _showUnblockConfirmation() async {
+    final userIdHex = _userIdHex!;
+    final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
+    final displayName = profile?.bestDisplayName ?? 'user';
+
     final result = await VineBottomSheet.show<MoreSheetResult>(
       context: context,
       scrollable: false,
@@ -168,8 +178,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       name: 'OtherProfileScreen',
     );
 
-    // Convert npub to hex
-    final userIdHex = npubToHexOrNull(widget.npub);
+    // Convert npub to hex using getter
+    final userIdHex = _userIdHex;
 
     if (userIdHex == null) {
       return _ProfileErrorScreen(
@@ -254,7 +264,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                   ),
                 ),
               ),
-              onPressed: () => _more(userIdHex),
+              onPressed: _more,
             ),
           ),
         ],
@@ -274,7 +284,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           videos: value.videos,
           profileStatsAsync: profileStatsAsync,
           scrollController: _scrollController,
-          onBlockedTap: () => _showUnblockConfirmation(userIdHex, displayName),
+          onBlockedTap: _showUnblockConfirmation,
         ),
       },
     );
