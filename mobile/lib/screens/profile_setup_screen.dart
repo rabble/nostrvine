@@ -44,13 +44,11 @@ class ProfileSetupScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileRepository = ref.watch(profileRepositoryProvider);
-    final usernameRepository = ref.watch(usernameRepositoryProvider);
     final userProfileService = ref.watch(userProfileServiceProvider);
 
     return BlocProvider<ProfileEditorBloc>(
       create: (context) => ProfileEditorBloc(
         profileRepository: profileRepository,
-        usernameRepository: usernameRepository,
         userProfileService: userProfileService,
       ),
       child: ProfileSetupScreenView(isNewUser: isNewUser),
@@ -227,6 +225,8 @@ class _ProfileSetupScreenViewState
 
   @override
   Widget build(BuildContext context) {
+    // TODO(refactor): Migrate usernameProvider to ProfileEditorBloc with
+    // debounced username validation
     final usernameState = ref.watch(usernameProvider);
     final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
 
@@ -308,7 +308,9 @@ class _ProfileSetupScreenViewState
               showDialog<void>(
                 context: context,
                 builder: (context) => UsernameReservedDialog(username),
-              );
+              ).then((_) {
+                ref.read(usernameProvider.notifier).setReserved(username);
+              });
             case ProfileEditorError.publishFailed:
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(

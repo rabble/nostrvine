@@ -1350,17 +1350,17 @@ abstract class _$BlocklistVersion extends $Notifier<int> {
   }
 }
 
-/// NIP-05 service for username registration and verification
+/// NIP-05 service for username availability checking
 
 @ProviderFor(nip05Service)
 const nip05ServiceProvider = Nip05ServiceProvider._();
 
-/// NIP-05 service for username registration and verification
+/// NIP-05 service for username availability checking
 
 final class Nip05ServiceProvider
     extends $FunctionalProvider<Nip05Service, Nip05Service, Nip05Service>
     with $Provider<Nip05Service> {
-  /// NIP-05 service for username registration and verification
+  /// NIP-05 service for username availability checking
   const Nip05ServiceProvider._()
     : super(
         from: null,
@@ -1394,14 +1394,14 @@ final class Nip05ServiceProvider
   }
 }
 
-String _$nip05ServiceHash() => r'1d27e1b137a09246fedc50586a7a28bcf37542b0';
+String _$nip05ServiceHash() => r'b7f7e1471a3783305bf1070cb64f1b95c4bdb516';
 
-/// Username repository for availability checking and registration
+/// Username repository for availability checking
 
 @ProviderFor(usernameRepository)
 const usernameRepositoryProvider = UsernameRepositoryProvider._();
 
-/// Username repository for availability checking and registration
+/// Username repository for availability checking
 
 final class UsernameRepositoryProvider
     extends
@@ -1411,7 +1411,7 @@ final class UsernameRepositoryProvider
           UsernameRepository
         >
     with $Provider<UsernameRepository> {
-  /// Username repository for availability checking and registration
+  /// Username repository for availability checking
   const UsernameRepositoryProvider._()
     : super(
         from: null,
@@ -2133,7 +2133,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'6e88d028e11c020869290a9883ea536c9c7a2695';
+String _$profileRepositoryHash() => r'459296fae107428ffb6a50d27d57f501f21663c5';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
