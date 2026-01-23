@@ -67,6 +67,8 @@ void main() {
         expect(VineTheme.borderWhite25, const Color(0x40FFFFFF));
         expect(VineTheme.outlinedDisabled, const Color(0xFF032017));
         expect(VineTheme.containerLow, const Color(0xFF0E2B21));
+        expect(VineTheme.surfaceContainer, const Color(0xFF032017));
+        expect(VineTheme.surfaceContainerHigh, const Color(0xFF000A06));
       });
     });
 

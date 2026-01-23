@@ -293,6 +293,9 @@ class VineTheme {
   /// Surface container background (bg/surface-container).
   static const Color surfaceContainer = Color(0xFF032017);
 
+  /// Surface container high background (bg/surface-container-high).
+  static const Color surfaceContainerHigh = Color(0xFF000A06);
+
   /// Muted outline color (outline/outline-muted).
   static const Color outlineMuted = Color(0xFF0E2B21);
 

@@ -300,7 +300,7 @@ class _ProfileSetupScreenViewState
       },
       builder: (context, profileEditorState) {
         return Scaffold(
-          backgroundColor: Colors.black,
+          backgroundColor: VineTheme.surfaceContainerHigh,
           appBar: AppBar(
             elevation: 0,
             scrolledUnderElevation: 0,
@@ -308,7 +308,7 @@ class _ProfileSetupScreenViewState
             leadingWidth: 80,
             centerTitle: false,
             titleSpacing: 0,
-            backgroundColor: VineTheme.navGreen,
+            backgroundColor: Colors.transparent,
             leading: IconButton(
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
