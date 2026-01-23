@@ -252,7 +252,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     return Column(
       children: [
         // Tabs only visible in grid mode
-        Container(
+        // Material widget is required for TabBar to render ink splashes
+        Material(
           color: VineTheme.navGreen,
           child: TabBar(
             controller: _tabController,
