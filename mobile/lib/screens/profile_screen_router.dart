@@ -280,8 +280,9 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   }
 
   Future<void> _more(String userIdHex) async {
-    final result = await MoreSheet.show<String>(
+    final result = await VineBottomSheet.show<String>(
       context: context,
+      scrollable: false,
       children: [
         InkWell(
           onTap: () => Navigator.of(context).pop('share'),

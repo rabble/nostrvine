@@ -85,8 +85,9 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
     final displayName = profile?.bestDisplayName ?? 'user';
 
-    final result = await MoreSheet.show<String>(
+    final result = await VineBottomSheet.show<String>(
       context: context,
+      scrollable: false,
       children: [
         if (isFollowing)
           InkWell(

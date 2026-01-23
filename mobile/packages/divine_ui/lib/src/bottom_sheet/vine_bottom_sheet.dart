@@ -1,6 +1,5 @@
 // ABOUTME: Reusable bottom sheet component with Vine design system
-// ABOUTME: Matches Figma design with drag handle, header, content area,
-// ABOUTME: and optional input
+// ABOUTME: Supports both scrollable (draggable) and fixed modes
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -10,15 +9,17 @@ import 'package:flutter/material.dart';
 /// Features:
 /// - Drag handle for gesture indication
 /// - Customizable header with title and trailing actions
-/// - Scrollable content area (or custom body)
+/// - Two modes: scrollable (draggable) and fixed
 /// - Optional bottom input section
 /// - Dark mode optimized with proper theming
 ///
-/// This component is designed to be used with [showModalBottomSheet] and
-/// [DraggableScrollableSheet] for consistent modal behavior across the app.
+/// Use [VineBottomSheet.show] to display the sheet:
+/// - `scrollable: true` (default) - Draggable sheet with scrollable content
+/// - `scrollable: false` - Fixed height based on content, not draggable
 class VineBottomSheet extends StatelessWidget {
   /// Creates a [VineBottomSheet] with the given parameters.
   const VineBottomSheet({
+    this.scrollable = true,
     this.title,
     this.scrollController,
     this.children,
@@ -27,24 +28,26 @@ class VineBottomSheet extends StatelessWidget {
     this.bottomInput,
     super.key,
   }) : assert(
-         (children != null && body == null) ||
-             (children == null && body != null),
-         'Provide either children or body, not both',
+         children != null || body != null,
+         'Provide either children or body',
        );
+
+  /// Whether the sheet is scrollable/draggable.
+  ///
+  /// When true (default), the sheet uses DraggableScrollableSheet and content
+  /// is scrollable. When false, the sheet has fixed height based on content.
+  final bool scrollable;
 
   /// Optional title widget displayed in the header
   final Widget? title;
 
-  /// Scroll controller from DraggableScrollableSheet (required if using
-  /// children)
+  /// Scroll controller from DraggableScrollableSheet (used when scrollable)
   final ScrollController? scrollController;
 
-  /// Content widgets to display in a scrollable ListView
-  /// Use this for simple lists of widgets
+  /// Content widgets to display
   final List<Widget>? children;
 
-  /// Custom body widget that manages its own scrolling
-  /// Use this when you need custom scroll behavior (e.g., ListView.builder)
+  /// Custom body widget (alternative to children)
   final Widget? body;
 
   /// Optional trailing widget in header (e.g., badge, button)
@@ -53,11 +56,15 @@ class VineBottomSheet extends StatelessWidget {
   /// Optional bottom input section (e.g., comment input)
   final Widget? bottomInput;
 
-  /// Shows the bottom sheet as a modal with proper configuration
+  /// Shows the bottom sheet as a modal.
+  ///
+  /// Set [scrollable] to false for fixed-height sheets (e.g., action menus).
+  /// The size parameters are only used when [scrollable] is true.
   static Future<T?> show<T>({
     required BuildContext context,
+    required List<Widget> children,
+    bool scrollable = true,
     Widget? title,
-    List<Widget>? children,
     Widget? body,
     Widget? trailing,
     Widget? bottomInput,
@@ -65,24 +72,41 @@ class VineBottomSheet extends StatelessWidget {
     double minChildSize = 0.3,
     double maxChildSize = 0.9,
   }) {
-    return showModalBottomSheet<T>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => DraggableScrollableSheet(
-        initialChildSize: initialChildSize,
-        minChildSize: minChildSize,
-        maxChildSize: maxChildSize,
-        builder: (context, scrollController) => VineBottomSheet(
+    if (scrollable) {
+      // Draggable/scrollable mode
+      return showModalBottomSheet<T>(
+        context: context,
+        isScrollControlled: true,
+        backgroundColor: Colors.transparent,
+        builder: (_) => DraggableScrollableSheet(
+          initialChildSize: initialChildSize,
+          minChildSize: minChildSize,
+          maxChildSize: maxChildSize,
+          builder: (context, scrollController) => VineBottomSheet(
+            title: title,
+            scrollController: scrollController,
+            trailing: trailing,
+            bottomInput: bottomInput,
+            body: body,
+            children: children,
+          ),
+        ),
+      );
+    } else {
+      // Fixed mode
+      return showModalBottomSheet<T>(
+        context: context,
+        backgroundColor: Colors.transparent,
+        builder: (_) => VineBottomSheet(
+          scrollable: false,
           title: title,
-          scrollController: scrollController,
           trailing: trailing,
           bottomInput: bottomInput,
           body: body,
           children: children,
         ),
-      ),
-    );
+      );
+    }
   }
 
   @override
@@ -92,30 +116,64 @@ class VineBottomSheet extends StatelessWidget {
         topLeft: Radius.circular(VineTheme.bottomSheetBorderRadius),
         topRight: Radius.circular(VineTheme.bottomSheetBorderRadius),
       ),
-      child: Container(
+      child: ColoredBox(
         color: VineTheme.surfaceBackground,
-        child: Column(
-          children: [
-            // Header with drag handle, title, trailing actions, and divider
-            VineBottomSheetHeader(title: title, trailing: trailing),
+        child: scrollable ? _buildScrollableContent() : _buildFixedContent(),
+      ),
+    );
+  }
 
-            // Content area
-            Expanded(
-              child:
-                  body ??
-                  ListView(
-                    controller: scrollController,
-                    padding: EdgeInsets.zero,
-                    children: children!,
-                  ),
-            ),
-            if (bottomInput != null)
-              const Divider(height: 2, color: VineTheme.outlinedDisabled),
+  Widget _buildScrollableContent() {
+    return Column(
+      children: [
+        // Header with drag handle, title, trailing actions, and divider
+        VineBottomSheetHeader(title: title, trailing: trailing),
 
-            // Optional bottom input
-            if (bottomInput != null) bottomInput!,
-          ],
+        // Scrollable content area
+        Expanded(
+          child:
+              body ??
+              ListView(
+                controller: scrollController,
+                padding: EdgeInsets.zero,
+                children: children!,
+              ),
         ),
+        if (bottomInput != null)
+          const Divider(height: 2, color: VineTheme.outlinedDisabled),
+
+        // Optional bottom input
+        ?bottomInput,
+      ],
+    );
+  }
+
+  Widget _buildFixedContent() {
+    return SafeArea(
+      top: false,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Header with drag handle and divider
+          VineBottomSheetHeader(title: title, trailing: trailing),
+
+          // Fixed content with minimum height for 2 entries (2 × 56px)
+          ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 112),
+            child:
+                body ??
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: children!,
+                ),
+          ),
+
+          if (bottomInput != null)
+            const Divider(height: 2, color: VineTheme.outlinedDisabled),
+
+          // Optional bottom input
+          ?bottomInput,
+        ],
       ),
     );
   }
