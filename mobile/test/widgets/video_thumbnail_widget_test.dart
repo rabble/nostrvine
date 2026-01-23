@@ -1,9 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/thumbnail_api_service.dart';
-import 'package:openvine/widgets/blurhash_display.dart';
-import 'package:openvine/widgets/video_icon_placeholder.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
 import '../test_data/video_test_data.dart';
@@ -63,14 +62,11 @@ void main() {
       // Widget should build without error
       expect(find.byType(VideoThumbnailWidget), findsOneWidget);
 
-      // Should create an Image widget when thumbnail URL exists
-      // We don't need to check that the placeholder was gone because
-      // the CachedNetworkImage will always show the placeholder, it
-      // just fades away when the image is loaded.
-      expect(find.byType(Image), findsOneWidget);
+      // Should create a CachedNetworkImage widget when thumbnail URL exists
+      expect(find.byType(CachedNetworkImage), findsOneWidget);
     });
 
-    testWidgets('displays blurhash when only blurhash is available', (
+    testWidgets('displays flat placeholder when only blurhash is available', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -87,38 +83,36 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Should show BlurhashDisplay
-      expect(find.byType(BlurhashDisplay), findsOneWidget);
+      // Should show Container with surfaceContainer color as placeholder
+      // (current implementation uses flat color instead of blurhash)
+      expect(find.byType(Container), findsWidgets);
 
-      // Should not show placeholder or image
-      expect(find.byType(VideoIconPlaceholder), findsNothing);
-      expect(find.byType(Image), findsNothing);
+      // Should not show CachedNetworkImage since no thumbnail URL
+      expect(find.byType(CachedNetworkImage), findsNothing);
+    });
+
+    testWidgets('displays thumbnail with flat background when both exist', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: VideoThumbnailWidget(
+              video: videoWithBoth,
+              width: 200,
+              height: 200,
+            ),
+          ),
+        ),
+      );
+
+      // Should show CachedNetworkImage for thumbnail
+      expect(find.byType(CachedNetworkImage), findsOneWidget);
+      expect(find.byType(Stack), findsAtLeastNWidgets(1));
     });
 
     testWidgets(
-      'displays blurhash as background when both thumbnail and blurhash exist',
-      (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: VideoThumbnailWidget(
-                video: videoWithBoth,
-                width: 200,
-                height: 200,
-              ),
-            ),
-          ),
-        );
-
-        // Should show both BlurhashDisplay and Image in a Stack
-        expect(find.byType(BlurhashDisplay), findsOneWidget);
-        expect(find.byType(Image), findsOneWidget);
-        expect(find.byType(Stack), findsAtLeastNWidgets(1));
-      },
-    );
-
-    testWidgets(
-      'displays icon placeholder when neither thumbnail nor blurhash exists',
+      'displays flat placeholder when neither thumbnail nor blurhash exists',
       (tester) async {
         await tester.pumpWidget(
           MaterialApp(
@@ -134,12 +128,11 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // Should show VideoIconPlaceholder
-        expect(find.byType(VideoIconPlaceholder), findsOneWidget);
+        // Should show Container with surfaceContainer color as placeholder
+        expect(find.byType(Container), findsWidgets);
 
-        // Should not show blurhash or image
-        expect(find.byType(BlurhashDisplay), findsNothing);
-        expect(find.byType(Image), findsNothing);
+        // Should not show CachedNetworkImage since no thumbnail URL
+        expect(find.byType(CachedNetworkImage), findsNothing);
       },
     );
 
@@ -197,11 +190,10 @@ void main() {
         ),
       );
 
-      // Initially shows image
-      expect(find.byType(Image), findsOneWidget);
-      expect(find.byType(BlurhashDisplay), findsNothing);
+      // Initially shows CachedNetworkImage for thumbnail
+      expect(find.byType(CachedNetworkImage), findsOneWidget);
 
-      // Update to video with only blurhash
+      // Update to video with only blurhash (no thumbnail)
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -216,9 +208,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Should now show blurhash instead of image
-      expect(find.byType(BlurhashDisplay), findsOneWidget);
-      expect(find.byType(Image), findsNothing);
+      // Should now show flat placeholder (no CachedNetworkImage)
+      expect(find.byType(CachedNetworkImage), findsNothing);
+      expect(find.byType(Container), findsWidgets);
     });
 
     testWidgets('respects thumbnail size parameter', (tester) async {
@@ -256,15 +248,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Should show blurhash, not loading indicator
-      expect(find.byType(BlurhashDisplay), findsOneWidget);
-
-      // Should not show loading placeholder
-      final placeholderFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is VideoIconPlaceholder && widget.showLoading == true,
-      );
-      expect(placeholderFinder, findsNothing);
+      // Should show flat placeholder, not loading indicator or image
+      expect(find.byType(Container), findsWidgets);
+      expect(find.byType(CachedNetworkImage), findsNothing);
     });
 
     testWidgets('shows loading state briefly during initialization', (
@@ -310,9 +296,9 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Should treat empty URL as null and show blurhash
-      expect(find.byType(BlurhashDisplay), findsOneWidget);
-      expect(find.byType(Image), findsNothing);
+      // Should treat empty URL as null and show flat placeholder
+      expect(find.byType(Container), findsWidgets);
+      expect(find.byType(CachedNetworkImage), findsNothing);
     });
   });
 }

@@ -1287,6 +1287,69 @@ final class ContentBlocklistServiceProvider
 String _$contentBlocklistServiceHash() =>
     r'a05020e10b4402686d4630f99b020c4f0e58eab3';
 
+/// Version counter to trigger rebuilds when blocklist changes.
+/// Widgets watching this will rebuild when block/unblock actions occur.
+
+@ProviderFor(BlocklistVersion)
+const blocklistVersionProvider = BlocklistVersionProvider._();
+
+/// Version counter to trigger rebuilds when blocklist changes.
+/// Widgets watching this will rebuild when block/unblock actions occur.
+final class BlocklistVersionProvider
+    extends $NotifierProvider<BlocklistVersion, int> {
+  /// Version counter to trigger rebuilds when blocklist changes.
+  /// Widgets watching this will rebuild when block/unblock actions occur.
+  const BlocklistVersionProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'blocklistVersionProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$blocklistVersionHash();
+
+  @$internal
+  @override
+  BlocklistVersion create() => BlocklistVersion();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(int value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<int>(value),
+    );
+  }
+}
+
+String _$blocklistVersionHash() => r'ae0ea100b12ecea021ad9beded8cfe790665a532';
+
+/// Version counter to trigger rebuilds when blocklist changes.
+/// Widgets watching this will rebuild when block/unblock actions occur.
+
+abstract class _$BlocklistVersion extends $Notifier<int> {
+  int build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<int, int>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<int, int>,
+              int,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}
+
 /// NIP-05 service for username registration and verification
 
 @ProviderFor(nip05Service)

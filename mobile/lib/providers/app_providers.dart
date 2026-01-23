@@ -363,6 +363,16 @@ ContentBlocklistService contentBlocklistService(Ref ref) {
   return ContentBlocklistService();
 }
 
+/// Version counter to trigger rebuilds when blocklist changes.
+/// Widgets watching this will rebuild when block/unblock actions occur.
+@riverpod
+class BlocklistVersion extends _$BlocklistVersion {
+  @override
+  int build() => 0;
+
+  void increment() => state++;
+}
+
 /// NIP-05 service for username registration and verification
 @riverpod
 Nip05Service nip05Service(Ref ref) {
