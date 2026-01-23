@@ -314,7 +314,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             child: Row(
               children: [
                 SvgPicture.asset(
-                  'assets/icon/Copy.svg',
+                  'assets/icon/copy.svg',
                   width: 24,
                   height: 24,
                   colorFilter: const ColorFilter.mode(
