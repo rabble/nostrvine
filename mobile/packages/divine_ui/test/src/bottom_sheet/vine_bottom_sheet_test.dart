@@ -181,8 +181,8 @@ void main() {
           home: Scaffold(
             body: VineBottomSheet(
               scrollable: false,
-              children: [Text('Content')],
               bottomInput: TextField(key: Key('fixed-input')),
+              children: [Text('Content')],
             ),
           ),
         ),
