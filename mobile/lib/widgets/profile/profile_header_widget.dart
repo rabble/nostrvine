@@ -23,6 +23,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
   const ProfileHeaderWidget({
     required this.userIdHex,
     required this.isOwnProfile,
+    required this.videoCount,
     required this.profileStatsAsync,
     this.onSetupProfile,
     super.key,
@@ -33,6 +34,9 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
+
+  /// The number of videos loaded in the profile grid.
+  final int videoCount;
 
   /// Async value containing profile stats (video count, etc.).
   final AsyncValue<ProfileStats> profileStatsAsync;
@@ -88,11 +92,9 @@ class ProfileHeaderWidget extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     ProfileStatColumn(
-                      count: profileStatsAsync.hasValue
-                          ? profileStatsAsync.value!.videoCount
-                          : null,
+                      count: videoCount,
                       label: 'Videos',
-                      isLoading: profileStatsAsync.isLoading,
+                      isLoading: false,
                       onTap: null, // Videos aren't tappable
                     ),
                     ProfileFollowersStat(

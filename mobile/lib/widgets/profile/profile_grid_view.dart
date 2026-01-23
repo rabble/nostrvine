@@ -155,6 +155,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                 child: ProfileHeaderWidget(
                   userIdHex: widget.userIdHex,
                   isOwnProfile: widget.isOwnProfile,
+                  videoCount: widget.videos.length,
                   profileStatsAsync: widget.profileStatsAsync,
                   onSetupProfile: widget.onSetupProfile,
                 ),
