@@ -253,6 +253,9 @@ class VineTheme {
   /// Muted content color on surfaces (50% white).
   static const Color onSurfaceMuted = Color(0x80FFFFFF);
 
+  /// Variant content color on surfaces (75% white).
+  static const Color onSurfaceVariant = Color(0xBFFFFFFF);
+
   /// Light alpha overlay (25% white).
   static const Color alphaLight25 = Color(0x40FFFFFF);
 

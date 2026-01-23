@@ -15,6 +15,7 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:openvine/widgets/profile/profile_block_confirmation_dialog.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
@@ -83,91 +84,24 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     final followRepository = ref.read(followRepositoryProvider);
     final isFollowing = followRepository.isFollowing(userIdHex);
 
-    // Get display name for unfollow action
+    // Get display name for actions
     final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
     final displayName = profile?.bestDisplayName ?? 'user';
 
     final result = await VineBottomSheet.show<String>(
       context: context,
       scrollable: false,
-      children: [
-        // Copy public key (npub)
-        InkWell(
-          onTap: () => Navigator.of(context).pop('copy'),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            child: Row(
-              children: [
-                SvgPicture.asset(
-                  'assets/icon/Copy.svg',
-                  width: 24,
-                  height: 24,
-                  colorFilter: const ColorFilter.mode(
-                    VineTheme.whiteText,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  'Copy public key (npub)',
-                  style: VineTheme.titleMediumFont(),
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (isFollowing)
-          InkWell(
-            onTap: () => Navigator.of(context).pop('unfollow'),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-              child: Row(
-                children: [
-                  SvgPicture.asset(
-                    'assets/icon/userMinus.svg',
-                    width: 24,
-                    height: 24,
-                    colorFilter: const ColorFilter.mode(
-                      VineTheme.whiteText,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Unfollow $displayName',
-                    style: VineTheme.titleMediumFont(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        InkWell(
-          onTap: () => Navigator.of(context).pop('block'),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            child: Row(
-              children: [
-                SvgPicture.asset(
-                  'assets/icon/prohibit.svg',
-                  width: 24,
-                  height: 24,
-                  colorFilter: ColorFilter.mode(
-                    isBlocked ? VineTheme.vineGreen : Colors.red,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  isBlocked ? 'Unblock $displayName' : 'Block $displayName',
-                  style: VineTheme.titleMediumFont(
-                    color: isBlocked ? VineTheme.vineGreen : Colors.red,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+      body: StatefulBuilder(
+        builder: (context, setState) {
+          return _MoreSheetContent(
+            userIdHex: userIdHex,
+            displayName: displayName,
+            isFollowing: isFollowing,
+            isBlocked: isBlocked,
+          );
+        },
+      ),
+      children: const [], // Required but unused when body is provided
     );
 
     if (!mounted) return;
@@ -182,8 +116,24 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       }
     } else if (result == 'unfollow') {
       await _unfollowUser(userIdHex, displayName);
-    } else if (result == 'block') {
-      await _blockUser(userIdHex, isBlocked);
+    } else if (result == 'block_confirmed') {
+      final blocklistService = ref.read(contentBlocklistServiceProvider);
+      blocklistService.blockUser(userIdHex);
+      if (mounted) {
+        showDialog(
+          context: context,
+          useRootNavigator: true,
+          builder: (context) => const ProfileBlockConfirmationDialog(),
+        );
+      }
+    } else if (result == 'unblock') {
+      final blocklistService = ref.read(contentBlocklistServiceProvider);
+      blocklistService.unblockUser(userIdHex);
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('User unblocked')));
+      }
     }
   }
 
@@ -318,58 +268,344 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       },
     );
   }
+}
 
-  Future<void> _blockUser(String pubkey, bool currentlyBlocked) async {
-    if (currentlyBlocked) {
-      // Unblock without confirmation
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-      blocklistService.unblockUser(pubkey);
+/// Content widget for the More sheet that manages menu and block confirmation states.
+class _MoreSheetContent extends StatefulWidget {
+  const _MoreSheetContent({
+    required this.userIdHex,
+    required this.displayName,
+    required this.isFollowing,
+    required this.isBlocked,
+  });
+
+  final String userIdHex;
+  final String displayName;
+  final bool isFollowing;
+  final bool isBlocked;
+
+  @override
+  State<_MoreSheetContent> createState() => _MoreSheetContentState();
+}
+
+class _MoreSheetContentState extends State<_MoreSheetContent>
+    with SingleTickerProviderStateMixin {
+  bool _showingConfirmation = false;
+  bool _displayConfirmation = false;
+  late AnimationController _controller;
+  late Animation<double> _fadeOutAnimation;
+  late Animation<double> _fadeInAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 600),
+      vsync: this,
+    );
+
+    // Fade out menu: 0-250ms (0.0-0.333 of total)
+    _fadeOutAnimation = Tween<double>(begin: 1.0, end: 0.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.0, 0.333, curve: Curves.easeOut),
+      ),
+    );
+
+    // Fade in confirmation: 500-750ms (0.667-1.0 of total)
+    _fadeInAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _controller,
+        curve: const Interval(0.667, 1.0, curve: Curves.easeIn),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _transitionToConfirmation() {
+    setState(() => _showingConfirmation = true);
+    _controller.forward();
+
+    // Switch displayed content at 200ms (after fade out, before resize completes)
+    Future.delayed(const Duration(milliseconds: 200), () {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('User unblocked')));
+        setState(() => _displayConfirmation = true);
       }
-      return;
-    }
+    });
+  }
 
-    // Show confirmation dialog for blocking
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: const Text('Block User', style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'You won\'t see their content in feeds. They won\'t be notified. '
-          'You can still visit their profile.',
-          style: TextStyle(color: Colors.grey),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => context.pop(false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedSize(
+      duration: const Duration(milliseconds: 200),
+      curve: Curves.easeInOut,
+      alignment: Alignment.topCenter,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, child) {
+          final opacity = _showingConfirmation
+              ? (_displayConfirmation ? _fadeInAnimation.value : 0.0)
+              : _fadeOutAnimation.value;
+
+          return Opacity(
+            opacity: _showingConfirmation ? opacity : _fadeOutAnimation.value,
+            child: _displayConfirmation
+                ? _buildBlockConfirmation()
+                : _buildMenu(),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildMenu() {
+    return Column(
+      key: const ValueKey('menu'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Copy public key action
+        InkWell(
+          onTap: () => Navigator.of(context).pop('copy'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icon/Copy.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: const ColorFilter.mode(
+                    VineTheme.whiteText,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  'Copy public key (npub)',
+                  style: VineTheme.titleMediumFont(),
+                ),
+              ],
+            ),
           ),
-          TextButton(
-            onPressed: () => context.pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Block'),
+        ),
+        // Unfollow action (only if following)
+        if (widget.isFollowing)
+          InkWell(
+            onTap: () => Navigator.of(context).pop('unfollow'),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              child: Row(
+                children: [
+                  SvgPicture.asset(
+                    'assets/icon/userMinus.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: const ColorFilter.mode(
+                      VineTheme.whiteText,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    'Unfollow ${widget.displayName}',
+                    style: VineTheme.titleMediumFont(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        // Block/Unblock action
+        InkWell(
+          onTap: () {
+            if (widget.isBlocked) {
+              Navigator.of(context).pop('unblock');
+            } else {
+              _transitionToConfirmation();
+            }
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icon/prohibit.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: ColorFilter.mode(
+                    widget.isBlocked ? VineTheme.vineGreen : Colors.red,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  widget.isBlocked
+                      ? 'Unblock ${widget.displayName}'
+                      : 'Block ${widget.displayName}',
+                  style: VineTheme.titleMediumFont(
+                    color: widget.isBlocked ? VineTheme.vineGreen : Colors.red,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBlockConfirmation() {
+    return Column(
+      key: const ValueKey('confirmation'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Title
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              'Block ${widget.displayName}?',
+              style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+            ),
+          ),
+        ),
+        // Explanation content
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'When you block a user:',
+                style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+              ),
+              const SizedBox(height: 8),
+              _buildBulletPoint('Their posts will not appear in your feeds.'),
+              _buildBulletPoint(
+                'They will be unable to view your profile, follow you, or view your posts.',
+              ),
+              _buildBulletPoint('They will not be notified of this change.'),
+              _buildBulletPoint(
+                'You will still be able to view their profile.',
+              ),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () =>
+                    launchUrl(Uri.parse('https://divine.video/safety')),
+                child: Text.rich(
+                  TextSpan(
+                    text: 'Learn more at ',
+                    style: VineTheme.bodyLargeFont(
+                      color: VineTheme.onSurfaceVariant,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: 'divine.video/safety',
+                        style:
+                            VineTheme.bodyLargeFont(
+                              color: VineTheme.onSurface,
+                            ).copyWith(
+                              decoration: TextDecoration.underline,
+                              decorationColor: VineTheme.vineGreen,
+                              decorationThickness: 2,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Button row
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Row(
+            children: [
+              // Cancel button - dismisses the sheet
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: VineTheme.surfaceContainer,
+                    foregroundColor: VineTheme.vineGreen,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                    side: const BorderSide(
+                      color: VineTheme.outlineMuted,
+                      width: 2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Text(
+                    'Cancel',
+                    style: VineTheme.titleMediumFont(
+                      color: VineTheme.vineGreen,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Block button
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop('block_confirmed'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Text(
+                    'Block',
+                    style: VineTheme.titleMediumFont(color: Colors.white),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBulletPoint(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '•  ',
+            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+          ),
+          Expanded(
+            child: Text(
+              text,
+              style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+            ),
           ),
         ],
       ),
     );
-
-    if (confirmed == true) {
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-      blocklistService.blockUser(pubkey);
-
-      if (mounted) {
-        // Show success confirmation
-        showDialog(
-          context: context,
-          useRootNavigator: true,
-          builder: (context) => const ProfileBlockConfirmationDialog(),
-        );
-      }
-    }
   }
 }
 
