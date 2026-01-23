@@ -7,7 +7,6 @@ import 'dart:core';
 import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:http/http.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:nostr_client/nostr_client.dart'
@@ -374,13 +373,14 @@ class BlocklistVersion extends _$BlocklistVersion {
   void increment() => state++;
 }
 
-/// NIP-05 service for username availability checking
+/// NIP-05 service for username registration and verification
 @riverpod
 Nip05Service nip05Service(Ref ref) {
-  return Nip05Service();
+  final nostrClient = ref.read(nostrServiceProvider);
+  return Nip05Service(nostrClient: nostrClient);
 }
 
-/// Username repository for availability checking
+/// Username repository for availability checking and registration
 @riverpod
 UsernameRepository usernameRepository(Ref ref) {
   final nip05Service = ref.watch(nip05ServiceProvider);
@@ -644,7 +644,7 @@ ProfileRepository profileRepository(Ref ref) {
     'ProfileRepository accessed without authentication',
   );
 
-  return ProfileRepository(nostrClient: nostrClient, httpClient: Client());
+  return ProfileRepository(nostrClient: nostrClient);
 }
 
 // ProfileStatsProvider is now handled by profile_stats_provider.dart with pure Riverpod

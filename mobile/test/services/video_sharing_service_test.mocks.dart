@@ -512,22 +512,6 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
           as _i6.Stream<_i7.Event>);
 
   @override
-  _i6.Future<String?> createNip98AuthHeader({
-    required String? url,
-    required String? method,
-    String? payload,
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(#createNip98AuthHeader, [], {
-              #url: url,
-              #method: method,
-              #payload: payload,
-            }),
-            returnValue: _i6.Future<String?>.value(),
-          )
-          as _i6.Future<String?>);
-
-  @override
   _i6.Future<void> dispose() =>
       (super.noSuchMethod(
             Invocation.method(#dispose, []),

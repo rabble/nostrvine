@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:db_client/db_client.dart' hide Filter;
 import 'package:flutter_test/flutter_test.dart';
@@ -7,7 +6,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_gateway/nostr_gateway.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:nostr_sdk/utils/hash_util.dart';
 
 class _MockNostr extends Mock implements Nostr {}
 
@@ -1791,85 +1789,6 @@ void main() {
 
         expect(result, isNull);
       });
-    });
-
-    group('createNip98AuthHeader', () {
-      test(
-        'returns "Nostr <base64>" with payload tag when payload is provided',
-        () async {
-          when(() => mockNostr.signEvent(any())).thenAnswer((invocation) {
-            invocation.positionalArguments[0] as Event
-              ..id = 'id'
-              ..sig = 'sig';
-            return Future.value();
-          });
-
-          const url = 'https://divine.video/api/username/claim';
-          final authHeader = await client.createNip98AuthHeader(
-            url: url,
-            method: 'POST',
-            payload: 'payload',
-          );
-          final decoded =
-              jsonDecode(utf8.decode(base64Decode(authHeader!.split(' ')[1])))
-                  as Map<String, dynamic>;
-          final tags = (decoded['tags'] as List).cast<List<dynamic>>();
-
-          expect(authHeader, startsWith('Nostr '));
-          expect(decoded['kind'], equals(EventKind.httpAuth));
-          expect(tags[0][1], equals(url));
-          expect(tags[1][1], equals('POST'));
-          expect(
-            tags[2][1],
-            equals(HashUtil.sha256Bytes(utf8.encode('payload'))),
-          );
-        },
-      );
-
-      test(
-        'returns "Nostr <base64>" without payload tag when payload is not '
-        'provided',
-        () async {
-          when(() => mockNostr.signEvent(any())).thenAnswer((invocation) {
-            invocation.positionalArguments[0] as Event
-              ..id = 'id'
-              ..sig = 'sig';
-            return Future.value();
-          });
-
-          const url = 'https://divine.video/api/username/claim';
-          final authHeader = await client.createNip98AuthHeader(
-            url: url,
-            method: 'POST',
-          );
-          final decoded =
-              jsonDecode(utf8.decode(base64Decode(authHeader!.split(' ')[1])))
-                  as Map<String, dynamic>;
-          final tags = (decoded['tags'] as List).cast<List<dynamic>>();
-
-          expect(authHeader, startsWith('Nostr '));
-          expect(decoded['kind'], equals(EventKind.httpAuth));
-          expect(tags[0][1], equals(url));
-          expect(tags[1][1], equals('POST'));
-          expect(tags.length, equals(2));
-        },
-      );
-
-      test(
-        'returns null when signing fails',
-        () async {
-          when(
-            () => mockNostr.signEvent(any()),
-          ).thenAnswer((_) => Future.value());
-
-          const url = 'https://divine.video/api/username/claim';
-          final authHeader = await client.createNip98AuthHeader(
-            url: url,
-            method: 'POST',
-          );
-          expect(authHeader, isNull);
-        },
-      );
     });
 
     group('dispose', () {

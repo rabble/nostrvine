@@ -8,7 +8,6 @@ import 'package:nostr_client/src/models/models.dart';
 import 'package:nostr_client/src/relay_manager.dart';
 import 'package:nostr_gateway/nostr_gateway.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:nostr_sdk/utils/hash_util.dart';
 
 /// {@template nostr_client}
 /// Abstraction layer for Nostr communication
@@ -919,32 +918,6 @@ class NostrClient {
     );
 
     return subscribe([filter]);
-  }
-
-  /// Creates a NIP-98 HTTP authentication header.
-  ///
-  /// Generates a signed kind 27235 event containing the [url] and [method],
-  /// plus an optional SHA256 hash of the [payload]. Returns the header value
-  /// in the format `Nostr <base64-encoded-event>`.
-  Future<String?> createNip98AuthHeader({
-    required String url,
-    required String method,
-    String? payload,
-  }) async {
-    final tags = [
-      ['u', url],
-      ['method', method],
-      if (payload != null)
-        ['payload', HashUtil.sha256Bytes(utf8.encode(payload))],
-    ];
-    final nip98Event = Event(_nostr.publicKey, EventKind.httpAuth, tags, '');
-    await _nostr.signEvent(nip98Event);
-
-    if (nip98Event.id.isEmpty || nip98Event.sig.isEmpty) return null;
-
-    final eventJson = jsonEncode(nip98Event.toJson());
-    final base64Event = base64Encode(utf8.encode(eventJson));
-    return 'Nostr $base64Event';
   }
 
   /// Disposes the client and cleans up resources

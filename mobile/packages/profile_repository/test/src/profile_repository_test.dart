@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:http/http.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -12,14 +11,11 @@ class MockNostrClient extends Mock implements NostrClient {}
 
 class MockEvent extends Mock implements Event {}
 
-class MockHttpClient extends Mock implements Client {}
-
 void main() {
   group('ProfileRepository', () {
     late MockNostrClient mockNostrClient;
     late ProfileRepository repository;
     late MockEvent mockProfileEvent;
-    late MockHttpClient mockHttpClient;
 
     const testPubkey =
         'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
@@ -28,17 +24,12 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(<String, dynamic>{});
-      registerFallbackValue(Uri.parse('https://example.com'));
     });
 
     setUp(() {
       mockNostrClient = MockNostrClient();
       mockProfileEvent = MockEvent();
-      mockHttpClient = MockHttpClient();
-      repository = ProfileRepository(
-        nostrClient: mockNostrClient,
-        httpClient: mockHttpClient,
-      );
+      repository = ProfileRepository(nostrClient: mockNostrClient);
 
       // Default mock event setup
       when(() => mockProfileEvent.kind).thenReturn(0);
@@ -257,188 +248,6 @@ void main() {
 
         expect(e.message, isNull);
         expect(e.toString(), contains('ProfileRepositoryException'));
-      });
-    });
-
-    group('claimUsername', () {
-      test('returns UsernameClaimSuccess when response is 200', () async {
-        when(
-          () => mockNostrClient.createNip98AuthHeader(
-            url: any(named: 'url'),
-            method: any(named: 'method'),
-            payload: any(named: 'payload'),
-          ),
-        ).thenAnswer((_) => Future.value('authHeader'));
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer((_) => Future.value(Response('body', 200)));
-
-        final usernameClaimResult = await repository.claimUsername(
-          username: 'username',
-        );
-        expect(usernameClaimResult, equals(const UsernameClaimSuccess()));
-      });
-
-      test('returns UsernameClaimSuccess when response is 201', () async {
-        when(
-          () => mockNostrClient.createNip98AuthHeader(
-            url: any(named: 'url'),
-            method: any(named: 'method'),
-            payload: any(named: 'payload'),
-          ),
-        ).thenAnswer((_) => Future.value('authHeader'));
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer((_) => Future.value(Response('body', 201)));
-
-        final usernameClaimResult = await repository.claimUsername(
-          username: 'username',
-        );
-        expect(usernameClaimResult, equals(const UsernameClaimSuccess()));
-      });
-
-      test('returns UsernameClaimReserved when response is 403', () async {
-        when(
-          () => mockNostrClient.createNip98AuthHeader(
-            url: any(named: 'url'),
-            method: any(named: 'method'),
-            payload: any(named: 'payload'),
-          ),
-        ).thenAnswer((_) => Future.value('authHeader'));
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer((_) => Future.value(Response('body', 403)));
-
-        final usernameClaimResult = await repository.claimUsername(
-          username: 'username',
-        );
-        expect(usernameClaimResult, equals(const UsernameClaimReserved()));
-      });
-
-      test('returns UsernameClaimTaken when response is 409', () async {
-        when(
-          () => mockNostrClient.createNip98AuthHeader(
-            url: any(named: 'url'),
-            method: any(named: 'method'),
-            payload: any(named: 'payload'),
-          ),
-        ).thenAnswer((_) => Future.value('authHeader'));
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer((_) => Future.value(Response('body', 409)));
-
-        final usernameClaimResult = await repository.claimUsername(
-          username: 'username',
-        );
-        expect(usernameClaimResult, equals(const UsernameClaimTaken()));
-      });
-
-      test('returns UsernameClaimError when response is unexpected', () async {
-        when(
-          () => mockNostrClient.createNip98AuthHeader(
-            url: any(named: 'url'),
-            method: any(named: 'method'),
-            payload: any(named: 'payload'),
-          ),
-        ).thenAnswer((_) => Future.value('authHeader'));
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenAnswer((_) => Future.value(Response('body', 500)));
-
-        final usernameClaimResult = await repository.claimUsername(
-          username: 'username',
-        );
-        expect(
-          usernameClaimResult,
-          isA<UsernameClaimError>().having(
-            (e) => e.message,
-            'message',
-            'Unexpected response: 500',
-          ),
-        );
-      });
-
-      test('returns UsernameClaimError on network exception ', () async {
-        when(
-          () => mockNostrClient.createNip98AuthHeader(
-            url: any(named: 'url'),
-            method: any(named: 'method'),
-            payload: any(named: 'payload'),
-          ),
-        ).thenAnswer((_) => Future.value('authHeader'));
-        when(
-          () => mockHttpClient.post(
-            any(),
-            headers: any(named: 'headers'),
-            body: any(named: 'body'),
-          ),
-        ).thenThrow(Exception('network exception'));
-
-        final usernameClaimResult = await repository.claimUsername(
-          username: 'username',
-        );
-        expect(
-          usernameClaimResult,
-          isA<UsernameClaimError>().having(
-            (e) => e.message,
-            'message',
-            'Network error: Exception: network exception',
-          ),
-        );
-      });
-
-      test(
-        'returns UsernameClaimError when nip98 auth header is null',
-        () async {
-          when(
-            () => mockNostrClient.createNip98AuthHeader(
-              url: any(named: 'url'),
-              method: any(named: 'method'),
-              payload: any(named: 'payload'),
-            ),
-          ).thenAnswer((_) => Future.value());
-
-          final usernameClaimResult = await repository.claimUsername(
-            username: 'username',
-          );
-          expect(
-            usernameClaimResult,
-            isA<UsernameClaimError>().having(
-              (e) => e.message,
-              'message',
-              'Nip98 authorization failed',
-            ),
-          );
-
-          verifyNever(() => mockHttpClient.post(any()));
-        },
-      );
-    });
-
-    group('UsernameClaimResult', () {
-      test('UsernameClaimError toString returns formatted message', () {
-        const error = UsernameClaimError('test error');
-        expect(error.toString(), equals('UsernameClaimError(test error)'));
       });
     });
   });

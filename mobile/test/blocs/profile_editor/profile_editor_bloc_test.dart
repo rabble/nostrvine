@@ -7,8 +7,11 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/models/user_profile.dart' as app_models;
+import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:profile_repository/profile_repository.dart';
+
+class _MockUsernameRepository extends Mock implements UsernameRepository {}
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
 
@@ -16,6 +19,7 @@ class _MockUserProfileService extends Mock implements UserProfileService {}
 
 void main() {
   group('ProfileEditorBloc', () {
+    late _MockUsernameRepository mockUsernameRepository;
     late _MockProfileRepository mockProfileRepository;
     late _MockUserProfileService mockUserProfileService;
 
@@ -58,6 +62,7 @@ void main() {
     });
 
     setUp(() {
+      mockUsernameRepository = _MockUsernameRepository();
       mockProfileRepository = _MockProfileRepository();
       mockUserProfileService = _MockUserProfileService();
 
@@ -68,6 +73,7 @@ void main() {
 
     ProfileEditorBloc createBloc() => ProfileEditorBloc(
       profileRepository: mockProfileRepository,
+      usernameRepository: mockUsernameRepository,
       userProfileService: mockUserProfileService,
     );
 
@@ -128,8 +134,9 @@ void main() {
               ),
             ).called(1);
             verifyNever(
-              () => mockProfileRepository.claimUsername(
+              () => mockUsernameRepository.register(
                 username: any(named: 'username'),
+                pubkey: any(named: 'pubkey'),
               ),
             );
           },
@@ -244,7 +251,10 @@ void main() {
               ),
             ).thenAnswer((_) async => createTestProfile());
             when(
-              () => mockProfileRepository.claimUsername(username: testUsername),
+              () => mockUsernameRepository.register(
+                username: testUsername,
+                pubkey: testPubkey,
+              ),
             ).thenAnswer((_) async => const UsernameClaimSuccess());
           },
           build: createBloc,
@@ -280,7 +290,10 @@ void main() {
               ),
             ).called(1);
             verify(
-              () => mockProfileRepository.claimUsername(username: testUsername),
+              () => mockUsernameRepository.register(
+                username: testUsername,
+                pubkey: testPubkey,
+              ),
             ).called(1);
           },
         );
@@ -356,8 +369,9 @@ void main() {
           ),
           verify: (_) {
             verifyNever(
-              () => mockProfileRepository.claimUsername(
+              () => mockUsernameRepository.register(
                 username: any(named: 'username'),
+                pubkey: any(named: 'pubkey'),
               ),
             );
           },
@@ -382,7 +396,10 @@ void main() {
               ),
             ).thenAnswer((_) async => createTestProfile());
             when(
-              () => mockProfileRepository.claimUsername(username: testUsername),
+              () => mockUsernameRepository.register(
+                username: testUsername,
+                pubkey: testPubkey,
+              ),
             ).thenAnswer((_) async => const UsernameClaimTaken());
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -437,7 +454,10 @@ void main() {
               ),
             ).thenAnswer((_) async => createTestProfile());
             when(
-              () => mockProfileRepository.claimUsername(username: testUsername),
+              () => mockUsernameRepository.register(
+                username: testUsername,
+                pubkey: testPubkey,
+              ),
             ).thenAnswer((_) async => const UsernameClaimTaken());
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -495,7 +515,10 @@ void main() {
               ),
             ).thenAnswer((_) async => createTestProfile());
             when(
-              () => mockProfileRepository.claimUsername(username: testUsername),
+              () => mockUsernameRepository.register(
+                username: testUsername,
+                pubkey: testPubkey,
+              ),
             ).thenAnswer((_) async => const UsernameClaimTaken());
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -556,7 +579,10 @@ void main() {
               ),
             ).thenAnswer((_) async => createTestProfile());
             when(
-              () => mockProfileRepository.claimUsername(username: testUsername),
+              () => mockUsernameRepository.register(
+                username: testUsername,
+                pubkey: testPubkey,
+              ),
             ).thenAnswer((_) async => const UsernameClaimReserved());
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -611,7 +637,10 @@ void main() {
               ),
             ).thenAnswer((_) async => createTestProfile());
             when(
-              () => mockProfileRepository.claimUsername(username: testUsername),
+              () => mockUsernameRepository.register(
+                username: testUsername,
+                pubkey: testPubkey,
+              ),
             ).thenAnswer((_) async => const UsernameClaimReserved());
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -672,7 +701,10 @@ void main() {
               ),
             ).thenAnswer((_) async => createTestProfile());
             when(
-              () => mockProfileRepository.claimUsername(username: testUsername),
+              () => mockUsernameRepository.register(
+                username: testUsername,
+                pubkey: testPubkey,
+              ),
             ).thenAnswer(
               (_) async => const UsernameClaimError('Server unavailable'),
             );
@@ -731,7 +763,10 @@ void main() {
               ),
             ).thenAnswer((_) async => createTestProfile());
             when(
-              () => mockProfileRepository.claimUsername(username: testUsername),
+              () => mockUsernameRepository.register(
+                username: testUsername,
+                pubkey: testPubkey,
+              ),
             ).thenAnswer((_) async => const UsernameClaimTaken());
             when(
               () => mockProfileRepository.saveProfileEvent(
