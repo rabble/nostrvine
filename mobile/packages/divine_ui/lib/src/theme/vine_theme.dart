@@ -256,6 +256,12 @@ class VineTheme {
   /// Variant content color on surfaces (75% white).
   static const Color onSurfaceVariant = Color(0xBFFFFFFF);
 
+  /// Error container background color.
+  static const Color errorContainer = Color(0xFF410001);
+
+  /// Error color for icons and text.
+  static const Color error = Color(0xFFF44336);
+
   /// Light alpha overlay (25% white).
   static const Color alphaLight25 = Color(0x40FFFFFF);
 

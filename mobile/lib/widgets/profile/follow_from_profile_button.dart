@@ -32,6 +32,13 @@ class FollowFromProfileButton extends ConsumerWidget {
     final nostrClient = ref.watch(nostrServiceProvider);
     final currentUserPubkey = nostrClient.publicKey;
 
+    // Watch blocklist version to trigger rebuilds when block/unblock occurs
+    ref.watch(blocklistVersionProvider);
+
+    // Watch blocklist to reactively update button state
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final isBlocked = blocklistService.isBlocked(pubkey);
+
     return BlocProvider(
       create: (_) =>
           MyFollowingBloc(followRepository: followRepository)
@@ -40,6 +47,7 @@ class FollowFromProfileButton extends ConsumerWidget {
         pubkey: pubkey,
         displayName: displayName,
         currentUserPubkey: currentUserPubkey,
+        isBlocked: isBlocked,
       ),
     );
   }
@@ -52,6 +60,7 @@ class FollowFromProfileButtonView extends StatelessWidget {
     required this.pubkey,
     required this.displayName,
     required this.currentUserPubkey,
+    this.isBlocked = false,
   });
 
   /// The public key of the profile user to follow/unfollow.
@@ -63,8 +72,50 @@ class FollowFromProfileButtonView extends StatelessWidget {
   /// The current user's public key (used for optimistic follower count update).
   final String? currentUserPubkey;
 
+  /// Whether the user is blocked.
+  final bool isBlocked;
+
   @override
   Widget build(BuildContext context) {
+    // Show Blocked state if user is blocked
+    if (isBlocked) {
+      return OutlinedButton(
+        onPressed: null, // Disabled - use More menu to unblock
+        style: OutlinedButton.styleFrom(
+          backgroundColor: VineTheme.errorContainer,
+          disabledBackgroundColor: VineTheme.errorContainer,
+          foregroundColor: VineTheme.error,
+          disabledForegroundColor: VineTheme.error,
+          side: const BorderSide(color: VineTheme.errorContainer, width: 2),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SvgPicture.asset(
+              'assets/icon/prohibit.svg',
+              width: 24,
+              height: 24,
+              colorFilter: const ColorFilter.mode(
+                VineTheme.error,
+                BlendMode.srcIn,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'Blocked',
+              style: VineTheme.titleMediumFont(color: VineTheme.error),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        ),
+      );
+    }
+
     return BlocSelector<MyFollowingBloc, MyFollowingState, bool>(
       selector: (state) => state.isFollowing(pubkey),
       builder: (context, isFollowing) {

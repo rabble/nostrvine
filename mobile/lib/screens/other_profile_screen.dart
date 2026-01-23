@@ -14,9 +14,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:openvine/widgets/profile/profile_block_confirmation_dialog.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
 
@@ -119,16 +117,13 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     } else if (result == 'block_confirmed') {
       final blocklistService = ref.read(contentBlocklistServiceProvider);
       blocklistService.blockUser(userIdHex);
-      if (mounted) {
-        showDialog(
-          context: context,
-          useRootNavigator: true,
-          builder: (context) => const ProfileBlockConfirmationDialog(),
-        );
-      }
+      // Increment version to trigger rebuild of widgets watching blocklist
+      ref.read(blocklistVersionProvider.notifier).increment();
     } else if (result == 'unblock') {
       final blocklistService = ref.read(contentBlocklistServiceProvider);
       blocklistService.unblockUser(userIdHex);
+      // Increment version to trigger rebuild of widgets watching blocklist
+      ref.read(blocklistVersionProvider.notifier).increment();
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -165,11 +160,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       );
     }
 
-    // Check if this user is blocked
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
-    if (blocklistService.shouldFilterFromFeeds(userIdHex)) {
-      return BlockedUserScreen(onBack: context.pop);
-    }
+    // Watch blocklist version to trigger rebuilds when block/unblock occurs
+    ref.watch(blocklistVersionProvider);
 
     // Get video data from profile feed
     final videosAsync = ref.watch(profileFeedProvider(userIdHex));
@@ -482,7 +474,9 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
             children: [
               Text(
                 'When you block a user:',
-                style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+                style: VineTheme.bodyLargeFont(
+                  color: VineTheme.onSurfaceVariant,
+                ),
               ),
               const SizedBox(height: 8),
               _buildBulletPoint('Their posts will not appear in your feeds.'),

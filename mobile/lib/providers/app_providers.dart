@@ -70,6 +70,7 @@ import 'package:openvine/services/web_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'app_providers.g.dart';
@@ -356,6 +357,16 @@ SeenVideosService seenVideosService(Ref ref) {
 @riverpod
 ContentBlocklistService contentBlocklistService(Ref ref) {
   return ContentBlocklistService();
+}
+
+/// Version counter to trigger rebuilds when blocklist changes.
+/// Widgets watching this will rebuild when block/unblock actions occur.
+@riverpod
+class BlocklistVersion extends _$BlocklistVersion {
+  @override
+  int build() => 0;
+
+  void increment() => state++;
 }
 
 /// NIP-05 service for username registration and verification
