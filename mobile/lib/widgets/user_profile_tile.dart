@@ -8,7 +8,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/services/image_cache_manager.dart';
-import 'package:openvine/utils/user_profile_utils.dart';
 
 /// A tile widget for displaying user profile information in lists.
 ///

@@ -10,7 +10,6 @@ import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/services/thumbnail_api_service.dart'
     show ThumbnailSize;
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/video_icon_placeholder.dart';
 
 /// Smart thumbnail widget that displays thumbnails with blurhash fallback
 class VideoThumbnailWidget extends StatefulWidget {
