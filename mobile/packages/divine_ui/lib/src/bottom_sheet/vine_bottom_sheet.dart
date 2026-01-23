@@ -162,7 +162,7 @@ class VineBottomSheet extends StatelessWidget {
                 controller: scrollController,
                 padding: EdgeInsets.zero,
                 children: [
-                  // Optional content title (56px: 16 top + 24 line height + 16 bottom)
+                  // Optional content title (56px total height)
                   if (contentTitle != null)
                     Padding(
                       padding: const EdgeInsets.symmetric(
@@ -209,7 +209,7 @@ class VineBottomSheet extends StatelessWidget {
                 Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    // Optional content title (56px: 16 top + 24 line height + 16 bottom)
+                    // Optional content title (56px total height)
                     if (contentTitle != null)
                       Padding(
                         padding: const EdgeInsets.symmetric(
