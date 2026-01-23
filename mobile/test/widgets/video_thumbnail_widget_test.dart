@@ -1,6 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:models/models.dart';
 import 'package:openvine/services/thumbnail_api_service.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
