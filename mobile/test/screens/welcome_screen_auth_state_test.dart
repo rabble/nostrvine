@@ -43,8 +43,8 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWithValue(mockAuthService),
-            authStateStreamProvider.overrideWith(
-              (ref) => Stream.value(AuthState.checking),
+            currentAuthStateProvider.overrideWith(
+              (ref) => AuthState.checking,
             ),
           ],
           child: const MaterialApp(home: WelcomeScreen()),
@@ -76,8 +76,8 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWithValue(mockAuthService),
-            authStateStreamProvider.overrideWith(
-              (ref) => Stream.value(AuthState.authenticating),
+            currentAuthStateProvider.overrideWith(
+              (ref) => AuthState.authenticating,
             ),
           ],
           child: const MaterialApp(home: WelcomeScreen()),
@@ -107,8 +107,8 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWithValue(mockAuthService),
-            authStateStreamProvider.overrideWith(
-              (ref) => Stream.value(AuthState.authenticated),
+            currentAuthStateProvider.overrideWith(
+              (ref) => AuthState.authenticated,
             ),
           ],
           child: const MaterialApp(home: WelcomeScreen()),
@@ -175,8 +175,8 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWithValue(mockAuthService),
-            authStateStreamProvider.overrideWith(
-              (ref) => Stream.value(AuthState.authenticated),
+            currentAuthStateProvider.overrideWith(
+              (ref) => AuthState.authenticated,
             ),
           ],
           child: const MaterialApp(home: WelcomeScreen()),
@@ -197,16 +197,20 @@ void main() {
     testWidgets(
       'UI updates when auth state changes from checking to authenticated (race condition test)',
       (tester) async {
-        // This test reproduces the race condition reported by users:
-        // Auth completes but button never appears because screen doesn't rebuild
+        // This test verifies that currentAuthStateProvider properly triggers
+        // UI rebuilds when the auth state changes. The provider listens to
+        // authService.authStateStream and uses ref.invalidateSelf() to rebuild.
 
         // Setup: Create stream controller to simulate auth state changes
-        final authStateController = StreamController<AuthState>();
+        final authStateController = StreamController<AuthState>.broadcast();
 
         // Start with auth state CHECKING
         when(mockAuthService.authState).thenReturn(AuthState.checking);
         when(mockAuthService.isAuthenticated).thenReturn(false);
         when(mockAuthService.lastError).thenReturn(null);
+        when(mockAuthService.authStateStream).thenAnswer(
+          (_) => authStateController.stream,
+        );
 
         await tester.binding.setSurfaceSize(const Size(800, 1200));
         await tester.pumpWidget(
@@ -214,16 +218,13 @@ void main() {
             overrides: [
               sharedPreferencesProvider.overrideWithValue(sharedPreferences),
               authServiceProvider.overrideWithValue(mockAuthService),
-              authStateStreamProvider.overrideWith(
-                (ref) => authStateController.stream,
-              ),
+              // Let the real currentAuthStateProvider run - it will use
+              // the mocked authService.authStateStream to trigger rebuilds
             ],
             child: const MaterialApp(home: WelcomeScreen()),
           ),
         );
 
-        // Emit initial checking state
-        authStateController.add(AuthState.checking);
         await tester.pump();
 
         // Verify: Loading indicator shown initially (BrandedLoadingIndicator with GIF)
@@ -231,11 +232,12 @@ void main() {
         expect(find.widgetWithText(ElevatedButton, 'Continue'), findsNothing);
 
         // Simulate auth state changing to AUTHENTICATED (like in real app)
+        // First update the mock's return value, then emit on the stream
         when(mockAuthService.authState).thenReturn(AuthState.authenticated);
         when(mockAuthService.isAuthenticated).thenReturn(true);
         authStateController.add(AuthState.authenticated);
 
-        // This should trigger a rebuild - the fix makes it work!
+        // This should trigger a rebuild via ref.invalidateSelf()
         // Need multiple pumps to process stream event and rebuild widget tree
         await tester.pump();
         await tester.pump();

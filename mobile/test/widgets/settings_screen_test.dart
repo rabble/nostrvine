@@ -39,8 +39,8 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWithValue(mockAuthService),
-            authStateStreamProvider.overrideWithValue(
-              const AsyncValue<AuthState>.data(AuthState.authenticated),
+            currentAuthStateProvider.overrideWith(
+              (ref) => AuthState.authenticated,
             ),
           ],
           child: const MaterialApp(home: SettingsScreen()),
@@ -59,8 +59,8 @@ void main() {
         ProviderScope(
           overrides: [
             authServiceProvider.overrideWithValue(mockAuthService),
-            authStateStreamProvider.overrideWithValue(
-              const AsyncValue<AuthState>.data(AuthState.authenticated),
+            currentAuthStateProvider.overrideWith(
+              (ref) => AuthState.authenticated,
             ),
           ],
           child: const MaterialApp(home: SettingsScreen()),
