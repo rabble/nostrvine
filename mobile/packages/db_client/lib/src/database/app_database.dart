@@ -16,6 +16,7 @@ const _notificationRetentionDays = 7;
 /// user profiles, video metrics, and other app data.
 @DriftDatabase(
   tables: [
+    // TODO(any): investigate to possibly remove this table if not needed
     NostrEvents,
     UserProfiles,
     VideoMetrics,

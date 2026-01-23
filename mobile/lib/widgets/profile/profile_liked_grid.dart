@@ -14,17 +14,12 @@ import 'package:openvine/utils/unified_logger.dart';
 /// Grid widget displaying user's liked videos
 ///
 /// Requires [ProfileLikedVideosBloc] to be provided in the widget tree.
-class ProfileLikedGrid extends StatefulWidget {
+class ProfileLikedGrid extends StatelessWidget {
   const ProfileLikedGrid({required this.isOwnProfile, super.key});
 
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
 
-  @override
-  State<ProfileLikedGrid> createState() => _ProfileLikedGridState();
-}
-
-class _ProfileLikedGridState extends State<ProfileLikedGrid> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProfileLikedVideosBloc, ProfileLikedVideosState>(
@@ -49,7 +44,7 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid> {
         final likedVideos = state.videos;
 
         if (likedVideos.isEmpty) {
-          return _LikedEmptyState(isOwnProfile: widget.isOwnProfile);
+          return _LikedEmptyState(isOwnProfile: isOwnProfile);
         }
 
         return NotificationListener<ScrollNotification>(

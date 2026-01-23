@@ -19,9 +19,6 @@ const _defaultReactionFetchLimit = 500;
 /// NIP-25 reaction content for a like.
 const _likeContent = '+';
 
-/// Kind 7 is the NIP-25 reaction event kind.
-const _reactionKind = 7;
-
 /// Repository for managing user likes (Kind 7 reactions) on Nostr events.
 ///
 /// This repository provides a unified interface for:
@@ -244,7 +241,7 @@ class LikesRepository {
   Future<int> getLikeCount(String eventId) async {
     // Query relays for count of Kind 7 reactions on this event
     final filter = Filter(
-      kinds: const [_reactionKind],
+      kinds: const [EventKind.reaction],
       e: [eventId],
     );
 
@@ -268,7 +265,7 @@ class LikesRepository {
     // Query relays for count of Kind 7 reactions on all events at once
     // Using a single filter with multiple event IDs in the 'e' array
     final filter = Filter(
-      kinds: const [_reactionKind],
+      kinds: const [EventKind.reaction],
       e: eventIds,
     );
 
@@ -327,7 +324,7 @@ class LikesRepository {
 
     // Then, fetch from relays (authoritative)
     final filter = Filter(
-      kinds: const [_reactionKind],
+      kinds: const [EventKind.reaction],
       authors: [_nostrClient.publicKey],
       limit: _defaultReactionFetchLimit,
     );
@@ -392,7 +389,7 @@ class LikesRepository {
   /// Throws [FetchLikesFailedException] if the fetch fails.
   Future<List<String>> fetchUserLikes(String pubkey) async {
     final filter = Filter(
-      kinds: const [_reactionKind],
+      kinds: const [EventKind.reaction],
       authors: [pubkey],
       limit: _defaultReactionFetchLimit,
     );
@@ -479,11 +476,6 @@ class LikesRepository {
       _isInitialized = false;
     }
   }
-
-  /// Whether the repository is ready for operations.
-  ///
-  /// Returns false if not authenticated.
-  bool get isAuthenticated => _isAuthenticated;
 
   /// Ensures the repository is initialized with data from storage.
   Future<void> _ensureInitialized() async {

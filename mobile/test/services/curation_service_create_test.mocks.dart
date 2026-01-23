@@ -429,6 +429,28 @@ class MockNostrClient extends _i1.Mock implements _i6.NostrClient {
           as _i8.Future<_i9.Event?>);
 
   @override
+  _i8.Future<_i9.Event?> sendGenericRepost({
+    required String? addressableId,
+    required int? targetKind,
+    required String? authorPubkey,
+    String? content = '',
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendGenericRepost, [], {
+              #addressableId: addressableId,
+              #targetKind: targetKind,
+              #authorPubkey: authorPubkey,
+              #content: content,
+              #tempRelays: tempRelays,
+              #targetRelays: targetRelays,
+            }),
+            returnValue: _i8.Future<_i9.Event?>.value(),
+          )
+          as _i8.Future<_i9.Event?>);
+
+  @override
   _i8.Future<_i9.Event?> deleteEvent(
     String? eventId, {
     List<String>? tempRelays,
@@ -1307,14 +1329,6 @@ class MockLikesRepository extends _i1.Mock implements _i3.LikesRepository {
   MockLikesRepository() {
     _i1.throwOnMissingStub(this);
   }
-
-  @override
-  bool get isAuthenticated =>
-      (super.noSuchMethod(
-            Invocation.getter(#isAuthenticated),
-            returnValue: false,
-          )
-          as bool);
 
   @override
   _i8.Stream<Set<String>> watchLikedEventIds() =>
