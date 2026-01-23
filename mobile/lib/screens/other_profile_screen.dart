@@ -404,105 +404,79 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
   }
 
   Widget _buildMenu() {
-    return Column(
-      key: const ValueKey('menu'),
-      mainAxisSize: MainAxisSize.min,
+    return _MoreSheetMenu(
+      displayName: widget.displayName,
+      isFollowing: widget.isFollowing,
+      isBlocked: widget.isBlocked,
+      onCopy: () => Navigator.of(context).pop('copy'),
+      onUnfollow: () => Navigator.of(context).pop('unfollow'),
+      onBlockTap: () {
+        if (widget.isBlocked) {
+          _transitionTo(_MoreSheetMode.unblockConfirmation);
+        } else {
+          _transitionTo(_MoreSheetMode.blockConfirmation);
+        }
+      },
+    );
+  }
+
+  Widget _buildBlockConfirmation() {
+    return _BlockConfirmationView(
+      displayName: widget.displayName,
+      onCancel: () => Navigator.of(context).pop(),
+      onConfirm: () => Navigator.of(context).pop('block_confirmed'),
+    );
+  }
+
+  Widget _buildUnblockConfirmation() {
+    return _UnblockConfirmationView(
+      displayName: widget.displayName,
+      onCancel: () => Navigator.of(context).pop(),
+      onConfirm: () => Navigator.of(context).pop('unblock_confirmed'),
+    );
+  }
+}
+
+/// A bullet point text row for use in confirmation dialogs.
+class _BulletPoint extends StatelessWidget {
+  const _BulletPoint(this.text);
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        // Copy public key action
-        InkWell(
-          onTap: () => Navigator.of(context).pop('copy'),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            child: Row(
-              children: [
-                SvgPicture.asset(
-                  'assets/icon/copy.svg',
-                  width: 24,
-                  height: 24,
-                  colorFilter: const ColorFilter.mode(
-                    VineTheme.whiteText,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  'Copy public key (npub)',
-                  style: VineTheme.titleMediumFont(),
-                ),
-              ],
-            ),
-          ),
+        Text(
+          '•  ',
+          style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
         ),
-        // Unfollow action (only if following)
-        if (widget.isFollowing)
-          InkWell(
-            onTap: () => Navigator.of(context).pop('unfollow'),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-              child: Row(
-                children: [
-                  SvgPicture.asset(
-                    'assets/icon/userMinus.svg',
-                    width: 24,
-                    height: 24,
-                    colorFilter: const ColorFilter.mode(
-                      VineTheme.whiteText,
-                      BlendMode.srcIn,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Text(
-                    'Unfollow ${widget.displayName}',
-                    style: VineTheme.titleMediumFont(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        // Block/Unblock action
-        InkWell(
-          onTap: () {
-            if (widget.isBlocked) {
-              _transitionTo(_MoreSheetMode.unblockConfirmation);
-            } else {
-              _transitionTo(_MoreSheetMode.blockConfirmation);
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
-            child: Row(
-              children: [
-                SvgPicture.asset(
-                  widget.isBlocked
-                      ? 'assets/icon/prohibitInset.svg'
-                      : 'assets/icon/prohibit.svg',
-                  width: 24,
-                  height: 24,
-                  colorFilter: ColorFilter.mode(
-                    widget.isBlocked ? VineTheme.onSurface : VineTheme.error,
-                    BlendMode.srcIn,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Text(
-                  widget.isBlocked
-                      ? 'Unblock ${widget.displayName}'
-                      : 'Block ${widget.displayName}',
-                  style: VineTheme.titleMediumFont(
-                    color: widget.isBlocked
-                        ? VineTheme.onSurface
-                        : VineTheme.error,
-                  ),
-                ),
-              ],
-            ),
+        Expanded(
+          child: Text(
+            text,
+            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildBlockConfirmation() {
+/// Confirmation view for blocking a user.
+class _BlockConfirmationView extends StatelessWidget {
+  const _BlockConfirmationView({
+    required this.displayName,
+    required this.onCancel,
+    required this.onConfirm,
+  });
+
+  final String displayName;
+  final VoidCallback onCancel;
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       key: const ValueKey('confirmation'),
       mainAxisSize: MainAxisSize.min,
@@ -513,7 +487,7 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Block ${widget.displayName}?',
+              'Block $displayName?',
               style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
             ),
           ),
@@ -531,12 +505,12 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
                 ),
               ),
               const SizedBox(height: 8),
-              _buildBulletPoint('Their posts will not appear in your feeds.'),
-              _buildBulletPoint(
+              const _BulletPoint('Their posts will not appear in your feeds.'),
+              const _BulletPoint(
                 'They will be unable to view your profile, follow you, or view your posts.',
               ),
-              _buildBulletPoint('They will not be notified of this change.'),
-              _buildBulletPoint(
+              const _BulletPoint('They will not be notified of this change.'),
+              const _BulletPoint(
                 'You will still be able to view their profile.',
               ),
               const SizedBox(height: 16),
@@ -576,7 +550,7 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
               // Cancel button - dismisses the sheet
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: onCancel,
                   style: OutlinedButton.styleFrom(
                     backgroundColor: VineTheme.surfaceContainer,
                     foregroundColor: VineTheme.vineGreen,
@@ -606,7 +580,7 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
               // Block button
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop('block_confirmed'),
+                  onPressed: onConfirm,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: VineTheme.error,
                     foregroundColor: VineTheme.onErrorContainer,
@@ -634,8 +608,22 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
       ],
     );
   }
+}
 
-  Widget _buildUnblockConfirmation() {
+/// Confirmation view for unblocking a user.
+class _UnblockConfirmationView extends StatelessWidget {
+  const _UnblockConfirmationView({
+    required this.displayName,
+    required this.onCancel,
+    required this.onConfirm,
+  });
+
+  final String displayName;
+  final VoidCallback onCancel;
+  final VoidCallback onConfirm;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       key: const ValueKey('unblock_confirmation'),
       mainAxisSize: MainAxisSize.min,
@@ -646,7 +634,7 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
           child: Align(
             alignment: Alignment.centerLeft,
             child: Text(
-              'Unblock ${widget.displayName}?',
+              'Unblock $displayName?',
               style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
             ),
           ),
@@ -664,11 +652,11 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
                 ),
               ),
               const SizedBox(height: 8),
-              _buildBulletPoint('Their posts will appear in your feeds.'),
-              _buildBulletPoint(
+              const _BulletPoint('Their posts will appear in your feeds.'),
+              const _BulletPoint(
                 'They will be able to view your profile, follow you, and view your posts.',
               ),
-              _buildBulletPoint('They will not be notified of this change.'),
+              const _BulletPoint('They will not be notified of this change.'),
               const SizedBox(height: 16),
               GestureDetector(
                 onTap: () =>
@@ -706,7 +694,7 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
               // Cancel button - dismisses the sheet
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: onCancel,
                   style: OutlinedButton.styleFrom(
                     backgroundColor: VineTheme.surfaceContainer,
                     foregroundColor: VineTheme.vineGreen,
@@ -736,8 +724,7 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
               // Unblock button
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () =>
-                      Navigator.of(context).pop('unblock_confirmed'),
+                  onPressed: onConfirm,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: VineTheme.vineGreen,
                     foregroundColor: VineTheme.onPrimary,
@@ -765,19 +752,110 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
       ],
     );
   }
+}
 
-  Widget _buildBulletPoint(String text) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+/// Menu widget for the More sheet with copy, unfollow, and block actions.
+class _MoreSheetMenu extends StatelessWidget {
+  const _MoreSheetMenu({
+    required this.displayName,
+    required this.isFollowing,
+    required this.isBlocked,
+    required this.onCopy,
+    required this.onUnfollow,
+    required this.onBlockTap,
+  });
+
+  final String displayName;
+  final bool isFollowing;
+  final bool isBlocked;
+  final VoidCallback onCopy;
+  final VoidCallback onUnfollow;
+  final VoidCallback onBlockTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      key: const ValueKey('menu'),
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          '•  ',
-          style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+        // Copy public key action
+        InkWell(
+          onTap: onCopy,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icon/copy.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: const ColorFilter.mode(
+                    VineTheme.whiteText,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  'Copy public key (npub)',
+                  style: VineTheme.titleMediumFont(),
+                ),
+              ],
+            ),
+          ),
         ),
-        Expanded(
-          child: Text(
-            text,
-            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+        // Unfollow action (only if following)
+        if (isFollowing)
+          InkWell(
+            onTap: onUnfollow,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              child: Row(
+                children: [
+                  SvgPicture.asset(
+                    'assets/icon/userMinus.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: const ColorFilter.mode(
+                      VineTheme.whiteText,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    'Unfollow $displayName',
+                    style: VineTheme.titleMediumFont(),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        // Block/Unblock action
+        InkWell(
+          onTap: onBlockTap,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  isBlocked
+                      ? 'assets/icon/prohibitInset.svg'
+                      : 'assets/icon/prohibit.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: ColorFilter.mode(
+                    isBlocked ? VineTheme.onSurface : VineTheme.error,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  isBlocked ? 'Unblock $displayName' : 'Block $displayName',
+                  style: VineTheme.titleMediumFont(
+                    color: isBlocked ? VineTheme.onSurface : VineTheme.error,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ],
