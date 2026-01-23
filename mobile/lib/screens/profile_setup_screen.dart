@@ -377,15 +377,15 @@ class _ProfileSetupScreenViewState
                   icon: Container(
                     width: 48,
                     height: 48,
-                    padding: const EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       color: VineTheme.scrim15,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: SvgPicture.asset(
                       'assets/icon/info.svg',
-                      width: 24,
-                      height: 24,
+                      width: 32,
+                      height: 32,
                       colorFilter: const ColorFilter.mode(
                         Colors.white,
                         BlendMode.srcIn,
@@ -1000,7 +1000,7 @@ class _ProfileSetupScreenViewState
         width: 144,
         height: 144,
         errorBuilder: (context, error, stackTrace) => Image.asset(
-          'assets/icon/user-avatar.png',
+          'assets/icon/acid_avatar.png',
           width: 144,
           height: 144,
           fit: BoxFit.cover,
@@ -1013,7 +1013,7 @@ class _ProfileSetupScreenViewState
         width: 144,
         height: 144,
         errorBuilder: (context, error, stackTrace) => Image.asset(
-          'assets/icon/user-avatar.png',
+          'assets/icon/acid_avatar.png',
           width: 144,
           height: 144,
           fit: BoxFit.cover,
@@ -1021,7 +1021,7 @@ class _ProfileSetupScreenViewState
       );
     } else {
       return Image.asset(
-        'assets/icon/user-avatar.png',
+        'assets/icon/acid_avatar.png',
         width: 144,
         height: 144,
         fit: BoxFit.cover,
@@ -1309,9 +1309,7 @@ class _ProfileSetupScreenViewState
     FocusScope.of(context).unfocus();
     VineBottomSheet.show<void>(
       context: context,
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.85,
+      scrollable: false,
       children: [
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
@@ -1434,85 +1432,47 @@ class _ProfileSetupScreenViewState
   void _showImageUrlSheet(BuildContext context) {
     // Unfocus any field before opening sheet
     FocusScope.of(context).unfocus();
-    showModalBottomSheet<void>(
+    VineBottomSheet.show<void>(
       context: context,
+      scrollable: false,
+      expanded: false,
       isScrollControlled: true,
-      backgroundColor: VineTheme.surfaceBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(VineTheme.bottomSheetBorderRadius),
-        ),
+      title: Text(
+        'Add image URL',
+        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
       ),
-      builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(context).viewInsets.bottom,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Drag handle
-                Center(
-                  child: Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: VineTheme.onSurfaceMuted,
-                      borderRadius: BorderRadius.circular(2),
-                    ),
-                  ),
+      children: [
+        Builder(
+          builder: (sheetContext) => Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+            ),
+            child: TextFormField(
+              controller: _pictureController,
+              style: const TextStyle(color: Colors.white),
+              cursorColor: VineTheme.primary,
+              decoration: InputDecoration(
+                hintText: 'https://example.com/image.jpg',
+                hintStyle: TextStyle(color: Colors.grey[600]),
+                filled: true,
+                fillColor: VineTheme.surfaceContainer,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(22),
+                  borderSide: BorderSide.none,
                 ),
-                Center(
-                  child: Text(
-                    'Add image URL',
-                    style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: _pictureController,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    labelText: 'Image URL',
-                    labelStyle: const TextStyle(color: VineTheme.primary),
-                    hintText: 'https://example.com/your-avatar.jpg',
-                    hintStyle: TextStyle(color: Colors.grey[600]),
-                    filled: true,
-                    fillColor: VineTheme.surfaceContainer,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide.none,
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: VineTheme.primary,
-                        width: 1,
-                      ),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: VineTheme.primary,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                  textInputAction: TextInputAction.done,
-                  onChanged: (_) => setState(() {}),
-                  onFieldSubmitted: (_) => Navigator.of(context).pop(),
-                  keyboardType: TextInputType.url,
-                  autofocus: true,
-                ),
-              ],
+              ),
+              textInputAction: TextInputAction.done,
+              onChanged: (_) => setState(() {}),
+              onFieldSubmitted: (_) => Navigator.of(sheetContext).pop(),
+              keyboardType: TextInputType.url,
+              autofocus: true,
             ),
           ),
-        );
-      },
+        ),
+      ],
     ).then((_) {
       // Unfocus after sheet is dismissed to prevent auto-focus on form fields
       if (mounted) {
