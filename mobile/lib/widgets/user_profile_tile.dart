@@ -4,6 +4,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/services/image_cache_manager.dart';
@@ -174,21 +175,54 @@ class _FollowButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 32,
-      child: ElevatedButton(
-        onPressed: onToggleFollow,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: isFollowing ? Colors.white : VineTheme.vineGreen,
-          foregroundColor: isFollowing ? VineTheme.vineGreen : Colors.white,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          shape: RoundedRectangleBorder(
+    if (isFollowing) {
+      // Following state: surfaceContainer bg, outlineMuted border, userMinus icon
+      return GestureDetector(
+        onTap: onToggleFollow,
+        child: Container(
+          width: 40,
+          height: 40,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: VineTheme.surfaceContainer,
             borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: VineTheme.outlineMuted,
+              width: 2,
+            ),
+          ),
+          child: SvgPicture.asset(
+            'assets/icon/userMinus.svg',
+            width: 24,
+            height: 24,
+            colorFilter: const ColorFilter.mode(
+              VineTheme.vineGreen,
+              BlendMode.srcIn,
+            ),
           ),
         ),
-        child: Text(
-          isFollowing ? 'Following' : 'Follow',
-          style: const TextStyle(fontSize: 12),
+      );
+    }
+
+    // Follow state: vineGreen bg, userPlus icon
+    return GestureDetector(
+      onTap: onToggleFollow,
+      child: Container(
+        width: 40,
+        height: 40,
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: VineTheme.vineGreen,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: SvgPicture.asset(
+          'assets/icon/userPlus.svg',
+          width: 24,
+          height: 24,
+          colorFilter: const ColorFilter.mode(
+            VineTheme.onPrimary,
+            BlendMode.srcIn,
+          ),
         ),
       ),
     );

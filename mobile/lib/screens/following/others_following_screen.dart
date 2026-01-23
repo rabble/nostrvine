@@ -63,7 +63,7 @@ class _OthersFollowingView extends StatelessWidget {
         : 'Following';
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.surfaceBackground,
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -96,7 +96,26 @@ class _OthersFollowingView extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
           tooltip: 'Back',
         ),
-        title: Text(appBarTitle, style: VineTheme.titleFont()),
+        title: BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
+          builder: (context, state) {
+            final count = state.status == OthersFollowingStatus.success
+                ? state.followingPubkeys.length
+                : 0;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(appBarTitle, style: VineTheme.titleFont()),
+                Text(
+                  '$count users',
+                  style: VineTheme.bodySmallFont(
+                    color: VineTheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
       body: BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
         builder: (context, state) {
@@ -149,7 +168,6 @@ class _FollowingListBody extends StatelessWidget {
         );
       },
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
         itemCount: following.length,
         itemBuilder: (context, index) {
           final userPubkey = following[index];
