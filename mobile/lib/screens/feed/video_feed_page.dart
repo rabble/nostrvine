@@ -10,7 +10,6 @@ import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
-import 'package:reposts_repository/reposts_repository.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoFeedPage extends ConsumerWidget {
@@ -231,9 +230,7 @@ class _PooledVideoFeedItem extends ConsumerWidget {
     final repostsRepository = ref.read(repostsRepositoryProvider);
 
     // Build addressable ID for reposts if video has a d-tag (vineId)
-    final addressableId = video.vineId != null
-        ? buildAddressableId(authorPubkey: video.pubkey, dTag: video.vineId!)
-        : null;
+    final addressableId = video.addressableId;
 
     return BlocProvider<VideoInteractionsBloc>(
       create: (_) =>

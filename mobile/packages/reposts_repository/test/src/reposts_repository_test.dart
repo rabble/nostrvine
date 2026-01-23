@@ -1,3 +1,6 @@
+// Not needed for test file
+// ignore_for_file: prefer_const_constructors
+
 import 'dart:async';
 
 import 'package:mocktail/mocktail.dart';
@@ -995,16 +998,18 @@ void main() {
 
   group('buildAddressableId', () {
     test('builds correct addressable ID format', () {
-      final addressableId = buildAddressableId(
-        authorPubkey: 'abc123',
+      final addressableId = AId(
+        kind: EventKind.videoVertical,
+        pubkey: 'abc123',
         dTag: 'my-video',
       );
       expect(addressableId, equals('34236:abc123:my-video'));
     });
 
     test('handles special characters in d-tag', () {
-      final addressableId = buildAddressableId(
-        authorPubkey: 'pubkey',
+      final addressableId = AId(
+        kind: EventKind.videoVertical,
+        pubkey: 'pubkey',
         dTag: 'video-with-dashes_and_underscores',
       );
       expect(

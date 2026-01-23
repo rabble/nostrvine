@@ -37,7 +37,6 @@ import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
-import 'package:reposts_repository/reposts_repository.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -258,12 +257,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     final repostsRepository = ref.read(repostsRepositoryProvider);
 
     // Build addressable ID for reposts if video has a d-tag (vineId)
-    final addressableId = widget.video.vineId != null
-        ? buildAddressableId(
-            authorPubkey: widget.video.pubkey,
-            dTag: widget.video.vineId!,
-          )
-        : null;
+    final addressableId = widget.video.addressableId;
 
     _interactionsBloc = VideoInteractionsBloc(
       eventId: widget.video.id,
