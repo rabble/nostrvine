@@ -2,6 +2,7 @@
 // ABOUTME: Pushed on stack from video feeds, profiles, search results, etc.
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
@@ -89,6 +91,31 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       context: context,
       scrollable: false,
       children: [
+        // Copy public key (npub)
+        InkWell(
+          onTap: () => Navigator.of(context).pop('copy'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icon/Copy.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: const ColorFilter.mode(
+                    VineTheme.whiteText,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  'Copy public key (npub)',
+                  style: VineTheme.titleMediumFont(),
+                ),
+              ],
+            ),
+          ),
+        ),
         if (isFollowing)
           InkWell(
             onTap: () => Navigator.of(context).pop('unfollow'),
@@ -145,7 +172,15 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
 
     if (!mounted) return;
 
-    if (result == 'unfollow') {
+    if (result == 'copy') {
+      final npub = NostrKeyUtils.encodePubKey(userIdHex);
+      await Clipboard.setData(ClipboardData(text: npub));
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Public key copied to clipboard')),
+        );
+      }
+    } else if (result == 'unfollow') {
       await _unfollowUser(userIdHex, displayName);
     } else if (result == 'block') {
       await _blockUser(userIdHex, isBlocked);
