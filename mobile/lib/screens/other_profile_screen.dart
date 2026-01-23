@@ -119,16 +119,11 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       blocklistService.blockUser(userIdHex);
       // Increment version to trigger rebuild of widgets watching blocklist
       ref.read(blocklistVersionProvider.notifier).increment();
-    } else if (result == 'unblock') {
+    } else if (result == 'unblock_confirmed') {
       final blocklistService = ref.read(contentBlocklistServiceProvider);
       blocklistService.unblockUser(userIdHex);
       // Increment version to trigger rebuild of widgets watching blocklist
       ref.read(blocklistVersionProvider.notifier).increment();
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('User unblocked')));
-      }
     }
   }
 
@@ -280,10 +275,13 @@ class _MoreSheetContent extends StatefulWidget {
   State<_MoreSheetContent> createState() => _MoreSheetContentState();
 }
 
+/// The current mode of the More sheet.
+enum _MoreSheetMode { menu, blockConfirmation, unblockConfirmation }
+
 class _MoreSheetContentState extends State<_MoreSheetContent>
     with SingleTickerProviderStateMixin {
-  bool _showingConfirmation = false;
-  bool _displayConfirmation = false;
+  _MoreSheetMode _targetMode = _MoreSheetMode.menu;
+  _MoreSheetMode _displayedMode = _MoreSheetMode.menu;
   late AnimationController _controller;
   late Animation<double> _fadeOutAnimation;
   late Animation<double> _fadeInAnimation;
@@ -319,20 +317,22 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
     super.dispose();
   }
 
-  void _transitionToConfirmation() {
-    setState(() => _showingConfirmation = true);
+  void _transitionTo(_MoreSheetMode mode) {
+    setState(() => _targetMode = mode);
     _controller.forward();
 
     // Switch displayed content at 200ms (after fade out, before resize completes)
     Future.delayed(const Duration(milliseconds: 200), () {
       if (mounted) {
-        setState(() => _displayConfirmation = true);
+        setState(() => _displayedMode = mode);
       }
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final isTransitioning = _targetMode != _MoreSheetMode.menu;
+
     return AnimatedSize(
       duration: const Duration(milliseconds: 200),
       curve: Curves.easeInOut,
@@ -340,19 +340,30 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, child) {
-          final opacity = _showingConfirmation
-              ? (_displayConfirmation ? _fadeInAnimation.value : 0.0)
+          final opacity = isTransitioning
+              ? (_displayedMode != _MoreSheetMode.menu
+                  ? _fadeInAnimation.value
+                  : 0.0)
               : _fadeOutAnimation.value;
 
           return Opacity(
-            opacity: _showingConfirmation ? opacity : _fadeOutAnimation.value,
-            child: _displayConfirmation
-                ? _buildBlockConfirmation()
-                : _buildMenu(),
+            opacity: isTransitioning ? opacity : _fadeOutAnimation.value,
+            child: _buildContent(),
           );
         },
       ),
     );
+  }
+
+  Widget _buildContent() {
+    switch (_displayedMode) {
+      case _MoreSheetMode.menu:
+        return _buildMenu();
+      case _MoreSheetMode.blockConfirmation:
+        return _buildBlockConfirmation();
+      case _MoreSheetMode.unblockConfirmation:
+        return _buildUnblockConfirmation();
+    }
   }
 
   Widget _buildMenu() {
@@ -415,9 +426,9 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
         InkWell(
           onTap: () {
             if (widget.isBlocked) {
-              Navigator.of(context).pop('unblock');
+              _transitionTo(_MoreSheetMode.unblockConfirmation);
             } else {
-              _transitionToConfirmation();
+              _transitionTo(_MoreSheetMode.blockConfirmation);
             }
           },
           child: Padding(
@@ -425,11 +436,13 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
             child: Row(
               children: [
                 SvgPicture.asset(
-                  'assets/icon/prohibit.svg',
+                  widget.isBlocked
+                      ? 'assets/icon/prohibitInset.svg'
+                      : 'assets/icon/prohibit.svg',
                   width: 24,
                   height: 24,
                   colorFilter: ColorFilter.mode(
-                    widget.isBlocked ? VineTheme.vineGreen : Colors.red,
+                    widget.isBlocked ? VineTheme.onSurface : Colors.red,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -439,7 +452,7 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
                       ? 'Unblock ${widget.displayName}'
                       : 'Block ${widget.displayName}',
                   style: VineTheme.titleMediumFont(
-                    color: widget.isBlocked ? VineTheme.vineGreen : Colors.red,
+                    color: widget.isBlocked ? VineTheme.onSurface : Colors.red,
                   ),
                 ),
               ],
@@ -581,24 +594,149 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
     );
   }
 
-  Widget _buildBulletPoint(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '•  ',
-            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
-          ),
-          Expanded(
+  Widget _buildUnblockConfirmation() {
+    return Column(
+      key: const ValueKey('unblock_confirmation'),
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Title
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          child: Align(
+            alignment: Alignment.centerLeft,
             child: Text(
-              text,
-              style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+              'Unblock ${widget.displayName}?',
+              style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
             ),
           ),
-        ],
-      ),
+        ),
+        // Explanation content
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'When you unblock this user:',
+                style: VineTheme.bodyLargeFont(
+                  color: VineTheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _buildBulletPoint('Their posts will appear in your feeds.'),
+              _buildBulletPoint(
+                'They will be able to view your profile, follow you, and view your posts.',
+              ),
+              _buildBulletPoint('They will not be notified of this change.'),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () =>
+                    launchUrl(Uri.parse('https://divine.video/safety')),
+                child: Text.rich(
+                  TextSpan(
+                    text: 'Learn more at ',
+                    style: VineTheme.bodyLargeFont(
+                      color: VineTheme.onSurfaceVariant,
+                    ),
+                    children: [
+                      TextSpan(
+                        text: 'divine.video/safety',
+                        style:
+                            VineTheme.bodyLargeFont(
+                              color: VineTheme.onSurface,
+                            ).copyWith(
+                              decoration: TextDecoration.underline,
+                              decorationColor: VineTheme.vineGreen,
+                              decorationThickness: 2,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        // Button row
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Row(
+            children: [
+              // Cancel button - dismisses the sheet
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: VineTheme.surfaceContainer,
+                    foregroundColor: VineTheme.vineGreen,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                    side: const BorderSide(
+                      color: VineTheme.outlineMuted,
+                      width: 2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Text(
+                    'Cancel',
+                    style: VineTheme.titleMediumFont(
+                      color: VineTheme.vineGreen,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Unblock button
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop('unblock_confirmed'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: VineTheme.vineGreen,
+                    foregroundColor: VineTheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Text(
+                    'Unblock',
+                    style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBulletPoint(String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '•  ',
+          style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+        ),
+        Expanded(
+          child: Text(
+            text,
+            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -265,6 +265,7 @@ flutter:
     - assets/icon/copy.svg
     - assets/icon/userMinus.svg
     - assets/icon/prohibit.svg
+    - assets/icon/prohibitInset.svg
     - assets/loading-brand.gif
     - assets/loading-brand-sprite.png
     - assets/seed_data/seed_events.sql
