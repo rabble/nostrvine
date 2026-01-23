@@ -296,7 +296,11 @@ class _SafeNetworkImage extends StatelessWidget {
         }
 
         // Show transparent so background surfaceContainer color shows through
-        return Container(width: width, height: height, color: Colors.transparent);
+        return Container(
+          width: width,
+          height: height,
+          color: Colors.transparent,
+        );
       },
     );
   }

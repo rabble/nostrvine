@@ -379,8 +379,8 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
         builder: (context, child) {
           final opacity = isTransitioning
               ? (_displayedMode != _MoreSheetMode.menu
-                  ? _fadeInAnimation.value
-                  : 0.0)
+                    ? _fadeInAnimation.value
+                    : 0.0)
               : _fadeOutAnimation.value;
 
           return Opacity(
@@ -489,7 +489,9 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
                       ? 'Unblock ${widget.displayName}'
                       : 'Block ${widget.displayName}',
                   style: VineTheme.titleMediumFont(
-                    color: widget.isBlocked ? VineTheme.onSurface : VineTheme.error,
+                    color: widget.isBlocked
+                        ? VineTheme.onSurface
+                        : VineTheme.error,
                   ),
                 ),
               ],
@@ -734,7 +736,8 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
               // Unblock button
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop('unblock_confirmed'),
+                  onPressed: () =>
+                      Navigator.of(context).pop('unblock_confirmed'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: VineTheme.vineGreen,
                     foregroundColor: VineTheme.onPrimary,
@@ -748,7 +751,9 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
                   ),
                   child: Text(
                     'Unblock',
-                    style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
+                    style: VineTheme.titleMediumFont(
+                      color: VineTheme.onPrimary,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

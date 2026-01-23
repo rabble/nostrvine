@@ -86,7 +86,8 @@ class UserProfileTile extends ConsumerWidget {
                     ),
                     child: ClipRRect(
                       borderRadius: BorderRadius.circular(14),
-                      child: profile?.picture != null &&
+                      child:
+                          profile?.picture != null &&
                               profile!.picture!.isNotEmpty
                           ? CachedNetworkImage(
                               imageUrl: profile.picture!,
@@ -186,10 +187,7 @@ class _FollowButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: VineTheme.surfaceContainer,
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: VineTheme.outlineMuted,
-              width: 2,
-            ),
+            border: Border.all(color: VineTheme.outlineMuted, width: 2),
           ),
           child: SvgPicture.asset(
             'assets/icon/userMinus.svg',
