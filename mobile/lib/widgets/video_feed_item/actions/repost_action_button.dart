@@ -41,8 +41,9 @@ class RepostActionButton extends StatelessWidget {
       builder: (context, state) {
         final isReposted = state.isReposted;
         final isRepostInProgress = state.isRepostInProgress;
-        final totalReposts =
-            _calculateTotalReposts(repostCount: state.repostCount);
+        final totalReposts = _calculateTotalReposts(
+          repostCount: state.repostCount,
+        );
 
         return _buildButton(
           context: context,
@@ -94,8 +95,9 @@ class RepostActionButton extends StatelessWidget {
               highlightColor: Colors.transparent,
               splashFactory: NoSplash.splashFactory,
             ),
-            onPressed:
-                isRepostInProgress || onPressed == null ? null : onPressed,
+            onPressed: isRepostInProgress || onPressed == null
+                ? null
+                : onPressed,
             icon: isRepostInProgress
                 ? const SizedBox(
                     width: 32,

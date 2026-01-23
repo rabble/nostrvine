@@ -31,8 +31,6 @@ void main() {
   group('RepostsRepository', () {
     late MockNostrClient mockNostrClient;
     late MockRepostsLocalStorage mockLocalStorage;
-    late EventCreator mockEventCreator;
-    late List<Event> createdEvents;
 
     const testPubkey =
         'test_pubkey_hex_64_chars_'
@@ -63,25 +61,31 @@ void main() {
     setUp(() {
       mockNostrClient = MockNostrClient();
       mockLocalStorage = MockRepostsLocalStorage();
-      createdEvents = [];
 
       when(() => mockNostrClient.publicKey).thenReturn(testPubkey);
 
-      mockEventCreator =
-          ({
-            required int kind,
-            required String content,
-            required List<List<String>> tags,
-          }) async {
-            final event = createMockEvent(
-              id: testRepostEventId,
-              kind: kind,
-              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-              tags: tags,
-            );
-            createdEvents.add(event);
-            return event;
-          };
+      // Default sendGenericRepost mock - returns a valid event
+      when(
+        () => mockNostrClient.sendGenericRepost(
+          addressableId: any(named: 'addressableId'),
+          targetKind: any(named: 'targetKind'),
+          authorPubkey: any(named: 'authorPubkey'),
+          content: any(named: 'content'),
+          tempRelays: any(named: 'tempRelays'),
+          targetRelays: any(named: 'targetRelays'),
+        ),
+      ).thenAnswer(
+        (_) async => createMockEvent(
+          id: testRepostEventId,
+          kind: EventKind.genericRepost,
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          tags: [
+            ['k', '${EventKind.videoVertical}'],
+            ['a', testAddressableId],
+            ['p', testAuthorPubkey],
+          ],
+        ),
+      );
 
       // Default local storage mocks
       when(
@@ -112,7 +116,6 @@ void main() {
       test('can be instantiated with required parameters', () {
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
         expect(repository, isNotNull);
       });
@@ -123,7 +126,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
           localStorage: mockLocalStorage,
           authStateStream: authController.stream,
           isAuthenticated: true,
@@ -138,7 +140,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
           localStorage: mockLocalStorage,
           authStateStream: authController.stream,
         );
@@ -155,19 +156,13 @@ void main() {
       test('returns false for non-reposted video', () {
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
         expect(repository.isRepostedSync(testAddressableId), isFalse);
       });
 
       test('returns true for reposted video in cache', () async {
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => createdEvents.last);
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         await repository.repostVideo(
@@ -183,19 +178,13 @@ void main() {
       test('returns false for non-reposted video', () async {
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
         expect(await repository.isReposted(testAddressableId), isFalse);
       });
 
       test('returns true after reposting', () async {
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => createdEvents.last);
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         await repository.repostVideo(
@@ -220,7 +209,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
           localStorage: mockLocalStorage,
         );
 
@@ -232,19 +220,13 @@ void main() {
       test('returns empty set when no reposts', () async {
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
         expect(await repository.getRepostedAddressableIds(), isEmpty);
       });
 
       test('returns set of reposted IDs', () async {
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => createdEvents.last);
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         await repository.repostVideo(
@@ -262,7 +244,6 @@ void main() {
       test('returns empty list when no reposts', () async {
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
         expect(await repository.getOrderedRepostedAddressableIds(), isEmpty);
       });
@@ -296,7 +277,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
           localStorage: mockLocalStorage,
         );
 
@@ -311,13 +291,8 @@ void main() {
 
     group('repostVideo', () {
       test('creates and publishes Kind 16 event', () async {
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => createdEvents.last);
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         final eventId = await repository.repostVideo(
@@ -326,19 +301,22 @@ void main() {
         );
 
         expect(eventId, equals(testRepostEventId));
-        expect(createdEvents, hasLength(1));
 
-        verify(() => mockNostrClient.publishEvent(any())).called(1);
+        verify(
+          () => mockNostrClient.sendGenericRepost(
+            addressableId: testAddressableId,
+            targetKind: EventKind.videoVertical,
+            authorPubkey: testAuthorPubkey,
+            content: any(named: 'content'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
       });
 
       test('saves repost record to local storage', () async {
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => createdEvents.last);
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
           localStorage: mockLocalStorage,
         );
 
@@ -351,13 +329,8 @@ void main() {
       });
 
       test('throws AlreadyRepostedException when already reposted', () async {
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => createdEvents.last);
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         await repository.repostVideo(
@@ -374,52 +347,37 @@ void main() {
         );
       });
 
-      test('throws RepostFailedException when event creation fails', () async {
-        Future<Null> failingEventCreator({
-          required int kind,
-          required String content,
-          required List<List<String>> tags,
-        }) async => null;
+      test(
+        'throws RepostFailedException when sendGenericRepost fails',
+        () async {
+          when(
+            () => mockNostrClient.sendGenericRepost(
+              addressableId: any(named: 'addressableId'),
+              targetKind: any(named: 'targetKind'),
+              authorPubkey: any(named: 'authorPubkey'),
+              content: any(named: 'content'),
+              tempRelays: any(named: 'tempRelays'),
+              targetRelays: any(named: 'targetRelays'),
+            ),
+          ).thenAnswer((_) async => null);
 
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-          eventCreator: failingEventCreator,
-        );
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+          );
 
-        expect(
-          () => repository.repostVideo(
-            addressableId: testAddressableId,
-            originalAuthorPubkey: testAuthorPubkey,
-          ),
-          throwsA(isA<RepostFailedException>()),
-        );
-      });
-
-      test('throws RepostFailedException when publish fails', () async {
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => null);
-
-        final repository = RepostsRepository(
-          nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
-        );
-
-        expect(
-          () => repository.repostVideo(
-            addressableId: testAddressableId,
-            originalAuthorPubkey: testAuthorPubkey,
-          ),
-          throwsA(isA<RepostFailedException>()),
-        );
-      });
+          expect(
+            () => repository.repostVideo(
+              addressableId: testAddressableId,
+              originalAuthorPubkey: testAuthorPubkey,
+            ),
+            throwsA(isA<RepostFailedException>()),
+          );
+        },
+      );
     });
 
     group('unrepostVideo', () {
       test('publishes deletion event and removes record', () async {
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => createdEvents.last);
         when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
           (_) async => createMockEvent(
             id: 'deletion_event_id',
@@ -430,7 +388,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
           localStorage: mockLocalStorage,
         );
 
@@ -453,7 +410,6 @@ void main() {
       test('throws NotRepostedException when not reposted', () async {
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         expect(
@@ -483,7 +439,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
           localStorage: mockLocalStorage,
         );
 
@@ -497,15 +452,11 @@ void main() {
 
       test('throws UnrepostFailedException when deletion fails', () async {
         when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => createdEvents.last);
-        when(
           () => mockNostrClient.deleteEvent(any()),
         ).thenAnswer((_) async => null);
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         await repository.repostVideo(
@@ -522,13 +473,8 @@ void main() {
 
     group('toggleRepost', () {
       test('reposts when not reposted and returns true', () async {
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => createdEvents.last);
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         final result = await repository.toggleRepost(
@@ -541,9 +487,6 @@ void main() {
       });
 
       test('unreposts when reposted and returns false', () async {
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => createdEvents.last);
         when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
           (_) async => createMockEvent(
             id: 'deletion_event_id',
@@ -554,7 +497,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         await repository.repostVideo(
@@ -575,13 +517,8 @@ void main() {
         when(
           () => mockLocalStorage.isReposted(testAddressableId),
         ).thenAnswer((_) async => false);
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => createdEvents.last);
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
           localStorage: mockLocalStorage,
         );
 
@@ -598,20 +535,14 @@ void main() {
       test('returns null when not reposted', () async {
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         expect(await repository.getRepostRecord(testAddressableId), isNull);
       });
 
       test('returns record when reposted', () async {
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => createdEvents.last);
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         await repository.repostVideo(
@@ -635,7 +566,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
           localStorage: mockLocalStorage,
         );
 
@@ -665,7 +595,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
           localStorage: mockLocalStorage,
         );
 
@@ -692,7 +621,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
           localStorage: mockLocalStorage,
         );
 
@@ -710,7 +638,6 @@ void main() {
 
           final repository = RepostsRepository(
             nostrClient: mockNostrClient,
-            eventCreator: mockEventCreator,
             localStorage: mockLocalStorage,
           );
 
@@ -755,7 +682,6 @@ void main() {
 
           final repository = RepostsRepository(
             nostrClient: mockNostrClient,
-            eventCreator: mockEventCreator,
             localStorage: mockLocalStorage,
           );
 
@@ -809,7 +735,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         final reposts = await repository.fetchUserReposts(otherUserPubkey);
@@ -849,7 +774,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         final reposts = await repository.fetchUserReposts(otherUserPubkey);
@@ -864,7 +788,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         expect(
@@ -896,7 +819,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         final records = await repository.fetchUserRepostRecords(
@@ -916,7 +838,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         expect(
@@ -928,13 +849,8 @@ void main() {
 
     group('clearCache', () {
       test('clears in-memory cache', () async {
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => createdEvents.last);
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         await repository.repostVideo(
@@ -952,7 +868,6 @@ void main() {
       test('clears local storage', () async {
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
           localStorage: mockLocalStorage,
         );
 
@@ -964,13 +879,8 @@ void main() {
 
     group('watchRepostedAddressableIds', () {
       test('returns internal stream when no local storage', () async {
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => createdEvents.last);
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         final stream = repository.watchRepostedAddressableIds();
@@ -1001,7 +911,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
           localStorage: mockLocalStorage,
         );
 
@@ -1017,13 +926,8 @@ void main() {
         final authController = StreamController<bool>.broadcast();
         addTearDown(authController.close);
 
-        when(
-          () => mockNostrClient.publishEvent(any()),
-        ).thenAnswer((_) async => createdEvents.last);
-
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
           localStorage: mockLocalStorage,
           authStateStream: authController.stream,
           isAuthenticated: true,
@@ -1059,7 +963,6 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
           authStateStream: authController.stream,
         );
 
@@ -1082,7 +985,6 @@ void main() {
       test('can be called safely without auth stream', () {
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-          eventCreator: mockEventCreator,
         );
 
         // Should not throw when no auth subscription exists

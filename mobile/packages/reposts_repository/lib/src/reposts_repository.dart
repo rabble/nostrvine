@@ -5,6 +5,7 @@
 
 import 'dart:async';
 
+import 'package:meta/meta.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:reposts_repository/src/exceptions.dart';
@@ -15,23 +16,6 @@ import 'package:rxdart/rxdart.dart';
 
 /// Default limit for fetching user reposts from relays.
 const _defaultRepostFetchLimit = 500;
-
-/// Kind 16 is the NIP-18 generic repost event kind.
-const _genericRepostKind = 16;
-
-/// Kind 34236 is the NIP-71 addressable short video kind.
-const _videoEventKind = 34236;
-
-/// Callback type for creating and signing Nostr events.
-///
-/// This allows the repository to create events without depending on
-/// a specific authentication implementation.
-typedef EventCreator =
-    Future<Event?> Function({
-      required int kind,
-      required String content,
-      required List<List<String>> tags,
-    });
 
 /// Repository for managing user reposts (Kind 16 generic reposts) on videos.
 ///
@@ -58,18 +42,15 @@ class RepostsRepository {
   ///
   /// Parameters:
   /// - [nostrClient]: Client for Nostr relay communication
-  /// - [eventCreator]: Callback to create and sign Nostr events
   /// - [localStorage]: Optional local storage for persistence
   /// - [authStateStream]: Optional stream of authentication state
   /// - [isAuthenticated]: Initial authentication state
   RepostsRepository({
     required NostrClient nostrClient,
-    required EventCreator eventCreator,
     RepostsLocalStorage? localStorage,
     Stream<bool>? authStateStream,
     bool isAuthenticated = false,
   }) : _nostrClient = nostrClient,
-       _eventCreator = eventCreator,
        _localStorage = localStorage,
        _isAuthenticated = isAuthenticated {
     // Listen to auth state changes if stream provided
@@ -79,7 +60,6 @@ class RepostsRepository {
   }
 
   final NostrClient _nostrClient;
-  final EventCreator _eventCreator;
   final RepostsLocalStorage? _localStorage;
   StreamSubscription<bool>? _authSubscription;
 
@@ -172,23 +152,13 @@ class RepostsRepository {
       throw AlreadyRepostedException(addressableId);
     }
 
-    // Create Kind 16 generic repost event
-    final event = await _eventCreator(
-      kind: _genericRepostKind,
-      content: '',
-      tags: [
-        ['k', '$_videoEventKind'], // Required k tag for generic repost
-        ['a', addressableId], // Addressable reference to video
-        ['p', originalAuthorPubkey], // Original author
-      ],
+    // Create and publish Kind 16 generic repost event
+    final sentEvent = await _nostrClient.sendGenericRepost(
+      addressableId: addressableId,
+      targetKind: EventKind.videoVertical,
+      authorPubkey: originalAuthorPubkey,
     );
 
-    if (event == null) {
-      throw const RepostFailedException('Failed to create repost event');
-    }
-
-    // Publish to relays
-    final sentEvent = await _nostrClient.publishEvent(event);
     if (sentEvent == null) {
       throw const RepostFailedException('Failed to publish repost to relays');
     }
@@ -306,7 +276,7 @@ class RepostsRepository {
 
     // Then, fetch from relays (authoritative)
     final filter = Filter(
-      kinds: const [_genericRepostKind],
+      kinds: const [EventKind.genericRepost],
       authors: [_nostrClient.publicKey],
       limit: _defaultRepostFetchLimit,
     );
@@ -374,7 +344,7 @@ class RepostsRepository {
   /// Throws [FetchRepostsFailedException] if the fetch fails.
   Future<List<String>> fetchUserReposts(String pubkey) async {
     final filter = Filter(
-      kinds: const [_genericRepostKind],
+      kinds: const [EventKind.genericRepost],
       authors: [pubkey],
       limit: _defaultRepostFetchLimit,
     );
@@ -414,7 +384,7 @@ class RepostsRepository {
   /// Throws [FetchRepostsFailedException] if the fetch fails.
   Future<List<RepostRecord>> fetchUserRepostRecords(String pubkey) async {
     final filter = Filter(
-      kinds: const [_genericRepostKind],
+      kinds: const [EventKind.genericRepost],
       authors: [pubkey],
       limit: _defaultRepostFetchLimit,
     );
@@ -517,6 +487,7 @@ class RepostsRepository {
   /// Whether the repository is ready for operations.
   ///
   /// Returns false if not authenticated.
+  @visibleForTesting
   bool get isAuthenticated => _isAuthenticated;
 
   /// Ensures the repository is initialized with data from storage.
@@ -564,5 +535,9 @@ String buildAddressableId({
   required String authorPubkey,
   required String dTag,
 }) {
-  return '$_videoEventKind:$authorPubkey:$dTag';
+  return AId(
+    kind: EventKind.videoVertical,
+    pubkey: authorPubkey,
+    dTag: dTag,
+  ).toAString();
 }

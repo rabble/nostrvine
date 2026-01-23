@@ -35,3 +35,15 @@ final class ProfileRepostedVideosLoadMoreRequested
     extends ProfileRepostedVideosEvent {
   const ProfileRepostedVideosLoadMoreRequested();
 }
+
+/// Internal event dispatched when reposted IDs change from the repository.
+///
+/// This event is triggered by the subscription to the repository's
+/// `watchRepostedAddressableIds()` stream and allows async handling
+/// of video fetching when reposts are added or removed.
+final class _ProfileRepostedVideosIdsChanged
+    extends ProfileRepostedVideosEvent {
+  const _ProfileRepostedVideosIdsChanged(this.newIds);
+
+  final List<String> newIds;
+}

@@ -336,8 +336,11 @@ class NostrClient {
     }
 
     // Merge cache + websocket and return (respecting original limit)
-    // Use first filter's limit since cache only works with single filters
-    final limit = filters.isNotEmpty ? filters.first.limit : null;
+    // Only apply limit when using a single filter - with multiple filters,
+    // each filter has its own limit and we shouldn't restrict the combined
+    // result set (e.g., getVideosByAddressableIds sends N filters with limit=1
+    // each, expecting N results total).
+    final limit = filters.length == 1 ? filters.first.limit : null;
     return _mergeEvents(cacheResults, websocketEvents, limit: limit);
   }
 
@@ -769,6 +772,52 @@ class NostrClient {
       _cacheEvent(repostEvent);
     }
     return repostEvent;
+  }
+
+  /// Sends a generic repost (Kind 16) for addressable events.
+  ///
+  /// Generic reposts (NIP-18) are used for reposting addressable events
+  /// like videos (Kind 34236) using the 'a' tag instead of 'e' tag.
+  ///
+  /// Parameters:
+  /// - [addressableId]: The addressable event identifier
+  ///   (e.g., "34236:pubkey:d-tag")
+  /// - [targetKind]: The kind of the event being reposted
+  ///   (e.g., 34236 for videos)
+  /// - [authorPubkey]: The public key of the original event author
+  /// - [content]: Optional content for the repost (usually empty)
+  ///
+  /// Successfully sent events are cached locally with 1-day expiry.
+  Future<Event?> sendGenericRepost({
+    required String addressableId,
+    required int targetKind,
+    required String authorPubkey,
+    String content = '',
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+  }) async {
+    final event = Event(
+      publicKey,
+      EventKind.genericRepost,
+      [
+        ['k', '$targetKind'],
+        ['a', addressableId],
+        ['p', authorPubkey],
+      ],
+      content,
+    );
+
+    final sentEvent = await _nostr.sendEvent(
+      event,
+      tempRelays: tempRelays,
+      targetRelays: targetRelays,
+    );
+
+    if (sentEvent != null) {
+      _cacheEvent(sentEvent);
+    }
+
+    return sentEvent;
   }
 
   /// Deletes an event

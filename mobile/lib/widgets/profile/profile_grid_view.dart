@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
+import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
@@ -89,31 +90,46 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   Widget build(BuildContext context) {
     final followRepository = ref.watch(followRepositoryProvider);
     final likesRepository = ref.watch(likesRepositoryProvider);
+    final repostsRepository = ref.watch(repostsRepositoryProvider);
     final videosRepository = ref.watch(videosRepositoryProvider);
     final nostrService = ref.watch(nostrServiceProvider);
     final currentUserPubkey = nostrService.publicKey;
 
-    // Build the base widget with ProfileLikedVideosBloc
-    // Pass userIdHex as targetUserPubkey so the BLoC knows whose likes to fetch
-    final tabContent = BlocProvider<ProfileLikedVideosBloc>(
-      create: (_) =>
-          ProfileLikedVideosBloc(
-              likesRepository: likesRepository,
-              videosRepository: videosRepository,
-              currentUserPubkey: currentUserPubkey,
-              targetUserPubkey: widget.userIdHex,
-            )
-            ..add(const ProfileLikedVideosSubscriptionRequested())
-            ..add(const ProfileLikedVideosSyncRequested()),
+    // Build the base widget with ProfileLikedVideosBloc and
+    // ProfileRepostedVideosBloc
+    // Pass userIdHex as targetUserPubkey so the BLoCs know whose
+    // likes/reposts to fetch
+    final tabContent = MultiBlocProvider(
+      providers: [
+        BlocProvider<ProfileLikedVideosBloc>(
+          create: (_) =>
+              ProfileLikedVideosBloc(
+                  likesRepository: likesRepository,
+                  videosRepository: videosRepository,
+                  currentUserPubkey: currentUserPubkey,
+                  targetUserPubkey: widget.userIdHex,
+                )
+                ..add(const ProfileLikedVideosSubscriptionRequested())
+                ..add(const ProfileLikedVideosSyncRequested()),
+        ),
+        BlocProvider<ProfileRepostedVideosBloc>(
+          create: (_) =>
+              ProfileRepostedVideosBloc(
+                  repostsRepository: repostsRepository,
+                  videosRepository: videosRepository,
+                  currentUserPubkey: currentUserPubkey,
+                  targetUserPubkey: widget.userIdHex,
+                )
+                ..add(const ProfileRepostedVideosSubscriptionRequested())
+                ..add(const ProfileRepostedVideosSyncRequested()),
+        ),
+      ],
       child: TabBarView(
         controller: _tabController,
         children: [
           ProfileVideosGrid(videos: widget.videos, userIdHex: widget.userIdHex),
           ProfileLikedGrid(isOwnProfile: widget.isOwnProfile),
-          ProfileRepostsGrid(
-            userIdHex: widget.userIdHex,
-            isOwnProfile: widget.isOwnProfile,
-          ),
+          ProfileRepostsGrid(isOwnProfile: widget.isOwnProfile),
         ],
       ),
     );
