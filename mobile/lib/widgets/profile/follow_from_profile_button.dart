@@ -128,85 +128,12 @@ class FollowFromProfileButtonView extends StatelessWidget {
     return BlocSelector<MyFollowingBloc, MyFollowingState, bool>(
       selector: (state) => state.isFollowing(pubkey),
       builder: (context, isFollowing) {
-        return isFollowing
-            ? OutlinedButton(
-                onPressed: () => _showUnfollowConfirmation(context),
-                style: OutlinedButton.styleFrom(
-                  backgroundColor: VineTheme.surfaceContainer,
-                  foregroundColor: VineTheme.vineGreen,
-                  side: const BorderSide(
-                    color: VineTheme.outlineMuted,
-                    width: 2,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 24,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SvgPicture.asset(
-                      'assets/icon/userCheck.svg',
-                      width: 24,
-                      height: 24,
-                      colorFilter: const ColorFilter.mode(
-                        VineTheme.vineGreen,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Following',
-                      style: VineTheme.titleMediumFont(
-                        color: VineTheme.vineGreen,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              )
-            : ElevatedButton(
-                onPressed: () => _follow(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: VineTheme.vineGreen,
-                  foregroundColor: VineTheme.onPrimary,
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 12,
-                    horizontal: 24,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SvgPicture.asset(
-                      'assets/icon/userPlus.svg',
-                      width: 24,
-                      height: 24,
-                      colorFilter: const ColorFilter.mode(
-                        VineTheme.onPrimary,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Follow',
-                      style: VineTheme.titleMediumFont(
-                        color: VineTheme.onPrimary,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
-              );
+        if (isFollowing) {
+          return _FollowingButton(
+            onPressed: () => _showUnfollowConfirmation(context),
+          );
+        }
+        return _FollowButton(onPressed: () => _follow(context));
       },
     );
   }
@@ -324,5 +251,88 @@ class FollowFromProfileButtonView extends StatelessWidget {
         OthersFollowersDecrementRequested(currentUserPubkey!),
       );
     }
+  }
+}
+
+/// Button showing "Following" state with checkmark icon.
+class _FollowingButton extends StatelessWidget {
+  const _FollowingButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return OutlinedButton(
+      onPressed: onPressed,
+      style: OutlinedButton.styleFrom(
+        backgroundColor: VineTheme.surfaceContainer,
+        foregroundColor: VineTheme.vineGreen,
+        side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            'assets/icon/userCheck.svg',
+            width: 24,
+            height: 24,
+            colorFilter: const ColorFilter.mode(
+              VineTheme.vineGreen,
+              BlendMode.srcIn,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Following',
+            style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Button showing "Follow" state with plus icon.
+class _FollowButton extends StatelessWidget {
+  const _FollowButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return ElevatedButton(
+      onPressed: onPressed,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: VineTheme.vineGreen,
+        foregroundColor: VineTheme.onPrimary,
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SvgPicture.asset(
+            'assets/icon/userPlus.svg',
+            width: 24,
+            height: 24,
+            colorFilter: const ColorFilter.mode(
+              VineTheme.onPrimary,
+              BlendMode.srcIn,
+            ),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            'Follow',
+            style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ],
+      ),
+    );
   }
 }

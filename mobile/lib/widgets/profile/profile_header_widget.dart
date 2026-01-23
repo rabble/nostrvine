@@ -2,8 +2,8 @@
 // ABOUTME: Reusable between own profile and others' profile screens
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -296,7 +296,11 @@ class _UniqueIdentifier extends StatelessWidget {
         Padding(
           padding: const EdgeInsets.only(left: 8),
           child: GestureDetector(
-            onTap: () => _copyToClipboard(context, npub),
+            onTap: () => ClipboardUtils.copy(
+              context,
+              npub,
+              message: 'Unique ID copied to clipboard',
+            ),
             child: SvgPicture.asset(
               'assets/icon/copy.svg',
               width: 24,
@@ -310,28 +314,6 @@ class _UniqueIdentifier extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  Future<void> _copyToClipboard(BuildContext context, String text) async {
-    await Clipboard.setData(ClipboardData(text: text));
-    if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check, color: VineTheme.onPrimary),
-              const SizedBox(width: 8),
-              Text(
-                'Unique ID copied to clipboard',
-                style: VineTheme.bodyMediumFont(color: VineTheme.onPrimary),
-              ),
-            ],
-          ),
-          backgroundColor: VineTheme.vineGreen,
-          duration: const Duration(seconds: 2),
-        ),
-      );
-    }
   }
 }
 

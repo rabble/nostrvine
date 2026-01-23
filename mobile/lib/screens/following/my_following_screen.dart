@@ -9,6 +9,7 @@ import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
 /// Page widget for displaying current user's following list.
@@ -77,25 +78,11 @@ class _MyFollowingView extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
           tooltip: 'Back',
         ),
-        title: BlocBuilder<MyFollowingBloc, MyFollowingState>(
-          builder: (context, state) {
-            final count = state.status == MyFollowingStatus.success
-                ? state.followingPubkeys.length
-                : 0;
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(appBarTitle, style: VineTheme.titleFont()),
-                Text(
-                  '$count users',
-                  style: VineTheme.bodySmallFont(
-                    color: VineTheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            );
-          },
+        title: FollowerCountTitle<MyFollowingBloc, MyFollowingState>(
+          title: appBarTitle,
+          selector: (state) => state.status == MyFollowingStatus.success
+              ? state.followingPubkeys.length
+              : 0,
         ),
       ),
       body: BlocBuilder<MyFollowingBloc, MyFollowingState>(

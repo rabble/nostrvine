@@ -2,7 +2,6 @@
 // ABOUTME: Pushed on stack from video feeds, profiles, search results, etc.
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -11,10 +10,12 @@ import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
 
@@ -86,7 +87,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
     final displayName = profile?.bestDisplayName ?? 'user';
 
-    final result = await VineBottomSheet.show<String>(
+    final result = await VineBottomSheet.show<MoreSheetResult>(
       context: context,
       scrollable: false,
       body: StatefulBuilder(
@@ -102,28 +103,24 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       children: const [], // Required but unused when body is provided
     );
 
-    if (!mounted) return;
+    if (!mounted || result == null) return;
 
-    if (result == 'copy') {
-      final npub = NostrKeyUtils.encodePubKey(userIdHex);
-      await Clipboard.setData(ClipboardData(text: npub));
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Public key copied to clipboard')),
-        );
-      }
-    } else if (result == 'unfollow') {
-      await _unfollowUser(userIdHex, displayName);
-    } else if (result == 'block_confirmed') {
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-      blocklistService.blockUser(userIdHex);
-      // Increment version to trigger rebuild of widgets watching blocklist
-      ref.read(blocklistVersionProvider.notifier).increment();
-    } else if (result == 'unblock_confirmed') {
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-      blocklistService.unblockUser(userIdHex);
-      // Increment version to trigger rebuild of widgets watching blocklist
-      ref.read(blocklistVersionProvider.notifier).increment();
+    switch (result) {
+      case MoreSheetResult.copy:
+        final npub = NostrKeyUtils.encodePubKey(userIdHex);
+        await ClipboardUtils.copyPubkey(context, npub);
+      case MoreSheetResult.unfollow:
+        await _unfollowUser(userIdHex, displayName);
+      case MoreSheetResult.blockConfirmed:
+        final blocklistService = ref.read(contentBlocklistServiceProvider);
+        blocklistService.blockUser(userIdHex);
+        // Increment version to trigger rebuild of widgets watching blocklist
+        ref.read(blocklistVersionProvider.notifier).increment();
+      case MoreSheetResult.unblockConfirmed:
+        final blocklistService = ref.read(contentBlocklistServiceProvider);
+        blocklistService.unblockUser(userIdHex);
+        // Increment version to trigger rebuild of widgets watching blocklist
+        ref.read(blocklistVersionProvider.notifier).increment();
     }
   }
 
@@ -142,7 +139,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     String userIdHex,
     String displayName,
   ) async {
-    final result = await VineBottomSheet.show<String>(
+    final result = await VineBottomSheet.show<MoreSheetResult>(
       context: context,
       scrollable: false,
       body: _MoreSheetContent(
@@ -157,7 +154,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
 
     if (!mounted) return;
 
-    if (result == 'unblock_confirmed') {
+    if (result == MoreSheetResult.unblockConfirmed) {
       final blocklistService = ref.read(contentBlocklistServiceProvider);
       blocklistService.unblockUser(userIdHex);
       ref.read(blocklistVersionProvider.notifier).increment();
@@ -408,8 +405,8 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
       displayName: widget.displayName,
       isFollowing: widget.isFollowing,
       isBlocked: widget.isBlocked,
-      onCopy: () => Navigator.of(context).pop('copy'),
-      onUnfollow: () => Navigator.of(context).pop('unfollow'),
+      onCopy: () => Navigator.of(context).pop(MoreSheetResult.copy),
+      onUnfollow: () => Navigator.of(context).pop(MoreSheetResult.unfollow),
       onBlockTap: () {
         if (widget.isBlocked) {
           _transitionTo(_MoreSheetMode.unblockConfirmation);
@@ -424,7 +421,8 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
     return _BlockConfirmationView(
       displayName: widget.displayName,
       onCancel: () => Navigator.of(context).pop(),
-      onConfirm: () => Navigator.of(context).pop('block_confirmed'),
+      onConfirm: () =>
+          Navigator.of(context).pop(MoreSheetResult.blockConfirmed),
     );
   }
 
@@ -432,7 +430,8 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
     return _UnblockConfirmationView(
       displayName: widget.displayName,
       onCancel: () => Navigator.of(context).pop(),
-      onConfirm: () => Navigator.of(context).pop('unblock_confirmed'),
+      onConfirm: () =>
+          Navigator.of(context).pop(MoreSheetResult.unblockConfirmed),
     );
   }
 }
