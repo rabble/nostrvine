@@ -405,6 +405,28 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
           as _i5.Future<_i6.Event?>);
 
   @override
+  _i5.Future<_i6.Event?> sendGenericRepost({
+    required String? addressableId,
+    required int? targetKind,
+    required String? authorPubkey,
+    String? content = '',
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendGenericRepost, [], {
+              #addressableId: addressableId,
+              #targetKind: targetKind,
+              #authorPubkey: authorPubkey,
+              #content: content,
+              #tempRelays: tempRelays,
+              #targetRelays: targetRelays,
+            }),
+            returnValue: _i5.Future<_i6.Event?>.value(),
+          )
+          as _i5.Future<_i6.Event?>);
+
+  @override
   _i5.Future<_i6.Event?> deleteEvent(
     String? eventId, {
     List<String>? tempRelays,

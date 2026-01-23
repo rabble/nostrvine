@@ -3346,4 +3346,68 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'3a2aed2fcddf0b6d6143c00e48e4bfd89a3cbec9';
+String _$likesRepositoryHash() => r'62defb128dde642ba8b874984307d47d42a8dd63';
+
+/// Provider for RepostsRepository instance
+///
+/// Creates a RepostsRepository for managing user reposts (Kind 16 generic
+/// reposts).
+/// Uses AuthService.createAndSignEvent for event creation.
+
+@ProviderFor(repostsRepository)
+const repostsRepositoryProvider = RepostsRepositoryProvider._();
+
+/// Provider for RepostsRepository instance
+///
+/// Creates a RepostsRepository for managing user reposts (Kind 16 generic
+/// reposts).
+/// Uses AuthService.createAndSignEvent for event creation.
+
+final class RepostsRepositoryProvider
+    extends
+        $FunctionalProvider<
+          RepostsRepository,
+          RepostsRepository,
+          RepostsRepository
+        >
+    with $Provider<RepostsRepository> {
+  /// Provider for RepostsRepository instance
+  ///
+  /// Creates a RepostsRepository for managing user reposts (Kind 16 generic
+  /// reposts).
+  /// Uses AuthService.createAndSignEvent for event creation.
+  const RepostsRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'repostsRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$repostsRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<RepostsRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  RepostsRepository create(Ref ref) {
+    return repostsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(RepostsRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<RepostsRepository>(value),
+    );
+  }
+}
+
+String _$repostsRepositoryHash() => r'2f2f22ddfc87f03ef9d2f617b8402ea641b373f7';
