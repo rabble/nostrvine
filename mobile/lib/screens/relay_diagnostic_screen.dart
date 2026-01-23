@@ -38,10 +38,7 @@ class FunnelCakeEndpointResult {
 
 /// Comprehensive FunnelCake API test results
 class FunnelCakeTestResults {
-  FunnelCakeTestResults({
-    required this.apiBaseUrl,
-    required this.endpoints,
-  });
+  FunnelCakeTestResults({required this.apiBaseUrl, required this.endpoints});
 
   final String apiBaseUrl;
   final List<FunnelCakeEndpointResult> endpoints;
@@ -52,7 +49,9 @@ class FunnelCakeTestResults {
 
   /// Average response time across successful endpoints
   int get avgLatencyMs {
-    final successful = endpoints.where((e) => e.isSuccess && e.latencyMs != null);
+    final successful = endpoints.where(
+      (e) => e.isSuccess && e.latencyMs != null,
+    );
     if (successful.isEmpty) return 0;
     final total = successful.fold<int>(0, (sum, e) => sum + e.latencyMs!);
     return total ~/ successful.length;
@@ -346,10 +345,7 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
       ),
     );
 
-    return FunnelCakeTestResults(
-      apiBaseUrl: apiBaseUrl,
-      endpoints: endpoints,
-    );
+    return FunnelCakeTestResults(apiBaseUrl: apiBaseUrl, endpoints: endpoints);
   }
 
   Future<FunnelCakeEndpointResult> _testFunnelCakeEndpoint(
