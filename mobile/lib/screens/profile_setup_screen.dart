@@ -306,8 +306,7 @@ class _ProfileSetupScreenViewState
             scrolledUnderElevation: 0,
             toolbarHeight: 72,
             leadingWidth: 80,
-            centerTitle: false,
-            titleSpacing: 0,
+            centerTitle: true,
             backgroundColor: Colors.transparent,
             leading: IconButton(
               padding: EdgeInsets.zero,
@@ -317,7 +316,7 @@ class _ProfileSetupScreenViewState
                 height: 48,
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: VineTheme.iconButtonBackground,
+                  color: VineTheme.scrim15,
                   borderRadius: BorderRadius.circular(20),
                 ),
                 child: SvgPicture.asset(
@@ -350,6 +349,35 @@ class _ProfileSetupScreenViewState
               tooltip: 'Back',
             ),
             title: Text('Edit Profile', style: VineTheme.titleFont()),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Container(
+                    width: 48,
+                    height: 48,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: VineTheme.scrim15,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: SvgPicture.asset(
+                      'assets/icon/info.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                  onPressed: () => _showNostrInfoSheet(context),
+                  tooltip: 'About Nostr',
+                ),
+              ),
+            ],
           ),
           body: GestureDetector(
             onTap: () {
@@ -1198,6 +1226,158 @@ class _ProfileSetupScreenViewState
         });
       }
     }
+  }
+
+  void _showNostrInfoSheet(BuildContext context) {
+    VineBottomSheet.show<void>(
+      context: context,
+      initialChildSize: 0.7,
+      minChildSize: 0.4,
+      maxChildSize: 0.85,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              RichText(
+                text: TextSpan(
+                  style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+                  children: const [
+                    TextSpan(
+                      text: 'DiVine is built on Nostr,',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    TextSpan(
+                      text:
+                          ' a censorship-resistant open protocol that lets people communicate online without relying on a single company or platform. ',
+                    ),
+                    TextSpan(
+                      text:
+                          'When you sign up for diVine, you get a new Nostr identity.',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Nostr lets you own your content, identity and social graph, which you can use across many apps. The result is more choice, less lock-in, and a healthier, more resilient social internet.',
+                style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Nostr lingo:',
+                style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
+              ),
+              const SizedBox(height: 8),
+              _buildBulletPoint(
+                'npub:',
+                " Your public Nostr address. It's safe to share and lets others find, follow, or message you across Nostr apps.",
+              ),
+              const SizedBox(height: 8),
+              _buildBulletPoint(
+                'nsec:',
+                ' Your private key and proof of ownership. It gives full control of your Nostr identity, so ',
+                italicSuffix: 'always keep it secret!',
+              ),
+              const SizedBox(height: 8),
+              _buildBulletPoint(
+                'Nostr username:',
+                ' A human-readable name (like @name.divine.video) that links to your npub. It makes your Nostr identity easier to recognize and verify, similar to an email address.',
+              ),
+              const SizedBox(height: 16),
+              GestureDetector(
+                onTap: () async {
+                  final uri = Uri.parse('https://divine.video/about');
+                  if (await canLaunchUrl(uri)) {
+                    await launchUrl(uri, mode: LaunchMode.externalApplication);
+                  }
+                },
+                child: RichText(
+                  text: TextSpan(
+                    style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+                    children: const [
+                      TextSpan(text: 'Learn more at '),
+                      TextSpan(
+                        text: 'divine.video/about',
+                        style: TextStyle(
+                          decoration: TextDecoration.underline,
+                          decorationColor: VineTheme.onSurface,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: VineTheme.surfaceContainer,
+                    foregroundColor: VineTheme.vineGreen,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                    side: const BorderSide(
+                      color: VineTheme.outlineMuted,
+                      width: 2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Text(
+                    'Got it!',
+                    style: VineTheme.titleMediumFont(
+                      color: VineTheme.vineGreen,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBulletPoint(
+    String boldText,
+    String normalText, {
+    String? italicSuffix,
+  }) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('• ', style: VineTheme.bodyLargeFont(color: VineTheme.onSurface)),
+        Expanded(
+          child: RichText(
+            text: TextSpan(
+              style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
+              children: [
+                TextSpan(
+                  text: boldText,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                TextSpan(text: normalText),
+                if (italicSuffix != null)
+                  TextSpan(
+                    text: italicSuffix,
+                    style: const TextStyle(fontStyle: FontStyle.italic),
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 

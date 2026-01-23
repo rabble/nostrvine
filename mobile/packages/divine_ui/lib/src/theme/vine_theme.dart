@@ -319,6 +319,9 @@ class VineTheme {
   /// Dark overlay color.
   static const Color darkOverlay = Color(0x88000000);
 
+  /// Scrim at 15% opacity (black 15%).
+  static const Color scrim15 = Color(0x26000000);
+
   // Text colors (dark theme optimized)
 
   /// Primary text color (white for dark backgrounds).
