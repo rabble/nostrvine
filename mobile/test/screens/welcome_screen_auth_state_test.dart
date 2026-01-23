@@ -129,6 +129,9 @@ void main() {
         // Setup: Auth state is UNAUTHENTICATED (auto-creation failed)
         when(mockAuthService.authState).thenReturn(AuthState.unauthenticated);
         when(mockAuthService.isAuthenticated).thenReturn(false);
+        when(
+          mockAuthService.authStateStream,
+        ).thenAnswer((_) => Stream.value(AuthState.unauthenticated));
         when(mockAuthService.lastError).thenReturn('Failed to create identity');
 
         await tester.binding.setSurfaceSize(const Size(800, 1200));
@@ -137,13 +140,14 @@ void main() {
             overrides: [
               sharedPreferencesProvider.overrideWithValue(sharedPreferences),
               authServiceProvider.overrideWithValue(mockAuthService),
+              currentAuthStateProvider.overrideWithValue(
+                AuthState.unauthenticated,
+              ),
             ],
             child: const MaterialApp(home: WelcomeScreen()),
           ),
         );
-
         await tester.pumpAndSettle();
-
         // Expect: Error message shown
         expect(
           find.textContaining('Failed to create identity'),

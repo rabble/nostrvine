@@ -85,7 +85,10 @@ void main() {
     testWidgets('Settings tiles have proper icons', (tester) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [authServiceProvider.overrideWithValue(mockAuthService)],
+          overrides: [
+            authServiceProvider.overrideWithValue(mockAuthService),
+            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
+          ],
           child: const MaterialApp(home: SettingsScreen()),
         ),
       );
@@ -111,6 +114,7 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWithValue(mockAuthService),
+            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
           child: const MaterialApp(home: SettingsScreen()),
         ),
@@ -134,6 +138,7 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWithValue(mockAuthService),
+            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
           child: const MaterialApp(home: SettingsScreen()),
         ),
