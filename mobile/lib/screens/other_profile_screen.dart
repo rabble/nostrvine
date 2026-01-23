@@ -85,77 +85,61 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
     final displayName = profile?.bestDisplayName ?? 'user';
 
-    final result = await showModalBottomSheet<String>(
+    final result = await MoreSheet.show<String>(
       context: context,
-      useRootNavigator: true,
-      backgroundColor: VineTheme.surfaceBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (modalContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (isFollowing)
-              InkWell(
-                onTap: () => Navigator.of(modalContext).pop('unfollow'),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 16,
-                    horizontal: 16,
-                  ),
-                  child: Row(
-                    children: [
-                      SvgPicture.asset(
-                        'assets/icon/userMinus.svg',
-                        width: 24,
-                        height: 24,
-                        colorFilter: const ColorFilter.mode(
-                          VineTheme.whiteText,
-                          BlendMode.srcIn,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Text(
-                        'Unfollow $displayName',
-                        style: VineTheme.titleMediumFont(),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            InkWell(
-              onTap: () => Navigator.of(modalContext).pop('block'),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 16,
-                ),
-                child: Row(
-                  children: [
-                    SvgPicture.asset(
-                      'assets/icon/prohibit.svg',
-                      width: 24,
-                      height: 24,
-                      colorFilter: ColorFilter.mode(
-                        isBlocked ? VineTheme.vineGreen : Colors.red,
-                        BlendMode.srcIn,
-                      ),
+      children: [
+        if (isFollowing)
+          InkWell(
+            onTap: () => Navigator.of(context).pop('unfollow'),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              child: Row(
+                children: [
+                  SvgPicture.asset(
+                    'assets/icon/userMinus.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: const ColorFilter.mode(
+                      VineTheme.whiteText,
+                      BlendMode.srcIn,
                     ),
-                    const SizedBox(width: 16),
-                    Text(
-                      isBlocked ? 'Unblock $displayName' : 'Block $displayName',
-                      style: VineTheme.titleMediumFont(
-                        color: isBlocked ? VineTheme.vineGreen : Colors.red,
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 16),
+                  Text(
+                    'Unfollow $displayName',
+                    style: VineTheme.titleMediumFont(),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
+        InkWell(
+          onTap: () => Navigator.of(context).pop('block'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icon/prohibit.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: ColorFilter.mode(
+                    isBlocked ? VineTheme.vineGreen : Colors.red,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  isBlocked ? 'Unblock $displayName' : 'Block $displayName',
+                  style: VineTheme.titleMediumFont(
+                    color: isBlocked ? VineTheme.vineGreen : Colors.red,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
 
     if (!mounted) return;
@@ -172,9 +156,9 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     await followRepository.toggleFollow(userIdHex);
 
     if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unfollowed $displayName')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Unfollowed $displayName')));
     }
   }
 

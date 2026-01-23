@@ -280,43 +280,31 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   }
 
   Future<void> _more(String userIdHex) async {
-    final result = await showModalBottomSheet<String>(
+    final result = await MoreSheet.show<String>(
       context: context,
-      useRootNavigator: true,
-      backgroundColor: VineTheme.surfaceBackground,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (modalContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            InkWell(
-              onTap: () => Navigator.of(modalContext).pop('share'),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 16,
-                  horizontal: 16,
+      children: [
+        InkWell(
+          onTap: () => Navigator.of(context).pop('share'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icon/content-controls/share.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: const ColorFilter.mode(
+                    VineTheme.whiteText,
+                    BlendMode.srcIn,
+                  ),
                 ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.ios_share,
-                      color: VineTheme.whiteText,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 16),
-                    Text(
-                      'Share profile',
-                      style: VineTheme.titleMediumFont(),
-                    ),
-                  ],
-                ),
-              ),
+                const SizedBox(width: 16),
+                Text('Share profile', style: VineTheme.titleMediumFont()),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+      ],
     );
 
     if (!mounted) return;

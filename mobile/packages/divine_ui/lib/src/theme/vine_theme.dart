@@ -244,6 +244,9 @@ class VineTheme {
   /// Background color for surfaces like bottom sheets.
   static const Color surfaceBackground = Color(0xFF00150D);
 
+  /// Border radius for bottom sheets.
+  static const double bottomSheetBorderRadius = 32;
+
   /// Primary content color on surfaces (95% white).
   static const Color onSurface = Color(0xF2FFFFFF);
 

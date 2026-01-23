@@ -11,49 +11,67 @@ import 'package:flutter/material.dart';
 class VineBottomSheetHeader extends StatelessWidget {
   /// Creates a [VineBottomSheetHeader] with the given title and optional
   /// trailing widget.
-  const VineBottomSheetHeader({required this.title, this.trailing, super.key});
+  const VineBottomSheetHeader({this.title, this.trailing, super.key});
 
-  /// Title widget displayed on the left
-  final Widget title;
+  /// Optional title widget displayed in the center
+  final Widget? title;
 
   /// Optional trailing widget on the right (e.g., badge, button)
   final Widget? trailing;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(left: 24, right: 24, top: 8, bottom: 16),
-      child: Column(
-        children: [
-          // Drag handle
-          Container(
-            width: 64,
-            height: 4,
-            decoration: BoxDecoration(
-              color: VineTheme.alphaLight25,
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
+    final hasTitle = title != null && title is! SizedBox;
 
-          const SizedBox(height: 20),
-
-          // Title (centered) + optional trailing actions
-          Stack(
-            alignment: Alignment.center,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 24, right: 24, top: 8),
+          child: Column(
             children: [
-              // Centered title
-              Center(child: title),
+              // Drag handle
+              Container(
+                width: 64,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: VineTheme.alphaLight25,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
 
-              // Trailing widget positioned on the right
-              if (trailing != null)
-                Positioned(
-                  right: 0,
-                  child: SizedBox(width: 62, child: trailing),
+              const SizedBox(height: 20),
+
+              if (hasTitle)
+                // Title (centered) + optional trailing actions
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Centered title
+                      Center(child: title),
+
+                      // Trailing widget positioned on the right
+                      if (trailing != null)
+                        Positioned(
+                          right: 0,
+                          child: SizedBox(width: 62, child: trailing),
+                        ),
+                    ],
+                  ),
                 ),
             ],
           ),
-        ],
-      ),
+        ),
+
+        // Divider separating header from content
+        const Divider(
+          height: 2,
+          thickness: 2,
+          color: VineTheme.outlinedDisabled,
+        ),
+      ],
     );
   }
 }

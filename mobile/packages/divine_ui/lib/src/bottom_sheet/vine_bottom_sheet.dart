@@ -19,7 +19,7 @@ import 'package:flutter/material.dart';
 class VineBottomSheet extends StatelessWidget {
   /// Creates a [VineBottomSheet] with the given parameters.
   const VineBottomSheet({
-    required this.title,
+    this.title,
     this.scrollController,
     this.children,
     this.body,
@@ -32,8 +32,8 @@ class VineBottomSheet extends StatelessWidget {
          'Provide either children or body, not both',
        );
 
-  /// Title widget displayed in the header
-  final Widget title;
+  /// Optional title widget displayed in the header
+  final Widget? title;
 
   /// Scroll controller from DraggableScrollableSheet (required if using
   /// children)
@@ -56,7 +56,7 @@ class VineBottomSheet extends StatelessWidget {
   /// Shows the bottom sheet as a modal with proper configuration
   static Future<T?> show<T>({
     required BuildContext context,
-    required Widget title,
+    Widget? title,
     List<Widget>? children,
     Widget? body,
     Widget? trailing,
@@ -87,36 +87,35 @@ class VineBottomSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: VineTheme.surfaceBackground,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(32),
-          topRight: Radius.circular(32),
-        ),
+    return ClipRRect(
+      borderRadius: const BorderRadius.only(
+        topLeft: Radius.circular(VineTheme.bottomSheetBorderRadius),
+        topRight: Radius.circular(VineTheme.bottomSheetBorderRadius),
       ),
-      child: Column(
-        children: [
-          // Header with drag handle, title, and trailing actions
-          VineBottomSheetHeader(title: title, trailing: trailing),
-          const Divider(height: 2, color: VineTheme.outlinedDisabled),
+      child: Container(
+        color: VineTheme.surfaceBackground,
+        child: Column(
+          children: [
+            // Header with drag handle, title, trailing actions, and divider
+            VineBottomSheetHeader(title: title, trailing: trailing),
 
-          // Content area (either managed ListView or custom body)
-          Expanded(
-            child:
-                body ??
-                ListView(
-                  controller: scrollController,
-                  padding: EdgeInsets.zero,
-                  children: children!,
-                ),
-          ),
-          if (bottomInput != null)
-            const Divider(height: 2, color: VineTheme.outlinedDisabled),
+            // Content area
+            Expanded(
+              child:
+                  body ??
+                  ListView(
+                    controller: scrollController,
+                    padding: EdgeInsets.zero,
+                    children: children!,
+                  ),
+            ),
+            if (bottomInput != null)
+              const Divider(height: 2, color: VineTheme.outlinedDisabled),
 
-          // Optional bottom input
-          ?bottomInput,
-        ],
+            // Optional bottom input
+            if (bottomInput != null) bottomInput!,
+          ],
+        ),
       ),
     );
   }
