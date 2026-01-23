@@ -422,17 +422,24 @@ AuthService authService(Ref ref) {
   );
 }
 
-/// Stream provider for reactive auth state changes
-/// Widgets should watch this instead of authService.authState to get rebuilds
-@riverpod
-Stream<AuthState> authStateStream(Ref ref) async* {
+/// Provider that returns current auth state and rebuilds when it changes.
+/// Widgets should watch this instead of authService.authState directly
+/// to get automatic rebuilds when authentication state changes.
+@Riverpod(keepAlive: true)
+AuthState currentAuthState(Ref ref) {
   final authService = ref.watch(authServiceProvider);
 
-  // Emit current state immediately
-  yield authService.authState;
+  // Listen to auth state changes and invalidate this provider when they occur
+  final subscription = authService.authStateStream.listen((_) {
+    // Invalidate to trigger rebuild with new state
+    ref.invalidateSelf();
+  });
 
-  // Then emit all future changes
-  yield* authService.authStateStream;
+  // Clean up subscription when provider is disposed
+  ref.onDispose(subscription.cancel);
+
+  // Return current state
+  return authService.authState;
 }
 
 /// Provider that sets Zendesk user identity when auth state changes
@@ -1109,9 +1116,9 @@ VideosRepository videosRepository(Ref ref) {
 LikesRepository likesRepository(Ref ref) {
   final authService = ref.watch(authServiceProvider);
 
-  // Watch auth state stream to react to auth changes (login/logout)
+  // Watch auth state to react to auth changes (login/logout)
   // This ensures the provider rebuilds when authentication completes
-  ref.watch(authStateStreamProvider);
+  ref.watch(currentAuthStateProvider);
 
   final isAuthenticated = authService.isAuthenticated;
 
@@ -1149,8 +1156,8 @@ RepostsRepository repostsRepository(Ref ref) {
   final authService = ref.watch(authServiceProvider);
   final nostrClient = ref.watch(nostrServiceProvider);
 
-  // Watch auth state stream to react to auth changes (login/logout)
-  ref.watch(authStateStreamProvider);
+  // Watch auth state to react to auth changes (login/logout)
+  ref.watch(currentAuthStateProvider);
 
   final isAuthenticated = authService.isAuthenticated;
 

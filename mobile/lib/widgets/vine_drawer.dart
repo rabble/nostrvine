@@ -79,12 +79,8 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   @override
   Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
-    final authStateAsync = ref.watch(authStateStreamProvider);
-    final isAuthenticated = authStateAsync.when(
-      data: (state) => state == AuthState.authenticated,
-      loading: () => false,
-      error: (_, __) => false,
-    );
+    final authState = ref.watch(currentAuthStateProvider);
+    final isAuthenticated = authState == AuthState.authenticated;
 
     return Drawer(
       backgroundColor: VineTheme.backgroundColor,

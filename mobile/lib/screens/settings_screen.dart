@@ -60,6 +60,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       _overlayNotifier = ref.read(overlayVisibilityProvider.notifier);
       _overlayNotifier?.setSettingsOpen(true);
     });
+    Log.debug(
+      '👨‍💻 settingsService initState auth',
+      name: 'SettingsScreen',
+      category: LogCategory.ui,
+    );
   }
 
   @override
@@ -80,20 +85,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
-    final authStateAsync = ref.watch(authStateStreamProvider);
-    final isAuthenticated = authStateAsync.when(
-      data: (state) {
-        Log.debug(
-          '👨‍💻 authStateAsync when $state',
-          name: 'SettingsScreen',
-          category: LogCategory.ui,
-        );
-
-        return state == AuthState.authenticated;
-      },
-      loading: () => false,
-      error: (_, __) => false,
-    );
+    // Use currentAuthStateProvider for synchronous access to auth state
+    // This provider invalidates itself when auth state changes
+    final authState = ref.watch(currentAuthStateProvider);
+    final isAuthenticated = authState == AuthState.authenticated;
 
     return Scaffold(
       appBar: AppBar(

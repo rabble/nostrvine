@@ -1580,47 +1580,57 @@ final class AuthServiceProvider
 
 String _$authServiceHash() => r'94a2bd6d38b6063777d3442f2383752fe6a885d8';
 
-/// Stream provider for reactive auth state changes
-/// Widgets should watch this instead of authService.authState to get rebuilds
+/// Provider that returns current auth state and rebuilds when it changes.
+/// Widgets should watch this instead of authService.authState directly
+/// to get automatic rebuilds when authentication state changes.
 
-@ProviderFor(authStateStream)
-const authStateStreamProvider = AuthStateStreamProvider._();
+@ProviderFor(currentAuthState)
+const currentAuthStateProvider = CurrentAuthStateProvider._();
 
-/// Stream provider for reactive auth state changes
-/// Widgets should watch this instead of authService.authState to get rebuilds
+/// Provider that returns current auth state and rebuilds when it changes.
+/// Widgets should watch this instead of authService.authState directly
+/// to get automatic rebuilds when authentication state changes.
 
-final class AuthStateStreamProvider
-    extends
-        $FunctionalProvider<AsyncValue<AuthState>, AuthState, Stream<AuthState>>
-    with $FutureModifier<AuthState>, $StreamProvider<AuthState> {
-  /// Stream provider for reactive auth state changes
-  /// Widgets should watch this instead of authService.authState to get rebuilds
-  const AuthStateStreamProvider._()
+final class CurrentAuthStateProvider
+    extends $FunctionalProvider<AuthState, AuthState, AuthState>
+    with $Provider<AuthState> {
+  /// Provider that returns current auth state and rebuilds when it changes.
+  /// Widgets should watch this instead of authService.authState directly
+  /// to get automatic rebuilds when authentication state changes.
+  const CurrentAuthStateProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'authStateStreamProvider',
-        isAutoDispose: true,
+        name: r'currentAuthStateProvider',
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$authStateStreamHash();
+  String debugGetCreateSourceHash() => _$currentAuthStateHash();
 
   @$internal
   @override
-  $StreamProviderElement<AuthState> $createElement($ProviderPointer pointer) =>
-      $StreamProviderElement(pointer);
+  $ProviderElement<AuthState> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
-  Stream<AuthState> create(Ref ref) {
-    return authStateStream(ref);
+  AuthState create(Ref ref) {
+    return currentAuthState(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AuthState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AuthState>(value),
+    );
   }
 }
 
-String _$authStateStreamHash() => r'bd5c1864e57cfd46c9676d3dc1fe3aa358c2a14b';
+String _$currentAuthStateHash() => r'41c987ffc8f661555bab3ebec9078180411f66eb';
 
 /// Provider that sets Zendesk user identity when auth state changes
 /// Watch this provider at app startup to keep Zendesk identity in sync with auth
@@ -3394,7 +3404,7 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'62defb128dde642ba8b874984307d47d42a8dd63';
+String _$likesRepositoryHash() => r'f9b50b96122f30b3da89fe49ca5762deceae552b';
 
 /// Provider for RepostsRepository instance
 ///
@@ -3458,4 +3468,4 @@ final class RepostsRepositoryProvider
   }
 }
 
-String _$repostsRepositoryHash() => r'2f2f22ddfc87f03ef9d2f617b8402ea641b373f7';
+String _$repostsRepositoryHash() => r'7e494675b3b347a6e62f769bc37b39b405e1cf8a';
