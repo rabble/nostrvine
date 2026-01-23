@@ -146,7 +146,9 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       onTap: () {
                         // Capture router before closing drawer to avoid context issues
                         final router = GoRouter.of(context);
-                        Navigator.of(context).pop(); // Close drawer (not context.pop!)
+                        Navigator.of(
+                          context,
+                        ).pop(); // Close drawer (not context.pop!)
                         router.push(ProfileSetupScreen.editPath);
                       },
                     ),
@@ -161,7 +163,9 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     onTap: () {
                       // Capture router before closing drawer to avoid context issues
                       final router = GoRouter.of(context);
-                      Navigator.of(context).pop(); // Close drawer (not context.pop!)
+                      Navigator.of(
+                        context,
+                      ).pop(); // Close drawer (not context.pop!)
                       router.push(SettingsScreen.path);
                     },
                   ),
