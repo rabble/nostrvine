@@ -134,7 +134,7 @@ void main() {
                     await VineBottomSheet.show<void>(
                       context: context,
                       title: const Text('Modal Sheet'),
-                      body: const Text('Modal Content'),
+                      children: const [Text('Modal Content')],
                     );
                   },
                   child: const Text('Show Sheet'),

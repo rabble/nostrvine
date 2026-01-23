@@ -18,6 +18,8 @@ import 'package:flutter/material.dart';
 /// - `scrollable: false` - Fixed height based on content, not draggable
 class VineBottomSheet extends StatelessWidget {
   /// Creates a [VineBottomSheet] with the given parameters.
+  ///
+  /// Set [expanded] to false for content that should wrap (not fill space).
   const VineBottomSheet({
     this.scrollable = true,
     this.title,
@@ -27,6 +29,7 @@ class VineBottomSheet extends StatelessWidget {
     this.body,
     this.trailing,
     this.bottomInput,
+    this.expanded = true,
     super.key,
   }) : assert(
          children != null || body != null,
@@ -62,23 +65,33 @@ class VineBottomSheet extends StatelessWidget {
   /// Optional bottom input section (e.g., comment input)
   final Widget? bottomInput;
 
+  /// Whether the body should expand to fill available space.
+  /// Set to false for simple content that should wrap.
+  final bool expanded;
+
   /// Shows the bottom sheet as a modal.
   ///
   /// Set [scrollable] to false for fixed-height sheets (e.g., action menus).
   /// The size parameters are only used when [scrollable] is true.
   static Future<T?> show<T>({
     required BuildContext context,
-    required List<Widget> children,
+    List<Widget>? children,
     bool scrollable = true,
     Widget? title,
     String? contentTitle,
     Widget? body,
     Widget? trailing,
     Widget? bottomInput,
+    bool expanded = true,
+    bool? isScrollControlled,
     double initialChildSize = 0.6,
     double minChildSize = 0.3,
     double maxChildSize = 0.9,
   }) {
+    assert(
+      children != null || body != null,
+      'Provide either children or body to VineBottomSheet.show',
+    );
     if (scrollable) {
       // Draggable/scrollable mode
       return showModalBottomSheet<T>(
@@ -95,6 +108,7 @@ class VineBottomSheet extends StatelessWidget {
             scrollController: scrollController,
             trailing: trailing,
             bottomInput: bottomInput,
+            expanded: expanded,
             body: body,
             children: children,
           ),
@@ -104,6 +118,7 @@ class VineBottomSheet extends StatelessWidget {
       // Fixed mode
       return showModalBottomSheet<T>(
         context: context,
+        isScrollControlled: isScrollControlled ?? expanded,
         backgroundColor: Colors.transparent,
         builder: (_) => VineBottomSheet(
           scrollable: false,
@@ -111,6 +126,7 @@ class VineBottomSheet extends StatelessWidget {
           contentTitle: contentTitle,
           trailing: trailing,
           bottomInput: bottomInput,
+          expanded: expanded,
           body: body,
           children: children,
         ),

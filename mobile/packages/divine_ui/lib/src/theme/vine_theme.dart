@@ -120,11 +120,13 @@ class VineTheme {
     double fontSize = 22,
     double? height,
     Color color = whiteText,
+    double? letterSpacing,
   }) => GoogleFonts.bricolageGrotesque(
     fontSize: fontSize,
     fontWeight: FontWeight.w800,
     height: height ?? 28 / 22,
     color: color,
+    letterSpacing: letterSpacing,
   );
 
   // --------------------------------------------------------------------------
@@ -167,11 +169,13 @@ class VineTheme {
     FontWeight fontWeight = FontWeight.w400,
     Color color = primaryText,
     double? height,
+    double? letterSpacing,
   }) => GoogleFonts.inter(
     fontSize: fontSize,
     fontWeight: fontWeight,
     color: color,
     height: height,
+    letterSpacing: letterSpacing,
   );
 
   // --------------------------------------------------------------------------
@@ -223,6 +227,9 @@ class VineTheme {
   static const Color vineGreenLight = Color(0xFF33C49F);
 
   // Navigation colors
+
+  /// Primary color.
+  static const Color primary = Color(0xFF27C58B);
 
   /// Navigation bar green background.
   static const Color navGreen = Color(0xFF00150D);
