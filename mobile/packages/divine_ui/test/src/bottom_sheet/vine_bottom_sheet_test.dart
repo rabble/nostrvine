@@ -221,8 +221,9 @@ void main() {
         expect(find.text('Modal Content'), findsOneWidget);
       });
 
-      testWidgets('shows fixed mode sheet with scrollable false',
-          (tester) async {
+      testWidgets('shows fixed mode sheet with scrollable false', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
