@@ -442,7 +442,7 @@ void main() {
       );
 
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
-        'updates repostedAddressableIds when video is reposted',
+        'updates repostedAddressableIds when video is reposted (fetch fails)',
         build: createBloc,
         seed: () => ProfileRepostedVideosState(
           status: ProfileRepostedVideosStatus.success,
@@ -460,6 +460,7 @@ void main() {
         },
         wait: const Duration(milliseconds: 100),
         expect: () => [
+          // Even when fetch fails, IDs are still updated
           isA<ProfileRepostedVideosState>().having(
             (s) => s.repostedAddressableIds,
             'repostedAddressableIds',
@@ -468,6 +469,61 @@ void main() {
               createAddressableId(currentUserPubkey, 'd2'),
             ]),
           ),
+        ],
+      );
+
+      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+        'fetches and prepends newly reposted video to list',
+        setUp: () {
+          final newAddressableId = createAddressableId(currentUserPubkey, 'd2');
+          final newVideo = createTestVideo(
+            id: 'e2',
+            pubkey: currentUserPubkey,
+            vineId: 'd2',
+          );
+          when(
+            () => mockVideosRepository.getVideosByAddressableIds([
+              newAddressableId,
+            ]),
+          ).thenAnswer((_) async => [newVideo]);
+        },
+        build: createBloc,
+        seed: () => ProfileRepostedVideosState(
+          status: ProfileRepostedVideosStatus.success,
+          repostedAddressableIds: [
+            createAddressableId(currentUserPubkey, 'd1'),
+          ],
+          videos: [
+            createTestVideo(id: 'e1', pubkey: currentUserPubkey, vineId: 'd1'),
+          ],
+        ),
+        act: (bloc) async {
+          bloc.add(const ProfileRepostedVideosSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          repostedIdsController.add({
+            createAddressableId(currentUserPubkey, 'd1'),
+            createAddressableId(currentUserPubkey, 'd2'),
+          });
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<ProfileRepostedVideosState>()
+              .having(
+                (s) => s.repostedAddressableIds.length,
+                'addressable IDs count',
+                2,
+              )
+              .having((s) => s.videos.length, 'videos count', 2)
+              .having(
+                (s) => s.videos.first.vineId,
+                'first video vineId (new video prepended)',
+                'd2',
+              )
+              .having(
+                (s) => s.videos.last.vineId,
+                'last video vineId (existing video)',
+                'd1',
+              ),
         ],
       );
     });
