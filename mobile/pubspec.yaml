@@ -29,6 +29,7 @@ workspace:
   - packages/divine_camera
   - packages/keycast_flutter
   - packages/likes_repository
+  - packages/media_cache
   - packages/models
   - packages/nostr_sdk
   - packages/nostr_client
