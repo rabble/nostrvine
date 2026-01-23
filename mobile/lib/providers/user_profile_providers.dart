@@ -15,22 +15,11 @@ part 'user_profile_providers.g.dart';
 
 @riverpod
 Future<UserProfile?> userProfileReactive(Ref ref, String pubkey) async {
-  Log.info('Checking for $pubkey');
   final userProfileService = ref.watch(userProfileServiceProvider);
 
   // Is the profile already present in the service cache?
-  final isCached = userProfileService.hasProfile(pubkey);
-
-  if (isCached) {
-    final cached = userProfileService.getCachedProfile(pubkey);
-    Log.debug(
-      '✅ Found cached profile: name=${cached?.name}, '
-      'displayName=${cached?.displayName}, bestDisplayName=${cached?.bestDisplayName}',
-      name: 'UserProfileReactiveProvider',
-      category: LogCategory.ui,
-    );
-
-    return cached;
+  if (userProfileService.hasProfile(pubkey)) {
+    return userProfileService.getCachedProfile(pubkey);
   }
 
   // Check if profile is known to be missing (should skip fetch)
@@ -161,13 +150,7 @@ Future<UserProfile?> fetchUserProfile(Ref ref, String pubkey) async {
     return null;
   }
 
-  final converted = UserProfile.fromJson(profile.toJson());
-  Log.debug(
-    'Loaded profile: ${converted.bestDisplayName}',
-    name: 'UserProfileProvider',
-    category: LogCategory.ui,
-  );
-  return converted;
+  return UserProfile.fromJson(profile.toJson());
 }
 
 // User profile state notifier with reactive state management
