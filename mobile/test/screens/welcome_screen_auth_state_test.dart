@@ -43,9 +43,7 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWithValue(mockAuthService),
-            currentAuthStateProvider.overrideWith(
-              (ref) => AuthState.checking,
-            ),
+            currentAuthStateProvider.overrideWith((ref) => AuthState.checking),
           ],
           child: const MaterialApp(home: WelcomeScreen()),
         ),
@@ -208,9 +206,9 @@ void main() {
         when(mockAuthService.authState).thenReturn(AuthState.checking);
         when(mockAuthService.isAuthenticated).thenReturn(false);
         when(mockAuthService.lastError).thenReturn(null);
-        when(mockAuthService.authStateStream).thenAnswer(
-          (_) => authStateController.stream,
-        );
+        when(
+          mockAuthService.authStateStream,
+        ).thenAnswer((_) => authStateController.stream);
 
         await tester.binding.setSurfaceSize(const Size(800, 1200));
         await tester.pumpWidget(
