@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -73,11 +74,28 @@ class FollowFromProfileButtonView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                child: Text(
-                  'Following',
-                  style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/icon/userCheck.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: const ColorFilter.mode(
+                        VineTheme.vineGreen,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Following',
+                      style: VineTheme.titleMediumFont(
+                        color: VineTheme.vineGreen,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               )
             : ElevatedButton(
@@ -93,11 +111,28 @@ class FollowFromProfileButtonView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(20),
                   ),
                 ),
-                child: Text(
-                  'Follow',
-                  style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SvgPicture.asset(
+                      'assets/icon/userPlus.svg',
+                      width: 24,
+                      height: 24,
+                      colorFilter: const ColorFilter.mode(
+                        VineTheme.onPrimary,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Follow',
+                      style: VineTheme.titleMediumFont(
+                        color: VineTheme.onPrimary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                 ),
               );
       },

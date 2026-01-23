@@ -247,11 +247,14 @@ flutter:
     - assets/icon/compass.svg
     - assets/icon/bell.svg
     - assets/icon/userCircle.svg
+    - assets/icon/userCheck.svg
+    - assets/icon/userPlus.svg
     - assets/icon/content-controls/
     - assets/icon/Icon-Follow.svg
     - assets/icon/Icon-Following.svg
     - assets/icon/ArrowClockwise.svg
     - assets/icon/Check.svg
+    - assets/icon/Copy.svg
     - assets/icon/plus.svg
     - assets/icon/arrow_bend_down_right.svg
     - assets/icon/DotsThree.svg

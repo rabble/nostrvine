@@ -2,6 +2,7 @@
 // ABOUTME: Uses CustomScrollView with slivers for smooth scrolling, URL is source of truth
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -305,6 +306,30 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             ),
           ),
         ),
+        InkWell(
+          onTap: () => Navigator.of(context).pop('copy_npub'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icon/Copy.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: const ColorFilter.mode(
+                    VineTheme.whiteText,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  'Copy public key (npub)',
+                  style: VineTheme.titleMediumFont(),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
 
@@ -312,6 +337,19 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     if (result == 'share') {
       await _shareProfile(userIdHex);
+    } else if (result == 'copy_npub') {
+      await _copyNpub(userIdHex);
+    }
+  }
+
+  Future<void> _copyNpub(String userIdHex) async {
+    final npub = NostrKeyUtils.encodePubKey(userIdHex);
+    await Clipboard.setData(ClipboardData(text: npub));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Public key copied to clipboard')),
+      );
     }
   }
 }
