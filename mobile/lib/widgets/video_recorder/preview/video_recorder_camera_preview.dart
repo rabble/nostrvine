@@ -110,7 +110,9 @@ class _CameraPreview extends ConsumerWidget {
             Container(color: const Color(0xFF141414)),
 
             /// Preview widget
-            if (!kIsWeb && Platform.isMacOS)
+            /// Use defaultTargetPlatform instead of Platform.isMacOS to allow
+            /// overriding in tests via debugDefaultTargetPlatformOverride
+            if (!kIsWeb && defaultTargetPlatform == TargetPlatform.macOS)
               VideoRecorderMacosPreview()
             else
               VideoRecorderMobilePreview(),
