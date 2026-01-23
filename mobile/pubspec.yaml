@@ -32,7 +32,6 @@ workspace:
   - packages/models
   - packages/nostr_sdk
   - packages/nostr_client
-  - packages/nostr_gateway
   - packages/nostr_key_manager
   - packages/permissions_service
   - packages/pooled_video_player

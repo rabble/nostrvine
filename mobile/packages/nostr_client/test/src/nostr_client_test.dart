@@ -5,13 +5,10 @@ import 'package:db_client/db_client.dart' hide Filter;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_gateway/nostr_gateway.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/utils/hash_util.dart';
 
 class _MockNostr extends Mock implements Nostr {}
-
-class _MockGatewayClient extends Mock implements GatewayClient {}
 
 class _MockRelayManager extends Mock implements RelayManager {}
 
@@ -69,7 +66,6 @@ Event _createTestEvent({
 void main() {
   group('NostrClient', () {
     late _MockNostr mockNostr;
-    late _MockGatewayClient mockGatewayClient;
     late _MockRelayManager mockRelayManager;
     late NostrClient client;
 
@@ -87,7 +83,6 @@ void main() {
 
     setUp(() {
       mockNostr = _MockNostr();
-      mockGatewayClient = _MockGatewayClient();
       mockRelayManager = _MockRelayManager();
 
       // Set up default mock behavior
@@ -102,13 +97,11 @@ void main() {
       client = NostrClient.forTesting(
         nostr: mockNostr,
         relayManager: mockRelayManager,
-        gatewayClient: mockGatewayClient,
       );
     });
 
     tearDown(() {
       reset(mockNostr);
-      reset(mockGatewayClient);
       reset(mockRelayManager);
     });
     group('constructor and properties', () {
@@ -117,13 +110,13 @@ void main() {
         verify(() => mockNostr.publicKey).called(1);
       });
 
-      test('creates client with null gatewayClient', () {
+      test('creates client without dbClient', () {
         final localMockRelayManager = _MockRelayManager();
-        final clientWithoutGateway = NostrClient.forTesting(
+        final clientWithoutDb = NostrClient.forTesting(
           nostr: mockNostr,
           relayManager: localMockRelayManager,
         );
-        expect(clientWithoutGateway.publicKey, equals(testPublicKey));
+        expect(clientWithoutDb.publicKey, equals(testPublicKey));
       });
     });
 
@@ -280,7 +273,6 @@ void main() {
           clientWithCache = NostrClient.forTesting(
             nostr: mockNostr,
             relayManager: mockRelayManager,
-            gatewayClient: mockGatewayClient,
             dbClient: mockDbClient,
           );
         });
@@ -382,79 +374,12 @@ void main() {
     });
 
     group('queryEvents', () {
-      test('uses gateway when enabled and single filter', () async {
+      test('queries events via WebSocket', () async {
         final filters = [
           Filter(kinds: [EventKind.textNote], limit: 10),
         ];
         final events = [_createTestEvent(), _createTestEvent()];
-        final response = GatewayResponse(
-          events: events,
-          eose: true,
-          complete: true,
-          cached: true,
-        );
 
-        when(
-          () => mockGatewayClient.query(any()),
-        ).thenAnswer((_) async => response);
-
-        final result = await client.queryEvents(filters);
-
-        expect(result, equals(events));
-        verify(() => mockGatewayClient.query(any())).called(1);
-        verifyNever(
-          () => mockNostr.queryEvents(
-            any(),
-            id: any(named: 'id'),
-            tempRelays: any(named: 'tempRelays'),
-            relayTypes: any(named: 'relayTypes'),
-            sendAfterAuth: any(named: 'sendAfterAuth'),
-          ),
-        );
-      });
-
-      test(
-        'returns empty list when gateway returns empty (no WebSocket fallback)',
-        () async {
-          final filters = [
-            Filter(kinds: [EventKind.textNote], limit: 10),
-          ];
-          const emptyResponse = GatewayResponse(
-            events: [],
-            eose: true,
-            complete: true,
-            cached: false,
-          );
-
-          when(
-            () => mockGatewayClient.query(any()),
-          ).thenAnswer((_) async => emptyResponse);
-
-          final result = await client.queryEvents(filters);
-
-          expect(result, isEmpty);
-          verify(() => mockGatewayClient.query(any())).called(1);
-          verifyNever(
-            () => mockNostr.queryEvents(
-              any(),
-              id: any(named: 'id'),
-              tempRelays: any(named: 'tempRelays'),
-              relayTypes: any(named: 'relayTypes'),
-              sendAfterAuth: any(named: 'sendAfterAuth'),
-            ),
-          );
-        },
-      );
-
-      test('falls back to WebSocket when gateway throws', () async {
-        final filters = [
-          Filter(kinds: [EventKind.textNote], limit: 10),
-        ];
-        final events = [_createTestEvent()];
-
-        when(
-          () => mockGatewayClient.query(any()),
-        ).thenThrow(Exception('Gateway error'));
         when(
           () => mockNostr.queryEvents(
             any(),
@@ -468,13 +393,21 @@ void main() {
         final result = await client.queryEvents(filters);
 
         expect(result, equals(events));
+        verify(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+          ),
+        ).called(1);
       });
 
-      test('skips gateway when useGateway is false', () async {
+      test('returns empty list when WebSocket returns empty', () async {
         final filters = [
           Filter(kinds: [EventKind.textNote], limit: 10),
         ];
-        final events = [_createTestEvent()];
 
         when(
           () => mockNostr.queryEvents(
@@ -484,15 +417,14 @@ void main() {
             relayTypes: any(named: 'relayTypes'),
             sendAfterAuth: any(named: 'sendAfterAuth'),
           ),
-        ).thenAnswer((_) async => events);
+        ).thenAnswer((_) async => []);
 
-        final result = await client.queryEvents(filters, useGateway: false);
+        final result = await client.queryEvents(filters);
 
-        expect(result, equals(events));
-        verifyNever(() => mockGatewayClient.query(any()));
+        expect(result, isEmpty);
       });
 
-      test('skips gateway when multiple filters provided', () async {
+      test('queries with multiple filters', () async {
         final filters = [
           Filter(kinds: [EventKind.textNote], limit: 10),
           Filter(kinds: [EventKind.metadata], limit: 5),
@@ -512,7 +444,6 @@ void main() {
         final result = await client.queryEvents(filters);
 
         expect(result, equals(events));
-        verifyNever(() => mockGatewayClient.query(any()));
       });
 
       test('passes all parameters to WebSocket query', () async {
@@ -538,7 +469,6 @@ void main() {
           tempRelays: tempRelays,
           relayTypes: [RelayType.normal],
           sendAfterAuth: true,
-          useGateway: false,
         );
 
         verify(
@@ -551,94 +481,10 @@ void main() {
           ),
         ).called(1);
       });
-
-      test('works without gateway client', () async {
-        final localMockRelayManager = _MockRelayManager();
-        final clientWithoutGateway = NostrClient.forTesting(
-          nostr: mockNostr,
-          relayManager: localMockRelayManager,
-        );
-        final filters = [
-          Filter(kinds: [EventKind.textNote], limit: 10),
-        ];
-        final events = [_createTestEvent()];
-
-        when(
-          () => mockNostr.queryEvents(
-            any(),
-            id: any(named: 'id'),
-            tempRelays: any(named: 'tempRelays'),
-            relayTypes: any(named: 'relayTypes'),
-            sendAfterAuth: any(named: 'sendAfterAuth'),
-          ),
-        ).thenAnswer((_) async => events);
-
-        final result = await clientWithoutGateway.queryEvents(filters);
-
-        expect(result, equals(events));
-      });
     });
 
     group('fetchEventById', () {
-      test('uses gateway when enabled', () async {
-        const eventId = 'test-event-id';
-        final event = _createTestEvent(id: eventId);
-
-        when(
-          () => mockGatewayClient.getEvent(eventId),
-        ).thenAnswer((_) async => event);
-
-        final result = await client.fetchEventById(eventId);
-
-        expect(result, equals(event));
-        verify(() => mockGatewayClient.getEvent(eventId)).called(1);
-      });
-
-      test('falls back to WebSocket when gateway returns null', () async {
-        const eventId = 'test-event-id';
-        final event = _createTestEvent(id: eventId);
-
-        when(
-          () => mockGatewayClient.getEvent(eventId),
-        ).thenAnswer((_) async => null);
-        when(
-          () => mockNostr.queryEvents(
-            any(),
-            id: any(named: 'id'),
-            tempRelays: any(named: 'tempRelays'),
-            relayTypes: any(named: 'relayTypes'),
-            sendAfterAuth: any(named: 'sendAfterAuth'),
-          ),
-        ).thenAnswer((_) async => [event]);
-
-        final result = await client.fetchEventById(eventId);
-
-        expect(result, equals(event));
-      });
-
-      test('falls back to WebSocket when gateway throws', () async {
-        const eventId = 'test-event-id';
-        final event = _createTestEvent(id: eventId);
-
-        when(
-          () => mockGatewayClient.getEvent(eventId),
-        ).thenThrow(Exception('Gateway error'));
-        when(
-          () => mockNostr.queryEvents(
-            any(),
-            id: any(named: 'id'),
-            tempRelays: any(named: 'tempRelays'),
-            relayTypes: any(named: 'relayTypes'),
-            sendAfterAuth: any(named: 'sendAfterAuth'),
-          ),
-        ).thenAnswer((_) async => [event]);
-
-        final result = await client.fetchEventById(eventId);
-
-        expect(result, equals(event));
-      });
-
-      test('skips gateway when useGateway is false', () async {
+      test('fetches event via WebSocket', () async {
         const eventId = 'test-event-id';
         final event = _createTestEvent(id: eventId);
 
@@ -652,9 +498,9 @@ void main() {
           ),
         ).thenAnswer((_) async => [event]);
 
-        await client.fetchEventById(eventId, useGateway: false);
+        final result = await client.fetchEventById(eventId);
 
-        verifyNever(() => mockGatewayClient.getEvent(any()));
+        expect(result, equals(event));
       });
 
       test('uses provided relayUrl', () async {
@@ -662,9 +508,6 @@ void main() {
         const relayUrl = 'wss://relay.example.com';
         final event = _createTestEvent(id: eventId);
 
-        when(
-          () => mockGatewayClient.getEvent(eventId),
-        ).thenAnswer((_) async => null);
         when(
           () => mockNostr.queryEvents(
             any(),
@@ -692,9 +535,6 @@ void main() {
         const eventId = 'nonexistent-id';
 
         when(
-          () => mockGatewayClient.getEvent(eventId),
-        ).thenAnswer((_) async => null);
-        when(
           () => mockNostr.queryEvents(
             any(),
             id: any(named: 'id'),
@@ -711,7 +551,7 @@ void main() {
     });
 
     group('fetchProfile', () {
-      test('uses gateway when enabled', () async {
+      test('fetches profile via WebSocket', () async {
         const pubkey = testPublicKey;
         final profileEvent = _createTestEvent(
           pubkey: pubkey,
@@ -720,26 +560,6 @@ void main() {
         );
 
         when(
-          () => mockGatewayClient.getProfile(pubkey),
-        ).thenAnswer((_) async => profileEvent);
-
-        final result = await client.fetchProfile(pubkey);
-
-        expect(result, equals(profileEvent));
-        verify(() => mockGatewayClient.getProfile(pubkey)).called(1);
-      });
-
-      test('falls back to WebSocket when gateway returns null', () async {
-        const pubkey = testPublicKey;
-        final profileEvent = _createTestEvent(
-          pubkey: pubkey,
-          kind: EventKind.metadata,
-        );
-
-        when(
-          () => mockGatewayClient.getProfile(pubkey),
-        ).thenAnswer((_) async => null);
-        when(
           () => mockNostr.queryEvents(
             any(),
             id: any(named: 'id'),
@@ -752,61 +572,11 @@ void main() {
         final result = await client.fetchProfile(pubkey);
 
         expect(result, equals(profileEvent));
-      });
-
-      test('falls back to WebSocket when gateway throws', () async {
-        const pubkey = testPublicKey;
-        final profileEvent = _createTestEvent(
-          pubkey: pubkey,
-          kind: EventKind.metadata,
-        );
-
-        when(
-          () => mockGatewayClient.getProfile(pubkey),
-        ).thenThrow(Exception('Gateway error'));
-        when(
-          () => mockNostr.queryEvents(
-            any(),
-            id: any(named: 'id'),
-            tempRelays: any(named: 'tempRelays'),
-            relayTypes: any(named: 'relayTypes'),
-            sendAfterAuth: any(named: 'sendAfterAuth'),
-          ),
-        ).thenAnswer((_) async => [profileEvent]);
-
-        final result = await client.fetchProfile(pubkey);
-
-        expect(result, equals(profileEvent));
-      });
-
-      test('skips gateway when useGateway is false', () async {
-        const pubkey = testPublicKey;
-        final profileEvent = _createTestEvent(
-          pubkey: pubkey,
-          kind: EventKind.metadata,
-        );
-
-        when(
-          () => mockNostr.queryEvents(
-            any(),
-            id: any(named: 'id'),
-            tempRelays: any(named: 'tempRelays'),
-            relayTypes: any(named: 'relayTypes'),
-            sendAfterAuth: any(named: 'sendAfterAuth'),
-          ),
-        ).thenAnswer((_) async => [profileEvent]);
-
-        await client.fetchProfile(pubkey, useGateway: false);
-
-        verifyNever(() => mockGatewayClient.getProfile(any()));
       });
 
       test('returns null when no profile found', () async {
         const pubkey = testPublicKey;
 
-        when(
-          () => mockGatewayClient.getProfile(pubkey),
-        ).thenAnswer((_) async => null);
         when(
           () => mockNostr.queryEvents(
             any(),
@@ -1908,56 +1678,6 @@ void main() {
       });
     });
 
-    group('gateway fallback behavior', () {
-      test('handles GatewayException gracefully', () async {
-        final filters = [
-          Filter(kinds: [EventKind.textNote], limit: 10),
-        ];
-        final events = [_createTestEvent()];
-
-        when(
-          () => mockGatewayClient.query(any()),
-        ).thenThrow(const GatewayException('Server error', statusCode: 500));
-        when(
-          () => mockNostr.queryEvents(
-            any(),
-            id: any(named: 'id'),
-            tempRelays: any(named: 'tempRelays'),
-            relayTypes: any(named: 'relayTypes'),
-            sendAfterAuth: any(named: 'sendAfterAuth'),
-          ),
-        ).thenAnswer((_) async => events);
-
-        final result = await client.queryEvents(filters);
-
-        expect(result, equals(events));
-      });
-
-      test('handles network errors gracefully', () async {
-        final filters = [
-          Filter(kinds: [EventKind.textNote], limit: 10),
-        ];
-        final events = [_createTestEvent()];
-
-        when(
-          () => mockGatewayClient.query(any()),
-        ).thenThrow(Exception('Network timeout'));
-        when(
-          () => mockNostr.queryEvents(
-            any(),
-            id: any(named: 'id'),
-            tempRelays: any(named: 'tempRelays'),
-            relayTypes: any(named: 'relayTypes'),
-            sendAfterAuth: any(named: 'sendAfterAuth'),
-          ),
-        ).thenAnswer((_) async => events);
-
-        final result = await client.queryEvents(filters);
-
-        expect(result, equals(events));
-      });
-    });
-
     group('Database caching integration', () {
       late _MockAppDbClient mockDbClient;
       late _MockAppDatabase mockDatabase;
@@ -1975,7 +1695,6 @@ void main() {
         clientWithCache = NostrClient.forTesting(
           nostr: mockNostr,
           relayManager: mockRelayManager,
-          gatewayClient: mockGatewayClient,
           dbClient: mockDbClient,
         );
       });
@@ -2127,48 +1846,21 @@ void main() {
       });
 
       group('queryEvents with cache-first', () {
-        test('returns cached events when available', () async {
+        test('returns merged cache + websocket events', () async {
           final filters = [
             Filter(kinds: [EventKind.textNote], limit: 10),
           ];
           final cachedEvents = [
             _createTestEvent(content: 'cached 1'),
-            _createTestEvent(content: 'cached 2'),
+          ];
+          final wsEvents = [
+            _createTestEvent(content: 'from websocket'),
           ];
 
           when(
             () => mockNostrEventsDao.getEventsByFilter(any()),
           ).thenAnswer((_) async => cachedEvents);
-
-          // Gateway returns cached events
-          // (simulating network returning same data)
           when(
-            () => mockGatewayClient.query(any()),
-          ).thenAnswer(
-            (_) async => GatewayResponse(
-              events: cachedEvents,
-              eose: true,
-              complete: true,
-              cached: false,
-            ),
-          );
-
-          // Stub upsertEventsBatch for the gateway cache write
-          when(
-            () => mockNostrEventsDao.upsertEventsBatch(any()),
-          ).thenAnswer((_) async {});
-
-          final result = await clientWithCache.queryEvents(filters);
-
-          // Cache + gateway results merged (deduplicated to cachedEvents)
-          expect(result, equals(cachedEvents));
-          verify(
-            () => mockNostrEventsDao.getEventsByFilter(filters.first),
-          ).called(1);
-          // Gateway IS called (cache + network merge strategy)
-          verify(() => mockGatewayClient.query(any())).called(1);
-          // WebSocket NOT called since gateway had events
-          verifyNever(
             () => mockNostr.queryEvents(
               any(),
               id: any(named: 'id'),
@@ -2176,101 +1868,94 @@ void main() {
               relayTypes: any(named: 'relayTypes'),
               sendAfterAuth: any(named: 'sendAfterAuth'),
             ),
-          );
-        });
-
-        test('falls back to gateway when cache is empty', () async {
-          final filters = [
-            Filter(kinds: [EventKind.textNote], limit: 10),
-          ];
-          final gatewayEvents = [_createTestEvent(content: 'from gateway')];
-
-          when(
-            () => mockNostrEventsDao.getEventsByFilter(any()),
-          ).thenAnswer((_) async => []);
-          when(
-            () => mockGatewayClient.query(any()),
-          ).thenAnswer(
-            (_) async => GatewayResponse(
-              events: gatewayEvents,
-              eose: true,
-              complete: true,
-              cached: false,
-            ),
-          );
+          ).thenAnswer((_) async => wsEvents);
           when(
             () => mockNostrEventsDao.upsertEventsBatch(any()),
           ).thenAnswer((_) async {});
 
           final result = await clientWithCache.queryEvents(filters);
 
-          expect(result, equals(gatewayEvents));
+          // Cache + WebSocket results merged
+          expect(result.length, 2);
           verify(
-            () => mockNostrEventsDao.upsertEventsBatch(gatewayEvents),
+            () => mockNostrEventsDao.getEventsByFilter(filters.first),
           ).called(1);
         });
 
-        test(
-          'returns empty when cache is empty and gateway returns empty',
-          () async {
-            final filters = [
-              Filter(kinds: [EventKind.textNote], limit: 10),
-            ];
+        test('queries websocket when cache is empty', () async {
+          final filters = [
+            Filter(kinds: [EventKind.textNote], limit: 10),
+          ];
+          final wsEvents = [_createTestEvent(content: 'from websocket')];
 
-            when(
-              () => mockNostrEventsDao.getEventsByFilter(any()),
-            ).thenAnswer((_) async => []);
-            when(
-              () => mockGatewayClient.query(any()),
-            ).thenAnswer(
-              (_) async => const GatewayResponse(
-                events: [],
-                eose: true,
-                complete: true,
-                cached: false,
-              ),
-            );
+          when(
+            () => mockNostrEventsDao.getEventsByFilter(any()),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+            ),
+          ).thenAnswer((_) async => wsEvents);
+          when(
+            () => mockNostrEventsDao.upsertEventsBatch(any()),
+          ).thenAnswer((_) async {});
 
-            final result = await clientWithCache.queryEvents(filters);
+          final result = await clientWithCache.queryEvents(filters);
 
-            // Empty gateway response is valid - returns empty, no WebSocket
-            expect(result, isEmpty);
-            verify(() => mockNostrEventsDao.getEventsByFilter(any())).called(1);
-            verify(() => mockGatewayClient.query(any())).called(1);
-            // WebSocket should NOT be called when gateway succeeds (even empty)
-            verifyNever(
-              () => mockNostr.queryEvents(
-                any(),
-                id: any(named: 'id'),
-                tempRelays: any(named: 'tempRelays'),
-                relayTypes: any(named: 'relayTypes'),
-                sendAfterAuth: any(named: 'sendAfterAuth'),
-              ),
-            );
-          },
-        );
+          expect(result, equals(wsEvents));
+          verify(
+            () => mockNostrEventsDao.upsertEventsBatch(wsEvents),
+          ).called(1);
+        });
+
+        test('returns empty when both cache and websocket are empty', () async {
+          final filters = [
+            Filter(kinds: [EventKind.textNote], limit: 10),
+          ];
+
+          when(
+            () => mockNostrEventsDao.getEventsByFilter(any()),
+          ).thenAnswer((_) async => []);
+          when(
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+            ),
+          ).thenAnswer((_) async => []);
+
+          final result = await clientWithCache.queryEvents(filters);
+
+          expect(result, isEmpty);
+          verify(() => mockNostrEventsDao.getEventsByFilter(any())).called(1);
+        });
 
         test('works without dbClient (backward compat)', () async {
           final filters = [
             Filter(kinds: [EventKind.textNote], limit: 10),
           ];
-          final gatewayEvents = [_createTestEvent(content: 'from gateway')];
+          final wsEvents = [_createTestEvent(content: 'from websocket')];
 
           when(
-            () => mockGatewayClient.query(any()),
-          ).thenAnswer(
-            (_) async => GatewayResponse(
-              events: gatewayEvents,
-              eose: true,
-              complete: true,
-              cached: false,
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
             ),
-          );
+          ).thenAnswer((_) async => wsEvents);
 
           // Using client without cache
           final result = await client.queryEvents(filters);
 
-          expect(result, equals(gatewayEvents));
+          expect(result, equals(wsEvents));
           verifyNever(() => mockNostrEventsDao.getEventsByFilter(any()));
           verifyNever(() => mockNostrEventsDao.upsertEventsBatch(any()));
         });
@@ -2317,64 +2002,37 @@ void main() {
 
           expect(result, equals(cachedEvent));
           verify(() => mockNostrEventsDao.getEventById(eventId)).called(1);
-          verifyNever(() => mockGatewayClient.getEvent(any()));
         });
 
-        test('falls back to gateway when cache misses', () async {
+        test('falls back to websocket when cache misses', () async {
           const eventId = 'test-event-id-12345';
-          final gatewayEvent = _createTestEvent(id: eventId);
+          final wsEvent = _createTestEvent(id: eventId);
 
           when(
             () => mockNostrEventsDao.getEventById(eventId),
           ).thenAnswer((_) async => null);
           when(
-            () => mockGatewayClient.getEvent(eventId),
-          ).thenAnswer((_) async => gatewayEvent);
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+            ),
+          ).thenAnswer((_) async => [wsEvent]);
           when(
             () => mockNostrEventsDao.upsertEvent(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockNostrEventsDao.upsertEventsBatch(any()),
           ).thenAnswer((_) async {});
 
           final result = await clientWithCache.fetchEventById(eventId);
 
-          expect(result, equals(gatewayEvent));
-          verify(() => mockNostrEventsDao.upsertEvent(gatewayEvent)).called(1);
+          expect(result, equals(wsEvent));
+          // Should cache the websocket result
+          verify(() => mockNostrEventsDao.upsertEvent(wsEvent)).called(1);
         });
-
-        test(
-          'falls back to websocket and caches when cache and gateway miss',
-          () async {
-            const eventId = 'test-event-id-12345';
-            final wsEvent = _createTestEvent(id: eventId);
-
-            when(
-              () => mockNostrEventsDao.getEventById(eventId),
-            ).thenAnswer((_) async => null);
-            when(
-              () => mockGatewayClient.getEvent(eventId),
-            ).thenAnswer((_) async => null);
-            when(
-              () => mockNostr.queryEvents(
-                any(),
-                id: any(named: 'id'),
-                tempRelays: any(named: 'tempRelays'),
-                relayTypes: any(named: 'relayTypes'),
-                sendAfterAuth: any(named: 'sendAfterAuth'),
-              ),
-            ).thenAnswer((_) async => [wsEvent]);
-            when(
-              () => mockNostrEventsDao.upsertEvent(any()),
-            ).thenAnswer((_) async {});
-            when(
-              () => mockNostrEventsDao.upsertEventsBatch(any()),
-            ).thenAnswer((_) async {});
-
-            final result = await clientWithCache.fetchEventById(eventId);
-
-            expect(result, equals(wsEvent));
-            // Should cache the websocket result
-            verify(() => mockNostrEventsDao.upsertEvent(wsEvent)).called(1);
-          },
-        );
       });
 
       group('fetchProfile with cache-first', () {
@@ -2394,74 +2052,41 @@ void main() {
 
           expect(result, equals(cachedProfile));
           verify(() => mockNostrEventsDao.getProfileByPubkey(pubkey)).called(1);
-          verifyNever(() => mockGatewayClient.getProfile(any()));
         });
 
-        test('falls back to gateway when cache misses', () async {
+        test('falls back to websocket when cache misses', () async {
           const pubkey = testPublicKey;
-          final gatewayProfile = _createTestEvent(
+          final wsProfile = _createTestEvent(
             pubkey: pubkey,
             kind: EventKind.metadata,
-            content: '{"name":"Gateway User"}',
+            content: '{"name":"WebSocket User"}',
           );
 
           when(
             () => mockNostrEventsDao.getProfileByPubkey(pubkey),
           ).thenAnswer((_) async => null);
           when(
-            () => mockGatewayClient.getProfile(pubkey),
-          ).thenAnswer((_) async => gatewayProfile);
+            () => mockNostr.queryEvents(
+              any(),
+              id: any(named: 'id'),
+              tempRelays: any(named: 'tempRelays'),
+              relayTypes: any(named: 'relayTypes'),
+              sendAfterAuth: any(named: 'sendAfterAuth'),
+            ),
+          ).thenAnswer((_) async => [wsProfile]);
           when(
             () => mockNostrEventsDao.upsertEvent(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockNostrEventsDao.upsertEventsBatch(any()),
           ).thenAnswer((_) async {});
 
           final result = await clientWithCache.fetchProfile(pubkey);
 
-          expect(result, equals(gatewayProfile));
-          verify(
-            () => mockNostrEventsDao.upsertEvent(gatewayProfile),
-          ).called(1);
+          expect(result, equals(wsProfile));
+          // Should cache the websocket result
+          verify(() => mockNostrEventsDao.upsertEvent(wsProfile)).called(1);
         });
-
-        test(
-          'falls back to websocket and caches when cache and gateway miss',
-          () async {
-            const pubkey = testPublicKey;
-            final wsProfile = _createTestEvent(
-              pubkey: pubkey,
-              kind: EventKind.metadata,
-              content: '{"name":"WebSocket User"}',
-            );
-
-            when(
-              () => mockNostrEventsDao.getProfileByPubkey(pubkey),
-            ).thenAnswer((_) async => null);
-            when(
-              () => mockGatewayClient.getProfile(pubkey),
-            ).thenAnswer((_) async => null);
-            when(
-              () => mockNostr.queryEvents(
-                any(),
-                id: any(named: 'id'),
-                tempRelays: any(named: 'tempRelays'),
-                relayTypes: any(named: 'relayTypes'),
-                sendAfterAuth: any(named: 'sendAfterAuth'),
-              ),
-            ).thenAnswer((_) async => [wsProfile]);
-            when(
-              () => mockNostrEventsDao.upsertEvent(any()),
-            ).thenAnswer((_) async {});
-            when(
-              () => mockNostrEventsDao.upsertEventsBatch(any()),
-            ).thenAnswer((_) async {});
-
-            final result = await clientWithCache.fetchProfile(pubkey);
-
-            expect(result, equals(wsProfile));
-            // Should cache the websocket result
-            verify(() => mockNostrEventsDao.upsertEvent(wsProfile)).called(1);
-          },
-        );
       });
     });
 
@@ -2743,10 +2368,6 @@ void main() {
             timeout: any(named: 'timeout'),
           ),
         ).thenThrow(CountNotSupportedException('Not supported'));
-        // Mock gateway to throw so it falls through to websocket
-        when(
-          () => mockGatewayClient.query(any()),
-        ).thenThrow(Exception('Gateway unavailable'));
         when(
           () => mockNostr.queryEvents(
             any(),
