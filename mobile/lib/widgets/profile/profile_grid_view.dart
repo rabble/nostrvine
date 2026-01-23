@@ -25,6 +25,7 @@ class ProfileGridView extends ConsumerStatefulWidget {
     required this.isOwnProfile,
     required this.videos,
     required this.profileStatsAsync,
+    this.displayName,
     this.onSetupProfile,
     this.onEditProfile,
     this.onOpenClips,
@@ -37,6 +38,9 @@ class ProfileGridView extends ConsumerStatefulWidget {
 
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
+
+  /// Display name for unfollow confirmation (only used for other profiles).
+  final String? displayName;
 
   /// List of videos to display in the videos tab.
   final List<VideoEvent> videos;
@@ -144,6 +148,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                 child: ProfileActionButtons(
                   userIdHex: widget.userIdHex,
                   isOwnProfile: widget.isOwnProfile,
+                  displayName: widget.displayName,
                   onEditProfile: widget.onEditProfile,
                   onOpenClips: widget.onOpenClips,
                 ),

@@ -21,6 +21,7 @@ class VineBottomSheet extends StatelessWidget {
   const VineBottomSheet({
     this.scrollable = true,
     this.title,
+    this.contentTitle,
     this.scrollController,
     this.children,
     this.body,
@@ -38,8 +39,13 @@ class VineBottomSheet extends StatelessWidget {
   /// is scrollable. When false, the sheet has fixed height based on content.
   final bool scrollable;
 
-  /// Optional title widget displayed in the header
+  /// Optional title widget displayed in the header (above divider)
   final Widget? title;
+
+  /// Optional title displayed in the content area (below divider)
+  ///
+  /// Styled with titleMedium font in onSurface color.
+  final String? contentTitle;
 
   /// Scroll controller from DraggableScrollableSheet (used when scrollable)
   final ScrollController? scrollController;
@@ -65,6 +71,7 @@ class VineBottomSheet extends StatelessWidget {
     required List<Widget> children,
     bool scrollable = true,
     Widget? title,
+    String? contentTitle,
     Widget? body,
     Widget? trailing,
     Widget? bottomInput,
@@ -84,6 +91,7 @@ class VineBottomSheet extends StatelessWidget {
           maxChildSize: maxChildSize,
           builder: (context, scrollController) => VineBottomSheet(
             title: title,
+            contentTitle: contentTitle,
             scrollController: scrollController,
             trailing: trailing,
             bottomInput: bottomInput,
@@ -100,6 +108,7 @@ class VineBottomSheet extends StatelessWidget {
         builder: (_) => VineBottomSheet(
           scrollable: false,
           title: title,
+          contentTitle: contentTitle,
           trailing: trailing,
           bottomInput: bottomInput,
           body: body,
@@ -129,14 +138,30 @@ class VineBottomSheet extends StatelessWidget {
         // Header with drag handle, title, trailing actions, and divider
         VineBottomSheetHeader(title: title, trailing: trailing),
 
-        // Scrollable content area
+        // Scrollable content area (contentTitle is first element inside)
         Expanded(
           child:
               body ??
               ListView(
                 controller: scrollController,
                 padding: EdgeInsets.zero,
-                children: children!,
+                children: [
+                  // Optional content title (56px: 16 top + 24 line height + 16 bottom)
+                  if (contentTitle != null)
+                    Padding(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      child: Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          contentTitle!,
+                          style:
+                              VineTheme.titleMediumFont(color: VineTheme.onSurface),
+                        ),
+                      ),
+                    ),
+                  ...children!,
+                ],
               ),
         ),
         if (bottomInput != null)
@@ -157,14 +182,33 @@ class VineBottomSheet extends StatelessWidget {
           // Header with drag handle and divider
           VineBottomSheetHeader(title: title, trailing: trailing),
 
-          // Fixed content with minimum height for 2 entries (2 × 56px)
+          // Fixed content area with minimum height for menu entries (2 × 56px)
           ConstrainedBox(
             constraints: const BoxConstraints(minHeight: 112),
             child:
                 body ??
                 Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: children!,
+                  children: [
+                    // Optional content title (56px: 16 top + 24 line height + 16 bottom)
+                    if (contentTitle != null)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            contentTitle!,
+                            style: VineTheme.titleMediumFont(
+                              color: VineTheme.onSurface,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ...children!,
+                  ],
                 ),
           ),
 

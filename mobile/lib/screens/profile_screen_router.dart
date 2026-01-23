@@ -13,6 +13,7 @@ import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
@@ -410,10 +411,19 @@ class _ProfileContentView extends ConsumerWidget {
       onFetchProfile(userIdHex, isOwnProfile);
     });
 
+    // Get display name for unfollow confirmation (only needed for other profiles)
+    final displayName = isOwnProfile
+        ? null
+        : ref
+              .watch(userProfileReactiveProvider(userIdHex))
+              .value
+              ?.bestDisplayName;
+
     return _ProfileDataView(
       npub: npub,
       userIdHex: userIdHex,
       isOwnProfile: isOwnProfile,
+      displayName: displayName,
       videoIndex: routeContext.videoIndex,
       scrollController: scrollController,
       onSetupProfile: onSetupProfile,
@@ -473,11 +483,13 @@ class _ProfileDataView extends ConsumerWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
+    this.displayName,
   });
 
   final String npub;
   final String userIdHex;
   final bool isOwnProfile;
+  final String? displayName;
   final int? videoIndex;
   final ScrollController scrollController;
   final VoidCallback onSetupProfile;
@@ -499,6 +511,7 @@ class _ProfileDataView extends ConsumerWidget {
         npub: npub,
         userIdHex: userIdHex,
         isOwnProfile: isOwnProfile,
+        displayName: displayName,
         videos: value.videos,
         videoIndex: videoIndex,
         profileStatsAsync: profileStatsAsync,
@@ -524,11 +537,13 @@ class _ProfileViewSwitcher extends StatelessWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
+    this.displayName,
   });
 
   final String npub;
   final String userIdHex;
   final bool isOwnProfile;
+  final String? displayName;
   final List<VideoEvent> videos;
   final int? videoIndex;
   final AsyncValue<ProfileStats> profileStatsAsync;
@@ -557,6 +572,7 @@ class _ProfileViewSwitcher extends StatelessWidget {
     return ProfileGridView(
       userIdHex: userIdHex,
       isOwnProfile: isOwnProfile,
+      displayName: displayName,
       videos: videos,
       profileStatsAsync: profileStatsAsync,
       scrollController: scrollController,

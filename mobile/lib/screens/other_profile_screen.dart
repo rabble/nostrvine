@@ -275,6 +275,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         AsyncData(:final value) => ProfileGridView(
           userIdHex: userIdHex,
           isOwnProfile: false,
+          displayName: displayName,
           videos: value.videos,
           profileStatsAsync: profileStatsAsync,
           scrollController: _scrollController,

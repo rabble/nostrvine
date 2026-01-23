@@ -12,6 +12,7 @@ class ProfileActionButtons extends StatelessWidget {
   const ProfileActionButtons({
     required this.userIdHex,
     required this.isOwnProfile,
+    this.displayName,
     this.onEditProfile,
     this.onOpenClips,
     super.key,
@@ -19,6 +20,9 @@ class ProfileActionButtons extends StatelessWidget {
 
   final String userIdHex;
   final bool isOwnProfile;
+
+  /// Display name for unfollow confirmation (required when not own profile).
+  final String? displayName;
   final VoidCallback? onEditProfile;
   final VoidCallback? onOpenClips;
 
@@ -116,7 +120,12 @@ class ProfileActionButtons extends StatelessWidget {
             ),
           ),
         ] else ...[
-          Expanded(child: FollowFromProfileButton(pubkey: userIdHex)),
+          Expanded(
+            child: FollowFromProfileButton(
+              pubkey: userIdHex,
+              displayName: displayName ?? 'user',
+            ),
+          ),
         ],
       ],
     ),

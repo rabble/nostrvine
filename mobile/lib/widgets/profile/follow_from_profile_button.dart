@@ -14,10 +14,17 @@ import 'package:openvine/utils/unified_logger.dart';
 
 /// Page widget that creates the [MyFollowingBloc] and provides it to the view.
 class FollowFromProfileButton extends ConsumerWidget {
-  const FollowFromProfileButton({super.key, required this.pubkey});
+  const FollowFromProfileButton({
+    super.key,
+    required this.pubkey,
+    required this.displayName,
+  });
 
   /// The public key of the profile user to follow/unfollow.
   final String pubkey;
+
+  /// The display name of the user (for unfollow confirmation).
+  final String displayName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -31,6 +38,7 @@ class FollowFromProfileButton extends ConsumerWidget {
             ..add(const MyFollowingListLoadRequested()),
       child: FollowFromProfileButtonView(
         pubkey: pubkey,
+        displayName: displayName,
         currentUserPubkey: currentUserPubkey,
       ),
     );
@@ -42,11 +50,15 @@ class FollowFromProfileButtonView extends StatelessWidget {
   @visibleForTesting
   const FollowFromProfileButtonView({
     required this.pubkey,
+    required this.displayName,
     required this.currentUserPubkey,
   });
 
   /// The public key of the profile user to follow/unfollow.
   final String pubkey;
+
+  /// The display name of the user (for unfollow confirmation).
+  final String displayName;
 
   /// The current user's public key (used for optimistic follower count update).
   final String? currentUserPubkey;
@@ -58,7 +70,7 @@ class FollowFromProfileButtonView extends StatelessWidget {
       builder: (context, isFollowing) {
         return isFollowing
             ? OutlinedButton(
-                onPressed: () => _toggleFollow(context, isFollowing),
+                onPressed: () => _showUnfollowConfirmation(context),
                 style: OutlinedButton.styleFrom(
                   backgroundColor: VineTheme.surfaceContainer,
                   foregroundColor: VineTheme.vineGreen,
@@ -99,7 +111,7 @@ class FollowFromProfileButtonView extends StatelessWidget {
                 ),
               )
             : ElevatedButton(
-                onPressed: () => _toggleFollow(context, isFollowing),
+                onPressed: () => _follow(context),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: VineTheme.vineGreen,
                   foregroundColor: VineTheme.onPrimary,
@@ -139,30 +151,118 @@ class FollowFromProfileButtonView extends StatelessWidget {
     );
   }
 
-  void _toggleFollow(BuildContext context, bool isCurrentlyFollowing) {
+  Future<void> _showUnfollowConfirmation(BuildContext context) async {
+    final result = await VineBottomSheet.show<bool>(
+      context: context,
+      scrollable: false,
+      contentTitle: 'Unfollow $displayName?',
+      children: [
+        // Button row (68px total: 16 top + 48 buttons + 4 bottom)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+          child: Row(
+            children: [
+              // Cancel button - matches Library button style
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  style: OutlinedButton.styleFrom(
+                    backgroundColor: VineTheme.surfaceContainer,
+                    foregroundColor: VineTheme.vineGreen,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                    side: const BorderSide(
+                      color: VineTheme.outlineMuted,
+                      width: 2,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Text(
+                    'Cancel',
+                    style: VineTheme.titleMediumFont(
+                      color: VineTheme.vineGreen,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 16),
+              // Unfollow button - matches Edit button style
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: VineTheme.vineGreen,
+                    foregroundColor: VineTheme.onPrimary,
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 12,
+                      horizontal: 16,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                  ),
+                  child: Text(
+                    'Unfollow',
+                    style: VineTheme.titleMediumFont(
+                      color: VineTheme.onPrimary,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (result == true && context.mounted) {
+      _unfollow(context);
+    }
+  }
+
+  void _follow(BuildContext context) {
     Log.info(
       'Profile follow button tapped for $pubkey',
       name: 'FollowFromProfileButton',
       category: LogCategory.ui,
     );
 
-    // Toggle follow in MyFollowingBloc
+    // Follow in MyFollowingBloc
     context.read<MyFollowingBloc>().add(MyFollowingToggleRequested(pubkey));
 
     // Optimistically update the followers count in OthersFollowersBloc
     final othersFollowersBloc = context.read<OthersFollowersBloc?>();
     if (othersFollowersBloc != null && currentUserPubkey != null) {
-      if (isCurrentlyFollowing) {
-        // Unfollowing - decrement count
-        othersFollowersBloc.add(
-          OthersFollowersDecrementRequested(currentUserPubkey!),
-        );
-      } else {
-        // Following - increment count
-        othersFollowersBloc.add(
-          OthersFollowersIncrementRequested(currentUserPubkey!),
-        );
-      }
+      othersFollowersBloc.add(
+        OthersFollowersIncrementRequested(currentUserPubkey!),
+      );
+    }
+  }
+
+  void _unfollow(BuildContext context) {
+    Log.info(
+      'Profile unfollow confirmed for $pubkey',
+      name: 'FollowFromProfileButton',
+      category: LogCategory.ui,
+    );
+
+    // Unfollow in MyFollowingBloc
+    context.read<MyFollowingBloc>().add(MyFollowingToggleRequested(pubkey));
+
+    // Optimistically update the followers count in OthersFollowersBloc
+    final othersFollowersBloc = context.read<OthersFollowersBloc?>();
+    if (othersFollowersBloc != null && currentUserPubkey != null) {
+      othersFollowersBloc.add(
+        OthersFollowersDecrementRequested(currentUserPubkey!),
+      );
     }
   }
 }
