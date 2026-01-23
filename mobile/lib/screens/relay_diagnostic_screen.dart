@@ -243,7 +243,6 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
               errorMessage: 'No relays configured',
             ),
           ],
-          totalLatencyMs: 0,
         );
       });
     }
