@@ -1,18 +1,62 @@
 // ABOUTME: Diagnostic screen for debugging relay connectivity issues
-// ABOUTME: Shows relay connection status and network health
+// ABOUTME: Shows relay connection status, network health, Blossom, and FunnelCake API
 
+import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import 'package:nostr_client/nostr_client.dart' show RelayState;
 import 'package:nostr_sdk/filter.dart' as nostr;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
+
+/// Result for a single FunnelCake API endpoint test
+class FunnelCakeEndpointResult {
+  FunnelCakeEndpointResult({
+    required this.endpoint,
+    required this.isSuccess,
+    this.latencyMs,
+    this.count,
+    this.errorMessage,
+    this.details,
+  });
+
+  final String endpoint;
+  final bool isSuccess;
+  final int? latencyMs;
+  final int? count;
+  final String? errorMessage;
+  final String? details;
+}
+
+/// Comprehensive FunnelCake API test results
+class FunnelCakeTestResults {
+  FunnelCakeTestResults({required this.apiBaseUrl, required this.endpoints});
+
+  final String apiBaseUrl;
+  final List<FunnelCakeEndpointResult> endpoints;
+
+  int get successCount => endpoints.where((e) => e.isSuccess).length;
+  int get failCount => endpoints.where((e) => !e.isSuccess).length;
+  bool get allSuccess => failCount == 0;
+
+  /// Average response time across successful endpoints
+  int get avgLatencyMs {
+    final successful = endpoints.where(
+      (e) => e.isSuccess && e.latencyMs != null,
+    );
+    if (successful.isEmpty) return 0;
+    final total = successful.fold<int>(0, (sum, e) => sum + e.latencyMs!);
+    return total ~/ successful.length;
+  }
+}
 
 /// Comprehensive diagnostic screen for relay connectivity debugging
 class RelayDiagnosticScreen extends ConsumerStatefulWidget {
@@ -35,6 +79,11 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
   bool _isTestingNetwork = false;
   bool _isRetrying = false;
   DateTime? _lastRefresh;
+
+  // REST endpoint test results
+  BlossomHealthCheckResult? _blossomResult;
+  FunnelCakeTestResults? _funnelCakeResults;
+  bool _isTestingRestEndpoints = false;
 
   @override
   void initState() {
@@ -137,6 +186,237 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
     setState(() {
       _isTestingNetwork = false;
     });
+  }
+
+  Future<void> _testRestEndpoints() async {
+    setState(() {
+      _isTestingRestEndpoints = true;
+      _blossomResult = null;
+      _funnelCakeResults = null;
+    });
+
+    Log.info('🔍 Testing REST endpoints...', name: 'RelayDiagnostic');
+
+    // Test Blossom server
+    try {
+      final blossomService = ref.read(blossomUploadServiceProvider);
+      final blossomResult = await blossomService.testServerConnection();
+      setState(() {
+        _blossomResult = blossomResult;
+      });
+      Log.info(
+        'Blossom server: ${blossomResult.isReachable ? "OK" : "FAILED"} '
+        '(${blossomResult.latencyMs}ms)',
+        name: 'RelayDiagnostic',
+      );
+    } catch (e) {
+      Log.error('Blossom test error: $e', name: 'RelayDiagnostic');
+      setState(() {
+        _blossomResult = BlossomHealthCheckResult(
+          isReachable: false,
+          errorMessage: e.toString(),
+        );
+      });
+    }
+
+    // Test FunnelCake API - comprehensive endpoint testing
+    final nostrService = ref.read(nostrServiceProvider);
+    final relays = nostrService.configuredRelays;
+    if (relays.isNotEmpty) {
+      final relayUrl = relays.first;
+      final apiBaseUrl = relayUrl
+          .replaceFirst('wss://', 'https://')
+          .replaceFirst('ws://', 'http://');
+
+      final results = await _testAllFunnelCakeEndpoints(apiBaseUrl);
+      setState(() {
+        _funnelCakeResults = results;
+      });
+    } else {
+      setState(() {
+        _funnelCakeResults = FunnelCakeTestResults(
+          apiBaseUrl: 'N/A',
+          endpoints: [
+            FunnelCakeEndpointResult(
+              endpoint: 'N/A',
+              isSuccess: false,
+              errorMessage: 'No relays configured',
+            ),
+          ],
+        );
+      });
+    }
+
+    setState(() {
+      _isTestingRestEndpoints = false;
+    });
+
+    if (mounted) {
+      final blossomOk = _blossomResult?.isReachable ?? false;
+      final funnelCakeOk = _funnelCakeResults?.allSuccess ?? false;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            blossomOk && funnelCakeOk
+                ? 'All REST endpoints healthy!'
+                : 'Some REST endpoints failed - see details above',
+          ),
+          backgroundColor: blossomOk && funnelCakeOk
+              ? Colors.green[700]
+              : Colors.orange[700],
+        ),
+      );
+    }
+  }
+
+  Future<FunnelCakeTestResults> _testAllFunnelCakeEndpoints(
+    String apiBaseUrl,
+  ) async {
+    final endpoints = <FunnelCakeEndpointResult>[];
+
+    // Test /api/stats
+    endpoints.add(
+      await _testFunnelCakeEndpoint(apiBaseUrl, '/api/stats', (json) {
+        final totalVideos = json['total_videos'] as int?;
+        final totalEvents = json['total_events'] as int?;
+        return (
+          count: totalVideos,
+          details: '$totalEvents events, $totalVideos videos',
+        );
+      }),
+    );
+
+    // Test /api/videos
+    endpoints.add(
+      await _testFunnelCakeEndpoint(apiBaseUrl, '/api/videos?limit=5', (json) {
+        final list = json as List;
+        return (count: list.length, details: 'returned ${list.length}');
+      }),
+    );
+
+    // Test /api/videos/events (with full Nostr events)
+    endpoints.add(
+      await _testFunnelCakeEndpoint(apiBaseUrl, '/api/videos/events?limit=5', (
+        json,
+      ) {
+        final videos = json['videos'] as List?;
+        final hasMore = json['has_more'] as bool?;
+        return (
+          count: videos?.length,
+          details: '${videos?.length ?? 0} events, hasMore=$hasMore',
+        );
+      }),
+    );
+
+    // Test /api/videos?sort=trending
+    endpoints.add(
+      await _testFunnelCakeEndpoint(
+        apiBaseUrl,
+        '/api/videos?sort=trending&limit=5',
+        (json) {
+          final list = json as List;
+          return (count: list.length, details: '${list.length} trending');
+        },
+      ),
+    );
+
+    // Test /api/hashtags
+    endpoints.add(
+      await _testFunnelCakeEndpoint(apiBaseUrl, '/api/hashtags?limit=5', (
+        json,
+      ) {
+        final list = json as List;
+        final topTag = list.isNotEmpty ? list[0]['hashtag'] : 'none';
+        return (count: list.length, details: 'top: #$topTag');
+      }),
+    );
+
+    // Test /api/hashtags/trending
+    endpoints.add(
+      await _testFunnelCakeEndpoint(
+        apiBaseUrl,
+        '/api/hashtags/trending?limit=5',
+        (json) {
+          final list = json as List;
+          return (count: list.length, details: '${list.length} trending tags');
+        },
+      ),
+    );
+
+    return FunnelCakeTestResults(apiBaseUrl: apiBaseUrl, endpoints: endpoints);
+  }
+
+  Future<FunnelCakeEndpointResult> _testFunnelCakeEndpoint(
+    String apiBaseUrl,
+    String path,
+    ({int? count, String? details}) Function(dynamic json) parseResponse,
+  ) async {
+    final stopwatch = Stopwatch()..start();
+    try {
+      final response = await http
+          .get(Uri.parse('$apiBaseUrl$path'))
+          .timeout(const Duration(seconds: 10));
+      stopwatch.stop();
+
+      if (response.statusCode == 200) {
+        try {
+          final json = response.body.isNotEmpty
+              ? _parseJson(response.body)
+              : null;
+          final parsed = json != null
+              ? parseResponse(json)
+              : (count: null, details: null);
+          return FunnelCakeEndpointResult(
+            endpoint: path.split('?').first,
+            isSuccess: true,
+            latencyMs: stopwatch.elapsedMilliseconds,
+            count: parsed.count,
+            details: parsed.details,
+          );
+        } catch (e) {
+          return FunnelCakeEndpointResult(
+            endpoint: path.split('?').first,
+            isSuccess: true,
+            latencyMs: stopwatch.elapsedMilliseconds,
+            details: 'Parse error: $e',
+          );
+        }
+      } else {
+        return FunnelCakeEndpointResult(
+          endpoint: path.split('?').first,
+          isSuccess: false,
+          latencyMs: stopwatch.elapsedMilliseconds,
+          errorMessage: 'HTTP ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      stopwatch.stop();
+      return FunnelCakeEndpointResult(
+        endpoint: path.split('?').first,
+        isSuccess: false,
+        latencyMs: stopwatch.elapsedMilliseconds,
+        errorMessage: e.toString().length > 50
+            ? '${e.toString().substring(0, 50)}...'
+            : e.toString(),
+      );
+    }
+  }
+
+  dynamic _parseJson(String body) {
+    return body.startsWith('[')
+        ? (body.isNotEmpty ? _decodeJsonList(body) : [])
+        : (body.isNotEmpty ? _decodeJsonMap(body) : {});
+  }
+
+  List<dynamic> _decodeJsonList(String body) {
+    // ignore: avoid_dynamic_calls
+    return (const JsonDecoder().convert(body)) as List<dynamic>;
+  }
+
+  Map<String, dynamic> _decodeJsonMap(String body) {
+    // ignore: avoid_dynamic_calls
+    return (const JsonDecoder().convert(body)) as Map<String, dynamic>;
   }
 
   Future<void> _testDirectEventQuery() async {
@@ -488,6 +768,118 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
                 ],
               ),
 
+              const SizedBox(height: 16),
+
+              // Blossom Server status
+              _buildSection(
+                title: 'Blossom Server',
+                icon: Icons.cloud_upload,
+                children: [
+                  if (_blossomResult == null && !_isTestingRestEndpoints)
+                    Center(
+                      child: ElevatedButton.icon(
+                        onPressed: _testRestEndpoints,
+                        icon: const Icon(Icons.play_arrow, color: Colors.white),
+                        label: const Text(
+                          'Test All Endpoints',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: VineTheme.vineGreen,
+                        ),
+                      ),
+                    ),
+                  if (_isTestingRestEndpoints && _blossomResult == null)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            VineTheme.vineGreen,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (_blossomResult != null) ...[
+                    _buildInfoRow(
+                      'Status',
+                      _blossomResult!.isReachable
+                          ? 'OK (${_blossomResult!.latencyMs}ms)'
+                          : 'FAILED',
+                      textColor: _blossomResult!.isReachable
+                          ? Colors.green
+                          : Colors.red,
+                    ),
+                    if (_blossomResult!.serverUrl != null)
+                      _buildInfoRow('URL', _blossomResult!.serverUrl!),
+                    if (_blossomResult!.errorMessage != null)
+                      _buildErrorRow('Error', _blossomResult!.errorMessage!),
+                  ],
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              // FunnelCake API status - comprehensive endpoint testing
+              _buildSection(
+                title: 'FunnelCake API',
+                icon: Icons.api,
+                children: [
+                  if (_funnelCakeResults == null && !_isTestingRestEndpoints)
+                    Center(
+                      child: ElevatedButton.icon(
+                        onPressed: _testRestEndpoints,
+                        icon: const Icon(Icons.play_arrow, color: Colors.white),
+                        label: const Text(
+                          'Test All Endpoints',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: VineTheme.vineGreen,
+                        ),
+                      ),
+                    ),
+                  if (_isTestingRestEndpoints && _funnelCakeResults == null)
+                    const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16),
+                        child: CircularProgressIndicator(
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            VineTheme.vineGreen,
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (_funnelCakeResults != null) ...[
+                    // Summary row
+                    _buildInfoRow('Base URL', _funnelCakeResults!.apiBaseUrl),
+                    _buildInfoRow(
+                      'Summary',
+                      '${_funnelCakeResults!.successCount}/${_funnelCakeResults!.endpoints.length} OK '
+                          '(avg ${_funnelCakeResults!.avgLatencyMs}ms)',
+                      textColor: _funnelCakeResults!.allSuccess
+                          ? Colors.green
+                          : Colors.orange,
+                    ),
+                    const Divider(color: Colors.grey),
+                    // Individual endpoint results
+                    ..._funnelCakeResults!.endpoints.map(
+                      (e) => _buildEndpointResultRow(e),
+                    ),
+                    const SizedBox(height: 12),
+                    Center(
+                      child: TextButton(
+                        onPressed: _testRestEndpoints,
+                        child: const Text(
+                          'Retest All',
+                          style: TextStyle(color: VineTheme.vineGreen),
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+
               const SizedBox(height: 24),
 
               // Retry connection button
@@ -679,6 +1071,65 @@ class _RelayDiagnosticScreenState extends ConsumerState<RelayDiagnosticScreen> {
               style: const TextStyle(color: Colors.red, fontSize: 12),
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEndpointResultRow(FunnelCakeEndpointResult result) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            result.isSuccess ? Icons.check_circle : Icons.error,
+            color: result.isSuccess ? Colors.green : Colors.red,
+            size: 16,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  result.endpoint,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontFamily: 'monospace',
+                  ),
+                ),
+                const SizedBox(height: 2),
+                if (result.isSuccess)
+                  Text(
+                    '${result.latencyMs}ms${result.details != null ? ' • ${result.details}' : ''}',
+                    style: TextStyle(color: Colors.grey[400], fontSize: 11),
+                  )
+                else
+                  Text(
+                    result.errorMessage ?? 'Failed',
+                    style: TextStyle(color: Colors.red[300], fontSize: 11),
+                  ),
+              ],
+            ),
+          ),
+          if (result.count != null)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: VineTheme.vineGreen.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                '${result.count}',
+                style: const TextStyle(
+                  color: VineTheme.vineGreen,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
         ],
       ),
     );
