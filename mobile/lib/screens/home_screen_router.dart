@@ -267,7 +267,8 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
             }
 
             return RefreshIndicator(
-              color: VineTheme.vineGreen,
+              color: VineTheme.onPrimary,
+              backgroundColor: VineTheme.vineGreen,
               semanticsLabel: 'searching for more videos',
               onRefresh: () =>
                   ref.read(homeRefreshControllerProvider).refresh(),

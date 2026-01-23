@@ -182,44 +182,11 @@ class _RepostGridTile extends StatelessWidget {
         category: LogCategory.video,
       );
     },
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: _RepostThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
-            ),
-          ),
-          const Center(
-            child: Icon(
-              Icons.play_circle_filled,
-              color: Colors.white70,
-              size: 32,
-            ),
-          ),
-          // Repost indicator badge
-          Positioned(
-            top: 4,
-            right: 4,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Icon(
-                Icons.repeat,
-                color: VineTheme.vineGreen,
-                size: 16,
-              ),
-            ),
-          ),
-        ],
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: VineTheme.cardBackground),
+        child: _RepostThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
       ),
     ),
   );
@@ -246,7 +213,7 @@ class _RepostThumbnail extends StatelessWidget {
   }
 }
 
-/// Gradient placeholder for repost thumbnails
+/// Flat color placeholder for repost thumbnails
 class _RepostThumbnailPlaceholder extends StatelessWidget {
   const _RepostThumbnailPlaceholder();
 
@@ -254,19 +221,7 @@ class _RepostThumbnailPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(4),
-      gradient: LinearGradient(
-        colors: [
-          VineTheme.vineGreen.withValues(alpha: 0.3),
-          Colors.blue.withValues(alpha: 0.3),
-        ],
-      ),
-    ),
-    child: const Center(
-      child: Icon(
-        Icons.play_circle_outline,
-        color: VineTheme.whiteText,
-        size: 24,
-      ),
+      color: VineTheme.surfaceContainer,
     ),
   );
 }

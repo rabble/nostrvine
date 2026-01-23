@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
@@ -16,7 +17,6 @@ import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 import 'package:openvine/widgets/profile/profile_reposts_grid.dart';
-import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
 
 /// Profile grid view showing header, stats, action buttons, and tabbed content.
@@ -26,11 +26,11 @@ class ProfileGridView extends ConsumerStatefulWidget {
     required this.isOwnProfile,
     required this.videos,
     required this.profileStatsAsync,
+    this.displayName,
     this.onSetupProfile,
     this.onEditProfile,
     this.onOpenClips,
-    this.onShareProfile,
-    this.onBlockUser,
+    this.onBlockedTap,
     this.scrollController,
     super.key,
   });
@@ -40,6 +40,9 @@ class ProfileGridView extends ConsumerStatefulWidget {
 
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
+
+  /// Display name for unfollow confirmation (only used for other profiles).
+  final String? displayName;
 
   /// List of videos to display in the videos tab.
   final List<VideoEvent> videos;
@@ -56,12 +59,8 @@ class ProfileGridView extends ConsumerStatefulWidget {
   /// Callback when "Clips" button is tapped (own profile only).
   final VoidCallback? onOpenClips;
 
-  /// Callback when "Share" button is tapped.
-  final VoidCallback? onShareProfile;
-
-  /// Callback when block/unblock button is tapped (others' profile only).
-  /// Parameter indicates whether user is currently blocked.
-  final void Function(bool isBlocked)? onBlockUser;
+  /// Callback when the Blocked button is tapped (other profiles only).
+  final VoidCallback? onBlockedTap;
 
   /// Optional scroll controller for the NestedScrollView.
   final ScrollController? scrollController;
@@ -78,10 +77,17 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(_onTabChanged);
+  }
+
+  void _onTabChanged() {
+    // Trigger rebuild to update SVG icon colors
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
+    _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
     super.dispose();
   }
@@ -149,21 +155,9 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                 child: ProfileHeaderWidget(
                   userIdHex: widget.userIdHex,
                   isOwnProfile: widget.isOwnProfile,
+                  videoCount: widget.videos.length,
                   profileStatsAsync: widget.profileStatsAsync,
                   onSetupProfile: widget.onSetupProfile,
-                ),
-              ),
-            ),
-          ),
-
-          // Stats Row
-          SliverToBoxAdapter(
-            child: Align(
-              alignment: Alignment.topCenter,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
-                child: ProfileStatsRowWidget(
-                  profileStatsAsync: widget.profileStatsAsync,
                 ),
               ),
             ),
@@ -178,10 +172,10 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                 child: ProfileActionButtons(
                   userIdHex: widget.userIdHex,
                   isOwnProfile: widget.isOwnProfile,
+                  displayName: widget.displayName,
                   onEditProfile: widget.onEditProfile,
                   onOpenClips: widget.onOpenClips,
-                  onShareProfile: widget.onShareProfile,
-                  onBlockUser: widget.onBlockUser,
+                  onBlockedTap: widget.onBlockedTap,
                 ),
               ),
             ),
@@ -193,16 +187,50 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
             delegate: _SliverAppBarDelegate(
               TabBar(
                 controller: _tabController,
-                indicatorColor: Colors.white,
-                indicatorWeight: 2,
+                indicatorColor: VineTheme.tabIndicatorGreen,
+                indicatorWeight: 4,
                 indicatorSize: TabBarIndicatorSize.tab,
                 dividerColor: Colors.transparent,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.grey,
-                tabs: const [
-                  Tab(icon: Icon(Icons.grid_on, size: 20)),
-                  Tab(icon: Icon(Icons.favorite_border, size: 20)),
-                  Tab(icon: Icon(Icons.repeat, size: 20)),
+                tabs: [
+                  Tab(
+                    icon: SvgPicture.asset(
+                      'assets/icon/play.svg',
+                      width: 28,
+                      height: 28,
+                      colorFilter: ColorFilter.mode(
+                        _tabController.index == 0
+                            ? VineTheme.whiteText
+                            : VineTheme.onSurfaceMuted,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                  Tab(
+                    icon: SvgPicture.asset(
+                      'assets/icon/heart.svg',
+                      width: 28,
+                      height: 28,
+                      colorFilter: ColorFilter.mode(
+                        _tabController.index == 1
+                            ? VineTheme.whiteText
+                            : VineTheme.onSurfaceMuted,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
+                  Tab(
+                    icon: SvgPicture.asset(
+                      'assets/icon/repost.svg',
+                      width: 28,
+                      height: 28,
+                      colorFilter: ColorFilter.mode(
+                        _tabController.index == 2
+                            ? VineTheme.whiteText
+                            : VineTheme.onSurfaceMuted,
+                        BlendMode.srcIn,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -211,6 +239,9 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         body: tabContent,
       ),
     );
+
+    // Wrap content with surfaceBackground to match app bar
+    content = ColoredBox(color: VineTheme.surfaceBackground, child: content);
 
     // Wrap with OthersFollowersBloc for other users' profiles
     // This allows the follow button to update the followers count optimistically
@@ -244,7 +275,7 @@ class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
     BuildContext context,
     double shrinkOffset,
     bool overlapsContent,
-  ) => ColoredBox(color: VineTheme.backgroundColor, child: _tabBar);
+  ) => ColoredBox(color: VineTheme.surfaceBackground, child: _tabBar);
 
   @override
   bool shouldRebuild(_SliverAppBarDelegate oldDelegate) => false;
