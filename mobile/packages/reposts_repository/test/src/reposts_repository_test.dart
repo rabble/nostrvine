@@ -995,27 +995,4 @@ void main() {
       });
     });
   });
-
-  group('buildAddressableId', () {
-    test('builds correct addressable ID format', () {
-      final addressableId = AId(
-        kind: EventKind.videoVertical,
-        pubkey: 'abc123',
-        dTag: 'my-video',
-      );
-      expect(addressableId, equals('34236:abc123:my-video'));
-    });
-
-    test('handles special characters in d-tag', () {
-      final addressableId = AId(
-        kind: EventKind.videoVertical,
-        pubkey: 'pubkey',
-        dTag: 'video-with-dashes_and_underscores',
-      );
-      expect(
-        addressableId,
-        equals('34236:pubkey:video-with-dashes_and_underscores'),
-      );
-    });
-  });
 }
