@@ -442,7 +442,7 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
                   width: 24,
                   height: 24,
                   colorFilter: ColorFilter.mode(
-                    widget.isBlocked ? VineTheme.onSurface : Colors.red,
+                    widget.isBlocked ? VineTheme.onSurface : VineTheme.error,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -452,7 +452,7 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
                       ? 'Unblock ${widget.displayName}'
                       : 'Block ${widget.displayName}',
                   style: VineTheme.titleMediumFont(
-                    color: widget.isBlocked ? VineTheme.onSurface : Colors.red,
+                    color: widget.isBlocked ? VineTheme.onSurface : VineTheme.error,
                   ),
                 ),
               ],
@@ -569,8 +569,8 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
                 child: ElevatedButton(
                   onPressed: () => Navigator.of(context).pop('block_confirmed'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.red,
-                    foregroundColor: Colors.white,
+                    backgroundColor: VineTheme.error,
+                    foregroundColor: VineTheme.onErrorContainer,
                     padding: const EdgeInsets.symmetric(
                       vertical: 12,
                       horizontal: 16,
@@ -581,7 +581,9 @@ class _MoreSheetContentState extends State<_MoreSheetContent>
                   ),
                   child: Text(
                     'Block',
-                    style: VineTheme.titleMediumFont(color: Colors.white),
+                    style: VineTheme.titleMediumFont(
+                      color: VineTheme.onErrorContainer,
+                    ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
