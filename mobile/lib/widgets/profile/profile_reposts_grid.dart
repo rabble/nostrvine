@@ -164,7 +164,7 @@ class _RepostThumbnail extends StatelessWidget {
   }
 }
 
-/// Gradient placeholder for repost thumbnails
+/// Flat color placeholder for repost thumbnails
 class _RepostThumbnailPlaceholder extends StatelessWidget {
   const _RepostThumbnailPlaceholder();
 
@@ -172,12 +172,7 @@ class _RepostThumbnailPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(4),
-      gradient: LinearGradient(
-        colors: [
-          VineTheme.vineGreen.withValues(alpha: 0.3),
-          Colors.blue.withValues(alpha: 0.3),
-        ],
-      ),
+      color: VineTheme.surfaceContainer,
     ),
   );
 }

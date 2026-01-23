@@ -201,7 +201,7 @@ class _VideoThumbnail extends StatelessWidget {
   }
 }
 
-/// Gradient placeholder for thumbnails
+/// Flat color placeholder for thumbnails
 class _ThumbnailPlaceholder extends StatelessWidget {
   const _ThumbnailPlaceholder();
 
@@ -209,12 +209,7 @@ class _ThumbnailPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(4),
-      gradient: LinearGradient(
-        colors: [
-          VineTheme.vineGreen.withValues(alpha: 0.3),
-          Colors.blue.withValues(alpha: 0.3),
-        ],
-      ),
+      color: VineTheme.surfaceContainer,
     ),
   );
 }

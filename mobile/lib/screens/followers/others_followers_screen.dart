@@ -160,6 +160,8 @@ class _FollowersListBody extends StatelessWidget {
     }
 
     return RefreshIndicator(
+      color: VineTheme.onPrimary,
+      backgroundColor: VineTheme.vineGreen,
       onRefresh: () async {
         context.read<OthersFollowersBloc>().add(
           OthersFollowersListLoadRequested(targetPubkey),

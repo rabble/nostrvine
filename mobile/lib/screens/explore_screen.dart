@@ -426,7 +426,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
     // Always show the static UI elements immediately
     return RefreshIndicator(
-      color: VineTheme.vineGreen,
+      color: VineTheme.onPrimary,
+      backgroundColor: VineTheme.vineGreen,
       onRefresh: () async {
         // Invalidate both providers to refresh
         ref.invalidate(userListsProvider);

@@ -133,6 +133,8 @@ class _FollowingListBody extends StatelessWidget {
     }
 
     return RefreshIndicator(
+      color: VineTheme.onPrimary,
+      backgroundColor: VineTheme.vineGreen,
       onRefresh: () async {
         context.read<MyFollowingBloc>().add(
           const MyFollowingListLoadRequested(),

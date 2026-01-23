@@ -210,7 +210,7 @@ class _LikedThumbnail extends StatelessWidget {
   }
 }
 
-/// Gradient placeholder for liked video thumbnails
+/// Flat color placeholder for liked video thumbnails
 class _LikedThumbnailPlaceholder extends StatelessWidget {
   const _LikedThumbnailPlaceholder();
 
@@ -218,12 +218,7 @@ class _LikedThumbnailPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(4),
-      gradient: LinearGradient(
-        colors: [
-          Colors.red.withValues(alpha: 0.3),
-          Colors.pink.withValues(alpha: 0.3),
-        ],
-      ),
+      color: VineTheme.surfaceContainer,
     ),
   );
 }
