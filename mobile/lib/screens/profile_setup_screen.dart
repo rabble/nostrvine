@@ -434,80 +434,120 @@ class _ProfileSetupScreenViewState
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                            // Profile Picture Section with overlapping buttons
-                            Center(
-                              child: SizedBox(
-                                // 144 avatar + 20 (half of 40px buttons extending below)
-                                height: 164,
-                                width: 144,
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    // Profile picture preview
-                                    Container(
-                                      width: 144,
-                                      height: 144,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(33),
-                                        color: Colors.grey[800],
-                                        border: Border.all(
-                                          color: VineTheme.onSurfaceDisabled,
-                                          width: 1.64,
-                                        ),
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(
-                                          31.36,
-                                        ),
-                                        child: _buildProfilePicturePreview(),
-                                      ),
-                                    ),
-                                    // Upload progress indicator
-                                    if (_isUploadingImage)
-                                      Positioned(
-                                        top: 0,
-                                        left: 0,
+                              // Profile Picture Section with overlapping buttons
+                              Center(
+                                child: SizedBox(
+                                  // 144 avatar + 20 (half of 40px buttons extending below)
+                                  height: 164,
+                                  width: 144,
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      // Profile picture preview
+                                      Container(
                                         width: 144,
                                         height: 144,
-                                        child: DecoratedBox(
-                                          decoration: BoxDecoration(
-                                            borderRadius:
-                                                BorderRadius.circular(33),
-                                            color: Colors.black.withValues(
-                                              alpha: 0.7,
-                                            ),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            33,
                                           ),
-                                          child: const Center(
-                                            child: CircularProgressIndicator(
-                                              color: VineTheme.vineGreen,
-                                              strokeWidth: 3,
+                                          color: Colors.grey[800],
+                                          border: Border.all(
+                                            color: VineTheme.onSurfaceDisabled,
+                                            width: 1.64,
+                                          ),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            31.36,
+                                          ),
+                                          child: _buildProfilePicturePreview(),
+                                        ),
+                                      ),
+                                      // Upload progress indicator
+                                      if (_isUploadingImage)
+                                        Positioned(
+                                          top: 0,
+                                          left: 0,
+                                          width: 144,
+                                          height: 144,
+                                          child: DecoratedBox(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(33),
+                                              color: Colors.black.withValues(
+                                                alpha: 0.7,
+                                              ),
+                                            ),
+                                            child: const Center(
+                                              child: CircularProgressIndicator(
+                                                color: VineTheme.vineGreen,
+                                                strokeWidth: 3,
+                                              ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    // Image source buttons - overlapping bottom of avatar
-                                    Positioned(
-                                      bottom: 0,
-                                      left: 0,
-                                      right: 0,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          // Show camera button on mobile only
-                                          if (!_isDesktopPlatform()) ...[
+                                      // Image source buttons - overlapping bottom of avatar
+                                      Positioned(
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            // Show camera button on mobile only
+                                            if (!_isDesktopPlatform()) ...[
+                                              GestureDetector(
+                                                onTap: _isUploadingImage
+                                                    ? null
+                                                    : () => _pickImage(
+                                                        ImageSource.camera,
+                                                      ),
+                                                child: Container(
+                                                  width: 40,
+                                                  height: 40,
+                                                  decoration: BoxDecoration(
+                                                    color: VineTheme
+                                                        .surfaceContainer,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          16,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: VineTheme
+                                                          .outlineMuted,
+                                                      width: 2,
+                                                    ),
+                                                  ),
+                                                  child: Center(
+                                                    child: SvgPicture.asset(
+                                                      'assets/icon/cameraPlus.svg',
+                                                      width: 24,
+                                                      height: 24,
+                                                      colorFilter:
+                                                          const ColorFilter.mode(
+                                                            VineTheme.primary,
+                                                            BlendMode.srcIn,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                            ],
                                             GestureDetector(
                                               onTap: _isUploadingImage
                                                   ? null
                                                   : () => _pickImage(
-                                                      ImageSource.camera,
+                                                      ImageSource.gallery,
                                                     ),
                                               child: Container(
                                                 width: 40,
                                                 height: 40,
                                                 decoration: BoxDecoration(
-                                                  color:
-                                                      VineTheme.surfaceContainer,
+                                                  color: VineTheme
+                                                      .surfaceContainer,
                                                   borderRadius:
                                                       BorderRadius.circular(16),
                                                   border: Border.all(
@@ -518,373 +558,349 @@ class _ProfileSetupScreenViewState
                                                 ),
                                                 child: Center(
                                                   child: SvgPicture.asset(
-                                                    'assets/icon/cameraPlus.svg',
+                                                    'assets/icon/imagesSquare.svg',
                                                     width: 24,
                                                     height: 24,
                                                     colorFilter:
                                                         const ColorFilter.mode(
-                                                      VineTheme.primary,
-                                                      BlendMode.srcIn,
-                                                    ),
+                                                          VineTheme.primary,
+                                                          BlendMode.srcIn,
+                                                        ),
                                                   ),
                                                 ),
                                               ),
                                             ),
                                             const SizedBox(width: 12),
+                                            // URL input button
+                                            GestureDetector(
+                                              onTap: () =>
+                                                  _showImageUrlSheet(context),
+                                              child: Container(
+                                                width: 40,
+                                                height: 40,
+                                                decoration: BoxDecoration(
+                                                  color: VineTheme
+                                                      .surfaceContainer,
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  border: Border.all(
+                                                    color:
+                                                        VineTheme.outlineMuted,
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                                child: Center(
+                                                  child: SvgPicture.asset(
+                                                    'assets/icon/linkSimple.svg',
+                                                    width: 24,
+                                                    height: 24,
+                                                    colorFilter:
+                                                        const ColorFilter.mode(
+                                                          VineTheme.primary,
+                                                          BlendMode.srcIn,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
                                           ],
-                                          GestureDetector(
-                                            onTap: _isUploadingImage
-                                                ? null
-                                                : () => _pickImage(
-                                                    ImageSource.gallery,
-                                                  ),
-                                            child: Container(
-                                              width: 40,
-                                              height: 40,
-                                              decoration: BoxDecoration(
-                                                color:
-                                                    VineTheme.surfaceContainer,
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                                border: Border.all(
-                                                  color: VineTheme.outlineMuted,
-                                                  width: 2,
-                                                ),
-                                              ),
-                                              child: Center(
-                                                child: SvgPicture.asset(
-                                                  'assets/icon/imagesSquare.svg',
-                                                  width: 24,
-                                                  height: 24,
-                                                  colorFilter:
-                                                      const ColorFilter.mode(
-                                                    VineTheme.primary,
-                                                    BlendMode.srcIn,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          // URL input button
-                                          GestureDetector(
-                                            onTap: () =>
-                                                _showImageUrlSheet(context),
-                                            child: Container(
-                                              width: 40,
-                                              height: 40,
-                                              decoration: BoxDecoration(
-                                                color:
-                                                    VineTheme.surfaceContainer,
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                                border: Border.all(
-                                                  color: VineTheme.outlineMuted,
-                                                  width: 2,
-                                                ),
-                                              ),
-                                              child: Center(
-                                                child: SvgPicture.asset(
-                                                  'assets/icon/linkSimple.svg',
-                                                  width: 24,
-                                                  height: 24,
-                                                  colorFilter: const ColorFilter.mode(
-                                                    VineTheme.primary,
-                                                    BlendMode.srcIn,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Display Name
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16),
+                                child: Text(
+                                  'Display Name',
+                                  style: VineTheme.labelMediumFont(
+                                    color: _nameFocusNode.hasFocus
+                                        ? VineTheme.primary
+                                        : VineTheme.onSurfaceMuted,
+                                  ),
+                                ),
+                              ),
+                              TextFormField(
+                                controller: _nameController,
+                                focusNode: _nameFocusNode,
+                                autofocus: false,
+                                style: VineTheme.bodyLargeFont(
+                                  color: VineTheme.onSurface,
+                                ),
+                                decoration: InputDecoration(
+                                  isCollapsed: true,
+                                  hintText: 'How should people know you?',
+                                  hintStyle: TextStyle(color: Colors.grey[600]),
+                                  border: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  enabledBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  errorBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedErrorBorder:
+                                      const UnderlineInputBorder(
+                                        borderRadius: BorderRadius.zero,
+                                        borderSide: BorderSide(
+                                          color: VineTheme.neutral10,
+                                        ),
+                                      ),
+                                  contentPadding: const EdgeInsets.all(16),
+                                ),
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) =>
+                                    FocusScope.of(context).nextFocus(),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Please enter a display name';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Bio
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Bio (Optional)',
+                                      style: VineTheme.labelMediumFont(
+                                        color: _bioFocusNode.hasFocus
+                                            ? VineTheme.primary
+                                            : VineTheme.onSurfaceMuted,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${_bioController.text.length}/360',
+                                      style: VineTheme.labelMediumFont(
+                                        color: VineTheme.onSurfaceMuted,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Display Name
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16),
-                              child: Text(
-                                'Display Name',
-                                style: VineTheme.labelMediumFont(
-                                  color: _nameFocusNode.hasFocus
-                                      ? VineTheme.primary
-                                      : VineTheme.onSurfaceMuted,
+                              TextFormField(
+                                controller: _bioController,
+                                focusNode: _bioFocusNode,
+                                style: VineTheme.bodyLargeFont(
+                                  color: VineTheme.onSurface,
                                 ),
-                              ),
-                            ),
-                            TextFormField(
-                              controller: _nameController,
-                              focusNode: _nameFocusNode,
-                              autofocus: false,
-                              style: VineTheme.bodyLargeFont(
-                                color: VineTheme.onSurface,
-                              ),
-                              decoration: InputDecoration(
-                                isCollapsed: true,
-                                hintText: 'How should people know you?',
-                                hintStyle: TextStyle(color: Colors.grey[600]),
-                                border: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                enabledBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                focusedBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                errorBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                focusedErrorBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.all(16),
-                              ),
-                              textInputAction: TextInputAction.next,
-                              onFieldSubmitted: (_) =>
-                                  FocusScope.of(context).nextFocus(),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter a display name';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Bio
-                            Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 16),
-                              child: Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Bio (Optional)',
-                                    style: VineTheme.labelMediumFont(
-                                      color: _bioFocusNode.hasFocus
-                                          ? VineTheme.primary
-                                          : VineTheme.onSurfaceMuted,
+                                decoration: InputDecoration(
+                                  isCollapsed: true,
+                                  hintText: 'Tell people about yourself...',
+                                  hintStyle: TextStyle(color: Colors.grey[600]),
+                                  border: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  Text(
-                                    '${_bioController.text.length}/360',
-                                    style: VineTheme.labelMediumFont(
-                                      color: VineTheme.onSurfaceMuted,
+                                  enabledBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
                                     ),
                                   ),
-                                ],
+                                  focusedBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  errorBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedErrorBorder:
+                                      const UnderlineInputBorder(
+                                        borderRadius: BorderRadius.zero,
+                                        borderSide: BorderSide(
+                                          color: VineTheme.neutral10,
+                                        ),
+                                      ),
+                                  contentPadding: const EdgeInsets.all(16),
+                                  counterText: '',
+                                ),
+                                maxLines: null,
+                                minLines: 1,
+                                maxLength: 360,
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) =>
+                                    FocusScope.of(context).nextFocus(),
+                                onChanged: (_) => setState(() {}),
                               ),
-                            ),
-                            TextFormField(
-                              controller: _bioController,
-                              focusNode: _bioFocusNode,
-                              style: VineTheme.bodyLargeFont(
-                                color: VineTheme.onSurface,
-                              ),
-                              decoration: InputDecoration(
-                                isCollapsed: true,
-                                hintText: 'Tell people about yourself...',
-                                hintStyle: TextStyle(color: Colors.grey[600]),
-                                border: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                enabledBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                focusedBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                errorBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                focusedErrorBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.all(16),
-                                counterText: '',
-                              ),
-                              maxLines: null,
-                              minLines: 1,
-                              maxLength: 360,
-                              textInputAction: TextInputAction.next,
-                              onFieldSubmitted: (_) =>
-                                  FocusScope.of(context).nextFocus(),
-                              onChanged: (_) => setState(() {}),
-                            ),
-                            const SizedBox(height: 16),
+                              const SizedBox(height: 16),
 
-                            // Public key (npub) - read-only
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16),
-                              child: Text(
-                                'Public key (npub)',
-                                style: VineTheme.labelMediumFont(
+                              // Public key (npub) - read-only
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16),
+                                child: Text(
+                                  'Public key (npub)',
+                                  style: VineTheme.labelMediumFont(
+                                    color: VineTheme.onSurfaceMuted,
+                                  ),
+                                ),
+                              ),
+                              TextFormField(
+                                initialValue: ref
+                                    .watch(authServiceProvider)
+                                    .currentNpub,
+                                readOnly: true,
+                                maxLines: null,
+                                style: VineTheme.bodyLargeFont(
                                   color: VineTheme.onSurfaceMuted,
                                 ),
-                              ),
-                            ),
-                            TextFormField(
-                              initialValue: ref.watch(authServiceProvider).currentNpub,
-                              readOnly: true,
-                              maxLines: null,
-                              style: VineTheme.bodyLargeFont(
-                                color: VineTheme.onSurfaceMuted,
-                              ),
-                              decoration: const InputDecoration(
-                                isCollapsed: true,
-                                border: UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
+                                decoration: const InputDecoration(
+                                  isCollapsed: true,
+                                  border: UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
                                   ),
-                                ),
-                                enabledBorder: UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
+                                  enabledBorder: UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
                                   ),
-                                ),
-                                focusedBorder: UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
+                                  focusedBorder: UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
                                   ),
+                                  contentPadding: EdgeInsets.all(16),
                                 ),
-                                contentPadding: EdgeInsets.all(16),
                               ),
-                            ),
-                            const SizedBox(height: 16),
+                              const SizedBox(height: 16),
 
-                            // NIP-05 Username (optional)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16),
-                              child: Text(
-                                'Username (Optional)',
-                                style: VineTheme.labelMediumFont(
-                                  color: _usernameFocusNode.hasFocus
-                                      ? VineTheme.primary
-                                      : VineTheme.onSurfaceMuted,
+                              // NIP-05 Username (optional)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16),
+                                child: Text(
+                                  'Username (Optional)',
+                                  style: VineTheme.labelMediumFont(
+                                    color: _usernameFocusNode.hasFocus
+                                        ? VineTheme.primary
+                                        : VineTheme.onSurfaceMuted,
+                                  ),
                                 ),
                               ),
-                            ),
-                            TextFormField(
-                              controller: _nip05Controller,
-                              focusNode: _usernameFocusNode,
-                              style: VineTheme.bodyLargeFont(
-                                color: VineTheme.onSurface,
-                              ),
-                              autovalidateMode:
-                                  AutovalidateMode.onUserInteraction,
-                              decoration: InputDecoration(
-                                isCollapsed: true,
-                                hintText: 'username',
-                                hintStyle: TextStyle(color: Colors.grey[600]),
-                                border: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
+                              TextFormField(
+                                controller: _nip05Controller,
+                                focusNode: _usernameFocusNode,
+                                style: VineTheme.bodyLargeFont(
+                                  color: VineTheme.onSurface,
+                                ),
+                                autovalidateMode:
+                                    AutovalidateMode.onUserInteraction,
+                                decoration: InputDecoration(
+                                  isCollapsed: true,
+                                  hintText: 'username',
+                                  hintStyle: TextStyle(color: Colors.grey[600]),
+                                  border: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
                                   ),
-                                ),
-                                enabledBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
+                                  enabledBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
                                   ),
-                                ),
-                                focusedBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
+                                  focusedBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
                                   ),
-                                ),
-                                errorBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
+                                  errorBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
                                   ),
-                                ),
-                                focusedErrorBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
+                                  focusedErrorBorder:
+                                      const UnderlineInputBorder(
+                                        borderRadius: BorderRadius.zero,
+                                        borderSide: BorderSide(
+                                          color: VineTheme.neutral10,
+                                        ),
+                                      ),
+                                  contentPadding: const EdgeInsets.all(16),
+                                  prefixText: '@',
+                                  prefixStyle: VineTheme.bodyLargeFont(
+                                    color: VineTheme.onSurfaceMuted,
                                   ),
+                                  suffixText: '@divine.video',
+                                  suffixStyle: VineTheme.bodyLargeFont(
+                                    color: VineTheme.onSurfaceMuted,
+                                  ),
+                                  errorMaxLines: 2,
                                 ),
-                                contentPadding: const EdgeInsets.all(16),
-                                prefixText: '@',
-                                prefixStyle: VineTheme.bodyLargeFont(
-                                  color: VineTheme.onSurfaceMuted,
-                                ),
-                                suffixText: '@divine.video',
-                                suffixStyle: VineTheme.bodyLargeFont(
-                                  color: VineTheme.onSurfaceMuted,
-                                ),
-                                errorMaxLines: 2,
-                              ),
-                              textInputAction: TextInputAction.next,
-                              onFieldSubmitted: (_) =>
-                                  FocusScope.of(context).nextFocus(),
-                              onChanged: (value) => ref
-                                  .read(usernameProvider.notifier)
-                                  .onUsernameChanged(value),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return null; // Optional field
-                                }
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) =>
+                                    FocusScope.of(context).nextFocus(),
+                                onChanged: (value) => ref
+                                    .read(usernameProvider.notifier)
+                                    .onUsernameChanged(value),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return null; // Optional field
+                                  }
 
-                                final regex = RegExp(
-                                  r'^[a-z0-9\-_.]+$',
-                                  caseSensitive: false,
-                                );
-                                if (!regex.hasMatch(value)) {
-                                  return 'Username can only contain letters, numbers, dash, underscore, and dot';
-                                }
-                                if (value.length < kMinUsernameLength) {
-                                  return 'Username must be at least $kMinUsernameLength characters';
-                                }
-                                if (value.length > kMaxUsernameLength) {
-                                  return 'Username must be $kMaxUsernameLength characters or less';
-                                }
-                                return null;
-                              },
-                            ),
-                            // Username status indicators
-                            UsernameStatusIndicator(state: usernameState),
-                          ],
+                                  final regex = RegExp(
+                                    r'^[a-z0-9\-_.]+$',
+                                    caseSensitive: false,
+                                  );
+                                  if (!regex.hasMatch(value)) {
+                                    return 'Username can only contain letters, numbers, dash, underscore, and dot';
+                                  }
+                                  if (value.length < kMinUsernameLength) {
+                                    return 'Username must be at least $kMinUsernameLength characters';
+                                  }
+                                  if (value.length > kMaxUsernameLength) {
+                                    return 'Username must be $kMaxUsernameLength characters or less';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              // Username status indicators
+                              UsernameStatusIndicator(state: usernameState),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -893,7 +909,6 @@ class _ProfileSetupScreenViewState
               ),
             ),
           ),
-        ),
           bottomNavigationBar: SafeArea(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
@@ -908,12 +923,11 @@ class _ProfileSetupScreenViewState
                           : () {
                               // Wait for any ongoing transitions before popping
                               // This prevents navigation timing race condition
-                              WidgetsBinding.instance
-                                  .addPostFrameCallback((_) {
-                                    if (mounted) {
-                                      Navigator.of(context).pop();
-                                    }
-                                  });
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  Navigator.of(context).pop();
+                                }
+                              });
                             },
                       style: OutlinedButton.styleFrom(
                         backgroundColor: VineTheme.surfaceContainer,
@@ -951,16 +965,15 @@ class _ProfileSetupScreenViewState
                                 _nip05Controller.text.trim() ==
                                     _initialUsername) &&
                             !usernameState.isChecking,
-                        onSave: () =>
-                            context.read<ProfileEditorBloc>().add(
-                              ProfileSaved(
-                                pubkey: pubkey,
-                                displayName: _nameController.text,
-                                about: _bioController.text,
-                                username: _nip05Controller.text,
-                                picture: _pictureController.text,
-                              ),
-                            ),
+                        onSave: () => context.read<ProfileEditorBloc>().add(
+                          ProfileSaved(
+                            pubkey: pubkey,
+                            displayName: _nameController.text,
+                            about: _bioController.text,
+                            username: _nip05Controller.text,
+                            picture: _pictureController.text,
+                          ),
+                        ),
                       ),
                     ),
                 ],
@@ -1682,13 +1695,8 @@ class _SaveButton extends StatelessWidget {
         foregroundColor: VineTheme.onPrimary,
         disabledBackgroundColor: VineTheme.vineGreen.withValues(alpha: 0.4),
         disabledForegroundColor: VineTheme.onPrimary.withValues(alpha: 0.6),
-        padding: const EdgeInsets.symmetric(
-          vertical: 12,
-          horizontal: 16,
-        ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       child: isLoading
           ? Row(
@@ -1705,17 +1713,13 @@ class _SaveButton extends StatelessWidget {
                 const SizedBox(width: 12),
                 Text(
                   'Saving...',
-                  style: VineTheme.titleMediumFont(
-                    color: VineTheme.onPrimary,
-                  ),
+                  style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
                 ),
               ],
             )
           : Text(
               'Save',
-              style: VineTheme.titleMediumFont(
-                color: VineTheme.onPrimary,
-              ),
+              style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
