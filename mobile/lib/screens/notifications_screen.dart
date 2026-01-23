@@ -56,7 +56,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     return Column(
       children: [
         // Tab bar for filtering notifications
-        Container(
+        Material(
           color: VineTheme.navGreen,
           child: TabBar(
             controller: _tabController,
