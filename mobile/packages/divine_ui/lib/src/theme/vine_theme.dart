@@ -256,6 +256,9 @@ class VineTheme {
   /// Variant content color on surfaces (75% white).
   static const Color onSurfaceVariant = Color(0xBFFFFFFF);
 
+  /// Disabled content color on surfaces (25% white).
+  static const Color onSurfaceDisabled = Color(0x40FFFFFF);
+
   /// Error container background color.
   static const Color errorContainer = Color(0xFF410001);
 

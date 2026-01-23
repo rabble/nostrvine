@@ -61,7 +61,7 @@ class _OthersFollowersView extends StatelessWidget {
         : 'Followers';
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.surfaceBackground,
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -94,7 +94,26 @@ class _OthersFollowersView extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
           tooltip: 'Back',
         ),
-        title: Text(appBarTitle, style: VineTheme.titleFont()),
+        title: BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
+          builder: (context, state) {
+            final count = state.status == OthersFollowersStatus.success
+                ? state.followersPubkeys.length
+                : 0;
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(appBarTitle, style: VineTheme.titleFont()),
+                Text(
+                  '$count users',
+                  style: VineTheme.bodySmallFont(
+                    color: VineTheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
       ),
       body: BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
         builder: (context, state) {
@@ -147,7 +166,6 @@ class _FollowersListBody extends StatelessWidget {
         );
       },
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
         itemCount: followers.length,
         itemBuilder: (context, index) {
           final userPubkey = followers[index];
