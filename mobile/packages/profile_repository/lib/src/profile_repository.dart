@@ -9,6 +9,9 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:profile_repository/profile_repository.dart';
 
+/// API endpoint for claiming usernames via NIP-98 auth.
+const _usernameClaimUrl = 'https://names.divine.video/api/username/claim';
+
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
 class ProfileRepository {
   /// Creates a new profile repository.
@@ -63,7 +66,7 @@ class ProfileRepository {
 
   /// Claims a username via NIP-98 authenticated request.
   ///
-  /// Makes a POST request to `divine.video/api/username/claim` with the
+  /// Makes a POST request to `names.divine.video/api/username/claim` with the
   /// username. The pubkey is extracted from the NIP-98 auth header by the
   /// server.
   ///
@@ -75,7 +78,7 @@ class ProfileRepository {
       'name': username,
     });
     final authHeader = await _nostrClient.createNip98AuthHeader(
-      url: 'https://divine.video/api/username/claim',
+      url: _usernameClaimUrl,
       method: 'POST',
       payload: payload,
     );
@@ -87,7 +90,7 @@ class ProfileRepository {
     final Response response;
     try {
       response = await _httpClient.post(
-        Uri.parse('https://divine.video/api/username/claim'),
+        Uri.parse(_usernameClaimUrl),
         headers: {
           'Authorization': authHeader,
           'Content-Type': 'application/json',
