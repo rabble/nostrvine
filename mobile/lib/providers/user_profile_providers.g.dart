@@ -65,7 +65,7 @@ final class UserProfileReactiveProvider
 }
 
 String _$userProfileReactiveHash() =>
-    r'7723a6aa75b383fe1de8e796ceb8ac62a34191e6';
+    r'a386655102ccb644658df4df490df424e66e8e03';
 
 final class UserProfileReactiveFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<UserProfile?>, String> {
@@ -151,7 +151,7 @@ final class FetchUserProfileProvider
   }
 }
 
-String _$fetchUserProfileHash() => r'0c34983f690724e0de10bb1e923f47eb88e4b48e';
+String _$fetchUserProfileHash() => r'ffed247913793b5c41e896a679df7c286fee540c';
 
 /// Async provider for loading a single user profile.
 /// Delegates to ProfileRepository for caching and fetching,
@@ -212,7 +212,7 @@ final class UserProfileNotifierProvider
 }
 
 String _$userProfileNotifierHash() =>
-    r'66d6fbe940e477bbd08ecd5c0d1958ade072cbc8';
+    r'8336acfa4268b155ca8b53240f1e3ee6126f9201';
 
 abstract class _$UserProfileNotifier extends $Notifier<UserProfileState> {
   UserProfileState build();
