@@ -267,7 +267,10 @@ class _ProfileNameAndBio extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (profile != null)
-            UserName.fromUserProfile(profile!, style: VineTheme.titleLargeFont())
+            UserName.fromUserProfile(
+              profile!,
+              style: VineTheme.titleLargeFont(),
+            )
           else
             UserName.fromPubKey(userIdHex, style: VineTheme.titleLargeFont()),
           _UniqueIdentifier(userIdHex: userIdHex, nip05: nip05),
