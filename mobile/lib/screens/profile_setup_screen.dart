@@ -285,7 +285,9 @@ class _ProfileSetupScreenViewState
               showDialog<void>(
                 context: context,
                 builder: (context) => UsernameReservedDialog(username),
-              );
+              ).then((_) {
+                ref.read(usernameProvider.notifier).setReserved(username);
+              });
             case ProfileEditorError.publishFailed:
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
