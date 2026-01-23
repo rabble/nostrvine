@@ -65,7 +65,7 @@ final class UserProfileReactiveProvider
 }
 
 String _$userProfileReactiveHash() =>
-    r'7f0a97ea992b601f1b4205eae0131e1970dc1435';
+    r'7723a6aa75b383fe1de8e796ceb8ac62a34191e6';
 
 final class UserProfileReactiveFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<UserProfile?>, String> {
@@ -85,14 +85,16 @@ final class UserProfileReactiveFamily extends $Family
   String toString() => r'userProfileReactiveProvider';
 }
 
-/// Async provider for loading a single user profile
-/// Delegates to UserProfileService which is the single source of truth
+/// Async provider for loading a single user profile.
+/// Delegates to ProfileRepository for caching and fetching,
+/// and UserProfileService for skip-tracking.
 
 @ProviderFor(fetchUserProfile)
 const fetchUserProfileProvider = FetchUserProfileFamily._();
 
-/// Async provider for loading a single user profile
-/// Delegates to UserProfileService which is the single source of truth
+/// Async provider for loading a single user profile.
+/// Delegates to ProfileRepository for caching and fetching,
+/// and UserProfileService for skip-tracking.
 
 final class FetchUserProfileProvider
     extends
@@ -102,8 +104,9 @@ final class FetchUserProfileProvider
           FutureOr<UserProfile?>
         >
     with $FutureModifier<UserProfile?>, $FutureProvider<UserProfile?> {
-  /// Async provider for loading a single user profile
-  /// Delegates to UserProfileService which is the single source of truth
+  /// Async provider for loading a single user profile.
+  /// Delegates to ProfileRepository for caching and fetching,
+  /// and UserProfileService for skip-tracking.
   const FetchUserProfileProvider._({
     required FetchUserProfileFamily super.from,
     required String super.argument,
@@ -148,10 +151,11 @@ final class FetchUserProfileProvider
   }
 }
 
-String _$fetchUserProfileHash() => r'8fcb96c584b9590712ec8e1681ebae84e0f66627';
+String _$fetchUserProfileHash() => r'0c34983f690724e0de10bb1e923f47eb88e4b48e';
 
-/// Async provider for loading a single user profile
-/// Delegates to UserProfileService which is the single source of truth
+/// Async provider for loading a single user profile.
+/// Delegates to ProfileRepository for caching and fetching,
+/// and UserProfileService for skip-tracking.
 
 final class FetchUserProfileFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<UserProfile?>, String> {
@@ -164,8 +168,9 @@ final class FetchUserProfileFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Async provider for loading a single user profile
-  /// Delegates to UserProfileService which is the single source of truth
+  /// Async provider for loading a single user profile.
+  /// Delegates to ProfileRepository for caching and fetching,
+  /// and UserProfileService for skip-tracking.
 
   FetchUserProfileProvider call(String pubkey) =>
       FetchUserProfileProvider._(argument: pubkey, from: this);

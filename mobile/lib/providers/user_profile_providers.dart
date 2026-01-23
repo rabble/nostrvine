@@ -25,13 +25,15 @@ Future<UserProfile?> userProfileReactive(Ref ref, String pubkey) async {
   final isCached = userProfileService.hasProfile(pubkey);
 
   if (isCached) {
+    final cached = userProfileService.getCachedProfile(pubkey);
     Log.debug(
-      '✅ Found cached profile: ${_safePubkeyTrunc(pubkey)}',
+      '✅ Found cached profile: name=${cached?.name}, '
+      'displayName=${cached?.displayName}, bestDisplayName=${cached?.bestDisplayName}',
       name: 'UserProfileReactiveProvider',
       category: LogCategory.ui,
     );
 
-    return userProfileService.getCachedProfile(pubkey);
+    return cached;
   }
 
   // Check if profile is known to be missing (should skip fetch)
@@ -127,23 +129,13 @@ Future<UserProfile?> userProfileReactive(Ref ref, String pubkey) async {
   );
 }
 
-/// Async provider for loading a single user profile
-/// Delegates to UserProfileService which is the single source of truth
+/// Async provider for loading a single user profile.
+/// Delegates to ProfileRepository for caching and fetching,
+/// and UserProfileService for skip-tracking.
 @riverpod
 Future<UserProfile?> fetchUserProfile(Ref ref, String pubkey) async {
-  // Use UserProfileService as single source of truth
   final userProfileService = ref.watch(userProfileServiceProvider);
-
-  // Check if already cached or should skip
-  final cached = userProfileService.getCachedProfile(pubkey);
-  if (cached != null) {
-    Log.debug(
-      '✅ Found cached profile: ${cached.bestDisplayName}',
-      name: 'UserProfileProvider',
-      category: LogCategory.ui,
-    );
-    return cached;
-  }
+  final profileRepository = ref.watch(profileRepositoryProvider);
 
   if (userProfileService.shouldSkipProfileFetch(pubkey)) {
     Log.debug(
@@ -155,31 +147,38 @@ Future<UserProfile?> fetchUserProfile(Ref ref, String pubkey) async {
   }
 
   Log.debug(
-    '🔍 Loading profile for: ${_safePubkeyTrunc(pubkey)}...',
+    'Loading profile for: ${_safePubkeyTrunc(pubkey)}...',
     name: 'UserProfileProvider',
     category: LogCategory.ui,
   );
 
-  try {
-    final profile = await userProfileService.fetchProfile(pubkey);
+  final profile = await profileRepository.getProfile(pubkey: pubkey);
 
-    if (profile != null) {
-      Log.info(
-        '✅ Fetched profile for ${_safePubkeyTrunc(pubkey)}: ${profile.bestDisplayName}',
-        name: 'UserProfileProvider',
-        category: LogCategory.ui,
-      );
-    }
-
-    return profile;
-  } catch (e) {
-    Log.error(
-      'Error loading profile: $e',
+  if (profile == null) {
+    Log.debug(
+      'Profile not found, marking as missing: ${_safePubkeyTrunc(pubkey)}...',
       name: 'UserProfileProvider',
       category: LogCategory.ui,
     );
+    userProfileService.markProfileAsMissing(pubkey);
     return null;
   }
+
+  Log.debug(
+    'Loaded profile from repo: name=${profile.name}, '
+    'displayName=${profile.displayName}, nip05=${profile.nip05}',
+    name: 'UserProfileProvider',
+    category: LogCategory.ui,
+  );
+
+  final converted = UserProfile.fromJson(profile.toJson());
+  Log.debug(
+    'After conversion: name=${converted.name}, '
+    'displayName=${converted.displayName}, bestDisplayName=${converted.bestDisplayName}',
+    name: 'UserProfileProvider',
+    category: LogCategory.ui,
+  );
+  return converted;
 }
 
 // User profile state notifier with reactive state management
