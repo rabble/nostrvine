@@ -103,39 +103,20 @@
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
-            <!-- Deep links for divine.video -->
+            <!-- Deep links for divine.video and login.divine.video -->
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                <data
-                    android:scheme="https"
-                    android:host="divine.video"
-                    android:pathPrefix="/video"/>
-                <data
-                    android:scheme="https"
-                    android:host="divine.video"
-                    android:pathPrefix="/profile"/>
-                <data
-                    android:scheme="https"
-                    android:host="divine.video"
-                    android:pathPrefix="/hashtag"/>
-                <data
-                    android:scheme="https"
-                    android:host="divine.video"
-                    android:pathPrefix="/search"/>
-            </intent-filter>
 
+                <data android:scheme="https" android:host="divine.video" />
+                <data android:scheme="https" android:host="login.divine.video" />
 
-            <!-- Deep link for password reset link emailed to user -->
-            <intent-filter android:autoVerify="true">
-                <action android:name="android.intent.action.VIEW"/>
-                <category android:name="android.intent.category.DEFAULT"/>
-                <category android:name="android.intent.category.BROWSABLE"/>
-                <data
-                    android:scheme="https"
-                    android:host="login.divine.video"
-                    android:pathPrefix="/reset-password"/>
+                <data android:pathPrefix="/video"/>
+                <data android:pathPrefix="/profile"/>
+                <data android:pathPrefix="/hashtag"/>
+                <data android:pathPrefix="/search"/>
+                <data android:pathPrefix="/reset-password"/>
             </intent-filter>
 
 

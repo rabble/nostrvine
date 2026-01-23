@@ -414,6 +414,28 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
           as _i6.Future<_i7.Event?>);
 
   @override
+  _i6.Future<_i7.Event?> sendGenericRepost({
+    required String? addressableId,
+    required int? targetKind,
+    required String? authorPubkey,
+    String? content = '',
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendGenericRepost, [], {
+              #addressableId: addressableId,
+              #targetKind: targetKind,
+              #authorPubkey: authorPubkey,
+              #content: content,
+              #tempRelays: tempRelays,
+              #targetRelays: targetRelays,
+            }),
+            returnValue: _i6.Future<_i7.Event?>.value(),
+          )
+          as _i6.Future<_i7.Event?>);
+
+  @override
   _i6.Future<_i7.Event?> deleteEvent(
     String? eventId, {
     List<String>? tempRelays,
@@ -679,6 +701,14 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
             returnValueForMissingStub: _i6.Future<void>.value(),
           )
           as _i6.Future<void>);
+
+  @override
+  _i6.Future<(bool, String?)> deleteKeycastAccount() =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteKeycastAccount, []),
+            returnValue: _i6.Future<(bool, String?)>.value((false, null)),
+          )
+          as _i6.Future<(bool, String?)>);
 
   @override
   _i6.Future<void> signOut({bool? deleteKeys = false}) =>

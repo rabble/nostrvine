@@ -1,5 +1,5 @@
 // ABOUTME: Tests for NIP-62 account deletion service
-// ABOUTME: Verifies kind 62 event creation, ALL_RELAYS tag, and broadcast behavior
+// ABOUTME: Verifies kind 62 event creation, ALL_RELAYS tag, NIP-09 batch deletion, and broadcast behavior
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
@@ -26,6 +26,7 @@ void main() {
       required int kind,
       required List<List<String>> tags,
       required String content,
+      String? id,
     }) {
       final event = Event(
         pubkey,
@@ -34,13 +35,12 @@ void main() {
         content,
         createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
       );
-      event.id = 'test_event_${DateTime.now().millisecondsSinceEpoch}';
+      event.id = id ?? 'test_event_${DateTime.now().millisecondsSinceEpoch}';
       event.sig = 'test_signature';
       return event;
     }
 
     setUp(() {
-      // Generate valid keys for testing
       testPrivateKey = generatePrivateKey();
       testPublicKey = getPublicKey(testPrivateKey);
 
@@ -51,9 +51,9 @@ void main() {
         authService: mockAuthService,
       );
 
-      // Setup common mocks
       when(mockAuthService.isAuthenticated).thenReturn(true);
       when(mockAuthService.currentPublicKeyHex).thenReturn(testPublicKey);
+      when(mockNostrService.queryEvents(any)).thenAnswer((_) async => []);
     });
 
     test('createNip62Event should create kind 62 event', () async {
@@ -267,5 +267,270 @@ void main() {
         verifyNever(mockNostrService.publishEvent(any));
       },
     );
+
+    group('NIP-09 batch deletion', () {
+      test('should fetch all user events before deletion', () async {
+        // Arrange
+        final nip62Event = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 62,
+          tags: [
+            ['relay', 'ALL_RELAYS'],
+          ],
+          content: 'User requested account deletion via diVine app',
+        );
+
+        when(mockNostrService.queryEvents(any)).thenAnswer((_) async => []);
+        when(
+          mockAuthService.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: anyNamed('tags'),
+          ),
+        ).thenAnswer((_) async => nip62Event);
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => nip62Event);
+
+        // Act
+        await service.deleteAccount();
+
+        // Assert
+        verify(mockNostrService.queryEvents(any)).called(1);
+      });
+
+      test(
+        'should publish kind 5 events for user events before NIP-62',
+        () async {
+          // Arrange
+          final userVideoEvent = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 34236,
+            tags: [],
+            content: 'test video',
+            id: 'video_event_1',
+          );
+
+          final kind5Event = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 5,
+            tags: [
+              ['e', 'video_event_1'],
+              ['k', '34236'],
+            ],
+            content: 'User requested account deletion via diVine app',
+          );
+
+          final nip62Event = createTestEvent(
+            pubkey: testPublicKey,
+            kind: 62,
+            tags: [
+              ['relay', 'ALL_RELAYS'],
+            ],
+            content: 'User requested account deletion via diVine app',
+          );
+
+          when(
+            mockNostrService.queryEvents(any),
+          ).thenAnswer((_) async => [userVideoEvent]);
+
+          var createCallCount = 0;
+          when(
+            mockAuthService.createAndSignEvent(
+              kind: anyNamed('kind'),
+              content: anyNamed('content'),
+              tags: anyNamed('tags'),
+            ),
+          ).thenAnswer((_) async {
+            createCallCount++;
+            if (createCallCount == 1) return kind5Event;
+            return nip62Event;
+          });
+
+          when(
+            mockNostrService.publishEvent(any),
+          ).thenAnswer((_) async => nip62Event);
+
+          // Act
+          final result = await service.deleteAccount();
+
+          // Assert
+          expect(result.success, isTrue);
+          verify(mockNostrService.publishEvent(any)).called(2);
+        },
+      );
+
+      test('should group events by kind for batch deletion', () async {
+        // Arrange
+        final videoEvent1 = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 34236,
+          tags: [],
+          content: 'video 1',
+          id: 'video_1',
+        );
+        final videoEvent2 = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 34236,
+          tags: [],
+          content: 'video 2',
+          id: 'video_2',
+        );
+        final likeEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 7,
+          tags: [],
+          content: '+',
+          id: 'like_1',
+        );
+
+        final kind5VideoEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 5,
+          tags: [
+            ['e', 'video_1'],
+            ['e', 'video_2'],
+            ['k', '34236'],
+          ],
+          content: 'deletion',
+        );
+        final kind5LikeEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 5,
+          tags: [
+            ['e', 'like_1'],
+            ['k', '7'],
+          ],
+          content: 'deletion',
+        );
+        final nip62Event = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 62,
+          tags: [
+            ['relay', 'ALL_RELAYS'],
+          ],
+          content: 'deletion',
+        );
+
+        when(
+          mockNostrService.queryEvents(any),
+        ).thenAnswer((_) async => [videoEvent1, videoEvent2, likeEvent]);
+
+        var createCallCount = 0;
+        when(
+          mockAuthService.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: anyNamed('tags'),
+          ),
+        ).thenAnswer((_) async {
+          createCallCount++;
+          if (createCallCount == 1) return kind5VideoEvent;
+          if (createCallCount == 2) return kind5LikeEvent;
+          return nip62Event;
+        });
+
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => nip62Event);
+
+        // Act
+        final result = await service.deleteAccount();
+
+        // Assert
+        expect(result.success, isTrue);
+        expect(result.deletedEventsCount, equals(3));
+        verify(mockNostrService.publishEvent(any)).called(3);
+      });
+
+      test('should return deletedEventsCount in result', () async {
+        // Arrange
+        final userEvent = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 1,
+          tags: [],
+          content: 'note',
+          id: 'note_1',
+        );
+
+        final kind5Event = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 5,
+          tags: [
+            ['e', 'note_1'],
+            ['k', '1'],
+          ],
+          content: 'deletion',
+        );
+        final nip62Event = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 62,
+          tags: [
+            ['relay', 'ALL_RELAYS'],
+          ],
+          content: 'deletion',
+        );
+
+        when(
+          mockNostrService.queryEvents(any),
+        ).thenAnswer((_) async => [userEvent]);
+
+        var createCallCount = 0;
+        when(
+          mockAuthService.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: anyNamed('tags'),
+          ),
+        ).thenAnswer((_) async {
+          createCallCount++;
+          if (createCallCount == 1) return kind5Event;
+          return nip62Event;
+        });
+
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => nip62Event);
+
+        // Act
+        final result = await service.deleteAccount();
+
+        // Assert
+        expect(result.success, isTrue);
+        expect(result.deletedEventsCount, equals(1));
+      });
+
+      test('should still publish NIP-62 even if no events found', () async {
+        // Arrange
+        final nip62Event = createTestEvent(
+          pubkey: testPublicKey,
+          kind: 62,
+          tags: [
+            ['relay', 'ALL_RELAYS'],
+          ],
+          content: 'deletion',
+        );
+
+        when(mockNostrService.queryEvents(any)).thenAnswer((_) async => []);
+        when(
+          mockAuthService.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: anyNamed('tags'),
+          ),
+        ).thenAnswer((_) async => nip62Event);
+        when(
+          mockNostrService.publishEvent(any),
+        ).thenAnswer((_) async => nip62Event);
+
+        // Act
+        final result = await service.deleteAccount();
+
+        // Assert
+        expect(result.success, isTrue);
+        expect(result.deletedEventsCount, equals(0));
+        verify(mockNostrService.publishEvent(any)).called(1);
+      });
+    });
   });
 }

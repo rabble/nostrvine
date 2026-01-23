@@ -139,3 +139,24 @@ class ResetPasswordResult {
     return ResetPasswordResult(success: false, message: message);
   }
 }
+
+/// Result from DELETE /api/user/account
+class DeleteAccountResult {
+  final bool success;
+  final String? message;
+  final String? error;
+
+  DeleteAccountResult({required this.success, this.message, this.error});
+
+  factory DeleteAccountResult.fromJson(Map<String, dynamic> json) {
+    return DeleteAccountResult(
+      success: json['success'] as bool? ?? false,
+      message: json['message'] as String?,
+      error: json['error'] as String?,
+    );
+  }
+
+  factory DeleteAccountResult.error(String message) {
+    return DeleteAccountResult(success: false, error: message);
+  }
+}
