@@ -112,7 +112,8 @@ class ComposableVideoGrid extends ConsumerWidget {
         semanticsLabel: 'searching for more videos',
         onRefresh: onRefresh!,
         child: gridView,
-        color: VineTheme.vineGreen,
+        color: VineTheme.onPrimary,
+        backgroundColor: VineTheme.vineGreen,
       );
     }
 

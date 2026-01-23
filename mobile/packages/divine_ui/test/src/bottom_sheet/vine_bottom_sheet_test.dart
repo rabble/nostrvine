@@ -123,6 +123,74 @@ void main() {
       expect(find.text('Item 2'), findsOneWidget);
     });
 
+    testWidgets('renders fixed mode with scrollable false', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheet(
+              scrollable: false,
+              title: Text('Fixed Sheet'),
+              children: [Text('Fixed Content')],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Fixed Sheet'), findsOneWidget);
+      expect(find.text('Fixed Content'), findsOneWidget);
+    });
+
+    testWidgets('renders contentTitle in fixed mode', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheet(
+              scrollable: false,
+              contentTitle: 'Content Title',
+              children: [Text('Content')],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Content Title'), findsOneWidget);
+      expect(find.text('Content'), findsOneWidget);
+    });
+
+    testWidgets('renders contentTitle in scrollable mode', (tester) async {
+      final scrollController = ScrollController();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheet(
+              contentTitle: 'Scrollable Title',
+              scrollController: scrollController,
+              children: const [Text('Scrollable Content')],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Scrollable Title'), findsOneWidget);
+      expect(find.text('Scrollable Content'), findsOneWidget);
+    });
+
+    testWidgets('renders bottomInput in fixed mode', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: VineBottomSheet(
+              scrollable: false,
+              bottomInput: TextField(key: Key('fixed-input')),
+              children: [Text('Content')],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byKey(const Key('fixed-input')), findsOneWidget);
+    });
+
     group('VineBottomSheet.show', () {
       testWidgets('shows modal bottom sheet', (tester) async {
         await tester.pumpWidget(
@@ -134,7 +202,7 @@ void main() {
                     await VineBottomSheet.show<void>(
                       context: context,
                       title: const Text('Modal Sheet'),
-                      body: const Text('Modal Content'),
+                      children: const [Text('Modal Content')],
                     );
                   },
                   child: const Text('Show Sheet'),
@@ -151,6 +219,62 @@ void main() {
         // Verify sheet is shown
         expect(find.text('Modal Sheet'), findsOneWidget);
         expect(find.text('Modal Content'), findsOneWidget);
+      });
+
+      testWidgets('shows fixed mode sheet with scrollable false', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    await VineBottomSheet.show<void>(
+                      context: context,
+                      scrollable: false,
+                      title: const Text('Fixed Modal'),
+                      children: const [Text('Fixed Modal Content')],
+                    );
+                  },
+                  child: const Text('Show Fixed Sheet'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show Fixed Sheet'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Fixed Modal'), findsOneWidget);
+        expect(find.text('Fixed Modal Content'), findsOneWidget);
+      });
+
+      testWidgets('shows sheet with body parameter', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    await VineBottomSheet.show<void>(
+                      context: context,
+                      scrollable: false,
+                      body: const Text('Body Content'),
+                    );
+                  },
+                  child: const Text('Show Body Sheet'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show Body Sheet'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Body Content'), findsOneWidget);
       });
     });
   });

@@ -6,15 +6,14 @@ import 'package:flutter/material.dart';
 
 /// Header component for [VineBottomSheet].
 ///
-/// Combines drag handle and optional title section as per Figma design.
+/// Combines drag handle and title section as per Figma design.
 /// Uses Bricolage Grotesque bold font at 24px for title.
-/// When title is null, only the drag handle is displayed.
 class VineBottomSheetHeader extends StatelessWidget {
-  /// Creates a [VineBottomSheetHeader] with an optional title and trailing
-  /// widget.
+  /// Creates a [VineBottomSheetHeader] with the given title and optional
+  /// trailing widget.
   const VineBottomSheetHeader({this.title, this.trailing, super.key});
 
-  /// Optional title widget displayed centered below the drag handle.
+  /// Optional title widget displayed in the center
   final Widget? title;
 
   /// Optional trailing widget on the right (e.g., badge, button)
@@ -22,56 +21,57 @@ class VineBottomSheetHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 24,
-        right: 24,
-        top: 8,
-        bottom: title != null ? 16 : 24,
-      ),
-      child: Column(
-        children: [
-          // Drag handle
-          Container(
-            width: 64,
-            height: 4,
-            decoration: BoxDecoration(
-              color: VineTheme.alphaLight25,
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
+    final hasTitle = title != null && title is! SizedBox;
 
-          // Title section (only shown when title is provided)
-          if (title != null) ...[
-            const SizedBox(height: 20),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 24, right: 24, top: 8),
+          child: Column(
+            children: [
+              // Drag handle
+              Container(
+                width: 64,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: VineTheme.alphaLight25,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
 
-            // Title (centered) + optional trailing actions
-            Stack(
-              alignment: Alignment.center,
-              children: [
-                // Centered title
-                Center(
-                  child: DefaultTextStyle(
-                    style: VineTheme.titleFont(
-                      fontSize: 18,
-                      height: 1.33,
-                      letterSpacing: 0.15,
-                    ),
-                    child: title!,
+              const SizedBox(height: 20),
+
+              if (hasTitle)
+                // Title (centered) + optional trailing actions
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 14),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      // Centered title
+                      Center(child: title),
+
+                      // Trailing widget positioned on the right
+                      if (trailing != null)
+                        Positioned(
+                          right: 0,
+                          child: SizedBox(width: 62, child: trailing),
+                        ),
+                    ],
                   ),
                 ),
+            ],
+          ),
+        ),
 
-                // Trailing widget positioned on the right
-                if (trailing != null)
-                  Positioned(
-                    right: 0,
-                    child: SizedBox(width: 62, child: trailing),
-                  ),
-              ],
-            ),
-          ],
-        ],
-      ),
+        // Divider separating header from content
+        const Divider(
+          height: 2,
+          thickness: 2,
+          color: VineTheme.outlinedDisabled,
+        ),
+      ],
     );
   }
 }

@@ -74,6 +74,7 @@ import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -361,6 +362,16 @@ SeenVideosService seenVideosService(Ref ref) {
 @riverpod
 ContentBlocklistService contentBlocklistService(Ref ref) {
   return ContentBlocklistService();
+}
+
+/// Version counter to trigger rebuilds when blocklist changes.
+/// Widgets watching this will rebuild when block/unblock actions occur.
+@riverpod
+class BlocklistVersion extends _$BlocklistVersion {
+  @override
+  int build() => 0;
+
+  void increment() => state++;
 }
 
 /// NIP-05 service for username availability checking
@@ -1104,9 +1115,7 @@ LikesRepository likesRepository(Ref ref) {
   // This ensures the provider rebuilds when authentication completes
   ref.watch(authStateStreamProvider);
 
-  // Repository requires authentication
-  final authenticated =
-      !authService.isAuthenticated || authService.currentPublicKeyHex == null;
+  final isAuthenticated = authService.isAuthenticated;
 
   final nostrClient = ref.watch(nostrServiceProvider);
   final db = ref.watch(databaseProvider);
@@ -1115,10 +1124,47 @@ LikesRepository likesRepository(Ref ref) {
     userPubkey: authService.currentPublicKeyHex!,
   );
 
+  // Map AuthState stream to bool stream for repository
+  final authBoolStream = authService.authStateStream.map(
+    (state) => state == AuthState.authenticated,
+  );
+
   final repository = LikesRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    isAuthenticated: authenticated,
+    authStateStream: authBoolStream,
+    isAuthenticated: isAuthenticated,
+  );
+
+  ref.onDispose(repository.dispose);
+
+  return repository;
+}
+
+/// Provider for RepostsRepository instance
+///
+/// Creates a RepostsRepository for managing user reposts (Kind 16 generic
+/// reposts).
+/// Uses AuthService.createAndSignEvent for event creation.
+@Riverpod(keepAlive: true)
+RepostsRepository repostsRepository(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+  final nostrClient = ref.watch(nostrServiceProvider);
+
+  // Watch auth state stream to react to auth changes (login/logout)
+  ref.watch(authStateStreamProvider);
+
+  final isAuthenticated = authService.isAuthenticated;
+
+  // Map AuthState stream to bool stream for repository
+  final authBoolStream = authService.authStateStream.map(
+    (state) => state == AuthState.authenticated,
+  );
+
+  final repository = RepostsRepository(
+    nostrClient: nostrClient,
+    authStateStream: authBoolStream,
+    isAuthenticated: isAuthenticated,
   );
 
   ref.onDispose(repository.dispose);

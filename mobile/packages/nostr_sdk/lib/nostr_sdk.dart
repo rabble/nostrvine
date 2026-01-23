@@ -1,5 +1,6 @@
 library;
 
+export 'aid.dart';
 export 'android_plugin/android_plugin.dart';
 // Specialized utilities
 export 'cashu/cashu_tokens.dart';

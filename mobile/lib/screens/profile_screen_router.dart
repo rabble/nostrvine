@@ -2,12 +2,18 @@
 // ABOUTME: Uses CustomScrollView with slivers for smooth scrolling, URL is source of truth
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/widgets/environment_indicator.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_utils.dart';
@@ -18,12 +24,12 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
-import 'package:openvine/widgets/profile/profile_block_confirmation_dialog.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
 import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
+import 'package:openvine/widgets/vine_bottom_nav.dart';
+import 'package:openvine/widgets/vine_drawer.dart';
 import 'package:share_plus/share_plus.dart';
 
 /// Router-driven ProfileScreen - Instagram-style scrollable profile
@@ -94,7 +100,18 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     // Read derived context from router
     final pageContext = ref.watch(pageContextProvider);
 
-    return switch (pageContext) {
+    // Check if this is own profile grid view (needs own scaffold)
+    final isOwnProfileGrid = pageContext.maybeWhen(
+      data: (ctx) {
+        if (ctx.type != RouteType.profile) return false;
+        if (ctx.videoIndex != null) return false; // Video mode uses shell
+        final currentNpub = ref.read(authServiceProvider).currentNpub;
+        return ctx.npub == 'me' || ctx.npub == currentNpub;
+      },
+      orElse: () => false,
+    );
+
+    final content = switch (pageContext) {
       AsyncLoading() => const ProfileLoadingView(),
       AsyncError(:final error) => Center(child: Text('Error: $error')),
       AsyncData(:final value) => _ProfileContentView(
@@ -104,10 +121,104 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         onSetupProfile: _setupProfile,
         onEditProfile: _editProfile,
         onOpenClips: _openClips,
-        onShareProfile: _shareProfile,
-        onBlockUser: _blockUser,
       ),
     };
+
+    // Own profile grid gets its own scaffold with custom app bar
+    if (isOwnProfileGrid) {
+      final environment = ref.watch(currentEnvironmentProvider);
+      final userIdHex = ref.read(authServiceProvider).currentPublicKeyHex;
+
+      return Scaffold(
+        backgroundColor: Colors.black,
+        onDrawerChanged: (isOpen) {
+          ref.read(overlayVisibilityProvider.notifier).setDrawerOpen(isOpen);
+        },
+        appBar: AppBar(
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          toolbarHeight: 72,
+          leadingWidth: 80,
+          centerTitle: false,
+          titleSpacing: 0,
+          backgroundColor: getEnvironmentAppBarColor(environment),
+          leading: Builder(
+            builder: (context) => IconButton(
+              key: const Key('menu-icon-button'),
+              tooltip: 'Menu',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Container(
+                width: 48,
+                height: 48,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: VineTheme.iconButtonBackground,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: SvgPicture.asset(
+                  'assets/icon/menu.svg',
+                  width: 32,
+                  height: 32,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+              onPressed: () {
+                Log.info(
+                  '👆 User tapped menu button',
+                  name: 'Navigation',
+                  category: LogCategory.ui,
+                );
+                Scaffold.of(context).openDrawer();
+              },
+            ),
+          ),
+          title: Text(
+            'My Profile',
+            style: VineTheme.titleFont(),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          actions: [
+            Padding(
+              padding: const EdgeInsets.only(right: 16),
+              child: IconButton(
+                tooltip: 'More',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Container(
+                  width: 48,
+                  height: 48,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: VineTheme.iconButtonBackground,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: SvgPicture.asset(
+                    'assets/icon/DotsThree.svg',
+                    width: 28,
+                    height: 28,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                  ),
+                ),
+                onPressed: userIdHex != null ? () => _more(userIdHex) : null,
+              ),
+            ),
+          ],
+        ),
+        drawer: const VineDrawer(),
+        body: content,
+        bottomNavigationBar: const VineBottomNav(currentIndex: 3),
+      );
+    }
+
+    return content;
   }
 
   // Action methods
@@ -118,71 +229,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   }
 
   Future<void> _editProfile() async {
-    // Show menu with Edit Profile and Delete Account options
-    // Note: Using showModalBottomSheet with Navigator.pop because GoRouter
-    // has known issues with ModalBottomSheetRoute (see flutter/flutter#100933)
-    final result = await showModalBottomSheet<String>(
-      context: context,
-      backgroundColor: VineTheme.cardBackground,
-      builder: (modalContext) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.edit, color: VineTheme.vineGreen),
-              title: const Text(
-                'Edit Profile',
-                style: TextStyle(color: VineTheme.whiteText),
-              ),
-              subtitle: const Text(
-                'Update your display name, bio, and avatar',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
-              ),
-              onTap: () => Navigator.of(modalContext).pop('edit'),
-            ),
-            const Divider(color: VineTheme.secondaryText, height: 1),
-            ListTile(
-              leading: const Icon(Icons.delete_forever, color: Colors.red),
-              title: const Text(
-                'Delete Account and Data',
-                style: TextStyle(color: Colors.red),
-              ),
-              subtitle: const Text(
-                'PERMANENTLY delete your account and all content',
-                style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
-              ),
-              onTap: () => Navigator.of(modalContext).pop('delete'),
-            ),
-          ],
-        ),
-      ),
-    );
-
-    if (!mounted) return;
-
-    if (result == 'edit') {
-      // Navigate to edit-profile route (defined outside ShellRoute)
-      await context.push(ProfileSetupScreen.editPath);
-    } else if (result == 'delete') {
-      _handleDeleteAccount();
-    }
-  }
-
-  Future<void> _handleDeleteAccount() async {
-    final deletionService = ref.read(accountDeletionServiceProvider);
-    final authService = ref.read(authServiceProvider);
-
-    // Show confirmation dialog, then execute deletion
-    // Identity is proven by having an active session
-    await showDeleteAllContentWarningDialog(
-      context: context,
-      onConfirm: () => executeAccountDeletion(
-        context: context,
-        deletionService: deletionService,
-        authService: authService,
-        screenName: 'ProfileScreenRouter',
-      ),
-    );
+    // Navigate directly to edit-profile route (defined outside ShellRoute)
+    await context.push(ProfileSetupScreen.editPath);
   }
 
   Future<void> _shareProfile(String userIdHex) async {
@@ -233,55 +281,76 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     context.push(ClipLibraryScreen.clipsPath);
   }
 
-  Future<void> _blockUser(String pubkey, bool currentlyBlocked) async {
-    if (currentlyBlocked) {
-      // Unblock without confirmation
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-      blocklistService.unblockUser(pubkey);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('User unblocked')));
-      }
-      return;
-    }
-
-    // Show confirmation dialog for blocking
-    final confirmed = await showDialog<bool>(
+  Future<void> _more(String userIdHex) async {
+    final result = await VineBottomSheet.show<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: const Text('Block @', style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'You won\'t see their content in feeds. They won\'t be notified. You can still visit their profile.',
-          style: TextStyle(color: Colors.grey),
+      scrollable: false,
+      children: [
+        InkWell(
+          onTap: () => Navigator.of(context).pop('share'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icon/content-controls/share.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: const ColorFilter.mode(
+                    VineTheme.whiteText,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text('Share profile', style: VineTheme.titleMediumFont()),
+              ],
+            ),
+          ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => context.pop(false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+        InkWell(
+          onTap: () => Navigator.of(context).pop('copy_npub'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icon/copy.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: const ColorFilter.mode(
+                    VineTheme.whiteText,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text(
+                  'Copy public key (npub)',
+                  style: VineTheme.titleMediumFont(),
+                ),
+              ],
+            ),
           ),
-          TextButton(
-            onPressed: () => context.pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Block'),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
 
-    if (confirmed == true) {
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-      blocklistService.blockUser(pubkey);
+    if (!mounted) return;
 
-      if (mounted) {
-        // Show success confirmation using root navigator
-        showDialog(
-          context: context,
-          useRootNavigator: true,
-          builder: (context) => const ProfileBlockConfirmationDialog(),
-        );
-      }
+    if (result == 'share') {
+      await _shareProfile(userIdHex);
+    } else if (result == 'copy_npub') {
+      await _copyNpub(userIdHex);
+    }
+  }
+
+  Future<void> _copyNpub(String userIdHex) async {
+    final npub = NostrKeyUtils.encodePubKey(userIdHex);
+    await Clipboard.setData(ClipboardData(text: npub));
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Public key copied to clipboard')),
+      );
     }
   }
 }
@@ -295,8 +364,6 @@ class _ProfileContentView extends ConsumerWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
-    required this.onShareProfile,
-    required this.onBlockUser,
   });
 
   final RouteContext routeContext;
@@ -305,8 +372,6 @@ class _ProfileContentView extends ConsumerWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
-  final void Function(String userIdHex) onShareProfile;
-  final void Function(String pubkey, bool isBlocked) onBlockUser;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -346,17 +411,24 @@ class _ProfileContentView extends ConsumerWidget {
       onFetchProfile(userIdHex, isOwnProfile);
     });
 
+    // Get display name for unfollow confirmation (only needed for other profiles)
+    final displayName = isOwnProfile
+        ? null
+        : ref
+              .watch(userProfileReactiveProvider(userIdHex))
+              .value
+              ?.bestDisplayName;
+
     return _ProfileDataView(
       npub: npub,
       userIdHex: userIdHex,
       isOwnProfile: isOwnProfile,
+      displayName: displayName,
       videoIndex: routeContext.videoIndex,
       scrollController: scrollController,
       onSetupProfile: onSetupProfile,
       onEditProfile: onEditProfile,
       onOpenClips: onOpenClips,
-      onShareProfile: () => onShareProfile(userIdHex),
-      onBlockUser: (isBlocked) => onBlockUser(userIdHex, isBlocked),
     );
   }
 }
@@ -411,20 +483,18 @@ class _ProfileDataView extends ConsumerWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
-    required this.onShareProfile,
-    required this.onBlockUser,
+    this.displayName,
   });
 
   final String npub;
   final String userIdHex;
   final bool isOwnProfile;
+  final String? displayName;
   final int? videoIndex;
   final ScrollController scrollController;
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
-  final VoidCallback onShareProfile;
-  final void Function(bool isBlocked) onBlockUser;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -441,6 +511,7 @@ class _ProfileDataView extends ConsumerWidget {
         npub: npub,
         userIdHex: userIdHex,
         isOwnProfile: isOwnProfile,
+        displayName: displayName,
         videos: value.videos,
         videoIndex: videoIndex,
         profileStatsAsync: profileStatsAsync,
@@ -448,8 +519,6 @@ class _ProfileDataView extends ConsumerWidget {
         onSetupProfile: onSetupProfile,
         onEditProfile: onEditProfile,
         onOpenClips: onOpenClips,
-        onShareProfile: onShareProfile,
-        onBlockUser: onBlockUser,
       ),
     };
   }
@@ -468,13 +537,13 @@ class _ProfileViewSwitcher extends StatelessWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
-    required this.onShareProfile,
-    required this.onBlockUser,
+    this.displayName,
   });
 
   final String npub;
   final String userIdHex;
   final bool isOwnProfile;
+  final String? displayName;
   final List<VideoEvent> videos;
   final int? videoIndex;
   final AsyncValue<ProfileStats> profileStatsAsync;
@@ -482,8 +551,6 @@ class _ProfileViewSwitcher extends StatelessWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
-  final VoidCallback onShareProfile;
-  final void Function(bool isBlocked) onBlockUser;
 
   @override
   Widget build(BuildContext context) {
@@ -505,14 +572,13 @@ class _ProfileViewSwitcher extends StatelessWidget {
     return ProfileGridView(
       userIdHex: userIdHex,
       isOwnProfile: isOwnProfile,
+      displayName: displayName,
       videos: videos,
       profileStatsAsync: profileStatsAsync,
       scrollController: scrollController,
       onSetupProfile: onSetupProfile,
       onEditProfile: onEditProfile,
       onOpenClips: onOpenClips,
-      onShareProfile: onShareProfile,
-      onBlockUser: onBlockUser,
     );
   }
 }
