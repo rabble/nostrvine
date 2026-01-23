@@ -165,14 +165,17 @@ class VineBottomSheet extends StatelessWidget {
                   // Optional content title (56px: 16 top + 24 line height + 16 bottom)
                   if (contentTitle != null)
                     Padding(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 16,
+                      ),
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           contentTitle!,
-                          style:
-                              VineTheme.titleMediumFont(color: VineTheme.onSurface),
+                          style: VineTheme.titleMediumFont(
+                            color: VineTheme.onSurface,
+                          ),
                         ),
                       ),
                     ),
