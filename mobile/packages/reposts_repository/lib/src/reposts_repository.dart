@@ -130,11 +130,55 @@ class RepostsRepository {
     return _repostRecords.containsKey(addressableId);
   }
 
+  /// Get the repost count for a video by its addressable ID.
+  ///
+  /// Queries relays for the count of Kind 16 generic reposts referencing the
+  /// video by its addressable ID (using the `a` tag).
+  ///
+  /// Note: This counts all reposts from all users, not just the current user's.
+  Future<int> getRepostCount(String addressableId) async {
+    // Query relays for count of Kind 16 reposts referencing this addressable ID
+    final filter = Filter(
+      kinds: const [EventKind.genericRepost],
+      a: [addressableId],
+    );
+
+    final result = await _nostrClient.countEvents([filter]);
+    return result.count;
+  }
+
+  /// Get the repost count for a video by its event ID.
+  ///
+  /// Queries relays for the count of Kind 6 (repost) and Kind 16 (generic
+  /// repost) events referencing the video by its event ID (using the `e` tag).
+  ///
+  /// Use this method for non-addressable videos (videos without a d-tag).
+  ///
+  /// Note: This counts all reposts from all users, not just the current user's.
+  Future<int> getRepostCountByEventId(String eventId) async {
+    // Query relays for count of Kind 6 and Kind 16 reposts referencing this
+    // event ID
+    final filter = Filter(
+      kinds: const [EventKind.repost, EventKind.genericRepost],
+      e: [eventId],
+    );
+
+    final result = await _nostrClient.countEvents([filter]);
+    return result.count;
+  }
+
   /// Repost a video.
   ///
   /// Creates and publishes a Kind 16 generic repost event.
   /// The repost event is broadcast to Nostr relays and the mapping
   /// is stored locally for later retrieval.
+  ///
+  /// Parameters:
+  /// - [addressableId]: The addressable ID of the video (kind:pubkey:d-tag)
+  /// - [originalAuthorPubkey]: The pubkey of the video's author
+  /// - [eventId]: Optional event ID for better relay compatibility. Including
+  ///   this allows relays to index the repost by `#e` tag, which is more
+  ///   universally supported than `#a` tag.
   ///
   /// Returns the repost event ID (needed for unreposts).
   ///
@@ -144,6 +188,7 @@ class RepostsRepository {
   Future<String> repostVideo({
     required String addressableId,
     required String originalAuthorPubkey,
+    String? eventId,
   }) async {
     await _ensureInitialized();
 
@@ -157,6 +202,7 @@ class RepostsRepository {
       addressableId: addressableId,
       targetKind: EventKind.videoVertical,
       authorPubkey: originalAuthorPubkey,
+      eventId: eventId,
     );
 
     if (sentEvent == null) {
@@ -220,11 +266,17 @@ class RepostsRepository {
   /// If the video is not reposted, reposts it and returns `true`.
   /// If the video is reposted, unreposts it and returns `false`.
   ///
+  /// Parameters:
+  /// - [addressableId]: The addressable ID of the video (kind:pubkey:d-tag)
+  /// - [originalAuthorPubkey]: The pubkey of the video's author
+  /// - [eventId]: Optional event ID for better relay compatibility
+  ///
   /// This is a convenience method that combines [isReposted], [repostVideo],
   /// and [unrepostVideo].
   Future<bool> toggleRepost({
     required String addressableId,
     required String originalAuthorPubkey,
+    String? eventId,
   }) async {
     await _ensureInitialized();
 
@@ -241,6 +293,7 @@ class RepostsRepository {
       await repostVideo(
         addressableId: addressableId,
         originalAuthorPubkey: originalAuthorPubkey,
+        eventId: eventId,
       );
       return true;
     }

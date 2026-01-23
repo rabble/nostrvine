@@ -94,6 +94,9 @@ void main() {
           when(
             () => mockCommentsRepository.getCommentsCount(testEventId),
           ).thenAnswer((_) async => 10);
+          when(
+            () => mockRepostsRepository.getRepostCountByEventId(testEventId),
+          ).thenAnswer((_) async => 5);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
@@ -103,6 +106,7 @@ void main() {
             status: VideoInteractionsStatus.success,
             isLiked: true,
             likeCount: 42,
+            repostCount: 5,
             commentCount: 10,
           ),
         ],
@@ -120,6 +124,9 @@ void main() {
           when(
             () => mockCommentsRepository.getCommentsCount(testEventId),
           ).thenAnswer((_) async => 0);
+          when(
+            () => mockRepostsRepository.getRepostCountByEventId(testEventId),
+          ).thenAnswer((_) async => 0);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
@@ -129,9 +136,53 @@ void main() {
             status: VideoInteractionsStatus.success,
             isLiked: false,
             likeCount: 5,
+            repostCount: 0,
             commentCount: 0,
           ),
         ],
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'fetches repost count by event ID for better relay compatibility',
+        setUp: () {
+          when(
+            () => mockLikesRepository.isLiked(testEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockRepostsRepository.isReposted(testAddressableId),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockLikesRepository.getLikeCount(testEventId),
+          ).thenAnswer((_) async => 10);
+          when(
+            () => mockCommentsRepository.getCommentsCount(testEventId),
+          ).thenAnswer((_) async => 5);
+          when(
+            () => mockRepostsRepository.getRepostCountByEventId(testEventId),
+          ).thenAnswer((_) async => 3);
+        },
+        build: () => createBloc(addressableId: testAddressableId),
+        act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
+        expect: () => [
+          const VideoInteractionsState(status: VideoInteractionsStatus.loading),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: false,
+            isReposted: true,
+            likeCount: 10,
+            repostCount: 3,
+            commentCount: 5,
+          ),
+        ],
+        verify: (_) {
+          // Always uses event ID for better relay compatibility
+          verify(
+            () => mockRepostsRepository.getRepostCountByEventId(testEventId),
+          ).called(1);
+          verifyNever(
+            () => mockRepostsRepository.getRepostCount(any()),
+          );
+        },
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
@@ -409,6 +460,7 @@ void main() {
             () => mockRepostsRepository.toggleRepost(
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
+              eventId: testEventId,
             ),
           ).thenAnswer((_) async => true);
         },
@@ -442,6 +494,7 @@ void main() {
             () => mockRepostsRepository.toggleRepost(
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
+              eventId: testEventId,
             ),
           ).thenAnswer((_) async => false);
         },
@@ -475,6 +528,7 @@ void main() {
             () => mockRepostsRepository.toggleRepost(
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
+              eventId: testEventId,
             ),
           ).thenAnswer((_) async => false);
         },
@@ -534,6 +588,7 @@ void main() {
             () => mockRepostsRepository.toggleRepost(
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
+              eventId: testEventId,
             ),
           ).thenThrow(const AlreadyRepostedException(testAddressableId));
         },
@@ -564,6 +619,7 @@ void main() {
             () => mockRepostsRepository.toggleRepost(
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
+              eventId: testEventId,
             ),
           ).thenThrow(const NotRepostedException(testAddressableId));
         },
@@ -594,6 +650,7 @@ void main() {
             () => mockRepostsRepository.toggleRepost(
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
+              eventId: testEventId,
             ),
           ).thenThrow(Exception('Network error'));
         },

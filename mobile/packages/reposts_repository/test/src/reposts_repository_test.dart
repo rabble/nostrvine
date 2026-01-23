@@ -35,6 +35,9 @@ void main() {
     const testPubkey =
         'test_pubkey_hex_64_chars_'
         '00000000000000000000000000000000000000';
+    const testEventId =
+        'test_event_id_64_chars_00'
+        '000000000000000000000000000000000000000';
     const testAddressableId = '34236:author_pubkey:test-dtag';
     const testAuthorPubkey = 'author_pubkey';
     const testRepostEventId =
@@ -528,6 +531,76 @@ void main() {
         );
 
         verify(() => mockLocalStorage.isReposted(testAddressableId)).called(1);
+      });
+    });
+
+    group('getRepostCount', () {
+      test('queries relays for repost count', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer(
+          (_) async => const CountResult(count: 42),
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+        );
+
+        final count = await repository.getRepostCount(testAddressableId);
+
+        expect(count, equals(42));
+        verify(() => mockNostrClient.countEvents(any())).called(1);
+      });
+
+      test('returns zero when no reposts exist', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer(
+          (_) async => const CountResult(count: 0),
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+        );
+
+        final count = await repository.getRepostCount(testAddressableId);
+
+        expect(count, equals(0));
+      });
+    });
+
+    group('getRepostCountByEventId', () {
+      test('queries relays for repost count using event ID', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer(
+          (_) async => const CountResult(count: 15),
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+        );
+
+        final count = await repository.getRepostCountByEventId(testEventId);
+
+        expect(count, equals(15));
+        verify(() => mockNostrClient.countEvents(any())).called(1);
+      });
+
+      test('returns zero when no reposts exist', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer(
+          (_) async => const CountResult(count: 0),
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+        );
+
+        final count = await repository.getRepostCountByEventId(testEventId);
+
+        expect(count, equals(0));
       });
     });
 

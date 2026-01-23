@@ -127,13 +127,17 @@ class VideoInteractionsBloc
           : false;
 
       // Fetch counts in parallel
+      // Always query repost count by event ID for better relay compatibility.
+      // The `#e` tag filter is more universally supported than `#a` tag.
       final results = await Future.wait([
         _likesRepository.getLikeCount(_eventId),
         _commentsRepository.getCommentsCount(_eventId),
+        _repostsRepository.getRepostCountByEventId(_eventId),
       ]);
 
       final likeCount = results[0];
       final commentCount = results[1];
+      final repostCount = results[2];
 
       emit(
         state.copyWith(
@@ -141,6 +145,7 @@ class VideoInteractionsBloc
           isLiked: isLiked,
           likeCount: likeCount,
           isReposted: isReposted,
+          repostCount: repostCount,
           commentCount: commentCount,
           clearError: true,
         ),
@@ -238,6 +243,7 @@ class VideoInteractionsBloc
       final isNowReposted = await _repostsRepository.toggleRepost(
         addressableId: _addressableId,
         originalAuthorPubkey: _authorPubkey,
+        eventId: _eventId,
       );
 
       // Update local state with new repost status and adjusted count
