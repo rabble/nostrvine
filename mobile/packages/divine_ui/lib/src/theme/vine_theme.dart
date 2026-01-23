@@ -299,6 +299,9 @@ class VineTheme {
   /// Muted outline color (outline/outline-muted).
   static const Color outlineMuted = Color(0xFF0E2B21);
 
+  /// Neutral 10 color for subtle borders.
+  static const Color neutral10 = Color(0xFF1B1C1C);
+
   /// Tab text style using Bricolage Grotesque bold.
   static TextStyle tabTextStyle({Color color = whiteText}) =>
       GoogleFonts.bricolageGrotesque(
