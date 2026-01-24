@@ -338,6 +338,11 @@ class _SelectionHeader extends ConsumerWidget {
             ],
           ),
         ),
+        const Divider(
+          height: 2,
+          thickness: 2,
+          color: VineTheme.outlinedDisabled,
+        ),
       ],
     );
   }
