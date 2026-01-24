@@ -3908,23 +3908,36 @@ class VideoEventService extends ChangeNotifier {
       }
     }
 
-    final currentUserPubkey = _nostrService.publicKey;
-    if (currentUserPubkey.isNotEmpty &&
-        subscriptionType != SubscriptionType.profile) {
+    if (subscriptionType != SubscriptionType.profile) {
+      final currentUserPubkey = _nostrService.publicKey;
       // Determine the author for bucket assignment (reposter for reposts)
       final authorHex = videoEvent.isRepost && videoEvent.reposterPubkey != null
           ? videoEvent.reposterPubkey!
           : videoEvent.pubkey;
 
-      // Only add if this is the current user's video
-      if (authorHex == currentUserPubkey) {
+      // Add to current user's bucket (for own profile)
+      if (currentUserPubkey.isNotEmpty && authorHex == currentUserPubkey) {
         final wasAdded = _addToAuthorBucket(
           videoEvent,
           authorHex,
           isHistorical: isHistorical,
         );
         if (wasAdded && !isHistorical) {
-          // Notify listeners that a new video was added for this user
+          _notifyNewVideo(videoEvent, authorHex);
+        }
+      }
+
+      // Cross-populate author bucket for OTHER users whose profiles were viewed.
+      // This ensures profile views stay up-to-date when videos arrive later
+      // in discovery/home feeds (fixes stale 0-video profile state).
+      if (authorHex != currentUserPubkey &&
+          _authorBuckets.containsKey(authorHex)) {
+        final wasAdded = _addToAuthorBucket(
+          videoEvent,
+          authorHex,
+          isHistorical: isHistorical,
+        );
+        if (wasAdded && !isHistorical) {
           _notifyNewVideo(videoEvent, authorHex);
         }
       }

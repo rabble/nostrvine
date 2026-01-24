@@ -4,7 +4,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/services/image_cache_manager.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class UserAvatar extends StatelessWidget {
@@ -24,15 +23,11 @@ class UserAvatar extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: BoxBorder.all(color: VineTheme.onSurfaceMuted, width: 1),
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(10),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(25),
+        child: SizedBox(
+          width: size,
+          height: size,
           child: imageUrl != null && imageUrl!.isNotEmpty
               ? CachedNetworkImage(
                   imageUrl: imageUrl!,
@@ -40,7 +35,7 @@ class UserAvatar extends StatelessWidget {
                   height: size,
                   fit: BoxFit.cover,
                   cacheManager: openVineImageCache,
-                  placeholder: (context, url) => _buildIconFallback(),
+                  placeholder: (context, url) => _buildDefaultAvatar(),
                   errorWidget: (context, url, error) {
                     // Log the failed URL for debugging
                     if (error.toString().contains('Invalid image data') ||
@@ -55,21 +50,21 @@ class UserAvatar extends StatelessWidget {
                         name: 'UserAvatar',
                       );
                     }
-                    return _buildIconFallback();
+                    return _buildDefaultAvatar();
                   },
                 )
-              : _buildIconFallback(),
+              : _buildDefaultAvatar(),
         ),
       ),
     );
   }
 
-  Widget _buildIconFallback() {
-    return Container(
-      color: VineTheme.vineGreen.withValues(alpha: 0.2),
-      child: Center(
-        child: Icon(Icons.person, color: VineTheme.vineGreen, size: size * 0.5),
-      ),
+  Widget _buildDefaultAvatar() {
+    return Image.asset(
+      'assets/icon/acid_avatar.png',
+      width: size,
+      height: size,
+      fit: BoxFit.cover,
     );
   }
 }
