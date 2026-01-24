@@ -64,9 +64,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   void dispose() {
-    // Mark settings as closed when leaving
-    // Use cached notifier reference since ref is invalid during dispose
-    _overlayNotifier?.setSettingsOpen(false);
+    // Defer provider modification to avoid modifying during widget tree finalization
+    final notifier = _overlayNotifier;
+    if (notifier != null) {
+      Future(() => notifier.setSettingsOpen(false));
+    }
     super.dispose();
   }
 
