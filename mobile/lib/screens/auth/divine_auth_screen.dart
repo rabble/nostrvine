@@ -143,6 +143,14 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     }
 
     if (result.verificationRequired && result.deviceCode != null) {
+      // Persist verification data for cold-start deep link scenario
+      final pendingService = ref.read(pendingVerificationServiceProvider);
+      await pendingService.save(
+        deviceCode: result.deviceCode!,
+        verifier: verifier,
+        email: email,
+      );
+
       // Navigate to email verification screen in polling mode
       if (mounted) {
         final encodedEmail = Uri.encodeComponent(email);

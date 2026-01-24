@@ -841,6 +841,55 @@ final class SecureKeycastStorageProvider
 String _$secureKeycastStorageHash() =>
     r'c57c0ec02e36cd1a0cc8b850c450af2eb4c496b3';
 
+@ProviderFor(pendingVerificationService)
+const pendingVerificationServiceProvider =
+    PendingVerificationServiceProvider._();
+
+final class PendingVerificationServiceProvider
+    extends
+        $FunctionalProvider<
+          PendingVerificationService,
+          PendingVerificationService,
+          PendingVerificationService
+        >
+    with $Provider<PendingVerificationService> {
+  const PendingVerificationServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'pendingVerificationServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$pendingVerificationServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<PendingVerificationService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  PendingVerificationService create(Ref ref) {
+    return pendingVerificationService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(PendingVerificationService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<PendingVerificationService>(value),
+    );
+  }
+}
+
+String _$pendingVerificationServiceHash() =>
+    r'9b524b7d7fd20c98b2e0942e9ea6358419dc9dd4';
+
 @ProviderFor(oauthClient)
 const oauthClientProvider = OauthClientProvider._();
 
@@ -1641,7 +1690,7 @@ final class AuthServiceProvider
   }
 }
 
-String _$authServiceHash() => r'94a2bd6d38b6063777d3442f2383752fe6a885d8';
+String _$authServiceHash() => r'2a8e1a700090afc3a4f2bd738032b7eef33f1c46';
 
 /// Provider that returns current auth state and rebuilds when it changes.
 /// Widgets should watch this instead of authService.authState directly

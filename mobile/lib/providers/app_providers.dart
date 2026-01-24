@@ -52,6 +52,7 @@ import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/email_verification_listener.dart';
 import 'package:openvine/services/password_reset_listener.dart';
+import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';
 import 'package:openvine/services/relay_capability_service.dart';
@@ -272,6 +273,10 @@ SecureKeycastStorage secureKeycastStorage(Ref ref) =>
     SecureKeycastStorage(ref.watch(flutterSecureStorageProvider));
 
 @Riverpod(keepAlive: true)
+PendingVerificationService pendingVerificationService(Ref ref) =>
+    PendingVerificationService(ref.watch(flutterSecureStorageProvider));
+
+@Riverpod(keepAlive: true)
 KeycastOAuth oauthClient(Ref ref) {
   final config = ref.watch(oauthConfigProvider);
   final storage = ref.watch(secureKeycastStorageProvider);
@@ -423,12 +428,16 @@ AuthService authService(Ref ref) {
   final oauthClient = ref.watch(oauthClientProvider);
   final flutterSecureStorage = ref.watch(flutterSecureStorageProvider);
   final oauthConfig = ref.watch(oauthConfigProvider);
+  final pendingVerificationService = ref.watch(
+    pendingVerificationServiceProvider,
+  );
   return AuthService(
     userDataCleanupService: userDataCleanupService,
     keyStorage: keyStorage,
     oauthClient: oauthClient,
     flutterSecureStorage: flutterSecureStorage,
     oauthConfig: oauthConfig,
+    pendingVerificationService: pendingVerificationService,
   );
 }
 

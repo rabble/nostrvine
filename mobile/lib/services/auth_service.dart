@@ -10,6 +10,7 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer, SecureKeyStorage;
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/user_profile_service.dart' as ups;
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -122,10 +123,12 @@ class AuthService {
     KeycastOAuth? oauthClient,
     FlutterSecureStorage? flutterSecureStorage,
     OAuthConfig? oauthConfig,
+    PendingVerificationService? pendingVerificationService,
   }) : _keyStorage = keyStorage ?? SecureKeyStorage(),
        _userDataCleanupService = userDataCleanupService,
        _oauthClient = oauthClient,
        _flutterSecureStorage = flutterSecureStorage,
+       _pendingVerificationService = pendingVerificationService,
        _oauthConfig =
            oauthConfig ??
            const OAuthConfig(serverUrl: '', clientId: '', redirectUri: '');
@@ -133,6 +136,7 @@ class AuthService {
   final UserDataCleanupService _userDataCleanupService;
   final KeycastOAuth? _oauthClient;
   final FlutterSecureStorage? _flutterSecureStorage;
+  final PendingVerificationService? _pendingVerificationService;
 
   AuthState _authState = AuthState.checking;
   SecureKeyContainer? _currentKeyContainer;
@@ -1031,6 +1035,9 @@ class AuthService {
           await KeycastSession.clear(_flutterSecureStorage);
         }
       } catch (_) {}
+
+      // Clear any pending verification data
+      await _pendingVerificationService?.clear();
 
       _setAuthState(AuthState.unauthenticated);
 

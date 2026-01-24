@@ -1,5 +1,6 @@
 // ABOUTME: Screen to handle email verification in two modes
 // ABOUTME: Polling mode (after registration) and token mode (from deep link)
+// ABOUTME: Supports auto-login on cold start via persisted verification data
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -79,18 +80,48 @@ class _EmailVerificationScreenState
         email: widget.email ?? '',
       );
     } else if (widget.isTokenMode) {
-      Log.info(
-        'Starting token mode verification',
-        name: 'EmailVerificationScreen',
-        category: LogCategory.auth,
-      );
-      _cubit.verifyWithToken(widget.token!);
+      // Token mode - check for persisted verification data for auto-login
+      _initTokenModeWithPersistenceCheck();
     } else {
       Log.warning(
         'EmailVerificationScreen opened without token or deviceCode',
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,
       );
+    }
+  }
+
+  /// Initialize token mode, checking for persisted data for auto-login.
+  ///
+  /// If persisted verification data exists (from a previous registration),
+  /// we can verify the email and then complete the OAuth flow automatically
+  /// instead of requiring the user to log in manually.
+  Future<void> _initTokenModeWithPersistenceCheck() async {
+    final pendingService = ref.read(pendingVerificationServiceProvider);
+    final pending = await pendingService.load();
+
+    if (pending != null) {
+      Log.info(
+        'Found persisted verification data for ${pending.email}, '
+        'attempting auto-login flow',
+        name: 'EmailVerificationScreen',
+        category: LogCategory.auth,
+      );
+
+      // Verify the email first, then start polling to complete login
+      await _cubit.verifyEmailOnly(widget.token!);
+      _cubit.startPolling(
+        deviceCode: pending.deviceCode,
+        verifier: pending.verifier,
+        email: pending.email,
+      );
+    } else {
+      Log.info(
+        'No persisted verification data, using standard token mode',
+        name: 'EmailVerificationScreen',
+        category: LogCategory.auth,
+      );
+      _cubit.verifyWithToken(widget.token!);
     }
   }
 
@@ -118,6 +149,9 @@ class _EmailVerificationScreenState
   }
 
   void _handleSuccess(EmailVerificationMode mode) {
+    // Clear persisted verification data on successful login
+    ref.read(pendingVerificationServiceProvider).clear();
+
     if (mode == EmailVerificationMode.polling) {
       // app_router should detect that we are authenticated
       // and route us to /home
@@ -129,6 +163,8 @@ class _EmailVerificationScreenState
 
   void _handleCancel() {
     _cubit.cancelPolling();
+    // Clear persisted verification data on cancel
+    ref.read(pendingVerificationServiceProvider).clear();
     // Go back to previous screen (registration form)
     if (context.canPop()) {
       context.pop();
