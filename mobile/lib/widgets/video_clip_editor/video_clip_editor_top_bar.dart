@@ -10,7 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/screens/video_editor/video_editor_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 
 /// Top bar with close button, clip counter, and done button.
@@ -92,7 +92,8 @@ class VideoClipEditorTopBar extends ConsumerWidget {
                                 .read(videoEditorProvider.notifier)
                                 .startRenderVideo(),
                           );
-                          context.push(VideoEditorScreen.path);
+                          // TODO(@hm21): Replace with VideoEditorScreen.path
+                          context.push(VideoMetadataScreen.path);
                         },
                       ),
                     ),
