@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed - Relay Management Improvements (2026-01-24)
+
+#### Bug Fixes
+- **Allow removing default relay** - Users can now remove any relay including the environment default from relay settings
+  - Previously `RelayManager` silently refused to remove the default relay
+  - UI now checks the removal result and shows appropriate feedback
+- **Refresh feeds when relay set changes** - Adding or removing relays now triggers a feed reset so content from the new relay configuration is fetched
+  - New `relaySetChangeBridge` Riverpod provider watches for relay URL set membership changes
+  - 2-second debounce collapses rapid add/remove operations into a single refresh
+  - Only reacts to set changes (relays added/removed), not connection state flapping
+  - Persistent feeds (home feed, discovery) are automatically resubscribed; ephemeral feeds (search, hashtag) are cleared and re-created on next navigation
+
+#### Technical Details
+- Modified `packages/nostr_client/lib/src/relay_manager.dart`:
+  - Removed guard preventing default relay removal
+- Modified `lib/screens/relay_settings_screen.dart`:
+  - Check `removeRelay()` return value before showing success
+- Modified `lib/services/video_event_service.dart`:
+  - Store `sortBy` and `nip50Sort` in `_subscriptionParams` for resubscription
+  - Added `resetAndResubscribeAll()` method: snapshots persistent feed params, cancels subscriptions, clears events/pagination/buckets, resubscribes with `force: true`
+- Modified `lib/providers/app_providers.dart`:
+  - Added `relaySetChangeBridge` keepAlive provider that listens to `relayStatusStream`, compares URL set, debounces 2s, calls `resetAndResubscribeAll()`
+- Modified `lib/router/app_shell.dart`:
+  - Activated bridge with `ref.watch(relaySetChangeBridgeProvider)`
+
+#### Tests Added
+- `test/unit/services/video_event_service_reset_resubscribe_test.dart` - 8 tests covering reset behavior, listener notifications, resubscription of persistent feeds, ephemeral feed handling, and disposed state
+- `test/unit/providers/relay_set_change_bridge_test.dart` - 6 tests covering relay add/remove detection, connection flapping no-op, debounce behavior, and empty initial state
+
 ### Fixed - NIP-22 Comment Compliance (2026-01-14)
 
 #### Critical Bug Fix

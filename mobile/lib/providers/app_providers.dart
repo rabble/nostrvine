@@ -196,6 +196,63 @@ void relayStatisticsBridge(Ref ref) {
   });
 }
 
+/// Bridge provider that detects when the configured relay set changes
+/// (relays added or removed) and triggers a full feed reset+resubscribe.
+/// Debounces for 2 seconds to collapse rapid add/remove operations.
+/// Only reacts to set membership changes, not connection state flapping.
+@Riverpod(keepAlive: true)
+void relaySetChangeBridge(Ref ref) {
+  final nostrService = ref.watch(nostrServiceProvider);
+  final videoEventService = ref.watch(videoEventServiceProvider);
+
+  Set<String> previousRelaySet = nostrService.relayStatuses.keys.toSet();
+  Timer? debounceTimer;
+
+  void processStatuses(Map<String, RelayConnectionStatus> statuses) {
+    final currentRelaySet = statuses.keys.toSet();
+
+    // Only trigger if the set of relay URLs has changed (not just status)
+    if (!_setsEqual(currentRelaySet, previousRelaySet)) {
+      Log.info(
+        'Relay set changed: '
+        '${previousRelaySet.length} -> ${currentRelaySet.length} relays',
+        name: 'RelaySetChangeBridge',
+        category: LogCategory.relay,
+      );
+
+      previousRelaySet = currentRelaySet;
+
+      // Debounce: collapse rapid changes into a single reset
+      debounceTimer?.cancel();
+      debounceTimer = Timer(const Duration(seconds: 2), () {
+        Log.info(
+          'Debounce elapsed - triggering feed reset for new relay set',
+          name: 'RelaySetChangeBridge',
+          category: LogCategory.relay,
+        );
+        videoEventService.resetAndResubscribeAll();
+      });
+    }
+  }
+
+  // Process current state immediately to establish baseline
+  processStatuses(nostrService.relayStatuses);
+
+  // Listen to relay status stream for future updates
+  final subscription = nostrService.relayStatusStream.listen(processStatuses);
+
+  ref.onDispose(() {
+    debounceTimer?.cancel();
+    subscription.cancel();
+  });
+}
+
+/// Helper to compare two sets for equality
+bool _setsEqual<T>(Set<T> a, Set<T> b) {
+  if (a.length != b.length) return false;
+  return a.containsAll(b);
+}
+
 /// Analytics service with opt-out support
 @Riverpod(keepAlive: true) // Keep alive to maintain singleton behavior
 AnalyticsService analyticsService(Ref ref) {

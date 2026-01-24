@@ -491,6 +491,15 @@ class MockVideoEventService extends _i1.Mock implements _i3.VideoEventService {
           as _i11.Future<void>);
 
   @override
+  _i11.Future<void> resetAndResubscribeAll() =>
+      (super.noSuchMethod(
+            Invocation.method(#resetAndResubscribeAll, []),
+            returnValue: _i11.Future<void>.value(),
+            returnValueForMissingStub: _i11.Future<void>.value(),
+          )
+          as _i11.Future<void>);
+
+  @override
   _i11.Future<void> loadMoreVideos({int? limit = 100}) =>
       (super.noSuchMethod(
             Invocation.method(#loadMoreVideos, [], {#limit: limit}),

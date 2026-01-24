@@ -426,6 +426,62 @@ final class RelayStatisticsBridgeProvider
 String _$relayStatisticsBridgeHash() =>
     r'8e5867762c8201c7244d2f44ba3bc84cbc63f012';
 
+/// Bridge provider that detects when the configured relay set changes
+/// (relays added or removed) and triggers a full feed reset+resubscribe.
+/// Debounces for 2 seconds to collapse rapid add/remove operations.
+/// Only reacts to set membership changes, not connection state flapping.
+
+@ProviderFor(relaySetChangeBridge)
+const relaySetChangeBridgeProvider = RelaySetChangeBridgeProvider._();
+
+/// Bridge provider that detects when the configured relay set changes
+/// (relays added or removed) and triggers a full feed reset+resubscribe.
+/// Debounces for 2 seconds to collapse rapid add/remove operations.
+/// Only reacts to set membership changes, not connection state flapping.
+
+final class RelaySetChangeBridgeProvider
+    extends $FunctionalProvider<void, void, void>
+    with $Provider<void> {
+  /// Bridge provider that detects when the configured relay set changes
+  /// (relays added or removed) and triggers a full feed reset+resubscribe.
+  /// Debounces for 2 seconds to collapse rapid add/remove operations.
+  /// Only reacts to set membership changes, not connection state flapping.
+  const RelaySetChangeBridgeProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'relaySetChangeBridgeProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$relaySetChangeBridgeHash();
+
+  @$internal
+  @override
+  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  void create(Ref ref) {
+    return relaySetChangeBridge(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$relaySetChangeBridgeHash() =>
+    r'd57982bcec97c066fb5db91322facf82744f8e60';
+
 /// Analytics service with opt-out support
 
 @ProviderFor(analyticsService)
