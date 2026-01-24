@@ -27,13 +27,18 @@ class VineBottomSheet extends StatelessWidget {
     this.scrollController,
     this.children,
     this.body,
+    this.buildScrollBody,
     this.trailing,
     this.bottomInput,
     this.expanded = true,
     super.key,
   }) : assert(
-         children != null || body != null,
-         'Provide either children or body',
+         children != null || body != null || buildScrollBody != null,
+         'Provide either children, body, or buildScrollBody',
+       ),
+       assert(
+         buildScrollBody == null || scrollController != null,
+         'scrollController must be provided when using buildScrollBody',
        );
 
   /// Whether the sheet is scrollable/draggable.
@@ -59,6 +64,12 @@ class VineBottomSheet extends StatelessWidget {
   /// Custom body widget (alternative to children)
   final Widget? body;
 
+  /// Builder function for custom scrollable content.
+  ///
+  /// Use this when you need direct access to the [ScrollController]
+  /// for custom scroll behavior. Requires [scrollController] to be provided.
+  final Widget Function(ScrollController scrollController)? buildScrollBody;
+
   /// Optional trailing widget in header (e.g., badge, button)
   final Widget? trailing;
 
@@ -80,6 +91,7 @@ class VineBottomSheet extends StatelessWidget {
     Widget? title,
     String? contentTitle,
     Widget? body,
+    Widget Function(ScrollController scrollController)? buildScrollBody,
     Widget? trailing,
     Widget? bottomInput,
     bool expanded = true,
@@ -89,14 +101,21 @@ class VineBottomSheet extends StatelessWidget {
     double maxChildSize = 0.9,
   }) {
     assert(
-      children != null || body != null,
-      'Provide either children or body to VineBottomSheet.show',
+      children != null || body != null || buildScrollBody != null,
+      'Provide either children, body, or buildScrollBody to '
+      'VineBottomSheet.show',
     );
+    assert(
+      scrollable || buildScrollBody == null,
+      'buildScrollBody can only be used when scrollable is true',
+    );
+
     if (scrollable) {
       // Draggable/scrollable mode
       return showModalBottomSheet<T>(
         context: context,
         isScrollControlled: true,
+        useSafeArea: true,
         backgroundColor: Colors.transparent,
         builder: (_) => DraggableScrollableSheet(
           initialChildSize: initialChildSize,
@@ -106,6 +125,7 @@ class VineBottomSheet extends StatelessWidget {
             title: title,
             contentTitle: contentTitle,
             scrollController: scrollController,
+            buildScrollBody: buildScrollBody,
             trailing: trailing,
             bottomInput: bottomInput,
             expanded: expanded,
@@ -119,6 +139,7 @@ class VineBottomSheet extends StatelessWidget {
       return showModalBottomSheet<T>(
         context: context,
         isScrollControlled: isScrollControlled ?? expanded,
+        useSafeArea: true,
         backgroundColor: Colors.transparent,
         builder: (_) => VineBottomSheet(
           scrollable: false,
@@ -158,6 +179,7 @@ class VineBottomSheet extends StatelessWidget {
         Expanded(
           child:
               body ??
+              buildScrollBody?.call(scrollController!) ??
               ListView(
                 controller: scrollController,
                 padding: EdgeInsets.zero,
@@ -202,33 +224,35 @@ class VineBottomSheet extends StatelessWidget {
           VineBottomSheetHeader(title: title, trailing: trailing),
 
           // Fixed content area with minimum height for menu entries (2 × 56px)
-          ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 112),
-            child:
-                body ??
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Optional content title (56px total height)
-                    if (contentTitle != null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            contentTitle!,
-                            style: VineTheme.titleMediumFont(
-                              color: VineTheme.onSurface,
+          Flexible(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 112),
+              child:
+                  body ??
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Optional content title (56px total height)
+                      if (contentTitle != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              contentTitle!,
+                              style: VineTheme.titleMediumFont(
+                                color: VineTheme.onSurface,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ...children!,
-                  ],
-                ),
+                      ...children!,
+                    ],
+                  ),
+            ),
           ),
 
           if (bottomInput != null)
