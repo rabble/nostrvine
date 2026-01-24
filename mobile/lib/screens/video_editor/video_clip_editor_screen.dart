@@ -65,7 +65,7 @@ class _VideoClipEditorScreenState extends ConsumerState<VideoClipEditorScreen> {
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: VineTheme.videoEditorBackground,
+        statusBarColor: VineTheme.surfaceContainerHigh,
         statusBarIconBrightness: .light,
         statusBarBrightness: .dark,
       ),
@@ -74,7 +74,7 @@ class _VideoClipEditorScreenState extends ConsumerState<VideoClipEditorScreen> {
         child: SafeArea(
           child: Scaffold(
             resizeToAvoidBottomInset: false,
-            backgroundColor: VineTheme.videoEditorBackground,
+            backgroundColor: VineTheme.surfaceContainerHigh,
             body: _isLoadingDraft
                 ? const Center(child: CircularProgressIndicator.adaptive())
                 : Column(

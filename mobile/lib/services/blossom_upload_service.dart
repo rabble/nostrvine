@@ -44,6 +44,32 @@ class BlossomUploadResult {
   });
 }
 
+/// Result type for Blossom server health checks
+class BlossomHealthCheckResult {
+  final bool isReachable;
+  final int? latencyMs;
+  final int? statusCode;
+  final String? serverUrl;
+  final String? errorMessage;
+
+  const BlossomHealthCheckResult({
+    required this.isReachable,
+    this.latencyMs,
+    this.statusCode,
+    this.serverUrl,
+    this.errorMessage,
+  });
+
+  @override
+  String toString() {
+    if (isReachable) {
+      return 'OK (${latencyMs}ms)';
+    } else {
+      return 'FAILED: ${errorMessage ?? "Unknown error"}';
+    }
+  }
+}
+
 class BlossomUploadService {
   static const String _blossomServerKey = 'blossom_server_url';
   static const String _useBlossomKey = 'use_blossom_upload';
@@ -1430,6 +1456,103 @@ class BlossomUploadService {
         return '.webm';
       default:
         return '.aac';
+    }
+  }
+
+  /// Test connection to a Blossom server
+  ///
+  /// Returns a [BlossomHealthCheckResult] with status, latency, and any errors.
+  /// This does a simple HEAD request to check if the server is reachable.
+  Future<BlossomHealthCheckResult> testServerConnection([
+    String? serverUrl,
+  ]) async {
+    final stopwatch = Stopwatch()..start();
+
+    try {
+      // Use provided URL or get configured server
+      final targetUrl = serverUrl ?? await getBlossomServer();
+      if (targetUrl == null || targetUrl.isEmpty) {
+        return const BlossomHealthCheckResult(
+          isReachable: false,
+          errorMessage: 'No Blossom server configured',
+        );
+      }
+
+      Log.info(
+        'Testing Blossom server connectivity: $targetUrl',
+        name: 'BlossomUploadService',
+        category: LogCategory.system,
+      );
+
+      // Try HEAD request first (lightweight), fall back to GET if HEAD fails
+      try {
+        final response = await dio.head(
+          targetUrl,
+          options: Options(
+            validateStatus: (status) => status != null && status < 500,
+            sendTimeout: const Duration(seconds: 5),
+            receiveTimeout: const Duration(seconds: 5),
+          ),
+        );
+        stopwatch.stop();
+
+        final isReachable =
+            response.statusCode != null && response.statusCode! < 500;
+        return BlossomHealthCheckResult(
+          isReachable: isReachable,
+          latencyMs: stopwatch.elapsedMilliseconds,
+          statusCode: response.statusCode,
+          serverUrl: targetUrl,
+        );
+      } on DioException catch (e) {
+        // If HEAD is not supported, try GET
+        if (e.response?.statusCode == 405) {
+          final response = await dio.get(
+            targetUrl,
+            options: Options(
+              validateStatus: (status) => status != null && status < 500,
+              sendTimeout: const Duration(seconds: 5),
+              receiveTimeout: const Duration(seconds: 5),
+            ),
+          );
+          stopwatch.stop();
+
+          final isReachable =
+              response.statusCode != null && response.statusCode! < 500;
+          return BlossomHealthCheckResult(
+            isReachable: isReachable,
+            latencyMs: stopwatch.elapsedMilliseconds,
+            statusCode: response.statusCode,
+            serverUrl: targetUrl,
+          );
+        }
+        rethrow;
+      }
+    } on DioException catch (e) {
+      stopwatch.stop();
+
+      String errorMessage;
+      if (e.type == DioExceptionType.connectionTimeout) {
+        errorMessage = 'Connection timeout';
+      } else if (e.type == DioExceptionType.connectionError) {
+        errorMessage = 'Cannot connect: ${e.message}';
+      } else {
+        errorMessage = e.message ?? 'Unknown error';
+      }
+
+      return BlossomHealthCheckResult(
+        isReachable: false,
+        latencyMs: stopwatch.elapsedMilliseconds,
+        errorMessage: errorMessage,
+        statusCode: e.response?.statusCode,
+      );
+    } catch (e) {
+      stopwatch.stop();
+      return BlossomHealthCheckResult(
+        isReachable: false,
+        latencyMs: stopwatch.elapsedMilliseconds,
+        errorMessage: e.toString(),
+      );
     }
   }
 
