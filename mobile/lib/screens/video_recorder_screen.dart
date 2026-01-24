@@ -93,6 +93,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
       await VineBottomSheet.show(
         context: context,
         expanded: false,
+        scrollable: false,
         isScrollControlled: true,
         body: const VideoEditorRestoreAutosaveSheet(),
       );

@@ -22,14 +22,11 @@ class VideoEditorRestoreAutosaveSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const .fromLTRB(16, 0, 16, 16),
+      padding: const .fromLTRB(16, 12, 16, 16),
       child: Column(
         crossAxisAlignment: .stretch,
         mainAxisSize: .min,
         children: [
-          const Divider(height: 2, color: VineTheme.outlinedDisabled),
-          const SizedBox(height: 12),
-
           const _WarningIcon(),
           const SizedBox(height: 16),
 

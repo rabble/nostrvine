@@ -206,6 +206,10 @@ class _VideoEditorMoreButtonState
 
     await VineBottomSheet.show(
       context: context,
+      expanded: false,
+      scrollable: false,
+      isScrollControlled: true,
+      showHeaderDivider: false,
       body: const ClipLibraryScreen(selectionMode: true),
     );
 
