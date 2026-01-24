@@ -158,18 +158,58 @@ class VineBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(VineTheme.bottomSheetBorderRadius),
-        topRight: Radius.circular(VineTheme.bottomSheetBorderRadius),
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(VineTheme.bottomSheetBorderRadius),
       ),
       child: ColoredBox(
         color: VineTheme.surfaceBackground,
-        child: scrollable ? _buildScrollableContent() : _buildFixedContent(),
+        child: scrollable
+            ? _ScrollableContent(
+                title: title,
+                trailing: trailing,
+                body: body,
+                buildScrollBody: buildScrollBody,
+                scrollController: scrollController,
+                contentTitle: contentTitle,
+                bottomInput: bottomInput,
+                children: children,
+              )
+            : _FixedContent(
+                title: title,
+                trailing: trailing,
+                body: body,
+                contentTitle: contentTitle,
+                bottomInput: bottomInput,
+                children: children,
+              ),
       ),
     );
   }
+}
 
-  Widget _buildScrollableContent() {
+class _ScrollableContent extends StatelessWidget {
+  const _ScrollableContent({
+    required this.title,
+    required this.trailing,
+    required this.body,
+    required this.buildScrollBody,
+    required this.scrollController,
+    required this.contentTitle,
+    required this.children,
+    required this.bottomInput,
+  });
+
+  final Widget? title;
+  final Widget? trailing;
+  final Widget? body;
+  final Widget Function(ScrollController scrollController)? buildScrollBody;
+  final ScrollController? scrollController;
+  final String? contentTitle;
+  final List<Widget>? children;
+  final Widget? bottomInput;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
         // Header with drag handle, title, trailing actions, and divider
@@ -213,8 +253,27 @@ class VineBottomSheet extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildFixedContent() {
+class _FixedContent extends StatelessWidget {
+  const _FixedContent({
+    required this.title,
+    required this.trailing,
+    required this.body,
+    required this.contentTitle,
+    required this.children,
+    required this.bottomInput,
+  });
+
+  final Widget? title;
+  final Widget? trailing;
+  final Widget? body;
+  final String? contentTitle;
+  final List<Widget>? children;
+  final Widget? bottomInput;
+
+  @override
+  Widget build(BuildContext context) {
     return SafeArea(
       top: false,
       child: Column(
