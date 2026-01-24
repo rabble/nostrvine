@@ -6,7 +6,7 @@ import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
-import 'package:openvine/widgets/video_editor/video_editor_clip_processing_overlay.dart';
+import 'package:openvine/widgets/video_clip_editor/video_clip_editor_processing_overlay.dart';
 
 /// Video clip preview widget with thumbnail and play button.
 ///
@@ -83,7 +83,7 @@ class VideoMetadataClipPreview extends ConsumerWidget {
                             ),
                     ),
                     // Processing overlay with play button
-                    VideoEditorClipProcessingOverlay(
+                    VideoClipEditorProcessingOverlay(
                       clip: clip,
                       isProcessing: state.isProcessing,
                       inactivePlaceholder: _PlayIndicator(

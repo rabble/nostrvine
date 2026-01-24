@@ -13,7 +13,7 @@ import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
-import 'package:openvine/widgets/video_editor/sheets/video_editor_restore_autosave_sheet.dart';
+import 'package:openvine/widgets/video_clip_editor/sheets/video_editor_restore_autosave_sheet.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_countdown_overlay.dart';
