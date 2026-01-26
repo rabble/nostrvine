@@ -440,6 +440,93 @@ class AnalyticsApiService {
     }
   }
 
+  /// Fetch videos sorted by loop count (highest first)
+  ///
+  /// Uses funnelcake's sort=loops for classic Vines with high engagement.
+  /// Returns VideoEvent objects ready for display.
+  ///
+  /// [before] - Unix timestamp cursor for pagination
+  Future<List<VideoEvent>> getVideosByLoops({
+    int limit = 50,
+    int? before,
+    bool forceRefresh = false,
+  }) async {
+    if (!isAvailable) {
+      Log.warning(
+        'Funnelcake API not available (no base URL configured)',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+      return [];
+    }
+
+    try {
+      var url = '$_baseUrl/api/videos?sort=loops&limit=$limit';
+      if (before != null) {
+        url += '&before=$before';
+      }
+      Log.info(
+        'Fetching videos by loops from Funnelcake: $url',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+
+        Log.info(
+          'Received ${data.length} videos sorted by loops from Funnelcake',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+
+        final videos = data
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+            .toList();
+
+        // Log first few for debugging
+        if (videos.isNotEmpty) {
+          final topLoops = videos
+              .take(3)
+              .map((v) => '${v.loops ?? 0}')
+              .join(', ');
+          Log.info(
+            'Top 3 videos by loops: $topLoops',
+            name: 'AnalyticsApiService',
+            category: LogCategory.video,
+          );
+        }
+
+        return videos.map((v) => v.toVideoEvent()).toList();
+      } else {
+        Log.error(
+          'Funnelcake API error: ${response.statusCode}',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+        return [];
+      }
+    } catch (e) {
+      Log.error(
+        'Error fetching videos by loops: $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+      return [];
+    }
+  }
+
   /// Fetch recent videos (newest first)
   ///
   /// [before] - Unix timestamp cursor for pagination (get videos created before this time)

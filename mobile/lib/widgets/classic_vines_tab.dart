@@ -1,16 +1,16 @@
 // ABOUTME: Classics tab widget showing pre-2017 Vine archive videos
 // ABOUTME: Uses REST API when available, falls back to Nostr videos with embedded loop stats
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/widgets/feature_flag_widget.dart';
-import 'package:openvine/models/video_event.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
-import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/classic_viners_slider.dart';

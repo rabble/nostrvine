@@ -1,8 +1,8 @@
 // ABOUTME: Service for publishing video view events (Kind 22236) to Nostr
 // ABOUTME: Tracks video watch time and publishes ephemeral analytics events
 
+import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/models/video_event.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -185,8 +185,9 @@ class ViewEventPublisher {
     ViewTrafficSource source = ViewTrafficSource.unknown,
   }) async {
     // Filter out invalid segments
-    final validSegments =
-        segments.where((s) => s.$2 > s.$1 && s.$2 - s.$1 >= 1).toList();
+    final validSegments = segments
+        .where((s) => s.$2 > s.$1 && s.$2 - s.$1 >= 1)
+        .toList();
 
     if (validSegments.isEmpty) {
       Log.debug(

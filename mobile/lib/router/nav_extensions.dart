@@ -269,7 +269,10 @@ extension NavX on BuildContext {
     if (displayName != null) extra['displayName'] = displayName;
     if (avatarUrl != null) extra['avatarUrl'] = avatarUrl;
 
-    await push(OtherProfileScreen.pathForNpub(npub), extra: extra.isEmpty ? null : extra);
+    await push(
+      OtherProfileScreen.pathForNpub(npub),
+      extra: extra.isEmpty ? null : extra,
+    );
   }
 
   /// Push curated list screen (NIP-51 kind 30005 video lists)

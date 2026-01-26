@@ -63,13 +63,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   @override
-  void dispose() {
-    // Defer provider modification to avoid modifying during widget tree finalization
-    final notifier = _overlayNotifier;
-    if (notifier != null) {
-      Future(() => notifier.setSettingsOpen(false));
-    }
-    super.dispose();
+  void deactivate() {
+    // Mark settings as closed when leaving
+    // Using deactivate() instead of dispose() because ref is still valid here
+    _overlayNotifier?.setSettingsOpen(false);
+    super.deactivate();
   }
 
   Future<void> _loadAppVersion() async {

@@ -54,6 +54,8 @@ class VideoEvent {
     this.audioEventId,
     this.audioEventRelay,
     this.nostrLikeCount,
+    this.authorName,
+    this.authorAvatar,
   });
 
   /// Create VideoEvent from Nostr event
@@ -616,6 +618,13 @@ class VideoEvent {
   /// Live like/reaction count from Nostr (updated in real-time)
   final int? nostrLikeCount;
 
+  // Author metadata from API (classic Vines)
+  /// Author display name (from Funnelcake API for classic Viners)
+  final String? authorName;
+
+  /// Author avatar URL (from Funnelcake API for classic Viners)
+  final String? authorAvatar;
+
   /// NIP-40: Check if this event has expired
   /// Returns true if expiration timestamp is set and current time >= expiration
   bool get isExpired {
@@ -947,6 +956,8 @@ class VideoEvent {
     String? audioEventId,
     String? audioEventRelay,
     int? nostrLikeCount,
+    String? authorName,
+    String? authorAvatar,
   }) => VideoEvent(
     id: id ?? this.id,
     pubkey: pubkey ?? this.pubkey,
@@ -983,6 +994,8 @@ class VideoEvent {
     audioEventId: audioEventId ?? this.audioEventId,
     audioEventRelay: audioEventRelay ?? this.audioEventRelay,
     nostrLikeCount: nostrLikeCount ?? this.nostrLikeCount,
+    authorName: authorName ?? this.authorName,
+    authorAvatar: authorAvatar ?? this.authorAvatar,
   );
 
   @override

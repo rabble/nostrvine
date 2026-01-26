@@ -1,6 +1,7 @@
 // ABOUTME: ClassicVines feed provider showing pre-2017 Vine archive videos
 // ABOUTME: Uses REST API when available, falls back to Nostr videos with embedded stats
 
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';

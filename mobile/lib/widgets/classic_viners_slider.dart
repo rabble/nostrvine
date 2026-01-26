@@ -2,12 +2,12 @@
 // ABOUTME: Displays circular avatars with names, tappable to view profile
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/services/image_cache_manager.dart';
-import 'package:openvine/theme/vine_theme.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Horizontal slider displaying top classic Viners sorted by loop count.

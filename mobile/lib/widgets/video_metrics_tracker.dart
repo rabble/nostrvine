@@ -302,21 +302,22 @@ class _VideoMetricsTrackerState extends ConsumerState<VideoMetricsTracker> {
           source: widget.trafficSource,
         )
         .then((success) {
-      if (success) {
-        Log.debug(
-          '📊 Published Nostr view event for ${widget.video.id}',
-          name: 'VideoMetricsTracker',
-          category: LogCategory.video,
-        );
-      }
-    }).catchError((Object error) {
-      // Silently ignore errors - view events are best-effort
-      Log.debug(
-        'Failed to publish Nostr view event: $error',
-        name: 'VideoMetricsTracker',
-        category: LogCategory.video,
-      );
-    });
+          if (success) {
+            Log.debug(
+              '📊 Published Nostr view event for ${widget.video.id}',
+              name: 'VideoMetricsTracker',
+              category: LogCategory.video,
+            );
+          }
+        })
+        .catchError((Object error) {
+          // Silently ignore errors - view events are best-effort
+          Log.debug(
+            'Failed to publish Nostr view event: $error',
+            name: 'VideoMetricsTracker',
+            category: LogCategory.video,
+          );
+        });
   }
 
   void _resetTracking() {

@@ -300,8 +300,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           profileStatsAsync: profileStatsAsync,
           scrollController: _scrollController,
           onBlockedTap: _showUnblockConfirmation,
-          onShareProfile: () => _shareProfile(userIdHex),
-          onBlockUser: (isBlocked) => _blockUser(userIdHex, isBlocked),
           displayNameHint: widget.displayNameHint,
           avatarUrlHint: widget.avatarUrlHint,
         ),
