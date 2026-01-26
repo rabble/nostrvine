@@ -97,7 +97,7 @@ class VideoInteractionsBloc
         ),
     ];
 
-    return subscriptions.wait.then((_) {});
+    return subscriptions.wait;
   }
 
   /// Handle request to fetch initial state.
