@@ -287,6 +287,15 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i3.Future<_i7.Event?>);
 
   @override
+  _i3.Future<void> acceptTerms() =>
+      (super.noSuchMethod(
+            Invocation.method(#acceptTerms, []),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
   void onAppBackgrounded() => super.noSuchMethod(
     Invocation.method(#onAppBackgrounded, []),
     returnValueForMissingStub: null,

@@ -289,14 +289,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.9.22+8"
-  camera_macos:
-    dependency: "direct main"
-    description:
-      name: camera_macos
-      sha256: a0e15729caf4e7c2831b9cd964e8c2e2ea985cd816e56316be03355de44aa743
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.9"
   camera_macos_plus:
     dependency: "direct main"
     description:
@@ -665,14 +657,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.4"
-  ffmpeg_kit_flutter_new:
+  ffmpeg_kit_flutter_new_min:
     dependency: "direct main"
     description:
-      name: ffmpeg_kit_flutter_new
-      sha256: a6f881b2a41c8900733afef1806e069f58ab48e395174552e98157eb10d8adc0
+      name: ffmpeg_kit_flutter_new_min
+      sha256: "15640bf8f177c5c3169a07490635ec0e2fe3816aeb31813eaa747ef0fbd271a6"
       url: "https://pub.dev"
     source: hosted
-    version: "3.2.0"
+    version: "3.1.0"
   ffmpeg_kit_flutter_platform_interface:
     dependency: transitive
     description:

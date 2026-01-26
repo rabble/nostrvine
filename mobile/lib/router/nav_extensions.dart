@@ -236,7 +236,15 @@ extension NavX on BuildContext {
   /// Use this when navigating to another user's profile from video feeds,
   /// search results, comments, etc. For navigating to own profile, use
   /// goProfileGrid('me') instead.
-  Future<void> pushOtherProfile(String identifier) async {
+  /// Push to another user's profile screen.
+  ///
+  /// Optional [displayName] and [avatarUrl] can be provided as hints
+  /// for users without Nostr Kind 0 profiles (e.g., classic Viners).
+  Future<void> pushOtherProfile(
+    String identifier, {
+    String? displayName,
+    String? avatarUrl,
+  }) async {
     // Handle 'me' special case - redirect to own profile tab instead
     if (identifier == 'me') {
       goProfileGrid('me');
@@ -256,7 +264,15 @@ extension NavX on BuildContext {
       return;
     }
 
-    await push(OtherProfileScreen.pathForNpub(npub));
+    // Pass profile hints via extra for users without Kind 0 profiles
+    final extra = <String, String?>{};
+    if (displayName != null) extra['displayName'] = displayName;
+    if (avatarUrl != null) extra['avatarUrl'] = avatarUrl;
+
+    await push(
+      OtherProfileScreen.pathForNpub(npub),
+      extra: extra.isEmpty ? null : extra,
+    );
   }
 
   /// Push curated list screen (NIP-51 kind 30005 video lists)

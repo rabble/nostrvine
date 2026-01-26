@@ -11,6 +11,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer, SecureKeyStorage;
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/background_activity_manager.dart';
+import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/user_profile_service.dart' as ups;
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -123,10 +124,12 @@ class AuthService implements BackgroundAwareService {
     KeycastOAuth? oauthClient,
     FlutterSecureStorage? flutterSecureStorage,
     OAuthConfig? oauthConfig,
+    PendingVerificationService? pendingVerificationService,
   }) : _keyStorage = keyStorage ?? SecureKeyStorage(),
        _userDataCleanupService = userDataCleanupService,
        _oauthClient = oauthClient,
        _flutterSecureStorage = flutterSecureStorage,
+       _pendingVerificationService = pendingVerificationService,
        _oauthConfig =
            oauthConfig ??
            const OAuthConfig(serverUrl: '', clientId: '', redirectUri: '');
@@ -134,6 +137,7 @@ class AuthService implements BackgroundAwareService {
   final UserDataCleanupService _userDataCleanupService;
   final KeycastOAuth? _oauthClient;
   final FlutterSecureStorage? _flutterSecureStorage;
+  final PendingVerificationService? _pendingVerificationService;
 
   AuthState _authState = AuthState.checking;
   SecureKeyContainer? _currentKeyContainer;
@@ -530,7 +534,6 @@ class AuthService implements BackgroundAwareService {
 
     _setAuthState(AuthState.authenticating);
     _lastError = null;
-    await _onTermsAccepted();
 
     try {
       // Validate nsec format
@@ -585,7 +588,6 @@ class AuthService implements BackgroundAwareService {
 
     _setAuthState(AuthState.authenticating);
     _lastError = null;
-    await _onTermsAccepted();
 
     try {
       // Validate hex format
@@ -643,7 +645,6 @@ class AuthService implements BackgroundAwareService {
     );
 
     _setAuthState(AuthState.authenticating);
-    await _onTermsAccepted();
     _lastError = null;
 
     try {
@@ -837,7 +838,7 @@ class AuthService implements BackgroundAwareService {
       if (_authState != AuthState.authenticated) {
         await _checkExistingAuth();
       }
-      await _onTermsAccepted();
+      await acceptTerms();
 
       Log.info(
         'Terms of Service accepted, user is now fully authenticated',
@@ -857,13 +858,12 @@ class AuthService implements BackgroundAwareService {
   /// Sign in using OAuth 2.0 flow
   Future<void> signInWithDivineOAuth(KeycastSession session) async {
     Log.debug(
-      'Integrating OAuth session into AuthService',
+      'Signing in with Divine OAuth session',
       name: 'AuthService',
       category: LogCategory.auth,
     );
 
     _setAuthState(AuthState.authenticating);
-    await _onTermsAccepted();
     _lastError = null;
 
     try {
@@ -1044,6 +1044,9 @@ class AuthService implements BackgroundAwareService {
           await KeycastSession.clear(_flutterSecureStorage);
         }
       } catch (_) {}
+
+      // Clear any pending verification data
+      await _pendingVerificationService?.clear();
 
       _setAuthState(AuthState.unauthenticated);
 
@@ -1296,7 +1299,7 @@ class AuthService implements BackgroundAwareService {
     }
   }
 
-  Future<void> _onTermsAccepted() async {
+  Future<void> acceptTerms() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       'terms_accepted_at',
@@ -1335,7 +1338,7 @@ class AuthService implements BackgroundAwareService {
           reason: 'identity_change',
         );
         // restore the TOS acceptance since we wouldn't be here otherwise
-        await _onTermsAccepted();
+        await acceptTerms();
       }
       await prefs.setString(
         'current_user_pubkey_hex',

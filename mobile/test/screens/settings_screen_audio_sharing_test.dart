@@ -31,6 +31,10 @@ void main() {
 
       when(mockAuthService.isAuthenticated).thenReturn(true);
       when(mockAuthService.isAnonymous).thenReturn(true);
+      when(mockAuthService.authState).thenReturn(AuthState.authenticated);
+      when(
+        mockAuthService.authStateStream,
+      ).thenAnswer((_) => Stream.value(AuthState.authenticated));
       when(mockAudioSharingService.isAudioSharingEnabled).thenReturn(false);
     });
 
@@ -42,6 +46,7 @@ void main() {
           audioSharingPreferenceServiceProvider.overrideWithValue(
             mockAudioSharingService,
           ),
+          currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
         ],
         child: MaterialApp(
           theme: VineTheme.theme,
