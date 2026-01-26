@@ -93,6 +93,15 @@ class CameraController: NSObject {
         currentLens = lens == "front" ? .front : .back
         screenFlashFeatureEnabled = enableScreenFlash
         
+        // Fallback to available camera if requested camera is not available
+        if currentLens == .front && !hasFrontCamera && hasBackCamera {
+            print("[DivineCameraController] Front camera requested but not available, falling back to back camera")
+            currentLens = .back
+        } else if currentLens == .back && !hasBackCamera && hasFrontCamera {
+            print("[DivineCameraController] Back camera requested but not available, falling back to front camera")
+            currentLens = .front
+        }
+        
         // Map video quality string to AVCaptureSession.Preset
         switch videoQuality {
         case "sd":

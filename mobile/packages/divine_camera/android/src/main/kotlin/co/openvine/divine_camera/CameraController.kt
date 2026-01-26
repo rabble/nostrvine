@@ -116,6 +116,15 @@ class CameraController(
 
         checkCameraAvailability()
 
+        // Fallback to available camera if requested camera is not available
+        if (currentLens == CameraSelector.LENS_FACING_FRONT && !hasFrontCamera && hasBackCamera) {
+            Log.w(TAG, "Front camera requested but not available, falling back to back camera")
+            currentLens = CameraSelector.LENS_FACING_BACK
+        } else if (currentLens == CameraSelector.LENS_FACING_BACK && !hasBackCamera && hasFrontCamera) {
+            Log.w(TAG, "Back camera requested but not available, falling back to front camera")
+            currentLens = CameraSelector.LENS_FACING_FRONT
+        }
+
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         cameraProviderFuture.addListener({
             try {
