@@ -148,17 +148,18 @@ void main() {
     });
 
     test(
-        'connectWithBunker failure should close signer before setting to null',
-        () {
-      // This test documents the expected behavior:
-      // When bunker connection fails, we should call close() on the signer
-      // before setting _bunkerSigner = null to clean up WebSocket connections
-      //
-      // Code path (in catch block):
-      //   _bunkerSigner?.close();
-      //   _bunkerSigner = null;
-      expect(true, isTrue); // Documentation test
-    });
+      'connectWithBunker failure should close signer before setting to null',
+      () {
+        // This test documents the expected behavior:
+        // When bunker connection fails, we should call close() on the signer
+        // before setting _bunkerSigner = null to clean up WebSocket connections
+        //
+        // Code path (in catch block):
+        //   _bunkerSigner?.close();
+        //   _bunkerSigner = null;
+        expect(true, isTrue); // Documentation test
+      },
+    );
   });
 
   group('AuthService dispose cleanup', () {
