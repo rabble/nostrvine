@@ -47,162 +47,190 @@ void main() {
       container.dispose();
     });
 
-    test('should subscribe to SubscriptionType.popularNow on build', () async {
-      // Act
-      final _ = container.read(popularNowFeedProvider);
-      await container.read(popularNowFeedProvider.future);
+    test(
+      'should subscribe to SubscriptionType.popularNow on build',
+      () async {
+        // Act
+        final _ = container.read(popularNowFeedProvider);
+        await container.read(popularNowFeedProvider.future);
 
-      // Assert
-      verify(
-        mockService.subscribeToVideoFeed(
-          subscriptionType: SubscriptionType.popularNow,
-          limit: 100,
-          sortBy: argThat(isNotNull, named: 'sortBy'),
-        ),
-      ).called(greaterThanOrEqualTo(1));
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
+        // Assert
+        verify(
+          mockService.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.popularNow,
+            limit: 100,
+            sortBy: argThat(isNotNull, named: 'sortBy'),
+          ),
+        ).called(greaterThanOrEqualTo(1));
+      },
+      skip:
+          'Complex mocking required: VideoFeedBuilder and AnalyticsApiService REST API fallback',
+    );
 
-    test('should get videos from popularNowVideos getter', () async {
-      // Arrange
-      final video1 = _createMockVideo(
-        id: 'v1',
-        createdAt: DateTime(2025, 1, 1),
-      );
-      final video2 = _createMockVideo(
-        id: 'v2',
-        createdAt: DateTime(2025, 1, 2),
-      );
-      when(mockService.popularNowVideos).thenReturn([video1, video2]);
+    test(
+      'should get videos from popularNowVideos getter',
+      () async {
+        // Arrange
+        final video1 = _createMockVideo(
+          id: 'v1',
+          createdAt: DateTime(2025, 1, 1),
+        );
+        final video2 = _createMockVideo(
+          id: 'v2',
+          createdAt: DateTime(2025, 1, 2),
+        );
+        when(mockService.popularNowVideos).thenReturn([video1, video2]);
 
-      // Act
-      final state = await container.read(popularNowFeedProvider.future);
+        // Act
+        final state = await container.read(popularNowFeedProvider.future);
 
-      // Assert
-      expect(state.videos.length, 2);
-      verify(mockService.popularNowVideos).called(greaterThanOrEqualTo(1));
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
+        // Assert
+        expect(state.videos.length, 2);
+        verify(mockService.popularNowVideos).called(greaterThanOrEqualTo(1));
+      },
+      skip:
+          'Complex mocking required: VideoFeedBuilder and AnalyticsApiService REST API fallback',
+    );
 
-    test('should sort videos by timestamp (newest first)', () async {
-      // Arrange
-      final video1 = _createMockVideo(
-        id: 'v1',
-        createdAt: DateTime(2025, 1, 1),
-      );
-      final video2 = _createMockVideo(
-        id: 'v2',
-        createdAt: DateTime(2025, 1, 3),
-      );
-      final video3 = _createMockVideo(
-        id: 'v3',
-        createdAt: DateTime(2025, 1, 2),
-      );
-      when(mockService.popularNowVideos).thenReturn([video1, video2, video3]);
+    test(
+      'should sort videos by timestamp (newest first)',
+      () async {
+        // Arrange
+        final video1 = _createMockVideo(
+          id: 'v1',
+          createdAt: DateTime(2025, 1, 1),
+        );
+        final video2 = _createMockVideo(
+          id: 'v2',
+          createdAt: DateTime(2025, 1, 3),
+        );
+        final video3 = _createMockVideo(
+          id: 'v3',
+          createdAt: DateTime(2025, 1, 2),
+        );
+        when(mockService.popularNowVideos).thenReturn([video1, video2, video3]);
 
-      // Act
-      final state = await container.read(popularNowFeedProvider.future);
+        // Act
+        final state = await container.read(popularNowFeedProvider.future);
 
-      // Assert
-      expect(state.videos.length, 3);
-      expect(state.videos[0].id, 'v2'); // Newest (Jan 3)
-      expect(state.videos[1].id, 'v3'); // Middle (Jan 2)
-      expect(state.videos[2].id, 'v1'); // Oldest (Jan 1)
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
+        // Assert
+        expect(state.videos.length, 3);
+        expect(state.videos[0].id, 'v2'); // Newest (Jan 3)
+        expect(state.videos[1].id, 'v3'); // Middle (Jan 2)
+        expect(state.videos[2].id, 'v1'); // Oldest (Jan 1)
+      },
+      skip:
+          'Complex mocking required: VideoFeedBuilder and AnalyticsApiService REST API fallback',
+    );
 
-    test('should return empty feed when no videos', () async {
-      // Arrange
-      when(mockService.popularNowVideos).thenReturn([]);
+    test(
+      'should return empty feed when no videos',
+      () async {
+        // Arrange
+        when(mockService.popularNowVideos).thenReturn([]);
 
-      // Act
-      final state = await container.read(popularNowFeedProvider.future);
+        // Act
+        final state = await container.read(popularNowFeedProvider.future);
 
-      // Assert
-      expect(state.videos, isEmpty);
-      expect(state.hasMoreContent, false);
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
+        // Assert
+        expect(state.videos, isEmpty);
+        expect(state.hasMoreContent, false);
+      },
+      skip:
+          'Complex mocking required: VideoFeedBuilder and AnalyticsApiService REST API fallback',
+    );
 
-    test('should set hasMoreContent true when videos >= 10', () async {
-      // Arrange
-      final videos = List.generate(
-        15,
-        (i) => _createMockVideo(
-          id: 'v$i',
-          createdAt: DateTime.now().subtract(Duration(hours: i)),
-        ),
-      );
-      when(mockService.popularNowVideos).thenReturn(videos);
+    test(
+      'should set hasMoreContent true when videos >= 10',
+      () async {
+        // Arrange
+        final videos = List.generate(
+          15,
+          (i) => _createMockVideo(
+            id: 'v$i',
+            createdAt: DateTime.now().subtract(Duration(hours: i)),
+          ),
+        );
+        when(mockService.popularNowVideos).thenReturn(videos);
 
-      // Act
-      final state = await container.read(popularNowFeedProvider.future);
+        // Act
+        final state = await container.read(popularNowFeedProvider.future);
 
-      // Assert
-      expect(state.videos.length, 15);
-      expect(state.hasMoreContent, true);
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
+        // Assert
+        expect(state.videos.length, 15);
+        expect(state.hasMoreContent, true);
+      },
+      skip:
+          'Complex mocking required: VideoFeedBuilder and AnalyticsApiService REST API fallback',
+    );
 
-    test('should load more videos when loadMore is called', () async {
-      // Arrange
-      final initialVideos = [_createMockVideo(id: 'v1')];
-      when(mockService.popularNowVideos).thenReturn(initialVideos);
-      when(
-        mockService.loadMoreEvents(
-          SubscriptionType.popularNow,
-          limit: anyNamed('limit'),
-        ),
-      ).thenAnswer((_) async => Future.value());
+    test(
+      'should load more videos when loadMore is called',
+      () async {
+        // Arrange
+        final initialVideos = [_createMockVideo(id: 'v1')];
+        when(mockService.popularNowVideos).thenReturn(initialVideos);
+        when(
+          mockService.loadMoreEvents(
+            SubscriptionType.popularNow,
+            limit: anyNamed('limit'),
+          ),
+        ).thenAnswer((_) async => Future.value());
 
-      // Mock getEventCount to return different values on consecutive calls
-      var callCount = 0;
-      when(
-        mockService.getEventCount(SubscriptionType.popularNow),
-      ).thenAnswer((_) => callCount++ == 0 ? 1 : 3);
+        // Mock getEventCount to return different values on consecutive calls
+        var callCount = 0;
+        when(
+          mockService.getEventCount(SubscriptionType.popularNow),
+        ).thenAnswer((_) => callCount++ == 0 ? 1 : 3);
 
-      // Get initial state
-      await container.read(popularNowFeedProvider.future);
+        // Get initial state
+        await container.read(popularNowFeedProvider.future);
 
-      // Act
-      await container.read(popularNowFeedProvider.notifier).loadMore();
+        // Act
+        await container.read(popularNowFeedProvider.notifier).loadMore();
 
-      // Assert
-      verify(
-        mockService.loadMoreEvents(SubscriptionType.popularNow, limit: 50),
-      ).called(1);
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
+        // Assert
+        verify(
+          mockService.loadMoreEvents(SubscriptionType.popularNow, limit: 50),
+        ).called(1);
+      },
+      skip:
+          'Complex mocking required: VideoFeedBuilder, AnalyticsApiService REST API fallback, and event count mocking',
+    );
 
-    test('should refresh feed when refresh is called', () async {
-      // Arrange
-      when(mockService.popularNowVideos).thenReturn([]);
-      when(
-        mockService.subscribeToVideoFeed(
-          subscriptionType: anyNamed('subscriptionType'),
-          limit: anyNamed('limit'),
-          sortBy: anyNamed('sortBy'),
-          force: anyNamed('force'),
-        ),
-      ).thenAnswer((_) async => Future.value());
+    test(
+      'should refresh feed when refresh is called',
+      () async {
+        // Arrange
+        when(mockService.popularNowVideos).thenReturn([]);
+        when(
+          mockService.subscribeToVideoFeed(
+            subscriptionType: anyNamed('subscriptionType'),
+            limit: anyNamed('limit'),
+            sortBy: anyNamed('sortBy'),
+            force: anyNamed('force'),
+          ),
+        ).thenAnswer((_) async => Future.value());
 
-      // Get initial state
-      await container.read(popularNowFeedProvider.future);
+        // Get initial state
+        await container.read(popularNowFeedProvider.future);
 
-      // Act
-      await container.read(popularNowFeedProvider.notifier).refresh();
+        // Act
+        await container.read(popularNowFeedProvider.notifier).refresh();
 
-      // Assert
-      verify(
-        mockService.subscribeToVideoFeed(
-          subscriptionType: SubscriptionType.popularNow,
-          limit: 100,
-          sortBy: argThat(isNotNull, named: 'sortBy'),
-          force: true, // Should force refresh
-        ),
-      ).called(1);
-      // TODO(any): Fix and re-enable this test
-    }, skip: true);
+        // Assert
+        verify(
+          mockService.subscribeToVideoFeed(
+            subscriptionType: SubscriptionType.popularNow,
+            limit: 100,
+            sortBy: argThat(isNotNull, named: 'sortBy'),
+            force: true, // Should force refresh
+          ),
+        ).called(1);
+      },
+      skip:
+          'Complex mocking required: VideoFeedBuilder and AnalyticsApiService REST API fallback',
+    );
 
     test('should return empty state when appReady is false', () async {
       // Arrange - create container with appReady=false

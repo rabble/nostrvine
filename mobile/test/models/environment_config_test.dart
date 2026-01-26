@@ -16,11 +16,12 @@ void main() {
   });
 
   group('DevRelay', () {
-    test('has three values (umbra, shugur, funnelcakeProd)', () {
-      expect(DevRelay.values.length, 3);
+    test('has four values (umbra, shugur, funnelcakeProd, localhost)', () {
+      expect(DevRelay.values.length, 4);
       expect(DevRelay.values, contains(DevRelay.umbra));
       expect(DevRelay.values, contains(DevRelay.shugur));
       expect(DevRelay.values, contains(DevRelay.funnelcakeProd));
+      expect(DevRelay.values, contains(DevRelay.localhost));
     });
   });
 

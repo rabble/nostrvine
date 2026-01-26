@@ -267,6 +267,9 @@ class AppShell extends ConsumerWidget {
     // Initialize relay statistics bridge to record connection events
     ref.watch(relayStatisticsBridgeProvider);
 
+    // Initialize relay set change bridge to refresh feeds when relays are added/removed
+    ref.watch(relaySetChangeBridgeProvider);
+
     // Initialize Zendesk identity sync to keep user identity in sync with auth
     ref.watch(zendeskIdentitySyncProvider);
 

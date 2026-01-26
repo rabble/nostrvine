@@ -66,6 +66,7 @@ import 'package:openvine/services/user_list_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/video_visibility_manager.dart';
@@ -194,6 +195,63 @@ void relayStatisticsBridge(Ref ref) {
   ref.onDispose(() {
     subscription.cancel();
   });
+}
+
+/// Bridge provider that detects when the configured relay set changes
+/// (relays added or removed) and triggers a full feed reset+resubscribe.
+/// Debounces for 2 seconds to collapse rapid add/remove operations.
+/// Only reacts to set membership changes, not connection state flapping.
+@Riverpod(keepAlive: true)
+void relaySetChangeBridge(Ref ref) {
+  final nostrService = ref.watch(nostrServiceProvider);
+  final videoEventService = ref.watch(videoEventServiceProvider);
+
+  Set<String> previousRelaySet = nostrService.relayStatuses.keys.toSet();
+  Timer? debounceTimer;
+
+  void processStatuses(Map<String, RelayConnectionStatus> statuses) {
+    final currentRelaySet = statuses.keys.toSet();
+
+    // Only trigger if the set of relay URLs has changed (not just status)
+    if (!_setsEqual(currentRelaySet, previousRelaySet)) {
+      Log.info(
+        'Relay set changed: '
+        '${previousRelaySet.length} -> ${currentRelaySet.length} relays',
+        name: 'RelaySetChangeBridge',
+        category: LogCategory.relay,
+      );
+
+      previousRelaySet = currentRelaySet;
+
+      // Debounce: collapse rapid changes into a single reset
+      debounceTimer?.cancel();
+      debounceTimer = Timer(const Duration(seconds: 2), () {
+        Log.info(
+          'Debounce elapsed - triggering feed reset for new relay set',
+          name: 'RelaySetChangeBridge',
+          category: LogCategory.relay,
+        );
+        videoEventService.resetAndResubscribeAll();
+      });
+    }
+  }
+
+  // Process current state immediately to establish baseline
+  processStatuses(nostrService.relayStatuses);
+
+  // Listen to relay status stream for future updates
+  final subscription = nostrService.relayStatusStream.listen(processStatuses);
+
+  ref.onDispose(() {
+    debounceTimer?.cancel();
+    subscription.cancel();
+  });
+}
+
+/// Helper to compare two sets for equality
+bool _setsEqual<T>(Set<T> a, Set<T> b) {
+  if (a.length != b.length) return false;
+  return a.containsAll(b);
 }
 
 /// Analytics service with opt-out support
@@ -790,6 +848,21 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
   );
 }
 
+/// View event publisher for kind 22236 ephemeral analytics events
+///
+/// Publishes video view events to track watch time, traffic sources,
+/// and enable creator analytics and recommendation systems.
+@riverpod
+ViewEventPublisher viewEventPublisher(Ref ref) {
+  final nostrService = ref.watch(nostrServiceProvider);
+  final authService = ref.watch(authServiceProvider);
+
+  return ViewEventPublisher(
+    nostrService: nostrService,
+    authService: authService,
+  );
+}
+
 /// Curation Service - manages NIP-51 video curation sets
 @Riverpod(keepAlive: true)
 CurationService curationService(Ref ref) {
@@ -1116,13 +1189,20 @@ LikesRepository likesRepository(Ref ref) {
   ref.watch(authStateStreamProvider);
 
   final isAuthenticated = authService.isAuthenticated;
+  final userPubkey = authService.currentPublicKeyHex;
 
   final nostrClient = ref.watch(nostrServiceProvider);
-  final db = ref.watch(databaseProvider);
-  final localStorage = DbLikesLocalStorage(
-    dao: db.personalReactionsDao,
-    userPubkey: authService.currentPublicKeyHex!,
-  );
+
+  // Only create localStorage if we have a valid user pubkey
+  // The provider will rebuild when auth state changes
+  DbLikesLocalStorage? localStorage;
+  if (userPubkey != null) {
+    final db = ref.watch(databaseProvider);
+    localStorage = DbLikesLocalStorage(
+      dao: db.personalReactionsDao,
+      userPubkey: userPubkey,
+    );
+  }
 
   // Map AuthState stream to bool stream for repository
   final authBoolStream = authService.authStateStream.map(
@@ -1145,16 +1225,33 @@ LikesRepository likesRepository(Ref ref) {
 ///
 /// Creates a RepostsRepository for managing user reposts (Kind 16 generic
 /// reposts).
-/// Uses AuthService.createAndSignEvent for event creation.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalRepostsDao from databaseProvider (for local storage)
 @Riverpod(keepAlive: true)
 RepostsRepository repostsRepository(Ref ref) {
   final authService = ref.watch(authServiceProvider);
-  final nostrClient = ref.watch(nostrServiceProvider);
 
   // Watch auth state stream to react to auth changes (login/logout)
+  // This ensures the provider rebuilds when authentication completes
   ref.watch(authStateStreamProvider);
 
   final isAuthenticated = authService.isAuthenticated;
+  final userPubkey = authService.currentPublicKeyHex;
+
+  final nostrClient = ref.watch(nostrServiceProvider);
+
+  // Only create localStorage if we have a valid user pubkey
+  // The provider will rebuild when auth state changes
+  DbRepostsLocalStorage? localStorage;
+  if (userPubkey != null) {
+    final db = ref.watch(databaseProvider);
+    localStorage = DbRepostsLocalStorage(
+      dao: db.personalRepostsDao,
+      userPubkey: userPubkey,
+    );
+  }
 
   // Map AuthState stream to bool stream for repository
   final authBoolStream = authService.authStateStream.map(
@@ -1163,6 +1260,7 @@ RepostsRepository repostsRepository(Ref ref) {
 
   final repository = RepostsRepository(
     nostrClient: nostrClient,
+    localStorage: localStorage,
     authStateStream: authBoolStream,
     isAuthenticated: isAuthenticated,
   );

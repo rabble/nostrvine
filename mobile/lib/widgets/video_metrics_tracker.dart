@@ -1,5 +1,6 @@
 // ABOUTME: Widget that tracks video playback metrics like watch duration and loop count
 // ABOUTME: Sends detailed analytics when video ends or user navigates away
+// ABOUTME: Publishes Kind 22236 ephemeral view events for decentralized analytics
 
 import 'dart:async';
 
@@ -8,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:video_player/video_player.dart';
 
@@ -17,12 +19,16 @@ class VideoMetricsTracker extends ConsumerStatefulWidget {
     required this.video,
     required this.controller,
     required this.child,
+    this.trafficSource = ViewTrafficSource.unknown,
     super.key,
   });
 
   final VideoEvent video;
   final VideoPlayerController? controller;
   final Widget child;
+
+  /// Traffic source for analytics (home feed, discovery, profile, etc.)
+  final ViewTrafficSource trafficSource;
 
   @override
   ConsumerState<VideoMetricsTracker> createState() =>
@@ -49,6 +55,7 @@ class _VideoMetricsTrackerState extends ConsumerState<VideoMetricsTracker> {
   dynamic _analyticsService;
   dynamic _authService;
   dynamic _seenVideosService;
+  ViewEventPublisher? _viewEventPublisher;
 
   @override
   void initState() {
@@ -57,6 +64,7 @@ class _VideoMetricsTrackerState extends ConsumerState<VideoMetricsTracker> {
     _analyticsService = ref.read(analyticsServiceProvider);
     _authService = ref.read(authServiceProvider);
     _seenVideosService = ref.read(seenVideosServiceProvider);
+    _viewEventPublisher = ref.read(viewEventPublisherProvider);
     _initializeTracking();
   }
 
@@ -243,6 +251,10 @@ class _VideoMetricsTrackerState extends ConsumerState<VideoMetricsTracker> {
           watchDuration: _totalWatchDuration,
         );
 
+        // Publish Kind 22236 ephemeral view event for decentralized analytics
+        // This enables creator analytics and recommendation systems
+        _publishNostrViewEvent();
+
         Log.debug(
           '⏹️ Video end: duration=${_totalWatchDuration.inSeconds}s, loops=$_loopCount',
           name: 'VideoMetricsTracker',
@@ -259,6 +271,53 @@ class _VideoMetricsTrackerState extends ConsumerState<VideoMetricsTracker> {
         );
       }
     }
+  }
+
+  /// Publish Kind 22236 ephemeral view event to Nostr relays.
+  ///
+  /// This enables decentralized creator analytics and recommendation systems.
+  /// The event is fire-and-forget (ephemeral) and processed by analytics services.
+  void _publishNostrViewEvent() {
+    final viewPublisher = _viewEventPublisher;
+    if (viewPublisher == null) {
+      Log.debug(
+        'ViewEventPublisher not available, skipping Nostr view event',
+        name: 'VideoMetricsTracker',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    // Only publish if we have meaningful watch time (at least 1 second)
+    if (_totalWatchDuration.inSeconds < 1) {
+      return;
+    }
+
+    // Fire-and-forget: don't await, don't block dispose
+    viewPublisher
+        .publishViewEvent(
+          video: widget.video,
+          startSeconds: 0,
+          endSeconds: _totalWatchDuration.inSeconds,
+          source: widget.trafficSource,
+        )
+        .then((success) {
+          if (success) {
+            Log.debug(
+              '📊 Published Nostr view event for ${widget.video.id}',
+              name: 'VideoMetricsTracker',
+              category: LogCategory.video,
+            );
+          }
+        })
+        .catchError((Object error) {
+          // Silently ignore errors - view events are best-effort
+          Log.debug(
+            'Failed to publish Nostr view event: $error',
+            name: 'VideoMetricsTracker',
+            category: LogCategory.video,
+          );
+        });
   }
 
   void _resetTracking() {

@@ -24,6 +24,10 @@ enum FeatureFlag {
   enableVideoEditorV1(
     'Video Editor V1',
     'Enable video editing functionality (disabled on web, enabled on native platforms)',
+  ),
+  classicsHashtags(
+    'Classics Trending Hashtags',
+    'Show trending hashtags section on the Classics tab',
   );
 
   const FeatureFlag(this.displayName, this.description);
