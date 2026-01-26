@@ -181,7 +181,8 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
 
         return RefreshIndicator(
           semanticsLabel: 'searching for more videos',
-          color: VineTheme.vineGreen,
+          color: VineTheme.onPrimary,
+          backgroundColor: VineTheme.vineGreen,
           onRefresh: () async {
             Log.info(
               '🔄 HashtagFeedScreen: Refreshing hashtag #${widget.hashtag}',

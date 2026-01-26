@@ -16,8 +16,9 @@ class ExploreScreenRouter extends ConsumerStatefulWidget {
   const ExploreScreenRouter({super.key});
 
   @override
-  ConsumerState<ExploreScreenRouter> createState() =>
-      _ExploreScreenRouterState();
+  ConsumerState<ExploreScreenRouter> createState() {
+    return _ExploreScreenRouterState();
+  }
 }
 
 class _ExploreScreenRouterState extends ConsumerState<ExploreScreenRouter>

@@ -13,6 +13,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
 
 /// Page widget for displaying another user's following list.
@@ -65,7 +66,7 @@ class _OthersFollowingView extends StatelessWidget {
         : 'Following';
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.surfaceBackground,
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -98,7 +99,12 @@ class _OthersFollowingView extends StatelessWidget {
           onPressed: () => Navigator.of(context).pop(),
           tooltip: 'Back',
         ),
-        title: Text(appBarTitle, style: VineTheme.titleFont()),
+        title: FollowerCountTitle<OthersFollowingBloc, OthersFollowingState>(
+          title: appBarTitle,
+          selector: (state) => state.status == OthersFollowingStatus.success
+              ? state.followingPubkeys.length
+              : 0,
+        ),
       ),
       body: BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
         builder: (context, state) {
@@ -145,13 +151,14 @@ class _FollowingListBody extends StatelessWidget {
     }
 
     return RefreshIndicator(
+      color: VineTheme.onPrimary,
+      backgroundColor: VineTheme.vineGreen,
       onRefresh: () async {
         context.read<OthersFollowingBloc>().add(
           OthersFollowingListLoadRequested(targetPubkey),
         );
       },
       child: ListView.builder(
-        padding: const EdgeInsets.all(16),
         itemCount: following.length,
         itemBuilder: (context, index) {
           final userPubkey = following[index];

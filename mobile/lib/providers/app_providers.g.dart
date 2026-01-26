@@ -426,6 +426,62 @@ final class RelayStatisticsBridgeProvider
 String _$relayStatisticsBridgeHash() =>
     r'8e5867762c8201c7244d2f44ba3bc84cbc63f012';
 
+/// Bridge provider that detects when the configured relay set changes
+/// (relays added or removed) and triggers a full feed reset+resubscribe.
+/// Debounces for 2 seconds to collapse rapid add/remove operations.
+/// Only reacts to set membership changes, not connection state flapping.
+
+@ProviderFor(relaySetChangeBridge)
+const relaySetChangeBridgeProvider = RelaySetChangeBridgeProvider._();
+
+/// Bridge provider that detects when the configured relay set changes
+/// (relays added or removed) and triggers a full feed reset+resubscribe.
+/// Debounces for 2 seconds to collapse rapid add/remove operations.
+/// Only reacts to set membership changes, not connection state flapping.
+
+final class RelaySetChangeBridgeProvider
+    extends $FunctionalProvider<void, void, void>
+    with $Provider<void> {
+  /// Bridge provider that detects when the configured relay set changes
+  /// (relays added or removed) and triggers a full feed reset+resubscribe.
+  /// Debounces for 2 seconds to collapse rapid add/remove operations.
+  /// Only reacts to set membership changes, not connection state flapping.
+  const RelaySetChangeBridgeProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'relaySetChangeBridgeProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$relaySetChangeBridgeHash();
+
+  @$internal
+  @override
+  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  void create(Ref ref) {
+    return relaySetChangeBridge(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$relaySetChangeBridgeHash() =>
+    r'd57982bcec97c066fb5db91322facf82744f8e60';
+
 /// Analytics service with opt-out support
 
 @ProviderFor(analyticsService)
@@ -1286,6 +1342,69 @@ final class ContentBlocklistServiceProvider
 
 String _$contentBlocklistServiceHash() =>
     r'a05020e10b4402686d4630f99b020c4f0e58eab3';
+
+/// Version counter to trigger rebuilds when blocklist changes.
+/// Widgets watching this will rebuild when block/unblock actions occur.
+
+@ProviderFor(BlocklistVersion)
+const blocklistVersionProvider = BlocklistVersionProvider._();
+
+/// Version counter to trigger rebuilds when blocklist changes.
+/// Widgets watching this will rebuild when block/unblock actions occur.
+final class BlocklistVersionProvider
+    extends $NotifierProvider<BlocklistVersion, int> {
+  /// Version counter to trigger rebuilds when blocklist changes.
+  /// Widgets watching this will rebuild when block/unblock actions occur.
+  const BlocklistVersionProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'blocklistVersionProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$blocklistVersionHash();
+
+  @$internal
+  @override
+  BlocklistVersion create() => BlocklistVersion();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(int value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<int>(value),
+    );
+  }
+}
+
+String _$blocklistVersionHash() => r'ae0ea100b12ecea021ad9beded8cfe790665a532';
+
+/// Version counter to trigger rebuilds when blocklist changes.
+/// Widgets watching this will rebuild when block/unblock actions occur.
+
+abstract class _$BlocklistVersion extends $Notifier<int> {
+  int build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<int, int>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<int, int>,
+              int,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}
 
 /// NIP-05 service for username registration and verification
 

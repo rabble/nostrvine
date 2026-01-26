@@ -10,14 +10,14 @@ import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/profile/blocked_user_screen.dart';
-import 'package:openvine/widgets/profile/profile_block_confirmation_dialog.dart';
+import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
+import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
-import 'package:share_plus/share_plus.dart';
 
 /// Fullscreen profile screen for viewing other users' profiles.
 ///
@@ -49,6 +49,9 @@ class OtherProfileScreen extends ConsumerStatefulWidget {
 class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   final ScrollController _scrollController = ScrollController();
 
+  /// Derived userIdHex from widget.npub - null if invalid npub.
+  String? get _userIdHex => npubToHexOrNull(widget.npub);
+
   @override
   void initState() {
     super.initState();
@@ -62,7 +65,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   }
 
   void _fetchProfileIfNeeded() {
-    final userIdHex = npubToHexOrNull(widget.npub);
+    final userIdHex = _userIdHex;
     if (userIdHex == null) return;
 
     final userProfileService = ref.read(userProfileServiceProvider);
@@ -76,6 +79,98 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     userProfileService.fetchProfile(userIdHex);
   }
 
+  Future<void> _more() async {
+    final userIdHex = _userIdHex!;
+
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final isBlocked = blocklistService.isBlocked(userIdHex);
+
+    final followRepository = ref.read(followRepositoryProvider);
+    final isFollowing = followRepository.isFollowing(userIdHex);
+
+    // Get display name for actions
+    final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
+    final displayName = profile?.bestDisplayName ?? 'user';
+
+    final result = await VineBottomSheet.show<MoreSheetResult>(
+      context: context,
+      scrollable: false,
+      body: StatefulBuilder(
+        builder: (context, setState) {
+          return MoreSheetContent(
+            userIdHex: userIdHex,
+            displayName: displayName,
+            isFollowing: isFollowing,
+            isBlocked: isBlocked,
+          );
+        },
+      ),
+      children: const [], // Required but unused when body is provided
+    );
+
+    if (!mounted || result == null) return;
+
+    switch (result) {
+      case MoreSheetResult.copy:
+        final npub = NostrKeyUtils.encodePubKey(userIdHex);
+        await ClipboardUtils.copyPubkey(context, npub);
+      case MoreSheetResult.unfollow:
+        await _unfollowUser();
+      case MoreSheetResult.blockConfirmed:
+        final blocklistService = ref.read(contentBlocklistServiceProvider);
+        blocklistService.blockUser(userIdHex);
+        // Increment version to trigger rebuild of widgets watching blocklist
+        ref.read(blocklistVersionProvider.notifier).increment();
+      case MoreSheetResult.unblockConfirmed:
+        final blocklistService = ref.read(contentBlocklistServiceProvider);
+        blocklistService.unblockUser(userIdHex);
+        // Increment version to trigger rebuild of widgets watching blocklist
+        ref.read(blocklistVersionProvider.notifier).increment();
+    }
+  }
+
+  Future<void> _unfollowUser() async {
+    final userIdHex = _userIdHex!;
+    final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
+    final displayName = profile?.bestDisplayName ?? 'user';
+
+    final followRepository = ref.read(followRepositoryProvider);
+    await followRepository.toggleFollow(userIdHex);
+
+    if (mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Unfollowed $displayName')));
+    }
+  }
+
+  Future<void> _showUnblockConfirmation() async {
+    final userIdHex = _userIdHex!;
+    final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
+    final displayName = profile?.bestDisplayName ?? 'user';
+
+    final result = await VineBottomSheet.show<MoreSheetResult>(
+      context: context,
+      scrollable: false,
+      body: MoreSheetContent(
+        userIdHex: userIdHex,
+        displayName: displayName,
+        isFollowing: false,
+        isBlocked: true,
+        initialMode: MoreSheetMode.unblockConfirmation,
+      ),
+      children: const [],
+    );
+
+    if (!mounted) return;
+
+    if (result == MoreSheetResult.unblockConfirmed) {
+      final blocklistService = ref.read(contentBlocklistServiceProvider);
+      blocklistService.unblockUser(userIdHex);
+      ref.read(blocklistVersionProvider.notifier).increment();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     Log.info(
@@ -83,8 +178,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       name: 'OtherProfileScreen',
     );
 
-    // Convert npub to hex
-    final userIdHex = npubToHexOrNull(widget.npub);
+    // Convert npub to hex using getter
+    final userIdHex = _userIdHex;
 
     if (userIdHex == null) {
       return _ProfileErrorScreen(
@@ -93,11 +188,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       );
     }
 
-    // Check if this user is blocked
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
-    if (blocklistService.shouldFilterFromFeeds(userIdHex)) {
-      return BlockedUserScreen(onBack: context.pop);
-    }
+    // Watch blocklist version to trigger rebuilds when block/unblock occurs
+    ref.watch(blocklistVersionProvider);
 
     // Get video data from profile feed
     final videosAsync = ref.watch(profileFeedProvider(userIdHex));
@@ -148,6 +240,34 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Container(
+                width: 48,
+                height: 48,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: VineTheme.iconButtonBackground,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: SvgPicture.asset(
+                  'assets/icon/DotsThree.svg',
+                  width: 28,
+                  height: 28,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+              onPressed: _more,
+            ),
+          ),
+        ],
       ),
       body: switch (videosAsync) {
         AsyncLoading() => const ProfileLoadingView(),
@@ -160,110 +280,14 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         AsyncData(:final value) => ProfileGridView(
           userIdHex: userIdHex,
           isOwnProfile: false,
+          displayName: displayName,
           videos: value.videos,
           profileStatsAsync: profileStatsAsync,
           scrollController: _scrollController,
-          onShareProfile: () => _shareProfile(userIdHex),
-          onBlockUser: (isBlocked) => _blockUser(userIdHex, isBlocked),
+          onBlockedTap: _showUnblockConfirmation,
         ),
       },
     );
-  }
-
-  Future<void> _shareProfile(String userIdHex) async {
-    try {
-      // Get profile info for better share text
-      final profile = await ref
-          .read(userProfileServiceProvider)
-          .fetchProfile(userIdHex);
-      final displayName = profile?.bestDisplayName ?? 'User';
-
-      // Convert hex pubkey to npub format for sharing
-      final npub = NostrKeyUtils.encodePubKey(userIdHex);
-
-      // Create share text with divine.video URL format
-      final shareText =
-          'Check out $displayName on divine!\n\n'
-          'https://divine.video/profile/$npub';
-
-      // Use share_plus to show native share sheet
-      final result = await SharePlus.instance.share(
-        ShareParams(text: shareText, subject: '$displayName on divine'),
-      );
-
-      if (result.status == ShareResultStatus.success) {
-        Log.info(
-          'Profile shared successfully',
-          name: 'OtherProfileScreen',
-          category: LogCategory.ui,
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Error sharing profile: $e',
-        name: 'OtherProfileScreen',
-        category: LogCategory.ui,
-      );
-
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Failed to share profile: $e')));
-      }
-    }
-  }
-
-  Future<void> _blockUser(String pubkey, bool currentlyBlocked) async {
-    if (currentlyBlocked) {
-      // Unblock without confirmation
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-      blocklistService.unblockUser(pubkey);
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('User unblocked')));
-      }
-      return;
-    }
-
-    // Show confirmation dialog for blocking
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: const Text('Block User', style: TextStyle(color: Colors.white)),
-        content: const Text(
-          'You won\'t see their content in feeds. They won\'t be notified. '
-          'You can still visit their profile.',
-          style: TextStyle(color: Colors.grey),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => context.pop(false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () => context.pop(true),
-            style: TextButton.styleFrom(foregroundColor: Colors.red),
-            child: const Text('Block'),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-      blocklistService.blockUser(pubkey);
-
-      if (mounted) {
-        // Show success confirmation
-        showDialog(
-          context: context,
-          useRootNavigator: true,
-          builder: (context) => const ProfileBlockConfirmationDialog(),
-        );
-      }
-    }
   }
 }
 
