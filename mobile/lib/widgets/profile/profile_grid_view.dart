@@ -32,6 +32,8 @@ class ProfileGridView extends ConsumerStatefulWidget {
     this.onOpenClips,
     this.onBlockedTap,
     this.scrollController,
+    this.displayNameHint,
+    this.avatarUrlHint,
     super.key,
   });
 
@@ -64,6 +66,12 @@ class ProfileGridView extends ConsumerStatefulWidget {
 
   /// Optional scroll controller for the NestedScrollView.
   final ScrollController? scrollController;
+
+  /// Optional display name hint for users without Kind 0 profiles (e.g., classic Viners).
+  final String? displayNameHint;
+
+  /// Optional avatar URL hint for users without Kind 0 profiles.
+  final String? avatarUrlHint;
 
   @override
   ConsumerState<ProfileGridView> createState() => _ProfileGridViewState();
@@ -158,6 +166,8 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                   videoCount: widget.videos.length,
                   profileStatsAsync: widget.profileStatsAsync,
                   onSetupProfile: widget.onSetupProfile,
+                  displayNameHint: widget.displayNameHint,
+                  avatarUrlHint: widget.avatarUrlHint,
                 ),
               ),
             ),

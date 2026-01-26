@@ -37,10 +37,21 @@ class OtherProfileScreen extends ConsumerStatefulWidget {
   /// Build path for a specific npub.
   static String pathForNpub(String npub) => '$path/$npub';
 
-  const OtherProfileScreen({required this.npub, super.key});
+  const OtherProfileScreen({
+    required this.npub,
+    this.displayNameHint,
+    this.avatarUrlHint,
+    super.key,
+  });
 
   /// The npub of the user whose profile is being viewed.
   final String npub;
+
+  /// Optional display name hint for users without Kind 0 profiles (e.g., classic Viners).
+  final String? displayNameHint;
+
+  /// Optional avatar URL hint for users without Kind 0 profiles.
+  final String? avatarUrlHint;
 
   @override
   ConsumerState<OtherProfileScreen> createState() => _OtherProfileScreenState();
@@ -198,8 +209,12 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     final profileStatsAsync = ref.watch(fetchProfileStatsProvider(userIdHex));
 
     // Watch profile reactively to get display name for AppBar
+    // Use hint as fallback for users without Kind 0 profiles (e.g., classic Viners)
     final profileAsync = ref.watch(userProfileReactiveProvider(userIdHex));
-    final displayName = profileAsync.value?.bestDisplayName ?? 'Profile';
+    final displayName =
+        profileAsync.value?.bestDisplayName ??
+        widget.displayNameHint ??
+        'Profile';
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -285,6 +300,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           profileStatsAsync: profileStatsAsync,
           scrollController: _scrollController,
           onBlockedTap: _showUnblockConfirmation,
+          displayNameHint: widget.displayNameHint,
+          avatarUrlHint: widget.avatarUrlHint,
         ),
       },
     );

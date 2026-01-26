@@ -62,8 +62,11 @@ class HashtagFeed extends _$HashtagFeed {
 
     // Try to get popular video ordering from Funnelcake REST API
     // This provides engagement-based sorting when available
+    // Use centralized availability check
+    final funnelcakeAvailable =
+        ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
     final analyticsService = ref.read(analyticsApiServiceProvider);
-    if (analyticsService.isAvailable) {
+    if (funnelcakeAvailable) {
       try {
         _popularVideos = await analyticsService.getVideosByHashtag(
           hashtag: tag,

@@ -57,6 +57,14 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   }
 
   Future<void> _loadThumbnail() async {
+    Log.debug(
+      '🖼️ VideoThumbnailWidget loading: id=${widget.video.id}, '
+      'thumbnailUrl=${widget.video.thumbnailUrl}, '
+      'blurhash=${widget.video.blurhash != null ? '${widget.video.blurhash!.length} chars' : 'null'}',
+      name: 'VideoThumbnailWidget',
+      category: LogCategory.video,
+    );
+
     // Check if we have an existing thumbnail URL
     if (widget.video.thumbnailUrl != null &&
         widget.video.thumbnailUrl!.isNotEmpty) {

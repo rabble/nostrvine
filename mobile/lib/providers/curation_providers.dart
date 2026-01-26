@@ -4,9 +4,11 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart'
     hide LogCategory, CurationSet, CurationSetType, SampleCurationSets;
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/models/curation_set.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/state/curation_state.dart';
@@ -21,6 +23,65 @@ AnalyticsApiService analyticsApiService(Ref ref) {
   final environmentConfig = ref.watch(currentEnvironmentProvider);
 
   return AnalyticsApiService(baseUrl: environmentConfig.apiBaseUrl);
+}
+
+/// Single source of truth for Funnelcake REST API availability.
+///
+/// Uses capability detection - actually probes the API to verify it works.
+/// Re-checks when environment or relay configuration changes.
+///
+/// All feed providers should watch this instead of checking
+/// `analyticsService.isAvailable` directly.
+@Riverpod(keepAlive: true)
+class FunnelcakeAvailable extends _$FunnelcakeAvailable {
+  @override
+  Future<bool> build() async {
+    final analyticsService = ref.watch(analyticsApiServiceProvider);
+
+    // Quick check: is the API configured at all?
+    if (!analyticsService.isAvailable) {
+      Log.debug(
+        '🔌 Funnelcake: API not configured',
+        name: 'FunnelcakeAvailable',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+
+    // Watch relay changes to re-probe when relays change
+    final nostrService = ref.watch(nostrServiceProvider);
+    // Access relayStatuses to establish dependency (triggers rebuild on change)
+    final relayCount = nostrService.relayStatuses.length;
+
+    // Capability detection: try a lightweight API call
+    try {
+      Log.debug(
+        '🔌 Funnelcake: Probing API availability (relays: $relayCount)',
+        name: 'FunnelcakeAvailable',
+        category: LogCategory.system,
+      );
+      // Use trending endpoint with limit=1 as lightweight probe
+      await analyticsService.getTrendingVideos(limit: 1);
+      Log.info(
+        '✅ Funnelcake: API available',
+        name: 'FunnelcakeAvailable',
+        category: LogCategory.system,
+      );
+      return true;
+    } catch (e) {
+      Log.info(
+        '❌ Funnelcake: API unavailable - $e',
+        name: 'FunnelcakeAvailable',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+  }
+
+  /// Force re-check of Funnelcake availability
+  void refresh() {
+    ref.invalidateSelf();
+  }
 }
 
 /// Main curation provider that manages curated content sets
@@ -161,17 +222,27 @@ bool curationLoading(Ref ref) => ref.watch(curationProvider).isLoading;
 List<VideoEvent> editorsPicks(Ref ref) =>
     ref.watch(curationProvider.select((state) => state.editorsPicks));
 
-/// Provider for analytics-based trending videos
+/// Provider for analytics-based trending videos with cursor pagination
 @riverpod
 class AnalyticsTrending extends _$AnalyticsTrending {
+  int? _nextCursor;
+  bool _hasMore = true;
+  bool _isLoading = false;
+
   @override
   List<VideoEvent> build() {
     // Initialize empty list, will be populated on refresh
+    _nextCursor = null;
+    _hasMore = true;
+    _isLoading = false;
     return [];
   }
 
   /// Refresh trending videos from analytics API
   Future<void> refresh() async {
+    if (_isLoading) return;
+    _isLoading = true;
+
     Log.info(
       'AnalyticsTrending: Refreshing trending videos from analytics API',
       name: 'AnalyticsTrendingProvider',
@@ -182,11 +253,18 @@ class AnalyticsTrending extends _$AnalyticsTrending {
       final service = ref.read(analyticsApiServiceProvider);
       final videos = await service.getTrendingVideos(forceRefresh: true);
 
+      // Check if provider is still mounted after async gap
+      if (!ref.mounted) return;
+
+      // Reset pagination state
+      _nextCursor = _getOldestTimestamp(videos);
+      _hasMore = videos.length >= AppConstants.paginationBatchSize;
+
       // Update state with new trending videos
       state = videos;
 
       Log.info(
-        'AnalyticsTrending: Loaded ${state.length} trending videos',
+        'AnalyticsTrending: Loaded ${state.length} trending videos, hasMore: $_hasMore',
         name: 'AnalyticsTrendingProvider',
         category: LogCategory.system,
       );
@@ -197,15 +275,27 @@ class AnalyticsTrending extends _$AnalyticsTrending {
         category: LogCategory.system,
       );
       // Keep existing state on error
+    } finally {
+      _isLoading = false;
     }
   }
 
-  /// Load more trending videos for pagination
+  /// Load more trending videos using cursor-based pagination
   Future<void> loadMore() async {
+    if (_isLoading || !_hasMore) {
+      Log.debug(
+        'AnalyticsTrending: Skipping loadMore (isLoading: $_isLoading, hasMore: $_hasMore)',
+        name: 'AnalyticsTrendingProvider',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    _isLoading = true;
     final currentCount = state.length;
 
     Log.info(
-      'AnalyticsTrending: Loading more trending videos (current: $currentCount)',
+      'AnalyticsTrending: Loading more trending videos (current: $currentCount, cursor: $_nextCursor)',
       name: 'AnalyticsTrendingProvider',
       category: LogCategory.system,
     );
@@ -213,24 +303,44 @@ class AnalyticsTrending extends _$AnalyticsTrending {
     try {
       final service = ref.read(analyticsApiServiceProvider);
 
-      // IMPORTANT: The analytics API currently returns a fixed set of trending videos
-      // If we already have videos and the API returns the same or fewer videos,
-      // don't update state to avoid infinite loops
+      // Use cursor-based pagination with 'before' parameter
       final videos = await service.getTrendingVideos(
-        limit: currentCount + 50,
-        forceRefresh: true,
+        limit: 50,
+        before: _nextCursor,
       );
 
-      if (videos.length > currentCount) {
-        state = videos;
-        Log.info(
-          'AnalyticsTrending: Loaded ${videos.length - currentCount} more videos (total: ${videos.length})',
-          name: 'AnalyticsTrendingProvider',
-          category: LogCategory.system,
-        );
+      // Check if provider is still mounted after async gap
+      if (!ref.mounted) return;
+
+      if (videos.isNotEmpty) {
+        // Deduplicate and merge
+        final existingIds = state.map((v) => v.id).toSet();
+        final newVideos = videos
+            .where((v) => !existingIds.contains(v.id))
+            .toList();
+
+        if (newVideos.isNotEmpty) {
+          state = [...state, ...newVideos];
+          _nextCursor = _getOldestTimestamp(videos);
+          _hasMore = videos.length >= AppConstants.paginationBatchSize;
+
+          Log.info(
+            'AnalyticsTrending: Loaded ${newVideos.length} more videos (total: ${state.length})',
+            name: 'AnalyticsTrendingProvider',
+            category: LogCategory.system,
+          );
+        } else {
+          _hasMore = false;
+          Log.info(
+            'AnalyticsTrending: All returned videos already in state, stopping pagination',
+            name: 'AnalyticsTrendingProvider',
+            category: LogCategory.system,
+          );
+        }
       } else {
-        Log.warning(
-          'AnalyticsTrending: No new videos available from API (requested: ${currentCount + 50}, received: ${videos.length})',
+        _hasMore = false;
+        Log.info(
+          'AnalyticsTrending: No more videos available',
           name: 'AnalyticsTrendingProvider',
           category: LogCategory.system,
         );
@@ -241,7 +351,15 @@ class AnalyticsTrending extends _$AnalyticsTrending {
         name: 'AnalyticsTrendingProvider',
         category: LogCategory.system,
       );
+    } finally {
+      _isLoading = false;
     }
+  }
+
+  /// Get oldest timestamp from videos for cursor pagination
+  int? _getOldestTimestamp(List<VideoEvent> videos) {
+    if (videos.isEmpty) return null;
+    return videos.map((v) => v.createdAt).reduce((a, b) => a < b ? a : b);
   }
 }
 

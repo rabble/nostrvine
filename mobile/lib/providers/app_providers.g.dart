@@ -1503,17 +1503,17 @@ abstract class _$BlocklistVersion extends $Notifier<int> {
   }
 }
 
-/// NIP-05 service for username registration and verification
+/// NIP-05 service for username availability checking
 
 @ProviderFor(nip05Service)
 const nip05ServiceProvider = Nip05ServiceProvider._();
 
-/// NIP-05 service for username registration and verification
+/// NIP-05 service for username availability checking
 
 final class Nip05ServiceProvider
     extends $FunctionalProvider<Nip05Service, Nip05Service, Nip05Service>
     with $Provider<Nip05Service> {
-  /// NIP-05 service for username registration and verification
+  /// NIP-05 service for username availability checking
   const Nip05ServiceProvider._()
     : super(
         from: null,
@@ -1547,14 +1547,14 @@ final class Nip05ServiceProvider
   }
 }
 
-String _$nip05ServiceHash() => r'1d27e1b137a09246fedc50586a7a28bcf37542b0';
+String _$nip05ServiceHash() => r'b7f7e1471a3783305bf1070cb64f1b95c4bdb516';
 
-/// Username repository for availability checking and registration
+/// Username repository for availability checking
 
 @ProviderFor(usernameRepository)
 const usernameRepositoryProvider = UsernameRepositoryProvider._();
 
-/// Username repository for availability checking and registration
+/// Username repository for availability checking
 
 final class UsernameRepositoryProvider
     extends
@@ -1564,7 +1564,7 @@ final class UsernameRepositoryProvider
           UsernameRepository
         >
     with $Provider<UsernameRepository> {
-  /// Username repository for availability checking and registration
+  /// Username repository for availability checking
   const UsernameRepositoryProvider._()
     : super(
         from: null,
@@ -2296,7 +2296,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'3f492aba74b38fc183ffc4efeb35d2185b5996dd';
+String _$profileRepositoryHash() => r'66f7386da11435f5e686d2c3bd390ec927eaf901';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
@@ -2706,6 +2706,68 @@ final class VideoEventPublisherProvider
 
 String _$videoEventPublisherHash() =>
     r'b14b2c63806aa23370d43e14d9a047b36dcde180';
+
+/// View event publisher for kind 22236 ephemeral analytics events
+///
+/// Publishes video view events to track watch time, traffic sources,
+/// and enable creator analytics and recommendation systems.
+
+@ProviderFor(viewEventPublisher)
+const viewEventPublisherProvider = ViewEventPublisherProvider._();
+
+/// View event publisher for kind 22236 ephemeral analytics events
+///
+/// Publishes video view events to track watch time, traffic sources,
+/// and enable creator analytics and recommendation systems.
+
+final class ViewEventPublisherProvider
+    extends
+        $FunctionalProvider<
+          ViewEventPublisher,
+          ViewEventPublisher,
+          ViewEventPublisher
+        >
+    with $Provider<ViewEventPublisher> {
+  /// View event publisher for kind 22236 ephemeral analytics events
+  ///
+  /// Publishes video view events to track watch time, traffic sources,
+  /// and enable creator analytics and recommendation systems.
+  const ViewEventPublisherProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'viewEventPublisherProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$viewEventPublisherHash();
+
+  @$internal
+  @override
+  $ProviderElement<ViewEventPublisher> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ViewEventPublisher create(Ref ref) {
+    return viewEventPublisher(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ViewEventPublisher value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ViewEventPublisher>(value),
+    );
+  }
+}
+
+String _$viewEventPublisherHash() =>
+    r'33477998370aad03ce25bb4beff38a28da291d64';
 
 /// Curation Service - manages NIP-51 video curation sets
 

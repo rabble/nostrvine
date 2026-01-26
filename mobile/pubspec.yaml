@@ -82,10 +82,9 @@ dependencies:
     git:
       url: https://github.com/hm21/CamerAwesome.git
       ref: master
-  camera_macos_plus: ^0.0.3
+  camera_macos_plus: ^0.0.3 # macOS camera support (replaces camera_macos)
   divine_camera:
     path: packages/divine_camera
-  camera_macos: ^0.0.9 # macOS camera support
   video_player: ^2.9.1 # Uses native AVPlayer (iOS/macOS) and ExoPlayer (Android)
   visibility_detector: ^0.4.0+2 # Detect widget visibility for proper video control
   image: ^4.1.7 # Image processing for GIF generation
@@ -148,7 +147,7 @@ dependencies:
   firebase_core: ^4.1.1
   firebase_crashlytics: ^5.0.2
   firebase_analytics: ^12.0.2
-  ffmpeg_kit_flutter_new: ^3.2.0
+  ffmpeg_kit_flutter_new_min: ^3.1.0
   app_device_integrity: ^1.1.0
   fc_native_video_thumbnail: ^0.17.2
   go_router: ^16.2.4

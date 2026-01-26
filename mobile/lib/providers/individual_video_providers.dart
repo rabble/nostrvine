@@ -27,6 +27,16 @@ const loopCheckInterval = Duration(milliseconds: 200);
 final authHeadersCacheProvider =
     StateProvider<Map<String, Map<String, String>>>((ref) => {});
 
+/// Cache for fallback video URLs by video ID
+/// When a video fails to load from cdn/stream.divine.video, we store a fallback URL
+/// to media.divine.video which is tried on the next retry
+final fallbackUrlCacheProvider = StateProvider<Map<String, String>>(
+  (ref) => {},
+);
+
+/// Blossom fallback server URL
+const _blossomFallbackServer = 'https://media.divine.video';
+
 /// Track controllers that have been scheduled for disposal.
 /// This prevents race conditions where async callbacks try to use disposed controllers.
 /// Key: videoId, Value: true if disposal has been scheduled
@@ -233,9 +243,20 @@ VideoPlayerController individualVideoController(
     category: LogCategory.system,
   );
 
+  // Check for fallback URL (set when previous attempt failed with 404/network error)
+  final fallbackCache = ref.read(fallbackUrlCacheProvider);
+  String videoUrl = fallbackCache[params.videoId] ?? params.videoUrl;
+
+  if (fallbackCache.containsKey(params.videoId)) {
+    Log.info(
+      '🔄 Using fallback URL for video ${params.videoId}: $videoUrl',
+      name: 'IndividualVideoController',
+      category: LogCategory.video,
+    );
+  }
+
   // Normalize .bin URLs by replacing extension based on MIME type from event metadata
   // CDN serves files based on hash, not extension, so we can safely rewrite for player compatibility
-  String videoUrl = params.videoUrl;
   if (videoUrl.toLowerCase().endsWith('.bin') && params.videoEvent != null) {
     final videoEvent = params.videoEvent as dynamic;
     final mimeType = videoEvent.mimeType as String?;
@@ -619,7 +640,40 @@ VideoPlayerController individualVideoController(
                 );
               });
         } else if (_isVideoError(errorMessage) && ref.mounted) {
-          // Mark video as broken for errors that indicate the video URL is non-functional
+          // Check if we can try a fallback URL before marking as broken
+          final currentFallbackCache = ref.read(fallbackUrlCacheProvider);
+          final alreadyUsedFallback = currentFallbackCache.containsKey(
+            params.videoId,
+          );
+
+          if (!alreadyUsedFallback) {
+            // Try to generate a fallback URL using sha256
+            String? sha256;
+            if (params.videoEvent != null) {
+              final videoEvent = params.videoEvent as dynamic;
+              sha256 = videoEvent.sha256 as String?;
+            }
+            // Also try extracting from URL
+            sha256 ??= _extractSha256FromUrl(params.videoUrl);
+
+            if (sha256 != null && sha256.isNotEmpty) {
+              // Store fallback URL for retry
+              final fallbackUrl = '$_blossomFallbackServer/$sha256';
+              final newCache = {...currentFallbackCache};
+              newCache[params.videoId] = fallbackUrl;
+              ref.read(fallbackUrlCacheProvider.notifier).state = newCache;
+
+              Log.info(
+                '🔄 Stored fallback URL for video $videoIdDisplay: $fallbackUrl',
+                name: 'IndividualVideoController',
+                category: LogCategory.video,
+              );
+              // Don't mark as broken - let retry use the fallback
+              return;
+            }
+          }
+
+          // No fallback available or already tried - mark video as broken
           ref
               .read(brokenVideoTrackerProvider.future)
               .then((tracker) {
@@ -677,6 +731,31 @@ VideoPlayerController individualVideoController(
   return controller;
 }
 
+/// Extract sha256 hash from a CDN URL path
+/// CDN URLs often follow the pattern: https://cdn.domain.com/{sha256hash}
+/// Returns null if URL doesn't match expected pattern
+String? _extractSha256FromUrl(String url) {
+  try {
+    final uri = Uri.parse(url);
+    final pathSegments = uri.pathSegments;
+
+    // The last path segment is often the sha256 hash
+    if (pathSegments.isNotEmpty) {
+      final lastSegment = pathSegments.last;
+      // SHA256 hashes are 64 hex characters
+      // Also handle filenames like "hash.mp4" by stripping extension
+      final cleanSegment = lastSegment.split('.').first;
+      if (cleanSegment.length == 64 &&
+          RegExp(r'^[a-fA-F0-9]+$').hasMatch(cleanSegment)) {
+        return cleanSegment.toLowerCase();
+      }
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
 /// Compute auth headers synchronously if possible (for VideoPlayerController)
 /// Returns cached headers if available, null otherwise
 Map<String, String>? _computeAuthHeadersSync(
@@ -689,30 +768,12 @@ Map<String, String>? _computeAuthHeadersSync(
     category: LogCategory.video,
   );
 
-  final ageVerificationService = ref.read(ageVerificationServiceProvider);
   final blossomAuthService = ref.read(blossomAuthServiceProvider);
 
-  Log.debug(
-    '🔐 [AUTH-SYNC] isAdultContentVerified=${ageVerificationService.isAdultContentVerified}, canCreateHeaders=${blossomAuthService.canCreateHeaders}, hasVideoEvent=${params.videoEvent != null}',
-    name: 'IndividualVideoController',
-    category: LogCategory.video,
-  );
-
-  // If user hasn't verified adult content, don't add auth headers
-  // This will cause 401 for NSFW videos, triggering the error overlay
-  if (!ageVerificationService.isAdultContentVerified) {
+  // If we can't create headers (not authenticated), return null
+  if (!blossomAuthService.canCreateHeaders) {
     Log.debug(
-      '🔐 [AUTH-SYNC] User has NOT verified adult content - returning null',
-      name: 'IndividualVideoController',
-      category: LogCategory.video,
-    );
-    return null;
-  }
-
-  // If user has verified but we can't create headers, return null
-  if (!blossomAuthService.canCreateHeaders || params.videoEvent == null) {
-    Log.debug(
-      '🔐 [AUTH-SYNC] Cannot create headers or no video event - returning null',
+      '🔐 [AUTH-SYNC] Cannot create headers (not authenticated) - returning null',
       name: 'IndividualVideoController',
       category: LogCategory.video,
     );
@@ -739,14 +800,14 @@ Map<String, String>? _computeAuthHeadersSync(
   }
 
   // No cached headers - trigger async generation for next time
-  Log.warning(
-    '🔐 [AUTH-SYNC] No cached headers found - triggering async generation (this request will fail with 401)',
+  Log.debug(
+    '🔐 [AUTH-SYNC] No cached headers found - triggering async generation',
     name: 'IndividualVideoController',
     category: LogCategory.video,
   );
   unawaited(_generateAuthHeadersAsync(ref, params));
 
-  // Return null for now - first load after verification will fail with 401
+  // Return null for now - first load may fail with 401
   // but the error overlay retry will have cached headers available
   return null;
 }
@@ -758,10 +819,33 @@ Future<void> _generateAuthHeadersAsync(
 ) async {
   try {
     final blossomAuthService = ref.read(blossomAuthServiceProvider);
-    final videoEvent = params.videoEvent as dynamic;
-    final sha256 = videoEvent.sha256 as String?;
+
+    // Try to get sha256 from video event first
+    String? sha256;
+    if (params.videoEvent != null) {
+      final videoEvent = params.videoEvent as dynamic;
+      sha256 = videoEvent.sha256 as String?;
+    }
+
+    // If no sha256 in event, try to extract from URL
+    // CDN URLs often have format: https://cdn.domain.com/{sha256hash}
+    if (sha256 == null || sha256.isEmpty) {
+      sha256 = _extractSha256FromUrl(params.videoUrl);
+      if (sha256 != null) {
+        Log.debug(
+          '🔐 Extracted sha256 from URL: ${sha256.substring(0, 8)}...',
+          name: 'IndividualVideoController',
+          category: LogCategory.video,
+        );
+      }
+    }
 
     if (sha256 == null || sha256.isEmpty) {
+      Log.debug(
+        '🔐 No sha256 available for video ${params.videoId} - cannot generate auth header',
+        name: 'IndividualVideoController',
+        category: LogCategory.video,
+      );
       return;
     }
 
@@ -824,27 +908,33 @@ Future<dynamic> _cacheVideoWithAuth(
     );
   }
 
-  // Check if we should add auth headers for NSFW content
+  // Check if we should add auth headers
   Map<String, String>? authHeaders;
 
-  final ageVerificationService = ref.read(ageVerificationServiceProvider);
   final blossomAuthService = ref.read(blossomAuthServiceProvider);
 
   Log.debug(
-    '🔐 Auth check: verified=${ageVerificationService.isAdultContentVerified}, canCreate=${blossomAuthService.canCreateHeaders}, hasEvent=${params.videoEvent != null}',
+    '🔐 Auth check: canCreate=${blossomAuthService.canCreateHeaders}',
     name: 'IndividualVideoController',
     category: LogCategory.video,
   );
 
-  // If user has verified adult content AND video has sha256 hash, create auth header
-  if (ageVerificationService.isAdultContentVerified &&
-      blossomAuthService.canCreateHeaders &&
-      params.videoEvent != null) {
-    final videoEvent = params.videoEvent as dynamic;
-    final sha256 = videoEvent.sha256 as String?;
+  // If user is authenticated, create auth header for all CDN requests
+  if (blossomAuthService.canCreateHeaders) {
+    // Try to get sha256 from video event first
+    String? sha256;
+    if (params.videoEvent != null) {
+      final videoEvent = params.videoEvent as dynamic;
+      sha256 = videoEvent.sha256 as String?;
+    }
+
+    // If no sha256 in event, try to extract from URL
+    if (sha256 == null || sha256.isEmpty) {
+      sha256 = _extractSha256FromUrl(params.videoUrl);
+    }
 
     Log.debug(
-      '🔐 Video sha256: $sha256',
+      '🔐 Video sha256: ${sha256 != null ? '${sha256.substring(0, 8)}...' : 'null'}',
       name: 'IndividualVideoController',
       category: LogCategory.video,
     );
@@ -877,7 +967,7 @@ Future<dynamic> _cacheVideoWithAuth(
       if (authHeader != null) {
         authHeaders = {'Authorization': authHeader};
         Log.info(
-          '✅ Added Blossom auth header for NSFW video cache',
+          '✅ Added Blossom auth header for video cache',
           name: 'IndividualVideoController',
           category: LogCategory.video,
         );
