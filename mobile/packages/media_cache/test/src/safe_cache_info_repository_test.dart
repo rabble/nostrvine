@@ -2,13 +2,18 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
+import 'package:mocktail/mocktail.dart';
 
+import 'helpers/mocks.dart';
 import 'helpers/test_helpers.dart';
 
 void main() {
   setUpTestEnvironment();
 
   group('SafeCacheInfoRepository', () {
+    late MockCacheInfoRepository mockRepository;
+    late Directory testDirectory;
+
     setUpAll(() async {
       await setUpTestDirectories();
     });
@@ -17,85 +22,302 @@ void main() {
       await tearDownTestDirectories();
     });
 
-    test('can be instantiated', () {
+    setUp(() {
+      mockRepository = MockCacheInfoRepository();
+      testDirectory = Directory(testSupportPath);
+    });
+
+    test('can be instantiated with default dependencies', () {
       final repo = SafeCacheInfoRepository(databaseName: 'test_db');
       expect(repo, isNotNull);
     });
 
+    test('can be instantiated with injected dependencies', () {
+      final repo = SafeCacheInfoRepository(
+        databaseName: 'test_db',
+        repository: mockRepository,
+        directoryProvider: () async => testDirectory,
+      );
+
+      expect(repo, isNotNull);
+      expect(repo.repository, same(mockRepository));
+    });
+
     group('open', () {
-      test('opens successfully with empty cache', () async {
-        final dbName = 'test_db_${DateTime.now().millisecondsSinceEpoch}';
-        final repo = SafeCacheInfoRepository(databaseName: dbName);
+      test('delegates to wrapped repository on success', () async {
+        when(() => mockRepository.open()).thenAnswer((_) async => true);
 
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db',
+          repository: mockRepository,
+          directoryProvider: () async => testDirectory,
+        );
+
+        final result = await repo.open();
+
+        expect(result, true);
+        verify(() => mockRepository.open()).called(1);
+      });
+
+      test('deletes cache file and retries on FormatException', () async {
+        var openCallCount = 0;
+        when(() => mockRepository.open()).thenAnswer((_) async {
+          openCallCount++;
+          if (openCallCount == 1) {
+            throw const FormatException('corrupted JSON');
+          }
+          return true;
+        });
+
+        // Create a corrupted cache file
+        final cacheFile = File('$testSupportPath/test_db.json');
+        await cacheFile.writeAsString('{ corrupted }');
+        expect(cacheFile.existsSync(), true);
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db',
+          repository: mockRepository,
+          directoryProvider: () async => testDirectory,
+        );
+
+        final result = await repo.open();
+
+        expect(result, true);
+        expect(openCallCount, 2); // Called twice: fail then retry
+        expect(cacheFile.existsSync(), false); // File was deleted
+      });
+
+      test(
+        'deletes cache file and retries on Unexpected end of input',
+        () async {
+          var openCallCount = 0;
+          when(() => mockRepository.open()).thenAnswer((_) async {
+            openCallCount++;
+            if (openCallCount == 1) {
+              throw Exception('Unexpected end of input');
+            }
+            return true;
+          });
+
+          // Create a cache file
+          final cacheFile = File('$testSupportPath/test_db2.json');
+          await cacheFile.writeAsString('');
+          expect(cacheFile.existsSync(), true);
+
+          final repo = SafeCacheInfoRepository(
+            databaseName: 'test_db2',
+            repository: mockRepository,
+            directoryProvider: () async => testDirectory,
+          );
+
+          final result = await repo.open();
+
+          expect(result, true);
+          expect(openCallCount, 2);
+          expect(cacheFile.existsSync(), false);
+        },
+      );
+
+      test('deletes cache file and retries on type Null exception', () async {
+        var openCallCount = 0;
+        when(() => mockRepository.open()).thenAnswer((_) async {
+          openCallCount++;
+          if (openCallCount == 1) {
+            throw Exception("type 'Null' is not a subtype of type 'Map'");
+          }
+          return true;
+        });
+
+        // Create a cache file
+        final cacheFile = File('$testSupportPath/test_db3.json');
+        await cacheFile.writeAsString('null');
+        expect(cacheFile.existsSync(), true);
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db3',
+          repository: mockRepository,
+          directoryProvider: () async => testDirectory,
+        );
+
+        final result = await repo.open();
+
+        expect(result, true);
+        expect(openCallCount, 2);
+        expect(cacheFile.existsSync(), false);
+      });
+
+      test('rethrows non-recoverable exceptions', () async {
+        when(() => mockRepository.open()).thenThrow(
+          Exception('Some other error'),
+        );
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db',
+          repository: mockRepository,
+          directoryProvider: () async => testDirectory,
+        );
+
+        expect(
+          () => repo.open(),
+          throwsA(isA<Exception>()),
+        );
+      });
+
+      test('handles missing cache file gracefully during deletion', () async {
+        var openCallCount = 0;
+        when(() => mockRepository.open()).thenAnswer((_) async {
+          openCallCount++;
+          if (openCallCount == 1) {
+            throw const FormatException('corrupted');
+          }
+          return true;
+        });
+
+        // Don't create a cache file - it doesn't exist
+        final cacheFile = File('$testSupportPath/nonexistent.json');
+        expect(cacheFile.existsSync(), false);
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'nonexistent',
+          repository: mockRepository,
+          directoryProvider: () async => testDirectory,
+        );
+
+        // Should not throw even when file doesn't exist
         final result = await repo.open();
         expect(result, true);
       });
+    });
 
-      test('handles corrupted JSON file gracefully', () async {
-        final dbName = 'corrupted_db_${DateTime.now().millisecondsSinceEpoch}';
+    group('deleteCacheFile', () {
+      test('deletes existing cache file', () async {
+        final cacheFile = File('$testSupportPath/delete_test.json');
+        await cacheFile.writeAsString('test content');
+        expect(cacheFile.existsSync(), true);
 
-        // Create a corrupted JSON file
-        final corruptedFile = File('$testSupportPath/$dbName.json');
-        await corruptedFile.writeAsString('{ this is not valid JSON }');
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'delete_test',
+          repository: mockRepository,
+          directoryProvider: () async => testDirectory,
+        );
 
-        final repo = SafeCacheInfoRepository(databaseName: dbName);
+        await repo.deleteCacheFile();
 
-        // Should not throw - parent class handles corruption gracefully
-        // by catching FormatException internally and starting fresh
-        final result = await repo.open();
-        expect(result, true);
+        expect(cacheFile.existsSync(), false);
       });
 
-      test('handles empty JSON file gracefully', () async {
-        final dbName = 'empty_db_${DateTime.now().millisecondsSinceEpoch}';
+      test('does nothing when cache file does not exist', () async {
+        final cacheFile = File('$testSupportPath/no_file.json');
+        expect(cacheFile.existsSync(), false);
 
-        // Create an empty JSON file
-        final emptyFile = File('$testSupportPath/$dbName.json');
-        await emptyFile.writeAsString('');
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'no_file',
+          repository: mockRepository,
+          directoryProvider: () async => testDirectory,
+        );
 
-        final repo = SafeCacheInfoRepository(databaseName: dbName);
+        // Should not throw
+        await repo.deleteCacheFile();
+        expect(cacheFile.existsSync(), false);
+      });
+    });
 
-        // Should not throw - should recover from empty file
-        final result = await repo.open();
+    group('delegation', () {
+      test('close delegates to wrapped repository', () async {
+        when(() => mockRepository.close()).thenAnswer((_) async => true);
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db',
+          repository: mockRepository,
+        );
+
+        final result = await repo.close();
+
         expect(result, true);
+        verify(() => mockRepository.close()).called(1);
       });
 
-      test('handles null content in JSON file', () async {
-        final dbName = 'null_db_${DateTime.now().millisecondsSinceEpoch}';
+      test('exists delegates to wrapped repository', () async {
+        when(() => mockRepository.exists()).thenAnswer((_) async => true);
 
-        // Create a JSON file with null content
-        final nullFile = File('$testSupportPath/$dbName.json');
-        await nullFile.writeAsString('null');
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db',
+          repository: mockRepository,
+        );
 
-        final repo = SafeCacheInfoRepository(databaseName: dbName);
+        final result = await repo.exists();
 
-        // Should not throw - should recover
-        final result = await repo.open();
         expect(result, true);
+        verify(() => mockRepository.exists()).called(1);
       });
 
-      test('handles valid JSON file', () async {
-        final dbName = 'valid_db_${DateTime.now().millisecondsSinceEpoch}';
+      test('get delegates to wrapped repository', () async {
+        when(() => mockRepository.get('key')).thenAnswer((_) async => null);
 
-        // Create a valid JSON cache file
-        final validFile = File('$testSupportPath/$dbName.json');
-        await validFile.writeAsString('{}');
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db',
+          repository: mockRepository,
+        );
 
-        final repo = SafeCacheInfoRepository(databaseName: dbName);
+        final result = await repo.get('key');
 
-        final result = await repo.open();
-        expect(result, true);
+        expect(result, isNull);
+        verify(() => mockRepository.get('key')).called(1);
       });
 
-      test('can be opened multiple times', () async {
-        final dbName = 'multi_open_${DateTime.now().millisecondsSinceEpoch}';
-        final repo = SafeCacheInfoRepository(databaseName: dbName);
+      test('getAllObjects delegates to wrapped repository', () async {
+        when(() => mockRepository.getAllObjects()).thenAnswer((_) async => []);
 
-        final result1 = await repo.open();
-        final result2 = await repo.open();
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db',
+          repository: mockRepository,
+        );
 
-        expect(result1, true);
-        expect(result2, true);
+        final result = await repo.getAllObjects();
+
+        expect(result, isEmpty);
+        verify(() => mockRepository.getAllObjects()).called(1);
+      });
+
+      test('delete delegates to wrapped repository', () async {
+        when(() => mockRepository.delete(1)).thenAnswer((_) async => 1);
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db',
+          repository: mockRepository,
+        );
+
+        final result = await repo.delete(1);
+
+        expect(result, 1);
+        verify(() => mockRepository.delete(1)).called(1);
+      });
+
+      test('deleteAll delegates to wrapped repository', () async {
+        when(() => mockRepository.deleteAll([1, 2])).thenAnswer((_) async => 2);
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db',
+          repository: mockRepository,
+        );
+
+        final result = await repo.deleteAll([1, 2]);
+
+        expect(result, 2);
+        verify(() => mockRepository.deleteAll([1, 2])).called(1);
+      });
+
+      test('deleteDataFile delegates to wrapped repository', () async {
+        when(() => mockRepository.deleteDataFile()).thenAnswer((_) async {});
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db',
+          repository: mockRepository,
+        );
+
+        await repo.deleteDataFile();
+
+        verify(() => mockRepository.deleteDataFile()).called(1);
       });
     });
   });

@@ -51,4 +51,5 @@
 library;
 
 export 'src/media_cache_manager.dart' show MediaCacheConfig, MediaCacheManager;
-export 'src/safe_cache_info_repository.dart' show SafeCacheInfoRepository;
+export 'src/safe_cache_info_repository.dart'
+    show DirectoryProvider, SafeCacheInfoRepository;

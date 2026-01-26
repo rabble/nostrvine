@@ -10,6 +10,9 @@ class MockFileInfo extends Mock implements FileInfo {}
 /// Uses File from the `file` package (used by flutter_cache_manager).
 class MockFile extends Mock implements File {}
 
+/// A mock [CacheInfoRepository] for testing [SafeCacheInfoRepository].
+class MockCacheInfoRepository extends Mock implements CacheInfoRepository {}
+
 /// A testable version of [MediaCacheManager] that allows overriding
 /// parent class methods for testing.
 class TestableMediaCacheManager extends MediaCacheManager {
@@ -76,50 +79,5 @@ class TestableMediaCacheManager extends MediaCacheManager {
       return mockEmptyCache!();
     }
     return super.emptyCache();
-  }
-}
-
-/// A testable version of [SafeCacheInfoRepository] that can simulate
-/// exceptions from the parent class.
-class TestableSafeCacheInfoRepository extends SafeCacheInfoRepository {
-  TestableSafeCacheInfoRepository({
-    required super.databaseName,
-    this.shouldThrowFormatException = false,
-    this.shouldThrowGenericException = false,
-    this.genericExceptionMessage,
-  });
-
-  /// If true, simulates [FormatException] from parent.
-  final bool shouldThrowFormatException;
-
-  /// If true, simulates a generic [Exception] from parent.
-  final bool shouldThrowGenericException;
-
-  /// Custom message for generic exception.
-  final String? genericExceptionMessage;
-
-  bool _hasThrown = false;
-
-  @override
-  Future<bool> open() async {
-    // Only throw once to allow recovery
-    if (!_hasThrown) {
-      if (shouldThrowFormatException) {
-        _hasThrown = true;
-        // Simulate recovery from FormatException
-        return true;
-      }
-      if (shouldThrowGenericException) {
-        _hasThrown = true;
-        final message = genericExceptionMessage ?? 'Unexpected end of input';
-        // Simulate recovery from recoverable exceptions
-        if (message.contains('Unexpected end of input') ||
-            message.contains("type 'Null'")) {
-          return true;
-        }
-        throw Exception(message);
-      }
-    }
-    return super.open();
   }
 }

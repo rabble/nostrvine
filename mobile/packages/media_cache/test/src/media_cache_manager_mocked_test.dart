@@ -28,7 +28,7 @@ void main() {
         final mockFile = MockFile();
         final mockFileInfo = MockFileInfo();
 
-        when(() => mockFile.existsSync()).thenReturn(true);
+        when(mockFile.existsSync).thenReturn(true);
         when(() => mockFile.path).thenReturn('/test/path/video.mp4');
         when(() => mockFileInfo.file).thenReturn(mockFile);
 
@@ -54,7 +54,7 @@ void main() {
         final mockFile = MockFile();
         final mockFileInfo = MockFileInfo();
 
-        when(() => mockFile.existsSync()).thenReturn(true);
+        when(mockFile.existsSync).thenReturn(true);
         when(() => mockFile.path).thenReturn('/test/path/new_video.mp4');
         when(() => mockFileInfo.file).thenReturn(mockFile);
 
@@ -103,7 +103,7 @@ void main() {
         final mockFileInfo = MockFileInfo();
         var downloadCount = 0;
 
-        when(() => mockFile.existsSync()).thenReturn(true);
+        when(mockFile.existsSync).thenReturn(true);
         when(() => mockFile.path).thenReturn('/test/path/video.mp4');
         when(() => mockFileInfo.file).thenReturn(mockFile);
 
@@ -147,7 +147,7 @@ void main() {
         final mockFileInfo = MockFileInfo();
         Map<String, String>? capturedHeaders;
 
-        when(() => mockFile.existsSync()).thenReturn(true);
+        when(mockFile.existsSync).thenReturn(true);
         when(() => mockFile.path).thenReturn('/test/path/video.mp4');
         when(() => mockFileInfo.file).thenReturn(mockFile);
 
@@ -179,7 +179,7 @@ void main() {
         final mockFile = MockFile();
         final mockFileInfo = MockFileInfo();
 
-        when(() => mockFile.existsSync()).thenReturn(true);
+        when(mockFile.existsSync).thenReturn(true);
         when(() => mockFile.path).thenReturn('/test/path/video.mp4');
         when(() => mockFileInfo.file).thenReturn(mockFile);
 
@@ -274,7 +274,7 @@ void main() {
         final mockFileInfo = MockFileInfo();
         var downloadCount = 0;
 
-        when(() => mockFile.existsSync()).thenReturn(true);
+        when(mockFile.existsSync).thenReturn(true);
         when(() => mockFile.path).thenReturn('/test/path/video.mp4');
         when(() => mockFileInfo.file).thenReturn(mockFile);
 
@@ -305,7 +305,7 @@ void main() {
         final mockFileInfo = MockFileInfo();
         final capturedHeaders = <String, Map<String, String>?>{};
 
-        when(() => mockFile.existsSync()).thenReturn(true);
+        when(mockFile.existsSync).thenReturn(true);
         when(() => mockFile.path).thenReturn('/test/path/video.mp4');
         when(() => mockFileInfo.file).thenReturn(mockFile);
 
