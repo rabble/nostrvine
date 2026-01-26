@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - Explore Tab Improvements (2026-01-26)
+
+#### Features
+- **Dynamic Classics tab** - Classics tab now only shows when connected to a Funnelcake-enabled relay
+  - Tab is completely hidden when Funnelcake API unavailable (no "unavailable" message)
+  - Uses `TickerProviderStateMixin` for dynamic TabController rebuilding
+  - Tab count changes reactively when switching environments
+
+- **Popular Videos uses trending** - Changed from historical loops to recent engagement
+  - Uses `sort=trending` API endpoint instead of `sort=loops`
+  - Shows videos with recent likes/engagement, can include both classic and new videos
+  - Falls back to supplementing with recent videos if trending returns < 10 results
+  - Nostr fallback sorts by `nostrLikeCount` instead of historical `originalLoops`
+
+- **Centralized Funnelcake availability** - Added single source of truth for API availability
+  - New `funnelcakeAvailableProvider` in curation_providers.dart
+  - All providers watch this instead of checking individually
+  - Invalidates automatically when environment changes
+
+#### Technical Details
+- Modified `lib/screens/explore_screen.dart`:
+  - Dynamic `_tabCount` getter (3 or 4 based on availability)
+  - Watch `classicVinesAvailableProvider` and rebuild TabController on change
+  - Conditional tabs and TabBarView children using `if (_classicsAvailable)`
+
+- Modified `lib/providers/popular_videos_feed_provider.dart`:
+  - Changed from `getVideosByLoops()` to `getTrendingVideos()`
+  - Added fallback to supplement with `getRecentVideos()` if trending < 10 videos
+  - Nostr fallback sorts by likes instead of loops
+
+- Modified `lib/providers/curation_providers.dart`:
+  - Added `funnelcakeAvailableProvider` with 30-second cache timeout
+  - Added `classicVinesAvailableProvider` that delegates to Funnelcake check
+
 ### Fixed - Relay Management Improvements (2026-01-24)
 
 #### Bug Fixes

@@ -46,15 +46,17 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
 
     final analyticsService = ref.read(analyticsApiServiceProvider);
     final videoEventService = ref.read(videoEventServiceProvider);
+    final funnelcakeAvailable =
+        ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
 
     Log.info(
-      '🎬 ClassicVinesFeed: Analytics service available: ${analyticsService.isAvailable}',
+      '🎬 ClassicVinesFeed: Funnelcake available: $funnelcakeAvailable',
       name: 'ClassicVinesFeedProvider',
       category: LogCategory.video,
     );
 
     // Try REST API first (Funnelcake has comprehensive classic Vine data)
-    if (analyticsService.isAvailable) {
+    if (funnelcakeAvailable) {
       try {
         final apiVideos = await analyticsService.getClassicVines(
           limit: _currentLimit,
@@ -145,12 +147,14 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     state = AsyncData(currentState.copyWith(isLoadingMore: true));
 
     try {
-      final analyticsService = ref.read(analyticsApiServiceProvider);
-      if (!analyticsService.isAvailable) {
+      final funnelcakeAvailable =
+          ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
+      if (!funnelcakeAvailable) {
         state = AsyncData(currentState.copyWith(isLoadingMore: false));
         return;
       }
 
+      final analyticsService = ref.read(analyticsApiServiceProvider);
       final newLimit = _currentLimit + 50;
       final apiVideos = await analyticsService.getClassicVines(limit: newLimit);
 
@@ -228,13 +232,12 @@ int classicVinesFeedCount(Ref ref) {
 
 /// Provider to check if classic vines are available
 ///
-/// Always returns true since we have both REST API and Nostr fallback.
-/// REST API provides comprehensive classic Vine data when available.
-/// Nostr fallback uses discovery videos with embedded loop stats (originalLoops > 0).
+/// Delegates to the centralized funnelcakeAvailableProvider.
+/// Classic vines require Funnelcake REST API to be available.
 @riverpod
-bool classicVinesAvailable(Ref ref) {
-  // Classic vines are always available - REST API or Nostr fallback
-  return true;
+Future<bool> classicVinesAvailable(Ref ref) async {
+  final funnelcakeAsync = ref.watch(funnelcakeAvailableProvider);
+  return funnelcakeAsync.asData?.value ?? false;
 }
 
 /// Data model for a top classic Viner

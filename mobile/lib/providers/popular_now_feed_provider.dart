@@ -63,9 +63,11 @@ class PopularNowFeed extends _$PopularNowFeed {
       );
     }
 
-    // Try REST API first if available
+    // Try REST API first if available (use centralized availability check)
+    final funnelcakeAvailable =
+        ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
     final analyticsService = ref.read(analyticsApiServiceProvider);
-    if (analyticsService.isAvailable) {
+    if (funnelcakeAvailable) {
       Log.info(
         '🆕 PopularNowFeed: Trying Funnelcake REST API first',
         name: 'PopularNowFeedProvider',

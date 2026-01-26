@@ -1,5 +1,5 @@
-// ABOUTME: Popular Videos feed provider showing videos sorted by loop count
-// ABOUTME: Tries Funnelcake REST API (sort=loops) first, falls back to Nostr if unavailable
+// ABOUTME: Popular Videos feed provider showing trending videos (recent engagement)
+// ABOUTME: Tries Funnelcake REST API (sort=trending) first, falls back to Nostr if unavailable
 
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
@@ -13,10 +13,10 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'popular_videos_feed_provider.g.dart';
 
-/// Popular Videos feed provider - shows videos sorted by loop count (highest first)
+/// Popular Videos feed provider - shows trending videos by recent engagement
 ///
-/// Strategy: Try Funnelcake REST API first (sort=loops) for accurate loop counts,
-/// fall back to Nostr subscription with local sorting if REST API is unavailable.
+/// Strategy: Try Funnelcake REST API first (sort=trending) for current popularity,
+/// fall back to Nostr subscription with local engagement sorting if REST API is unavailable.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
@@ -49,17 +49,71 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       );
     }
 
-    // Try REST API first
+    // Try REST API first (use centralized availability check)
     final analyticsService = ref.read(analyticsApiServiceProvider);
-    if (analyticsService.isAvailable) {
+
+    // Quick sync check: is API even configured?
+    final apiConfigured = analyticsService.isAvailable;
+
+    // If API is NOT configured, go straight to Nostr fallback
+    // Otherwise, wait for the async availability check
+    final funnelcakeAvailableAsync = ref.watch(funnelcakeAvailableProvider);
+
+    // Determine if we should use Funnelcake
+    final bool useFunnelcake;
+    if (!apiConfigured) {
+      // No API URL = definitely use Nostr
+      useFunnelcake = false;
       Log.info(
-        'PopularVideosFeed: Trying Funnelcake REST API (sort=loops)',
+        'PopularVideosFeed: No API URL configured, using Nostr',
+        name: 'PopularVideosFeedProvider',
+        category: LogCategory.video,
+      );
+    } else if (funnelcakeAvailableAsync.isLoading) {
+      // API configured but still checking availability - wait for it
+      Log.info(
+        'PopularVideosFeed: Waiting for Funnelcake availability check...',
+        name: 'PopularVideosFeedProvider',
+        category: LogCategory.video,
+      );
+      return VideoFeedState(
+        videos: const [],
+        hasMoreContent: true,
+        isLoadingMore: true,
+      );
+    } else {
+      // API configured and check complete - use result
+      useFunnelcake = funnelcakeAvailableAsync.asData?.value ?? false;
+    }
+
+    if (useFunnelcake) {
+      Log.info(
+        'PopularVideosFeed: Trying Funnelcake REST API (sort=trending)',
         name: 'PopularVideosFeedProvider',
         category: LogCategory.video,
       );
 
       try {
-        final apiVideos = await analyticsService.getVideosByLoops(limit: 100);
+        var apiVideos = await analyticsService.getTrendingVideos(limit: 100);
+
+        // If trending returns too few videos, supplement with recent videos
+        if (apiVideos.length < 10) {
+          Log.info(
+            'PopularVideosFeed: Trending returned only ${apiVideos.length} videos, supplementing with recent',
+            name: 'PopularVideosFeedProvider',
+            category: LogCategory.video,
+          );
+          final recentVideos = await analyticsService.getRecentVideos(
+            limit: 100,
+          );
+          // Merge: trending first, then recent (excluding duplicates)
+          final existingIds = apiVideos.map((v) => v.id).toSet();
+          final additionalVideos = recentVideos
+              .where((v) => !existingIds.contains(v.id))
+              .toList();
+          apiVideos = [...apiVideos, ...additionalVideos];
+        }
+
         if (apiVideos.isNotEmpty) {
           _usingRestApi = true;
           _nextCursor = _getOldestTimestamp(apiVideos);
@@ -70,7 +124,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
               .toList();
 
           Log.info(
-            'PopularVideosFeed: Got ${filteredVideos.length} videos from REST API (top loops: ${filteredVideos.isNotEmpty ? filteredVideos.first.originalLoops : 0})',
+            'PopularVideosFeed: Got ${filteredVideos.length} videos from REST API (trending + recent)',
             name: 'PopularVideosFeedProvider',
             category: LogCategory.video,
           );
@@ -115,15 +169,15 @@ class PopularVideosFeed extends _$PopularVideosFeed {
             .where((v) => v.isSupportedOnCurrentPlatform)
             .toList();
 
-        // Sort by loop count locally (Nostr doesn't provide loop-sorted data)
+        // Sort by likes for trending (use nostrLikeCount, fall back to originalLikes)
         filteredVideos.sort((a, b) {
-          final aLoops = a.originalLoops ?? 0;
-          final bLoops = b.originalLoops ?? 0;
-          return bLoops.compareTo(aLoops);
+          final aLikes = a.nostrLikeCount ?? a.originalLikes ?? 0;
+          final bLikes = b.nostrLikeCount ?? b.originalLikes ?? 0;
+          return bLikes.compareTo(aLikes);
         });
 
         Log.info(
-          'PopularVideosFeed: Nostr fallback - ${filteredVideos.length} videos (top loops: ${filteredVideos.isNotEmpty ? filteredVideos.first.originalLoops : 0})',
+          'PopularVideosFeed: Nostr fallback - ${filteredVideos.length} videos sorted by likes',
           name: 'PopularVideosFeedProvider',
           category: LogCategory.video,
         );
@@ -176,7 +230,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
           category: LogCategory.video,
         );
 
-        final apiVideos = await analyticsService.getVideosByLoops(
+        final apiVideos = await analyticsService.getTrendingVideos(
           limit: 50,
           before: _nextCursor,
         );
@@ -256,7 +310,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
     if (_usingRestApi) {
       try {
         final analyticsService = ref.read(analyticsApiServiceProvider);
-        final apiVideos = await analyticsService.getVideosByLoops(
+        final apiVideos = await analyticsService.getTrendingVideos(
           limit: 100,
           forceRefresh: true,
         );

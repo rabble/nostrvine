@@ -49,9 +49,11 @@ class ProfileFeed extends _$ProfileFeed {
     final videoEventService = ref.watch(videoEventServiceProvider);
     List<VideoEvent> authorVideos = [];
 
-    // Try REST API first if available
+    // Try REST API first if available (use centralized availability check)
+    final funnelcakeAvailable =
+        ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
     final analyticsService = ref.read(analyticsApiServiceProvider);
-    if (analyticsService.isAvailable) {
+    if (funnelcakeAvailable) {
       Log.info(
         'ProfileFeed: Trying Funnelcake REST API first for user=$userId',
         name: 'ProfileFeedProvider',

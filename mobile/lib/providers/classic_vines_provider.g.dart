@@ -48,7 +48,7 @@ final class ClassicVinesFeedProvider
   ClassicVinesFeed create() => ClassicVinesFeed();
 }
 
-String _$classicVinesFeedHash() => r'e45c60ab31c384b667f426ebeb42308d48821c0f';
+String _$classicVinesFeedHash() => r'88c54ce5fbf492f3becc81ef03af447a42092d97';
 
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
@@ -171,27 +171,24 @@ String _$classicVinesFeedCountHash() =>
 
 /// Provider to check if classic vines are available
 ///
-/// Always returns true since we have both REST API and Nostr fallback.
-/// REST API provides comprehensive classic Vine data when available.
-/// Nostr fallback uses discovery videos with embedded loop stats (originalLoops > 0).
+/// Delegates to the centralized funnelcakeAvailableProvider.
+/// Classic vines require Funnelcake REST API to be available.
 
 @ProviderFor(classicVinesAvailable)
 const classicVinesAvailableProvider = ClassicVinesAvailableProvider._();
 
 /// Provider to check if classic vines are available
 ///
-/// Always returns true since we have both REST API and Nostr fallback.
-/// REST API provides comprehensive classic Vine data when available.
-/// Nostr fallback uses discovery videos with embedded loop stats (originalLoops > 0).
+/// Delegates to the centralized funnelcakeAvailableProvider.
+/// Classic vines require Funnelcake REST API to be available.
 
 final class ClassicVinesAvailableProvider
-    extends $FunctionalProvider<bool, bool, bool>
-    with $Provider<bool> {
+    extends $FunctionalProvider<AsyncValue<bool>, bool, FutureOr<bool>>
+    with $FutureModifier<bool>, $FutureProvider<bool> {
   /// Provider to check if classic vines are available
   ///
-  /// Always returns true since we have both REST API and Nostr fallback.
-  /// REST API provides comprehensive classic Vine data when available.
-  /// Nostr fallback uses discovery videos with embedded loop stats (originalLoops > 0).
+  /// Delegates to the centralized funnelcakeAvailableProvider.
+  /// Classic vines require Funnelcake REST API to be available.
   const ClassicVinesAvailableProvider._()
     : super(
         from: null,
@@ -208,25 +205,17 @@ final class ClassicVinesAvailableProvider
 
   @$internal
   @override
-  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $FutureProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $FutureProviderElement(pointer);
 
   @override
-  bool create(Ref ref) {
+  FutureOr<bool> create(Ref ref) {
     return classicVinesAvailable(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(bool value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<bool>(value),
-    );
   }
 }
 
 String _$classicVinesAvailableHash() =>
-    r'1cf1e7c441a54c093fd9abfbaf4bc97c955ae7df';
+    r'39ee4ffc7ab9d5494577f0ef017908bc6103f394';
 
 /// Provider for top classic Viners derived from classic videos
 ///

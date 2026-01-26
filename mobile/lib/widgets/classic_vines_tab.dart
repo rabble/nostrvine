@@ -37,7 +37,8 @@ class _ClassicVinesTabState extends ConsumerState<ClassicVinesTab> {
   @override
   Widget build(BuildContext context) {
     final classicVinesAsync = ref.watch(classicVinesFeedProvider);
-    final isAvailable = ref.watch(classicVinesAvailableProvider);
+    final isAvailableAsync = ref.watch(classicVinesAvailableProvider);
+    final isAvailable = isAvailableAsync.asData?.value ?? false;
 
     Log.debug(
       '🎬 ClassicVinesTab: AsyncValue state - isLoading: ${classicVinesAsync.isLoading}, '
@@ -46,7 +47,7 @@ class _ClassicVinesTabState extends ConsumerState<ClassicVinesTab> {
       category: LogCategory.video,
     );
 
-    // If REST API not available, show unavailable state
+    // If REST API not available (or still checking), show unavailable state
     if (!isAvailable) {
       return const _ClassicVinesUnavailableState();
     }

@@ -233,8 +233,11 @@ class HomeFeed extends _$HomeFeed {
     List<VideoEvent> followingVideosFromSource = [];
 
     // Try REST API first if available and user is authenticated
+    // Use centralized availability check
+    final funnelcakeAvailable =
+        ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
     final analyticsService = ref.read(analyticsApiServiceProvider);
-    if (analyticsService.isAvailable &&
+    if (funnelcakeAvailable &&
         currentUserPubkey != null &&
         followingPubkeys.isNotEmpty) {
       Log.info(

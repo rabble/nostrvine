@@ -8,6 +8,7 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/models/curation_set.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/state/curation_state.dart';
@@ -22,6 +23,65 @@ AnalyticsApiService analyticsApiService(Ref ref) {
   final environmentConfig = ref.watch(currentEnvironmentProvider);
 
   return AnalyticsApiService(baseUrl: environmentConfig.apiBaseUrl);
+}
+
+/// Single source of truth for Funnelcake REST API availability.
+///
+/// Uses capability detection - actually probes the API to verify it works.
+/// Re-checks when environment or relay configuration changes.
+///
+/// All feed providers should watch this instead of checking
+/// `analyticsService.isAvailable` directly.
+@Riverpod(keepAlive: true)
+class FunnelcakeAvailable extends _$FunnelcakeAvailable {
+  @override
+  Future<bool> build() async {
+    final analyticsService = ref.watch(analyticsApiServiceProvider);
+
+    // Quick check: is the API configured at all?
+    if (!analyticsService.isAvailable) {
+      Log.debug(
+        '🔌 Funnelcake: API not configured',
+        name: 'FunnelcakeAvailable',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+
+    // Watch relay changes to re-probe when relays change
+    final nostrService = ref.watch(nostrServiceProvider);
+    // Access relayStatuses to establish dependency (triggers rebuild on change)
+    final relayCount = nostrService.relayStatuses.length;
+
+    // Capability detection: try a lightweight API call
+    try {
+      Log.debug(
+        '🔌 Funnelcake: Probing API availability (relays: $relayCount)',
+        name: 'FunnelcakeAvailable',
+        category: LogCategory.system,
+      );
+      // Use trending endpoint with limit=1 as lightweight probe
+      await analyticsService.getTrendingVideos(limit: 1);
+      Log.info(
+        '✅ Funnelcake: API available',
+        name: 'FunnelcakeAvailable',
+        category: LogCategory.system,
+      );
+      return true;
+    } catch (e) {
+      Log.info(
+        '❌ Funnelcake: API unavailable - $e',
+        name: 'FunnelcakeAvailable',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+  }
+
+  /// Force re-check of Funnelcake availability
+  void refresh() {
+    ref.invalidateSelf();
+  }
 }
 
 /// Main curation provider that manages curated content sets

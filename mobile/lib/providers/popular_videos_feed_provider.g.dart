@@ -8,10 +8,10 @@ part of 'popular_videos_feed_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Popular Videos feed provider - shows videos sorted by loop count (highest first)
+/// Popular Videos feed provider - shows trending videos by recent engagement
 ///
-/// Strategy: Try Funnelcake REST API first (sort=loops) for accurate loop counts,
-/// fall back to Nostr subscription with local sorting if REST API is unavailable.
+/// Strategy: Try Funnelcake REST API first (sort=trending) for current popularity,
+/// fall back to Nostr subscription with local engagement sorting if REST API is unavailable.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
@@ -20,20 +20,20 @@ part of 'popular_videos_feed_provider.dart';
 @ProviderFor(PopularVideosFeed)
 const popularVideosFeedProvider = PopularVideosFeedProvider._();
 
-/// Popular Videos feed provider - shows videos sorted by loop count (highest first)
+/// Popular Videos feed provider - shows trending videos by recent engagement
 ///
-/// Strategy: Try Funnelcake REST API first (sort=loops) for accurate loop counts,
-/// fall back to Nostr subscription with local sorting if REST API is unavailable.
+/// Strategy: Try Funnelcake REST API first (sort=trending) for current popularity,
+/// fall back to Nostr subscription with local engagement sorting if REST API is unavailable.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
 /// - appReady gate becomes true
 final class PopularVideosFeedProvider
     extends $AsyncNotifierProvider<PopularVideosFeed, VideoFeedState> {
-  /// Popular Videos feed provider - shows videos sorted by loop count (highest first)
+  /// Popular Videos feed provider - shows trending videos by recent engagement
   ///
-  /// Strategy: Try Funnelcake REST API first (sort=loops) for accurate loop counts,
-  /// fall back to Nostr subscription with local sorting if REST API is unavailable.
+  /// Strategy: Try Funnelcake REST API first (sort=trending) for current popularity,
+  /// fall back to Nostr subscription with local engagement sorting if REST API is unavailable.
   ///
   /// Rebuilds when:
   /// - Pull to refresh
@@ -57,12 +57,12 @@ final class PopularVideosFeedProvider
   PopularVideosFeed create() => PopularVideosFeed();
 }
 
-String _$popularVideosFeedHash() => r'5d86d0ed130e6684bc553ba60374cf0545d730ca';
+String _$popularVideosFeedHash() => r'77f919b0d5d47458bc80d55274e9a7a35f4441a3';
 
-/// Popular Videos feed provider - shows videos sorted by loop count (highest first)
+/// Popular Videos feed provider - shows trending videos by recent engagement
 ///
-/// Strategy: Try Funnelcake REST API first (sort=loops) for accurate loop counts,
-/// fall back to Nostr subscription with local sorting if REST API is unavailable.
+/// Strategy: Try Funnelcake REST API first (sort=trending) for current popularity,
+/// fall back to Nostr subscription with local engagement sorting if REST API is unavailable.
 ///
 /// Rebuilds when:
 /// - Pull to refresh
