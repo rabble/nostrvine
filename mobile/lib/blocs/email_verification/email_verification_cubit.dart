@@ -144,7 +144,7 @@ class EmailVerificationCubit extends Cubit<EmailVerificationState> {
             // Edge case: completion detected but missing code or verifier
             Log.error(
               'Verification complete but missing code or verifier! '
-              'code=${result.code}, verifier=${_pendingVerifier}',
+              'code=${result.code}, verifier=$_pendingVerifier',
               name: 'EmailVerificationCubit',
               category: LogCategory.auth,
             );

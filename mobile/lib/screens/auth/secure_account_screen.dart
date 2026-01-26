@@ -1,6 +1,7 @@
 // ABOUTME: Native email/password authentication screen for diVine
 // ABOUTME: Handles both login and registration with email verification flow
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,7 +9,6 @@ import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/error_message.dart';
@@ -27,8 +27,7 @@ class SecureAccountScreen extends ConsumerStatefulWidget {
       _SecureAccountScreenState();
 }
 
-class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
-    with SingleTickerProviderStateMixin {
+class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -42,6 +41,12 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
   @override
   void initState() {
     super.initState();
+  }
+
+  void _setErrorMessage(String? message) {
+    if (mounted) {
+      setState(() => _errorMessage = message);
+    }
   }
 
   @override
@@ -91,14 +96,19 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
         name: 'SecureAccountScreen',
         category: LogCategory.auth,
       );
-      setState(() {
-        _errorMessage = 'An unexpected error occurred. Please try again.';
-      });
+      _setErrorMessage('An unexpected error occurred. Please try again.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
+  }
+
+  String? _validateConfirmPassword(String? value) {
+    if (value != _passwordController.text) {
+      return 'Passwords do not match';
+    }
+    return null;
   }
 
   Future<void> _handleRegister({
@@ -115,9 +125,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
     );
 
     if (!result.success) {
-      setState(() {
-        _errorMessage = result.error ?? 'Registration failed';
-      });
+      _setErrorMessage(result.error ?? 'Registration failed');
       return;
     }
 
@@ -134,14 +142,12 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
         _showVerificationDialog(email);
       }
     } else {
-      setState(() {
-        _errorMessage = 'Registration complete. Please check your email.';
-      });
+      _setErrorMessage('Registration complete. Please check your email.');
     }
   }
 
   void _showVerificationDialog(String email) {
-    showDialog(
+    showDialog<void>(
       context: context,
       barrierDismissible: true,
       builder: (dialogContext) => _VerificationDialog(
@@ -175,11 +181,16 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
     }
   }
 
-  String? _validateConfirmPassword(String? value) {
-    if (value != _passwordController.text) {
-      return 'Passwords do not match';
-    }
-    return null;
+  InputDecoration _buildInputDecoration({
+    required String label,
+    required IconData icon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+      suffixIcon: suffixIcon,
+    );
   }
 
   @override
@@ -316,9 +327,9 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
                                       color: VineTheme.vineGreen,
                                     ),
                                   )
-                                : Text(
+                                : const Text(
                                     'Create Account',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                     ),
@@ -336,18 +347,6 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen>
           ),
         ),
       ),
-    );
-  }
-
-  InputDecoration _buildInputDecoration({
-    required String label,
-    required IconData icon,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon),
-      suffixIcon: suffixIcon,
     );
   }
 }

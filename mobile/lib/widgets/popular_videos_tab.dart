@@ -1,11 +1,10 @@
 // ABOUTME: Popular Videos tab widget showing trending videos sorted by loop count
-// ABOUTME: Extracted from ExploreScreen for better separation of concerns
+// ABOUTME: Uses REST API (sort=loops) with Nostr fallback for accurate loop-based sorting
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/providers/video_events_providers.dart';
+import 'package:openvine/providers/popular_videos_feed_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
@@ -58,36 +57,32 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
     _errorTracker = widget.errorTracker;
   }
 
-  // Trending tab sort cache - avoid re-sorting videos on every rebuild
-  List<VideoEvent>? _cachedTrendingVideos;
-  List<VideoEvent>? _lastRawVideos;
-
   @override
   Widget build(BuildContext context) {
-    final videoEventsAsync = ref.watch(videoEventsProvider);
+    // Use popularVideosFeedProvider which tries REST API (sort=loops) first,
+    // then falls back to Nostr if unavailable
+    final feedAsync = ref.watch(popularVideosFeedProvider);
 
     Log.debug(
-      '🔍 PopularVinesTab: AsyncValue state - isLoading: ${videoEventsAsync.isLoading}, '
-      'hasValue: ${videoEventsAsync.hasValue}, hasError: ${videoEventsAsync.hasError}, '
-      'value length: ${videoEventsAsync.value?.length ?? 0}',
-      name: 'ExploreScreen',
+      '🔍 PopularVideosTab: AsyncValue state - isLoading: ${feedAsync.isLoading}, '
+      'hasValue: ${feedAsync.hasValue}, hasError: ${feedAsync.hasError}',
+      name: 'PopularVideosTab',
       category: LogCategory.video,
     );
 
     // Track feed loading start
-    if (videoEventsAsync.isLoading && _feedLoadStartTime == null) {
+    if (feedAsync.isLoading && _feedLoadStartTime == null) {
       _feedLoadStartTime = DateTime.now();
-      _feedTracker?.startFeedLoad('trending');
+      _feedTracker?.startFeedLoad('popular');
     }
 
     // CRITICAL: Check hasValue FIRST before isLoading
-    // StreamProviders can have both isLoading:true and hasValue:true during rebuilds
-    if (videoEventsAsync.hasValue && videoEventsAsync.value != null) {
-      return _buildDataState(videoEventsAsync.value!);
+    if (feedAsync.hasValue && feedAsync.value != null) {
+      return _buildDataState(feedAsync.value!.videos);
     }
 
-    if (videoEventsAsync.hasError) {
-      _trackErrorState(videoEventsAsync.error);
+    if (feedAsync.hasError) {
+      _trackErrorState(feedAsync.error);
       return const _PopularVideosErrorState();
     }
 
@@ -96,71 +91,40 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
     return const _PopularVideosLoadingState();
   }
 
-  Widget _buildDataState(List<VideoEvent> allVideos) {
-    // Filter out WebM videos on iOS/macOS (not supported by AVPlayer)
-    final videos = allVideos
-        .where((v) => v.isSupportedOnCurrentPlatform)
-        .toList();
+  Widget _buildDataState(List<VideoEvent> videos) {
+    // Videos are already sorted by loops from the provider (REST API or Nostr fallback)
+    // and filtered for platform compatibility
 
     Log.info(
-      '✅ TrendingTab: Data state - ${videos.length} videos (filtered from ${allVideos.length} total)',
-      name: 'ExploreScreen',
+      '✅ PopularVideosTab: Data state - ${videos.length} videos '
+      '(top loops: ${videos.isNotEmpty ? videos.first.originalLoops ?? 0 : 0})',
+      name: 'PopularVideosTab',
       category: LogCategory.video,
     );
 
     // Track feed loaded with videos
     if (_feedLoadStartTime != null) {
-      _feedTracker?.markFirstVideosReceived('trending', videos.length);
-      _feedTracker?.markFeedDisplayed('trending', videos.length);
+      _feedTracker?.markFirstVideosReceived('popular', videos.length);
+      _feedTracker?.markFeedDisplayed('popular', videos.length);
       _screenAnalytics?.markDataLoaded(
         'explore_screen',
-        dataMetrics: {'tab': 'trending', 'video_count': videos.length},
+        dataMetrics: {'tab': 'popular', 'video_count': videos.length},
       );
       _feedLoadStartTime = null;
     }
 
     // Track empty feed
     if (videos.isEmpty) {
-      _feedTracker?.trackEmptyFeed('trending');
+      _feedTracker?.trackEmptyFeed('popular');
     }
 
-    // PERFORMANCE OPTIMIZATION: Only re-sort if video list changed
-    final List<VideoEvent> sortedVideos;
-    if (identical(videos, _lastRawVideos) && _cachedTrendingVideos != null) {
-      // Same video list object - use cached sort
-      sortedVideos = _cachedTrendingVideos!;
-      Log.debug(
-        '✨ TRENDING CACHE HIT: Reusing sorted list (${sortedVideos.length} videos)',
-        name: 'ExploreScreen',
-        category: LogCategory.video,
-      );
-    } else {
-      // New video list - sort and cache
-      sortedVideos = List<VideoEvent>.from(videos);
-      sortedVideos.sort((a, b) {
-        final aLoops = a.originalLoops ?? 0;
-        final bLoops = b.originalLoops ?? 0;
-        return bLoops.compareTo(aLoops); // Descending order
-      });
-
-      // Update cache
-      _lastRawVideos = videos;
-      _cachedTrendingVideos = sortedVideos;
-
-      Log.verbose(
-        'Trending: sorted ${sortedVideos.length} videos by loop count',
-        name: 'ExploreScreen',
-        category: LogCategory.video,
-      );
-    }
-
-    return _PopularVideosTrendingContent(videos: sortedVideos);
+    return _PopularVideosTrendingContent(videos: videos);
   }
 
   void _trackErrorState(Object? error) {
     Log.error(
-      '❌ TrendingTab: Error state - $error',
-      name: 'ExploreScreen',
+      '❌ PopularVideosTab: Error state - $error',
+      name: 'PopularVideosTab',
       category: LogCategory.video,
     );
 
@@ -168,12 +132,12 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
         ? DateTime.now().difference(_feedLoadStartTime!).inMilliseconds
         : null;
     _feedTracker?.trackFeedError(
-      'trending',
+      'popular',
       errorType: 'load_failed',
       errorMessage: error.toString(),
     );
     _errorTracker?.trackFeedLoadError(
-      feedType: 'trending',
+      feedType: 'popular',
       errorType: 'provider_error',
       errorMessage: error.toString(),
       loadTimeMs: loadTime,
@@ -183,8 +147,8 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
 
   void _trackLoadingState() {
     Log.info(
-      '⏳ TrendingTab: Showing loading indicator',
-      name: 'ExploreScreen',
+      '⏳ PopularVideosTab: Showing loading indicator',
+      name: 'PopularVideosTab',
       category: LogCategory.video,
     );
 
@@ -194,10 +158,10 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
           .inMilliseconds;
       if (elapsed > 5000) {
         _errorTracker?.trackSlowOperation(
-          operation: 'trending_feed_load',
+          operation: 'popular_feed_load',
           durationMs: elapsed,
           thresholdMs: 5000,
-          location: 'explore_trending',
+          location: 'explore_popular',
         );
       }
     }
@@ -239,10 +203,10 @@ class _PopularVideosTrendingContent extends ConsumerWidget {
             },
             onRefresh: () async {
               Log.info(
-                '🔄 ExploreScreen: Refreshing trending tab',
+                '🔄 PopularVideosTab: Refreshing',
                 category: LogCategory.video,
               );
-              await ref.read(videoEventsProvider.notifier).refresh();
+              await ref.read(popularVideosFeedProvider.notifier).refresh();
             },
             emptyBuilder: () => const _PopularVideosEmptyState(),
           ),
