@@ -25,6 +25,13 @@ class VideoInteractionsLikeToggled extends VideoInteractionsEvent {
   const VideoInteractionsLikeToggled();
 }
 
+/// Request to toggle repost status.
+///
+/// Will repost if not reposted, unrepost if already reposted.
+class VideoInteractionsRepostToggled extends VideoInteractionsEvent {
+  const VideoInteractionsRepostToggled();
+}
+
 /// Request to start listening for liked IDs changes from the repository.
 ///
 /// This should be dispatched once when the video feed item is initialized.

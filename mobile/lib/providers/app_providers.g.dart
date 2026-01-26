@@ -426,6 +426,62 @@ final class RelayStatisticsBridgeProvider
 String _$relayStatisticsBridgeHash() =>
     r'8e5867762c8201c7244d2f44ba3bc84cbc63f012';
 
+/// Bridge provider that detects when the configured relay set changes
+/// (relays added or removed) and triggers a full feed reset+resubscribe.
+/// Debounces for 2 seconds to collapse rapid add/remove operations.
+/// Only reacts to set membership changes, not connection state flapping.
+
+@ProviderFor(relaySetChangeBridge)
+const relaySetChangeBridgeProvider = RelaySetChangeBridgeProvider._();
+
+/// Bridge provider that detects when the configured relay set changes
+/// (relays added or removed) and triggers a full feed reset+resubscribe.
+/// Debounces for 2 seconds to collapse rapid add/remove operations.
+/// Only reacts to set membership changes, not connection state flapping.
+
+final class RelaySetChangeBridgeProvider
+    extends $FunctionalProvider<void, void, void>
+    with $Provider<void> {
+  /// Bridge provider that detects when the configured relay set changes
+  /// (relays added or removed) and triggers a full feed reset+resubscribe.
+  /// Debounces for 2 seconds to collapse rapid add/remove operations.
+  /// Only reacts to set membership changes, not connection state flapping.
+  const RelaySetChangeBridgeProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'relaySetChangeBridgeProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$relaySetChangeBridgeHash();
+
+  @$internal
+  @override
+  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  void create(Ref ref) {
+    return relaySetChangeBridge(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$relaySetChangeBridgeHash() =>
+    r'd57982bcec97c066fb5db91322facf82744f8e60';
+
 /// Analytics service with opt-out support
 
 @ProviderFor(analyticsService)
@@ -3409,13 +3465,16 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'62defb128dde642ba8b874984307d47d42a8dd63';
+String _$likesRepositoryHash() => r'bade0098417d673eb8e253ee8f4f31074387dc9a';
 
 /// Provider for RepostsRepository instance
 ///
 /// Creates a RepostsRepository for managing user reposts (Kind 16 generic
 /// reposts).
-/// Uses AuthService.createAndSignEvent for event creation.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalRepostsDao from databaseProvider (for local storage)
 
 @ProviderFor(repostsRepository)
 const repostsRepositoryProvider = RepostsRepositoryProvider._();
@@ -3424,7 +3483,10 @@ const repostsRepositoryProvider = RepostsRepositoryProvider._();
 ///
 /// Creates a RepostsRepository for managing user reposts (Kind 16 generic
 /// reposts).
-/// Uses AuthService.createAndSignEvent for event creation.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalRepostsDao from databaseProvider (for local storage)
 
 final class RepostsRepositoryProvider
     extends
@@ -3438,7 +3500,10 @@ final class RepostsRepositoryProvider
   ///
   /// Creates a RepostsRepository for managing user reposts (Kind 16 generic
   /// reposts).
-  /// Uses AuthService.createAndSignEvent for event creation.
+  ///
+  /// Uses:
+  /// - NostrClient from nostrServiceProvider (for relay communication)
+  /// - PersonalRepostsDao from databaseProvider (for local storage)
   const RepostsRepositoryProvider._()
     : super(
         from: null,
@@ -3473,4 +3538,4 @@ final class RepostsRepositoryProvider
   }
 }
 
-String _$repostsRepositoryHash() => r'2f2f22ddfc87f03ef9d2f617b8402ea641b373f7';
+String _$repostsRepositoryHash() => r'0ea3679801eb26d97ae274060e8c607a28184c93';

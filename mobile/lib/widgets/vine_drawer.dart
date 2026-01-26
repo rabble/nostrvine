@@ -144,9 +144,12 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       icon: Icons.person,
                       title: 'Edit Profile',
                       onTap: () {
-                        // Close drawer first, then navigate to edit-profile route
-                        context.pop();
-                        context.push(ProfileSetupScreen.editPath);
+                        // Capture router before closing drawer to avoid context issues
+                        final router = GoRouter.of(context);
+                        Navigator.of(
+                          context,
+                        ).pop(); // Close drawer (not context.pop!)
+                        router.push(ProfileSetupScreen.editPath);
                       },
                     ),
                     const Divider(color: Colors.grey, height: 1),
@@ -158,9 +161,12 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     icon: Icons.settings,
                     title: 'Settings',
                     onTap: () {
-                      // Close drawer first, then navigate to settings route
-                      context.pop();
-                      context.push(SettingsScreen.path);
+                      // Capture router before closing drawer to avoid context issues
+                      final router = GoRouter.of(context);
+                      Navigator.of(
+                        context,
+                      ).pop(); // Close drawer (not context.pop!)
+                      router.push(SettingsScreen.path);
                     },
                   ),
 
@@ -193,7 +199,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       // Get root context before closing drawer
                       final navigatorContext = Navigator.of(context).context;
 
-                      context.pop(); // Close drawer
+                      Navigator.of(context).pop(); // Close drawer
 
                       // Wait for drawer close animation
                       await Future.delayed(const Duration(milliseconds: 300));
@@ -223,7 +229,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     title: 'Privacy Policy',
                     subtitle: 'How we handle your data',
                     onTap: () {
-                      context.pop(); // Close drawer
+                      Navigator.of(context).pop(); // Close drawer
                       _launchWebPage(
                         context,
                         'https://divine.video/privacy',
@@ -236,7 +242,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     title: 'Safety Center',
                     subtitle: 'Community safety guidelines',
                     onTap: () {
-                      context.pop(); // Close drawer
+                      Navigator.of(context).pop(); // Close drawer
                       _launchWebPage(
                         context,
                         'https://divine.video/safety',
@@ -249,7 +255,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     title: 'FAQ',
                     subtitle: 'Frequently asked questions',
                     onTap: () {
-                      context.pop(); // Close drawer
+                      Navigator.of(context).pop(); // Close drawer
                       _launchWebPage(
                         context,
                         'https://divine.video/faq',
