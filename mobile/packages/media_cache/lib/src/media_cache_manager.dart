@@ -124,7 +124,9 @@ class MediaCacheManager extends CacheManager {
   /// {@macro media_cache_manager}
   MediaCacheManager({
     required MediaCacheConfig config,
+    @visibleForTesting DirectoryProvider? tempDirectoryProvider,
   }) : _config = config,
+       _tempDirectoryProvider = tempDirectoryProvider ?? getTemporaryDirectory,
        super(
          Config(
            config.cacheKey,
@@ -136,6 +138,7 @@ class MediaCacheManager extends CacheManager {
        );
 
   final MediaCacheConfig _config;
+  final DirectoryProvider _tempDirectoryProvider;
 
   /// In-memory manifest for synchronous lookups.
   /// Maps cache key to file path.
@@ -183,7 +186,7 @@ class MediaCacheManager extends CacheManager {
 
     try {
       // Get the base cache directory
-      final tempDir = await getTemporaryDirectory();
+      final tempDir = await _tempDirectoryProvider();
       final baseCacheDir = path.join(tempDir.path, _config.cacheKey);
       final cacheDir = Directory(baseCacheDir);
 

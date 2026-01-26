@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
@@ -158,7 +159,7 @@ void main() {
         );
 
         expect(
-          () => repo.open(),
+          repo.open,
           throwsA(isA<Exception>()),
         );
       });
@@ -318,6 +319,106 @@ void main() {
         await repo.deleteDataFile();
 
         verify(() => mockRepository.deleteDataFile()).called(1);
+      });
+
+      test('getObjectsOverCapacity delegates to wrapped repository', () async {
+        when(
+          () => mockRepository.getObjectsOverCapacity(100),
+        ).thenAnswer((_) async => []);
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db',
+          repository: mockRepository,
+        );
+
+        final result = await repo.getObjectsOverCapacity(100);
+
+        expect(result, isEmpty);
+        verify(() => mockRepository.getObjectsOverCapacity(100)).called(1);
+      });
+
+      test('getOldObjects delegates to wrapped repository', () async {
+        const maxAge = Duration(days: 7);
+        when(
+          () => mockRepository.getOldObjects(maxAge),
+        ).thenAnswer((_) async => []);
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db',
+          repository: mockRepository,
+        );
+
+        final result = await repo.getOldObjects(maxAge);
+
+        expect(result, isEmpty);
+        verify(() => mockRepository.getOldObjects(maxAge)).called(1);
+      });
+
+      test('insert delegates to wrapped repository', () async {
+        final cacheObject = CacheObject(
+          'test_url',
+          relativePath: 'test.mp4',
+          validTill: DateTime.now().add(const Duration(days: 7)),
+        );
+        when(
+          () => mockRepository.insert(cacheObject),
+        ).thenAnswer((_) async => cacheObject);
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db',
+          repository: mockRepository,
+        );
+
+        final result = await repo.insert(cacheObject);
+
+        expect(result, cacheObject);
+        verify(
+          () => mockRepository.insert(cacheObject),
+        ).called(1);
+      });
+
+      test('update delegates to wrapped repository', () async {
+        final cacheObject = CacheObject(
+          'test_url',
+          relativePath: 'test.mp4',
+          validTill: DateTime.now().add(const Duration(days: 7)),
+        );
+        when(
+          () => mockRepository.update(cacheObject),
+        ).thenAnswer((_) async => 1);
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db',
+          repository: mockRepository,
+        );
+
+        final result = await repo.update(cacheObject);
+
+        expect(result, 1);
+        verify(
+          () => mockRepository.update(cacheObject),
+        ).called(1);
+      });
+
+      test('updateOrInsert delegates to wrapped repository', () async {
+        final cacheObject = CacheObject(
+          'test_url',
+          relativePath: 'test.mp4',
+          validTill: DateTime.now().add(const Duration(days: 7)),
+        );
+        when(
+          () => mockRepository.updateOrInsert(cacheObject),
+        ).thenAnswer((_) async => cacheObject);
+
+        final repo = SafeCacheInfoRepository(
+          databaseName: 'test_db',
+          repository: mockRepository,
+        );
+
+        final result = await repo.updateOrInsert(cacheObject);
+
+        expect(result, cacheObject);
+        verify(() => mockRepository.updateOrInsert(cacheObject)).called(1);
       });
     });
   });

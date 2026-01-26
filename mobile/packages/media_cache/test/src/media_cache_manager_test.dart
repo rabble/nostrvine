@@ -68,6 +68,23 @@ void main() {
         expect(noManifestCache.isInitialized, true);
       });
 
+      test('handles exception gracefully and sets initialized', () async {
+        final failingCache = MediaCacheManager(
+          config: MediaCacheConfig(
+            cacheKey: 'failing_${DateTime.now().millisecondsSinceEpoch}',
+            enableSyncManifest: true,
+          ),
+          tempDirectoryProvider: () async =>
+              throw Exception('Directory unavailable'),
+        );
+
+        // Should not throw - graceful degradation
+        await failingCache.initialize();
+        expect(failingCache.isInitialized, true);
+
+        failingCache.resetForTesting();
+      });
+
       test('loads existing files into manifest', () async {
         // Create cache directory with test files
         final cacheDir = Directory(
