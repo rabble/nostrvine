@@ -1,5 +1,5 @@
-// ABOUTME: Screen to handle email verification in two modes
-// ABOUTME: Polling mode (after registration) and token mode (from deep link)
+// ABOUTME: Screen to handle email verification via polling or token
+// ABOUTME: Supports polling mode (after registration) and token mode (from deep link)
 // ABOUTME: Supports auto-login on cold start via persisted verification data
 
 import 'package:divine_ui/divine_ui.dart';
@@ -54,6 +54,7 @@ class EmailVerificationScreen extends ConsumerStatefulWidget {
 class _EmailVerificationScreenState
     extends ConsumerState<EmailVerificationScreen> {
   late final EmailVerificationCubit _cubit;
+  bool _isTokenMode = false;
 
   @override
   void initState() {
@@ -81,6 +82,7 @@ class _EmailVerificationScreenState
       );
     } else if (widget.isTokenMode) {
       // Token mode - check for persisted verification data for auto-login
+      _isTokenMode = true;
       _initTokenModeWithPersistenceCheck();
     } else {
       Log.warning(
@@ -108,8 +110,18 @@ class _EmailVerificationScreenState
         category: LogCategory.auth,
       );
 
-      // Verify the email first, then start polling to complete login
-      await _cubit.verifyEmailOnly(widget.token!);
+      // Verify the email first via OAuth client, then start polling to complete login
+      final oauth = ref.read(oauthClientProvider);
+      try {
+        await oauth.verifyEmail(token: widget.token!);
+      } catch (e) {
+        Log.error(
+          'Email verification error: $e',
+          name: 'EmailVerificationScreen',
+          category: LogCategory.auth,
+        );
+      }
+
       _cubit.startPolling(
         deviceCode: pending.deviceCode,
         verifier: pending.verifier,
@@ -121,7 +133,47 @@ class _EmailVerificationScreenState
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,
       );
-      _cubit.verifyWithToken(widget.token!);
+      _verifyWithToken(widget.token!);
+    }
+  }
+
+  /// Verify email with token (standalone token mode without polling)
+  Future<void> _verifyWithToken(String token) async {
+    Log.info(
+      'Verifying email with token',
+      name: 'EmailVerificationScreen',
+      category: LogCategory.auth,
+    );
+
+    final oauth = ref.read(oauthClientProvider);
+    try {
+      final result = await oauth.verifyEmail(token: token);
+      if (result.success) {
+        Log.info(
+          'Email verification successful (token mode)',
+          name: 'EmailVerificationScreen',
+          category: LogCategory.auth,
+        );
+        // In token mode without polling, redirect to login
+        _handleTokenModeSuccess();
+      } else {
+        Log.warning(
+          'Email verification failed: ${result.error}',
+          name: 'EmailVerificationScreen',
+          category: LogCategory.auth,
+        );
+        if (mounted) {
+          setState(() {
+            // Show error in UI
+          });
+        }
+      }
+    } catch (e) {
+      Log.error(
+        'Email verification error: $e',
+        name: 'EmailVerificationScreen',
+        category: LogCategory.auth,
+      );
     }
   }
 
@@ -131,14 +183,14 @@ class _EmailVerificationScreenState
 
     // If we receive a token via deep link while polling, verify it
     // This marks the email as verified on the server, allowing the poll to complete
-    // We don't cancel polling - it will complete after verification succeeds
     if (widget.isTokenMode && !oldWidget.isTokenMode) {
       Log.info(
         'Token received via deep link, calling verifyEmail',
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,
       );
-      _cubit.verifyEmailOnly(widget.token!);
+      final oauth = ref.read(oauthClientProvider);
+      oauth.verifyEmail(token: widget.token!);
     }
   }
 
@@ -148,21 +200,28 @@ class _EmailVerificationScreenState
     super.dispose();
   }
 
-  void _handleSuccess(EmailVerificationMode mode) {
+  void _handleSuccess() {
     // Clear persisted verification data on successful login
     ref.read(pendingVerificationServiceProvider).clear();
 
-    if (mode == EmailVerificationMode.polling) {
-      // app_router should detect that we are authenticated
+    if (!_isTokenMode) {
+      // Polling mode: app_router should detect that we are authenticated
       // and route us to /home
     } else {
       // Token mode: redirect to login screen
-      context.go(WelcomeScreen.authNativePath);
+      _handleTokenModeSuccess();
     }
   }
 
+  void _handleTokenModeSuccess() {
+    // Clear persisted verification data
+    ref.read(pendingVerificationServiceProvider).clear();
+    // Redirect to login screen
+    context.go(WelcomeScreen.authNativePath);
+  }
+
   void _handleCancel() {
-    _cubit.cancelPolling();
+    _cubit.stopPolling();
     // Clear persisted verification data on cancel
     ref.read(pendingVerificationServiceProvider).clear();
     // Go back to previous screen (registration form)
@@ -193,8 +252,8 @@ class _EmailVerificationScreenState
           child: SafeArea(
             child: BlocConsumer<EmailVerificationCubit, EmailVerificationState>(
               listener: (context, state) {
-                if (state is EmailVerificationSuccess) {
-                  _handleSuccess(state.mode);
+                if (state.status == EmailVerificationStatus.success) {
+                  _handleSuccess();
                 }
               },
               builder: (context, state) {
@@ -213,20 +272,20 @@ class _EmailVerificationScreenState
   }
 
   Widget _buildContent(EmailVerificationState state) {
-    return switch (state) {
-      EmailVerificationInitial() => _buildLoadingContent(null),
-      EmailVerificationInProgress(:final mode, :final email) =>
-        _buildLoadingContent(
-          mode == EmailVerificationMode.polling ? email : null,
-        ),
-      EmailVerificationSuccess() => _buildSuccessContent(),
-      EmailVerificationFailure(:final mode, :final errorMessage) =>
-        _buildErrorContent(mode, errorMessage),
-    };
+    switch (state.status) {
+      case EmailVerificationStatus.initial:
+        return _buildLoadingContent(null);
+      case EmailVerificationStatus.polling:
+        return _buildLoadingContent(state.pendingEmail);
+      case EmailVerificationStatus.success:
+        return _buildSuccessContent();
+      case EmailVerificationStatus.failure:
+        return _buildErrorContent(state.error ?? 'Verification failed');
+    }
   }
 
   Widget _buildLoadingContent(String? email) {
-    final isPollingMode = widget.isPollingMode;
+    final isPollingMode = widget.isPollingMode || !_isTokenMode;
 
     return Column(
       mainAxisSize: MainAxisSize.min,
@@ -330,7 +389,7 @@ class _EmailVerificationScreenState
     );
   }
 
-  Widget _buildErrorContent(EmailVerificationMode mode, String errorMessage) {
+  Widget _buildErrorContent(String errorMessage) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

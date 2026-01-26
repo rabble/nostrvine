@@ -71,9 +71,9 @@ class ProfileHeaderWidget extends ConsumerWidget {
     final about = profile?.about;
     final authService = ref.watch(authServiceProvider);
 
-    // Watch auth state stream to rebuild when auth state changes
+    // Watch auth state to rebuild when auth state changes
     // (e.g., after email verification completes)
-    ref.watch(authStateStreamProvider);
+    ref.watch(currentAuthStateProvider);
     final isAnonymous = authService.isAnonymous;
 
     return Padding(
