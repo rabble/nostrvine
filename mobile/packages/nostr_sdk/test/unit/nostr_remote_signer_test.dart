@@ -176,16 +176,18 @@ void main() {
       expect(expectedMaxRetries, equals(5));
     });
 
-    test('exponential backoff should follow pattern 100, 200, 400, 800, 1600ms',
-        () {
-      // Document the expected backoff pattern
-      // Backoff formula: 100 * (1 << retryCount) milliseconds
-      final expectedDelays = <int>[];
-      for (var retry = 0; retry < 5; retry++) {
-        expectedDelays.add(100 * (1 << retry));
-      }
+    test(
+      'exponential backoff should follow pattern 100, 200, 400, 800, 1600ms',
+      () {
+        // Document the expected backoff pattern
+        // Backoff formula: 100 * (1 << retryCount) milliseconds
+        final expectedDelays = <int>[];
+        for (var retry = 0; retry < 5; retry++) {
+          expectedDelays.add(100 * (1 << retry));
+        }
 
-      expect(expectedDelays, equals([100, 200, 400, 800, 1600]));
-    });
+        expect(expectedDelays, equals([100, 200, 400, 800, 1600]));
+      },
+    );
   });
 }

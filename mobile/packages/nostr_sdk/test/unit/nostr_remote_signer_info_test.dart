@@ -18,7 +18,10 @@ void main() {
       });
 
       test('should return false for non-bunker URLs', () {
-        expect(NostrRemoteSignerInfo.isBunkerUrl('https://example.com'), isFalse);
+        expect(
+          NostrRemoteSignerInfo.isBunkerUrl('https://example.com'),
+          isFalse,
+        );
         expect(NostrRemoteSignerInfo.isBunkerUrl('wss://relay.com'), isFalse);
         expect(NostrRemoteSignerInfo.isBunkerUrl('nsec1abc'), isFalse);
         expect(NostrRemoteSignerInfo.isBunkerUrl(''), isFalse);
@@ -46,7 +49,8 @@ void main() {
 
         test('should throw when relay parameter is empty', () {
           expect(
-            () => NostrRemoteSignerInfo.parseBunkerUrl('bunker://pubkey?relay='),
+            () =>
+                NostrRemoteSignerInfo.parseBunkerUrl('bunker://pubkey?relay='),
             throwsA(
               isA<Exception>().having(
                 (e) => e.toString(),
@@ -57,21 +61,23 @@ void main() {
           );
         });
 
-        test('should throw when relay URL does not start with wss:// or ws://',
-            () {
-          expect(
-            () => NostrRemoteSignerInfo.parseBunkerUrl(
-              'bunker://pubkey?relay=bad',
-            ),
-            throwsA(
-              isA<Exception>().having(
-                (e) => e.toString(),
-                'message',
-                contains('relay bad should start with wss:// or ws://'),
+        test(
+          'should throw when relay URL does not start with wss:// or ws://',
+          () {
+            expect(
+              () => NostrRemoteSignerInfo.parseBunkerUrl(
+                'bunker://pubkey?relay=bad',
               ),
-            ),
-          );
-        });
+              throwsA(
+                isA<Exception>().having(
+                  (e) => e.toString(),
+                  'message',
+                  contains('relay bad should start with wss:// or ws://'),
+                ),
+              ),
+            );
+          },
+        );
 
         test('should throw when relay URL is http://', () {
           expect(
