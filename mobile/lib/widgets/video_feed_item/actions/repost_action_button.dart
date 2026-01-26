@@ -28,8 +28,7 @@ class RepostActionButton extends StatelessWidget {
 
     if (interactionsBloc == null) {
       // No bloc available - show disabled state with original reposts only
-      return _buildButton(
-        context: context,
+      return _RepostButton(
         isReposted: false,
         isRepostInProgress: false,
         totalReposts: _calculateTotalReposts(repostCount: null),
@@ -45,8 +44,7 @@ class RepostActionButton extends StatelessWidget {
           repostCount: state.repostCount,
         );
 
-        return _buildButton(
-          context: context,
+        return _RepostButton(
           isReposted: isReposted,
           isRepostInProgress: isRepostInProgress,
           totalReposts: totalReposts,
@@ -71,14 +69,23 @@ class RepostActionButton extends StatelessWidget {
     final originalReposts = video.originalReposts ?? 0;
     return nostrReposts + originalReposts;
   }
+}
 
-  Widget _buildButton({
-    required BuildContext context,
-    required bool isReposted,
-    required bool isRepostInProgress,
-    required int totalReposts,
-    required VoidCallback? onPressed,
-  }) {
+class _RepostButton extends StatelessWidget {
+  const _RepostButton({
+    required this.isReposted,
+    required this.isRepostInProgress,
+    required this.totalReposts,
+    this.onPressed,
+  });
+
+  final bool isReposted;
+  final bool isRepostInProgress;
+  final int totalReposts;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [

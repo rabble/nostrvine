@@ -427,6 +427,7 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
     required String? addressableId,
     required int? targetKind,
     required String? authorPubkey,
+    String? eventId,
     String? content = '',
     List<String>? tempRelays,
     List<String>? targetRelays,
@@ -436,6 +437,7 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
               #addressableId: addressableId,
               #targetKind: targetKind,
               #authorPubkey: authorPubkey,
+              #eventId: eventId,
               #content: content,
               #tempRelays: tempRelays,
               #targetRelays: targetRelays,
@@ -974,6 +976,15 @@ class MockVideoEventService extends _i1.Mock implements _i9.VideoEventService {
   _i7.Future<void> refreshVideoFeed() =>
       (super.noSuchMethod(
             Invocation.method(#refreshVideoFeed, []),
+            returnValue: _i7.Future<void>.value(),
+            returnValueForMissingStub: _i7.Future<void>.value(),
+          )
+          as _i7.Future<void>);
+
+  @override
+  _i7.Future<void> resetAndResubscribeAll() =>
+      (super.noSuchMethod(
+            Invocation.method(#resetAndResubscribeAll, []),
             returnValue: _i7.Future<void>.value(),
             returnValueForMissingStub: _i7.Future<void>.value(),
           )

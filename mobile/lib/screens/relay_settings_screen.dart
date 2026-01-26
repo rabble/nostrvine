@@ -731,7 +731,12 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
 
     try {
       final nostrService = ref.read(nostrServiceProvider);
-      await nostrService.removeRelay(relayUrl);
+      final success = await nostrService.removeRelay(relayUrl);
+
+      if (!success) {
+        _showError('Failed to remove relay');
+        return;
+      }
 
       if (mounted) {
         setState(() {});

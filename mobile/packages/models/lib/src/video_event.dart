@@ -655,6 +655,14 @@ class VideoEvent {
     return rawTags['pgp_fingerprint'];
   }
 
+  String? get addressableId => vineId != null
+      ? AId(
+          kind: EventKind.videoVertical,
+          pubkey: pubkey,
+          dTag: vineId!,
+        ).toAString()
+      : null;
+
   /// ProofMode: Check if video has any proof
   bool get hasProofMode {
     return proofModeVerificationLevel != null ||

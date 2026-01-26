@@ -471,7 +471,8 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
     }
 
     return RefreshIndicator(
-      color: VineTheme.vineGreen,
+      color: VineTheme.onPrimary,
+      backgroundColor: VineTheme.vineGreen,
       onRefresh: () => _streamPublicLists(isRefresh: true),
       child: ListView.builder(
         controller: _scrollController,

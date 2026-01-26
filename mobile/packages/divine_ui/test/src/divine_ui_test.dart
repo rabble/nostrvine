@@ -40,6 +40,7 @@ void main() {
       });
 
       test('has correct navigation colors', () {
+        expect(VineTheme.primary, const Color(0xFF27C58B));
         expect(VineTheme.navGreen, const Color(0xFF00150D));
         expect(VineTheme.iconButtonBackground, const Color(0xFF032017));
         expect(VineTheme.tabIconInactive, const Color(0xFF40504A));
@@ -66,6 +67,108 @@ void main() {
         expect(VineTheme.borderWhite25, const Color(0x40FFFFFF));
         expect(VineTheme.outlinedDisabled, const Color(0xFF032017));
         expect(VineTheme.containerLow, const Color(0xFF0E2B21));
+        expect(VineTheme.surfaceContainer, const Color(0xFF032017));
+        expect(VineTheme.surfaceContainerHigh, const Color(0xFF000A06));
+      });
+    });
+
+    group('typography - display fonts', () {
+      testWidgets('displayLargeFont returns correct style', (tester) async {
+        final style = VineTheme.displayLargeFont();
+        expect(style.fontSize, 57);
+        expect(style.fontWeight, FontWeight.w700);
+      });
+
+      testWidgets('displayMediumFont returns correct style', (tester) async {
+        final style = VineTheme.displayMediumFont();
+        expect(style.fontSize, 45);
+        expect(style.fontWeight, FontWeight.w700);
+      });
+
+      testWidgets('displaySmallFont returns correct style', (tester) async {
+        final style = VineTheme.displaySmallFont();
+        expect(style.fontSize, 36);
+        expect(style.fontWeight, FontWeight.w700);
+      });
+    });
+
+    group('typography - headline fonts', () {
+      testWidgets('headlineLargeFont returns correct style', (tester) async {
+        final style = VineTheme.headlineLargeFont();
+        expect(style.fontSize, 32);
+        expect(style.fontWeight, FontWeight.w700);
+      });
+
+      testWidgets('headlineMediumFont returns correct style', (tester) async {
+        final style = VineTheme.headlineMediumFont();
+        expect(style.fontSize, 28);
+        expect(style.fontWeight, FontWeight.w700);
+      });
+
+      testWidgets('headlineSmallFont returns correct style', (tester) async {
+        final style = VineTheme.headlineSmallFont();
+        expect(style.fontSize, 24);
+        expect(style.fontWeight, FontWeight.w700);
+      });
+    });
+
+    group('typography - title fonts', () {
+      testWidgets('titleLargeFont returns correct style', (tester) async {
+        final style = VineTheme.titleLargeFont();
+        expect(style.fontSize, 22);
+        expect(style.fontWeight, FontWeight.w800);
+      });
+
+      testWidgets('titleMediumFont returns correct style', (tester) async {
+        final style = VineTheme.titleMediumFont();
+        expect(style.fontSize, 18);
+        expect(style.fontWeight, FontWeight.w800);
+      });
+
+      testWidgets('titleSmallFont returns correct style', (tester) async {
+        final style = VineTheme.titleSmallFont();
+        expect(style.fontSize, 14);
+        expect(style.fontWeight, FontWeight.w800);
+      });
+    });
+
+    group('typography - body fonts', () {
+      testWidgets('bodyLargeFont returns correct style', (tester) async {
+        final style = VineTheme.bodyLargeFont();
+        expect(style.fontSize, 16);
+        expect(style.fontWeight, FontWeight.w400);
+      });
+
+      testWidgets('bodyMediumFont returns correct style', (tester) async {
+        final style = VineTheme.bodyMediumFont();
+        expect(style.fontSize, 14);
+        expect(style.fontWeight, FontWeight.w400);
+      });
+
+      testWidgets('bodySmallFont returns correct style', (tester) async {
+        final style = VineTheme.bodySmallFont();
+        expect(style.fontSize, 12);
+        expect(style.fontWeight, FontWeight.w400);
+      });
+    });
+
+    group('typography - label fonts', () {
+      testWidgets('labelLargeFont returns correct style', (tester) async {
+        final style = VineTheme.labelLargeFont();
+        expect(style.fontSize, 14);
+        expect(style.fontWeight, FontWeight.w600);
+      });
+
+      testWidgets('labelMediumFont returns correct style', (tester) async {
+        final style = VineTheme.labelMediumFont();
+        expect(style.fontSize, 12);
+        expect(style.fontWeight, FontWeight.w600);
+      });
+
+      testWidgets('labelSmallFont returns correct style', (tester) async {
+        final style = VineTheme.labelSmallFont();
+        expect(style.fontSize, 11);
+        expect(style.fontWeight, FontWeight.w600);
       });
     });
 
@@ -95,6 +198,12 @@ void main() {
         final style = VineTheme.titleFont(color: Colors.red);
 
         expect(style.color, Colors.red);
+      });
+
+      testWidgets('returns TextStyle with letterSpacing', (tester) async {
+        final style = VineTheme.titleFont(letterSpacing: 0.5);
+
+        expect(style.letterSpacing, 0.5);
       });
     });
 
@@ -129,6 +238,12 @@ void main() {
         final style = VineTheme.bodyFont(height: 1.8);
 
         expect(style.height, 1.8);
+      });
+
+      testWidgets('returns TextStyle with letterSpacing', (tester) async {
+        final style = VineTheme.bodyFont(letterSpacing: 0.25);
+
+        expect(style.letterSpacing, 0.25);
       });
     });
 

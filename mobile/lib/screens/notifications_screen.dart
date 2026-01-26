@@ -56,7 +56,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     return Column(
       children: [
         // Tab bar for filtering notifications
-        Container(
+        Material(
           color: VineTheme.navGreen,
           child: TabBar(
             controller: _tabController,
@@ -150,7 +150,8 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
                 color: Colors.black,
                 child: RefreshIndicator(
                   semanticsLabel: 'checking for new notifications',
-                  color: VineTheme.vineGreen,
+                  color: VineTheme.onPrimary,
+                  backgroundColor: VineTheme.vineGreen,
                   onRefresh: () async {
                     await service.refreshNotifications();
                   },

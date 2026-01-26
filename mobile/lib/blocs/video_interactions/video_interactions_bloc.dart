@@ -60,50 +60,44 @@ class VideoInteractionsBloc
   Future<void> _onSubscriptionRequested(
     VideoInteractionsSubscriptionRequested event,
     Emitter<VideoInteractionsState> emit,
-  ) async {
-    // Subscribe to likes stream
-    final likesFuture = emit.forEach<Set<String>>(
-      _likesRepository.watchLikedEventIds(),
-      onData: (likedIds) {
-        final isLiked = likedIds.contains(_eventId);
-        if (isLiked == state.isLiked) return state;
+  ) {
+    final subscriptions = [
+      emit.forEach<Set<String>>(
+        _likesRepository.watchLikedEventIds(),
+        onData: (likedIds) {
+          final isLiked = likedIds.contains(_eventId);
+          if (isLiked == state.isLiked) return state;
 
-        // Update like status and adjust count
-        final currentCount = state.likeCount ?? 0;
-        final newCount = isLiked ? currentCount + 1 : currentCount - 1;
-
-        return state.copyWith(
-          isLiked: isLiked,
-          likeCount: newCount < 0 ? 0 : newCount,
-        );
-      },
-    );
-
-    // Subscribe to reposts stream (only for addressable events)
-    if (_addressableId != null) {
-      final repostsFuture = emit.forEach<Set<String>>(
-        _repostsRepository.watchRepostedAddressableIds(),
-        onData: (repostedIds) {
-          final isReposted = repostedIds.contains(_addressableId);
-          if (isReposted == state.isReposted) return state;
-
-          // Update repost status and adjust count
-          final currentCount = state.repostCount ?? 0;
-          final newCount = isReposted ? currentCount + 1 : currentCount - 1;
+          // Update like status and adjust count
+          final currentCount = state.likeCount ?? 0;
+          final newCount = isLiked ? currentCount + 1 : currentCount - 1;
 
           return state.copyWith(
-            isReposted: isReposted,
-            repostCount: newCount < 0 ? 0 : newCount,
+            isLiked: isLiked,
+            likeCount: newCount < 0 ? 0 : newCount,
           );
         },
-      );
+      ),
+      if (_addressableId != null)
+        emit.forEach<Set<String>>(
+          _repostsRepository.watchRepostedAddressableIds(),
+          onData: (repostedIds) {
+            final isReposted = repostedIds.contains(_addressableId);
+            if (isReposted == state.isReposted) return state;
 
-      // Wait for both subscriptions concurrently
-      await Future.wait([likesFuture, repostsFuture]);
-    } else {
-      // Only subscribe to likes if no addressable ID
-      await likesFuture;
-    }
+            // Update repost status and adjust count
+            final currentCount = state.repostCount ?? 0;
+            final newCount = isReposted ? currentCount + 1 : currentCount - 1;
+
+            return state.copyWith(
+              isReposted: isReposted,
+              repostCount: newCount < 0 ? 0 : newCount,
+            );
+          },
+        ),
+    ];
+
+    return subscriptions.wait;
   }
 
   /// Handle request to fetch initial state.

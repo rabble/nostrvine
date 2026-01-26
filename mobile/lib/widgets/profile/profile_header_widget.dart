@@ -1,8 +1,9 @@
-// ABOUTME: Profile header widget showing avatar, stats, name, bio, and npub
+// ABOUTME: Profile header widget showing avatar, stats, name, and bio
 // ABOUTME: Reusable between own profile and others' profile screens
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -17,11 +18,12 @@ import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 
-/// Profile header widget displaying avatar, stats, name, bio, and public key.
+/// Profile header widget displaying avatar, stats, name, and bio.
 class ProfileHeaderWidget extends ConsumerWidget {
   const ProfileHeaderWidget({
     required this.userIdHex,
     required this.isOwnProfile,
+    required this.videoCount,
     required this.profileStatsAsync,
     this.onSetupProfile,
     super.key,
@@ -32,6 +34,9 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
+
+  /// The number of videos loaded in the profile grid.
+  final int videoCount;
 
   /// Async value containing profile stats (video count, etc.).
   final AsyncValue<ProfileStats> profileStatsAsync;
@@ -60,7 +65,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
     final authService = ref.watch(authServiceProvider);
 
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Column(
         children: [
           // Setup profile banner for new users with default names
@@ -77,7 +82,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
           Row(
             children: [
               // Profile picture
-              UserAvatar(imageUrl: profilePictureUrl, name: null, size: 86),
+              UserAvatar(imageUrl: profilePictureUrl, name: null, size: 88),
 
               const SizedBox(width: 20),
 
@@ -87,11 +92,9 @@ class ProfileHeaderWidget extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     ProfileStatColumn(
-                      count: profileStatsAsync.hasValue
-                          ? profileStatsAsync.value!.videoCount
-                          : null,
+                      count: videoCount,
                       label: 'Videos',
-                      isLoading: profileStatsAsync.isLoading,
+                      isLoading: false,
                       onTap: null, // Videos aren't tappable
                     ),
                     ProfileFollowersStat(
@@ -108,7 +111,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
           // Name and bio
           _ProfileNameAndBio(userIdHex: userIdHex, nip05: nip05, about: about),
@@ -139,24 +142,22 @@ class _SetupProfileBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.person_add, color: Colors.white, size: 24),
+          Icon(Icons.person_add, color: VineTheme.whiteText, size: 24),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Complete Your Profile',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: VineTheme.titleSmallFont(),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   'Add your name, bio, and picture to get started',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  style: VineTheme.bodySmallFont(
+                    color: VineTheme.onSurfaceMuted,
+                  ),
                 ),
               ],
             ),
@@ -164,16 +165,16 @@ class _SetupProfileBanner extends StatelessWidget {
           ElevatedButton(
             onPressed: onSetup,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
+              backgroundColor: VineTheme.whiteText,
               foregroundColor: Colors.purple,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text(
+            child: Text(
               'Set Up',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              style: VineTheme.labelMediumFont(color: Colors.purple),
             ),
           ),
         ],
@@ -200,24 +201,19 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.security, color: Colors.white, size: 24),
+          Icon(Icons.security, color: VineTheme.whiteText, size: 24),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'Secure Your Account',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 4),
+                Text('Secure Your Account', style: VineTheme.titleSmallFont()),
+                const SizedBox(height: 4),
                 Text(
                   'Add email & password to recover your account on any device',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  style: VineTheme.bodySmallFont(
+                    color: VineTheme.onSurfaceMuted,
+                  ),
                 ),
               ],
             ),
@@ -225,16 +221,16 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
           ElevatedButton(
             onPressed: () => context.push(SecureAccountScreen.path),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
+              backgroundColor: VineTheme.whiteText,
               foregroundColor: VineTheme.vineGreen,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text(
+            child: Text(
               'Register',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              style: VineTheme.labelMediumFont(color: VineTheme.vineGreen),
             ),
           ),
         ],
@@ -262,39 +258,64 @@ class _ProfileNameAndBio extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserName.fromPubKey(
-            userIdHex,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
-          ),
-          if (nip05 != null && nip05!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            _Nip05Identifier(nip05: nip05!),
-          ],
+          UserName.fromPubKey(userIdHex, style: VineTheme.titleLargeFont()),
+          _UniqueIdentifier(userIdHex: userIdHex, nip05: nip05),
           if (about != null && about!.isNotEmpty) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 24),
             _AboutText(about: about!),
           ],
-          const SizedBox(height: 8),
-          _PublicKeyDisplay(userIdHex: userIdHex),
         ],
       ),
     );
   }
 }
 
-/// NIP-05 identifier display.
-class _Nip05Identifier extends StatelessWidget {
-  const _Nip05Identifier({required this.nip05});
+/// Unique identifier display (NIP-05 or full npub with ellipsis).
+class _UniqueIdentifier extends StatelessWidget {
+  const _UniqueIdentifier({required this.userIdHex, required this.nip05});
 
-  final String nip05;
+  final String userIdHex;
+  final String? nip05;
 
   @override
   Widget build(BuildContext context) {
-    return Text(nip05, style: TextStyle(color: Colors.grey[400], fontSize: 13));
+    final displayText = (nip05 != null && nip05!.isNotEmpty)
+        ? nip05!
+        : NostrKeyUtils.encodePubKey(userIdHex);
+    final npub = NostrKeyUtils.encodePubKey(userIdHex);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Text(
+            displayText,
+            style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: GestureDetector(
+            onTap: () => ClipboardUtils.copy(
+              context,
+              npub,
+              message: 'Unique ID copied to clipboard',
+            ),
+            child: SvgPicture.asset(
+              'assets/icon/copy.svg',
+              width: 24,
+              height: 24,
+              colorFilter: const ColorFilter.mode(
+                VineTheme.vineGreen,
+                BlendMode.srcIn,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -308,79 +329,7 @@ class _AboutText extends StatelessWidget {
   Widget build(BuildContext context) {
     return SelectableText(
       about,
-      style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.3),
-    );
-  }
-}
-
-/// Public key (npub) display with copy functionality.
-class _PublicKeyDisplay extends StatelessWidget {
-  const _PublicKeyDisplay({required this.userIdHex});
-
-  final String userIdHex;
-
-  Future<void> _copyToClipboard(BuildContext context) async {
-    try {
-      final npub = NostrKeyUtils.encodePubKey(userIdHex);
-      await Clipboard.setData(ClipboardData(text: npub));
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Public key copied to clipboard'),
-              ],
-            ),
-            backgroundColor: VineTheme.vineGreen,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to copy: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _copyToClipboard(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.grey[800],
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: Colors.grey[600]!, width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: SelectableText(
-                NostrKeyUtils.encodePubKey(userIdHex),
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                ),
-                maxLines: 1,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.copy, color: Colors.grey, size: 14),
-          ],
-        ),
-      ),
+      style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
     );
   }
 }

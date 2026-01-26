@@ -1232,6 +1232,8 @@ class VideoEventService extends ChangeNotifier {
           'until': until,
           'limit': limit,
           'includeReposts': includeReposts,
+          'sortBy': sortBy,
+          'nip50Sort': nip50Sort,
         };
 
         // Set per-subscription loading state to show loading UI
@@ -2772,6 +2774,84 @@ class VideoEventService extends ChangeNotifier {
     );
   }
 
+  /// Reset all persistent subscriptions and resubscribe.
+  ///
+  /// Used when the relay set changes (relays added/removed) to ensure feeds
+  /// reflect data from the new relay configuration. Ephemeral subscriptions
+  /// (search, hashtag, profile) are cancelled but not auto-resubscribed;
+  /// user navigation will trigger fresh ones.
+  Future<void> resetAndResubscribeAll() async {
+    if (_isDisposed) return;
+
+    Log.info(
+      'Relay set changed - resetting and resubscribing all persistent feeds',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+
+    // Snapshot params for persistent subscription types before clearing
+    final homeFeedParams =
+        _subscriptionParams[SubscriptionType.homeFeed] != null
+        ? Map<String, dynamic>.from(
+            _subscriptionParams[SubscriptionType.homeFeed]!,
+          )
+        : null;
+    final discoveryParams =
+        _subscriptionParams[SubscriptionType.discovery] != null
+        ? Map<String, dynamic>.from(
+            _subscriptionParams[SubscriptionType.discovery]!,
+          )
+        : null;
+
+    // Cancel all subscriptions
+    await unsubscribeFromVideoFeed();
+
+    // Clear all event lists
+    clearVideoEvents();
+
+    // Reset pagination states
+    for (final state in _paginationStates.values) {
+      state.reset();
+    }
+
+    // Clear bucket caches
+    _hashtagBuckets.clear();
+    _authorBuckets.clear();
+
+    // Notify listeners so providers react (emit empty → loading transition)
+    notifyListeners();
+
+    // Re-subscribe to discovery feed
+    if (discoveryParams != null) {
+      await subscribeToVideoFeed(
+        subscriptionType: SubscriptionType.discovery,
+        limit: discoveryParams['limit'] as int? ?? 200,
+        sortBy: discoveryParams['sortBy'] as VideoSortField?,
+        nip50Sort: discoveryParams['nip50Sort'] as NIP50SortMode?,
+        force: true,
+      );
+    }
+
+    // Re-subscribe to home feed with saved authors list
+    if (homeFeedParams != null) {
+      final authors = homeFeedParams['authors'] as List<String>?;
+      if (authors != null && authors.isNotEmpty) {
+        await subscribeToHomeFeed(
+          authors,
+          limit: homeFeedParams['limit'] as int? ?? 100,
+          sortBy: homeFeedParams['sortBy'] as VideoSortField?,
+          force: true,
+        );
+      }
+    }
+
+    Log.info(
+      'Relay set change: resubscription complete',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+  }
+
   /// Progressive loading: load more videos after initial fast load
   Future<void> loadMoreVideos({int limit = 100}) async {
     Log.verbose(
@@ -3908,23 +3988,36 @@ class VideoEventService extends ChangeNotifier {
       }
     }
 
-    final currentUserPubkey = _nostrService.publicKey;
-    if (currentUserPubkey.isNotEmpty &&
-        subscriptionType != SubscriptionType.profile) {
+    if (subscriptionType != SubscriptionType.profile) {
+      final currentUserPubkey = _nostrService.publicKey;
       // Determine the author for bucket assignment (reposter for reposts)
       final authorHex = videoEvent.isRepost && videoEvent.reposterPubkey != null
           ? videoEvent.reposterPubkey!
           : videoEvent.pubkey;
 
-      // Only add if this is the current user's video
-      if (authorHex == currentUserPubkey) {
+      // Add to current user's bucket (for own profile)
+      if (currentUserPubkey.isNotEmpty && authorHex == currentUserPubkey) {
         final wasAdded = _addToAuthorBucket(
           videoEvent,
           authorHex,
           isHistorical: isHistorical,
         );
         if (wasAdded && !isHistorical) {
-          // Notify listeners that a new video was added for this user
+          _notifyNewVideo(videoEvent, authorHex);
+        }
+      }
+
+      // Cross-populate author bucket for OTHER users whose profiles were viewed.
+      // This ensures profile views stay up-to-date when videos arrive later
+      // in discovery/home feeds (fixes stale 0-video profile state).
+      if (authorHex != currentUserPubkey &&
+          _authorBuckets.containsKey(authorHex)) {
+        final wasAdded = _addToAuthorBucket(
+          videoEvent,
+          authorHex,
+          isHistorical: isHistorical,
+        );
+        if (wasAdded && !isHistorical) {
           _notifyNewVideo(videoEvent, authorHex);
         }
       }

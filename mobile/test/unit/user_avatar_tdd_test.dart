@@ -59,7 +59,7 @@ void main() {
     expect(find.byType(UserAvatar), findsOneWidget);
   });
 
-  testWidgets('UserAvatar has green border decoration', (tester) async {
+  testWidgets('UserAvatar has rounded border decoration', (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
         home: Scaffold(body: UserAvatar(imageUrl: null, size: 40)),
@@ -68,8 +68,8 @@ void main() {
 
     await tester.pump();
 
-    // Should find at least one Container (the green border container)
-    expect(find.byType(Container), findsWidgets);
+    // Should find ClipRRect for the rounded border
+    expect(find.byType(ClipRRect), findsOneWidget);
     expect(find.byType(UserAvatar), findsOneWidget);
   });
 }

@@ -284,13 +284,15 @@ class VideosRepository {
     // Some relays have issues with too many filters in a single REQ,
     // so we batch them in chunks rather than sending all at once or
     // querying one at a time.
-    final events = <Event>[];
+    final futures = <Future<List<Event>>>[];
     for (var i = 0; i < filters.length; i += _addressableIdBatchSize) {
       final batchEnd = (i + _addressableIdBatchSize).clamp(0, filters.length);
       final batch = filters.sublist(i, batchEnd);
-      final result = await _nostrClient.queryEvents(batch);
-      events.addAll(result);
+      futures.add(_nostrClient.queryEvents(batch));
     }
+
+    final results = await Future.wait(futures);
+    final events = results.expand((e) => e).toList();
 
     // Build a map keyed by addressable ID for ordering
     final eventMap = <String, Event>{};

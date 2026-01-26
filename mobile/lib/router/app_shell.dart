@@ -267,11 +267,31 @@ class AppShell extends ConsumerWidget {
     // Initialize relay statistics bridge to record connection events
     ref.watch(relayStatisticsBridgeProvider);
 
+    // Initialize relay set change bridge to refresh feeds when relays are added/removed
+    ref.watch(relaySetChangeBridgeProvider);
+
     // Initialize Zendesk identity sync to keep user identity in sync with auth
     ref.watch(zendeskIdentitySyncProvider);
 
     // Watch page context to determine if back button should show and if on search route
     final pageCtxAsync = ref.watch(pageContextProvider);
+
+    // Check if on own profile grid view - if so, let ProfileScreenRouter render its own scaffold
+    final isOwnProfileGrid = pageCtxAsync.maybeWhen(
+      data: (ctx) {
+        if (ctx.type != RouteType.profile) return false;
+        if (ctx.videoIndex != null) return false; // Video mode uses shell
+        final currentNpub = ref.read(authServiceProvider).currentNpub;
+        return ctx.npub == 'me' || ctx.npub == currentNpub;
+      },
+      orElse: () => false,
+    );
+
+    // Own profile grid uses its own scaffold - just return the child
+    if (isOwnProfileGrid) {
+      return child;
+    }
+
     final isSearchRoute = pageCtxAsync.maybeWhen(
       data: (ctx) => ctx.type == RouteType.search,
       orElse: () => false,

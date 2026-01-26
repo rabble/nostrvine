@@ -258,12 +258,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     final repostsRepository = ref.read(repostsRepositoryProvider);
 
     // Build addressable ID for reposts if video has a d-tag (vineId)
-    final addressableId = widget.video.vineId != null
-        ? buildAddressableId(
-            authorPubkey: widget.video.pubkey,
-            dTag: widget.video.vineId!,
-          )
-        : null;
+    final addressableId = widget.video.addressableId;
 
     _interactionsBloc = VideoInteractionsBloc(
       eventId: widget.video.id,
