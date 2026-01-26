@@ -6,17 +6,18 @@
 import 'dart:async' as _i5;
 import 'dart:io' as _i7;
 
-import 'package:keycast_flutter/keycast_flutter.dart' as _i10;
+import 'package:keycast_flutter/keycast_flutter.dart' as _i11;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i9;
 import 'package:models/models.dart' as _i8;
-import 'package:nostr_sdk/nostr_sdk.dart' as _i11;
+import 'package:nostr_sdk/nostr_sdk.dart' as _i12;
 import 'package:openvine/models/pending_upload.dart' as _i2;
 import 'package:openvine/models/vine_draft.dart' as _i6;
 import 'package:openvine/services/audio_sharing_preference_service.dart'
-    as _i12;
+    as _i13;
 import 'package:openvine/services/auth_service.dart' as _i3;
 import 'package:openvine/services/upload_manager.dart' as _i4;
-import 'package:openvine/services/user_profile_service.dart' as _i9;
+import 'package:openvine/services/user_profile_service.dart' as _i10;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -424,6 +425,23 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as Map<String, dynamic>);
 
   @override
+  String get serviceName =>
+      (super.noSuchMethod(
+            Invocation.getter(#serviceName),
+            returnValue: _i9.dummyValue<String>(
+              this,
+              Invocation.getter(#serviceName),
+            ),
+          )
+          as String);
+
+  @override
+  void clearError() => super.noSuchMethod(
+    Invocation.method(#clearError, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   _i5.Future<void> initialize() =>
       (super.noSuchMethod(
             Invocation.method(#initialize, []),
@@ -512,7 +530,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
 
   @override
   _i5.Future<void> refreshCurrentProfile(
-    _i9.UserProfileService? userProfileService,
+    _i10.UserProfileService? userProfileService,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#refreshCurrentProfile, [userProfileService]),
@@ -531,7 +549,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i5.Future<void>);
 
   @override
-  _i5.Future<void> signInWithDivineOAuth(_i10.KeycastSession? session) =>
+  _i5.Future<void> signInWithDivineOAuth(_i11.KeycastSession? session) =>
       (super.noSuchMethod(
             Invocation.method(#signInWithDivineOAuth, [session]),
             returnValue: _i5.Future<void>.value(),
@@ -577,7 +595,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i5.Future<String?>);
 
   @override
-  _i5.Future<_i11.Event?> createAndSignEvent({
+  _i5.Future<_i12.Event?> createAndSignEvent({
     required int? kind,
     required String? content,
     List<List<String>>? tags,
@@ -590,9 +608,33 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               #tags: tags,
               #biometricPrompt: biometricPrompt,
             }),
-            returnValue: _i5.Future<_i11.Event?>.value(),
+            returnValue: _i5.Future<_i12.Event?>.value(),
           )
-          as _i5.Future<_i11.Event?>);
+          as _i5.Future<_i12.Event?>);
+
+  @override
+  void onAppBackgrounded() => super.noSuchMethod(
+    Invocation.method(#onAppBackgrounded, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void onAppResumed() => super.noSuchMethod(
+    Invocation.method(#onAppResumed, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void onExtendedBackground() => super.noSuchMethod(
+    Invocation.method(#onExtendedBackground, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void onPeriodicCleanup() => super.noSuchMethod(
+    Invocation.method(#onPeriodicCleanup, []),
+    returnValueForMissingStub: null,
+  );
 
   @override
   _i5.Future<void> dispose() =>
@@ -608,7 +650,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockAudioSharingPreferenceService extends _i1.Mock
-    implements _i12.AudioSharingPreferenceService {
+    implements _i13.AudioSharingPreferenceService {
   MockAudioSharingPreferenceService() {
     _i1.throwOnMissingStub(this);
   }

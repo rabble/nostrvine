@@ -35,6 +35,10 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
   void dispose() {
     _keyController.dispose();
 
+    // Clear any authentication errors when leaving this screen
+    // This prevents stale errors from being displayed on the welcome screen
+    ref.read(authServiceProvider).clearError();
+
     super.dispose();
   }
 
@@ -116,10 +120,10 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
 
                   // Check if it's a bunker URL
                   if (NostrRemoteSignerInfo.isBunkerUrl(trimmed)) {
-                    // Validate bunker URL format
-                    final info = NostrRemoteSignerInfo.parseBunkerUrl(trimmed);
-                    if (info == null) {
-                      return 'Invalid bunker URL. Must include relay parameter';
+                    try {
+                      NostrRemoteSignerInfo.parseBunkerUrl(trimmed);
+                    } catch (e) {
+                      return 'Invalid bunker URL';
                     }
                     return null;
                   }
