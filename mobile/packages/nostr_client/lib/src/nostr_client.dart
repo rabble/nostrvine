@@ -336,8 +336,11 @@ class NostrClient {
     }
 
     // Merge cache + websocket and return (respecting original limit)
-    // Use first filter's limit since cache only works with single filters
-    final limit = filters.isNotEmpty ? filters.first.limit : null;
+    // Only apply limit when using a single filter - with multiple filters,
+    // each filter has its own limit and we shouldn't restrict the combined
+    // result set (e.g., getVideosByAddressableIds sends N filters with limit=1
+    // each, expecting N results total).
+    final limit = filters.length == 1 ? filters.first.limit : null;
     return _mergeEvents(cacheResults, websocketEvents, limit: limit);
   }
 
