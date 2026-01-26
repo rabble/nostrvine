@@ -39,6 +39,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
             ? const Color(0xFF410001)
             : const Color(0xFF000A06),
         behavior: .floating,
+        margin: const .fromLTRB(16, 0, 16, 68),
       ),
     );
   }
