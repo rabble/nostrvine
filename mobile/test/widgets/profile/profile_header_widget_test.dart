@@ -129,6 +129,7 @@ void main() {
       required String userIdHex,
       required bool isOwnProfile,
       required AsyncValue<ProfileStats> profileStatsAsync,
+      int videoCount = 10,
       UserProfile? profile,
       VoidCallback? onSetupProfile,
       bool isAnonymous = false,
@@ -153,6 +154,7 @@ void main() {
               child: ProfileHeaderWidget(
                 userIdHex: userIdHex,
                 isOwnProfile: isOwnProfile,
+                videoCount: videoCount,
                 profileStatsAsync: profileStatsAsync,
                 onSetupProfile: onSetupProfile,
               ),

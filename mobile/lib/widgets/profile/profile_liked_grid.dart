@@ -67,12 +67,12 @@ class ProfileLikedGrid extends StatelessWidget {
           child: CustomScrollView(
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.all(2),
+                padding: const EdgeInsets.all(4),
                 sliver: SliverGrid(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
-                    crossAxisSpacing: 2,
-                    mainAxisSpacing: 2,
+                    crossAxisSpacing: 4,
+                    mainAxisSpacing: 4,
                     childAspectRatio: 1,
                   ),
                   delegate: SliverChildBuilderDelegate((context, index) {
@@ -182,40 +182,11 @@ class _LikedGridTile extends StatelessWidget {
         category: LogCategory.video,
       );
     },
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: _LikedThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
-            ),
-          ),
-          const Center(
-            child: Icon(
-              Icons.play_circle_filled,
-              color: Colors.white70,
-              size: 32,
-            ),
-          ),
-          // Heart indicator badge
-          Positioned(
-            top: 4,
-            right: 4,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Icon(Icons.favorite, color: Colors.red, size: 16),
-            ),
-          ),
-        ],
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: VineTheme.cardBackground),
+        child: _LikedThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
       ),
     ),
   );
@@ -242,7 +213,7 @@ class _LikedThumbnail extends StatelessWidget {
   }
 }
 
-/// Gradient placeholder for liked video thumbnails
+/// Flat color placeholder for liked video thumbnails
 class _LikedThumbnailPlaceholder extends StatelessWidget {
   const _LikedThumbnailPlaceholder();
 
@@ -250,19 +221,7 @@ class _LikedThumbnailPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(4),
-      gradient: LinearGradient(
-        colors: [
-          Colors.red.withValues(alpha: 0.3),
-          Colors.pink.withValues(alpha: 0.3),
-        ],
-      ),
-    ),
-    child: const Center(
-      child: Icon(
-        Icons.play_circle_outline,
-        color: VineTheme.whiteText,
-        size: 24,
-      ),
+      color: VineTheme.surfaceContainer,
     ),
   );
 }

@@ -2,6 +2,7 @@
 // ABOUTME: Uses existing thumbnail URLs from video events and falls back to blurhash when missing
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' hide LogCategory, AspectRatio;
 import 'package:openvine/extensions/video_event_extensions.dart';
@@ -9,8 +10,6 @@ import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/services/thumbnail_api_service.dart'
     show ThumbnailSize;
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/blurhash_display.dart';
-import 'package:openvine/widgets/video_icon_placeholder.dart';
 
 /// Smart thumbnail widget that displays thumbnails with blurhash fallback
 class VideoThumbnailWidget extends StatefulWidget {
@@ -116,15 +115,14 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   }
 
   Widget _buildContent(BoxFit fit) {
-    // While determining what thumbnail to use, show blurhash if available
-    if (_isLoading && widget.video.blurhash != null) {
+    // While loading, show flat placeholder color
+    if (_isLoading) {
       return Stack(
         children: [
-          BlurhashDisplay(
-            blurhash: widget.video.blurhash!,
+          Container(
             width: widget.width,
             height: widget.height,
-            fit: fit,
+            color: VineTheme.surfaceContainer,
           ),
           if (widget.showPlayIcon)
             Center(
@@ -146,29 +144,17 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
       );
     }
 
-    if (_isLoading) {
-      return VideoIconPlaceholder(
-        width: widget.width,
-        height: widget.height,
-        showLoading: true,
-        showPlayIcon: widget.showPlayIcon,
-        borderRadius: widget.borderRadius?.topLeft.x ?? 8.0,
-      );
-    }
-
     if (_thumbnailUrl != null) {
-      // Show the thumbnail with blurhash as placeholder while loading
+      // Show the thumbnail with flat color as placeholder while loading
       return Stack(
         fit: StackFit.expand,
         children: [
-          // Show blurhash as background while image loads
-          if (widget.video.blurhash != null)
-            BlurhashDisplay(
-              blurhash: widget.video.blurhash!,
-              width: widget.width,
-              height: widget.height,
-              fit: fit,
-            ),
+          // Show flat color as background while image loads
+          Container(
+            width: widget.width,
+            height: widget.height,
+            color: VineTheme.surfaceContainer,
+          ),
           // Actual thumbnail image with error boundary
           _SafeNetworkImage(
             url: _thumbnailUrl!,
@@ -176,7 +162,6 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
             height: widget.height,
             fit: fit,
             videoId: widget.video.id,
-            blurhash: widget.video.blurhash,
             showPlayIcon: widget.showPlayIcon,
             borderRadius: widget.borderRadius,
           ),
@@ -201,53 +186,32 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
       );
     }
 
-    // No thumbnail URL - show blurhash if available, otherwise placeholder
-    if (widget.video.blurhash != null) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          BlurhashDisplay(
-            blurhash: widget.video.blurhash!,
-            width: widget.width,
-            height: widget.height,
-            fit: fit,
-          ),
-          if (widget.showPlayIcon)
-            Center(
-              child: Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.6),
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.play_arrow,
-                  color: Colors.white,
-                  size: 32,
-                ),
+    // No thumbnail URL - show flat placeholder color with optional play icon
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(
+          width: widget.width,
+          height: widget.height,
+          color: VineTheme.surfaceContainer,
+        ),
+        if (widget.showPlayIcon)
+          Center(
+            child: Container(
+              width: 48,
+              height: 48,
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.6),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.play_arrow,
+                color: Colors.white,
+                size: 32,
               ),
             ),
-        ],
-      );
-    }
-
-    // Avoid spinning video controllers for thumbnails; fall back to icon
-    if (widget.video.videoUrl != null && widget.video.videoUrl!.isNotEmpty) {
-      return VideoIconPlaceholder(
-        width: widget.width,
-        height: widget.height,
-        showPlayIcon: widget.showPlayIcon,
-        borderRadius: widget.borderRadius?.topLeft.x ?? 8.0,
-      );
-    }
-
-    // Final fallback - icon placeholder
-    return VideoIconPlaceholder(
-      width: widget.width,
-      height: widget.height,
-      showPlayIcon: widget.showPlayIcon,
-      borderRadius: widget.borderRadius?.topLeft.x ?? 8.0,
+          ),
+      ],
     );
   }
 
@@ -290,7 +254,6 @@ class _SafeNetworkImage extends StatelessWidget {
     this.width,
     this.height,
     this.fit = BoxFit.cover,
-    this.blurhash,
     this.showPlayIcon = false,
     this.borderRadius,
   });
@@ -300,7 +263,6 @@ class _SafeNetworkImage extends StatelessWidget {
   final double? width;
   final double? height;
   final BoxFit fit;
-  final String? blurhash;
   final bool showPlayIcon;
   final BorderRadius? borderRadius;
 
@@ -313,7 +275,9 @@ class _SafeNetworkImage extends StatelessWidget {
       fit: fit,
       alignment: Alignment.topCenter,
       cacheManager: openVineImageCache,
-      placeholder: (context, url) => _buildFallback(),
+      // Show transparent container so background surfaceContainer color shows through
+      placeholder: (context, url) =>
+          Container(width: width, height: height, color: Colors.transparent),
       errorWidget: (context, url, error) {
         // 404s are expected - thumbnail may not exist yet. Handle silently.
         final errorStr = error.toString();
@@ -321,35 +285,22 @@ class _SafeNetworkImage extends StatelessWidget {
             errorStr.contains('404') ||
             (errorStr.contains('statusCode') && errorStr.contains('Invalid'));
 
-        if (is404) {
-          // Expected case - just use fallback without logging
-          return _buildFallback();
+        if (!is404) {
+          // Only log unexpected errors (not 404s)
+          Log.warning(
+            '🖼️ Thumbnail load failed for video $videoId: ${error.runtimeType}',
+            name: 'VideoThumbnailWidget',
+            category: LogCategory.video,
+          );
         }
 
-        // Only log unexpected errors (not 404s)
-        Log.warning(
-          '🖼️ Thumbnail load failed for video $videoId: ${error.runtimeType}',
-          name: 'VideoThumbnailWidget',
-          category: LogCategory.video,
+        // Show transparent so background surfaceContainer color shows through
+        return Container(
+          width: width,
+          height: height,
+          color: Colors.transparent,
         );
-
-        return _buildFallback();
       },
-    );
-  }
-
-  Widget _buildFallback() {
-    // Don't show blurhash here - it's already shown as background in the outer Stack
-    // Just show a transparent container so the background blurhash is visible
-    if (blurhash != null && blurhash!.isNotEmpty) {
-      return Container(width: width, height: height, color: Colors.transparent);
-    }
-    // Fall back to icon placeholder if no blurhash
-    return VideoIconPlaceholder(
-      width: width,
-      height: height,
-      showPlayIcon: showPlayIcon,
-      borderRadius: borderRadius?.topLeft.x ?? 8.0,
     );
   }
 }

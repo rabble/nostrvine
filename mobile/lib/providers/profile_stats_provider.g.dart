@@ -8,12 +8,16 @@ part of 'profile_stats_provider.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Async provider for loading profile statistics
+/// Async provider for loading profile statistics.
+/// Derives video count from profileFeedProvider to ensure consistency
+/// and proper waiting for relay events.
 
 @ProviderFor(fetchProfileStats)
 const fetchProfileStatsProvider = FetchProfileStatsFamily._();
 
-/// Async provider for loading profile statistics
+/// Async provider for loading profile statistics.
+/// Derives video count from profileFeedProvider to ensure consistency
+/// and proper waiting for relay events.
 
 final class FetchProfileStatsProvider
     extends
@@ -23,7 +27,9 @@ final class FetchProfileStatsProvider
           FutureOr<ProfileStats>
         >
     with $FutureModifier<ProfileStats>, $FutureProvider<ProfileStats> {
-  /// Async provider for loading profile statistics
+  /// Async provider for loading profile statistics.
+  /// Derives video count from profileFeedProvider to ensure consistency
+  /// and proper waiting for relay events.
   const FetchProfileStatsProvider._({
     required FetchProfileStatsFamily super.from,
     required String super.argument,
@@ -68,9 +74,11 @@ final class FetchProfileStatsProvider
   }
 }
 
-String _$fetchProfileStatsHash() => r'14c6f29c55d8c8cd2e4f338722b0f32dc900c28c';
+String _$fetchProfileStatsHash() => r'c4d7f95b45334084b4a1dd8f1394c5bd52bd58e4';
 
-/// Async provider for loading profile statistics
+/// Async provider for loading profile statistics.
+/// Derives video count from profileFeedProvider to ensure consistency
+/// and proper waiting for relay events.
 
 final class FetchProfileStatsFamily extends $Family
     with $FunctionalFamilyOverride<FutureOr<ProfileStats>, String> {
@@ -83,7 +91,9 @@ final class FetchProfileStatsFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Async provider for loading profile statistics
+  /// Async provider for loading profile statistics.
+  /// Derives video count from profileFeedProvider to ensure consistency
+  /// and proper waiting for relay events.
 
   FetchProfileStatsProvider call(String pubkey) =>
       FetchProfileStatsProvider._(argument: pubkey, from: this);

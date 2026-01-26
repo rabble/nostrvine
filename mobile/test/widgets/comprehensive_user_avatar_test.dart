@@ -93,8 +93,8 @@ void main() {
         );
 
         expect(find.byType(CachedNetworkImage), findsNothing);
-        // Should show fallback initials or icon
-        expect(find.byType(Container), findsAtLeastNWidgets(1));
+        // Should show fallback avatar image
+        expect(find.byType(Image), findsAtLeastNWidgets(1));
       });
 
       testWidgets('shows fallback when imageUrl is empty', (tester) async {
