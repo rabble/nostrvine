@@ -58,19 +58,19 @@ void _setupPathProviderMock() {
 
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(pathProviderChannel, (
-    MethodCall methodCall,
-  ) async {
-    switch (methodCall.method) {
-      case 'getTemporaryDirectory':
-        return _testTempDir.path;
-      case 'getApplicationDocumentsDirectory':
-        return '${_testTempDir.path}/documents';
-      case 'getApplicationSupportDirectory':
-        return _testSupportDir.path;
-      default:
-        return null;
-    }
-  });
+        MethodCall methodCall,
+      ) async {
+        switch (methodCall.method) {
+          case 'getTemporaryDirectory':
+            return _testTempDir.path;
+          case 'getApplicationDocumentsDirectory':
+            return '${_testTempDir.path}/documents';
+          case 'getApplicationSupportDirectory':
+            return _testSupportDir.path;
+          default:
+            return null;
+        }
+      });
 }
 
 /// Creates a test file with the given content.

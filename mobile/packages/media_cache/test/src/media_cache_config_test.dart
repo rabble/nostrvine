@@ -18,10 +18,6 @@ void main() {
       expect(config.maxConnectionsPerHost, 6);
       expect(config.enableSyncManifest, false);
       expect(config.allowBadCertificatesInDebug, true);
-      expect(config.onDebug, isNull);
-      expect(config.onInfo, isNull);
-      expect(config.onWarning, isNull);
-      expect(config.onError, isNull);
     });
 
     test('accepts custom values', () {
@@ -59,56 +55,6 @@ void main() {
         expect(config.enableSyncManifest, true);
         expect(config.allowBadCertificatesInDebug, true);
       });
-
-      test('accepts logging callbacks', () {
-        var debugCalled = false;
-        var infoCalled = false;
-        var warningCalled = false;
-        var errorCalled = false;
-
-        final config = MediaCacheConfig.video(
-          cacheKey: 'video_cache',
-          onDebug: (_) => debugCalled = true,
-          onInfo: (_) => infoCalled = true,
-          onWarning: (_) => warningCalled = true,
-          onError: (_) => errorCalled = true,
-        );
-
-        config.onDebug?.call('debug');
-        config.onInfo?.call('info');
-        config.onWarning?.call('warning');
-        config.onError?.call('error');
-
-        expect(debugCalled, true);
-        expect(infoCalled, true);
-        expect(warningCalled, true);
-        expect(errorCalled, true);
-      });
-
-      test('callbacks receive correct messages', () {
-        String? debugMsg;
-        String? infoMsg;
-        String? warningMsg;
-        String? errorMsg;
-
-        final config = MediaCacheConfig.video(
-          cacheKey: 'video_cache',
-          onDebug: (msg) => debugMsg = msg,
-          onInfo: (msg) => infoMsg = msg,
-          onWarning: (msg) => warningMsg = msg,
-          onError: (msg) => errorMsg = msg,
-        );
-
-        config.onDebug?.call('test debug');
-        config.onInfo?.call('test info');
-        config.onWarning?.call('test warning');
-        config.onError?.call('test error');
-
-        expect(debugMsg, 'test debug');
-        expect(infoMsg, 'test info');
-        expect(warningMsg, 'test warning');
-        expect(errorMsg, 'test error');
-      });
     });
 
     group('image preset', () {
@@ -123,31 +69,6 @@ void main() {
         expect(config.maxConnectionsPerHost, 6);
         expect(config.enableSyncManifest, false);
         expect(config.allowBadCertificatesInDebug, true);
-      });
-
-      test('accepts logging callbacks', () {
-        var debugCalled = false;
-        var infoCalled = false;
-        var warningCalled = false;
-        var errorCalled = false;
-
-        final config = MediaCacheConfig.image(
-          cacheKey: 'image_cache',
-          onDebug: (_) => debugCalled = true,
-          onInfo: (_) => infoCalled = true,
-          onWarning: (_) => warningCalled = true,
-          onError: (_) => errorCalled = true,
-        );
-
-        config.onDebug?.call('debug');
-        config.onInfo?.call('info');
-        config.onWarning?.call('warning');
-        config.onError?.call('error');
-
-        expect(debugCalled, true);
-        expect(infoCalled, true);
-        expect(warningCalled, true);
-        expect(errorCalled, true);
       });
     });
 

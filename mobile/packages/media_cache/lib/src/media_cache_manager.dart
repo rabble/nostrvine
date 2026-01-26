@@ -8,18 +8,6 @@ import 'package:media_cache/src/safe_cache_info_repository.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 
-/// Callback for logging debug messages.
-typedef LogDebugCallback = void Function(String message);
-
-/// Callback for logging info messages.
-typedef LogInfoCallback = void Function(String message);
-
-/// Callback for logging warning messages.
-typedef LogWarningCallback = void Function(String message);
-
-/// Callback for logging error messages.
-typedef LogErrorCallback = void Function(String message);
-
 /// {@template media_cache_config}
 /// Configuration for [MediaCacheManager].
 ///
@@ -36,10 +24,6 @@ class MediaCacheConfig {
     this.maxConnectionsPerHost = 6,
     this.enableSyncManifest = false,
     this.allowBadCertificatesInDebug = true,
-    this.onDebug,
-    this.onInfo,
-    this.onWarning,
-    this.onError,
   });
 
   /// Creates a configuration optimized for video caching.
@@ -48,25 +32,16 @@ class MediaCacheConfig {
   /// - More cache objects (1000)
   /// - Longer timeouts for large downloads
   /// - Sync manifest enabled for instant playback
-  const MediaCacheConfig.video({
-    required String cacheKey,
-    LogDebugCallback? onDebug,
-    LogInfoCallback? onInfo,
-    LogWarningCallback? onWarning,
-    LogErrorCallback? onError,
-  }) : this(
-         cacheKey: cacheKey,
-         stalePeriod: const Duration(days: 30),
-         maxNrOfCacheObjects: 1000,
-         connectionTimeout: const Duration(seconds: 30),
-         idleTimeout: const Duration(minutes: 2),
-         maxConnectionsPerHost: 4,
-         enableSyncManifest: true,
-         onDebug: onDebug,
-         onInfo: onInfo,
-         onWarning: onWarning,
-         onError: onError,
-       );
+  const MediaCacheConfig.video({required String cacheKey})
+    : this(
+        cacheKey: cacheKey,
+        stalePeriod: const Duration(days: 30),
+        maxNrOfCacheObjects: 1000,
+        connectionTimeout: const Duration(seconds: 30),
+        idleTimeout: const Duration(minutes: 2),
+        maxConnectionsPerHost: 4,
+        enableSyncManifest: true,
+      );
 
   /// Creates a configuration optimized for image caching.
   ///
@@ -74,25 +49,16 @@ class MediaCacheConfig {
   /// - Fewer cache objects (200)
   /// - Shorter timeouts for smaller downloads
   /// - No sync manifest needed
-  const MediaCacheConfig.image({
-    required String cacheKey,
-    LogDebugCallback? onDebug,
-    LogInfoCallback? onInfo,
-    LogWarningCallback? onWarning,
-    LogErrorCallback? onError,
-  }) : this(
-         cacheKey: cacheKey,
-         stalePeriod: const Duration(days: 7),
-         maxNrOfCacheObjects: 200,
-         connectionTimeout: const Duration(seconds: 10),
-         idleTimeout: const Duration(seconds: 30),
-         maxConnectionsPerHost: 6,
-         enableSyncManifest: false,
-         onDebug: onDebug,
-         onInfo: onInfo,
-         onWarning: onWarning,
-         onError: onError,
-       );
+  const MediaCacheConfig.image({required String cacheKey})
+    : this(
+        cacheKey: cacheKey,
+        stalePeriod: const Duration(days: 7),
+        maxNrOfCacheObjects: 200,
+        connectionTimeout: const Duration(seconds: 10),
+        idleTimeout: const Duration(seconds: 30),
+        maxConnectionsPerHost: 6,
+        enableSyncManifest: false,
+      );
 
   /// Unique key for this cache. Used as the cache directory name.
   final String cacheKey;
@@ -123,18 +89,6 @@ class MediaCacheConfig {
   ///
   /// Useful for local development with self-signed certificates.
   final bool allowBadCertificatesInDebug;
-
-  /// Optional callback for debug messages.
-  final LogDebugCallback? onDebug;
-
-  /// Optional callback for info messages.
-  final LogInfoCallback? onInfo;
-
-  /// Optional callback for warning messages.
-  final LogWarningCallback? onWarning;
-
-  /// Optional callback for error messages.
-  final LogErrorCallback? onError;
 }
 
 /// {@template media_cache_manager}
@@ -176,12 +130,7 @@ class MediaCacheManager extends CacheManager {
            config.cacheKey,
            stalePeriod: config.stalePeriod,
            maxNrOfCacheObjects: config.maxNrOfCacheObjects,
-           repo: SafeCacheInfoRepository(
-             databaseName: config.cacheKey,
-             onWarning: config.onWarning,
-             onInfo: config.onInfo,
-             onError: config.onError,
-           ),
+           repo: SafeCacheInfoRepository(databaseName: config.cacheKey),
            fileService: _createHttpFileService(config),
          ),
        );
@@ -227,44 +176,23 @@ class MediaCacheManager extends CacheManager {
   ///
   /// Safe to call multiple times - subsequent calls are no-ops.
   Future<void> initialize() async {
-    if (!_config.enableSyncManifest) {
-      _config.onDebug?.call(
-        '${_config.cacheKey}: Sync manifest disabled, skipping initialization',
-      );
+    if (!_config.enableSyncManifest || _manifestInitialized) {
       _manifestInitialized = true;
       return;
     }
 
-    if (_manifestInitialized) {
-      _config.onDebug?.call(
-        '${_config.cacheKey}: Cache manifest already initialized, skipping',
-      );
-      return;
-    }
-
     try {
-      _config.onInfo?.call(
-        '${_config.cacheKey}: Initializing cache manifest from database...',
-      );
-
-      final startTime = DateTime.now();
-
       // Get the base cache directory
       final tempDir = await getTemporaryDirectory();
       final baseCacheDir = path.join(tempDir.path, _config.cacheKey);
       final cacheDir = Directory(baseCacheDir);
 
       if (!cacheDir.existsSync()) {
-        _config.onInfo?.call(
-          '${_config.cacheKey}: No cache directory found yet, '
-          'skipping initialization',
-        );
         _manifestInitialized = true;
         return;
       }
 
       // Scan the cache directory for files
-      var loadedCount = 0;
       await for (final entity in cacheDir.list()) {
         if (entity is File) {
           final fileName = path.basename(entity.path);
@@ -272,21 +200,11 @@ class MediaCacheManager extends CacheManager {
           // We store without extension as the key
           final key = path.basenameWithoutExtension(fileName);
           _cacheManifest[key] = entity.path;
-          loadedCount++;
         }
       }
 
-      final duration = DateTime.now().difference(startTime);
       _manifestInitialized = true;
-
-      _config.onInfo?.call(
-        '${_config.cacheKey}: Cache manifest initialized: '
-        '$loadedCount files loaded (${duration.inMilliseconds}ms)',
-      );
-    } on Exception catch (error) {
-      _config.onError?.call(
-        '${_config.cacheKey}: Failed to initialize cache manifest: $error',
-      );
+    } on Exception {
       // Don't throw - degraded functionality is better than crash
       _manifestInitialized = true;
     }
@@ -317,15 +235,9 @@ class MediaCacheManager extends CacheManager {
     if (!file.existsSync()) {
       // Remove stale entry from manifest
       _cacheManifest.remove(key);
-      _config.onDebug?.call(
-        '${_config.cacheKey}: Removed stale cache entry for $key',
-      );
       return null;
     }
 
-    _config.onDebug?.call(
-      '${_config.cacheKey}: Fast cache hit for $key (sync check)',
-    );
     return file;
   }
 
@@ -352,17 +264,11 @@ class MediaCacheManager extends CacheManager {
       if (_config.enableSyncManifest) {
         _cacheManifest[key] = existingFile.file.path;
       }
-      _config.onDebug?.call(
-        '${_config.cacheKey}: File $key already cached, skipping download',
-      );
       return existingFile.file;
     }
 
     // Check if already being cached
     if (_pendingCacheOperations.containsKey(key)) {
-      _config.onDebug?.call(
-        '${_config.cacheKey}: Waiting for ongoing cache operation for $key',
-      );
       return _pendingCacheOperations[key];
     }
 
@@ -371,10 +277,6 @@ class MediaCacheManager extends CacheManager {
     _pendingCacheOperations[key] = completer.future;
 
     try {
-      _config.onInfo?.call(
-        '${_config.cacheKey}: Caching $key from $url',
-      );
-
       final fileInfo = await downloadFile(
         url,
         key: key,
@@ -386,17 +288,9 @@ class MediaCacheManager extends CacheManager {
         _cacheManifest[key] = fileInfo.file.path;
       }
 
-      _config.onInfo?.call(
-        '${_config.cacheKey}: Successfully cached $key '
-        'at ${fileInfo.file.path}',
-      );
-
       completer.complete(fileInfo.file);
       return fileInfo.file;
-    } on Exception catch (error) {
-      _config.onError?.call(
-        '${_config.cacheKey}: Failed to cache $key: $error',
-      );
+    } on Exception {
       completer.complete(null);
       return null;
     } finally {
@@ -418,10 +312,7 @@ class MediaCacheManager extends CacheManager {
       }
 
       return isCached;
-    } on Exception catch (error) {
-      _config.onWarning?.call(
-        '${_config.cacheKey}: Error checking cache for $key: $error',
-      );
+    } on Exception {
       return false;
     }
   }
@@ -439,10 +330,6 @@ class MediaCacheManager extends CacheManager {
   }) async {
     if (items.isEmpty) return;
 
-    _config.onInfo?.call(
-      '${_config.cacheKey}: Pre-caching ${items.length} files',
-    );
-
     // Process in batches
     for (var i = 0; i < items.length; i += batchSize) {
       final batch = <Future<File?>>[];
@@ -453,9 +340,6 @@ class MediaCacheManager extends CacheManager {
 
         // Skip if already cached
         if (await isFileCached(item.key)) {
-          _config.onDebug?.call(
-            '${_config.cacheKey}: Skipping already cached ${item.key}',
-          );
           continue;
         }
 
@@ -471,58 +355,26 @@ class MediaCacheManager extends CacheManager {
       // Wait for batch to complete
       await Future.wait(batch);
     }
-
-    _config.onInfo?.call(
-      '${_config.cacheKey}: Pre-caching completed',
-    );
   }
 
   /// Removes a cached file by key.
   ///
   /// Useful for removing corrupted files so they can be re-downloaded.
   Future<void> removeCachedFile(String key) async {
-    try {
-      _config.onInfo?.call(
-        '${_config.cacheKey}: Removing cached file $key',
-      );
+    await removeFile(key);
 
-      await removeFile(key);
-
-      // Remove from manifest
-      _cacheManifest.remove(key);
-      unawaited(Future(() => _pendingCacheOperations.remove(key)));
-
-      _config.onInfo?.call(
-        '${_config.cacheKey}: Successfully removed $key from cache',
-      );
-    } on Exception catch (error) {
-      _config.onError?.call(
-        '${_config.cacheKey}: Error removing $key from cache: $error',
-      );
-    }
+    // Remove from manifest
+    _cacheManifest.remove(key);
+    unawaited(Future(() => _pendingCacheOperations.remove(key)));
   }
 
   /// Clears all cached files.
   Future<void> clearCache() async {
-    try {
-      _config.onInfo?.call(
-        '${_config.cacheKey}: Clearing all cached files...',
-      );
+    await emptyCache();
 
-      await emptyCache();
-
-      // Clear manifest
-      _cacheManifest.clear();
-      _pendingCacheOperations.clear();
-
-      _config.onInfo?.call(
-        '${_config.cacheKey}: Cache cleared successfully',
-      );
-    } on Exception catch (error) {
-      _config.onError?.call(
-        '${_config.cacheKey}: Error clearing cache: $error',
-      );
-    }
+    // Clear manifest
+    _cacheManifest.clear();
+    _pendingCacheOperations.clear();
   }
 
   /// Returns basic cache statistics.
@@ -543,8 +395,5 @@ class MediaCacheManager extends CacheManager {
     _manifestInitialized = false;
     _cacheManifest.clear();
     _pendingCacheOperations.clear();
-    _config.onDebug?.call(
-      '${_config.cacheKey}: Cache manager reset for testing',
-    );
   }
 }

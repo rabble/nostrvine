@@ -29,7 +29,8 @@ class TestableMediaCacheManager extends MediaCacheManager {
     String url, {
     String? key,
     Map<String, String>? authHeaders,
-  })? mockDownloadFile;
+  })?
+  mockDownloadFile;
 
   /// Mock function for [removeFile].
   final Future<void> Function(String key)? mockRemoveFile;
@@ -83,9 +84,6 @@ class TestableMediaCacheManager extends MediaCacheManager {
 class TestableSafeCacheInfoRepository extends SafeCacheInfoRepository {
   TestableSafeCacheInfoRepository({
     required super.databaseName,
-    super.onWarning,
-    super.onInfo,
-    super.onError,
     this.shouldThrowFormatException = false,
     this.shouldThrowGenericException = false,
     this.genericExceptionMessage,
@@ -108,44 +106,20 @@ class TestableSafeCacheInfoRepository extends SafeCacheInfoRepository {
     if (!_hasThrown) {
       if (shouldThrowFormatException) {
         _hasThrown = true;
-        // Call the overridden open which will catch and handle
-        return _openWithFormatException();
+        // Simulate recovery from FormatException
+        return true;
       }
       if (shouldThrowGenericException) {
         _hasThrown = true;
-        return _openWithGenericException();
+        final message = genericExceptionMessage ?? 'Unexpected end of input';
+        // Simulate recovery from recoverable exceptions
+        if (message.contains('Unexpected end of input') ||
+            message.contains("type 'Null'")) {
+          return true;
+        }
+        throw Exception(message);
       }
     }
     return super.open();
-  }
-
-  Future<bool> _openWithFormatException() async {
-    try {
-      throw const FormatException('Simulated corrupted JSON');
-    } on FormatException catch (e) {
-      onWarning?.call(
-        'Cache JSON corrupted for testDb, clearing cache: $e',
-      );
-      // Simulate deletion and retry
-      onInfo?.call('Deleted corrupted cache file: /test/path');
-      return true;
-    }
-  }
-
-  Future<bool> _openWithGenericException() async {
-    final message = genericExceptionMessage ?? 'Unexpected end of input';
-    try {
-      throw Exception(message);
-    } on Exception catch (e) {
-      if (e.toString().contains('Unexpected end of input') ||
-          e.toString().contains("type 'Null'")) {
-        onWarning?.call(
-          'Cache JSON empty/null for testDb, clearing cache: $e',
-        );
-        onInfo?.call('Deleted corrupted cache file: /test/path');
-        return true;
-      }
-      rethrow;
-    }
   }
 }

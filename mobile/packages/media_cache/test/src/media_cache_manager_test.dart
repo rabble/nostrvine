@@ -10,7 +10,6 @@ void main() {
 
   group('MediaCacheManager', () {
     late MediaCacheManager cacheManager;
-    late List<String> logMessages;
 
     setUpAll(() async {
       await setUpTestDirectories();
@@ -21,15 +20,10 @@ void main() {
     });
 
     setUp(() {
-      logMessages = [];
       cacheManager = MediaCacheManager(
         config: MediaCacheConfig(
           cacheKey: 'test_cache_${DateTime.now().millisecondsSinceEpoch}',
           enableSyncManifest: true,
-          onDebug: logMessages.add,
-          onInfo: logMessages.add,
-          onWarning: logMessages.add,
-          onError: logMessages.add,
         ),
       );
     });
@@ -61,28 +55,17 @@ void main() {
         await cacheManager.initialize();
         await cacheManager.initialize();
         expect(cacheManager.isInitialized, true);
-
-        // Should log that it's already initialized
-        expect(
-          logMessages.any((m) => m.contains('already initialized')),
-          true,
-        );
       });
 
       test('skips initialization when sync manifest is disabled', () async {
         final noManifestCache = MediaCacheManager(
           config: MediaCacheConfig(
             cacheKey: 'no_manifest_${DateTime.now().millisecondsSinceEpoch}',
-            onDebug: logMessages.add,
           ),
         );
 
         await noManifestCache.initialize();
         expect(noManifestCache.isInitialized, true);
-        expect(
-          logMessages.any((m) => m.contains('Sync manifest disabled')),
-          true,
-        );
       });
 
       test('loads existing files into manifest', () async {
@@ -98,10 +81,6 @@ void main() {
         await cacheManager.initialize();
 
         expect(cacheManager.isInitialized, true);
-        expect(
-          logMessages.any((m) => m.contains('3 files loaded')),
-          true,
-        );
 
         // Clean up
         cacheDir.deleteSync(recursive: true);
@@ -161,10 +140,6 @@ void main() {
         // Should return null and remove from manifest
         file = cacheManager.getCachedFileSync('stale_key');
         expect(file, isNull);
-        expect(
-          logMessages.any((m) => m.contains('Removed stale cache entry')),
-          true,
-        );
 
         // Clean up
         if (cacheDir.existsSync()) {
@@ -228,17 +203,6 @@ void main() {
         await cacheManager.preCacheFiles([]);
         // Should not throw
       });
-
-      test('logs when pre-caching', () async {
-        await cacheManager.preCacheFiles([
-          (url: 'https://example.com/video1.mp4', key: 'video1'),
-        ]);
-
-        expect(
-          logMessages.any((m) => m.contains('Pre-caching')),
-          true,
-        );
-      });
     });
 
     group('with video config', () {
@@ -301,12 +265,6 @@ void main() {
       test('handles non-existent key gracefully', () async {
         // Should not throw when key does not exist
         await cacheManager.removeCachedFile('non_existent_key');
-
-        // Verify appropriate logs
-        expect(
-          logMessages.any((m) => m.contains('Removing cached file')),
-          true,
-        );
       });
     });
 
@@ -321,80 +279,6 @@ void main() {
         // Stats should show empty manifest
         final stats = cacheManager.getCacheStats();
         expect(stats['manifestSize'], 0);
-      });
-    });
-
-    group('logging', () {
-      test('debug callback is called for sync manifest disabled', () async {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        final noManifestCache = MediaCacheManager(
-          config: MediaCacheConfig(
-            cacheKey: 'no_manifest_log_$timestamp',
-            onDebug: logMessages.add,
-          ),
-        );
-
-        await noManifestCache.initialize();
-
-        expect(
-          logMessages.any(
-            (m) => m.contains('Sync manifest disabled'),
-          ),
-          true,
-        );
-      });
-
-      test('debug callback is called on getCachedFileSync hit', () async {
-        // Create cache directory with test file
-        final cacheDir = Directory(
-          '$testTempPath/${cacheManager.mediaConfig.cacheKey}',
-        )..createSync(recursive: true);
-        await createTestFile(cacheDir, 'hit_key.mp4');
-
-        await cacheManager.initialize();
-
-        // First call should be a hit
-        logMessages.clear();
-        final file = cacheManager.getCachedFileSync('hit_key');
-
-        expect(file, isNotNull);
-        expect(
-          logMessages.any((m) => m.contains('Fast cache hit')),
-          true,
-        );
-
-        // Clean up
-        cacheDir.deleteSync(recursive: true);
-      });
-
-      test('info callback is called during initialization', () async {
-        final cacheDir = Directory(
-          '$testTempPath/${cacheManager.mediaConfig.cacheKey}',
-        )..createSync(recursive: true);
-        await createTestFile(cacheDir, 'init_file.mp4');
-
-        logMessages.clear();
-        await cacheManager.initialize();
-
-        expect(
-          logMessages.any(
-            (m) => m.contains('Initializing cache manifest'),
-          ),
-          true,
-        );
-
-        // Clean up
-        cacheDir.deleteSync(recursive: true);
-      });
-
-      test('resetForTesting logs debug message', () {
-        logMessages.clear();
-        cacheManager.resetForTesting();
-
-        expect(
-          logMessages.any((m) => m.contains('reset for testing')),
-          true,
-        );
       });
     });
   });

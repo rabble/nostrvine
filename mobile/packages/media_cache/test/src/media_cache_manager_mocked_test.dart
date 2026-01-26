@@ -1,5 +1,3 @@
-// ignore_for_file: unnecessary_lambdas
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
@@ -11,7 +9,6 @@ void main() {
   setUpTestEnvironment();
 
   group('MediaCacheManager with mocks', () {
-    late List<String> logMessages;
     late TestableMediaCacheManager cacheManager;
 
     setUpAll(() async {
@@ -20,10 +17,6 @@ void main() {
 
     tearDownAll(() async {
       await tearDownTestDirectories();
-    });
-
-    setUp(() {
-      logMessages = [];
     });
 
     tearDown(() {
@@ -44,8 +37,6 @@ void main() {
           config: MediaCacheConfig(
             cacheKey: 'cache_test_$timestamp',
             enableSyncManifest: true,
-            onDebug: logMessages.add,
-            onInfo: logMessages.add,
           ),
           mockGetFileFromCache: (key) async => mockFileInfo,
         );
@@ -57,10 +48,6 @@ void main() {
 
         expect(result, isNotNull);
         expect(result!.path, '/test/path/video.mp4');
-        expect(
-          logMessages.any((m) => m.contains('already cached')),
-          true,
-        );
       });
 
       test('downloads and caches new file', () async {
@@ -76,8 +63,6 @@ void main() {
           config: MediaCacheConfig(
             cacheKey: 'download_test_$timestamp',
             enableSyncManifest: true,
-            onDebug: logMessages.add,
-            onInfo: logMessages.add,
           ),
           mockGetFileFromCache: (key) async => null,
           mockDownloadFile: (url, {key, authHeaders}) async => mockFileInfo,
@@ -90,14 +75,6 @@ void main() {
 
         expect(result, isNotNull);
         expect(result!.path, '/test/path/new_video.mp4');
-        expect(
-          logMessages.any((m) => m.contains('Caching new_key')),
-          true,
-        );
-        expect(
-          logMessages.any((m) => m.contains('Successfully cached')),
-          true,
-        );
       });
 
       test('handles download error gracefully', () async {
@@ -106,9 +83,6 @@ void main() {
           config: MediaCacheConfig(
             cacheKey: 'error_test_$timestamp',
             enableSyncManifest: true,
-            onDebug: logMessages.add,
-            onInfo: logMessages.add,
-            onError: logMessages.add,
           ),
           mockGetFileFromCache: (key) async => null,
           mockDownloadFile: (url, {key, authHeaders}) async {
@@ -122,10 +96,6 @@ void main() {
         );
 
         expect(result, isNull);
-        expect(
-          logMessages.any((m) => m.contains('Failed to cache')),
-          true,
-        );
       });
 
       test('deduplicates concurrent requests for same key', () async {
@@ -142,8 +112,6 @@ void main() {
           config: MediaCacheConfig(
             cacheKey: 'dedup_test_$timestamp',
             enableSyncManifest: true,
-            onDebug: logMessages.add,
-            onInfo: logMessages.add,
           ),
           mockGetFileFromCache: (key) async => null,
           mockDownloadFile: (url, {key, authHeaders}) async {
@@ -172,10 +140,6 @@ void main() {
 
         // But download should only happen once
         expect(downloadCount, 1);
-        expect(
-          logMessages.any((m) => m.contains('Waiting for ongoing')),
-          true,
-        );
       });
 
       test('passes auth headers to download', () async {
@@ -251,7 +215,6 @@ void main() {
         cacheManager = TestableMediaCacheManager(
           config: MediaCacheConfig(
             cacheKey: 'error_cached_test_$timestamp',
-            onWarning: logMessages.add,
           ),
           mockGetFileFromCache: (key) async {
             throw Exception('Cache error');
@@ -260,10 +223,6 @@ void main() {
 
         final isCached = await cacheManager.isFileCached('error_key');
         expect(isCached, false);
-        expect(
-          logMessages.any((m) => m.contains('Error checking cache')),
-          true,
-        );
       });
     });
 
@@ -276,7 +235,6 @@ void main() {
           config: MediaCacheConfig(
             cacheKey: 'remove_test_$timestamp',
             enableSyncManifest: true,
-            onInfo: logMessages.add,
           ),
           mockRemoveFile: (key) async {
             removeFileCalled = true;
@@ -286,36 +244,6 @@ void main() {
         await cacheManager.removeCachedFile('remove_key');
 
         expect(removeFileCalled, true);
-        expect(
-          logMessages.any((m) => m.contains('Removing cached file')),
-          true,
-        );
-        expect(
-          logMessages.any((m) => m.contains('Successfully removed')),
-          true,
-        );
-      });
-
-      test('handles removal error gracefully', () async {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        cacheManager = TestableMediaCacheManager(
-          config: MediaCacheConfig(
-            cacheKey: 'remove_error_test_$timestamp',
-            onInfo: logMessages.add,
-            onError: logMessages.add,
-          ),
-          mockRemoveFile: (key) async {
-            throw Exception('Removal failed');
-          },
-        );
-
-        // Should not throw
-        await cacheManager.removeCachedFile('error_key');
-
-        expect(
-          logMessages.any((m) => m.contains('Error removing')),
-          true,
-        );
       });
     });
 
@@ -328,7 +256,6 @@ void main() {
           config: MediaCacheConfig(
             cacheKey: 'clear_test_$timestamp',
             enableSyncManifest: true,
-            onInfo: logMessages.add,
           ),
           mockEmptyCache: () async {
             emptyCacheCalled = true;
@@ -338,36 +265,6 @@ void main() {
         await cacheManager.clearCache();
 
         expect(emptyCacheCalled, true);
-        expect(
-          logMessages.any((m) => m.contains('Clearing all cached files')),
-          true,
-        );
-        expect(
-          logMessages.any((m) => m.contains('Cache cleared successfully')),
-          true,
-        );
-      });
-
-      test('handles clear error gracefully', () async {
-        final timestamp = DateTime.now().millisecondsSinceEpoch;
-        cacheManager = TestableMediaCacheManager(
-          config: MediaCacheConfig(
-            cacheKey: 'clear_error_test_$timestamp',
-            onInfo: logMessages.add,
-            onError: logMessages.add,
-          ),
-          mockEmptyCache: () async {
-            throw Exception('Clear failed');
-          },
-        );
-
-        // Should not throw
-        await cacheManager.clearCache();
-
-        expect(
-          logMessages.any((m) => m.contains('Error clearing cache')),
-          true,
-        );
       });
     });
 
@@ -386,8 +283,6 @@ void main() {
           config: MediaCacheConfig(
             cacheKey: 'precache_skip_$timestamp',
             enableSyncManifest: true,
-            onDebug: logMessages.add,
-            onInfo: logMessages.add,
           ),
           mockGetFileFromCache: (key) async => mockFileInfo,
           mockDownloadFile: (url, {key, authHeaders}) async {
@@ -403,10 +298,6 @@ void main() {
 
         // Should skip downloads since files are cached
         expect(downloadCount, 0);
-        expect(
-          logMessages.any((m) => m.contains('Skipping already cached')),
-          true,
-        );
       });
 
       test('uses auth headers provider', () async {
@@ -423,7 +314,6 @@ void main() {
           config: MediaCacheConfig(
             cacheKey: 'precache_auth_$timestamp',
             enableSyncManifest: true,
-            onInfo: logMessages.add,
           ),
           mockGetFileFromCache: (key) async => null,
           mockDownloadFile: (url, {key, authHeaders}) async {
