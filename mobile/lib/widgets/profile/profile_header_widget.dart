@@ -27,6 +27,8 @@ class ProfileHeaderWidget extends ConsumerWidget {
     required this.videoCount,
     required this.profileStatsAsync,
     this.onSetupProfile,
+    this.displayNameHint,
+    this.avatarUrlHint,
     super.key,
   });
 
@@ -46,21 +48,25 @@ class ProfileHeaderWidget extends ConsumerWidget {
   /// Only shown for own profile with default name.
   final VoidCallback? onSetupProfile;
 
+  /// Optional display name hint for users without Kind 0 profiles (e.g., classic Viners).
+  final String? displayNameHint;
+
+  /// Optional avatar URL hint for users without Kind 0 profiles.
+  final String? avatarUrlHint;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Watch profile from relay (reactive)
     final profileAsync = ref.watch(fetchUserProfileProvider(userIdHex));
     final profile = profileAsync.value;
 
-    if (!isOwnProfile && profile == null) {
-      return const SizedBox.shrink();
-    }
-
-    final profilePictureUrl = profile?.picture;
-    final displayName = profile?.bestDisplayName;
+    // Use hints as fallbacks for users without Kind 0 profiles (e.g., classic Viners)
+    final profilePictureUrl = profile?.picture ?? avatarUrlHint;
+    final displayName = profile?.bestDisplayName ?? displayNameHint;
     final hasCustomName =
         profile?.name?.isNotEmpty == true ||
-        profile?.displayName?.isNotEmpty == true;
+        profile?.displayName?.isNotEmpty == true ||
+        displayNameHint?.isNotEmpty == true;
     final nip05 = profile?.nip05;
     final about = profile?.about;
     final authService = ref.watch(authServiceProvider);
@@ -120,6 +126,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
             userIdHex: userIdHex,
             nip05: nip05,
             about: about,
+            displayNameHint: displayNameHint,
           ),
         ],
       ),
@@ -252,12 +259,14 @@ class _ProfileNameAndBio extends StatelessWidget {
     required this.userIdHex,
     required this.nip05,
     required this.about,
+    this.displayNameHint,
   });
 
   final UserProfile? profile;
   final String userIdHex;
   final String? nip05;
   final String? about;
+  final String? displayNameHint;
 
   @override
   Widget build(BuildContext context) {
@@ -272,7 +281,11 @@ class _ProfileNameAndBio extends StatelessWidget {
               style: VineTheme.titleLargeFont(),
             )
           else
-            UserName.fromPubKey(userIdHex, style: VineTheme.titleLargeFont()),
+            UserName.fromPubKey(
+              userIdHex,
+              style: VineTheme.titleLargeFont(),
+              anonymousName: displayNameHint,
+            ),
           _UniqueIdentifier(userIdHex: userIdHex, nip05: nip05),
           if (about != null && about!.isNotEmpty) ...[
             const SizedBox(height: 24),

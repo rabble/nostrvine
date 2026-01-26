@@ -49,13 +49,19 @@ class _FakeBlossomUploadResult_2 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
-class _FakeAuthResult_3 extends _i1.SmartFake implements _i2.AuthResult {
-  _FakeAuthResult_3(Object parent, Invocation parentInvocation)
+class _FakeBlossomHealthCheckResult_3 extends _i1.SmartFake
+    implements _i4.BlossomHealthCheckResult {
+  _FakeBlossomHealthCheckResult_3(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeCountResult_4 extends _i1.SmartFake implements _i5.CountResult {
-  _FakeCountResult_4(Object parent, Invocation parentInvocation)
+class _FakeAuthResult_4 extends _i1.SmartFake implements _i2.AuthResult {
+  _FakeAuthResult_4(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeCountResult_5 extends _i1.SmartFake implements _i5.CountResult {
+  _FakeCountResult_5(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -224,6 +230,21 @@ class MockBlossomUploadService extends _i1.Mock
             ),
           )
           as _i6.Future<_i4.BlossomUploadResult>);
+
+  @override
+  _i6.Future<_i4.BlossomHealthCheckResult> testServerConnection([
+    String? serverUrl,
+  ]) =>
+      (super.noSuchMethod(
+            Invocation.method(#testServerConnection, [serverUrl]),
+            returnValue: _i6.Future<_i4.BlossomHealthCheckResult>.value(
+              _FakeBlossomHealthCheckResult_3(
+                this,
+                Invocation.method(#testServerConnection, [serverUrl]),
+              ),
+            ),
+          )
+          as _i6.Future<_i4.BlossomHealthCheckResult>);
 }
 
 /// A class which mocks [AuthService].
@@ -308,7 +329,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
               #biometricPrompt: biometricPrompt,
             }),
             returnValue: _i6.Future<_i2.AuthResult>.value(
-              _FakeAuthResult_3(
+              _FakeAuthResult_4(
                 this,
                 Invocation.method(#createNewIdentity, [], {
                   #biometricPrompt: biometricPrompt,
@@ -330,7 +351,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
               {#biometricPrompt: biometricPrompt},
             ),
             returnValue: _i6.Future<_i2.AuthResult>.value(
-              _FakeAuthResult_3(
+              _FakeAuthResult_4(
                 this,
                 Invocation.method(
                   #importFromNsec,
@@ -354,7 +375,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
               {#biometricPrompt: biometricPrompt},
             ),
             returnValue: _i6.Future<_i2.AuthResult>.value(
-              _FakeAuthResult_3(
+              _FakeAuthResult_4(
                 this,
                 Invocation.method(
                   #importFromHex,
@@ -371,7 +392,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
       (super.noSuchMethod(
             Invocation.method(#connectWithBunker, [bunkerUrl]),
             returnValue: _i6.Future<_i2.AuthResult>.value(
-              _FakeAuthResult_3(
+              _FakeAuthResult_4(
                 this,
                 Invocation.method(#connectWithBunker, [bunkerUrl]),
               ),
@@ -638,7 +659,7 @@ class MockNostrClient extends _i1.Mock implements _i11.NostrClient {
               },
             ),
             returnValue: _i6.Future<_i5.CountResult>.value(
-              _FakeCountResult_4(
+              _FakeCountResult_5(
                 this,
                 Invocation.method(
                   #countEvents,

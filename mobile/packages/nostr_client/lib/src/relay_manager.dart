@@ -208,17 +208,12 @@ class RelayManager {
   /// Remove a relay from the configuration
   ///
   /// Returns true if the relay was removed.
-  /// Returns false if the relay is the default relay or not configured.
+  /// Returns false if the relay URL is invalid or not configured.
   Future<bool> removeRelay(String url) async {
     final normalizedUrl = _normalizeUrl(url);
 
     if (normalizedUrl == null) {
       _log('Invalid relay URL: $url');
-      return false;
-    }
-
-    if (normalizedUrl == _config.defaultRelayUrl) {
-      _log('Cannot remove default relay: $normalizedUrl');
       return false;
     }
 

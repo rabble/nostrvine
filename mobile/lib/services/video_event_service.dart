@@ -1232,6 +1232,8 @@ class VideoEventService extends ChangeNotifier {
           'until': until,
           'limit': limit,
           'includeReposts': includeReposts,
+          'sortBy': sortBy,
+          'nip50Sort': nip50Sort,
         };
 
         // Set per-subscription loading state to show loading UI
@@ -2769,6 +2771,84 @@ class VideoEventService extends ChangeNotifier {
       subscriptionType: SubscriptionType.discovery,
       includeReposts: false,
       force: true, // Force refresh to get fresh data from relay
+    );
+  }
+
+  /// Reset all persistent subscriptions and resubscribe.
+  ///
+  /// Used when the relay set changes (relays added/removed) to ensure feeds
+  /// reflect data from the new relay configuration. Ephemeral subscriptions
+  /// (search, hashtag, profile) are cancelled but not auto-resubscribed;
+  /// user navigation will trigger fresh ones.
+  Future<void> resetAndResubscribeAll() async {
+    if (_isDisposed) return;
+
+    Log.info(
+      'Relay set changed - resetting and resubscribing all persistent feeds',
+      name: 'VideoEventService',
+      category: LogCategory.video,
+    );
+
+    // Snapshot params for persistent subscription types before clearing
+    final homeFeedParams =
+        _subscriptionParams[SubscriptionType.homeFeed] != null
+        ? Map<String, dynamic>.from(
+            _subscriptionParams[SubscriptionType.homeFeed]!,
+          )
+        : null;
+    final discoveryParams =
+        _subscriptionParams[SubscriptionType.discovery] != null
+        ? Map<String, dynamic>.from(
+            _subscriptionParams[SubscriptionType.discovery]!,
+          )
+        : null;
+
+    // Cancel all subscriptions
+    await unsubscribeFromVideoFeed();
+
+    // Clear all event lists
+    clearVideoEvents();
+
+    // Reset pagination states
+    for (final state in _paginationStates.values) {
+      state.reset();
+    }
+
+    // Clear bucket caches
+    _hashtagBuckets.clear();
+    _authorBuckets.clear();
+
+    // Notify listeners so providers react (emit empty → loading transition)
+    notifyListeners();
+
+    // Re-subscribe to discovery feed
+    if (discoveryParams != null) {
+      await subscribeToVideoFeed(
+        subscriptionType: SubscriptionType.discovery,
+        limit: discoveryParams['limit'] as int? ?? 200,
+        sortBy: discoveryParams['sortBy'] as VideoSortField?,
+        nip50Sort: discoveryParams['nip50Sort'] as NIP50SortMode?,
+        force: true,
+      );
+    }
+
+    // Re-subscribe to home feed with saved authors list
+    if (homeFeedParams != null) {
+      final authors = homeFeedParams['authors'] as List<String>?;
+      if (authors != null && authors.isNotEmpty) {
+        await subscribeToHomeFeed(
+          authors,
+          limit: homeFeedParams['limit'] as int? ?? 100,
+          sortBy: homeFeedParams['sortBy'] as VideoSortField?,
+          force: true,
+        );
+      }
+    }
+
+    Log.info(
+      'Relay set change: resubscription complete',
+      name: 'VideoEventService',
+      category: LogCategory.video,
     );
   }
 

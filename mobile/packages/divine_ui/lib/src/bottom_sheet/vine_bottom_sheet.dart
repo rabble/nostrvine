@@ -27,13 +27,19 @@ class VineBottomSheet extends StatelessWidget {
     this.scrollController,
     this.children,
     this.body,
+    this.buildScrollBody,
     this.trailing,
     this.bottomInput,
     this.expanded = true,
+    this.showHeaderDivider = true,
     super.key,
   }) : assert(
-         children != null || body != null,
-         'Provide either children or body',
+         children != null || body != null || buildScrollBody != null,
+         'Provide either children, body, or buildScrollBody',
+       ),
+       assert(
+         buildScrollBody == null || scrollController != null,
+         'scrollController must be provided when using buildScrollBody',
        );
 
   /// Whether the sheet is scrollable/draggable.
@@ -59,6 +65,12 @@ class VineBottomSheet extends StatelessWidget {
   /// Custom body widget (alternative to children)
   final Widget? body;
 
+  /// Builder function for custom scrollable content.
+  ///
+  /// Use this when you need direct access to the [ScrollController]
+  /// for custom scroll behavior. Requires [scrollController] to be provided.
+  final Widget Function(ScrollController scrollController)? buildScrollBody;
+
   /// Optional trailing widget in header (e.g., badge, button)
   final Widget? trailing;
 
@@ -68,6 +80,11 @@ class VineBottomSheet extends StatelessWidget {
   /// Whether the body should expand to fill available space.
   /// Set to false for simple content that should wrap.
   final bool expanded;
+
+  /// Whether to show the divider below the header.
+  ///
+  /// Defaults to true.
+  final bool showHeaderDivider;
 
   /// Shows the bottom sheet as a modal.
   ///
@@ -80,23 +97,32 @@ class VineBottomSheet extends StatelessWidget {
     Widget? title,
     String? contentTitle,
     Widget? body,
+    Widget Function(ScrollController scrollController)? buildScrollBody,
     Widget? trailing,
     Widget? bottomInput,
     bool expanded = true,
+    bool showHeaderDivider = true,
     bool? isScrollControlled,
     double initialChildSize = 0.6,
     double minChildSize = 0.3,
     double maxChildSize = 0.9,
   }) {
     assert(
-      children != null || body != null,
-      'Provide either children or body to VineBottomSheet.show',
+      children != null || body != null || buildScrollBody != null,
+      'Provide either children, body, or buildScrollBody to '
+      'VineBottomSheet.show',
     );
+    assert(
+      scrollable || buildScrollBody == null,
+      'buildScrollBody can only be used when scrollable is true',
+    );
+
     if (scrollable) {
       // Draggable/scrollable mode
       return showModalBottomSheet<T>(
         context: context,
         isScrollControlled: true,
+        useSafeArea: true,
         backgroundColor: Colors.transparent,
         builder: (_) => DraggableScrollableSheet(
           initialChildSize: initialChildSize,
@@ -106,9 +132,11 @@ class VineBottomSheet extends StatelessWidget {
             title: title,
             contentTitle: contentTitle,
             scrollController: scrollController,
+            buildScrollBody: buildScrollBody,
             trailing: trailing,
             bottomInput: bottomInput,
             expanded: expanded,
+            showHeaderDivider: showHeaderDivider,
             body: body,
             children: children,
           ),
@@ -119,6 +147,7 @@ class VineBottomSheet extends StatelessWidget {
       return showModalBottomSheet<T>(
         context: context,
         isScrollControlled: isScrollControlled ?? expanded,
+        useSafeArea: true,
         backgroundColor: Colors.transparent,
         builder: (_) => VineBottomSheet(
           scrollable: false,
@@ -127,6 +156,7 @@ class VineBottomSheet extends StatelessWidget {
           trailing: trailing,
           bottomInput: bottomInput,
           expanded: expanded,
+          showHeaderDivider: showHeaderDivider,
           body: body,
           children: children,
         ),
@@ -137,27 +167,76 @@ class VineBottomSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: const BorderRadius.only(
-        topLeft: Radius.circular(VineTheme.bottomSheetBorderRadius),
-        topRight: Radius.circular(VineTheme.bottomSheetBorderRadius),
+      borderRadius: const BorderRadius.vertical(
+        top: Radius.circular(VineTheme.bottomSheetBorderRadius),
       ),
       child: ColoredBox(
         color: VineTheme.surfaceBackground,
-        child: scrollable ? _buildScrollableContent() : _buildFixedContent(),
+        child: scrollable
+            ? _ScrollableContent(
+                title: title,
+                trailing: trailing,
+                body: body,
+                buildScrollBody: buildScrollBody,
+                scrollController: scrollController,
+                contentTitle: contentTitle,
+                bottomInput: bottomInput,
+                showHeaderDivider: showHeaderDivider,
+                children: children,
+              )
+            : _FixedContent(
+                title: title,
+                trailing: trailing,
+                body: body,
+                contentTitle: contentTitle,
+                bottomInput: bottomInput,
+                showHeaderDivider: showHeaderDivider,
+                children: children,
+              ),
       ),
     );
   }
+}
 
-  Widget _buildScrollableContent() {
+class _ScrollableContent extends StatelessWidget {
+  const _ScrollableContent({
+    required this.title,
+    required this.trailing,
+    required this.body,
+    required this.buildScrollBody,
+    required this.scrollController,
+    required this.contentTitle,
+    required this.children,
+    required this.bottomInput,
+    required this.showHeaderDivider,
+  });
+
+  final Widget? title;
+  final Widget? trailing;
+  final Widget? body;
+  final Widget Function(ScrollController scrollController)? buildScrollBody;
+  final ScrollController? scrollController;
+  final String? contentTitle;
+  final List<Widget>? children;
+  final Widget? bottomInput;
+  final bool showHeaderDivider;
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: [
         // Header with drag handle, title, trailing actions, and divider
-        VineBottomSheetHeader(title: title, trailing: trailing),
+        VineBottomSheetHeader(
+          title: title,
+          trailing: trailing,
+          showDivider: showHeaderDivider,
+        ),
 
         // Scrollable content area (contentTitle is first element inside)
         Expanded(
           child:
               body ??
+              buildScrollBody?.call(scrollController!) ??
               ListView(
                 controller: scrollController,
                 padding: EdgeInsets.zero,
@@ -191,44 +270,71 @@ class VineBottomSheet extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildFixedContent() {
+class _FixedContent extends StatelessWidget {
+  const _FixedContent({
+    required this.title,
+    required this.trailing,
+    required this.body,
+    required this.contentTitle,
+    required this.children,
+    required this.bottomInput,
+    required this.showHeaderDivider,
+  });
+
+  final Widget? title;
+  final Widget? trailing;
+  final Widget? body;
+  final String? contentTitle;
+  final List<Widget>? children;
+  final Widget? bottomInput;
+  final bool showHeaderDivider;
+
+  @override
+  Widget build(BuildContext context) {
     return SafeArea(
       top: false,
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           // Header with drag handle and divider
-          VineBottomSheetHeader(title: title, trailing: trailing),
+          VineBottomSheetHeader(
+            title: title,
+            trailing: trailing,
+            showDivider: showHeaderDivider,
+          ),
 
           // Fixed content area with minimum height for menu entries (2 × 56px)
-          ConstrainedBox(
-            constraints: const BoxConstraints(minHeight: 112),
-            child:
-                body ??
-                Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // Optional content title (56px total height)
-                    if (contentTitle != null)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 16,
-                        ),
-                        child: Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            contentTitle!,
-                            style: VineTheme.titleMediumFont(
-                              color: VineTheme.onSurface,
+          Flexible(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 112),
+              child:
+                  body ??
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Optional content title (56px total height)
+                      if (contentTitle != null)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 16,
+                          ),
+                          child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(
+                              contentTitle!,
+                              style: VineTheme.titleMediumFont(
+                                color: VineTheme.onSurface,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ...children!,
-                  ],
-                ),
+                      ...children!,
+                    ],
+                  ),
+            ),
           ),
 
           if (bottomInput != null)

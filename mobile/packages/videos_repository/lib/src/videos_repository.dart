@@ -236,6 +236,12 @@ class VideosRepository {
     return videos;
   }
 
+  /// Number of filters to batch in a single relay query.
+  ///
+  /// Batching improves performance while staying compatible with relays
+  /// that may have issues with too many filters in one REQ.
+  static const int _addressableIdBatchSize = 20;
+
   /// Fetches videos by their addressable IDs.
   ///
   /// Addressable IDs follow the format: `kind:pubkey:d-tag`
@@ -258,12 +264,15 @@ class VideosRepository {
     for (final addressableId in addressableIds) {
       final parsed = AId.fromString(addressableId);
       if (parsed != null && NIP71VideoKinds.isVideoKind(parsed.kind)) {
+        // Note: No limit needed - addressable events are unique by
+        // kind:pubkey:d-tag, so there's only one latest version per ID.
+        // Adding limit:1 per filter causes issues when batching multiple
+        // filters, as relays may apply a global limit.
         filters.add(
           Filter(
             kinds: [parsed.kind],
             authors: [parsed.pubkey],
             d: [parsed.dTag],
-            limit: 1,
           ),
         );
       }
@@ -271,7 +280,19 @@ class VideosRepository {
 
     if (filters.isEmpty) return [];
 
-    final events = await _nostrClient.queryEvents(filters);
+    // Batch filters to balance performance with relay compatibility.
+    // Some relays have issues with too many filters in a single REQ,
+    // so we batch them in chunks rather than sending all at once or
+    // querying one at a time.
+    final futures = <Future<List<Event>>>[];
+    for (var i = 0; i < filters.length; i += _addressableIdBatchSize) {
+      final batchEnd = (i + _addressableIdBatchSize).clamp(0, filters.length);
+      final batch = filters.sublist(i, batchEnd);
+      futures.add(_nostrClient.queryEvents(batch));
+    }
+
+    final results = await Future.wait(futures);
+    final events = results.expand((e) => e).toList();
 
     // Build a map keyed by addressable ID for ordering
     final eventMap = <String, Event>{};
@@ -290,7 +311,9 @@ class VideosRepository {
       if (event == null) continue;
 
       final video = _tryParseAndFilter(event);
-      if (video != null) videos.add(video);
+      if (video != null) {
+        videos.add(video);
+      }
     }
 
     return videos;

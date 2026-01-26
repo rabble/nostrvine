@@ -3,11 +3,11 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/circular_icon_button.dart';
 
 /// Like action button with count display for video overlay.
 ///
@@ -79,50 +79,61 @@ class LikeActionButton extends StatelessWidget {
           explicitChildNodes: true,
           button: true,
           label: isLiked ? 'Unlike video' : 'Like video',
-          child: CircularIconButton(
-            onPressed: isLikeInProgress || onPressed == null
-                ? () {}
-                : onPressed,
+          child: IconButton(
+            padding: const EdgeInsets.all(8),
+            constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+            style: IconButton.styleFrom(
+              highlightColor: Colors.transparent,
+              splashFactory: NoSplash.splashFactory,
+            ),
+            onPressed: isLikeInProgress || onPressed == null ? null : onPressed,
             icon: isLikeInProgress
                 ? const SizedBox(
-                    width: 24,
-                    height: 24,
+                    width: 32,
+                    height: 32,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       color: Colors.white,
                     ),
                   )
-                : Icon(
-                    isLiked ? Icons.favorite : Icons.favorite_outline,
-                    color: isLiked ? Colors.red : Colors.white,
-                    size: 32,
+                : DecoratedBox(
+                    decoration: BoxDecoration(
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.15),
+                          blurRadius: 15,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                    ),
+                    child: SvgPicture.asset(
+                      'assets/icon/content-controls/like.svg',
+                      width: 32,
+                      height: 32,
+                      colorFilter: ColorFilter.mode(
+                        isLiked ? Colors.red : Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                    ),
                   ),
           ),
         ),
         // Show total like count: new likes + original Vine likes
-        if (totalLikes > 0) ...[
-          const SizedBox(height: 0),
-          Text(
-            StringUtils.formatCompactNumber(totalLikes),
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              shadows: [
-                Shadow(
-                  offset: Offset(0, 0),
-                  blurRadius: 6,
-                  color: Colors.black,
-                ),
-                Shadow(
-                  offset: Offset(1, 1),
-                  blurRadius: 3,
-                  color: Colors.black,
-                ),
-              ],
+        if (totalLikes > 0)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Text(
+              StringUtils.formatCompactNumber(totalLikes),
+              style: const TextStyle(
+                fontFamily: 'Bricolage Grotesque',
+                color: Colors.white,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                height: 1,
+                letterSpacing: 0.5,
+              ),
             ),
           ),
-        ],
       ],
     );
   }

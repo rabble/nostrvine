@@ -397,11 +397,14 @@ void main() {
         verify(() => mockRelayPool.remove(testCustomRelayUrl)).called(1);
       });
 
-      test('returns false when removing default relay', () async {
+      test('allows removing default relay', () async {
         final result = await manager.removeRelay(testDefaultRelayUrl);
 
-        expect(result, isFalse);
-        expect(manager.configuredRelays, contains(testDefaultRelayUrl));
+        expect(result, isTrue);
+        expect(
+          manager.configuredRelays,
+          isNot(contains(testDefaultRelayUrl)),
+        );
       });
 
       test('returns false for non-configured relay', () async {

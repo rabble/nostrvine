@@ -55,10 +55,40 @@ class AppDatabase extends _$AppDatabase {
       await m.createAll();
     },
     beforeOpen: (details) async {
+      // Create any missing tables that should have been part of v1
+      await _createMissingTables();
+
       // Run cleanup of expired data on every app startup
       await runStartupCleanup();
     },
   );
+
+  /// Creates tables that were added to the schema but missing from some
+  /// installs.
+  ///
+  /// This handles cases where tables were added to the Drift schema but
+  /// existing databases don't have them yet. Rather than incrementing the
+  /// schema version, we check and create missing tables on startup.
+  Future<void> _createMissingTables() async {
+    // Check if personal_reposts table exists, create if missing
+    final result = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='personal_reposts'",
+    ).get();
+
+    if (result.isEmpty) {
+      await customStatement('''
+        CREATE TABLE personal_reposts (
+          addressable_id TEXT NOT NULL,
+          repost_event_id TEXT NOT NULL,
+          original_author_pubkey TEXT NOT NULL,
+          user_pubkey TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          PRIMARY KEY (addressable_id, user_pubkey)
+        )
+      ''');
+    }
+  }
 
   /// Runs cleanup of expired data from all tables.
   ///
