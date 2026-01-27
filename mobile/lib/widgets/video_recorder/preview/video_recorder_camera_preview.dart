@@ -1,6 +1,8 @@
 // ABOUTME: Camera preview widget with animated aspect ratio transitions and grid overlay
 // ABOUTME: Handles tap-to-focus and displays rule-of-thirds grid during non-recording state
 
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
