@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -119,10 +120,64 @@ class VideoThumbnailService {
   }
 
   /// Extract thumbnail as bytes (for direct upload without file)
+  ///
+  /// Includes automatic retry logic:
+  /// 1. First attempt at the specified timestamp
+  /// 2. If failed: Immediate retry at the same timestamp
+  /// 3. If failed again: Final attempt at 50ms (fallback position)
   static Future<Uint8List?> extractThumbnailBytes({
     required String videoPath,
     Duration timestamp = const Duration(milliseconds: 210),
     int quality = _thumbnailQuality,
+  }) async {
+    // First attempt
+    var result = await _extractThumbnailBytesInternal(
+      videoPath: videoPath,
+      timestamp: timestamp,
+      quality: quality,
+    );
+
+    if (result != null) return result;
+
+    // Second attempt with same timestamp
+    Log.debug(
+      'Retrying thumbnail extraction at same timestamp: '
+      '${timestamp.inMilliseconds}ms',
+      name: 'VideoThumbnailService',
+      category: LogCategory.video,
+    );
+    result = await _extractThumbnailBytesInternal(
+      videoPath: videoPath,
+      timestamp: timestamp,
+      quality: quality,
+    );
+
+    if (result != null) return result;
+
+    // Final attempt at 50ms fallback position
+    const fallbackTimestamp = Duration(milliseconds: 50);
+    Log.debug(
+      'Retrying thumbnail extraction at fallback timestamp: '
+      '${fallbackTimestamp.inMilliseconds}ms',
+      name: 'VideoThumbnailService',
+      category: LogCategory.video,
+    );
+    result = await _extractThumbnailBytesInternal(
+      videoPath: videoPath,
+      timestamp: fallbackTimestamp,
+      quality: quality,
+      logToCrashlytics: true,
+    );
+
+    return result;
+  }
+
+  /// Internal method for extracting thumbnail bytes without retry logic.
+  static Future<Uint8List?> _extractThumbnailBytesInternal({
+    required String videoPath,
+    required Duration timestamp,
+    required int quality,
+    bool logToCrashlytics = false,
   }) async {
     try {
       Log.debug(
@@ -148,6 +203,14 @@ class VideoThumbnailService {
           name: 'VideoThumbnailService',
           category: LogCategory.video,
         );
+        if (logToCrashlytics) {
+          await CrashReportingService.instance.recordError(
+            Exception('Thumbnail extraction failed - thumbnails list is empty'),
+            StackTrace.current,
+            reason: 'VideoThumbnailService: Failed to extract thumbnail from '
+                '$videoPath at timestamp: ${timestamp.inMilliseconds}ms',
+          );
+        }
         return null;
       }
 
@@ -160,12 +223,20 @@ class VideoThumbnailService {
         category: LogCategory.video,
       );
       return thumbnail;
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
         'Thumbnail bytes extraction error: $e',
         name: 'VideoThumbnailService',
         category: LogCategory.video,
       );
+      if (logToCrashlytics) {
+        await CrashReportingService.instance.recordError(
+          e,
+          stackTrace,
+          reason: 'VideoThumbnailService: Failed to extract thumbnail from '
+              '$videoPath at timestamp: ${timestamp.inMilliseconds}ms',
+        );
+      }
       return null;
     }
   }
