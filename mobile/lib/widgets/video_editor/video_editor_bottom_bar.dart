@@ -192,20 +192,28 @@ class _ClipRemoveArea extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final deleteButtonKey = ref.read(videoEditorProvider).deleteButtonKey;
+    final isOverDeleteZone = ref.watch(
+      videoEditorProvider.select((s) => s.isOverDeleteZone),
+    );
     return Align(
-      child: Container(
-        key: deleteButtonKey,
-        padding: const .all(10),
-        decoration: ShapeDecoration(
-          color: const Color(0xFFF44336),
-          shape: RoundedRectangleBorder(borderRadius: .circular(20)),
-        ),
-        child: SizedBox(
-          height: 28,
-          width: 28,
-          child: SvgPicture.asset(
-            'assets/icon/delete.svg',
-            colorFilter: const .mode(Color(0xFF000000), .srcIn),
+      child: AnimatedScale(
+        scale: isOverDeleteZone ? 1.4 : 1.0,
+        duration: const Duration(milliseconds: 200),
+        curve: Curves.easeInOut,
+        child: Container(
+          key: deleteButtonKey,
+          padding: const .all(10),
+          decoration: ShapeDecoration(
+            color: const Color(0xFFF44336),
+            shape: RoundedRectangleBorder(borderRadius: .circular(20)),
+          ),
+          child: SizedBox(
+            height: 28,
+            width: 28,
+            child: SvgPicture.asset(
+              'assets/icon/delete.svg',
+              colorFilter: const .mode(Color(0xFF000000), .srcIn),
+            ),
           ),
         ),
       ),
