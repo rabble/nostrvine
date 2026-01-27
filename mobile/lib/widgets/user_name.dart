@@ -78,7 +78,7 @@ class UserName extends ConsumerWidget {
         ),
         AsyncLoading() ||
         AsyncData() => (NostrKeyUtils.truncateNpub(pubkey!), false),
-        AsyncError() => ('Unknown', false),
+        AsyncError() => (NostrKeyUtils.truncateNpub(pubkey!), false),
       };
     }
 

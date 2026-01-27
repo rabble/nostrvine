@@ -19,6 +19,7 @@ import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -748,7 +749,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                         icon: isBlocked ? Icons.block : Icons.block_outlined,
                         title: isBlocked
                             ? 'Unblock User'
-                            : 'Block @${widget.video.pubkey.substring(0, 8)}',
+                            : 'Block @${NostrKeyUtils.truncateNpub(widget.video.pubkey)}',
                         subtitle: isBlocked
                             ? 'Show content from this user'
                             : 'Hide content from this user',
