@@ -11,7 +11,6 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/developer_mode_tap_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
-import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
@@ -48,37 +47,16 @@ class SettingsScreen extends ConsumerStatefulWidget {
 
 class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   String _appVersion = '';
-  // Store notifier reference to safely call in deactivate
-  OverlayVisibility? _overlayNotifier;
 
   @override
   void initState() {
     super.initState();
     unawaited(_loadAppVersion());
-    // Mark settings as open to pause video playback
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _overlayNotifier = ref.read(overlayVisibilityProvider.notifier);
-      _overlayNotifier?.setSettingsOpen(true);
-    });
     Log.debug(
       '👨‍💻 settingsService initState auth',
       name: 'SettingsScreen',
       category: LogCategory.ui,
     );
-  }
-
-  @override
-  void dispose() {
-    // Mark settings as closed when leaving
-    // Use captured notifier reference so we don't need ref to be valid
-    // Defer to avoid "Tried to modify a provider while the widget tree was building"
-    final notifier = _overlayNotifier;
-    if (notifier != null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        notifier.setSettingsOpen(false);
-      });
-    }
-    super.dispose();
   }
 
   Future<void> _loadAppVersion() async {

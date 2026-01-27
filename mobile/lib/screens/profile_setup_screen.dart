@@ -16,7 +16,6 @@ import 'package:image_picker/image_picker.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/username_notifier.dart';
 import 'package:openvine/state/username_state.dart';
@@ -83,8 +82,6 @@ class _ProfileSetupScreenViewState
   bool _isFormValid = false;
   File? _selectedImage;
   String? _uploadedImageUrl;
-  // Store notifier reference to safely call in deactivate
-  OverlayVisibility? _overlayNotifier;
   String? _initialUsername;
 
   @override
@@ -95,29 +92,10 @@ class _ProfileSetupScreenViewState
     _nameFocusNode.addListener(_onFocusChange);
     _bioFocusNode.addListener(_onFocusChange);
     _usernameFocusNode.addListener(_onFocusChange);
-    // Mark settings as open to pause video playback
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _overlayNotifier = ref.read(overlayVisibilityProvider.notifier);
-      _overlayNotifier?.setSettingsOpen(true);
-    });
   }
 
   void _onFocusChange() {
     setState(() {});
-  }
-
-  @override
-  void deactivate() {
-    // Mark settings as closed when leaving
-    // Use cached notifier reference since ref is invalid during deactivate
-    // Must use Future to avoid modifying provider during widget tree build
-    final notifier = _overlayNotifier;
-    if (notifier != null) {
-      Future(() {
-        notifier.setSettingsOpen(false);
-      });
-    }
-    super.deactivate();
   }
 
   @override
