@@ -122,7 +122,10 @@ void main() {
       await tester.pump();
 
       // Instruction text should be visible
-      expect(find.text('Tap to edit. Drag to reorder.'), findsOneWidget);
+      expect(
+        find.text('Tap to edit. Hold and drag to reorder.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('can scroll through clips', (tester) async {

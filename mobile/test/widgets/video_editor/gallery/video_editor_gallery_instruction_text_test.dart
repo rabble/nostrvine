@@ -18,7 +18,10 @@ void main() {
         ),
       );
 
-      expect(find.text('Tap to edit. Drag to reorder.'), findsOneWidget);
+      expect(
+        find.text('Tap to edit. Hold and drag to reorder.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('should hide text when editing', (tester) async {
@@ -34,7 +37,10 @@ void main() {
       );
 
       // Initially visible
-      expect(find.text('Tap to edit. Drag to reorder.'), findsOneWidget);
+      expect(
+        find.text('Tap to edit. Hold and drag to reorder.'),
+        findsOneWidget,
+      );
 
       // Start editing
       container.read(videoEditorProvider.notifier).startClipReordering();
