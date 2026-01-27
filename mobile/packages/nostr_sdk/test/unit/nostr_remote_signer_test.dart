@@ -113,32 +113,6 @@ void main() {
       });
     });
 
-    group('timeout handling', () {
-      test('sendAndWaitForResult accepts timeout parameter', () {
-        // This test documents the expected behavior:
-        // When a bunker request times out, it should throw TimeoutException
-        // instead of returning null (the old behavior).
-        //
-        // The sendAndWaitForResult method signature:
-        //   Future<String?> sendAndWaitForResult(
-        //     NostrRemoteRequest request, {
-        //     int timeout = 60,
-        //   })
-        //
-        // On timeout, it now throws TimeoutException instead of returning null.
-        // This behavior was verified by code inspection and integration testing.
-        //
-        // Key change in the code:
-        //   onTimeout: () {
-        //     throw TimeoutException(
-        //       'Bunker request timed out after ${timeout}s',
-        //       Duration(seconds: timeout),
-        //     );
-        //   },
-        expect(true, isTrue); // Documentation test
-      });
-    });
-
     group('signer info', () {
       test('should store remote signer pubkey', () {
         expect(
@@ -167,14 +141,6 @@ void main() {
   group('NostrRemoteSigner reconnection logic', () {
     // These tests document the expected reconnection behavior.
     // Full integration tests would require mocking WebSocket connections.
-
-    test('max retries constant should be 5', () {
-      // This is a documentation test - the actual constant is private
-      // but we document that after 5 failed attempts, reconnection stops.
-      // Value verified by code inspection of NostrRemoteSigner._maxRetries
-      const expectedMaxRetries = 5;
-      expect(expectedMaxRetries, equals(5));
-    });
 
     test(
       'exponential backoff should follow pattern 100, 200, 400, 800, 1600ms',
