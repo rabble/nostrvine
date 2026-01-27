@@ -151,7 +151,7 @@ final class FetchUserProfileProvider
   }
 }
 
-String _$fetchUserProfileHash() => r'ffed247913793b5c41e896a679df7c286fee540c';
+String _$fetchUserProfileHash() => r'1661b6f5ee53b884c47d4567bd2e6a242a7210cc';
 
 /// Async provider for loading a single user profile.
 /// Delegates to ProfileRepository for caching and fetching,

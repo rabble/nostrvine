@@ -519,6 +519,25 @@ AuthState currentAuthState(Ref ref) {
   return authService.authState;
 }
 
+/// Provider that returns true only when NostrClient is fully ready for operations.
+/// Combines auth state check AND nostrClient.hasKeys verification.
+/// Use this to guard providers that require authenticated NostrClient access.
+///
+/// This prevents race conditions where auth state is 'authenticated' but
+/// the NostrClient hasn't yet rebuilt with the new keys.
+@Riverpod(keepAlive: true)
+bool isNostrReady(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  // Watch auth state to rebuild when auth changes
+  ref.watch(currentAuthStateProvider);
+
+  if (!authService.isAuthenticated) return false;
+
+  final nostrClient = ref.watch(nostrServiceProvider);
+  return nostrClient.hasKeys;
+}
+
 /// Provider that sets Zendesk user identity when auth state changes
 /// Watch this provider at app startup to keep Zendesk identity in sync with auth
 @Riverpod(keepAlive: true)
@@ -681,14 +700,16 @@ SocialService socialService(Ref ref) {
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - PersonalEventCacheService (for caching contact list events)
 @Riverpod(keepAlive: true)
-FollowRepository followRepository(Ref ref) {
+FollowRepository? followRepository(Ref ref) {
+  // Return null if NostrClient is not ready yet
+  // This prevents race conditions during auth where auth state is 'authenticated'
+  // but NostrClient hasn't yet rebuilt with the new keys.
+  // The provider will rebuild when isNostrReady becomes true.
+  if (!ref.watch(isNostrReadyProvider)) {
+    return null;
+  }
+
   final nostrClient = ref.watch(nostrServiceProvider);
-
-  assert(
-    nostrClient.hasKeys,
-    'FollowRepository accessed without authentication',
-  );
-
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
 
   final repository = FollowRepository(
@@ -718,14 +739,17 @@ FollowRepository followRepository(Ref ref) {
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
 @Riverpod(keepAlive: true)
-ProfileRepository profileRepository(Ref ref) {
+ProfileRepository? profileRepository(Ref ref) {
+  // Return null if NostrClient is not ready yet
+  // This prevents race conditions during auth where auth state is 'authenticated'
+  // but NostrClient hasn't yet rebuilt with the new keys.
+  // The provider will rebuild when isNostrReady becomes true.
+  if (!ref.watch(isNostrReadyProvider)) {
+    return null;
+  }
+
   final nostrClient = ref.watch(nostrServiceProvider);
   final userProfilesDao = ref.watch(databaseProvider).userProfilesDao;
-
-  assert(
-    nostrClient.hasKeys,
-    'ProfileRepository accessed without authentication',
-  );
 
   return ProfileRepository(
     nostrClient: nostrClient,

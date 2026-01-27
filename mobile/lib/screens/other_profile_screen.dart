@@ -97,7 +97,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     final isBlocked = blocklistService.isBlocked(userIdHex);
 
     final followRepository = ref.read(followRepositoryProvider);
-    final isFollowing = followRepository.isFollowing(userIdHex);
+    // If NostrClient doesn't have keys yet, treat as not following
+    final isFollowing = followRepository?.isFollowing(userIdHex) ?? false;
 
     // Get display name for actions
     final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
@@ -146,6 +147,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     final displayName = profile?.bestDisplayName ?? 'user';
 
     final followRepository = ref.read(followRepositoryProvider);
+    // Can't unfollow if NostrClient doesn't have keys yet
+    if (followRepository == null) return;
     await followRepository.toggleFollow(userIdHex);
 
     if (mounted) {

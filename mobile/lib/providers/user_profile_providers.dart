@@ -123,6 +123,16 @@ Future<UserProfile?> fetchUserProfile(Ref ref, String pubkey) async {
   final userProfileService = ref.watch(userProfileServiceProvider);
   final profileRepository = ref.watch(profileRepositoryProvider);
 
+  // Return null if NostrClient doesn't have keys yet
+  if (profileRepository == null) {
+    Log.debug(
+      'ProfileRepository not ready yet, waiting for keys...',
+      name: 'UserProfileProvider',
+      category: LogCategory.ui,
+    );
+    return null;
+  }
+
   if (userProfileService.shouldSkipProfileFetch(pubkey)) {
     Log.debug(
       'Skipping fetch for known missing profile: $pubkey...',
