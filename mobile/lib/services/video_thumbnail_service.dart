@@ -121,11 +121,12 @@ class VideoThumbnailService {
 
   /// Extract thumbnail as bytes (for direct upload without file)
   ///
-  /// Includes automatic retry logic:
+  /// Includes automatic retry logic with delays to handle "cannot open" errors
+  /// that occur when the video file is still being written or locked:
   /// 1. First attempt at the specified timestamp
-  /// 2. If failed: Immediate retry at the same timestamp
-  /// 3. If failed again: Attempt at 50ms (fallback position)
-  /// 4. If failed again: Final attempt at video duration / 2 (middle of video)
+  /// 2. If failed: Wait 100ms, then retry at the same timestamp
+  /// 3. If failed again: Wait 200ms, then attempt at 50ms (fallback position)
+  /// 4. If failed again: Wait 300ms, then attempt at video duration / 2
   static Future<Uint8List?> extractThumbnailBytes({
     required String videoPath,
     Duration timestamp = const Duration(milliseconds: 210),
@@ -139,6 +140,10 @@ class VideoThumbnailService {
     );
 
     if (result != null) return result;
+
+    // Wait before retry to allow file system to release the file
+    // This helps with "cannot open" errors when file is still being written
+    await Future<void>.delayed(const Duration(milliseconds: 100));
 
     // Second attempt with same timestamp
     Log.debug(
@@ -155,6 +160,9 @@ class VideoThumbnailService {
 
     if (result != null) return result;
 
+    // Increase delay for subsequent retries
+    await Future<void>.delayed(const Duration(milliseconds: 200));
+
     // Third attempt at 50ms fallback position
     const fallbackTimestamp = Duration(milliseconds: 50);
     Log.debug(
@@ -170,6 +178,9 @@ class VideoThumbnailService {
     );
 
     if (result != null) return result;
+
+    // Wait longer before final attempt
+    await Future<void>.delayed(const Duration(milliseconds: 300));
 
     // Final attempt at middle of video (duration / 2)
     try {
