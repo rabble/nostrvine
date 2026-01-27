@@ -62,12 +62,14 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
   Future<CameraState> initializeCamera({
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
   }) async {
     final result = await methodChannel.invokeMapMethod<dynamic, dynamic>(
       'initializeCamera',
       {
         'lens': lens.toNativeString(),
         'videoQuality': videoQuality.value,
+        'enableScreenFlash': enableScreenFlash,
       },
     );
     if (result == null) {
@@ -141,9 +143,13 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
   }
 
   @override
-  Future<void> startRecording({Duration? maxDuration}) async {
+  Future<void> startRecording({
+    Duration? maxDuration,
+    bool useCache = true,
+  }) async {
     await methodChannel.invokeMethod<void>('startRecording', {
       if (maxDuration != null) 'maxDurationMs': maxDuration.inMilliseconds,
+      'useCache': useCache,
     });
   }
 
