@@ -124,7 +124,8 @@ class VideoThumbnailService {
   /// Includes automatic retry logic:
   /// 1. First attempt at the specified timestamp
   /// 2. If failed: Immediate retry at the same timestamp
-  /// 3. If failed again: Final attempt at 50ms (fallback position)
+  /// 3. If failed again: Attempt at 50ms (fallback position)
+  /// 4. If failed again: Final attempt at video duration / 2 (middle of video)
   static Future<Uint8List?> extractThumbnailBytes({
     required String videoPath,
     Duration timestamp = const Duration(milliseconds: 210),
@@ -154,7 +155,7 @@ class VideoThumbnailService {
 
     if (result != null) return result;
 
-    // Final attempt at 50ms fallback position
+    // Third attempt at 50ms fallback position
     const fallbackTimestamp = Duration(milliseconds: 50);
     Log.debug(
       'Retrying thumbnail extraction at fallback timestamp: '
@@ -166,8 +167,37 @@ class VideoThumbnailService {
       videoPath: videoPath,
       timestamp: fallbackTimestamp,
       quality: quality,
-      logToCrashlytics: true,
     );
+
+    if (result != null) return result;
+
+    // Final attempt at middle of video (duration / 2)
+    try {
+      final metadata = await _proVideoEditor.getMetadata(
+        EditorVideo.file(videoPath),
+      );
+      final middleTimestamp = Duration(
+        milliseconds: metadata.duration.inMilliseconds ~/ 2,
+      );
+      Log.debug(
+        'Retrying thumbnail extraction at middle of video: '
+        '${middleTimestamp.inMilliseconds}ms',
+        name: 'VideoThumbnailService',
+        category: LogCategory.video,
+      );
+      result = await _extractThumbnailBytesInternal(
+        videoPath: videoPath,
+        timestamp: middleTimestamp,
+        quality: quality,
+        logToCrashlytics: true,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to get video metadata for middle timestamp: $e',
+        name: 'VideoThumbnailService',
+        category: LogCategory.video,
+      );
+    }
 
     return result;
   }
