@@ -75,16 +75,16 @@ class VineBottomSheetActionMenu {
       context: context,
       title: title,
       expanded: false,
+      scrollable: false,
       isScrollControlled: true,
-      body: Flexible(
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: .min,
-            children: [
-              for (final option in options)
-                _VineBottomSheetListTile(data: option),
-            ],
-          ),
+      body: SingleChildScrollView(
+        padding: const .only(top: 8),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final option in options)
+              _VineBottomSheetListTile(data: option),
+          ],
         ),
       ),
     );

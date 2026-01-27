@@ -197,6 +197,157 @@ class VideosRepository {
     return videos.take(limit).toList();
   }
 
+  /// Fetches videos by their event IDs.
+  ///
+  /// This is used for fetching videos that a user has liked (Kind 7 reactions
+  /// reference videos by their event ID).
+  ///
+  /// Parameters:
+  /// - [eventIds]: List of event IDs to fetch
+  ///
+  /// Returns a list of [VideoEvent] in the same order as [eventIds].
+  /// Videos that couldn't be found or failed to parse are omitted.
+  Future<List<VideoEvent>> getVideosByIds(List<String> eventIds) async {
+    if (eventIds.isEmpty) return [];
+
+    final filter = Filter(
+      ids: eventIds,
+      kinds: NIP71VideoKinds.getAllVideoKinds(),
+    );
+
+    final events = await _nostrClient.queryEvents([filter]);
+
+    // Build a map for ordering
+    final eventMap = <String, Event>{};
+    for (final event in events) {
+      eventMap[event.id] = event;
+    }
+
+    // Transform and filter, preserving input order
+    final videos = <VideoEvent>[];
+    for (final id in eventIds) {
+      final event = eventMap[id];
+      if (event == null) continue;
+
+      final video = _tryParseAndFilter(event);
+      if (video != null) videos.add(video);
+    }
+
+    return videos;
+  }
+
+  /// Number of filters to batch in a single relay query.
+  ///
+  /// Batching improves performance while staying compatible with relays
+  /// that may have issues with too many filters in one REQ.
+  static const int _addressableIdBatchSize = 20;
+
+  /// Fetches videos by their addressable IDs.
+  ///
+  /// Addressable IDs follow the format: `kind:pubkey:d-tag`
+  /// This is used for fetching videos that a user has reposted (Kind 16
+  /// generic reposts reference addressable events via the 'a' tag).
+  ///
+  /// Parameters:
+  /// - [addressableIds]: List of addressable IDs in `kind:pubkey:d-tag` format
+  ///
+  /// Returns a list of [VideoEvent] in the same order as [addressableIds].
+  /// Videos that couldn't be found or failed to parse are omitted.
+  Future<List<VideoEvent>> getVideosByAddressableIds(
+    List<String> addressableIds,
+  ) async {
+    if (addressableIds.isEmpty) return [];
+
+    // Parse addressable IDs and build filters
+    final filters = <Filter>[];
+
+    for (final addressableId in addressableIds) {
+      final parsed = AId.fromString(addressableId);
+      if (parsed != null && NIP71VideoKinds.isVideoKind(parsed.kind)) {
+        // Note: No limit needed - addressable events are unique by
+        // kind:pubkey:d-tag, so there's only one latest version per ID.
+        // Adding limit:1 per filter causes issues when batching multiple
+        // filters, as relays may apply a global limit.
+        filters.add(
+          Filter(
+            kinds: [parsed.kind],
+            authors: [parsed.pubkey],
+            d: [parsed.dTag],
+          ),
+        );
+      }
+    }
+
+    if (filters.isEmpty) return [];
+
+    // Batch filters to balance performance with relay compatibility.
+    // Some relays have issues with too many filters in a single REQ,
+    // so we batch them in chunks rather than sending all at once or
+    // querying one at a time.
+    final futures = <Future<List<Event>>>[];
+    for (var i = 0; i < filters.length; i += _addressableIdBatchSize) {
+      final batchEnd = (i + _addressableIdBatchSize).clamp(0, filters.length);
+      final batch = filters.sublist(i, batchEnd);
+      futures.add(_nostrClient.queryEvents(batch));
+    }
+
+    final results = await Future.wait(futures);
+    final events = results.expand((e) => e).toList();
+
+    // Build a map keyed by addressable ID for ordering
+    final eventMap = <String, Event>{};
+    for (final event in events) {
+      final dTag = event.dTagValue;
+      if (dTag.isNotEmpty) {
+        final addressableId = '${event.kind}:${event.pubkey}:$dTag';
+        eventMap[addressableId] = event;
+      }
+    }
+
+    // Transform and filter, preserving input order
+    final videos = <VideoEvent>[];
+    for (final addressableId in addressableIds) {
+      final event = eventMap[addressableId];
+      if (event == null) continue;
+
+      final video = _tryParseAndFilter(event);
+      if (video != null) {
+        videos.add(video);
+      }
+    }
+
+    return videos;
+  }
+
+  /// Attempts to parse an event into a VideoEvent and apply filters.
+  ///
+  /// Returns the [VideoEvent] if it passes all filters, or null if:
+  /// - The event kind is not a video kind
+  /// - The pubkey is blocked
+  /// - The video has no playable URL
+  /// - The video is expired (NIP-40)
+  /// - The video fails content filtering
+  VideoEvent? _tryParseAndFilter(Event event) {
+    // Skip events that aren't valid video kinds
+    if (!NIP71VideoKinds.isVideoKind(event.kind)) return null;
+
+    // Block filter - check pubkey before parsing for efficiency
+    if (_blockFilter?.call(event.pubkey) ?? false) return null;
+
+    final video = VideoEvent.fromNostrEvent(event);
+
+    // Skip videos without a playable URL
+    if (!video.hasVideo) return null;
+
+    // Skip expired videos (NIP-40)
+    if (video.isExpired) return null;
+
+    // Content filter - check parsed video (NSFW, etc.)
+    if (_contentFilter?.call(video) ?? false) return null;
+
+    return video;
+  }
+
   /// Transforms raw Nostr events to VideoEvents and filters invalid ones.
   ///
   /// Applies two-stage filtering:
@@ -220,25 +371,8 @@ class VideosRepository {
     final videos = <VideoEvent>[];
 
     for (final event in events) {
-      // Skip events that aren't valid video kinds
-      if (!NIP71VideoKinds.isVideoKind(event.kind)) continue;
-
-      // Stage 1: Content filter - check pubkey before parsing for efficiency
-      // Content filter - check early before parsing for efficiency
-      if (_blockFilter?.call(event.pubkey) ?? false) continue;
-
-      final video = VideoEvent.fromNostrEvent(event);
-
-      // Skip videos without a playable URL
-      if (!video.hasVideo) continue;
-
-      // Skip expired videos (NIP-40)
-      if (video.isExpired) continue;
-
-      // Stage 2: Video event filter - check parsed video (NSFW, etc.)
-      if (_contentFilter?.call(video) ?? false) continue;
-
-      videos.add(video);
+      final video = _tryParseAndFilter(event);
+      if (video != null) videos.add(video);
     }
 
     // Sort by creation time (newest first) unless preserving relay order

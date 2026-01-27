@@ -177,7 +177,6 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
     List<String>? tempRelays,
     List<int>? relayTypes = const [1, 2, 3, 4],
     bool? sendAfterAuth = false,
-    bool? useGateway = true,
     bool? useCache = true,
   }) =>
       (super.noSuchMethod(
@@ -189,7 +188,6 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
                 #tempRelays: tempRelays,
                 #relayTypes: relayTypes,
                 #sendAfterAuth: sendAfterAuth,
-                #useGateway: useGateway,
                 #useCache: useCache,
               },
             ),
@@ -238,18 +236,13 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
   _i7.Future<_i8.Event?> fetchEventById(
     String? eventId, {
     String? relayUrl,
-    bool? useGateway = true,
     bool? useCache = true,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
               #fetchEventById,
               [eventId],
-              {
-                #relayUrl: relayUrl,
-                #useGateway: useGateway,
-                #useCache: useCache,
-              },
+              {#relayUrl: relayUrl, #useCache: useCache},
             ),
             returnValue: _i7.Future<_i8.Event?>.value(),
           )
@@ -258,15 +251,10 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
   @override
   _i7.Future<_i8.Event?> fetchProfile(
     String? pubkey, {
-    bool? useGateway = true,
     bool? useCache = true,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(
-              #fetchProfile,
-              [pubkey],
-              {#useGateway: useGateway, #useCache: useCache},
-            ),
+            Invocation.method(#fetchProfile, [pubkey], {#useCache: useCache}),
             returnValue: _i7.Future<_i8.Event?>.value(),
           )
           as _i7.Future<_i8.Event?>);
@@ -423,6 +411,28 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
           as _i7.Future<_i8.Event?>);
 
   @override
+  _i7.Future<_i8.Event?> sendGenericRepost({
+    required String? addressableId,
+    required int? targetKind,
+    required String? authorPubkey,
+    String? content = '',
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendGenericRepost, [], {
+              #addressableId: addressableId,
+              #targetKind: targetKind,
+              #authorPubkey: authorPubkey,
+              #content: content,
+              #tempRelays: tempRelays,
+              #targetRelays: targetRelays,
+            }),
+            returnValue: _i7.Future<_i8.Event?>.value(),
+          )
+          as _i7.Future<_i8.Event?>);
+
+  @override
   _i7.Future<_i8.Event?> deleteEvent(
     String? eventId, {
     List<String>? tempRelays,
@@ -496,6 +506,22 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
             returnValue: _i7.Stream<_i8.Event>.empty(),
           )
           as _i7.Stream<_i8.Event>);
+
+  @override
+  _i7.Future<String?> createNip98AuthHeader({
+    required String? url,
+    required String? method,
+    String? payload,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#createNip98AuthHeader, [], {
+              #url: url,
+              #method: method,
+              #payload: payload,
+            }),
+            returnValue: _i7.Future<String?>.value(),
+          )
+          as _i7.Future<String?>);
 
   @override
   _i7.Future<void> dispose() =>
@@ -958,6 +984,15 @@ class MockVideoEventService extends _i1.Mock implements _i9.VideoEventService {
           as _i7.Future<void>);
 
   @override
+  _i7.Future<void> resetAndResubscribeAll() =>
+      (super.noSuchMethod(
+            Invocation.method(#resetAndResubscribeAll, []),
+            returnValue: _i7.Future<void>.value(),
+            returnValueForMissingStub: _i7.Future<void>.value(),
+          )
+          as _i7.Future<void>);
+
+  @override
   _i7.Future<void> loadMoreVideos({int? limit = 100}) =>
       (super.noSuchMethod(
             Invocation.method(#loadMoreVideos, [], {#limit: limit}),
@@ -1301,14 +1336,6 @@ class MockLikesRepository extends _i1.Mock implements _i3.LikesRepository {
   MockLikesRepository() {
     _i1.throwOnMissingStub(this);
   }
-
-  @override
-  bool get isAuthenticated =>
-      (super.noSuchMethod(
-            Invocation.getter(#isAuthenticated),
-            returnValue: false,
-          )
-          as bool);
 
   @override
   _i7.Stream<Set<String>> watchLikedEventIds() =>
@@ -1684,6 +1711,15 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
             returnValue: _i7.Future<_i8.Event?>.value(),
           )
           as _i7.Future<_i8.Event?>);
+
+  @override
+  _i7.Future<void> acceptTerms() =>
+      (super.noSuchMethod(
+            Invocation.method(#acceptTerms, []),
+            returnValue: _i7.Future<void>.value(),
+            returnValueForMissingStub: _i7.Future<void>.value(),
+          )
+          as _i7.Future<void>);
 
   @override
   _i7.Future<void> dispose() =>

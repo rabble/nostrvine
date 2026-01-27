@@ -42,12 +42,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
 
   @override
   Widget build(BuildContext context) {
-    final authStateAsync = ref.watch(authStateStreamProvider);
-    final isAuthenticated = authStateAsync.when(
-      data: (state) => state == AuthState.authenticated,
-      loading: () => false,
-      error: (_, __) => false,
-    );
+    final authState = ref.watch(currentAuthStateProvider);
+    final isAuthenticated = authState == AuthState.authenticated;
 
     if (!isAuthenticated) {
       return _buildUnauthenticatedState();

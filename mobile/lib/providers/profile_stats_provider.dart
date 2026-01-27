@@ -4,7 +4,9 @@
 import 'dart:async';
 
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/services/profile_stats_cache_service.dart';
+import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -89,12 +91,14 @@ Future<void> clearAllProfileStatsCache() async {
 }
 
 // TODO(any): refactor this method while doing https://github.com/divinevideo/divine-mobile/issues/571
-/// Async provider for loading profile statistics
+/// Async provider for loading profile statistics.
+/// Derives video count from profileFeedProvider to ensure consistency
+/// and proper waiting for relay events.
 @riverpod
 Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
-  // Check cache first
+  // Check cache first (only use cache if video count > 0 to avoid stale zeros)
   final cached = await _getCachedProfileStats(pubkey);
-  if (cached != null) {
+  if (cached != null && cached.videoCount > 0) {
     return cached;
   }
 
@@ -102,24 +106,23 @@ Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
   final socialService = ref.read(socialServiceProvider);
 
   try {
-    // Get video event service and ensure subscription exists
-    final videoEventService = ref.read(videoEventServiceProvider);
+    // Get video data from profileFeedProvider which properly waits for relay events.
+    // This avoids the race condition of reading the bucket immediately after
+    // subscription setup (before events arrive).
+    final feedStateFuture = ref.watch(profileFeedProvider(pubkey).future);
 
-    // Run video subscription and follower stats fetch in parallel
-    // This reduces load time from sequential (~5-6s) to parallel (~2-3s)
-    final results = await Future.wait([
-      videoEventService.subscribeToUserVideos(pubkey, limit: 100),
+    // Run feed loading and follower stats fetch in parallel
+    final results = await Future.wait<Object>([
+      feedStateFuture,
       socialService.getFollowerStats(pubkey),
     ]);
 
-    // Extract follower stats from parallel results
+    // Extract feed state and follower stats
+    final feedState = results[0] as VideoFeedState;
     final followerStats = results[1] as Map<String, int>;
 
-    // Get videos from VideoEventService (now populated via subscription)
-    // Filter out reposts - only count original videos authored by the user
-    final videos = videoEventService
-        .authorVideos(pubkey)
-        .where((v) => !v.isRepost);
+    // Get video list from feed state (already filtered to non-reposts)
+    final videos = feedState.videos;
     final videoCount = videos.length;
 
     // Sum up loops and likes from all user's videos
@@ -133,15 +136,17 @@ Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
 
     final stats = ProfileStats(
       videoCount: videoCount,
-      totalLikes: totalLikes, // Sum of all likes from user's videos
+      totalLikes: totalLikes,
       followers: followerStats['followers'] ?? 0,
       following: followerStats['following'] ?? 0,
-      totalViews: totalLoops, // Sum of all loops (views) from user's videos
+      totalViews: totalLoops,
       lastUpdated: DateTime.now(),
     );
 
-    // Cache the results
-    await _cacheProfileStats(pubkey, stats);
+    // Cache the results (only if video count > 0 to avoid caching timing issues)
+    if (videoCount > 0) {
+      await _cacheProfileStats(pubkey, stats);
+    }
 
     Log.info(
       'Profile stats loaded: $videoCount videos, ${StringUtils.formatCompactNumber(totalLoops)} views, ${StringUtils.formatCompactNumber(totalLikes)} likes',

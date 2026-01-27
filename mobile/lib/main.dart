@@ -607,6 +607,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     // Initialize the deep link service for password reset
     ref.read(passwordResetListenerProvider).initialize();
 
+    // Initialize the deep link service for email verification
+    ref.read(emailVerificationListenerProvider).initialize();
+
     Log.info(
       '✅ Deep Link services initialized',
       name: 'DeepLinkHandler',

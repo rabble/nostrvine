@@ -5,7 +5,6 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
 import 'package:openvine/models/user_profile.dart' as app_models;
-import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -17,17 +16,14 @@ part 'profile_editor_state.dart';
 class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   ProfileEditorBloc({
     required ProfileRepository profileRepository,
-    required UsernameRepository usernameRepository,
     required UserProfileService userProfileService,
   }) : _profileRepository = profileRepository,
-       _usernameRepository = usernameRepository,
        _userProfileService = userProfileService,
        super(const ProfileEditorState()) {
     on<ProfileSaved>(_onProfileSaved);
   }
 
   final ProfileRepository _profileRepository;
-  final UsernameRepository _usernameRepository;
   final UserProfileService _userProfileService;
 
   Future<void> _onProfileSaved(
@@ -98,10 +94,9 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       name: 'ProfileEditorBloc',
     );
 
-    final result = await _usernameRepository.register(
-      username: username,
-      pubkey: event.pubkey,
-    );
+    final result = await _profileRepository.claimUsername(username: username);
+
+    Log.info('📝 Username claim result: $result', name: 'ProfileEditorBloc');
 
     final error = switch (result) {
       UsernameClaimSuccess() => null,

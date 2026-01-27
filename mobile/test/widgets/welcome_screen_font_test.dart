@@ -40,6 +40,7 @@ void main() {
           overrides: [
             sharedPreferencesProvider.overrideWithValue(sharedPreferences),
             authServiceProvider.overrideWithValue(mockAuthService),
+            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
           child: const MaterialApp(home: WelcomeScreen()),
         ),

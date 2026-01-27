@@ -64,24 +64,21 @@ class _ProfileStatValue extends StatelessWidget {
       AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
         child: isLoading
-            ? const Text(
+            ? Text(
                 '—',
-                style: TextStyle(
-                  color: Colors.grey,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                style: VineTheme.titleSmallFont(
+                  color: VineTheme.onSurfaceMuted,
                 ),
               )
             : Text(
                 StringUtils.formatCompactNumber(count),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                ),
+                style: VineTheme.titleSmallFont(),
               ),
       ),
-      Text(label, style: TextStyle(color: Colors.grey.shade300, fontSize: 12)),
+      Text(
+        label,
+        style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+      ),
     ],
   );
 }
@@ -104,29 +101,24 @@ class ProfileStatColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final column = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         AnimatedSwitcher(
           duration: const Duration(milliseconds: 300),
           child: isLoading
-              ? const Text(
+              ? Text(
                   '—',
-                  style: TextStyle(
-                    color: Colors.grey,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+                  style: VineTheme.titleMediumFont(
+                    color: VineTheme.onSurfaceMuted,
                   ),
                 )
               : Text(
                   count != null ? StringUtils.formatCompactNumber(count!) : '—',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+                  style: VineTheme.titleMediumFont(),
                 ),
         ),
         const SizedBox(height: 4),
-        Text(label, style: const TextStyle(color: Colors.grey, fontSize: 12)),
+        Text(label, style: VineTheme.bodyMediumFont()),
       ],
     );
 
