@@ -787,9 +787,7 @@ class HomeFeed extends _$HomeFeed {
       // FollowRepository not ready - can't load more
       if (followRepository == null) {
         if (!ref.mounted) return;
-        state = AsyncData(
-          currentState.copyWith(isLoadingMore: false),
-        );
+        state = AsyncData(currentState.copyWith(isLoadingMore: false));
         return;
       }
       final followingPubkeys = followRepository.followingPubkeys;
