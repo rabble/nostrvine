@@ -4,11 +4,12 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, ValueChanged;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:dio/dio.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/circuit_breaker_service.dart';
@@ -19,6 +20,7 @@ import 'package:openvine/services/upload_initialization_helper.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Get platform name for logging (web-safe)
@@ -269,6 +271,7 @@ class UploadManager {
     required VineDraft draft,
     required String nostrPubkey,
     Duration? videoDuration,
+    ValueChanged<double>? onProgress,
   }) async {
     Log.info(
       '🚀 === STARTING UPLOAD FROM DRAFT ===',
@@ -289,14 +292,40 @@ class UploadManager {
       );
     }
 
+    // Use single clip (already processed) directly, or merge multiple clips
+    // with 6.3s max duration.
+    String videoFilePath;
+    if (draft.clips.length == 1) {
+      videoFilePath = await draft.clips.first.video.safeFilePath();
+    } else {
+      videoFilePath = '';
+      await ProVideoEditor.instance.renderVideoToFile(
+        videoFilePath,
+        VideoRenderData(
+          videoSegments: draft.clips
+              .map((clip) => VideoSegment(video: clip.video))
+              .toList(),
+          endTime: VideoEditorConstants.maxDuration,
+        ),
+      );
+    }
+
+    if (videoDuration == null) {
+      final meta = await ProVideoEditor.instance.getMetadata(
+        EditorVideo.file(videoFilePath),
+      );
+      videoDuration = meta.duration;
+    }
+
     return _startUploadInternal(
-      videoFile: draft.videoFile,
+      videoFile: File(videoFilePath),
       nostrPubkey: nostrPubkey,
       title: draft.title,
       description: draft.description,
-      hashtags: draft.hashtags,
+      hashtags: draft.hashtags.toList(),
       videoDuration: videoDuration,
       proofManifestJson: draft.proofManifestJson,
+      onProgress: onProgress,
     );
   }
 
@@ -304,6 +333,7 @@ class UploadManager {
   Future<PendingUpload> startUpload({
     required File videoFile,
     required String nostrPubkey,
+    ValueChanged<double>? onProgress,
     String? thumbnailPath,
     String? title,
     String? description,
@@ -348,6 +378,7 @@ class UploadManager {
       videoHeight: videoHeight,
       videoDuration: videoDuration,
       proofManifestJson: proofManifestJson,
+      onProgress: onProgress,
     );
   }
 
@@ -355,6 +386,7 @@ class UploadManager {
   Future<PendingUpload> _startUploadInternal({
     required File videoFile,
     required String nostrPubkey,
+    ValueChanged<double>? onProgress,
     String? thumbnailPath,
     String? title,
     String? description,
@@ -524,7 +556,7 @@ class UploadManager {
     // CRITICAL FIX: Await upload completion before returning
     // This ensures videoId and cdnUrl are populated before publishing
     try {
-      await _performUpload(upload);
+      await _performUpload(upload, onProgress: onProgress);
 
       // Fetch the updated upload with videoId and cdnUrl populated
       final completedUpload = getUpload(upload.id);
@@ -549,7 +581,10 @@ class UploadManager {
   }
 
   /// Perform upload with circuit breaker and retry logic
-  Future<void> _performUpload(PendingUpload upload) async {
+  Future<void> _performUpload(
+    PendingUpload upload, {
+    ValueChanged<double>? onProgress,
+  }) async {
     Log.info(
       '🏃 === PERFORM UPLOAD STARTED ===',
       name: 'UploadManager',
@@ -621,7 +656,7 @@ class UploadManager {
         name: 'UploadManager',
         category: LogCategory.video,
       );
-      await _performUploadWithRetry(upload, videoFile);
+      await _performUploadWithRetry(upload, videoFile, onProgress);
     } catch (e) {
       Log.error(
         '❌ Upload failed: $e',
@@ -636,6 +671,7 @@ class UploadManager {
   Future<void> _performUploadWithRetry(
     PendingUpload upload,
     File videoFile,
+    ValueChanged<double>? onProgress,
   ) async {
     try {
       await AsyncUtils.retryWithBackoff(
@@ -667,7 +703,11 @@ class UploadManager {
           }
 
           // Execute upload with timeout
-          final result = await _executeUploadWithTimeout(upload, videoFile);
+          final result = await _executeUploadWithTimeout(
+            upload,
+            videoFile,
+            onProgress,
+          );
 
           // Success - record metrics and complete
           await _handleUploadSuccess(upload, result);
@@ -695,6 +735,7 @@ class UploadManager {
   Future<dynamic> _executeUploadWithTimeout(
     PendingUpload upload,
     File videoFile,
+    ValueChanged<double>? onProgress,
   ) async {
     Log.info(
       '📤 === EXECUTING UPLOAD ===',
@@ -763,11 +804,11 @@ class UploadManager {
             title: upload.title ?? '',
             description: upload.description,
             hashtags: upload.hashtags,
-            onProgress: (progress) {
-              _updateUploadProgress(
-                upload.id,
-                progress * 0.8,
-              ); // Reserve 20% for thumbnail
+            onProgress: (value) {
+              final progress = value * 0.8; // Reserve 20% for thumbnail
+
+              _updateUploadProgress(upload.id, progress);
+              onProgress?.call(progress);
             },
           )
           .timeout(
@@ -826,6 +867,7 @@ class UploadManager {
         }
 
         _updateUploadProgress(upload.id, 1.0);
+        onProgress?.call(1.0);
       }
 
       // Store thumbnail URL in upload for later use
@@ -2141,7 +2183,6 @@ Upload Timeout Failure:
       // Generate thumbnail at optimal timestamp
       final thumbnailPath = await VideoThumbnailService.extractThumbnail(
         videoPath: videoFile.path,
-        timeMs: 500, // Extract at 500ms
         quality: 85,
       );
 

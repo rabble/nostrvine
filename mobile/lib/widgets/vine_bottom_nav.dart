@@ -150,7 +150,7 @@ class VineBottomNav extends ConsumerWidget {
                     name: 'Navigation',
                     category: LogCategory.ui,
                   );
-                  context.pushCamera();
+                  context.pushVideoRecorder();
                 },
                 child: Container(
                   width: 72,

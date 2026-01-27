@@ -265,71 +265,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.1"
-  camera:
-    dependency: "direct main"
-    description:
-      name: camera
-      sha256: eefad89f262a873f38d21e5eec853461737ea074d7c9ede39f3ceb135d201cab
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.11.3"
-  camera_android_camerax:
-    dependency: transitive
-    description:
-      name: camera_android_camerax
-      sha256: "474d8355961658d43f1c976e2fa1ca715505bea1adbd56df34c581aaa70ec41f"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.6.26+2"
-  camera_avfoundation:
-    dependency: transitive
-    description:
-      name: camera_avfoundation
-      sha256: "087a9fadef20325cb246b4c13344a3ce8e408acfc3e0c665ebff0ec3144d7163"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.9.22+8"
   camera_macos_plus:
     dependency: "direct main"
     description:
       name: camera_macos_plus
-      sha256: "1c4af91f15aec8d0be5f3e02a4d5ee17cdffcdf1cea6eeed6aa2022bfb587032"
+      sha256: dad4f992c6c511e3ceeef49ab1dc999d22135dac462a7fc06c8cfb05632c8f16
       url: "https://pub.dev"
     source: hosted
-    version: "0.0.3"
-  camera_platform_interface:
-    dependency: transitive
-    description:
-      name: camera_platform_interface
-      sha256: "98cfc9357e04bad617671b4c1f78a597f25f08003089dd94050709ae54effc63"
-      url: "https://pub.dev"
-    source: hosted
-    version: "2.12.0"
-  camera_web:
-    dependency: transitive
-    description:
-      name: camera_web
-      sha256: "57f49a635c8bf249d07fb95eb693d7e4dda6796dedb3777f9127fb54847beba7"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.3.5+3"
-  camerawesome:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: master
-      resolved-ref: "432059f362b1d499fc53fdd2c50bb3a521b0ab15"
-      url: "https://github.com/hm21/CamerAwesome.git"
-    source: git
-    version: "2.5.0"
-  carousel_slider:
-    dependency: transitive
-    description:
-      name: carousel_slider
-      sha256: bcc61735345c9ab5cb81073896579e735f81e35fd588907a393143ea986be8ff
-      url: "https://pub.dev"
-    source: hosted
-    version: "5.1.1"
+    version: "0.0.4"
   characters:
     dependency: transitive
     description:
@@ -402,14 +345,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
-  colorfilter_generator:
-    dependency: transitive
-    description:
-      name: colorfilter_generator
-      sha256: ccc2995e440b1d828d55d99150e7cad64624f3cb4a1e235000de3f93cf10d35c
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.8"
   connectivity_plus:
     dependency: "direct main"
     description:
@@ -641,14 +576,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.3"
-  fc_native_video_thumbnail:
-    dependency: "direct main"
-    description:
-      name: fc_native_video_thumbnail
-      sha256: edebd03d98f5bd3914b17fa1666cef1b8e820e2e0c2b9ace5ff8d9de5fda33f7
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.17.2"
   ffi:
     dependency: transitive
     description:
@@ -657,22 +584,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.4"
-  ffmpeg_kit_flutter_new_min:
-    dependency: "direct main"
-    description:
-      name: ffmpeg_kit_flutter_new_min
-      sha256: "15640bf8f177c5c3169a07490635ec0e2fe3816aeb31813eaa747ef0fbd271a6"
-      url: "https://pub.dev"
-    source: hosted
-    version: "3.1.0"
-  ffmpeg_kit_flutter_platform_interface:
-    dependency: transitive
-    description:
-      name: ffmpeg_kit_flutter_platform_interface
-      sha256: addf046ae44e190ad0101b2fde2ad909a3cd08a2a109f6106d2f7048b7abedee
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.2.1"
   file:
     dependency: transitive
     description:
@@ -1391,14 +1302,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.11.1"
-  matrix2d:
-    dependency: transitive
-    description:
-      name: matrix2d
-      sha256: "188718dd3bc2a31e372cfd0791b0f77f4f13ea76164147342cc378d9132949e7"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.0.4"
   melos:
     dependency: "direct dev"
     description:
@@ -2364,14 +2267,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.0"
-  video_thumbnail:
-    dependency: "direct main"
-    description:
-      name: video_thumbnail
-      sha256: "181a0c205b353918954a881f53a3441476b9e301641688a581e0c13f00dc588b"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.5.6"
   visibility_detector:
     dependency: "direct main"
     description:

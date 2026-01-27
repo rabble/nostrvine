@@ -1,599 +1,118 @@
 // ABOUTME: Video editor screen for adding text overlays and sound to recorded videos
 // ABOUTME: Dark-themed interface with video preview, text editing, and sound selection
 
-import 'dart:async';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
-import 'package:just_audio/just_audio.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:openvine/models/vine_draft.dart';
-import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/providers/vine_recording_provider.dart';
-import 'package:openvine/screens/pure/video_metadata_screen_pure.dart';
-import 'package:openvine/services/draft_storage_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/sound_picker/sound_picker_modal.dart';
-import 'package:openvine/widgets/text_overlay/draggable_text_overlay.dart';
-import 'package:openvine/widgets/text_overlay/text_overlay_editor.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:video_player/video_player.dart';
+import 'package:openvine/widgets/video_editor/gallery/video_editor_clip_gallery.dart';
+import 'package:openvine/widgets/video_editor/video_editor_bottom_bar.dart';
+import 'package:openvine/widgets/video_editor/video_editor_processing_overlay.dart';
+import 'package:openvine/widgets/video_editor/video_editor_progress_bar.dart';
+import 'package:openvine/widgets/video_editor/video_editor_split_bar.dart';
+import 'package:openvine/widgets/video_editor/video_editor_top_bar.dart';
 
+/// Video editor screen for editing recorded video clips.
 class VideoEditorScreen extends ConsumerStatefulWidget {
+  /// Creates a video editor screen.
+  const VideoEditorScreen({super.key, this.draftId, this.fromLibrary = false});
+
+  /// Optional draft ID to load an existing draft.
+  final String? draftId;
+
+  /// Whether the editor was opened from the clip library.
+  final bool fromLibrary;
+
   /// Route name for this screen.
-  static const routeName = 'edit-video';
+  static const routeName = 'video-editor';
 
   /// Path for this route.
-  static const path = '/edit-video';
-
-  const VideoEditorScreen({
-    super.key,
-    required this.videoPath,
-    this.onExport,
-    this.onBack,
-    this.externalAudioEventId,
-    this.externalAudioUrl,
-    this.externalAudioIsBundled = false,
-    this.externalAudioAssetPath,
-  });
-
-  final String videoPath;
-  final VoidCallback? onExport;
-  final VoidCallback? onBack;
-
-  /// External audio event ID from lip sync recording on camera screen.
-  /// When provided, this audio will be mixed into the final video.
-  final String? externalAudioEventId;
-
-  /// Direct URL to the external audio file (avoids re-fetching).
-  final String? externalAudioUrl;
-
-  /// Whether the external audio is a bundled asset.
-  final bool externalAudioIsBundled;
-
-  /// Asset path for bundled external audio.
-  final String? externalAudioAssetPath;
+  static const path = '/video-editor';
 
   @override
   ConsumerState<VideoEditorScreen> createState() => _VideoEditorScreenState();
 }
 
 class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
-  VideoPlayerController? _videoController;
-  bool _isVideoInitialized = false;
-  AudioPlayer? _audioPlayer;
-  String? _currentSoundId;
-  Size? _lastPreviewSize; // Store preview size for text overlay scaling
+  late bool _isLoadingDraft = widget.draftId != null;
 
   @override
   void initState() {
     super.initState();
-    Log.info(
-      '📹 VideoEditorScreen.initState() START - videoPath: ${widget.videoPath}',
-      category: LogCategory.video,
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await ref
+          .read(videoEditorProvider.notifier)
+          .initialize(draftId: widget.draftId);
+      if (!mounted) return;
 
-    // Log external audio info from lip sync recording
-    if (widget.externalAudioEventId != null) {
-      Log.info(
-        '📹 External audio from lip sync: ${widget.externalAudioEventId}'
-        '${widget.externalAudioIsBundled ? " (bundled: ${widget.externalAudioAssetPath})" : ""}'
-        '${widget.externalAudioUrl != null && !widget.externalAudioIsBundled ? " (url: ${widget.externalAudioUrl})" : ""}',
-        category: LogCategory.video,
-      );
-    }
-
-    _initializeVideo();
-    _audioPlayer = AudioPlayer();
-    Log.info(
-      '📹 VideoEditorScreen.initState() END',
-      category: LogCategory.video,
-    );
-  }
-
-  Future<void> _initializeVideo() async {
-    Log.info('📹 _initializeVideo() START', category: LogCategory.video);
-    try {
-      final file = File(widget.videoPath);
-      Log.info(
-        '📹 Video file exists: ${file.existsSync()}, path: ${widget.videoPath}',
-        category: LogCategory.video,
-      );
-
-      final controller = VideoPlayerController.file(file);
-      Log.info(
-        '📹 VideoPlayerController created, calling initialize()...',
-        category: LogCategory.video,
-      );
-
-      await controller.initialize();
-      Log.info(
-        '📹 VideoPlayerController initialized, size: ${controller.value.size}',
-        category: LogCategory.video,
-      );
-
-      await controller.setLooping(true);
-
-      // If we have external audio from lip sync, mute video
-      if (widget.externalAudioUrl != null ||
-          widget.externalAudioAssetPath != null) {
-        await controller.setVolume(0.0);
-      }
-
-      // Set state BEFORE calling play() - on macOS, play() can hang
-      // This ensures the video displays even if play() blocks
-      if (mounted) {
-        setState(() {
-          _videoController = controller;
-          _isVideoInitialized = true;
-        });
-        Log.info(
-          '📹 _initializeVideo() - video controller ready, starting playback',
-          category: LogCategory.video,
-        );
-      }
-
-      // Don't await play() - let it run asynchronously to avoid blocking
-      unawaited(controller.play());
-      Log.info('📹 Video playback started', category: LogCategory.video);
-
-      // Load external audio AFTER video is displayed - don't block on it
-      if (widget.externalAudioUrl != null ||
-          widget.externalAudioAssetPath != null) {
-        unawaited(_loadExternalAudio());
-      }
-    } catch (e, stackTrace) {
-      Log.error(
-        '📹 _initializeVideo() FAILED: $e',
-        category: LogCategory.video,
-      );
-      Log.error('📹 Stack trace: $stackTrace', category: LogCategory.video);
-    }
-  }
-
-  /// Load external audio from lip sync recording for preview playback
-  Future<void> _loadExternalAudio() async {
-    try {
-      if (widget.externalAudioIsBundled &&
-          widget.externalAudioAssetPath != null) {
-        // Bundled sound - load from asset
-        Log.info(
-          '📹 Loading bundled audio for preview: ${widget.externalAudioAssetPath}',
-          category: LogCategory.video,
-        );
-        await _audioPlayer?.setAsset(widget.externalAudioAssetPath!);
-      } else if (widget.externalAudioUrl != null) {
-        final audioUrl = widget.externalAudioUrl!;
-        if (audioUrl.startsWith('http://') || audioUrl.startsWith('https://')) {
-          // Remote sound - load from URL
-          Log.info(
-            '📹 Loading remote audio for preview: $audioUrl',
-            category: LogCategory.video,
-          );
-          await _audioPlayer?.setUrl(audioUrl);
-        }
-      }
-
-      await _audioPlayer?.setLoopMode(LoopMode.one);
-      await _audioPlayer?.play();
-
-      Log.info(
-        '📹 External audio loaded and playing for preview',
-        category: LogCategory.video,
-      );
-    } catch (e) {
-      Log.error(
-        '📹 Failed to load external audio for preview: $e',
-        category: LogCategory.video,
-      );
-    }
-  }
-
-  @override
-  void dispose() {
-    _videoController?.dispose();
-    _audioPlayer?.dispose();
-    super.dispose();
-  }
-
-  /// Load and play the selected sound, synced with video
-  Future<void> _loadAndPlaySound(String? soundId) async {
-    if (soundId == _currentSoundId) return;
-    _currentSoundId = soundId;
-
-    // Stop current audio
-    await _audioPlayer?.stop();
-
-    if (soundId == null) {
-      // No sound selected - unmute video
-      await _videoController?.setVolume(1.0);
-      return;
-    }
-
-    // Mute video's original audio when playing selected sound
-    await _videoController?.setVolume(0.0);
-
-    // Get the sound's asset path
-    final soundService = await ref.read(soundLibraryServiceProvider.future);
-    final sound = soundService.getSoundById(soundId);
-
-    if (sound == null) {
-      Log.warning('Sound not found: $soundId', category: LogCategory.video);
-      return;
-    }
-
-    try {
-      String filePath;
-
-      // Load the audio - handle both asset paths and file paths
-      if (sound.assetPath.startsWith('/') ||
-          sound.assetPath.startsWith('file://')) {
-        // Custom sound - file path
-        filePath = sound.assetPath.replaceFirst('file://', '');
-      } else {
-        // Bundled asset - copy to temp file for reliable playback on desktop
-        final tempDir = await getTemporaryDirectory();
-        final extension = sound.assetPath.split('.').last;
-        filePath = '${tempDir.path}/editor_${sound.id}.$extension';
-
-        final tempFile = File(filePath);
-        if (!await tempFile.exists()) {
-          final assetData = await rootBundle.load(sound.assetPath);
-          await tempFile.writeAsBytes(assetData.buffer.asUint8List());
-        }
-      }
-
-      await _audioPlayer?.setFilePath(filePath);
-
-      // Set looping to match video
-      await _audioPlayer?.setLoopMode(LoopMode.one);
-
-      // Play the audio
-      await _audioPlayer?.play();
-
-      Log.info('Playing sound: ${sound.title}', category: LogCategory.video);
-    } catch (e) {
-      Log.error('Failed to play sound: $e', category: LogCategory.video);
-      // Unmute video on error
-      await _videoController?.setVolume(1.0);
-    }
-  }
-
-  void _handleAddText() async {
-    // Pause video and audio while editing text
-    await _videoController?.pause();
-    await _audioPlayer?.pause();
-
-    if (!mounted) return;
-
-    await showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => TextOverlayEditor(
-        onSave: (overlay) {
-          ref
-              .read(videoEditorProvider(widget.videoPath).notifier)
-              .addTextOverlay(overlay);
-          context.pop();
-        },
-        onCancel: context.pop,
-      ),
-    );
-
-    // Resume playback after closing text editor
-    if (mounted) {
-      await _videoController?.play();
-      await _audioPlayer?.play();
-    }
-  }
-
-  void _handleAddSound() async {
-    // Pause video and audio while selecting sound
-    await _videoController?.pause();
-    await _audioPlayer?.pause();
-
-    // Wait for sounds to load
-    final soundServiceAsync = await ref.read(
-      soundLibraryServiceProvider.future,
-    );
-
-    if (!mounted) return;
-
-    String? selectedSoundId;
-
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => SoundPickerModal(
-          sounds: soundServiceAsync.sounds,
-          selectedSoundId: ref
-              .read(videoEditorProvider(widget.videoPath))
-              .selectedSoundId,
-          onSoundSelected: (soundId) {
-            ref
-                .read(videoEditorProvider(widget.videoPath).notifier)
-                .selectSound(soundId);
-            // Store selected sound ID to load after navigation completes
-            selectedSoundId = soundId;
-            context.pop();
-          },
-        ),
-      ),
-    );
-
-    // Load and play sound after returning from sound picker
-    // This ensures the navigation is complete before we start playing
-    if (mounted) {
-      if (selectedSoundId != null) {
-        await _loadAndPlaySound(selectedSoundId);
-      }
-      await _videoController?.play();
-    }
-  }
-
-  Future<void> _handleDone() async {
-    // Stop audio preview before navigating
-    await _audioPlayer?.stop();
-    await _videoController?.pause();
-
-    try {
-      Log.info(
-        '📹 VideoEditorScreen: Creating draft for video: ${widget.videoPath}',
-        category: LogCategory.video,
-      );
-
-      // Get the current editor state for text overlays and sound
-      final editorState = ref.read(videoEditorProvider(widget.videoPath));
-
-      Log.info(
-        '📹 Editor state - overlays: ${editorState.textOverlays.length}, sound: ${editorState.selectedSoundId}',
-        category: LogCategory.video,
-      );
-
-      // Create draft storage service
-      final prefs = await SharedPreferences.getInstance();
-      final draftService = DraftStorageService(prefs);
-
-      // Get the aspect ratio from recording state
-      final recordingState = ref.read(vineRecordingProvider);
-      final aspectRatio = recordingState.aspectRatio;
-
-      // Create a draft with the ORIGINAL video immediately
-      // Processing (text overlays, audio mixing) will happen in background
-      // on the metadata screen
-      final draft = VineDraft.create(
-        videoFile: File(widget.videoPath),
-        title: '',
-        description: '',
-        hashtags: [],
-        frameCount: 0,
-        selectedApproach: 'video',
-        aspectRatio: aspectRatio,
-      );
-
-      await draftService.saveDraft(draft);
-
-      Log.info(
-        '📹 Created draft with ID: ${draft.id}',
-        category: LogCategory.video,
-      );
-
-      // Build processing params for background processing on metadata screen
-      final processingParams = VideoProcessingParams(
-        textOverlays: List.from(editorState.textOverlays),
-        selectedSoundId: editorState.selectedSoundId,
-        externalAudioEventId: widget.externalAudioEventId,
-        externalAudioUrl: widget.externalAudioUrl,
-        externalAudioIsBundled: widget.externalAudioIsBundled,
-        externalAudioAssetPath: widget.externalAudioAssetPath,
-        previewSize: _lastPreviewSize,
-      );
-
-      if (mounted) {
-        // Dispose video controller to free memory before navigating
-        // The metadata screen will create its own player
-        _videoController?.dispose();
-        _videoController = null;
-        _audioPlayer?.dispose();
-        _audioPlayer = null;
-        setState(() {
-          _isVideoInitialized = false;
-        });
-
-        // Navigate to metadata screen immediately
-        // Video processing (text overlays, audio mixing) happens in background
-        await Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => VideoMetadataScreenPure(
-              draftId: draft.id,
-              processingParams: processingParams,
-            ),
-          ),
-        );
-
-        // Re-initialize video when returning from metadata screen
-        if (mounted) {
-          _audioPlayer = AudioPlayer();
-          await _initializeVideo();
-          // Re-apply sound if one was selected
-          if (_currentSoundId != null) {
-            await _loadAndPlaySound(_currentSoundId);
-          }
-        }
-      }
-
-      // Call original callback if exists
-      widget.onExport?.call();
-    } catch (e) {
-      Log.error('Failed to create draft: $e', category: LogCategory.video);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save video: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  void _handleBack() {
-    // Stop audio preview when going back
-    _audioPlayer?.stop();
-
-    if (widget.onBack != null) {
-      widget.onBack!();
-    } else {
-      // Pop back to ClipManager since we got here via push
-      context.pop();
-    }
-  }
-
-  void _updateTextOverlayPosition(String id, Offset normalizedPosition) {
-    final state = ref.read(videoEditorProvider(widget.videoPath));
-    final overlay = state.textOverlays.firstWhere((o) => o.id == id);
-    final updatedOverlay = overlay.copyWith(
-      normalizedPosition: normalizedPosition,
-    );
-    ref
-        .read(videoEditorProvider(widget.videoPath).notifier)
-        .updateTextOverlay(id, updatedOverlay);
+      setState(() {
+        _isLoadingDraft = false;
+      });
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    Log.info(
-      '📹 VideoEditorScreen.build() START - isVideoInitialized: $_isVideoInitialized',
-      category: LogCategory.video,
+    final isProcessing = ref.watch(
+      videoEditorProvider.select((p) => p.isProcessing),
     );
-    final editorState = ref.watch(videoEditorProvider(widget.videoPath));
-    final soundServiceAsync = ref.watch(soundLibraryServiceProvider);
-    final soundService = soundServiceAsync.value;
+    const backgroundColor = Color(0xFF000A06);
 
-    Log.info(
-      '📹 VideoEditorScreen.build() returning Scaffold',
-      category: LogCategory.video,
-    );
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: _handleBack,
-        ),
-        title: const Text('Edit Video', style: TextStyle(color: Colors.white)),
-        actions: [
-          TextButton(
-            onPressed: _handleDone,
-            child: const Text(
-              'Done',
-              style: TextStyle(color: Colors.white, fontSize: 16),
-            ),
-          ),
-        ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: backgroundColor,
+        statusBarIconBrightness: .light,
+        statusBarBrightness: .dark,
       ),
-      body: Column(
-        children: [
-          // Video preview area
-          Expanded(
-            child: Container(
-              color: Colors.black,
-              child: Center(
-                child: _isVideoInitialized && _videoController != null
-                    ? AspectRatio(
-                        aspectRatio: _videoController!.value.aspectRatio,
-                        child: LayoutBuilder(
-                          builder: (context, constraints) {
-                            // Use actual rendered size, not native video resolution
-                            final renderedSize = Size(
-                              constraints.maxWidth,
-                              constraints.maxHeight,
-                            );
-                            // Store preview size for text overlay scaling during export
-                            _lastPreviewSize = renderedSize;
-                            return Stack(
-                              fit: StackFit.expand,
-                              children: [
-                                VideoPlayer(_videoController!),
-                                // Text overlays
-                                ...editorState.textOverlays.map((overlay) {
-                                  return DraggableTextOverlay(
-                                    overlay: overlay,
-                                    videoSize: renderedSize,
-                                    onPositionChanged: (position) =>
-                                        _updateTextOverlayPosition(
-                                          overlay.id,
-                                          position,
-                                        ),
-                                  );
-                                }),
-                              ],
-                            );
-                          },
-                        ),
-                      )
-                    : const CircularProgressIndicator(color: Colors.white),
-              ),
-            ),
-          ),
+      child: PopScope(
+        canPop: !isProcessing,
+        child: Scaffold(
+          resizeToAvoidBottomInset: false,
+          backgroundColor: backgroundColor,
+          body: _isLoadingDraft
+              ? const Center(child: CircularProgressIndicator.adaptive())
+              : Stack(
+                  children: [
+                    SafeArea(
+                      child: Column(
+                        children: [
+                          /// Top bar
+                          VideoEditorTopBar(fromLibrary: widget.fromLibrary),
 
-          // Selected sound indicator
-          if (editorState.selectedSoundId != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Colors.grey[900],
-              child: Row(
-                children: [
-                  const Icon(Icons.music_note, color: Colors.white, size: 16),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Sound: ${soundService?.getSoundById(editorState.selectedSoundId!)?.title ?? 'Loading...'}',
-                    style: const TextStyle(color: Colors.white, fontSize: 14),
-                  ),
-                ],
-              ),
-            ),
+                          /// Main content area with clips
+                          const Expanded(child: VideoEditorClipGallery()),
 
-          // Bottom action buttons
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.grey[900],
-            child: Row(
-              children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _handleAddText,
-                    icon: const Icon(Icons.text_fields),
-                    label: const Text('Add Text'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                          /// Progress or Split bar
+                          Consumer(
+                            builder: (_, ref, _) {
+                              final isEditing = ref.watch(
+                                videoEditorProvider.select((p) => p.isEditing),
+                              );
+
+                              return Container(
+                                height: 40,
+                                padding: const .symmetric(horizontal: 16),
+                                child: isEditing
+                                    ? const VideoEditorSplitBar()
+                                    : const VideoProgressBar(),
+                              );
+                            },
+                          ),
+
+                          /// Bottom bar
+                          const VideoEditorBottomBar(),
+                        ],
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _handleAddSound,
-                    icon: const Icon(Icons.volume_up),
-                    label: const Text('Add Sound'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.white,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 200),
+                      child: isProcessing
+                          ? const VideoEditorProcessingOverlay()
+                          : const SizedBox.shrink(),
                     ),
-                  ),
+                  ],
                 ),
-              ],
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

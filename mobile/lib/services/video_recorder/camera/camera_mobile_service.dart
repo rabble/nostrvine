@@ -29,7 +29,7 @@ class CameraMobileService extends CameraService {
       category: .video,
     );
     try {
-      await _camera.initialize();
+      await _camera.initialize(lens: .front);
       _camera.onRecordingAutoStopped = (result) {
         onAutoStopped(EditorVideo.file(result.filePath));
       };

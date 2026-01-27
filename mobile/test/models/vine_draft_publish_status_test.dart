@@ -1,9 +1,10 @@
 // ABOUTME: Tests for PublishStatus enum and publish tracking fields in VineDraft
 // ABOUTME: Validates serialization, migration, and status lifecycle
 
-import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/recording_clip.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:models/models.dart' show AspectRatio;
 
 void main() {
@@ -12,18 +13,24 @@ void main() {
       final now = DateTime.now();
       final draft = VineDraft(
         id: 'test_draft',
-        videoFile: File('/path/to/video.mp4'),
+        clips: [
+          RecordingClip(
+            id: 'test_clip',
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: Duration(seconds: 6),
+            recordedAt: now,
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Test',
         description: 'Desc',
-        hashtags: ['test'],
-        frameCount: 30,
+        hashtags: {'test'},
         selectedApproach: 'native',
         createdAt: now,
         lastModified: now,
         publishStatus: PublishStatus.draft,
         publishError: null,
         publishAttempts: 0,
-        aspectRatio: AspectRatio.square,
       );
 
       final json = draft.toJson();
@@ -40,18 +47,24 @@ void main() {
       for (final status in PublishStatus.values) {
         final draft = VineDraft(
           id: 'test_${status.name}',
-          videoFile: File('/path/to/video.mp4'),
+          clips: [
+            RecordingClip(
+              id: 'test_clip',
+              video: EditorVideo.file('/path/to/video.mp4'),
+              duration: Duration(seconds: 6),
+              recordedAt: now,
+              aspectRatio: AspectRatio.square,
+            ),
+          ],
           title: 'Test',
           description: '',
-          hashtags: [],
-          frameCount: 30,
+          hashtags: {},
           selectedApproach: 'native',
           createdAt: now,
           lastModified: now,
           publishStatus: status,
           publishError: null,
           publishAttempts: 0,
-          aspectRatio: AspectRatio.square,
         );
 
         final json = draft.toJson();
@@ -86,18 +99,24 @@ void main() {
       final now = DateTime.now();
       final draft = VineDraft(
         id: 'failed_draft',
-        videoFile: File('/path/to/video.mp4'),
+        clips: [
+          RecordingClip(
+            id: 'test_clip',
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: Duration(seconds: 6),
+            recordedAt: now,
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Failed',
         description: '',
-        hashtags: [],
-        frameCount: 30,
+        hashtags: {},
         selectedApproach: 'native',
         createdAt: now,
         lastModified: now,
         publishStatus: PublishStatus.failed,
         publishError: 'Network error',
         publishAttempts: 2,
-        aspectRatio: AspectRatio.square,
       );
 
       final json = draft.toJson();
@@ -115,18 +134,24 @@ void main() {
       final now = DateTime.now();
       final draft = VineDraft(
         id: 'test',
-        videoFile: File('/path/to/video.mp4'),
+        clips: [
+          RecordingClip(
+            id: 'test_clip',
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: Duration(seconds: 6),
+            recordedAt: now,
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Test',
         description: '',
-        hashtags: [],
-        frameCount: 30,
+        hashtags: {},
         selectedApproach: 'native',
         createdAt: now,
         lastModified: now,
         publishStatus: PublishStatus.draft,
         publishError: null,
         publishAttempts: 0,
-        aspectRatio: AspectRatio.square,
       );
 
       final publishing = draft.copyWith(
@@ -140,18 +165,24 @@ void main() {
       final now = DateTime.now();
       final draft = VineDraft(
         id: 'test',
-        videoFile: File('/path/to/video.mp4'),
+        clips: [
+          RecordingClip(
+            id: 'test_clip',
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: Duration(seconds: 6),
+            recordedAt: now,
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Test',
         description: '',
-        hashtags: [],
-        frameCount: 30,
+        hashtags: {},
         selectedApproach: 'native',
         createdAt: now,
         lastModified: now,
         publishStatus: PublishStatus.draft,
         publishError: null,
         publishAttempts: 0,
-        aspectRatio: AspectRatio.square,
       );
 
       final failed = draft.copyWith(
@@ -169,18 +200,24 @@ void main() {
       final now = DateTime.now();
       final draft = VineDraft(
         id: 'test',
-        videoFile: File('/path/to/video.mp4'),
+        clips: [
+          RecordingClip(
+            id: 'test_clip',
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: Duration(seconds: 6),
+            recordedAt: now,
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Test',
         description: '',
-        hashtags: [],
-        frameCount: 30,
+        hashtags: {},
         selectedApproach: 'native',
         createdAt: now,
         lastModified: now,
         publishStatus: PublishStatus.failed,
         publishError: 'Previous error',
         publishAttempts: 1,
-        aspectRatio: AspectRatio.square,
       );
 
       // Explicitly set publishError to null

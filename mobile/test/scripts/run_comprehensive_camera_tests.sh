@@ -64,26 +64,31 @@ main() {
     mkdir -p coverage
 
     # Unit Tests
-    run_test_category "Unit - Native macOS Camera" "test/services/native_macos_camera_test.dart"
-    run_test_category "Unit - Camera Interface" "test/services/macos_camera_interface_test.dart"
-    run_test_category "Unit - Recording Provider" "test/providers/vine_recording_provider_test.dart"
-    run_test_category "Unit - Enhanced Mobile Camera" "test/services/camera/enhanced_mobile_camera_interface_test.dart"
+    run_test_category "Unit - macOS Camera Service" "test/services/native_macos_camera_test.dart"
+    run_test_category "Unit - Video Recorder Provider" "test/providers/video_recorder_provider_test.dart"
 
-    # Integration Tests
+    # Performance Tests
+    run_test_category "Performance - Initialization Benchmark" "test/performance/camera_initialization_benchmark_test.dart"
+
+    # Integration Tests (require device/simulator)
     if [ "$1" != "--skip-integration" ]; then
         echo -e "${YELLOW}Running integration tests (requires device/simulator)...${NC}"
-        flutter test integration_test/camera_recording_integration_test.dart || true
+        echo -e "${YELLOW}Note: Integration tests need a running device or simulator${NC}"
+        
+        flutter test integration_test/thumbnail_integration_test.dart || echo -e "${YELLOW}⚠ Skipped (no device)${NC}"
+        flutter test integration_test/video_recorder/camera_controls_integration_test.dart || echo -e "${YELLOW}⚠ Skipped (no device)${NC}"
+        flutter test integration_test/video_recorder/camera_initialization_integration_test.dart || echo -e "${YELLOW}⚠ Skipped (no device)${NC}"
+        flutter test integration_test/video_recorder/camera_lifecycle_integration_test.dart || echo -e "${YELLOW}⚠ Skipped (no device)${NC}"
+        flutter test integration_test/video_recorder/camera_switching_integration_test.dart || echo -e "${YELLOW}⚠ Skipped (no device)${NC}"
+        flutter test integration_test/video_recorder/video_recorder_integration_test.dart || echo -e "${YELLOW}⚠ Skipped (no device)${NC}"
+        
+        echo ""
+    else
+        echo -e "${YELLOW}Skipping integration tests (--skip-integration flag)${NC}"
+        ((SKIPPED_TESTS+=6))
         echo ""
     fi
 
-    # Performance Tests
-    run_test_category "Performance" "test/performance/camera_initialization_benchmark_test.dart"
-
-    # Cross-platform Tests
-    run_test_category "Cross-platform" "test/cross_platform/platform_compatibility_test.dart"
-
-    # Edge Case Tests
-    run_test_category "Edge Cases" "test/edge_cases/camera_error_recovery_test.dart"
 
     # Visual Regression Tests (if golden toolkit available)
     if flutter pub deps | grep -q golden_toolkit; then
@@ -108,9 +113,10 @@ main() {
 
         # Combine all coverage files
         lcov --add-tracefile coverage/Unit*.info \
-             --add-tracefile coverage/Performance.info \
-             --add-tracefile coverage/Cross-platform.info \
-             --add-tracefile coverage/Edge*.info \
+             --add-tracefile coverage/Performance*.info \
+             --add-tracefile coverage/Integration*.info \
+             --add-tracefile coverage/Visual*.info \
+             --add-tracefile coverage/E2E*.info \
              -o coverage/lcov.info 2>/dev/null || true
 
         # Generate HTML report

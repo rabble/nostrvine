@@ -1,3 +1,6 @@
+// ABOUTME: UI state model for video recorder capturing camera and recording state
+// ABOUTME: Manages zoom, focus, flash, timer, aspect ratio, and recording status
+
 import 'dart:ui';
 
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
@@ -15,8 +18,8 @@ class VideoRecorderProviderState {
     this.focusPoint = .zero,
     this.canRecord = false,
     this.isCameraInitialized = false,
-    this.canSwitchCamera = false,
-    this.hasFlash = false,
+    this.canSwitchCamera = true,
+    this.hasFlash = true,
     this.countdownValue = 0,
     this.cameraRebuildCount = 0,
     this.aspectRatio = .vertical,

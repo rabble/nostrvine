@@ -11,7 +11,6 @@ Future<void> main() async {
   print('Extracting thumbnail from test video...');
   final thumbnailBytes = await VideoThumbnailService.extractThumbnailBytes(
     videoPath: testVideoPath,
-    timeMs: 500,
     quality: 75,
   );
 

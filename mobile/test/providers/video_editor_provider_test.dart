@@ -1,12 +1,16 @@
 // ABOUTME: Unit tests for EditorProvider (Riverpod) validating state mutations and provider behavior
 // ABOUTME: Tests all EditorNotifier methods and state transitions using ProviderContainer
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
-// TODO(@hm21): update tests
 void main() {
-  group('EditorProvider', () {
+  group('VideoEditorProvider', () {
     late ProviderContainer container;
 
     setUp(() {
@@ -15,6 +19,461 @@ void main() {
 
     tearDown(() {
       container.dispose();
+    });
+
+    group('initial state', () {
+      test('should have default values', () {
+        final state = container.read(videoEditorProvider);
+
+        expect(
+          state.currentClipIndex,
+          0,
+          reason: 'currentClipIndex should default to 0',
+        );
+        expect(
+          state.currentPosition,
+          Duration.zero,
+          reason: 'currentPosition should default to zero',
+        );
+        expect(
+          state.splitPosition,
+          Duration.zero,
+          reason: 'splitPosition should default to zero',
+        );
+        expect(
+          state.isEditing,
+          false,
+          reason: 'isEditing should default to false',
+        );
+        expect(
+          state.isReordering,
+          false,
+          reason: 'isReordering should default to false',
+        );
+        expect(
+          state.isOverDeleteZone,
+          false,
+          reason: 'isOverDeleteZone should default to false',
+        );
+        expect(
+          state.isPlaying,
+          false,
+          reason: 'isPlaying should default to false',
+        );
+        expect(state.isMuted, false, reason: 'isMuted should default to false');
+        expect(
+          state.isProcessing,
+          false,
+          reason: 'isProcessing should default to false',
+        );
+      });
+    });
+
+    group('selectClip', () {
+      test('should update currentClipIndex', () {
+        // Add clips first
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              video: EditorVideo.file('/test/clip1.mp4'),
+              aspectRatio: .square,
+              duration: const Duration(seconds: 2),
+            );
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              video: EditorVideo.file('/test/clip2.mp4'),
+              aspectRatio: .square,
+              duration: const Duration(seconds: 2),
+            );
+
+        container.read(videoEditorProvider.notifier).selectClipByIndex(1);
+        final state = container.read(videoEditorProvider);
+
+        expect(state.currentClipIndex, 1);
+        expect(state.isPlaying, false);
+      });
+
+      test('should calculate currentPosition from previous clips', () {
+        // Add clips with known durations
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              video: EditorVideo.file('/test/clip1.mp4'),
+              aspectRatio: .square,
+              duration: const Duration(seconds: 2),
+            );
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              video: EditorVideo.file('/test/clip2.mp4'),
+              aspectRatio: .square,
+              duration: const Duration(seconds: 3),
+            );
+
+        container.read(videoEditorProvider.notifier).selectClipByIndex(1);
+        final state = container.read(videoEditorProvider);
+
+        // Position should be sum of previous clips (2 seconds)
+        expect(state.currentPosition, const Duration(seconds: 2));
+      });
+
+      test('should reset splitPosition to zero', () {
+        container.read(videoEditorProvider.notifier).selectClipByIndex(0);
+        final state = container.read(videoEditorProvider);
+
+        expect(state.splitPosition, Duration.zero);
+      });
+    });
+
+    group('clip reordering', () {
+      test('startClipReordering should set isReordering to true', () {
+        container.read(videoEditorProvider.notifier).startClipReordering();
+        final state = container.read(videoEditorProvider);
+
+        expect(state.isReordering, true);
+      });
+
+      test('stopClipReordering should set isReordering to false', () {
+        container.read(videoEditorProvider.notifier).startClipReordering();
+        container.read(videoEditorProvider.notifier).stopClipReordering();
+        final state = container.read(videoEditorProvider);
+
+        expect(state.isReordering, false);
+        expect(state.isOverDeleteZone, false);
+      });
+    });
+
+    group('clip editing', () {
+      test('startClipEditing should set isEditing to true', () {
+        // Add a clip first
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              video: EditorVideo.file('/test/clip.mp4'),
+              aspectRatio: .square,
+              duration: const Duration(seconds: 4),
+            );
+
+        container.read(videoEditorProvider.notifier).startClipEditing();
+        final state = container.read(videoEditorProvider);
+
+        expect(state.isEditing, true);
+        expect(state.isPlaying, false);
+      });
+
+      test(
+        'startClipEditing should set splitPosition to half of clip duration',
+        () {
+          container
+              .read(clipManagerProvider.notifier)
+              .addClip(
+                video: EditorVideo.file('/test/clip.mp4'),
+                aspectRatio: .square,
+                duration: const Duration(seconds: 4),
+              );
+
+          container.read(videoEditorProvider.notifier).startClipEditing();
+          final state = container.read(videoEditorProvider);
+
+          expect(state.splitPosition, const Duration(seconds: 2));
+        },
+      );
+
+      test('stopClipEditing should set isEditing to false', () {
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              video: EditorVideo.file('/test/clip.mp4'),
+              aspectRatio: .square,
+              duration: const Duration(seconds: 2),
+            );
+
+        container.read(videoEditorProvider.notifier).startClipEditing();
+        container.read(videoEditorProvider.notifier).stopClipEditing();
+        final state = container.read(videoEditorProvider);
+
+        expect(state.isEditing, false);
+        expect(state.isPlaying, false);
+      });
+
+      test('toggleClipEditing should toggle isEditing state', () {
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              video: EditorVideo.file('/test/clip.mp4'),
+              aspectRatio: .square,
+              duration: const Duration(seconds: 2),
+            );
+
+        // First toggle: off -> on
+        container.read(videoEditorProvider.notifier).toggleClipEditing();
+        expect(container.read(videoEditorProvider).isEditing, true);
+
+        // Second toggle: on -> off
+        container.read(videoEditorProvider.notifier).toggleClipEditing();
+        expect(container.read(videoEditorProvider).isEditing, false);
+      });
+    });
+
+    group('playback control', () {
+      test('pauseVideo should set isPlaying to false', () {
+        container.read(videoEditorProvider.notifier).pauseVideo();
+        final state = container.read(videoEditorProvider);
+
+        expect(state.isPlaying, false);
+      });
+
+      test('togglePlayPause should toggle isPlaying state', () {
+        // First toggle: off -> on
+        container.read(videoEditorProvider.notifier).togglePlayPause();
+        expect(container.read(videoEditorProvider).isPlaying, true);
+
+        // Second toggle: on -> off
+        container.read(videoEditorProvider.notifier).togglePlayPause();
+        expect(container.read(videoEditorProvider).isPlaying, false);
+      });
+    });
+
+    group('delete zone', () {
+      test('setOverDeleteZone should update isOverDeleteZone', () {
+        container.read(videoEditorProvider.notifier).setOverDeleteZone(true);
+        expect(container.read(videoEditorProvider).isOverDeleteZone, true);
+
+        container.read(videoEditorProvider.notifier).setOverDeleteZone(false);
+        expect(container.read(videoEditorProvider).isOverDeleteZone, false);
+      });
+    });
+
+    group('seek and trim', () {
+      test('seekToTrimPosition should update splitPosition and pause', () {
+        container.read(videoEditorProvider.notifier).togglePlayPause();
+        expect(container.read(videoEditorProvider).isPlaying, true);
+
+        container
+            .read(videoEditorProvider.notifier)
+            .seekToTrimPosition(const Duration(milliseconds: 1500));
+        final state = container.read(videoEditorProvider);
+
+        expect(state.splitPosition, const Duration(milliseconds: 1500));
+        expect(state.isPlaying, false);
+      });
+    });
+
+    group('audio', () {
+      test('toggleMute should toggle isMuted state', () {
+        // First toggle: unmuted -> muted
+        container.read(videoEditorProvider.notifier).toggleMute();
+        expect(container.read(videoEditorProvider).isMuted, true);
+
+        // Second toggle: muted -> unmuted
+        container.read(videoEditorProvider.notifier).toggleMute();
+        expect(container.read(videoEditorProvider).isMuted, false);
+      });
+    });
+
+    group('reset', () {
+      test('should reset all state to defaults', () {
+        // Modify some state first
+        container.read(videoEditorProvider.notifier)
+          ..togglePlayPause()
+          ..toggleMute();
+
+        // Verify state changed
+        var state = container.read(videoEditorProvider);
+        expect(
+          state.isPlaying,
+          true,
+          reason: 'isPlaying should be true after togglePlayPause',
+        );
+        expect(
+          state.isMuted,
+          true,
+          reason: 'isMuted should be true after toggleMute',
+        );
+
+        // Reset
+        container.read(videoEditorProvider.notifier).reset();
+        state = container.read(videoEditorProvider);
+
+        expect(
+          state.currentClipIndex,
+          0,
+          reason: 'currentClipIndex should reset to 0',
+        );
+        expect(
+          state.currentPosition,
+          Duration.zero,
+          reason: 'currentPosition should reset to zero',
+        );
+        expect(
+          state.splitPosition,
+          Duration.zero,
+          reason: 'splitPosition should reset to zero',
+        );
+        expect(
+          state.isEditing,
+          false,
+          reason: 'isEditing should reset to false',
+        );
+        expect(
+          state.isReordering,
+          false,
+          reason: 'isReordering should reset to false',
+        );
+        expect(
+          state.isPlaying,
+          false,
+          reason: 'isPlaying should reset to false',
+        );
+        expect(state.isMuted, false, reason: 'isMuted should reset to false');
+        expect(
+          state.isProcessing,
+          false,
+          reason: 'isProcessing should reset to false',
+        );
+      });
+    });
+
+    group('updatePosition', () {
+      test('should update currentPosition clamped to max 6300ms', () {
+        container
+            .read(videoEditorProvider.notifier)
+            .updatePosition(const Duration(seconds: 3));
+        final state = container.read(videoEditorProvider);
+
+        expect(state.currentPosition, const Duration(seconds: 3));
+      });
+
+      test('should clamp position to max duration', () {
+        container
+            .read(videoEditorProvider.notifier)
+            .updatePosition(const Duration(seconds: 10));
+        final state = container.read(videoEditorProvider);
+
+        expect(state.currentPosition, VideoEditorConstants.maxDuration);
+      });
+
+      test('should clamp position to min 0', () {
+        container
+            .read(videoEditorProvider.notifier)
+            .updatePosition(const Duration(seconds: -5));
+        final state = container.read(videoEditorProvider);
+
+        expect(state.currentPosition, Duration.zero);
+      });
+
+      test('should add offset from previous clips when not editing', () {
+        // Add clips with known durations
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              video: EditorVideo.file('/test/clip1.mp4'),
+              aspectRatio: .square,
+              duration: const Duration(seconds: 2),
+            );
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              video: EditorVideo.file('/test/clip2.mp4'),
+              aspectRatio: .square,
+              duration: const Duration(seconds: 2),
+            );
+
+        // Select second clip
+        container.read(videoEditorProvider.notifier).selectClipByIndex(1);
+
+        // Update position by 500ms within the clip
+        container
+            .read(videoEditorProvider.notifier)
+            .updatePosition(const Duration(milliseconds: 500));
+
+        final state = container.read(videoEditorProvider);
+        // Should be 2000ms (offset) + 500ms (position) = 2500ms
+        expect(state.currentPosition, const Duration(milliseconds: 2500));
+      });
+
+      test('should not add offset when editing', () {
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              video: EditorVideo.file('/test/clip1.mp4'),
+              aspectRatio: .square,
+              duration: const Duration(seconds: 2),
+            );
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              video: EditorVideo.file('/test/clip2.mp4'),
+              aspectRatio: .square,
+              duration: const Duration(seconds: 2),
+            );
+
+        // Select second clip and start editing
+        container.read(videoEditorProvider.notifier)
+          ..selectClipByIndex(1)
+          ..startClipEditing();
+
+        // Update position by 500ms within the clip
+        container
+            .read(videoEditorProvider.notifier)
+            .updatePosition(const Duration(milliseconds: 500));
+
+        final state = container.read(videoEditorProvider);
+        // Should be just 500ms (no offset in editing mode)
+        expect(state.currentPosition, const Duration(milliseconds: 500));
+      });
+    });
+
+    group('setDraftId', () {
+      test('should set the draft ID', () {
+        final id = 'test-draft-id';
+        container.read(videoEditorProvider.notifier).setDraftId(id);
+
+        expect(id, container.read(videoEditorProvider.notifier).draftId);
+      });
+    });
+  });
+
+  group('VideoEditorProviderState', () {
+    test('copyWith should preserve unchanged values', () {
+      final original = VideoEditorProviderState(
+        currentClipIndex: 2,
+        currentPosition: const Duration(seconds: 3),
+        splitPosition: const Duration(seconds: 1),
+        isEditing: true,
+        isReordering: true,
+        isOverDeleteZone: true,
+        isPlaying: true,
+        isMuted: true,
+        isProcessing: true,
+      );
+
+      final copied = original.copyWith();
+
+      expect(copied.currentClipIndex, 2);
+      expect(copied.currentPosition, const Duration(seconds: 3));
+      expect(copied.splitPosition, const Duration(seconds: 1));
+      expect(copied.isEditing, true);
+      expect(copied.isReordering, true);
+      expect(copied.isOverDeleteZone, true);
+      expect(copied.isPlaying, true);
+      expect(copied.isMuted, true);
+      expect(copied.isProcessing, true);
+    });
+
+    test('copyWith should update only specified values', () {
+      final original = VideoEditorProviderState(
+        currentClipIndex: 2,
+        isEditing: true,
+        isMuted: true,
+      );
+
+      final copied = original.copyWith(currentClipIndex: 5, isEditing: false);
+
+      expect(copied.currentClipIndex, 5);
+      expect(copied.isEditing, false);
+      expect(copied.isMuted, true); // Unchanged
     });
   });
 }

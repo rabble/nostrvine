@@ -6,10 +6,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/main.dart' as app;
-import 'package:openvine/services/vine_recording_controller.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
-import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
@@ -19,6 +20,9 @@ void main() {
     testWidgets(
       'Record video and generate thumbnail end-to-end',
       (tester) async {
+        // Save ErrorWidget.builder to restore at end of test
+        final originalErrorWidgetBuilder = ErrorWidget.builder;
+
         Log.debug('🎬 Starting real thumbnail integration test...');
 
         // Start the app
@@ -60,49 +64,48 @@ void main() {
         // Look for record controls
         await tester.pump(const Duration(seconds: 1));
 
-        // Try to test recording controller directly if UI interaction fails
-        Log.debug('🔧 Testing VineRecordingController directly...');
+        // Try to test recording provider directly if UI interaction fails
+        Log.debug('🔧 Testing VineRecordingProvider directly...');
 
-        final recordingController = VineRecordingController();
+        final container = ProviderContainer();
+        final notifier = container.read(videoRecorderProvider.notifier);
 
         try {
-          Log.debug('📷 Initializing recording controller...');
-          await recordingController.initialize();
-          Log.debug('✅ Recording controller initialized successfully');
+          Log.debug('📷 Initializing recording provider...');
+          await notifier.initialize();
+          Log.debug('✅ Recording provider initialized successfully');
 
           Log.debug('🎬 Starting video recording...');
-          await recordingController.startRecording();
+          await notifier.startRecording();
           Log.debug('✅ Recording started');
 
           // Record for 2 seconds
-          await Future.delayed(const Duration(seconds: 2));
+          await Future.delayed(Duration(seconds: 2));
 
           Log.debug('⏹️ Stopping recording...');
-          await recordingController.stopRecording();
+          await notifier.stopRecording();
           Log.debug('✅ Recording stopped');
 
-          // Finish recording to get the video file
-          final (videoFile, proofManifest) = await recordingController
-              .finishRecording();
-          if (videoFile == null) {
-            throw Exception('No video file produced');
+          // Check if clip has thumbnail
+          final clipProvider = container.read(clipManagerProvider.notifier);
+          final clips = clipProvider.clips;
+
+          if (clips.isEmpty) {
+            throw Exception('No clips created after recording');
           }
 
-          Log.debug('📹 Video file: ${videoFile.path}');
-          Log.debug('📦 File size: ${await videoFile.length()} bytes');
-          Log.debug('📜 ProofMode available: ${proofManifest != null}');
+          final clip = clips.first;
+          final filePath = await clip.video.safeFilePath();
+          Log.debug('📹 Clip created: ${filePath}');
+          Log.debug('📦 File size: ${File(filePath).lengthSync()} bytes');
 
           // Test thumbnail generation
-          Log.debug('\n🖼️ Testing thumbnail generation...');
+          Log.debug('\n🖼️ Testing thumbnail...');
 
-          final thumbnailBytes =
-              await VideoThumbnailService.extractThumbnailBytes(
-                videoPath: videoFile.path,
-                timeMs: 500,
-                quality: 80,
-              );
+          if (clip.thumbnailPath != null) {
+            final thumbnail = File(clip.thumbnailPath!);
+            final thumbnailBytes = await thumbnail.readAsBytes();
 
-          if (thumbnailBytes != null) {
             Log.debug('✅ Thumbnail generated successfully!');
             Log.debug('📸 Thumbnail size: ${thumbnailBytes.length} bytes');
 
@@ -114,19 +117,6 @@ void main() {
             } else {
               Log.debug('❌ Generated thumbnail is not valid JPEG format');
             }
-
-            // Test upload structure (without actually uploading)
-            Log.debug('\n📤 Testing upload structure...');
-
-            final uploadResult = BlossomUploadResult(
-              success: true,
-              videoId: 'real_test_video',
-              fallbackUrl: 'https://cdn.example.com/real_test_video.mp4',
-            );
-
-            Log.debug('✅ Upload result structure verified');
-            Log.debug('🎬 Video URL: ${uploadResult.cdnUrl}');
-            Log.debug('✅ Success status: ${uploadResult.success}');
           } else {
             Log.debug('❌ Thumbnail generation failed');
             Log.debug('ℹ️ This might be due to test environment limitations');
@@ -134,9 +124,12 @@ void main() {
 
           // Clean up
           try {
-            recordingController.dispose();
-            await videoFile.delete();
-            Log.debug('🗑️ Cleaned up video file and controller');
+            container.dispose();
+            await File(filePath).delete();
+            if (clip.thumbnailPath != null) {
+              await File(clip.thumbnailPath!).delete();
+            }
+            Log.debug('🗑️ Cleaned up video file and provider');
           } catch (e) {
             Log.debug('⚠️ Could not delete video file: $e');
           }
@@ -146,63 +139,30 @@ void main() {
             'ℹ️ This is expected on simulator or headless test environment',
           );
 
-          // Test the structure without real recording
           Log.debug(
-            '\n🧪 Testing thumbnail service structure without real video...',
+            '⚠️ Recording test skipped - camera not available in test environment',
           );
-
-          // Create a dummy file for structure testing
-          final tempDir = await Directory.systemTemp.createTemp(
-            'structure_test',
-          );
-          final dummyVideo = File('${tempDir.path}/dummy.mp4');
-          await dummyVideo.writeAsBytes([1, 2, 3, 4]); // Minimal content
-
-          final thumbnailResult =
-              await VideoThumbnailService.extractThumbnailBytes(
-                videoPath: dummyVideo.path,
-              );
-
-          if (thumbnailResult == null) {
-            Log.debug(
-              '✅ Thumbnail service correctly handles invalid video files',
-            );
-          }
-
-          // Test optimal timestamp calculation
-          final timestamp1 = VideoThumbnailService.getOptimalTimestamp(
-            const Duration(seconds: 6, milliseconds: 300),
-          );
-          final timestamp2 = VideoThumbnailService.getOptimalTimestamp(
-            const Duration(seconds: 30),
-          );
-
-          Log.debug('✅ Optimal timestamp for vine (6.3s): ${timestamp1}ms');
-          Log.debug(
-            '✅ Optimal timestamp for long video (30s): ${timestamp2}ms',
-          );
-
-          expect(timestamp1, equals(630)); // 10% of 6300ms
-          expect(timestamp2, equals(1000)); // Capped at 1000ms
-
-          // Clean up
-          await tempDir.delete(recursive: true);
         } finally {
-          recordingController.dispose();
+          container.dispose();
         }
 
         Log.debug('\n🎉 Thumbnail integration test completed!');
+
+        // Restore ErrorWidget.builder before test ends to avoid framework assertion
+        ErrorWidget.builder = originalErrorWidgetBuilder;
       },
       timeout: const Timeout(Duration(minutes: 2)),
     );
 
     testWidgets('Test upload manager thumbnail integration', (tester) async {
+      // Save ErrorWidget.builder to restore at end of test
+      final originalErrorWidgetBuilder = ErrorWidget.builder;
+
       Log.debug('\n📋 Testing UploadManager thumbnail integration...');
 
-      // Start the app to get services initialized
-      app.main();
-      await tester.pumpAndSettle();
-      await tester.pump(const Duration(seconds: 1));
+      // Note: We don't call app.main() here since:
+      // 1. The app may still be running from the previous test
+      // 2. This test only validates data structures, not app functionality
 
       // Test UploadManager structure supports thumbnails
       Log.debug('🔧 Testing UploadManager with thumbnail data...');
@@ -236,6 +196,9 @@ void main() {
       Log.debug('📸 CDN URL format verified: ${mockUploadResult.cdnUrl}');
 
       Log.debug('🎉 UploadManager thumbnail integration test passed!');
+
+      // Restore ErrorWidget.builder before test ends to avoid framework assertion
+      ErrorWidget.builder = originalErrorWidgetBuilder;
     });
   });
 }

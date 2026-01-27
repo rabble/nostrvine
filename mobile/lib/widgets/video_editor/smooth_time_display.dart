@@ -1,3 +1,6 @@
+// ABOUTME: Widget for smooth interpolated time display during video playback
+// ABOUTME: Uses Ticker for 60 FPS updates between position updates from video player
+
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -46,22 +49,6 @@ class _SmoothTimeDisplayState extends ConsumerState<SmoothTimeDisplay>
     super.initState();
     _ticker = createTicker(_onTick);
 
-    // Initialize with current position
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _lastKnownPosition = ref.read(widget.currentPositionSelector);
-        _lastUpdateTime = DateTime.now();
-
-        // Start ticker if already playing
-        final isPlaying = ref.read(widget.isPlayingSelector);
-        if (isPlaying && !_ticker.isActive) {
-          _ticker.start();
-        }
-
-        setState(() {});
-      }
-    });
-
     // Listen to playing state changes
     ref
       ..listenManual(widget.isPlayingSelector, (previous, next) async {
@@ -82,7 +69,7 @@ class _SmoothTimeDisplayState extends ConsumerState<SmoothTimeDisplay>
       // Listen to position changes
       ..listenManual(widget.currentPositionSelector, (previous, next) {
         if ((next - _lastKnownPosition).abs() >
-            const Duration(milliseconds: 50)) {
+            const Duration(milliseconds: 10)) {
           _lastKnownPosition = next;
           _lastUpdateTime = DateTime.now();
           if (mounted) {
@@ -90,6 +77,22 @@ class _SmoothTimeDisplayState extends ConsumerState<SmoothTimeDisplay>
           }
         }
       });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize position on first build (called before build)
+    if (_lastUpdateTime == null) {
+      _lastKnownPosition = ref.read(widget.currentPositionSelector);
+      _lastUpdateTime = DateTime.now();
+
+      // Start ticker if already playing
+      final isPlaying = ref.read(widget.isPlayingSelector);
+      if (isPlaying && !_ticker.isActive) {
+        _ticker.start();
+      }
+    }
   }
 
   void _onTick(Duration elapsed) {
@@ -126,8 +129,11 @@ class _SmoothTimeDisplayState extends ConsumerState<SmoothTimeDisplay>
           fontSize: 14,
           fontWeight: .w800,
           letterSpacing: 0.1,
+          fontFeatures: [.tabularFigures()],
         );
 
-    return Text(_displayPosition.toFormattedSeconds(), style: style);
+    return RepaintBoundary(
+      child: Text(_displayPosition.toFormattedSeconds(), style: style),
+    );
   }
 }

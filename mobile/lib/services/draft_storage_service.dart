@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DraftStorageService {
@@ -28,6 +29,19 @@ class DraftStorageService {
     }
 
     await _saveDrafts(drafts);
+  }
+
+  Future<VineDraft?> getDraftById(String id) async {
+    final prefs = await SharedPreferences.getInstance();
+    final draftService = DraftStorageService(prefs);
+    final drafts = await draftService.getAllDrafts();
+
+    final index = drafts.indexWhere((d) => d.id == id);
+
+    if (index >= 0) return drafts[index];
+
+    Log.error('📝 Draft not found: ${id}', category: .video);
+    return null;
   }
 
   /// Get all drafts from storage

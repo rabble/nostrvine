@@ -1,15 +1,12 @@
-// ABOUTME: Service for extracting audio tracks from video files using FFmpeg
+// ABOUTME: Service for extracting audio tracks from video files using ProVideoEditor
 // ABOUTME: Used by the audio reuse feature to create separate audio files for publishing
 
 import 'dart:io';
 
-import 'package:ffmpeg_kit_flutter_new_min/ffmpeg_kit.dart';
-import 'package:ffmpeg_kit_flutter_new_min/ffprobe_kit.dart';
-import 'package:ffmpeg_kit_flutter_new_min/return_code.dart';
-import 'package:openvine/utils/ffmpeg_encoder.dart';
 import 'package:openvine/utils/hash_util.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// Result of an audio extraction operation.
 ///
@@ -37,7 +34,7 @@ class AudioExtractionResult {
   /// SHA-256 hash of the audio file (hex string).
   final String sha256Hash;
 
-  /// MIME type of the audio file (e.g., "audio/aac").
+  /// MIME type of the audio file (e.g., "audio/m4a").
   final String mimeType;
 
   @override
@@ -72,7 +69,7 @@ class AudioExtractionException implements Exception {
 
 /// Service for extracting audio tracks from video files.
 ///
-/// Uses FFmpeg to extract the audio track from a video file and save it
+/// Uses ProVideoEditor to extract the audio track from a video file and save it
 /// as a separate AAC file. This is used by the audio reuse feature when
 /// a user publishes a video with "Allow others to use this audio" enabled.
 ///
@@ -92,21 +89,15 @@ class AudioExtractionService {
   static const String _logName = 'AudioExtractionService';
   static const LogCategory _logCategory = LogCategory.video;
 
-  /// Default audio codec for extraction.
-  static const String _audioCodec = 'aac';
-
-  /// Default audio bitrate.
-  static const String _audioBitrate = '128k';
-
-  /// MIME type for AAC audio files.
-  static const String _aacMimeType = 'audio/aac';
+  /// MIME type for M4A audio files.
+  static const String _aacMimeType = 'audio/m4a';
 
   /// Tracks temporary audio files created by this service for cleanup.
   final List<String> _temporaryFiles = [];
 
   /// Extracts the audio track from a video file.
   ///
-  /// The audio is extracted as an AAC file at 128kbps bitrate.
+  /// The audio is extracted as an M4A.
   ///
   /// [videoPath] - Path to the source video file.
   ///
@@ -116,7 +107,7 @@ class AudioExtractionService {
   /// Throws [AudioExtractionException] if:
   /// - The video file does not exist
   /// - The video has no audio track
-  /// - FFmpeg fails to extract the audio
+  /// - Audio extraction fails
   Future<AudioExtractionResult> extractAudio(String videoPath) async {
     Log.info(
       'Starting audio extraction from: $videoPath',
@@ -164,36 +155,28 @@ class AudioExtractionService {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final outputPath = '${tempDir.path}/extracted_audio_$timestamp.aac';
 
-    // Extract audio using FFmpeg
-    // -vn: No video (audio only)
-    // -c:a aac: Use AAC codec
-    // -b:a 128k: 128kbps bitrate
-    final command =
-        '-y -i "$videoPath" -vn -c:a $_audioCodec -b:a $_audioBitrate "$outputPath"';
-
     Log.debug(
-      'FFmpeg audio extraction command: ffmpeg $command',
+      'Extracting audio to: $outputPath',
       name: _logName,
       category: _logCategory,
     );
-
-    final session = await FFmpegKit.execute(command);
-    final returnCode = await session.getReturnCode();
-
-    // Clear sessions to free memory
-    await FFmpegEncoder.clearSessions();
-
-    if (!ReturnCode.isSuccess(returnCode)) {
-      final output = await session.getOutput();
+    try {
+      await ProVideoEditor.instance.extractAudioToFile(
+        outputPath,
+        AudioExtractConfigs(
+          video: EditorVideo.file(videoPath),
+          format: AudioFormat.m4a,
+        ),
+      );
+    } on AudioNoTrackException {
+      throw const AudioExtractionException('Video has no audio track');
+    } catch (e) {
       Log.error(
-        'FFmpeg audio extraction failed: $output',
+        'Audio extraction failed: $e',
         name: _logName,
         category: _logCategory,
       );
-      throw AudioExtractionException(
-        'FFmpeg failed to extract audio',
-        cause: output,
-      );
+      throw AudioExtractionException('Failed to extract audio', cause: e);
     }
 
     // Verify output file exists
@@ -242,36 +225,14 @@ class AudioExtractionService {
 
   /// Checks if a video file has an audio stream.
   ///
-  /// Uses FFprobe to analyze the media streams and look for an audio track.
+  /// Uses ProVideoEditor to analyze the media and check for an audio track.
   Future<bool> _hasAudioStream(String videoPath) async {
     try {
-      final session = await FFprobeKit.getMediaInformation(videoPath);
-      final mediaInfo = session.getMediaInformation();
+      bool hasAudio = await ProVideoEditor.instance.hasAudioTrack(
+        EditorVideo.file(videoPath),
+      );
 
-      if (mediaInfo == null) {
-        Log.warning(
-          'Could not get media information for: $videoPath',
-          name: _logName,
-          category: _logCategory,
-        );
-        return false;
-      }
-
-      final streams = mediaInfo.getStreams();
-      for (final stream in streams) {
-        if (stream.getType() == 'audio') {
-          Log.debug(
-            'Found audio stream: codec=${stream.getCodec()}, '
-            'sampleRate=${stream.getSampleRate()}, '
-            'channelLayout=${stream.getChannelLayout()}',
-            name: _logName,
-            category: _logCategory,
-          );
-          return true;
-        }
-      }
-
-      return false;
+      return hasAudio;
     } catch (e) {
       Log.error(
         'Error checking audio stream: $e',
@@ -284,37 +245,14 @@ class AudioExtractionService {
 
   /// Gets the audio duration from a video file in seconds.
   ///
-  /// Uses FFprobe to get media information and extract duration.
+  /// Uses ProVideoEditor to get media metadata and extract duration.
   Future<double?> _getAudioDuration(String videoPath) async {
     try {
-      final session = await FFprobeKit.getMediaInformation(videoPath);
-      final mediaInfo = session.getMediaInformation();
+      final metadata = await ProVideoEditor.instance.getMetadata(
+        EditorVideo.file(videoPath),
+      );
 
-      if (mediaInfo == null) {
-        return null;
-      }
-
-      // Try to get duration from format info first (more reliable)
-      final durationStr = mediaInfo.getDuration();
-      if (durationStr != null && durationStr.isNotEmpty) {
-        final duration = double.tryParse(durationStr);
-        if (duration != null && duration > 0) {
-          return duration;
-        }
-      }
-
-      // Fallback: try to get duration from audio stream
-      final streams = mediaInfo.getStreams();
-      for (final stream in streams) {
-        if (stream.getType() == 'audio') {
-          final streamDuration = stream.getStringProperty('duration');
-          if (streamDuration != null && streamDuration.isNotEmpty) {
-            return double.tryParse(streamDuration);
-          }
-        }
-      }
-
-      return null;
+      return metadata.duration.inMilliseconds / 1000;
     } catch (e) {
       Log.error(
         'Error getting audio duration: $e',
