@@ -251,8 +251,8 @@ void main() {
             return null;
           });
 
-      expect(
-        () => platform.initializeCamera(),
+      await expectLater(
+        platform.initializeCamera(),
         throwsA(isA<PlatformException>()),
       );
     });
@@ -266,8 +266,8 @@ void main() {
             return null;
           });
 
-      expect(
-        () => platform.switchCamera(DivineCameraLens.front),
+      await expectLater(
+        platform.switchCamera(DivineCameraLens.front),
         throwsA(isA<PlatformException>()),
       );
     });
@@ -281,8 +281,8 @@ void main() {
             return null;
           });
 
-      expect(
-        () => platform.getCameraState(),
+      await expectLater(
+        platform.getCameraState(),
         throwsA(isA<PlatformException>()),
       );
     });
@@ -371,12 +371,15 @@ void main() {
         }),
       );
 
-      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .handlePlatformMessage(
-            'divine_camera',
-            envelope,
-            (data) {},
-          );
+      await expectLater(
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .handlePlatformMessage(
+              'divine_camera',
+              envelope,
+              (data) {},
+            ),
+        completes,
+      );
 
       expect(receivedResult, isNotNull);
       expect(receivedResult!.filePath, '/auto/stopped.mp4');
@@ -392,12 +395,15 @@ void main() {
       );
 
       // Should not throw
-      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .handlePlatformMessage(
-            'divine_camera',
-            envelope,
-            (data) {},
-          );
+      await expectLater(
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .handlePlatformMessage(
+              'divine_camera',
+              envelope,
+              (data) {},
+            ),
+        completes,
+      );
     });
 
     test('handles onRecordingAutoStopped with no callback set', () async {
@@ -411,12 +417,15 @@ void main() {
       );
 
       // Should not throw
-      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .handlePlatformMessage(
-            'divine_camera',
-            envelope,
-            (data) {},
-          );
+      await expectLater(
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .handlePlatformMessage(
+              'divine_camera',
+              envelope,
+              (data) {},
+            ),
+        completes,
+      );
     });
 
     test('handles unknown method call', () async {
@@ -426,12 +435,15 @@ void main() {
       );
 
       // Should not throw, just return null
-      await TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
-          .handlePlatformMessage(
-            'divine_camera',
-            envelope,
-            (data) {},
-          );
+      await expectLater(
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .handlePlatformMessage(
+              'divine_camera',
+              envelope,
+              (data) {},
+            ),
+        completes,
+      );
     });
   });
 }
