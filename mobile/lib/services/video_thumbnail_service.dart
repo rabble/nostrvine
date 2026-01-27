@@ -132,85 +132,99 @@ class VideoThumbnailService {
     Duration timestamp = const Duration(milliseconds: 210),
     int quality = _thumbnailQuality,
   }) async {
-    // First attempt
-    var result = await _extractThumbnailBytesInternal(
-      videoPath: videoPath,
-      timestamp: timestamp,
-      quality: quality,
-    );
-
-    if (result != null) return result;
-
-    // Wait before retry to allow file system to release the file
-    // This helps with "cannot open" errors when file is still being written
-    await Future<void>.delayed(const Duration(milliseconds: 100));
-
-    // Second attempt with same timestamp
-    Log.debug(
-      'Retrying thumbnail extraction at same timestamp: '
-      '${timestamp.inMilliseconds}ms',
-      name: 'VideoThumbnailService',
-      category: LogCategory.video,
-    );
-    result = await _extractThumbnailBytesInternal(
-      videoPath: videoPath,
-      timestamp: timestamp,
-      quality: quality,
-    );
-
-    if (result != null) return result;
-
-    // Increase delay for subsequent retries
-    await Future<void>.delayed(const Duration(milliseconds: 200));
-
-    // Third attempt at 50ms fallback position
-    const fallbackTimestamp = Duration(milliseconds: 50);
-    Log.debug(
-      'Retrying thumbnail extraction at fallback timestamp: '
-      '${fallbackTimestamp.inMilliseconds}ms',
-      name: 'VideoThumbnailService',
-      category: LogCategory.video,
-    );
-    result = await _extractThumbnailBytesInternal(
-      videoPath: videoPath,
-      timestamp: fallbackTimestamp,
-      quality: quality,
-    );
-
-    if (result != null) return result;
-
-    // Wait longer before final attempt
-    await Future<void>.delayed(const Duration(milliseconds: 300));
-
-    // Final attempt at middle of video (duration / 2)
-    try {
-      final metadata = await _proVideoEditor.getMetadata(
-        EditorVideo.file(videoPath),
-      );
-      final middleTimestamp = Duration(
-        milliseconds: metadata.duration.inMilliseconds ~/ 2,
-      );
-      Log.debug(
-        'Retrying thumbnail extraction at middle of video: '
-        '${middleTimestamp.inMilliseconds}ms',
-        name: 'VideoThumbnailService',
-        category: LogCategory.video,
-      );
-      result = await _extractThumbnailBytesInternal(
-        videoPath: videoPath,
-        timestamp: middleTimestamp,
-        quality: quality,
+    // Build list of retry attempts with increasing delays and fallback timestamps
+    final attempts = <_ThumbnailAttempt>[
+      _ThumbnailAttempt(timestamp: timestamp, delay: .zero),
+      _ThumbnailAttempt(
+        timestamp: timestamp,
+        delay: const Duration(milliseconds: 100),
+      ),
+      _ThumbnailAttempt(
+        timestamp: const Duration(milliseconds: 50),
+        delay: const Duration(milliseconds: 200),
+      ),
+      _ThumbnailAttempt(
+        timestamp: null, // Will use video duration / 2
+        delay: const Duration(milliseconds: 300),
         logToCrashlytics: true,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to get video metadata for middle timestamp: $e',
+      ),
+    ];
+
+    return _extractWithRetry(
+      videoPath: videoPath,
+      quality: quality,
+      attempts: attempts,
+    );
+  }
+
+  /// Recursively attempts thumbnail extraction with the given list of attempts.
+  static Future<Uint8List?> _extractWithRetry({
+    required String videoPath,
+    required int quality,
+    required List<_ThumbnailAttempt> attempts,
+  }) async {
+    if (attempts.isEmpty) return null;
+
+    final attempt = attempts.first;
+    final remainingAttempts = attempts.sublist(1);
+    final isLastAttempt = remainingAttempts.isEmpty;
+
+    // Apply delay before this attempt (except for first attempt)
+    if (attempt.delay > Duration.zero) {
+      await Future<void>.delayed(attempt.delay);
+    }
+
+    // Resolve timestamp (null means use video duration / 2)
+    Duration timestamp;
+    if (attempt.timestamp != null) {
+      timestamp = attempt.timestamp!;
+    } else {
+      try {
+        final metadata = await _proVideoEditor.getMetadata(
+          EditorVideo.file(videoPath),
+        );
+        timestamp = Duration(
+          milliseconds: metadata.duration.inMilliseconds ~/ 2,
+        );
+      } catch (e) {
+        Log.error(
+          'Failed to get video metadata for middle timestamp: $e',
+          name: 'VideoThumbnailService',
+          category: LogCategory.video,
+        );
+        // Skip to next attempt if we can't get metadata
+        return _extractWithRetry(
+          videoPath: videoPath,
+          quality: quality,
+          attempts: remainingAttempts,
+        );
+      }
+    }
+
+    if (attempt.delay > Duration.zero) {
+      Log.debug(
+        'Retrying thumbnail extraction at timestamp: '
+        '${timestamp.inMilliseconds}ms',
         name: 'VideoThumbnailService',
         category: LogCategory.video,
       );
     }
 
-    return result;
+    final result = await _extractThumbnailBytesInternal(
+      videoPath: videoPath,
+      timestamp: timestamp,
+      quality: quality,
+      logToCrashlytics: attempt.logToCrashlytics && isLastAttempt,
+    );
+
+    if (result != null) return result;
+
+    // Recurse to next attempt
+    return _extractWithRetry(
+      videoPath: videoPath,
+      quality: quality,
+      attempts: remainingAttempts,
+    );
   }
 
   /// Internal method for extracting thumbnail bytes without retry logic.
@@ -356,4 +370,23 @@ class VideoThumbnailService {
     // But ensure it's at least 100ms and not more than 1 second
     return Duration(milliseconds: tenPercent.clamp(100, 1000));
   }
+}
+
+/// Configuration for a single thumbnail extraction attempt.
+class _ThumbnailAttempt {
+  const _ThumbnailAttempt({
+    required this.timestamp,
+    required this.delay,
+    this.logToCrashlytics = false,
+  });
+
+  /// The timestamp to extract the thumbnail from.
+  /// If null, the middle of the video (duration / 2) will be used.
+  final Duration? timestamp;
+
+  /// Delay to wait before this attempt.
+  final Duration delay;
+
+  /// Whether to log failures to Crashlytics (typically only for the last attempt).
+  final bool logToCrashlytics;
 }
