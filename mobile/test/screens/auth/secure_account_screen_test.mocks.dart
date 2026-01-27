@@ -71,14 +71,20 @@ class _FakeResetPasswordResult_6 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
-class _FakeDeleteAccountResult_7 extends _i1.SmartFake
-    implements _i4.DeleteAccountResult {
-  _FakeDeleteAccountResult_7(Object parent, Invocation parentInvocation)
+class _FakeVerifyEmailResult_7 extends _i1.SmartFake
+    implements _i4.VerifyEmailResult {
+  _FakeVerifyEmailResult_7(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeAuthResult_8 extends _i1.SmartFake implements _i5.AuthResult {
-  _FakeAuthResult_8(Object parent, Invocation parentInvocation)
+class _FakeDeleteAccountResult_8 extends _i1.SmartFake
+    implements _i4.DeleteAccountResult {
+  _FakeDeleteAccountResult_8(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeAuthResult_9 extends _i1.SmartFake implements _i5.AuthResult {
+  _FakeAuthResult_9(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -325,11 +331,24 @@ class MockKeycastOAuth extends _i1.Mock implements _i6.KeycastOAuth {
           as _i7.Future<_i4.ResetPasswordResult>);
 
   @override
+  _i7.Future<_i4.VerifyEmailResult> verifyEmail({required String? token}) =>
+      (super.noSuchMethod(
+            Invocation.method(#verifyEmail, [], {#token: token}),
+            returnValue: _i7.Future<_i4.VerifyEmailResult>.value(
+              _FakeVerifyEmailResult_7(
+                this,
+                Invocation.method(#verifyEmail, [], {#token: token}),
+              ),
+            ),
+          )
+          as _i7.Future<_i4.VerifyEmailResult>);
+
+  @override
   _i7.Future<_i4.DeleteAccountResult> deleteAccount(String? token) =>
       (super.noSuchMethod(
             Invocation.method(#deleteAccount, [token]),
             returnValue: _i7.Future<_i4.DeleteAccountResult>.value(
-              _FakeDeleteAccountResult_7(
+              _FakeDeleteAccountResult_8(
                 this,
                 Invocation.method(#deleteAccount, [token]),
               ),
@@ -426,7 +445,7 @@ class MockAuthService extends _i1.Mock implements _i5.AuthService {
               #biometricPrompt: biometricPrompt,
             }),
             returnValue: _i7.Future<_i5.AuthResult>.value(
-              _FakeAuthResult_8(
+              _FakeAuthResult_9(
                 this,
                 Invocation.method(#createNewIdentity, [], {
                   #biometricPrompt: biometricPrompt,
@@ -448,7 +467,7 @@ class MockAuthService extends _i1.Mock implements _i5.AuthService {
               {#biometricPrompt: biometricPrompt},
             ),
             returnValue: _i7.Future<_i5.AuthResult>.value(
-              _FakeAuthResult_8(
+              _FakeAuthResult_9(
                 this,
                 Invocation.method(
                   #importFromNsec,
@@ -472,7 +491,7 @@ class MockAuthService extends _i1.Mock implements _i5.AuthService {
               {#biometricPrompt: biometricPrompt},
             ),
             returnValue: _i7.Future<_i5.AuthResult>.value(
-              _FakeAuthResult_8(
+              _FakeAuthResult_9(
                 this,
                 Invocation.method(
                   #importFromHex,
@@ -489,7 +508,7 @@ class MockAuthService extends _i1.Mock implements _i5.AuthService {
       (super.noSuchMethod(
             Invocation.method(#connectWithBunker, [bunkerUrl]),
             returnValue: _i7.Future<_i5.AuthResult>.value(
-              _FakeAuthResult_8(
+              _FakeAuthResult_9(
                 this,
                 Invocation.method(#connectWithBunker, [bunkerUrl]),
               ),
@@ -580,6 +599,15 @@ class MockAuthService extends _i1.Mock implements _i5.AuthService {
             returnValue: _i7.Future<_i12.Event?>.value(),
           )
           as _i7.Future<_i12.Event?>);
+
+  @override
+  _i7.Future<void> acceptTerms() =>
+      (super.noSuchMethod(
+            Invocation.method(#acceptTerms, []),
+            returnValue: _i7.Future<void>.value(),
+            returnValueForMissingStub: _i7.Future<void>.value(),
+          )
+          as _i7.Future<void>);
 
   @override
   _i7.Future<void> dispose() =>
