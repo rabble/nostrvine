@@ -18,8 +18,9 @@ class VideoMetadataBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: .fromLTRB(16, 16, 16, 4),
+      padding: .fromLTRB(16, 0, 16, 4),
       child: Row(
+        crossAxisAlignment: .end,
         spacing: 16,
         children: [
           Expanded(child: _SaveDraftButton()),
