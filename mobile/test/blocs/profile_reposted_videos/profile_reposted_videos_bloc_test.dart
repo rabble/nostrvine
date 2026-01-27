@@ -51,14 +51,13 @@ void main() {
     ProfileRepostedVideosBloc createBloc({
       String? targetUserPubkey,
       AnalyticsApiService? analyticsApiService,
-    }) =>
-        ProfileRepostedVideosBloc(
-          repostsRepository: mockRepostsRepository,
-          videosRepository: mockVideosRepository,
-          currentUserPubkey: currentUserPubkey,
-          targetUserPubkey: targetUserPubkey,
-          analyticsApiService: analyticsApiService,
-        );
+    }) => ProfileRepostedVideosBloc(
+      repostsRepository: mockRepostsRepository,
+      videosRepository: mockVideosRepository,
+      currentUserPubkey: currentUserPubkey,
+      targetUserPubkey: targetUserPubkey,
+      analyticsApiService: analyticsApiService,
+    );
 
     VideoEvent createTestVideo({
       required String id,
