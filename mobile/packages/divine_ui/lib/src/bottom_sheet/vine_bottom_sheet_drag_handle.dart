@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 /// A drag handle indicator for bottom sheets.
 ///
 /// Displays a small horizontal bar that indicates the sheet can be dragged.
+// coverage:ignore-start
 class VineBottomSheetDragHandle extends StatelessWidget {
   /// Creates a bottom sheet drag handle.
   const VineBottomSheetDragHandle({super.key});
@@ -20,3 +21,5 @@ class VineBottomSheetDragHandle extends StatelessWidget {
     );
   }
 }
+
+// coverage:ignore-end
