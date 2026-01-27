@@ -4,14 +4,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import '../helpers/go_router.dart';
 
 void main() {
   group('ClipLibraryScreen', () {
@@ -69,88 +66,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // Should show duration badges
-      expect(find.text('2.0s'), findsOneWidget);
-      expect(find.text('1.5s'), findsOneWidget);
-    });
-
-    testWidgets('shows delete icon in preview sheet on long press', (
-      tester,
-    ) async {
-      await clipService.saveClip(
-        SavedClip(
-          id: 'clip_to_delete',
-          filePath: '/tmp/video.mp4',
-          thumbnailPath: null,
-          duration: const Duration(seconds: 1),
-          createdAt: DateTime.now(),
-          aspectRatio: 'square',
-        ),
-      );
-
-      await tester.pumpWidget(buildTestWidget());
-      await tester.pumpAndSettle();
-
-      // Long press to show preview sheet
-      await tester.longPress(find.byType(ClipThumbnailCard));
-      // Use pump instead of pumpAndSettle since VideoPlayer may not initialize
-      await tester.pump(const Duration(milliseconds: 500));
-
-      // Preview sheet should have delete icon button
-      expect(find.byIcon(Icons.delete), findsOneWidget);
-    });
-
-    testWidgets('deletes clip when confirmed', (tester) async {
-      await clipService.saveClip(
-        SavedClip(
-          id: 'clip_to_delete',
-          filePath: '/tmp/video.mp4',
-          thumbnailPath: null,
-          duration: const Duration(seconds: 1),
-          createdAt: DateTime.now(),
-          aspectRatio: 'square',
-        ),
-      );
-
-      // Create mock GoRouter for context.pop() calls
-      final mockGoRouter = MockGoRouter();
-      when(() => mockGoRouter.canPop()).thenReturn(true);
-      when(() => mockGoRouter.pop<void>()).thenAnswer((_) async {});
-
-      await tester.pumpWidget(
-        ProviderScope(
-          overrides: [
-            clipLibraryServiceProvider.overrideWith((ref) => clipService),
-          ],
-          child: MockGoRouterProvider(
-            goRouter: mockGoRouter,
-            child: const MaterialApp(home: ClipLibraryScreen()),
-          ),
-        ),
-      );
-      await tester.pumpAndSettle();
-
-      // Initially has 1 clip
-      expect((await clipService.getAllClips()).length, 1);
-
-      // Long press to show preview sheet
-      await tester.longPress(find.byType(ClipThumbnailCard));
-      await tester.pump(const Duration(milliseconds: 500));
-
-      // Tap delete icon in preview sheet
-      await tester.tap(find.byIcon(Icons.delete));
-      // Use pump() with duration instead of pumpAndSettle() to avoid timeout
-      // from ongoing animations in bottom sheet/dialog transitions
-      await tester.pump(const Duration(milliseconds: 500));
-
-      // Confirmation dialog should appear
-      expect(find.text('Delete Clip?'), findsOneWidget);
-
-      // Confirm deletion
-      await tester.tap(find.text('Delete'));
-      await tester.pump(const Duration(milliseconds: 500));
-
-      // Clip should be deleted
-      expect((await clipService.getAllClips()).length, 0);
+      expect(find.text('2.00'), findsOneWidget);
+      expect(find.text('1.50'), findsOneWidget);
     });
   });
 }

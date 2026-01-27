@@ -6,13 +6,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/video_editor_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 
 import 'app_router.dart';
@@ -204,7 +207,15 @@ extension NavX on BuildContext {
   );
 
   // Optional pushes (non-tab routes)
-  Future<void> pushCamera() => push(UniversalCameraScreenPure.path);
+  Future<void> pushVideoRecorder() => push(VideoRecorderScreen.path);
+  Future<void> pushVideoEditor({String? draftId, bool fromLibrary = false}) =>
+      push(
+        '${VideoEditorScreen.path}${draftId != null ? '/$draftId' : ''}',
+        extra: fromLibrary ? {'fromLibrary': true} : null,
+      );
+  Future<void> pushVideoMetadata() => push(VideoMetadataScreen.path);
+  Future<void> pushClipLibrary() => push(ClipLibraryScreen.clipsPath);
+  Future<void> pushDraftLibrary() => push(ClipLibraryScreen.draftsPath);
   Future<void> pushSettings() => push(SettingsScreen.path);
   Future<void> pushComments(VideoEvent video) =>
       CommentsScreen.show(this, video);

@@ -1,6 +1,7 @@
 // ABOUTME: Processing overlay with mascot and progress indicator.
 // ABOUTME: Displays during video export operations.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 
 /// Overlay widget displayed during video processing operations.
@@ -29,7 +30,6 @@ class VideoEditorProcessingOverlay extends StatelessWidget {
                 color: Color(0x51000000),
                 blurRadius: 3,
                 offset: Offset(0, 1),
-                spreadRadius: 0,
               ),
               BoxShadow(
                 color: Color(0x28000000),
@@ -50,12 +50,11 @@ class VideoEditorProcessingOverlay extends StatelessWidget {
               ),
 
               // Processing text
-              const Text(
+              Text(
+                // TODO(l10n): Replace with context.l10n when localization is added.
                 'Processing...',
                 textAlign: .center,
-                style: TextStyle(
-                  fontFamily: 'BricolageGrotesque',
-                  fontWeight: .w800,
+                style: VineTheme.titleFont(
                   fontSize: 14,
                   height: 1.43,
                   letterSpacing: 0.1,

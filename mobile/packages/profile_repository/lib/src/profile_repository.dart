@@ -4,6 +4,7 @@
 
 import 'dart:convert';
 
+import 'package:db_client/db_client.dart';
 import 'package:http/http.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -17,23 +18,38 @@ class ProfileRepository {
   /// Creates a new profile repository.
   const ProfileRepository({
     required NostrClient nostrClient,
+    required UserProfilesDao userProfilesDao,
     required Client httpClient,
   }) : _nostrClient = nostrClient,
+       _userProfilesDao = userProfilesDao,
        _httpClient = httpClient;
 
   final NostrClient _nostrClient;
+  final UserProfilesDao _userProfilesDao;
   final Client _httpClient;
 
-  /// Fetches a user profile by pubkey.
+  /// Fetches a user profile by pubkey using cache-first strategy.
+  ///
+  /// First checks the local cache (SQLite). If found, returns immediately.
+  /// On cache miss, fetches from Nostr relays, caches the result, and returns.
   ///
   /// Returns `null` if no profile exists for the given pubkey.
   Future<UserProfile?> getProfile({required String pubkey}) async {
+    final cachedProfile = await _userProfilesDao.getProfile(pubkey);
+    if (cachedProfile != null) return cachedProfile;
+
     final profileEvent = await _nostrClient.fetchProfile(pubkey);
     if (profileEvent == null) return null;
-    return UserProfile.fromNostrEvent(profileEvent);
+
+    final profile = UserProfile.fromNostrEvent(profileEvent);
+    await _userProfilesDao.upsertProfile(profile);
+    return profile;
   }
 
-  /// Publishes profile metadata to Nostr relays
+  /// Publishes profile metadata to Nostr relays and updates the local cache.
+  ///
+  /// After successful publish, the profile is cached locally for immediate
+  /// subsequent reads.
   ///
   /// Throws `ProfilePublishFailedException` if the operation fails.
   Future<UserProfile> saveProfileEvent({
@@ -61,7 +77,9 @@ class ProfileRepository {
       );
     }
 
-    return UserProfile.fromNostrEvent(profileEvent);
+    final profile = UserProfile.fromNostrEvent(profileEvent);
+    await _userProfilesDao.upsertProfile(profile);
+    return profile;
   }
 
   /// Claims a username via NIP-98 authenticated request.

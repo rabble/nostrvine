@@ -7,7 +7,6 @@ import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
@@ -25,13 +24,14 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
-import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_editor_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 
 /// Route types supported by the app
@@ -43,9 +43,9 @@ enum RouteType {
   likedVideos, // Current user's liked videos feed
   hashtag, // Still supported as push route within explore
   search,
-  camera,
-  clipManager, // Clip management screen for recorded segments
-  editVideo, // Video editor screen for text/sound overlays
+  videoRecorder, // Video recorder screen
+  videoEditor, // Video editor screen
+  videoMetadata, // Video editor meta screen
   importKey,
   settings,
   relaySettings, // Relay configuration screen
@@ -227,14 +227,14 @@ RouteContext parseRoute(String path) {
         videoIndex: index,
       );
 
-    case 'camera':
-      return const RouteContext(type: RouteType.camera);
+    case 'video-recorder':
+      return const RouteContext(type: RouteType.videoRecorder);
 
-    case 'clip-manager':
-      return const RouteContext(type: RouteType.clipManager);
+    case 'video-editor':
+      return const RouteContext(type: RouteType.videoEditor);
 
-    case 'edit-video':
-      return const RouteContext(type: RouteType.editVideo);
+    case 'video-metadata':
+      return const RouteContext(type: RouteType.videoMetadata);
 
     case 'settings':
       return const RouteContext(type: RouteType.settings);
@@ -396,14 +396,14 @@ String buildRoute(RouteContext context) {
       final index = rawIndex < 0 ? 0 : rawIndex;
       return '${SearchScreenPure.path}/$index';
 
-    case RouteType.camera:
-      return UniversalCameraScreenPure.path;
+    case RouteType.videoRecorder:
+      return VideoRecorderScreen.path;
 
-    case RouteType.clipManager:
-      return ClipManagerScreen.path;
-
-    case RouteType.editVideo:
+    case RouteType.videoEditor:
       return VideoEditorScreen.path;
+
+    case RouteType.videoMetadata:
+      return VideoMetadataScreen.path;
 
     case RouteType.settings:
       return SettingsScreen.path;

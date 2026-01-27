@@ -1,16 +1,17 @@
 // ABOUTME: Profile header widget showing avatar, stats, name, and bio
 // ABOUTME: Reusable between own profile and others' profile screens
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/profile/profile_followers_stat.dart';
 import 'package:openvine/widgets/profile/profile_following_stat.dart';
@@ -121,6 +122,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
           // Name and bio
           _ProfileNameAndBio(
+            profile: profile,
             userIdHex: userIdHex,
             nip05: nip05,
             about: about,
@@ -253,12 +255,14 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
 /// Profile name, NIP-05, bio, and public key display.
 class _ProfileNameAndBio extends StatelessWidget {
   const _ProfileNameAndBio({
+    required this.profile,
     required this.userIdHex,
     required this.nip05,
     required this.about,
     this.displayNameHint,
   });
 
+  final UserProfile? profile;
   final String userIdHex;
   final String? nip05;
   final String? about;
@@ -271,11 +275,17 @@ class _ProfileNameAndBio extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserName.fromPubKey(
-            userIdHex,
-            style: VineTheme.titleLargeFont(),
-            anonymousName: displayNameHint,
-          ),
+          if (profile != null)
+            UserName.fromUserProfile(
+              profile!,
+              style: VineTheme.titleLargeFont(),
+            )
+          else
+            UserName.fromPubKey(
+              userIdHex,
+              style: VineTheme.titleLargeFont(),
+              anonymousName: displayNameHint,
+            ),
           _UniqueIdentifier(userIdHex: userIdHex, nip05: nip05),
           if (about != null && about!.isNotEmpty) ...[
             const SizedBox(height: 24),

@@ -1,6 +1,8 @@
 // ABOUTME: Service for publishing videos to Nostr with upload management
 // ABOUTME: Handles video upload to Blossom servers, retry logic, and Nostr event creation
 
+import 'dart:async';
+
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/vine_draft.dart';
@@ -67,7 +69,7 @@ class VideoPublishService {
   /// Used to stop polling when the caller is disposed.
   final bool Function()? isMounted;
 
-  bool get _shouldContinue => isMounted?.call() ?? true;
+  bool get _shouldContinue => isMounted?.call() ?? false;
 
   /// Tracks the current background upload ID.
   String? _backgroundUploadId;
@@ -85,9 +87,8 @@ class VideoPublishService {
       final publishing = draft.copyWith(publishStatus: .publishing);
       await draftService.saveDraft(publishing);
 
-      // TODO(@hm21): Temporary "commented out" create PR with only new files
-      /* final videoPath = await draft.clips.first.video.safeFilePath();
-      Log.info('📝 Publishing video: $videoPath', category: .video); */
+      final videoPath = await draft.clips.first.video.safeFilePath();
+      Log.info('📝 Publishing video: $videoPath', category: .video);
 
       // Verify user is fully authenticated
       if (!authService.isAuthenticated) {
@@ -122,13 +123,12 @@ class VideoPublishService {
         upload: pendingUpload,
         title: draft.title,
         description: draft.description,
-        hashtags: draft.hashtags,
-        // TODO(@hm21): Temporary "commented out" create PR with only new files
-        /*  expirationTimestamp: draft.expireTime != null
+        hashtags: draft.hashtags.toList(),
+        expirationTimestamp: draft.expireTime != null
             ? DateTime.now().millisecondsSinceEpoch ~/ 1000 +
                   draft.expireTime!.inSeconds
             : null,
-        allowAudioReuse: draft.allowAudioReuse, */
+        allowAudioReuse: draft.allowAudioReuse,
       );
 
       if (!published) {
@@ -223,10 +223,10 @@ class VideoPublishService {
         case .pending:
         case .retrying:
         case .paused:
-          await Future<void>.delayed(const Duration(milliseconds: 100));
+          await Future<void>.delayed(const Duration(milliseconds: 50));
       }
     }
-    return false;
+    return true;
   }
 
   /// Starts a new upload and polls for progress until completion.
@@ -247,6 +247,7 @@ class VideoPublishService {
     final pendingUpload = await uploadManager.startUploadFromDraft(
       draft: draft,
       nostrPubkey: pubkey,
+      onProgress: (value) => onProgressChanged(value),
     );
     _backgroundUploadId = pendingUpload.id;
 

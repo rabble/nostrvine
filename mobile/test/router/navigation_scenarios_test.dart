@@ -11,7 +11,6 @@ import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
-import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/video_editor_screen.dart';
 
@@ -257,29 +256,6 @@ void main() {
       expect(
         router.routeInformationProvider.value.uri.toString(),
         SearchScreenPure.pathForTerm(term: 'bitcoin', index: 3),
-      );
-    });
-
-    testWidgets('Camera route', (tester) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-
-      router.go(UniversalCameraScreenPure.path);
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        UniversalCameraScreenPure.path,
       );
     });
 

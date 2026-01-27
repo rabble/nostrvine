@@ -11,8 +11,10 @@ import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
-import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/video_editor_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 
 void main() {
   group('App Router - All Routes', () {
@@ -300,30 +302,6 @@ void main() {
       },
     );
 
-    testWidgets('${UniversalCameraScreenPure.path} route works', (
-      tester,
-    ) async {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      await tester.pumpWidget(
-        UncontrolledProviderScope(
-          container: container,
-          child: MaterialApp.router(
-            routerConfig: container.read(goRouterProvider),
-          ),
-        ),
-      );
-
-      final router = container.read(goRouterProvider);
-      router.go(UniversalCameraScreenPure.path);
-      await tester.pumpAndSettle();
-      expect(
-        router.routeInformationProvider.value.uri.toString(),
-        UniversalCameraScreenPure.path,
-      );
-    });
-
     testWidgets('${SettingsScreen.path} route works', (tester) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
@@ -343,6 +321,72 @@ void main() {
       expect(
         router.routeInformationProvider.value.uri.toString(),
         SettingsScreen.path,
+      );
+    });
+
+    testWidgets('${VideoRecorderScreen.path} route works', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: container.read(goRouterProvider),
+          ),
+        ),
+      );
+
+      final router = container.read(goRouterProvider);
+      router.go(VideoRecorderScreen.path);
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        VideoRecorderScreen.path,
+      );
+    });
+
+    testWidgets('${VideoEditorScreen.path} route works', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: container.read(goRouterProvider),
+          ),
+        ),
+      );
+
+      final router = container.read(goRouterProvider);
+      router.go(VideoEditorScreen.path);
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        VideoEditorScreen.path,
+      );
+    });
+
+    testWidgets('${VideoMetadataScreen.path} route works', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: container.read(goRouterProvider),
+          ),
+        ),
+      );
+
+      final router = container.read(goRouterProvider);
+      router.go(VideoMetadataScreen.path);
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        VideoMetadataScreen.path,
       );
     });
     // TOOD(any): Fix and re-enable these tests

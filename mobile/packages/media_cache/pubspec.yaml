@@ -1,0 +1,24 @@
+name: media_cache
+description: A reusable media caching package built on flutter_cache_manager with corrupt cache recovery and optional sync manifest lookups.
+version: 0.1.0+1
+publish_to: none
+resolution: workspace
+
+environment:
+  sdk: ^3.10.0
+  flutter: ^3.38.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_cache_manager: ^3.4.1
+  http: ^1.4.0
+  path: ^1.9.1
+  path_provider: ^2.1.5
+
+dev_dependencies:
+  file: ^7.0.0
+  flutter_test:
+    sdk: flutter
+  mocktail: ^1.0.4
+  very_good_analysis: ^10.0.0

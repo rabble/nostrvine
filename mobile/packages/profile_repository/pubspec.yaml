@@ -16,6 +16,8 @@ dev_dependencies:
   very_good_analysis: ^10.0.0
 
 dependencies:
+  db_client:
+    path: '../db_client'
   equatable: ^2.0.8
   http: ^1.2.2
   models:

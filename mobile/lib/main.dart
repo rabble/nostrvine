@@ -5,6 +5,7 @@ import 'dart:io'
 
 import 'package:audio_session/audio_session.dart';
 import 'package:db_client/db_client.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -50,8 +51,6 @@ import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_cache_manager.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/utils/ffmpeg_encoder.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
@@ -229,22 +228,6 @@ Future<void> _startOpenVineApp() async {
         category: LogCategory.system,
       );
       StartupPerformanceService.instance.completePhase('video_cache');
-    }
-  }
-
-  // Initialize FFmpegEncoder with memory-efficient session settings
-  if (!kIsWeb) {
-    StartupPerformanceService.instance.startPhase('ffmpeg_encoder');
-    try {
-      await FFmpegEncoder.initialize();
-      StartupPerformanceService.instance.completePhase('ffmpeg_encoder');
-    } catch (e) {
-      Log.error(
-        '[STARTUP] FFmpeg encoder initialization failed: $e',
-        name: 'Main',
-        category: LogCategory.system,
-      );
-      StartupPerformanceService.instance.completePhase('ffmpeg_encoder');
     }
   }
 

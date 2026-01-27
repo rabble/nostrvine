@@ -1,15 +1,17 @@
 import 'package:divine_camera/divine_camera.dart';
 import 'package:divine_camera/divine_camera_method_channel.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  final platform = MethodChannelDivineCamera();
+  late MethodChannelDivineCamera platform;
   const channel = MethodChannel('divine_camera');
 
   setUp(() {
+    platform = MethodChannelDivineCamera();
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
           channel,
@@ -127,6 +129,22 @@ void main() {
       expect(state.lens, DivineCameraLens.front);
     });
 
+    test('initializeCamera with video quality', () async {
+      final state = await platform.initializeCamera(
+        videoQuality: DivineVideoQuality.uhd,
+      );
+
+      expect(state.isInitialized, isTrue);
+    });
+
+    test('initializeCamera with enableScreenFlash false', () async {
+      final state = await platform.initializeCamera(
+        enableScreenFlash: false,
+      );
+
+      expect(state.isInitialized, isTrue);
+    });
+
     test('disposeCamera completes without error', () async {
       await expectLater(platform.disposeCamera(), completes);
     });
@@ -165,6 +183,20 @@ void main() {
       await expectLater(platform.startRecording(), completes);
     });
 
+    test('startRecording with maxDuration', () async {
+      await expectLater(
+        platform.startRecording(maxDuration: const Duration(seconds: 30)),
+        completes,
+      );
+    });
+
+    test('startRecording with useCache false', () async {
+      await expectLater(
+        platform.startRecording(useCache: false),
+        completes,
+      );
+    });
+
     test('stopRecording returns VideoRecordingResult', () async {
       final result = await platform.stopRecording();
 
@@ -188,6 +220,230 @@ void main() {
 
       expect(state.isInitialized, isTrue);
       expect(state.lens, DivineCameraLens.back);
+    });
+
+    test('buildPreview returns Texture widget', () {
+      final widget = platform.buildPreview(1);
+
+      expect(widget, isA<Texture>());
+      expect((widget as Texture).textureId, 1);
+    });
+
+    test('onRecordingAutoStopped getter and setter work', () {
+      void Function(VideoRecordingResult)? callback;
+      callback = (result) {};
+
+      platform.onRecordingAutoStopped = callback;
+      expect(platform.onRecordingAutoStopped, callback);
+
+      platform.onRecordingAutoStopped = null;
+      expect(platform.onRecordingAutoStopped, isNull);
+    });
+  });
+
+  group('MethodChannelDivineCamera error handling', () {
+    test('initializeCamera throws when result is null', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            if (methodCall.method == 'initializeCamera') {
+              return null;
+            }
+            return null;
+          });
+
+      await expectLater(
+        platform.initializeCamera(),
+        throwsA(isA<PlatformException>()),
+      );
+    });
+
+    test('switchCamera throws when result is null', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            if (methodCall.method == 'switchCamera') {
+              return null;
+            }
+            return null;
+          });
+
+      await expectLater(
+        platform.switchCamera(DivineCameraLens.front),
+        throwsA(isA<PlatformException>()),
+      );
+    });
+
+    test('getCameraState throws when result is null', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            if (methodCall.method == 'getCameraState') {
+              return null;
+            }
+            return null;
+          });
+
+      await expectLater(
+        platform.getCameraState(),
+        throwsA(isA<PlatformException>()),
+      );
+    });
+
+    test('stopRecording returns null when result is null', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            if (methodCall.method == 'stopRecording') {
+              return null;
+            }
+            return null;
+          });
+
+      final result = await platform.stopRecording();
+      expect(result, isNull);
+    });
+
+    test('setFlashMode returns false when result is null', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            if (methodCall.method == 'setFlashMode') {
+              return null;
+            }
+            return null;
+          });
+
+      final result = await platform.setFlashMode(DivineCameraFlashMode.on);
+      expect(result, isFalse);
+    });
+
+    test('setFocusPoint returns false when result is null', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            if (methodCall.method == 'setFocusPoint') {
+              return null;
+            }
+            return null;
+          });
+
+      final result = await platform.setFocusPoint(const Offset(0.5, 0.5));
+      expect(result, isFalse);
+    });
+
+    test('setExposurePoint returns false when result is null', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            if (methodCall.method == 'setExposurePoint') {
+              return null;
+            }
+            return null;
+          });
+
+      final result = await platform.setExposurePoint(const Offset(0.5, 0.5));
+      expect(result, isFalse);
+    });
+
+    test('setZoomLevel returns false when result is null', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, (methodCall) async {
+            if (methodCall.method == 'setZoomLevel') {
+              return null;
+            }
+            return null;
+          });
+
+      final result = await platform.setZoomLevel(2);
+      expect(result, isFalse);
+    });
+  });
+
+  group('MethodChannelDivineCamera native callbacks', () {
+    test('handles onRecordingAutoStopped callback from native', () async {
+      VideoRecordingResult? receivedResult;
+      platform.onRecordingAutoStopped = (result) {
+        receivedResult = result;
+      };
+
+      // Simulate native callback by invoking the method channel from "native"
+      const codec = StandardMethodCodec();
+      final envelope = codec.encodeMethodCall(
+        const MethodCall('onRecordingAutoStopped', {
+          'filePath': '/auto/stopped.mp4',
+          'durationMs': 30000,
+          'width': 1920,
+          'height': 1080,
+        }),
+      );
+
+      await expectLater(
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .handlePlatformMessage(
+              'divine_camera',
+              envelope,
+              (data) {},
+            ),
+        completes,
+      );
+
+      expect(receivedResult, isNotNull);
+      expect(receivedResult!.filePath, '/auto/stopped.mp4');
+      expect(receivedResult!.durationMs, 30000);
+    });
+
+    test('handles onRecordingAutoStopped with null args', () async {
+      platform.onRecordingAutoStopped = (result) {};
+
+      const codec = StandardMethodCodec();
+      final envelope = codec.encodeMethodCall(
+        const MethodCall('onRecordingAutoStopped'),
+      );
+
+      // Should not throw
+      await expectLater(
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .handlePlatformMessage(
+              'divine_camera',
+              envelope,
+              (data) {},
+            ),
+        completes,
+      );
+    });
+
+    test('handles onRecordingAutoStopped with no callback set', () async {
+      platform.onRecordingAutoStopped = null;
+
+      const codec = StandardMethodCodec();
+      final envelope = codec.encodeMethodCall(
+        const MethodCall('onRecordingAutoStopped', {
+          'filePath': '/test.mp4',
+        }),
+      );
+
+      // Should not throw
+      await expectLater(
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .handlePlatformMessage(
+              'divine_camera',
+              envelope,
+              (data) {},
+            ),
+        completes,
+      );
+    });
+
+    test('handles unknown method call', () async {
+      const codec = StandardMethodCodec();
+      final envelope = codec.encodeMethodCall(
+        const MethodCall('unknownMethod'),
+      );
+
+      // Should not throw, just return null
+      await expectLater(
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .handlePlatformMessage(
+              'divine_camera',
+              envelope,
+              (data) {},
+            ),
+        completes,
+      );
     });
   });
 }

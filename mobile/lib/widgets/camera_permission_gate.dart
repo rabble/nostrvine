@@ -1,13 +1,15 @@
 // ABOUTME: Declarative permission gate that wraps camera screen
 // ABOUTME: Renders permission UI or camera based on CameraPermissionBloc state
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/router/nav_extensions.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_segment_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_top_bar.dart';
 
 /// A declarative gate widget that handles camera/microphone permissions.
@@ -185,14 +187,20 @@ class _CameraPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: .expand,
+    return const Column(
+      spacing: 12,
       children: [
-        // Top bar with close-button, clip-duration, and confirm-button
-        const VideoRecorderTopBar(),
-
-        // Bottom controls
-        const VideoRecorderBottomBar(),
+        Expanded(
+          child: Stack(
+            fit: .expand,
+            children: [
+              VideoRecorderSegmentBar(),
+              VideoRecorderTopBar(),
+              RecordButton(),
+            ],
+          ),
+        ),
+        VideoRecorderBottomBar(),
       ],
     );
   }

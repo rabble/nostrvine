@@ -1,10 +1,11 @@
 // ABOUTME: Integration test for complete auto-draft flow from recording to publish
 // ABOUTME: Validates end-to-end behavior: record → auto-draft → edit → publish → retry
 
-import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -22,11 +23,18 @@ void main() {
 
       // 2. Preview screen loads draft by ID
       final draft = VineDraft.create(
-        videoFile: File('/path/to/video.mp4'),
+        clips: [
+          RecordingClip(
+            id: 'id',
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: Duration(seconds: 4),
+            recordedAt: .now(),
+            aspectRatio: .vertical,
+          ),
+        ],
         title: 'Do it for the Vine!',
         description: '',
-        hashtags: ['openvine', 'vine'],
-        frameCount: 30,
+        hashtags: {'openvine', 'vine'},
         selectedApproach: 'native',
       );
       await draftStorage.saveDraft(draft);
@@ -67,11 +75,18 @@ void main() {
 
       // 1. Auto-draft created
       final draft = VineDraft.create(
-        videoFile: File('/path/to/video.mp4'),
+        clips: [
+          RecordingClip(
+            id: 'id',
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: Duration(seconds: 4),
+            recordedAt: .now(),
+            aspectRatio: .vertical,
+          ),
+        ],
         title: 'Test Video',
         description: '',
-        hashtags: ['test'],
-        frameCount: 30,
+        hashtags: {'test'},
         selectedApproach: 'native',
       );
       await draftStorage.saveDraft(draft);

@@ -292,7 +292,7 @@ void main() {
       expect(state.focusPoint, Offset.zero);
       expect(state.canRecord, false);
       expect(state.isCameraInitialized, false);
-      expect(state.canSwitchCamera, false);
+      expect(state.canSwitchCamera, true);
       expect(state.countdownValue, 0);
       expect(state.aspectRatio, AspectRatio.vertical);
       expect(state.flashMode, DivineFlashMode.auto);
