@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/services/image_cache_manager.dart';
 
@@ -53,13 +54,14 @@ class UserProfileTile extends ConsumerWidget {
       builder: (context, snapshot) {
         final profile = userProfileService.getCachedProfile(pubkey);
         // wrapping with Semantics for testability and accessibility
-        // Get display name or truncated npub
-        final displayName = profile?.bestDisplayName ?? 'Loading...';
+        // Get display name or truncated npub (fallback for users without Kind 0)
+        final truncatedNpub = NostrKeyUtils.truncateNpub(pubkey);
+        final displayName = profile?.bestDisplayName ?? truncatedNpub;
 
-        // Get unique identifier: NIP-05 if available, otherwise npub
+        // Get unique identifier: NIP-05 if available, otherwise truncated npub
         final uniqueIdentifier = profile?.nip05?.isNotEmpty == true
             ? profile!.nip05!
-            : profile?.npub ?? 'Loading...';
+            : truncatedNpub;
 
         return Semantics(
           identifier: 'user_profile_tile_$pubkey',

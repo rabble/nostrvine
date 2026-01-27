@@ -82,6 +82,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       isProcessing: false,
       isSavingDraft: false,
       isPlaying: false,
+      isOverDeleteZone: false,
       currentPosition: .zero,
     );
 

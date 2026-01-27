@@ -22,6 +22,7 @@ import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/ui/overlay_policy.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
@@ -1043,7 +1044,8 @@ class VideoOverlayActions extends ConsumerWidget {
                     );
                     final avatarUrl = profile?.picture;
                     final displayName =
-                        profile?.bestDisplayName ?? 'Loading...';
+                        profile?.bestDisplayName ??
+                        NostrKeyUtils.truncateNpub(video.pubkey);
                     final loopCount = video.originalLoops ?? 0;
 
                     void navigateToProfile() {
@@ -1708,7 +1710,8 @@ class VideoRepostHeader extends ConsumerWidget {
     }
 
     final displayName =
-        reposterProfile?.bestDisplayName ?? reposterPubkey.substring(0, 8);
+        reposterProfile?.bestDisplayName ??
+        NostrKeyUtils.truncateNpub(reposterPubkey);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

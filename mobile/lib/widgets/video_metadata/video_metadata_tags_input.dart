@@ -100,8 +100,13 @@ class _VideoMetadataTagsInputState
     final updatedTags = {...oldTags, ...newTags};
     ref.read(videoEditorProvider.notifier).updateMetadata(tags: updatedTags);
     _controller.clear();
-    // Keep focus to prevent keyboard from closing (after rebuild)
+    // Keep focus to prevent keyboard from closing (after rebuild).
+    //
+    // We request focus twice: once immediately and once in a post-frame
+    // callback to prevent an issue where focus could be lost during the widget
+    // rebuild triggered by the state update.
     if (updatedTags.length < VideoEditorConstants.tagLimit) {
+      _focusNode.requestFocus();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _focusNode.requestFocus();
       });

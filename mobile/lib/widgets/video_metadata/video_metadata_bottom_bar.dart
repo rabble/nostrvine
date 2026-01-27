@@ -1,12 +1,8 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/providers/video_publish_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/screens/clip_library_screen.dart';
 
 /// Bottom bar with "Save draft" and "Post" buttons for video metadata.
 ///
@@ -18,11 +14,13 @@ class VideoMetadataBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: .fromLTRB(16, 16, 16, 4),
+      padding: .fromLTRB(16, 0, 16, 4),
       child: Row(
+        crossAxisAlignment: .end,
         spacing: 16,
         children: [
-          Expanded(child: _SaveDraftButton()),
+          // TODO(@hm21): Once the Drafts library exists, uncomment the Drafts button again.
+          // Expanded(child: _SaveDraftButton()),
           Expanded(child: _PostButton()),
         ],
       ),
@@ -31,7 +29,7 @@ class VideoMetadataBottomBar extends StatelessWidget {
 }
 
 /// Outlined button to save the video as a draft.
-class _SaveDraftButton extends ConsumerWidget {
+/* class _SaveDraftButton extends ConsumerWidget {
   /// Creates a save draft button.
   const _SaveDraftButton();
 
@@ -54,8 +52,8 @@ class _SaveDraftButton extends ConsumerWidget {
           opacity: isSaving ? 0.6 : 1.0,
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF032017),
-              border: .all(color: const Color(0xFF27C58B), width: 2),
+              color: VineTheme.surfaceContainer,
+              border: .all(color: Color(0xFF0E2B21), width: 2),
               borderRadius: .circular(20),
             ),
             padding: const .symmetric(vertical: 10),
@@ -66,7 +64,7 @@ class _SaveDraftButton extends ConsumerWidget {
                       height: 24,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.5,
-                        color: Color(0xFF27C58B),
+                        color: VineTheme.primary,
                       ),
                     )
                   // TODO(l10n): Replace with context.l10n when localization is added.
@@ -75,7 +73,7 @@ class _SaveDraftButton extends ConsumerWidget {
                       style: GoogleFonts.bricolageGrotesque(
                         fontSize: 18,
                         fontWeight: .w800,
-                        color: const Color(0xFF27C58B),
+                        color: VineTheme.primary,
                         height: 1.33,
                         letterSpacing: 0.15,
                       ),
@@ -152,7 +150,7 @@ class _SaveDraftButton extends ConsumerWidget {
     }
   }
 }
-
+ */
 /// Filled button to publish the video to the feed.
 class _PostButton extends ConsumerWidget {
   /// Creates a post button.
@@ -182,7 +180,7 @@ class _PostButton extends ConsumerWidget {
               : null,
           child: Container(
             decoration: BoxDecoration(
-              color: const Color(0xFF27C58B),
+              color: VineTheme.primary,
               borderRadius: .circular(20),
             ),
             padding: const .symmetric(vertical: 12),

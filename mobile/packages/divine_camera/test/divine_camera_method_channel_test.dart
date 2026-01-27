@@ -197,6 +197,25 @@ void main() {
       );
     });
 
+    test('startRecording returns false on PlatformException', () async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            channel,
+            (MethodCall methodCall) async {
+              if (methodCall.method == 'startRecording') {
+                throw PlatformException(
+                  code: 'RECORD_START_ERROR',
+                  message: 'Recording failed to start',
+                );
+              }
+              return null;
+            },
+          );
+
+      final result = await platform.startRecording();
+      expect(result, isFalse);
+    });
+
     test('stopRecording returns VideoRecordingResult', () async {
       final result = await platform.stopRecording();
 

@@ -7,7 +7,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 
 /// Instruction text that appears below the clip gallery.
 ///
-/// Displays "Tap to edit. Drag to reorder." with animated transitions
+/// Displays "Tap to edit. Hold and drag to reorder." with animated transitions
 /// based on editing and reordering states.
 class ClipGalleryInstructionText extends ConsumerWidget {
   /// Creates clip gallery instruction text.
@@ -38,7 +38,7 @@ class ClipGalleryInstructionText extends ConsumerWidget {
                   padding: .only(top: 25),
                   child: Text(
                     // TODO(l10n): Replace with context.l10n when localization is added.
-                    'Tap to edit. Drag to reorder.',
+                    'Tap to edit. Hold and drag to reorder.',
                     style: TextStyle(
                       fontFamily: 'Inter',
                       height: 1.33,

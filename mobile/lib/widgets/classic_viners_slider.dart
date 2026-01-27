@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/services/image_cache_manager.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Horizontal slider displaying top classic Viners sorted by loop count.
@@ -132,7 +133,8 @@ class _VinerAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Use authorName from classic Vine data, clean up social media prefixes
-    final rawName = viner.authorName ?? _formatPubkey(viner.pubkey);
+    final rawName =
+        viner.authorName ?? NostrKeyUtils.truncateNpub(viner.pubkey);
     final displayName = _cleanDisplayName(rawName);
 
     return GestureDetector(
@@ -182,11 +184,6 @@ class _VinerAvatar extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatPubkey(String pubkey) {
-    if (pubkey.length <= 8) return pubkey;
-    return '${pubkey.substring(0, 4)}...${pubkey.substring(pubkey.length - 4)}';
   }
 
   Widget _buildAvatar(String displayName) {

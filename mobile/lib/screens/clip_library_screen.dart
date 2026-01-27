@@ -141,18 +141,15 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
 
     // Add each selected clip
     for (final clip in selectedClips) {
-      // Skip if clip already exists in clip-manager
-      if (!clipManagerNotifier.clips.any((el) => el.id == clip.id)) {
-        clipManagerNotifier.addClip(
-          video: EditorVideo.file(clip.filePath),
-          duration: clip.duration,
-          thumbnailPath: clip.thumbnailPath,
-          aspectRatio: model.AspectRatio.values.firstWhere(
-            (el) => el.name == clip.aspectRatio,
-            orElse: () => .vertical,
-          ),
-        );
-      }
+      clipManagerNotifier.addClip(
+        video: EditorVideo.file(clip.filePath),
+        duration: clip.duration,
+        thumbnailPath: clip.thumbnailPath,
+        aspectRatio: model.AspectRatio.values.firstWhere(
+          (el) => el.name == clip.aspectRatio,
+          orElse: () => .vertical,
+        ),
+      );
     }
 
     if (widget.selectionMode) {
