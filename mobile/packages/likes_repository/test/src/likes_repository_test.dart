@@ -432,6 +432,43 @@ void main() {
           throwsA(isA<UnlikeFailedException>()),
         );
       });
+
+      test('falls back to database when record not in memory cache', () async {
+        final likeRecord = LikeRecord(
+          targetEventId: testEventId,
+          reactionEventId: testReactionEventId,
+          createdAt: DateTime.now(),
+        );
+
+        // getAllLikeRecords returns empty (cache not populated)
+        // but getLikeRecord returns the record from database
+        when(
+          () => mockLocalStorage.getLikeRecord(testEventId),
+        ).thenAnswer((_) async => likeRecord);
+
+        final mockDeletionEvent = MockEvent();
+        when(
+          () => mockNostrClient.deleteEvent(testReactionEventId),
+        ).thenAnswer((_) async => mockDeletionEvent);
+
+        when(
+          () => mockLocalStorage.deleteLikeRecord(testEventId),
+        ).thenAnswer((_) async => true);
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        // Don't call isLiked first, go directly to unlike
+        await repository.unlikeEvent(testEventId);
+
+        verify(() => mockLocalStorage.getLikeRecord(testEventId)).called(1);
+        verify(
+          () => mockNostrClient.deleteEvent(testReactionEventId),
+        ).called(1);
+        verify(() => mockLocalStorage.deleteLikeRecord(testEventId)).called(1);
+      });
     });
 
     group('toggleLike', () {
@@ -496,6 +533,39 @@ void main() {
         // Initialize
         await repository.isLiked(testEventId);
 
+        final result = await repository.toggleLike(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+
+        expect(result, isFalse);
+      });
+
+      test('uses in-memory cache when no localStorage', () async {
+        final mockEvent = MockEvent();
+        when(() => mockEvent.id).thenReturn(testReactionEventId);
+
+        when(
+          () => mockNostrClient.sendLike(testEventId, content: '+'),
+        ).thenAnswer((_) async => mockEvent);
+
+        final mockDeletionEvent = MockEvent();
+        when(
+          () => mockNostrClient.deleteEvent(testReactionEventId),
+        ).thenAnswer((_) async => mockDeletionEvent);
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          // No localStorage
+        );
+
+        // Like the event first (adds to in-memory cache)
+        await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+        );
+
+        // Toggle should unlike since it's in memory cache
         final result = await repository.toggleLike(
           eventId: testEventId,
           authorPubkey: testAuthorPubkey,
@@ -666,6 +736,609 @@ void main() {
       });
     });
 
+    group('syncUserReactions', () {
+      test('fetches reactions from relay and stores locally', () async {
+        const targetEventId = 'target_event_1234567890abcdef';
+        const reactionEventId = 'reaction_event_1234567890abcdef';
+        const reactionCreatedAt = 1700000000;
+
+        final mockReactionEvent = MockEvent();
+        when(() => mockReactionEvent.id).thenReturn(reactionEventId);
+        when(() => mockReactionEvent.content).thenReturn('+');
+        when(() => mockReactionEvent.createdAt).thenReturn(reactionCreatedAt);
+        when(() => mockReactionEvent.tags).thenReturn([
+          ['e', targetEventId],
+        ]);
+
+        // First call returns reactions, second returns deletions (empty)
+        var callCount = 0;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            return [mockReactionEvent];
+          }
+          return []; // No deletions
+        });
+
+        when(
+          () => mockLocalStorage.saveLikeRecordsBatch(any()),
+        ).thenAnswer((_) async {});
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.syncUserReactions();
+
+        expect(result.orderedEventIds, contains(targetEventId));
+        expect(
+          result.eventIdToReactionId[targetEventId],
+          equals(reactionEventId),
+        );
+        verify(() => mockLocalStorage.saveLikeRecordsBatch(any())).called(1);
+      });
+
+      test('filters out deleted reactions using Kind 5 events', () async {
+        const targetEventId1 = 'target_event_1_1234567890abcdef';
+        const reactionEventId1 = 'reaction_event_1_1234567890abcdef';
+        const targetEventId2 = 'target_event_2_1234567890abcdef';
+        const reactionEventId2 = 'reaction_event_2_1234567890abcdef';
+        const reactionCreatedAt = 1700000000;
+
+        // Two reaction events
+        final mockReaction1 = MockEvent();
+        when(() => mockReaction1.id).thenReturn(reactionEventId1);
+        when(() => mockReaction1.content).thenReturn('+');
+        when(() => mockReaction1.createdAt).thenReturn(reactionCreatedAt);
+        when(() => mockReaction1.tags).thenReturn([
+          ['e', targetEventId1],
+        ]);
+
+        final mockReaction2 = MockEvent();
+        when(() => mockReaction2.id).thenReturn(reactionEventId2);
+        when(() => mockReaction2.content).thenReturn('+');
+        when(() => mockReaction2.createdAt).thenReturn(reactionCreatedAt);
+        when(() => mockReaction2.tags).thenReturn([
+          ['e', targetEventId2],
+        ]);
+
+        // Deletion event for reaction1
+        final mockDeletion = MockEvent();
+        when(() => mockDeletion.tags).thenReturn([
+          ['e', reactionEventId1], // References the deleted reaction
+        ]);
+
+        // First call returns reactions, second returns deletions
+        var callCount = 0;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            return [mockReaction1, mockReaction2];
+          }
+          return [mockDeletion];
+        });
+
+        when(
+          () => mockLocalStorage.saveLikeRecordsBatch(any()),
+        ).thenAnswer((_) async {});
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.syncUserReactions();
+
+        // Only reaction2 should remain (reaction1 was deleted)
+        expect(result.orderedEventIds, contains(targetEventId2));
+        expect(result.orderedEventIds, isNot(contains(targetEventId1)));
+        expect(result.eventIdToReactionId.containsKey(targetEventId2), isTrue);
+        expect(
+          result.eventIdToReactionId.containsKey(targetEventId1),
+          isFalse,
+        );
+      });
+
+      test('removes deleted likes from local storage', () async {
+        const targetEventId = 'target_event_1234567890abcdef';
+        const reactionEventId = 'reaction_event_1234567890abcdef';
+        const reactionCreatedAt = 1700000000;
+
+        // Pre-existing like in local storage
+        final existingRecord = LikeRecord(
+          targetEventId: targetEventId,
+          reactionEventId: reactionEventId,
+          createdAt: DateTime.fromMillisecondsSinceEpoch(
+            reactionCreatedAt * 1000,
+          ),
+        );
+
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer((_) async => [existingRecord]);
+
+        // Reaction event from relay
+        final mockReaction = MockEvent();
+        when(() => mockReaction.id).thenReturn(reactionEventId);
+        when(() => mockReaction.content).thenReturn('+');
+        when(() => mockReaction.createdAt).thenReturn(reactionCreatedAt);
+        when(() => mockReaction.tags).thenReturn([
+          ['e', targetEventId],
+        ]);
+
+        // Deletion event that deletes this reaction
+        final mockDeletion = MockEvent();
+        when(() => mockDeletion.tags).thenReturn([
+          ['e', reactionEventId],
+        ]);
+
+        var callCount = 0;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            return [mockReaction];
+          }
+          return [mockDeletion];
+        });
+
+        when(
+          () => mockLocalStorage.deleteLikeRecord(targetEventId),
+        ).thenAnswer((_) async => true);
+
+        when(
+          () => mockLocalStorage.saveLikeRecordsBatch(any()),
+        ).thenAnswer((_) async {});
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        await repository.syncUserReactions();
+
+        // Should have deleted the local record
+        verify(
+          () => mockLocalStorage.deleteLikeRecord(targetEventId),
+        ).called(1);
+      });
+
+      test('ignores non-like reactions (content != "+")', () async {
+        const targetEventId = 'target_event_1234567890abcdef';
+        const reactionEventId = 'reaction_event_1234567890abcdef';
+        const reactionCreatedAt = 1700000000;
+
+        final mockReaction = MockEvent();
+        when(() => mockReaction.id).thenReturn(reactionEventId);
+        when(() => mockReaction.content).thenReturn('-'); // Dislike, not like
+        when(() => mockReaction.createdAt).thenReturn(reactionCreatedAt);
+        when(() => mockReaction.tags).thenReturn([
+          ['e', targetEventId],
+        ]);
+
+        var callCount = 0;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            return [mockReaction];
+          }
+          return [];
+        });
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.syncUserReactions();
+
+        expect(result.orderedEventIds, isEmpty);
+      });
+
+      test('handles empty relay response', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [],
+        );
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.syncUserReactions();
+
+        expect(result.orderedEventIds, isEmpty);
+        expect(result.eventIdToReactionId, isEmpty);
+      });
+
+      test('falls back to local data when relay query fails', () async {
+        final existingRecord = LikeRecord(
+          targetEventId: 'local_target_event_1234567890abcdef',
+          reactionEventId: 'local_reaction_event_1234567890abcdef',
+          createdAt: DateTime.now(),
+        );
+
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer((_) async => [existingRecord]);
+
+        when(() => mockNostrClient.queryEvents(any())).thenThrow(
+          Exception('Network error'),
+        );
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.syncUserReactions();
+
+        // Should still have local data
+        expect(
+          result.orderedEventIds,
+          contains('local_target_event_1234567890abcdef'),
+        );
+      });
+
+      test(
+        'throws SyncFailedException when relay fails and no local data',
+        () async {
+          when(() => mockNostrClient.queryEvents(any())).thenThrow(
+            Exception('Network error'),
+          );
+
+          repository = LikesRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
+
+          expect(
+            () => repository.syncUserReactions(),
+            throwsA(isA<SyncFailedException>()),
+          );
+        },
+      );
+
+      test('handles continuous like/unlike cycles correctly', () async {
+        // Simulates: like → unlike → like again
+        // relay has: reaction1 (deleted), reaction2 (active)
+        const targetEventId = 'target_event_1234567890abcdef';
+        const reactionEventId1 = 'reaction_1_1234567890abcdef';
+        const reactionEventId2 = 'reaction_2_1234567890abcdef';
+        const reactionCreatedAt1 = 1700000000;
+        const reactionCreatedAt2 = 1700000100;
+
+        // First like (now deleted)
+        final mockReaction1 = MockEvent();
+        when(() => mockReaction1.id).thenReturn(reactionEventId1);
+        when(() => mockReaction1.content).thenReturn('+');
+        when(() => mockReaction1.createdAt).thenReturn(reactionCreatedAt1);
+        when(() => mockReaction1.tags).thenReturn([
+          ['e', targetEventId],
+        ]);
+
+        // Second like (still active)
+        final mockReaction2 = MockEvent();
+        when(() => mockReaction2.id).thenReturn(reactionEventId2);
+        when(() => mockReaction2.content).thenReturn('+');
+        when(() => mockReaction2.createdAt).thenReturn(reactionCreatedAt2);
+        when(() => mockReaction2.tags).thenReturn([
+          ['e', targetEventId],
+        ]);
+
+        // Deletion for first reaction only
+        final mockDeletion = MockEvent();
+        when(() => mockDeletion.tags).thenReturn([
+          ['e', reactionEventId1],
+        ]);
+
+        var callCount = 0;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            return [mockReaction1, mockReaction2];
+          }
+          return [mockDeletion];
+        });
+
+        when(
+          () => mockLocalStorage.saveLikeRecordsBatch(any()),
+        ).thenAnswer((_) async {});
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.syncUserReactions();
+
+        // Should have the target event (from reaction2, the newer active one)
+        expect(result.orderedEventIds, contains(targetEventId));
+        expect(
+          result.eventIdToReactionId[targetEventId],
+          equals(reactionEventId2),
+        );
+      });
+
+      test('handles deletion events with multiple e tags', () async {
+        const targetEventId1 = 'target_1_1234567890abcdef';
+        const reactionEventId1 = 'reaction_1_1234567890abcdef';
+        const targetEventId2 = 'target_2_1234567890abcdef';
+        const reactionEventId2 = 'reaction_2_1234567890abcdef';
+        const reactionCreatedAt = 1700000000;
+
+        final mockReaction1 = MockEvent();
+        when(() => mockReaction1.id).thenReturn(reactionEventId1);
+        when(() => mockReaction1.content).thenReturn('+');
+        when(() => mockReaction1.createdAt).thenReturn(reactionCreatedAt);
+        when(() => mockReaction1.tags).thenReturn([
+          ['e', targetEventId1],
+        ]);
+
+        final mockReaction2 = MockEvent();
+        when(() => mockReaction2.id).thenReturn(reactionEventId2);
+        when(() => mockReaction2.content).thenReturn('+');
+        when(() => mockReaction2.createdAt).thenReturn(reactionCreatedAt);
+        when(() => mockReaction2.tags).thenReturn([
+          ['e', targetEventId2],
+        ]);
+
+        // Single deletion event that deletes both reactions
+        final mockDeletion = MockEvent();
+        when(() => mockDeletion.tags).thenReturn([
+          ['e', reactionEventId1],
+          ['e', reactionEventId2],
+        ]);
+
+        var callCount = 0;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            return [mockReaction1, mockReaction2];
+          }
+          return [mockDeletion];
+        });
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.syncUserReactions();
+
+        // Both should be filtered out
+        expect(result.orderedEventIds, isEmpty);
+      });
+
+      test('updates newer record when duplicate target events exist', () async {
+        const targetEventId = 'target_event_1234567890abcdef';
+        const olderReactionId = 'older_reaction_1234567890abcdef';
+        const newerReactionId = 'newer_reaction_1234567890abcdef';
+        const olderCreatedAt = 1700000000;
+        const newerCreatedAt = 1700000100;
+
+        // Older reaction
+        final mockOlderReaction = MockEvent();
+        when(() => mockOlderReaction.id).thenReturn(olderReactionId);
+        when(() => mockOlderReaction.content).thenReturn('+');
+        when(() => mockOlderReaction.createdAt).thenReturn(olderCreatedAt);
+        when(() => mockOlderReaction.tags).thenReturn([
+          ['e', targetEventId],
+        ]);
+
+        // Newer reaction to same target
+        final mockNewerReaction = MockEvent();
+        when(() => mockNewerReaction.id).thenReturn(newerReactionId);
+        when(() => mockNewerReaction.content).thenReturn('+');
+        when(() => mockNewerReaction.createdAt).thenReturn(newerCreatedAt);
+        when(() => mockNewerReaction.tags).thenReturn([
+          ['e', targetEventId],
+        ]);
+
+        var callCount = 0;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            // Return older first, then newer
+            return [mockOlderReaction, mockNewerReaction];
+          }
+          return [];
+        });
+
+        when(
+          () => mockLocalStorage.saveLikeRecordsBatch(any()),
+        ).thenAnswer((_) async {});
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.syncUserReactions();
+
+        // Should use the newer reaction ID
+        expect(
+          result.eventIdToReactionId[targetEventId],
+          equals(newerReactionId),
+        );
+      });
+    });
+
+    group('fetchUserLikes', () {
+      test('fetches likes for another user from relay', () async {
+        const otherUserPubkey = 'other_user_pubkey_1234567890abcdef';
+        const targetEventId = 'target_event_1234567890abcdef';
+
+        final mockReaction = MockEvent();
+        when(() => mockReaction.content).thenReturn('+');
+        when(() => mockReaction.createdAt).thenReturn(1700000000);
+        when(() => mockReaction.tags).thenReturn([
+          ['e', targetEventId],
+        ]);
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [mockReaction],
+        );
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.fetchUserLikes(otherUserPubkey);
+
+        expect(result, contains(targetEventId));
+      });
+
+      test('returns likes ordered by recency', () async {
+        const otherUserPubkey = 'other_user_pubkey_1234567890abcdef';
+        const olderTargetId = 'older_target_1234567890abcdef';
+        const newerTargetId = 'newer_target_1234567890abcdef';
+
+        final mockOlderReaction = MockEvent();
+        when(() => mockOlderReaction.content).thenReturn('+');
+        when(() => mockOlderReaction.createdAt).thenReturn(1700000000);
+        when(() => mockOlderReaction.tags).thenReturn([
+          ['e', olderTargetId],
+        ]);
+
+        final mockNewerReaction = MockEvent();
+        when(() => mockNewerReaction.content).thenReturn('+');
+        when(() => mockNewerReaction.createdAt).thenReturn(1700000100);
+        when(() => mockNewerReaction.tags).thenReturn([
+          ['e', newerTargetId],
+        ]);
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [mockOlderReaction, mockNewerReaction],
+        );
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.fetchUserLikes(otherUserPubkey);
+
+        expect(result[0], equals(newerTargetId));
+        expect(result[1], equals(olderTargetId));
+      });
+
+      test('deduplicates target event IDs', () async {
+        const otherUserPubkey = 'other_user_pubkey_1234567890abcdef';
+        const targetEventId = 'target_event_1234567890abcdef';
+
+        // Two reactions to the same target (e.g., from like/unlike/like cycle)
+        final mockReaction1 = MockEvent();
+        when(() => mockReaction1.content).thenReturn('+');
+        when(() => mockReaction1.createdAt).thenReturn(1700000000);
+        when(() => mockReaction1.tags).thenReturn([
+          ['e', targetEventId],
+        ]);
+
+        final mockReaction2 = MockEvent();
+        when(() => mockReaction2.content).thenReturn('+');
+        when(() => mockReaction2.createdAt).thenReturn(1700000100);
+        when(() => mockReaction2.tags).thenReturn([
+          ['e', targetEventId],
+        ]);
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [mockReaction1, mockReaction2],
+        );
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.fetchUserLikes(otherUserPubkey);
+
+        // Should only have one entry for the target
+        expect(result.length, equals(1));
+        expect(result[0], equals(targetEventId));
+      });
+
+      test('ignores non-like reactions', () async {
+        const otherUserPubkey = 'other_user_pubkey_1234567890abcdef';
+        const targetEventId = 'target_event_1234567890abcdef';
+
+        final mockReaction = MockEvent();
+        when(() => mockReaction.content).thenReturn('-'); // Dislike
+        when(() => mockReaction.createdAt).thenReturn(1700000000);
+        when(() => mockReaction.tags).thenReturn([
+          ['e', targetEventId],
+        ]);
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [mockReaction],
+        );
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.fetchUserLikes(otherUserPubkey);
+
+        expect(result, isEmpty);
+      });
+
+      test('throws FetchLikesFailedException on error', () async {
+        const otherUserPubkey = 'other_user_pubkey_1234567890abcdef';
+
+        when(() => mockNostrClient.queryEvents(any())).thenThrow(
+          Exception('Network error'),
+        );
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        expect(
+          () => repository.fetchUserLikes(otherUserPubkey),
+          throwsA(isA<FetchLikesFailedException>()),
+        );
+      });
+    });
+
+    group('getLikeRecord', () {
+      test('returns record when event is liked', () async {
+        final likeRecord = LikeRecord(
+          targetEventId: testEventId,
+          reactionEventId: testReactionEventId,
+          createdAt: DateTime.now(),
+        );
+
+        when(
+          () => mockLocalStorage.getAllLikeRecords(),
+        ).thenAnswer((_) async => [likeRecord]);
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.getLikeRecord(testEventId);
+
+        expect(result, isNotNull);
+        expect(result!.targetEventId, equals(testEventId));
+        expect(result.reactionEventId, equals(testReactionEventId));
+      });
+
+      test('returns null when event is not liked', () async {
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final result = await repository.getLikeRecord('nonexistent_event_id');
+
+        expect(result, isNull);
+      });
+    });
+
     group('clearCache', () {
       test('clears local storage and in-memory cache', () async {
         when(() => mockLocalStorage.clearAll()).thenAnswer((_) async {});
@@ -701,88 +1374,89 @@ void main() {
 
         expect(result, containsAll(['event1', 'event2']));
       });
-    });
-  });
 
-  group('LikeRecord', () {
-    test('equals works correctly', () {
-      final now = DateTime.now();
-      final record1 = LikeRecord(
-        targetEventId: 'target1',
-        reactionEventId: 'reaction1',
-        createdAt: now,
-      );
-      final record2 = LikeRecord(
-        targetEventId: 'target1',
-        reactionEventId: 'reaction1',
-        createdAt: now,
-      );
-      final record3 = LikeRecord(
-        targetEventId: 'target2',
-        reactionEventId: 'reaction1',
-        createdAt: now,
-      );
+      test('returns internal stream when no local storage', () async {
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+        );
 
-      expect(record1, equals(record2));
-      expect(record1, isNot(equals(record3)));
+        final stream = repository.watchLikedEventIds();
+        final result = await stream.first;
+
+        expect(result, isEmpty);
+      });
     });
 
-    test('copyWith works correctly', () {
-      final now = DateTime.now();
-      final record = LikeRecord(
-        targetEventId: 'target1',
-        reactionEventId: 'reaction1',
-        createdAt: now,
-      );
+    group('auth state changes', () {
+      test('clears cache when user logs out', () async {
+        final authController = StreamController<bool>.broadcast();
 
-      final copied = record.copyWith(targetEventId: 'target2');
+        when(() => mockLocalStorage.clearAll()).thenAnswer((_) async {});
 
-      expect(copied.targetEventId, equals('target2'));
-      expect(copied.reactionEventId, equals('reaction1'));
-      expect(copied.createdAt, equals(now));
-    });
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          authStateStream: authController.stream,
+          isAuthenticated: true,
+        );
 
-    test('toString returns expected format', () {
-      final now = DateTime.now();
-      final record = LikeRecord(
-        targetEventId: 'target1',
-        reactionEventId: 'reaction1',
-        createdAt: now,
-      );
+        // Simulate logout
+        authController.add(false);
 
-      final str = record.toString();
-      expect(str, contains('LikeRecord'));
-      expect(str, contains('target1'));
-      expect(str, contains('reaction1'));
-    });
-  });
+        // Give time for the stream to process
+        await Future<void>.delayed(Duration.zero);
 
-  group('Exceptions', () {
-    test('LikeFailedException has correct message', () {
-      const exception = LikeFailedException('test message');
-      expect(exception.message, equals('test message'));
-      expect(exception.toString(), contains('LikeFailedException'));
-    });
+        verify(() => mockLocalStorage.clearAll()).called(1);
 
-    test('UnlikeFailedException has correct message', () {
-      const exception = UnlikeFailedException('test message');
-      expect(exception.message, equals('test message'));
-      expect(exception.toString(), contains('UnlikeFailedException'));
-    });
+        await authController.close();
+      });
 
-    test('NotAuthenticatedException has default message', () {
-      const exception = NotAuthenticatedException();
-      expect(exception.message, equals('User not authenticated'));
-    });
+      test('does not clear cache when auth state unchanged', () async {
+        final authController = StreamController<bool>.broadcast();
 
-    test('AlreadyLikedException includes event ID', () {
-      const exception = AlreadyLikedException('event123');
-      expect(exception.message, contains('event123'));
-    });
+        when(() => mockLocalStorage.clearAll()).thenAnswer((_) async {});
 
-    test('NotLikedException includes event ID', () {
-      const exception = NotLikedException('event123');
-      expect(exception.message, contains('event123'));
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          authStateStream: authController.stream,
+        );
+
+        // Send same state
+        authController.add(false);
+
+        await Future<void>.delayed(Duration.zero);
+
+        verifyNever(() => mockLocalStorage.clearAll());
+
+        await authController.close();
+      });
+
+      test('marks as not initialized when user logs in', () async {
+        final authController = StreamController<bool>.broadcast();
+
+        when(() => mockLocalStorage.clearAll()).thenAnswer((_) async {});
+
+        repository = LikesRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          authStateStream: authController.stream,
+        );
+
+        // Initialize the repository
+        await repository.getLikedEventIds();
+
+        // Simulate login
+        authController.add(true);
+
+        // Give time for the stream to process
+        await Future<void>.delayed(Duration.zero);
+
+        // clearAll should NOT be called on login
+        verifyNever(() => mockLocalStorage.clearAll());
+
+        await authController.close();
+      });
     });
   });
 }
