@@ -42,16 +42,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Watch auth state stream for reactive updates when state changes
-    final authStateAsync = ref.watch(authStateStreamProvider);
+    // Watch auth state for reactive updates when state changes
+    final authState = ref.watch(currentAuthStateProvider);
     final authService = ref.watch(authServiceProvider);
-
-    // Handle stream loading/error states
-    final authState = authStateAsync.when(
-      data: (state) => state,
-      loading: () => AuthState.checking,
-      error: (_, __) => AuthState.unauthenticated,
-    );
 
     return Scaffold(
       body: Container(
@@ -145,9 +138,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                                 // Login option for existing users
                                 TextButton(
                                   onPressed: _canProceed
-                                      ? () => context.push(
-                                          WelcomeScreen.loginOptionsPath,
-                                        )
+                                      ? () {
+                                          authService.acceptTerms();
+                                          context.push(
+                                            WelcomeScreen.loginOptionsPath,
+                                          );
+                                        }
                                       : null,
                                   child: Text(
                                     'Have an account? Log In',

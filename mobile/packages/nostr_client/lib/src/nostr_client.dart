@@ -6,15 +6,15 @@ import 'package:db_client/db_client.dart' hide Filter;
 import 'package:meta/meta.dart';
 import 'package:nostr_client/src/models/models.dart';
 import 'package:nostr_client/src/relay_manager.dart';
-import 'package:nostr_gateway/nostr_gateway.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:nostr_sdk/utils/hash_util.dart';
 
 /// {@template nostr_client}
 /// Abstraction layer for Nostr communication
 ///
 /// This client wraps nostr_sdk and provides:
 /// - Subscription deduplication (prevents duplicate subscriptions)
-/// - Gateway integration for cached queries
+/// - Local database caching for faster queries
 /// - Clean API for repositories to use
 /// - Proper resource management
 /// - Relay management via RelayManager
@@ -31,7 +31,6 @@ class NostrClient {
   factory NostrClient({
     required NostrClientConfig config,
     required RelayManagerConfig relayManagerConfig,
-    GatewayClient? gatewayClient,
     AppDbClient? dbClient,
   }) {
     final nostr = _createNostr(config);
@@ -42,7 +41,6 @@ class NostrClient {
     return NostrClient._internal(
       nostr: nostr,
       relayManager: relayManager,
-      gatewayClient: gatewayClient,
       dbClient: dbClient,
     );
   }
@@ -51,11 +49,9 @@ class NostrClient {
   NostrClient._internal({
     required Nostr nostr,
     required RelayManager relayManager,
-    GatewayClient? gatewayClient,
     AppDbClient? dbClient,
   }) : _nostr = nostr,
        _relayManager = relayManager,
-       _gatewayClient = gatewayClient,
        _dbClient = dbClient;
 
   /// Creates a NostrClient with injected dependencies for testing
@@ -63,11 +59,9 @@ class NostrClient {
   NostrClient.forTesting({
     required Nostr nostr,
     required RelayManager relayManager,
-    GatewayClient? gatewayClient,
     AppDbClient? dbClient,
   }) : _nostr = nostr,
        _relayManager = relayManager,
-       _gatewayClient = gatewayClient,
        _dbClient = dbClient;
 
   static Nostr _createNostr(NostrClientConfig config) {
@@ -86,7 +80,6 @@ class NostrClient {
   }
 
   final Nostr _nostr;
-  final GatewayClient? _gatewayClient;
   final RelayManager _relayManager;
   final AppDbClient? _dbClient;
 
@@ -264,21 +257,18 @@ class NostrClient {
 
   /// Queries events with given filters
   ///
-  /// Query flow: **Cache + (Gateway → WebSocket)**
+  /// Query flow: **Cache + WebSocket**
   ///
   /// If [useCache] is `true` and cache is available, checks local cache first.
-  /// If [useGateway] is `true` and gateway is enabled, attempts to use
-  /// the REST gateway for cached responses (empty responses are valid).
-  /// Falls back to WebSocket query only if cache misses and gateway fails.
+  /// Then queries via WebSocket and merges results.
   ///
-  /// Results from gateway/websocket are cached for future queries.
+  /// Results from websocket are cached for future queries.
   Future<List<Event>> queryEvents(
     List<Filter> filters, {
     String? subscriptionId,
     List<String>? tempRelays,
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth = false,
-    bool useGateway = true,
     bool useCache = true,
   }) async {
     final cacheResults = <Event>[];
@@ -289,34 +279,7 @@ class NostrClient {
       cacheResults.addAll(await dao.getEventsByFilter(filters.first));
     }
 
-    // 2. Try gateway (fast REST)
-    if (useGateway && filters.length == 1) {
-      final gatewayClient = _gatewayClient;
-      if (gatewayClient != null) {
-        final response = await _tryGateway(
-          () => gatewayClient.query(filters.first),
-        );
-        // Accept gateway response even if empty - null means gateway failed
-        if (response != null) {
-          // Cache gateway results if any (fire-and-forget)
-          if (response.hasEvents) {
-            try {
-              unawaited(_nostrEventsDao?.upsertEventsBatch(response.events));
-            } on Object {
-              // Ignore cache errors
-            }
-          }
-          // Merge cache + gateway and return (respecting original limit)
-          return _mergeEvents(
-            cacheResults,
-            response.events,
-            limit: filters.first.limit,
-          );
-        }
-      }
-    }
-
-    // 3. Fall back to WebSocket query
+    // 2. Query via WebSocket
     final filtersJson = filters.map((f) => f.toJson()).toList();
     final websocketEvents = await _nostr.queryEvents(
       filtersJson,
@@ -336,8 +299,11 @@ class NostrClient {
     }
 
     // Merge cache + websocket and return (respecting original limit)
-    // Use first filter's limit since cache only works with single filters
-    final limit = filters.isNotEmpty ? filters.first.limit : null;
+    // Only apply limit when using a single filter - with multiple filters,
+    // each filter has its own limit and we shouldn't restrict the combined
+    // result set (e.g., getVideosByAddressableIds sends N filters with limit=1
+    // each, expecting N results total).
+    final limit = filters.length == 1 ? filters.first.limit : null;
     return _mergeEvents(cacheResults, websocketEvents, limit: limit);
   }
 
@@ -403,18 +369,15 @@ class NostrClient {
 
   /// Fetches a single event by ID
   ///
-  /// Query flow: **Cache → Gateway → WebSocket**
+  /// Query flow: **Cache → WebSocket**
   ///
   /// If [useCache] is `true` and cache is available, checks local cache first.
-  /// If [useGateway] is `true` and gateway is enabled, attempts to use
-  /// the REST gateway for faster cached responses.
-  /// Falls back to WebSocket query if both are unavailable.
+  /// Falls back to WebSocket query if cache miss.
   ///
-  /// Results from gateway/websocket are cached for future queries.
+  /// Results from websocket are cached for future queries.
   Future<Event?> fetchEventById(
     String eventId, {
     String? relayUrl,
-    bool useGateway = true,
     bool useCache = true,
   }) async {
     // 1. Check cache first
@@ -426,33 +389,13 @@ class NostrClient {
       }
     }
 
-    // 2. Try gateway
+    // 2. Query via WebSocket
     final targetRelays = relayUrl != null ? [relayUrl] : null;
-    if (useGateway) {
-      final gatewayClient = _gatewayClient;
-      if (gatewayClient != null) {
-        final event = await _tryGateway(
-          () => gatewayClient.getEvent(eventId),
-        );
-        if (event != null) {
-          // Cache gateway result (fire-and-forget)
-          try {
-            unawaited(_nostrEventsDao?.upsertEvent(event));
-          } on Object {
-            // Ignore cache errors
-          }
-          return event;
-        }
-      }
-    }
-
-    // 3. Fall back to WebSocket query
     final filters = [
       Filter(ids: [eventId], limit: 1),
     ];
     final events = await queryEvents(
       filters,
-      useGateway: false,
       useCache: false, // Already checked cache above
       tempRelays: targetRelays,
     );
@@ -471,17 +414,14 @@ class NostrClient {
 
   /// Fetches a profile (kind 0) by pubkey
   ///
-  /// Query flow: **Cache → Gateway → WebSocket**
+  /// Query flow: **Cache → WebSocket**
   ///
   /// If [useCache] is `true` and cache is available, checks local cache first.
-  /// If [useGateway] is `true` and gateway is enabled, attempts to use
-  /// the REST gateway for faster cached responses.
-  /// Falls back to WebSocket query if both are unavailable.
+  /// Falls back to WebSocket query if cache miss.
   ///
-  /// Results from gateway/websocket are cached for future queries.
+  /// Results from websocket are cached for future queries.
   Future<Event?> fetchProfile(
     String pubkey, {
-    bool useGateway = true,
     bool useCache = true,
   }) async {
     // 1. Check cache first
@@ -493,32 +433,12 @@ class NostrClient {
       }
     }
 
-    // 2. Try gateway
-    if (useGateway) {
-      final gatewayClient = _gatewayClient;
-      if (gatewayClient != null) {
-        final profile = await _tryGateway(
-          () => gatewayClient.getProfile(pubkey),
-        );
-        if (profile != null) {
-          // Cache gateway result (fire-and-forget)
-          try {
-            unawaited(_nostrEventsDao?.upsertEvent(profile));
-          } on Object {
-            // Ignore cache errors
-          }
-          return profile;
-        }
-      }
-    }
-
-    // 3. Fall back to WebSocket query
+    // 2. Query via WebSocket
     final filters = [
       Filter(authors: [pubkey], kinds: [EventKind.metadata], limit: 1),
     ];
     final events = await queryEvents(
       filters,
-      useGateway: false,
       useCache: false, // Already checked cache above
     );
     if (events.isNotEmpty) {
@@ -920,6 +840,32 @@ class NostrClient {
     return subscribe([filter]);
   }
 
+  /// Creates a NIP-98 HTTP authentication header.
+  ///
+  /// Generates a signed kind 27235 event containing the [url] and [method],
+  /// plus an optional SHA256 hash of the [payload]. Returns the header value
+  /// in the format `Nostr <base64-encoded-event>`.
+  Future<String?> createNip98AuthHeader({
+    required String url,
+    required String method,
+    String? payload,
+  }) async {
+    final tags = [
+      ['u', url],
+      ['method', method],
+      if (payload != null)
+        ['payload', HashUtil.sha256Bytes(utf8.encode(payload))],
+    ];
+    final nip98Event = Event(_nostr.publicKey, EventKind.httpAuth, tags, '');
+    await _nostr.signEvent(nip98Event);
+
+    if (nip98Event.id.isEmpty || nip98Event.sig.isEmpty) return null;
+
+    final eventJson = jsonEncode(nip98Event.toJson());
+    final base64Event = base64Encode(utf8.encode(eventJson));
+    return 'Nostr $base64Event';
+  }
+
   /// Disposes the client and cleans up resources
   ///
   /// Closes all subscriptions, disconnects from relays, and cleans up
@@ -988,27 +934,5 @@ class NostrClient {
     }
 
     return merged;
-  }
-
-  /// Attempts to execute a gateway operation
-  /// (e.g. query events, fetch events, fetch profiles),
-  /// falling back gracefully on failure
-  ///
-  /// Returns the result if successful, or `null` if gateway is unavailable
-  /// or the operation fails. Only falls back for recoverable errors (network,
-  /// timeouts, server errors). Client errors (4xx) are not retried.
-  Future<T?> _tryGateway<T>(
-    Future<T> Function() operation, {
-    bool shouldFallback = true,
-  }) async {
-    if (_gatewayClient == null) {
-      return null;
-    }
-
-    try {
-      return await operation();
-    } on Exception catch (_) {
-      return null;
-    }
   }
 }

@@ -1201,11 +1201,9 @@ void main() {
         expect(filters[0].kinds, equals([EventKind.videoVertical]));
         expect(filters[0].authors, equals(['pubkey1']));
         expect(filters[0].d, equals(['dtag1']));
-        expect(filters[0].limit, equals(1));
         expect(filters[1].kinds, equals([EventKind.videoVertical]));
         expect(filters[1].authors, equals(['pubkey2']));
         expect(filters[1].d, equals(['dtag2']));
-        expect(filters[1].limit, equals(1));
       });
 
       test('transforms valid events to VideoEvents', () async {

@@ -278,22 +278,25 @@ void main() {
       expect(find.text('Complete Your Profile'), findsNothing);
     });
 
-    testWidgets('returns empty widget for others profile with null profile', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        buildTestWidget(
-          userIdHex: testUserHex,
-          isOwnProfile: false,
-          profileStatsAsync: AsyncValue.data(createTestStats()),
-          profile: null,
-        ),
-      );
-      await tester.pumpAndSettle();
+    testWidgets(
+      'renders fallback content for others profile with null profile',
+      (tester) async {
+        // With the classic Viners feature, profiles without Kind 0 events
+        // can still be displayed using hint values as fallbacks
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: false,
+            profileStatsAsync: AsyncValue.data(createTestStats()),
+            profile: null,
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      // Should render SizedBox.shrink() - no UserAvatar visible
-      expect(find.byType(ProfileHeaderWidget), findsOneWidget);
-      expect(find.byType(UserAvatar), findsNothing);
-    });
+        // Should render with fallback/default avatar (not empty)
+        expect(find.byType(ProfileHeaderWidget), findsOneWidget);
+        expect(find.byType(UserAvatar), findsOneWidget);
+      },
+    );
   });
 }

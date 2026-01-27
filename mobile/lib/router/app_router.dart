@@ -15,6 +15,7 @@ import 'package:openvine/router/app_shell.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/auth/divine_auth_screen.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
+import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
@@ -286,7 +287,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           (location == WelcomeScreen.path ||
               location == KeyImportScreen.path ||
               location == WelcomeScreen.loginOptionsPath ||
-              location == WelcomeScreen.resetPasswordPath)) {
+              location == WelcomeScreen.resetPasswordPath ||
+              location == EmailVerificationScreen.path)) {
         debugPrint('[Router] Authenticated. moving to /home/0');
         return HomeScreenRouter.pathForIndex(0);
       }
@@ -295,7 +297,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final isAuthRoute =
           location.startsWith(WelcomeScreen.path) ||
           location.startsWith(KeyImportScreen.path) ||
-          location.startsWith(WelcomeScreen.resetPasswordPath);
+          location.startsWith(WelcomeScreen.resetPasswordPath) ||
+          location.startsWith(EmailVerificationScreen.path);
 
       // Check TOS acceptance for non-auth routes
       if (!isAuthRoute) {
@@ -705,6 +708,22 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return '${WelcomeScreen.resetPasswordPath}?token=$token';
         },
       ),
+      // Email verification route - supports both modes:
+      // - Token mode (deep link): /verify-email?token=xyz
+      // - Polling mode (after registration): /verify-email?deviceCode=abc&verifier=def&email=user@example.com
+      GoRoute(
+        path: EmailVerificationScreen.path,
+        name: EmailVerificationScreen.routeName,
+        builder: (context, state) {
+          final params = state.uri.queryParameters;
+          return EmailVerificationScreen(
+            token: params['token'],
+            deviceCode: params['deviceCode'],
+            verifier: params['verifier'],
+            email: params['email'],
+          );
+        },
+      ),
       GoRoute(
         path: SettingsScreen.path,
         name: SettingsScreen.routeName,
@@ -969,7 +988,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               body: const Center(child: Text('Invalid profile ID')),
             );
           }
-          return OtherProfileScreen(npub: npub);
+          // Extract profile hints from extra (for users without Kind 0 profiles)
+          final extra = st.extra as Map<String, String?>?;
+          final displayNameHint = extra?['displayName'];
+          final avatarUrlHint = extra?['avatarUrl'];
+          return OtherProfileScreen(
+            npub: npub,
+            displayNameHint: displayNameHint,
+            avatarUrlHint: avatarUrlHint,
+          );
         },
       ),
     ],

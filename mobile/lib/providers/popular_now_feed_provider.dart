@@ -1,6 +1,7 @@
 // ABOUTME: PopularNow feed provider showing newest videos with REST API + Nostr fallback
 // ABOUTME: Tries Funnelcake REST API first, falls back to Nostr subscription if unavailable
 
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/helpers/video_feed_builder.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
@@ -29,9 +30,14 @@ part 'popular_now_feed_provider.g.dart';
 class PopularNowFeed extends _$PopularNowFeed {
   VideoFeedBuilder? _builder;
   bool _usingRestApi = false;
+  int? _nextCursor; // Cursor for REST API pagination
 
   @override
   Future<VideoFeedState> build() async {
+    // Reset cursor state at start of build to ensure clean state
+    _usingRestApi = false;
+    _nextCursor = null;
+
     // Watch appReady gate - provider rebuilds when this changes
     final isAppReady = ref.watch(appReadyProvider);
 
@@ -57,9 +63,11 @@ class PopularNowFeed extends _$PopularNowFeed {
       );
     }
 
-    // Try REST API first if available
+    // Try REST API first if available (use centralized availability check)
+    final funnelcakeAvailable =
+        ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
     final analyticsService = ref.read(analyticsApiServiceProvider);
-    if (analyticsService.isAvailable) {
+    if (funnelcakeAvailable) {
       Log.info(
         '🆕 PopularNowFeed: Trying Funnelcake REST API first',
         name: 'PopularNowFeedProvider',
@@ -70,8 +78,10 @@ class PopularNowFeed extends _$PopularNowFeed {
         final apiVideos = await analyticsService.getRecentVideos(limit: 100);
         if (apiVideos.isNotEmpty) {
           _usingRestApi = true;
+          // Store cursor for pagination (oldest video timestamp)
+          _nextCursor = _getOldestTimestamp(apiVideos);
           Log.info(
-            '✅ PopularNowFeed: Got ${apiVideos.length} videos from REST API',
+            '✅ PopularNowFeed: Got ${apiVideos.length} videos from REST API, cursor: $_nextCursor',
             name: 'PopularNowFeedProvider',
             category: LogCategory.video,
           );
@@ -83,7 +93,8 @@ class PopularNowFeed extends _$PopularNowFeed {
 
           return VideoFeedState(
             videos: filteredVideos,
-            hasMoreContent: filteredVideos.length >= 50,
+            hasMoreContent:
+                apiVideos.length >= AppConstants.paginationBatchSize,
             isLoadingMore: false,
             lastUpdated: DateTime.now(),
           );
@@ -197,38 +208,75 @@ class PopularNowFeed extends _$PopularNowFeed {
     state = AsyncData(currentState.copyWith(isLoadingMore: true));
 
     try {
-      // If using REST API, load more from there
+      // If using REST API, load more using cursor-based pagination
       if (_usingRestApi) {
         final analyticsService = ref.read(analyticsApiServiceProvider);
-        final currentCount = currentState.videos.length;
-        final newLimit = currentCount + 50;
-
-        final apiVideos = await analyticsService.getRecentVideos(
-          limit: newLimit,
-          forceRefresh: true,
-        );
-
-        if (!ref.mounted) return;
-
-        final filteredVideos = apiVideos
-            .where((v) => v.isSupportedOnCurrentPlatform)
-            .toList();
-        final newEventsLoaded = filteredVideos.length - currentCount;
 
         Log.info(
-          '🆕 PopularNowFeed: Loaded $newEventsLoaded new videos from REST API (total: ${filteredVideos.length})',
+          '🆕 PopularNowFeed: Loading more from REST API with cursor: $_nextCursor',
           name: 'PopularNowFeedProvider',
           category: LogCategory.video,
         );
 
-        state = AsyncData(
-          VideoFeedState(
-            videos: filteredVideos,
-            hasMoreContent: newEventsLoaded > 0,
-            isLoadingMore: false,
-            lastUpdated: DateTime.now(),
-          ),
+        // Use cursor (before parameter) for pagination
+        final apiVideos = await analyticsService.getRecentVideos(
+          limit: 50,
+          before: _nextCursor,
         );
+
+        if (!ref.mounted) return;
+
+        if (apiVideos.isNotEmpty) {
+          // Deduplicate and merge
+          final existingIds = currentState.videos.map((v) => v.id).toSet();
+          final newVideos = apiVideos
+              .where((v) => !existingIds.contains(v.id))
+              .where((v) => v.isSupportedOnCurrentPlatform)
+              .toList();
+
+          // Update cursor for next pagination
+          _nextCursor = _getOldestTimestamp(apiVideos);
+
+          if (newVideos.isNotEmpty) {
+            final allVideos = [...currentState.videos, ...newVideos];
+            Log.info(
+              '🆕 PopularNowFeed: Loaded ${newVideos.length} new videos from REST API (total: ${allVideos.length})',
+              name: 'PopularNowFeedProvider',
+              category: LogCategory.video,
+            );
+
+            state = AsyncData(
+              VideoFeedState(
+                videos: allVideos,
+                hasMoreContent:
+                    apiVideos.length >= AppConstants.paginationBatchSize,
+                isLoadingMore: false,
+                lastUpdated: DateTime.now(),
+              ),
+            );
+          } else {
+            Log.info(
+              '🆕 PopularNowFeed: All returned videos already in state',
+              name: 'PopularNowFeedProvider',
+              category: LogCategory.video,
+            );
+            state = AsyncData(
+              currentState.copyWith(
+                hasMoreContent: false,
+                isLoadingMore: false,
+              ),
+            );
+          }
+        } else {
+          Log.info(
+            '🆕 PopularNowFeed: No more videos available from REST API',
+            name: 'PopularNowFeedProvider',
+            category: LogCategory.video,
+          );
+          state = AsyncData(
+            currentState.copyWith(hasMoreContent: false, isLoadingMore: false),
+          );
+        }
         return;
       }
 
@@ -307,7 +355,8 @@ class PopularNowFeed extends _$PopularNowFeed {
     state = AsyncData(
       VideoFeedState(
         videos: updatedVideos,
-        hasMoreContent: updatedVideos.length >= 10,
+        hasMoreContent:
+            updatedVideos.length >= AppConstants.hasMoreContentThreshold,
         isLoadingMore: false,
         lastUpdated: DateTime.now(),
       ),
@@ -331,7 +380,13 @@ class PopularNowFeed extends _$PopularNowFeed {
           forceRefresh: true,
         );
 
+        // Check if provider is still mounted after async gap
+        if (!ref.mounted) return;
+
         if (apiVideos.isNotEmpty) {
+          // Reset cursor for pagination
+          _nextCursor = _getOldestTimestamp(apiVideos);
+
           final filteredVideos = apiVideos
               .where((v) => v.isSupportedOnCurrentPlatform)
               .toList();
@@ -339,14 +394,15 @@ class PopularNowFeed extends _$PopularNowFeed {
           state = AsyncData(
             VideoFeedState(
               videos: filteredVideos,
-              hasMoreContent: filteredVideos.length >= 50,
+              hasMoreContent:
+                  apiVideos.length >= AppConstants.paginationBatchSize,
               isLoadingMore: false,
               lastUpdated: DateTime.now(),
             ),
           );
 
           Log.info(
-            '✅ PopularNowFeed: Refreshed ${filteredVideos.length} videos from REST API',
+            '✅ PopularNowFeed: Refreshed ${filteredVideos.length} videos from REST API, cursor: $_nextCursor',
             name: 'PopularNowFeedProvider',
             category: LogCategory.video,
           );
@@ -361,8 +417,18 @@ class PopularNowFeed extends _$PopularNowFeed {
       }
     }
 
+    // Reset cursor state before invalidating
+    _usingRestApi = false;
+    _nextCursor = null;
+
     // Invalidate to re-run build() which will try REST API then Nostr
     ref.invalidateSelf();
+  }
+
+  /// Get oldest timestamp from videos for cursor pagination
+  int? _getOldestTimestamp(List<VideoEvent> videos) {
+    if (videos.isEmpty) return null;
+    return videos.map((v) => v.createdAt).reduce((a, b) => a < b ? a : b);
   }
 }
 

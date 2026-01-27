@@ -223,8 +223,9 @@ class ProfileRepostedVideosBloc
           );
         }
 
-        // If a video was reposted, we need to fetch it asynchronously
-        // For now, just update the IDs - the video will be fetched on next sync
+        // If a video was reposted, we need to fetch it asynchronously.
+        // For now, just update the IDs - the video will be fetched on next
+        // sync.
         if (newIds.length > state.repostedAddressableIds.length) {
           return state.copyWith(repostedAddressableIds: newIds);
         }
