@@ -57,6 +57,10 @@ class CameraController(
     private var currentFlashMode: Int = ImageCapture.FLASH_MODE_OFF
     private var isTorchEnabled: Boolean = false
     private var isRecording: Boolean = false
+    private var recordingTrulyStarted: Boolean = false
+    
+    // Callback for startRecording - called when recording truly starts or is aborted
+    private var startRecordingCallback: ((String?) -> Unit)? = null
     private var isPaused: Boolean = false
 
     // Screen brightness for front camera "torch" mode
@@ -115,6 +119,15 @@ class CameraController(
         }
 
         checkCameraAvailability()
+
+        // Fallback to available camera if requested camera is not available
+        if (currentLens == CameraSelector.LENS_FACING_FRONT && !hasFrontCamera && hasBackCamera) {
+            Log.w(TAG, "Front camera requested but not available, falling back to back camera")
+            currentLens = CameraSelector.LENS_FACING_BACK
+        } else if (currentLens == CameraSelector.LENS_FACING_BACK && !hasBackCamera && hasFrontCamera) {
+            Log.w(TAG, "Back camera requested but not available, falling back to front camera")
+            currentLens = CameraSelector.LENS_FACING_FRONT
+        }
 
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         cameraProviderFuture.addListener({
@@ -730,8 +743,8 @@ class CameraController(
 
             val outputOptions = FileOutputOptions.Builder(outputFile).build()
 
-            // Flag to ensure callback is only called once (when recording truly starts)
-            var callbackCalled = false
+            // Store callback so it can be called from Finalize if recording is stopped early
+            startRecordingCallback = callback
 
             recording = videoCap.output
                 .prepareRecording(context, outputOptions)
@@ -750,8 +763,8 @@ class CameraController(
                             // Status events are sent continuously during recording
                             // When recordedDurationNanos > 0, the encoder is truly recording frames
                             val durationNanos = event.recordingStats.recordedDurationNanos
-                            if (!callbackCalled && durationNanos > 0) {
-                                callbackCalled = true
+                            if (startRecordingCallback != null && durationNanos > 0) {
+                                recordingTrulyStarted = true
                                 recordingStartTime = System.currentTimeMillis()
                                 Log.d(
                                     TAG,
@@ -773,12 +786,15 @@ class CameraController(
                                     )
                                 }
 
-                                callback(null)
+                                // Notify Flutter that recording truly started
+                                startRecordingCallback?.invoke(null)
+                                startRecordingCallback = null
                             }
                         }
 
                         is VideoRecordEvent.Finalize -> {
                             isRecording = false
+                            recordingTrulyStarted = false
                             // Cancel any pending auto-stop
                             maxDurationRunnable?.let { mainHandler.removeCallbacks(it) }
                             maxDurationRunnable = null
@@ -789,26 +805,51 @@ class CameraController(
                                 Log.d(TAG, "Recording finalized")
                             }
 
-                            // Handle auto-stop callback
+                            // If startRecordingCallback is still set, recording was stopped before first keyframe
+                            // We need to notify Flutter that recording failed to start properly
+                            startRecordingCallback?.let { startCallback ->
+                                Log.w(TAG, "Recording stopped before first keyframe - notifying Flutter")
+                                startCallback("Recording stopped before first keyframe")
+                                startRecordingCallback = null
+                            }
+
+                            // Build the result map once
+                            val file = currentRecordingFile
+                            val result = if (file != null && file.exists() && file.length() > 0) {
+                                val duration = System.currentTimeMillis() - recordingStartTime
+                                mapOf(
+                                    "filePath" to file.absolutePath,
+                                    "durationMs" to duration.toInt(),
+                                    "width" to videoWidth,
+                                    "height" to videoHeight
+                                )
+                            } else null
+
+                            // Handle manual stop callback (from stopRecording)
+                            manualStopCallback?.let { manualCallback ->
+                                if (result != null) {
+                                    Log.d(TAG, "Manual stop recording result: $result")
+                                    manualCallback(result, null)
+                                } else {
+                                    Log.w(TAG, "Manual stop: Recording file not found or empty")
+                                    manualCallback(null, "Recording file not found or empty")
+                                }
+                                manualStopCallback = null
+                            }
+
+                            // Handle auto-stop callback (from max duration)
                             autoStopCallback?.let { autoCallback ->
-                                val file = currentRecordingFile
-                                if (file != null && file.exists()) {
-                                    val duration = System.currentTimeMillis() - recordingStartTime
-                                    val result = mapOf(
-                                        "filePath" to file.absolutePath,
-                                        "durationMs" to duration.toInt(),
-                                        "width" to videoWidth,
-                                        "height" to videoHeight
-                                    )
+                                if (result != null) {
                                     Log.d(TAG, "Auto-stop recording result: $result")
                                     autoCallback(result, null)
                                 } else {
                                     autoCallback(null, "Recording file not found")
                                 }
                                 autoStopCallback = null
-                                currentRecordingFile = null
-                                recording = null
                             }
+
+                            currentRecordingFile = null
+                            recording = null
                         }
                     }
                 }
@@ -816,6 +857,7 @@ class CameraController(
 
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start recording", e)
+            startRecordingCallback = null
             callback("Failed to start recording: ${e.message}")
         }
     }
@@ -845,8 +887,12 @@ class CameraController(
         // The Finalize event will handle the callback via autoStopCallback
     }
 
+    // Callback for manual stop recording - will be invoked when Finalize event fires
+    private var manualStopCallback: ((Map<String, Any>?, String?) -> Unit)? = null
+
     /**
      * Stops video recording and returns the result.
+     * Waits for the Finalize event to ensure the file is fully written.
      */
     fun stopRecording(callback: (Map<String, Any>?, String?) -> Unit) {
         val currentRecording = recording
@@ -856,32 +902,25 @@ class CameraController(
             return
         }
 
+        // If recording hasn't truly started yet (no keyframe), we need to handle this
+        if (!recordingTrulyStarted) {
+            Log.w(TAG, "Stopping recording before first keyframe - will return empty result")
+            // The startRecordingCallback will be notified via Finalize event
+            // We still need to call manualStopCallback, but it will get null result
+        }
+
         try {
             Log.d(TAG, "Stopping recording...")
+            
+            // Store callback to be invoked when Finalize event fires
+            manualStopCallback = callback
+            
             currentRecording.stop()
-
-            // Wait for file to be finalized
-            mainHandler.postDelayed({
-                val file = currentRecordingFile
-                if (file != null && file.exists()) {
-                    val duration = System.currentTimeMillis() - recordingStartTime
-                    val result = mapOf(
-                        "filePath" to file.absolutePath,
-                        "durationMs" to duration.toInt(),
-                        "width" to videoWidth,
-                        "height" to videoHeight
-                    )
-                    Log.d(TAG, "Recording stopped: $result")
-                    callback(result, null)
-                } else {
-                    callback(null, "Recording file not found")
-                }
-                currentRecordingFile = null
-                recording = null
-            }, 200)
+            // The Finalize event handler will call the callback when file is ready
 
         } catch (e: Exception) {
             Log.e(TAG, "Failed to stop recording", e)
+            manualStopCallback = null
             callback(null, "Failed to stop recording: ${e.message}")
         }
     }

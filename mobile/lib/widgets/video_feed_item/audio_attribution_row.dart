@@ -11,6 +11,7 @@ import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// A tappable row showing audio attribution when a video uses external audio.
@@ -88,7 +89,8 @@ class _AudioAttributionContent extends ConsumerWidget {
     }
 
     final creatorName =
-        creatorProfile?.bestDisplayName ?? _formatPubkeyShort(audio.pubkey);
+        creatorProfile?.bestDisplayName ??
+        NostrKeyUtils.truncateNpub(audio.pubkey);
     final soundName = audio.title ?? 'Original sound';
 
     return GestureDetector(
@@ -151,10 +153,6 @@ class _AudioAttributionContent extends ConsumerWidget {
   }
 
   /// Format pubkey for display (short version with ellipsis in middle).
-  String _formatPubkeyShort(String pubkey) {
-    if (pubkey.length <= 12) return pubkey;
-    return '${pubkey.substring(0, 6)}...${pubkey.substring(pubkey.length - 4)}';
-  }
 }
 
 /// Skeleton loading state for audio attribution.

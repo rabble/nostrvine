@@ -13,6 +13,7 @@ import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -358,7 +359,9 @@ class _NotificationItem extends ConsumerWidget {
     final profile = userProfileService.getCachedProfile(
       notification.actorPubkey,
     );
-    final userName = profile?.bestDisplayName ?? 'Unknown User';
+    final userName =
+        profile?.bestDisplayName ??
+        NostrKeyUtils.truncateNpub(notification.actorPubkey);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -480,7 +483,7 @@ class _FollowingItem extends StatelessWidget {
         children: [
           Flexible(
             child: Text(
-              profile?.bestDisplayName ?? 'Unknown User',
+              profile?.bestDisplayName ?? NostrKeyUtils.truncateNpub(pubkey),
               style: const TextStyle(
                 color: VineTheme.whiteText,
                 fontWeight: FontWeight.bold,

@@ -29,7 +29,8 @@ import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
-import 'package:openvine/screens/video_editor_screen.dart';
+import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
+import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
@@ -44,6 +45,7 @@ enum RouteType {
   hashtag, // Still supported as push route within explore
   search,
   videoRecorder, // Video recorder screen
+  videoClipEditor, // Video clip editor screen
   videoEditor, // Video editor screen
   videoMetadata, // Video editor meta screen
   importKey,
@@ -233,6 +235,9 @@ RouteContext parseRoute(String path) {
     case 'video-editor':
       return const RouteContext(type: RouteType.videoEditor);
 
+    case 'video-clip-editor':
+      return const RouteContext(type: RouteType.videoClipEditor);
+
     case 'video-metadata':
       return const RouteContext(type: RouteType.videoMetadata);
 
@@ -401,6 +406,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.videoEditor:
       return VideoEditorScreen.path;
+
+    case RouteType.videoClipEditor:
+      return VideoClipEditorScreen.path;
 
     case RouteType.videoMetadata:
       return VideoMetadataScreen.path;

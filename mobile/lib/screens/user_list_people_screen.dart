@@ -14,6 +14,7 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 
 class UserListPeopleScreen extends ConsumerStatefulWidget {
@@ -256,7 +257,8 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen> {
                       UserAvatar(imageUrl: profile?.picture, size: 64),
                       const SizedBox(height: 6),
                       Text(
-                        profile?.bestDisplayName ?? 'Loading...',
+                        profile?.bestDisplayName ??
+                            NostrKeyUtils.truncateNpub(pubkey),
                         style: const TextStyle(
                           color: VineTheme.whiteText,
                           fontSize: 12,

@@ -195,7 +195,8 @@ void main() {
       await tester.pumpAndSettle();
 
       // CRITICAL: Even without profile data, verify npub is shown, not raw hex
-      expect(find.textContaining('npub1'), findsOneWidget);
+      // May find multiple npub references (truncated + full in different places)
+      expect(find.textContaining('npub1'), findsWidgets);
       expect(find.textContaining(testPubkey), findsNothing);
     });
   });

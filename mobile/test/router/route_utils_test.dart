@@ -8,7 +8,8 @@ import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/settings_screen.dart';
-import 'package:openvine/screens/video_editor_screen.dart';
+import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
+import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 
@@ -131,6 +132,12 @@ void main() {
       expect(buildRoute(context), VideoRecorderScreen.path);
     });
 
+    test('builds video-clip-editor route', () {
+      final context = RouteContext(type: RouteType.videoClipEditor);
+
+      expect(buildRoute(context), VideoClipEditorScreen.path);
+    });
+
     test('builds video-editor route', () {
       final context = RouteContext(type: RouteType.videoEditor);
 
@@ -164,7 +171,7 @@ void main() {
         ProfileScreenRouter.pathForIndex('npub1abc123', 2),
         HashtagScreenRouter.pathForTag('nostr', index: 1),
         VideoRecorderScreen.path,
-        VideoEditorScreen.path,
+        VideoClipEditorScreen.path,
         VideoMetadataScreen.path,
         SettingsScreen.path,
       ];

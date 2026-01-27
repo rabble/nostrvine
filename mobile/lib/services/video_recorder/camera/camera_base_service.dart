@@ -61,7 +61,7 @@ abstract class CameraService {
   Future<bool> switchCamera();
 
   /// Starts video recording.
-  Future<void> startRecording({Duration? maxDuration});
+  Future<bool> startRecording({Duration? maxDuration});
 
   /// Stops video recording.
   Future<EditorVideo?> stopRecording();

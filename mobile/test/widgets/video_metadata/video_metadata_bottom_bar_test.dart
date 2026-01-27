@@ -30,8 +30,8 @@ void main() {
           child: MaterialApp(home: Scaffold(body: VideoMetadataBottomBar())),
         ),
       );
-
-      expect(find.text('Save draft'), findsOneWidget);
+      // TODO(@hm21): Once the Drafts library exists, uncomment below
+      // expect(find.text('Save draft'), findsOneWidget);
       expect(find.text('Post'), findsOneWidget);
     });
 
@@ -123,7 +123,8 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(saveAsDraftCalled, isTrue);
-    });
+      // TODO(@hm21): Once the Drafts library exists, remove skip below
+    }, skip: true);
 
     testWidgets('tapping Post button calls postVideo when valid', (
       tester,
