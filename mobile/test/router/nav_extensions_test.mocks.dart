@@ -229,6 +229,14 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i4.Future<void>);
 
   @override
+  _i4.Future<(bool, String?)> deleteKeycastAccount() =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteKeycastAccount, []),
+            returnValue: _i4.Future<(bool, String?)>.value((false, null)),
+          )
+          as _i4.Future<(bool, String?)>);
+
+  @override
   _i4.Future<void> signOut({bool? deleteKeys = false}) =>
       (super.noSuchMethod(
             Invocation.method(#signOut, [], {#deleteKeys: deleteKeys}),
@@ -274,6 +282,15 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
             returnValue: _i4.Future<_i7.Event?>.value(),
           )
           as _i4.Future<_i7.Event?>);
+
+  @override
+  _i4.Future<void> acceptTerms() =>
+      (super.noSuchMethod(
+            Invocation.method(#acceptTerms, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
 
   @override
   _i4.Future<void> dispose() =>
@@ -410,7 +427,6 @@ class MockNostrClient extends _i1.Mock implements _i8.NostrClient {
     List<String>? tempRelays,
     List<int>? relayTypes = const [1, 2, 3, 4],
     bool? sendAfterAuth = false,
-    bool? useGateway = true,
     bool? useCache = true,
   }) =>
       (super.noSuchMethod(
@@ -422,7 +438,6 @@ class MockNostrClient extends _i1.Mock implements _i8.NostrClient {
                 #tempRelays: tempRelays,
                 #relayTypes: relayTypes,
                 #sendAfterAuth: sendAfterAuth,
-                #useGateway: useGateway,
                 #useCache: useCache,
               },
             ),
@@ -471,18 +486,13 @@ class MockNostrClient extends _i1.Mock implements _i8.NostrClient {
   _i4.Future<_i7.Event?> fetchEventById(
     String? eventId, {
     String? relayUrl,
-    bool? useGateway = true,
     bool? useCache = true,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
               #fetchEventById,
               [eventId],
-              {
-                #relayUrl: relayUrl,
-                #useGateway: useGateway,
-                #useCache: useCache,
-              },
+              {#relayUrl: relayUrl, #useCache: useCache},
             ),
             returnValue: _i4.Future<_i7.Event?>.value(),
           )
@@ -491,15 +501,10 @@ class MockNostrClient extends _i1.Mock implements _i8.NostrClient {
   @override
   _i4.Future<_i7.Event?> fetchProfile(
     String? pubkey, {
-    bool? useGateway = true,
     bool? useCache = true,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(
-              #fetchProfile,
-              [pubkey],
-              {#useGateway: useGateway, #useCache: useCache},
-            ),
+            Invocation.method(#fetchProfile, [pubkey], {#useCache: useCache}),
             returnValue: _i4.Future<_i7.Event?>.value(),
           )
           as _i4.Future<_i7.Event?>);
@@ -656,6 +661,28 @@ class MockNostrClient extends _i1.Mock implements _i8.NostrClient {
           as _i4.Future<_i7.Event?>);
 
   @override
+  _i4.Future<_i7.Event?> sendGenericRepost({
+    required String? addressableId,
+    required int? targetKind,
+    required String? authorPubkey,
+    String? content = '',
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendGenericRepost, [], {
+              #addressableId: addressableId,
+              #targetKind: targetKind,
+              #authorPubkey: authorPubkey,
+              #content: content,
+              #tempRelays: tempRelays,
+              #targetRelays: targetRelays,
+            }),
+            returnValue: _i4.Future<_i7.Event?>.value(),
+          )
+          as _i4.Future<_i7.Event?>);
+
+  @override
   _i4.Future<_i7.Event?> deleteEvent(
     String? eventId, {
     List<String>? tempRelays,
@@ -729,6 +756,22 @@ class MockNostrClient extends _i1.Mock implements _i8.NostrClient {
             returnValue: _i4.Stream<_i7.Event>.empty(),
           )
           as _i4.Stream<_i7.Event>);
+
+  @override
+  _i4.Future<String?> createNip98AuthHeader({
+    required String? url,
+    required String? method,
+    String? payload,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#createNip98AuthHeader, [], {
+              #url: url,
+              #method: method,
+              #payload: payload,
+            }),
+            returnValue: _i4.Future<String?>.value(),
+          )
+          as _i4.Future<String?>);
 
   @override
   _i4.Future<void> dispose() =>
@@ -1185,6 +1228,15 @@ class MockVideoEventService extends _i1.Mock implements _i10.VideoEventService {
   _i4.Future<void> refreshVideoFeed() =>
       (super.noSuchMethod(
             Invocation.method(#refreshVideoFeed, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  _i4.Future<void> resetAndResubscribeAll() =>
+      (super.noSuchMethod(
+            Invocation.method(#resetAndResubscribeAll, []),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )

@@ -94,9 +94,9 @@ final activeVideoIdProvider = Provider<String?>((ref) {
       );
       return null;
     case RouteType.notifications:
-    case RouteType.camera:
-    case RouteType.clipManager:
-    case RouteType.editVideo:
+    case RouteType.videoRecorder:
+    case RouteType.videoEditor:
+    case RouteType.videoMetadata:
     case RouteType.settings:
     case RouteType.relaySettings:
     case RouteType.relayDiagnostic:

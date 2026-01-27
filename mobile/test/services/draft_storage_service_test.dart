@@ -1,11 +1,11 @@
 // ABOUTME: TDD tests for DraftStorageService - persistent storage for vine drafts
 // ABOUTME: Tests save, load, delete, and clear operations using shared_preferences
 
-import 'dart:io';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/recording_clip.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -23,11 +23,18 @@ void main() {
     group('saveDraft', () {
       test('should save a draft to storage', () async {
         final draft = VineDraft.create(
-          videoFile: File('/path/to/video.mp4'),
+          clips: [
+            RecordingClip(
+              id: 'test_clip',
+              video: EditorVideo.file('/path/to/video.mp4'),
+              duration: Duration(seconds: 6),
+              recordedAt: DateTime.now(),
+              aspectRatio: AspectRatio.square,
+            ),
+          ],
           title: 'Test Vine',
           description: 'A test description',
-          hashtags: ['test', 'vine'],
-          frameCount: 30,
+          hashtags: {'test', 'vine'},
           selectedApproach: 'hybrid',
         );
 
@@ -39,7 +46,6 @@ void main() {
         expect(drafts.first.title, 'Test Vine');
         expect(drafts.first.description, 'A test description');
         expect(drafts.first.hashtags, ['test', 'vine']);
-        expect(drafts.first.frameCount, 30);
         expect(drafts.first.selectedApproach, 'hybrid');
       });
 
@@ -47,34 +53,46 @@ void main() {
         final now = DateTime.now();
         final draft1 = VineDraft(
           id: 'draft_1',
-          videoFile: File('/path/to/video1.mp4'),
+          clips: [
+            RecordingClip(
+              id: 'clip_1',
+              video: EditorVideo.file('/path/to/video1.mp4'),
+              duration: Duration(seconds: 6),
+              recordedAt: now,
+              aspectRatio: AspectRatio.square,
+            ),
+          ],
           title: 'First Vine',
           description: 'First',
-          hashtags: ['first'],
-          frameCount: 30,
+          hashtags: {'first'},
           selectedApproach: 'hybrid',
           createdAt: now,
           lastModified: now,
           publishStatus: PublishStatus.draft,
           publishError: null,
           publishAttempts: 0,
-          aspectRatio: AspectRatio.square,
         );
 
         final draft2 = VineDraft(
           id: 'draft_2',
-          videoFile: File('/path/to/video2.mp4'),
+          clips: [
+            RecordingClip(
+              id: 'clip_2',
+              video: EditorVideo.file('/path/to/video2.mp4'),
+              duration: Duration(seconds: 6),
+              recordedAt: now,
+              aspectRatio: AspectRatio.square,
+            ),
+          ],
           title: 'Second Vine',
           description: 'Second',
-          hashtags: ['second'],
-          frameCount: 45,
+          hashtags: {'second'},
           selectedApproach: 'imageSequence',
           createdAt: now,
           lastModified: now,
           publishStatus: PublishStatus.draft,
           publishError: null,
           publishAttempts: 0,
-          aspectRatio: AspectRatio.square,
         );
 
         await service.saveDraft(draft1);
@@ -88,11 +106,18 @@ void main() {
 
       test('should update existing draft if ID matches', () async {
         final draft = VineDraft.create(
-          videoFile: File('/path/to/video.mp4'),
+          clips: [
+            RecordingClip(
+              id: 'test_clip',
+              video: EditorVideo.file('/path/to/video.mp4'),
+              duration: Duration(seconds: 6),
+              recordedAt: DateTime.now(),
+              aspectRatio: AspectRatio.square,
+            ),
+          ],
           title: 'Original Title',
           description: 'Original',
-          hashtags: ['original'],
-          frameCount: 30,
+          hashtags: {'original'},
           selectedApproach: 'hybrid',
         );
 
@@ -122,34 +147,46 @@ void main() {
         final now = DateTime.now();
         final draft1 = VineDraft(
           id: 'draft_1',
-          videoFile: File('/path/to/video1.mp4'),
+          clips: [
+            RecordingClip(
+              id: 'clip_1',
+              video: EditorVideo.file('/path/to/video1.mp4'),
+              duration: Duration(seconds: 6),
+              recordedAt: now,
+              aspectRatio: AspectRatio.square,
+            ),
+          ],
           title: 'First',
           description: '',
-          hashtags: [],
-          frameCount: 30,
+          hashtags: {},
           selectedApproach: 'hybrid',
           createdAt: now,
           lastModified: now,
           publishStatus: PublishStatus.draft,
           publishError: null,
           publishAttempts: 0,
-          aspectRatio: AspectRatio.square,
         );
 
         final draft2 = VineDraft(
           id: 'draft_2',
-          videoFile: File('/path/to/video2.mp4'),
+          clips: [
+            RecordingClip(
+              id: 'clip_2',
+              video: EditorVideo.file('/path/to/video2.mp4'),
+              duration: Duration(seconds: 6),
+              recordedAt: now,
+              aspectRatio: AspectRatio.square,
+            ),
+          ],
           title: 'Second',
           description: '',
-          hashtags: [],
-          frameCount: 45,
+          hashtags: {},
           selectedApproach: 'imageSequence',
           createdAt: now,
           lastModified: now,
           publishStatus: PublishStatus.draft,
           publishError: null,
           publishAttempts: 0,
-          aspectRatio: AspectRatio.square,
         );
 
         await service.saveDraft(draft1);
@@ -173,34 +210,46 @@ void main() {
         final now = DateTime.now();
         final draft1 = VineDraft(
           id: 'draft_1',
-          videoFile: File('/path/to/video1.mp4'),
+          clips: [
+            RecordingClip(
+              id: 'clip_1',
+              video: EditorVideo.file('/path/to/video1.mp4'),
+              duration: Duration(seconds: 6),
+              recordedAt: now,
+              aspectRatio: AspectRatio.square,
+            ),
+          ],
           title: 'First',
           description: '',
-          hashtags: [],
-          frameCount: 30,
+          hashtags: {},
           selectedApproach: 'hybrid',
           createdAt: now,
           lastModified: now,
           publishStatus: PublishStatus.draft,
           publishError: null,
           publishAttempts: 0,
-          aspectRatio: AspectRatio.square,
         );
 
         final draft2 = VineDraft(
           id: 'draft_2',
-          videoFile: File('/path/to/video2.mp4'),
+          clips: [
+            RecordingClip(
+              id: 'clip_2',
+              video: EditorVideo.file('/path/to/video2.mp4'),
+              duration: Duration(seconds: 6),
+              recordedAt: now,
+              aspectRatio: AspectRatio.square,
+            ),
+          ],
           title: 'Second',
           description: '',
-          hashtags: [],
-          frameCount: 45,
+          hashtags: {},
           selectedApproach: 'imageSequence',
           createdAt: now,
           lastModified: now,
           publishStatus: PublishStatus.draft,
           publishError: null,
           publishAttempts: 0,
-          aspectRatio: AspectRatio.square,
         );
 
         await service.saveDraft(draft1);
@@ -216,11 +265,18 @@ void main() {
 
       test('should do nothing if draft ID does not exist', () async {
         final draft = VineDraft.create(
-          videoFile: File('/path/to/video.mp4'),
+          clips: [
+            RecordingClip(
+              id: 'test_clip',
+              video: EditorVideo.file('/path/to/video.mp4'),
+              duration: Duration(seconds: 6),
+              recordedAt: DateTime.now(),
+              aspectRatio: AspectRatio.square,
+            ),
+          ],
           title: 'Test',
           description: '',
-          hashtags: [],
-          frameCount: 30,
+          hashtags: {},
           selectedApproach: 'hybrid',
         );
 
@@ -237,34 +293,46 @@ void main() {
         final now = DateTime.now();
         final draft1 = VineDraft(
           id: 'draft_1',
-          videoFile: File('/path/to/video1.mp4'),
+          clips: [
+            RecordingClip(
+              id: 'clip_1',
+              video: EditorVideo.file('/path/to/video1.mp4'),
+              duration: Duration(seconds: 6),
+              recordedAt: now,
+              aspectRatio: AspectRatio.square,
+            ),
+          ],
           title: 'First',
           description: '',
-          hashtags: [],
-          frameCount: 30,
+          hashtags: {},
           selectedApproach: 'hybrid',
           createdAt: now,
           lastModified: now,
           publishStatus: PublishStatus.draft,
           publishError: null,
           publishAttempts: 0,
-          aspectRatio: AspectRatio.square,
         );
 
         final draft2 = VineDraft(
           id: 'draft_2',
-          videoFile: File('/path/to/video2.mp4'),
+          clips: [
+            RecordingClip(
+              id: 'clip_2',
+              video: EditorVideo.file('/path/to/video2.mp4'),
+              duration: Duration(seconds: 6),
+              recordedAt: now,
+              aspectRatio: AspectRatio.square,
+            ),
+          ],
           title: 'Second',
           description: '',
-          hashtags: [],
-          frameCount: 45,
+          hashtags: {},
           selectedApproach: 'imageSequence',
           createdAt: now,
           lastModified: now,
           publishStatus: PublishStatus.draft,
           publishError: null,
           publishAttempts: 0,
-          aspectRatio: AspectRatio.square,
         );
 
         await service.saveDraft(draft1);

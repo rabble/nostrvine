@@ -7,36 +7,29 @@ import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:nostr_client/nostr_client.dart';
-import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:models/models.dart';
-import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 class _MockLikesRepository extends Mock implements LikesRepository {}
 
-class _MockVideoEventService extends Mock implements VideoEventService {}
-
-class _MockNostrClient extends Mock implements NostrClient {}
-
-class _FakeFilter extends Fake implements Filter {}
+class _MockVideosRepository extends Mock implements VideosRepository {}
 
 void main() {
-  setUpAll(() {
-    registerFallbackValue(_FakeFilter());
-    registerFallbackValue(<Filter>[]);
-  });
-
   group('ProfileLikedVideosBloc', () {
     late _MockLikesRepository mockLikesRepository;
-    late _MockVideoEventService mockVideoEventService;
-    late _MockNostrClient mockNostrClient;
+    late _MockVideosRepository mockVideosRepository;
     late StreamController<Set<String>> likedIdsController;
+
+    // Test pubkeys
+    const currentUserPubkey =
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+    const otherUserPubkey =
+        'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
 
     setUp(() {
       mockLikesRepository = _MockLikesRepository();
-      mockVideoEventService = _MockVideoEventService();
-      mockNostrClient = _MockNostrClient();
+      mockVideosRepository = _MockVideosRepository();
       likedIdsController = StreamController<Set<String>>.broadcast();
 
       // Default stub for watchLikedEventIds
@@ -49,11 +42,13 @@ void main() {
       likedIdsController.close();
     });
 
-    ProfileLikedVideosBloc createBloc() => ProfileLikedVideosBloc(
-      likesRepository: mockLikesRepository,
-      videoEventService: mockVideoEventService,
-      nostrClient: mockNostrClient,
-    );
+    ProfileLikedVideosBloc createBloc({String? targetUserPubkey}) =>
+        ProfileLikedVideosBloc(
+          likesRepository: mockLikesRepository,
+          videosRepository: mockVideosRepository,
+          currentUserPubkey: currentUserPubkey,
+          targetUserPubkey: targetUserPubkey,
+        );
 
     VideoEvent createTestVideo(String id) {
       // Create a minimal VideoEvent for testing
@@ -163,7 +158,7 @@ void main() {
       );
 
       blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
-        'emits [syncing, loading, success] when videos found in cache',
+        'emits [syncing, loading, success] when videos found',
         setUp: () {
           final video1 = createTestVideo('event1');
           final video2 = createTestVideo('event2');
@@ -178,11 +173,8 @@ void main() {
             ),
           );
           when(
-            () => mockVideoEventService.getVideoById('event1'),
-          ).thenReturn(video1);
-          when(
-            () => mockVideoEventService.getVideoById('event2'),
-          ).thenReturn(video2);
+            () => mockVideosRepository.getVideosByIds(['event1', 'event2']),
+          ).thenAnswer((_) async => [video1, video2]);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ProfileLikedVideosSyncRequested()),
@@ -261,15 +253,14 @@ void main() {
               eventIdToReactionId: {},
             ),
           );
+          // VideosRepository preserves order from input
           when(
-            () => mockVideoEventService.getVideoById('event1'),
-          ).thenReturn(video1);
-          when(
-            () => mockVideoEventService.getVideoById('event2'),
-          ).thenReturn(video2);
-          when(
-            () => mockVideoEventService.getVideoById('event3'),
-          ).thenReturn(video3);
+            () => mockVideosRepository.getVideosByIds([
+              'event3',
+              'event1',
+              'event2',
+            ]),
+          ).thenAnswer((_) async => [video3, video1, video2]);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ProfileLikedVideosSyncRequested()),
@@ -300,17 +291,6 @@ void main() {
     group('ProfileLikedVideosSubscriptionRequested', () {
       blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
         'removes video when unliked via stream',
-        setUp: () {
-          final video1 = createTestVideo('event1');
-          final video2 = createTestVideo('event2');
-
-          when(
-            () => mockVideoEventService.getVideoById('event1'),
-          ).thenReturn(video1);
-          when(
-            () => mockVideoEventService.getVideoById('event2'),
-          ).thenReturn(video2);
-        },
         build: createBloc,
         seed: () => ProfileLikedVideosState(
           status: ProfileLikedVideosStatus.success,
@@ -384,30 +364,16 @@ void main() {
     });
 
     group('Other user profile (targetUserPubkey)', () {
-      // 64-character hex pubkeys for testing
-      final currentUserPubkey = 'a' * 64;
-      final otherUserPubkey = 'b' * 64;
-
       setUp(() {
-        // Set up current user pubkey
-        when(() => mockNostrClient.publicKey).thenReturn(currentUserPubkey);
-
         // Set up fetchUserLikes for other user
         when(
           () => mockLikesRepository.fetchUserLikes(any()),
         ).thenAnswer((_) async => <String>[]);
       });
 
-      ProfileLikedVideosBloc createBlocForOtherUser() => ProfileLikedVideosBloc(
-        likesRepository: mockLikesRepository,
-        videoEventService: mockVideoEventService,
-        nostrClient: mockNostrClient,
-        targetUserPubkey: otherUserPubkey,
-      );
-
       blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
         'fetches likes via repository.fetchUserLikes for other user',
-        build: createBlocForOtherUser,
+        build: () => createBloc(targetUserPubkey: otherUserPubkey),
         act: (bloc) => bloc.add(const ProfileLikedVideosSyncRequested()),
         wait: const Duration(milliseconds: 100),
         expect: () => [
@@ -433,7 +399,7 @@ void main() {
 
       blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
         'does not subscribe to repository stream for other user profile',
-        build: createBlocForOtherUser,
+        build: () => createBloc(targetUserPubkey: otherUserPubkey),
         act: (bloc) async {
           bloc.add(const ProfileLikedVideosSubscriptionRequested());
           await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -451,12 +417,7 @@ void main() {
             () => mockLikesRepository.syncUserReactions(),
           ).thenAnswer((_) async => const LikesSyncResult.empty());
         },
-        build: () => ProfileLikedVideosBloc(
-          likesRepository: mockLikesRepository,
-          videoEventService: mockVideoEventService,
-          nostrClient: mockNostrClient,
-          targetUserPubkey: currentUserPubkey,
-        ),
+        build: () => createBloc(targetUserPubkey: currentUserPubkey),
         act: (bloc) => bloc.add(const ProfileLikedVideosSyncRequested()),
         expect: () => [
           const ProfileLikedVideosState(
@@ -475,6 +436,60 @@ void main() {
           // Should NOT use fetchUserLikes for own profile
           verifyNever(() => mockLikesRepository.fetchUserLikes(any()));
         },
+      );
+    });
+
+    group('ProfileLikedVideosLoadMoreRequested', () {
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'loads next page of videos',
+        setUp: () {
+          final video3 = createTestVideo('event3');
+          when(
+            () => mockVideosRepository.getVideosByIds(['event3']),
+          ).thenAnswer((_) async => [video3]);
+        },
+        build: createBloc,
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          likedEventIds: const ['event1', 'event2', 'event3'],
+          videos: [createTestVideo('event1'), createTestVideo('event2')],
+          hasMoreContent: true,
+        ),
+        act: (bloc) => bloc.add(const ProfileLikedVideosLoadMoreRequested()),
+        expect: () => [
+          isA<ProfileLikedVideosState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.videos.length, 'videos count', 3)
+              .having((s) => s.hasMoreContent, 'hasMoreContent', false),
+        ],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'does not load more when already loading',
+        build: createBloc,
+        seed: () => const ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          isLoadingMore: true,
+          hasMoreContent: true,
+        ),
+        act: (bloc) => bloc.add(const ProfileLikedVideosLoadMoreRequested()),
+        expect: () => <ProfileLikedVideosState>[],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'does not load more when no more content',
+        build: createBloc,
+        seed: () => const ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          hasMoreContent: false,
+        ),
+        act: (bloc) => bloc.add(const ProfileLikedVideosLoadMoreRequested()),
+        expect: () => <ProfileLikedVideosState>[],
       );
     });
   });

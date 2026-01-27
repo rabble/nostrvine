@@ -329,7 +329,8 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
     }
 
     return RefreshIndicator(
-      color: VineTheme.vineGreen,
+      color: VineTheme.onPrimary,
+      backgroundColor: VineTheme.vineGreen,
       onRefresh: () async {
         await ref.read(trendingSoundsProvider.notifier).refresh();
       },

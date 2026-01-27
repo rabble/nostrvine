@@ -53,16 +53,20 @@ class VineBottomSheetSelectionMenu {
       context: context,
       title: title,
       expanded: false,
-      body: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (final option in options)
-            _VineBottomSheetSelectionOption(
-              label: option.label,
-              isSelected: option.value == selectedValue,
-              onTap: () => Navigator.of(context).pop(option.value),
-            ),
-        ],
+      scrollable: false,
+      isScrollControlled: true,
+      body: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final option in options)
+              _VineBottomSheetSelectionOption(
+                label: option.label,
+                isSelected: option.value == selectedValue,
+                onTap: () => Navigator.of(context).pop(option.value),
+              ),
+          ],
+        ),
       ),
     );
   }

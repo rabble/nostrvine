@@ -3,14 +3,14 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/route_utils.dart';
-import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/video_editor_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 
 void main() {
   group('parseRoute', () {
@@ -50,10 +50,17 @@ void main() {
       expect(result.videoIndex, 1);
     });
 
-    test('parses camera route', () {
-      final result = parseRoute(UniversalCameraScreenPure.path);
+    test('parses video-recorder route', () {
+      final result = parseRoute('/video-recorder');
 
-      expect(result.type, RouteType.camera);
+      expect(result.type, RouteType.videoRecorder);
+      expect(result.videoIndex, isNull);
+    });
+
+    test('parses video-editor route', () {
+      final result = parseRoute('/video-editor');
+
+      expect(result.type, RouteType.videoEditor);
       expect(result.videoIndex, isNull);
     });
 
@@ -61,20 +68,6 @@ void main() {
       final result = parseRoute(SettingsScreen.path);
 
       expect(result.type, RouteType.settings);
-      expect(result.videoIndex, isNull);
-    });
-
-    test('parses clip-manager route', () {
-      final result = parseRoute(ClipManagerScreen.path);
-
-      expect(result.type, RouteType.clipManager);
-      expect(result.videoIndex, isNull);
-    });
-
-    test('parses edit-video route', () {
-      final result = parseRoute(VideoEditorScreen.path);
-
-      expect(result.type, RouteType.editVideo);
       expect(result.videoIndex, isNull);
     });
 
@@ -132,28 +125,28 @@ void main() {
       );
     });
 
-    test('builds camera route', () {
-      final context = RouteContext(type: RouteType.camera);
+    test('builds video-recorder route', () {
+      final context = RouteContext(type: RouteType.videoRecorder);
 
-      expect(buildRoute(context), UniversalCameraScreenPure.path);
+      expect(buildRoute(context), VideoRecorderScreen.path);
+    });
+
+    test('builds video-editor route', () {
+      final context = RouteContext(type: RouteType.videoEditor);
+
+      expect(buildRoute(context), VideoEditorScreen.path);
+    });
+
+    test('builds video-metadata route', () {
+      final context = RouteContext(type: RouteType.videoMetadata);
+
+      expect(buildRoute(context), VideoMetadataScreen.path);
     });
 
     test('builds settings route', () {
       final context = RouteContext(type: RouteType.settings);
 
       expect(buildRoute(context), SettingsScreen.path);
-    });
-
-    test('builds clip-manager route', () {
-      final context = RouteContext(type: RouteType.clipManager);
-
-      expect(buildRoute(context), ClipManagerScreen.path);
-    });
-
-    test('builds edit-video route', () {
-      final context = RouteContext(type: RouteType.editVideo);
-
-      expect(buildRoute(context), VideoEditorScreen.path);
     });
 
     test('defaults missing index to 0 for video routes', () {
@@ -170,10 +163,10 @@ void main() {
         ExploreScreen.pathForIndex(3),
         ProfileScreenRouter.pathForIndex('npub1abc123', 2),
         HashtagScreenRouter.pathForTag('nostr', index: 1),
-        UniversalCameraScreenPure.path,
-        SettingsScreen.path,
-        ClipManagerScreen.path,
+        VideoRecorderScreen.path,
         VideoEditorScreen.path,
+        VideoMetadataScreen.path,
+        SettingsScreen.path,
       ];
 
       for (final url in urls) {

@@ -2,10 +2,11 @@
 // ABOUTME: Tests thumbnail generation, error handling, and edge cases
 
 import 'dart:io';
-import 'dart:typed_data';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 
 @GenerateMocks([])
@@ -15,6 +16,17 @@ void main() {
   group('VideoThumbnailService', () {
     late String testVideoPath;
     late Directory tempDir;
+
+    // Mock the pro_video_editor platform channel
+    const channel = MethodChannel('pro_video_editor');
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(channel, (MethodCall methodCall) async {
+          if (methodCall.method == 'getThumbnails') {
+            // Return empty list to simulate no thumbnails generated
+            return <Uint8List>[];
+          }
+          return null;
+        });
 
     setUpAll(() async {
       // Create a temporary directory for test files
@@ -26,6 +38,10 @@ void main() {
       if (await tempDir.exists()) {
         await tempDir.delete(recursive: true);
       }
+
+      // Clean up the mock method call handler
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(channel, null);
     });
 
     setUp(() {
@@ -84,7 +100,7 @@ void main() {
         // Test with custom timestamp
         final result = await VideoThumbnailService.extractThumbnail(
           videoPath: testVideoPath,
-          timeMs: 2000,
+          timestamp: const Duration(seconds: 2),
         );
 
         expect(result, isNull); // Expected because it's not a real video
@@ -149,7 +165,11 @@ void main() {
 
         final results = await VideoThumbnailService.extractMultipleThumbnails(
           videoPath: testVideoPath,
-          timestamps: [100, 200, 300],
+          timestamps: const [
+            Duration(milliseconds: 100),
+            Duration(milliseconds: 200),
+            Duration(milliseconds: 300),
+          ],
         );
 
         expect(results, isEmpty); // Expected because it's not a real video
@@ -213,35 +233,35 @@ void main() {
         final timestamp = VideoThumbnailService.getOptimalTimestamp(
           const Duration(milliseconds: 500),
         );
-        expect(timestamp, equals(100));
+        expect(timestamp.inMilliseconds, equals(100));
       });
 
       test('returns 10% timestamp for medium videos', () {
         final timestamp = VideoThumbnailService.getOptimalTimestamp(
           const Duration(seconds: 5),
         );
-        expect(timestamp, equals(500)); // 10% of 5000ms
+        expect(timestamp.inMilliseconds, equals(500)); // 10% of 5000ms
       });
 
       test('caps at 1000ms for long videos', () {
         final timestamp = VideoThumbnailService.getOptimalTimestamp(
           const Duration(seconds: 30),
         );
-        expect(timestamp, equals(1000)); // Capped at 1 second
+        expect(timestamp.inMilliseconds, equals(1000)); // Capped at 1 second
       });
 
       test('handles edge case of 1 second video', () {
         final timestamp = VideoThumbnailService.getOptimalTimestamp(
           const Duration(seconds: 1),
         );
-        expect(timestamp, equals(100)); // 10% of 1000ms = 100ms
+        expect(timestamp.inMilliseconds, equals(100)); // 10% of 1000ms = 100ms
       });
 
       test('handles vine-length video (6.3 seconds)', () {
         final timestamp = VideoThumbnailService.getOptimalTimestamp(
-          const Duration(milliseconds: 6300),
+          VideoEditorConstants.maxDuration,
         );
-        expect(timestamp, equals(630)); // 10% of 6300ms
+        expect(timestamp.inMilliseconds, equals(630)); // 10% of 6300ms
       });
     });
   });

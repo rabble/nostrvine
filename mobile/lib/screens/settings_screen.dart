@@ -1,5 +1,8 @@
 // ABOUTME: Unified settings hub providing access to all app configuration
-// ABOUTME: Central entry point for profile, relay, media server, and notification settings
+// ABOUTME: Central entry point for profile, relay, media server, and
+// notification settings
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -51,20 +54,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   void initState() {
     super.initState();
-    _loadAppVersion();
+    unawaited(_loadAppVersion());
     // Mark settings as open to pause video playback
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _overlayNotifier = ref.read(overlayVisibilityProvider.notifier);
       _overlayNotifier?.setSettingsOpen(true);
     });
+    Log.debug(
+      '👨‍💻 settingsService initState auth',
+      name: 'SettingsScreen',
+      category: LogCategory.ui,
+    );
   }
 
   @override
-  void dispose() {
+  void deactivate() {
     // Mark settings as closed when leaving
-    // Use cached notifier reference since ref is invalid during dispose
+    // Using deactivate() instead of dispose() because ref is still valid here
     _overlayNotifier?.setSettingsOpen(false);
-    super.dispose();
+    super.deactivate();
   }
 
   Future<void> _loadAppVersion() async {
@@ -77,12 +85,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
-    final authStateAsync = ref.watch(authStateStreamProvider);
-    final isAuthenticated = authStateAsync.when(
-      data: (state) => state == AuthState.authenticated,
-      loading: () => false,
-      error: (_, __) => false,
-    );
+    // Use currentAuthStateProvider for synchronous access to auth state
+    // This provider invalidates itself when auth state changes
+    final authState = ref.watch(currentAuthStateProvider);
+    final isAuthenticated = authState == AuthState.authenticated;
 
     return Scaffold(
       appBar: AppBar(
@@ -217,12 +223,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
                     if (!success && context.mounted) {
                       // Zendesk failed, show fallback options
-                      _showSupportFallback(context, ref, authService);
+                      await _showSupportFallback(context, ref, authService);
                     }
                   } else {
                     // Zendesk not available, show fallback options
                     if (context.mounted) {
-                      _showSupportFallback(context, ref, authService);
+                      await _showSupportFallback(context, ref, authService);
                     }
                   }
                 },
@@ -295,7 +301,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   icon: Icons.key_off,
                   title: 'Remove Keys from Device',
                   subtitle:
-                      'Delete your private key from this device only. Your content stays on relays, but you\'ll need your nsec backup to access your account again.',
+                      'Delete your private key from this device only. '
+                      'Your content stays on relays, but you\'ll need your '
+                      'nsec backup to access your account again.',
                   onTap: () => _handleRemoveKeys(context, ref),
                   iconColor: Colors.orange,
                   titleColor: Colors.orange,
@@ -426,7 +434,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ref.read(developerModeTapCounterProvider.notifier).tap();
 
         Log.debug(
-          '👨‍💻 Dev mode count: ${newCount}',
+          '👨‍💻 Dev mode count: $newCount',
           name: 'SettingsScreen',
           category: LogCategory.ui,
         );
@@ -560,11 +568,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       onConfirm: () async {
         // Show loading indicator
         if (!context.mounted) return;
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+
+        // show busy dialog, but don't await it as the code needs to continue
+        // to signOut the user and deleteKeys. Changing the authentication state
+        // will redirect the user away and cause this to close.
+        unawaited(
+          showDialog<void>(
+            context: context,
+            barrierDismissible: false,
+            builder: (context) => const Center(
+              child: CircularProgressIndicator(color: VineTheme.vineGreen),
+            ),
           ),
         );
 
@@ -603,67 +617,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     final deletionService = ref.read(accountDeletionServiceProvider);
     final authService = ref.read(authServiceProvider);
 
-    // Get current user's public key for nsec verification
-    final currentPublicKeyHex = authService.currentPublicKeyHex;
-    if (currentPublicKeyHex == null) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Unable to verify identity. Please log in again.'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-      return;
-    }
-
-    // Show nsec verification dialog first, then standard delete dialog
+    // Show confirmation dialog, then execute deletion
     await showDeleteAllContentWarningDialog(
       context: context,
-      currentPublicKeyHex: currentPublicKeyHex,
-      onConfirm: () async {
-        // Show loading indicator
-        if (!context.mounted) return;
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
-          ),
-        );
-
-        // Execute NIP-62 deletion request
-        final result = await deletionService.deleteAccount();
-
-        // Close loading indicator
-        if (!context.mounted) return;
-        context.pop();
-
-        if (result.success) {
-          // Sign out and delete keys
-          // Router will automatically redirect to /welcome when auth state becomes unauthenticated
-          await authService.signOut(deleteKeys: true);
-
-          // Show completion dialog
-          if (!context.mounted) return;
-          await showDeleteAccountCompletionDialog(
-            context: context,
-            onCreateNewAccount: context.pop,
-          );
-        } else {
-          // Show error
-          if (!context.mounted) return;
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                result.error ?? 'Failed to delete content from relays',
-                style: const TextStyle(color: Colors.white),
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      },
+      onConfirm: () => executeAccountDeletion(
+        context: context,
+        deletionService: deletionService,
+        authService: authService,
+        screenName: 'SettingsScreen',
+      ),
     );
   }
 
@@ -700,7 +662,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _showSupportFallback(
     BuildContext context,
     WidgetRef ref,
-    dynamic authService, // Type inferred from authServiceProvider
+    AuthService authService,
   ) async {
     final bugReportService = ref.read(bugReportServiceProvider);
     final userPubkey = authService.currentPublicKeyHex;
@@ -730,12 +692,14 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
     if (!context.mounted) return;
 
-    showDialog(
-      context: context,
-      builder: (context) => BugReportDialog(
-        bugReportService: bugReportService,
-        currentScreen: 'SettingsScreen',
-        userPubkey: userPubkey,
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (context) => BugReportDialog(
+          bugReportService: bugReportService,
+          currentScreen: 'SettingsScreen',
+          userPubkey: userPubkey,
+        ),
       ),
     );
   }

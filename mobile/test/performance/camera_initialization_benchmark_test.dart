@@ -4,18 +4,20 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/services/vine_recording_controller.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/providers/video_recorder_provider.dart';
 
 void main() {
   group('Camera Initialization Performance Benchmarks', () {
     test(
       'Camera initialization should complete within acceptable time limits',
       () async {
-        final controller = VineRecordingController();
+        final container = ProviderContainer();
+        final notifier = container.read(videoRecorderProvider.notifier);
         final stopwatch = Stopwatch()..start();
 
         try {
-          await controller.initialize();
+          await notifier.initialize();
           stopwatch.stop();
 
           // Platform-specific expectations
@@ -35,18 +37,19 @@ void main() {
           print('   Time: ${stopwatch.elapsedMilliseconds}ms');
           print('   Memory before: ${_getMemoryUsage()}MB');
         } finally {
-          controller.dispose();
+          container.dispose();
         }
       },
     );
 
     test('Rapid camera switching performance', () async {
-      final controller = VineRecordingController();
+      final container = ProviderContainer();
+      final notifier = container.read(videoRecorderProvider.notifier);
 
       try {
-        await controller.initialize();
+        await notifier.initialize();
 
-        if (!controller.canSwitchCamera) {
+        if (!notifier.state.canSwitchCamera) {
           return; // Skip if only one camera
         }
 
@@ -55,7 +58,7 @@ void main() {
         // Perform 10 rapid camera switches
         for (int i = 0; i < 10; i++) {
           final stopwatch = Stopwatch()..start();
-          await controller.switchCamera();
+          await notifier.switchCamera();
           stopwatch.stop();
           switchTimes.add(stopwatch.elapsedMilliseconds);
         }
@@ -82,23 +85,24 @@ void main() {
           reason: 'Maximum camera switch time should be under 1s',
         );
       } finally {
-        controller.dispose();
+        container.dispose();
       }
     });
 
     test('Memory leak detection during long recording session', () async {
-      final controller = VineRecordingController();
+      final container = ProviderContainer();
+      final notifier = container.read(videoRecorderProvider.notifier);
 
       try {
-        await controller.initialize();
+        await notifier.initialize();
 
         final initialMemory = _getMemoryUsage();
 
         // Simulate 50 recording segments
         for (int i = 0; i < 50; i++) {
-          await controller.startRecording();
+          await notifier.startRecording();
           await Future.delayed(Duration(milliseconds: 100));
-          await controller.stopRecording();
+          await notifier.stopRecording();
         }
 
         final finalMemory = _getMemoryUsage();
@@ -118,7 +122,7 @@ void main() {
               'possible memory leak detected',
         );
       } finally {
-        controller.dispose();
+        container.dispose();
       }
     });
     // TODO(any): Fix and re-enable this test

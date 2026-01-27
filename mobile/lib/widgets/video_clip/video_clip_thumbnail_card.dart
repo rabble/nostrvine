@@ -162,7 +162,10 @@ class _ThumbnailState extends State<_Thumbnail> {
         }
 
         if ((snapshot.data ?? false) && widget.clip.thumbnailPath != null) {
-          return Image.file(File(widget.clip.thumbnailPath!), fit: .cover);
+          return Hero(
+            tag: 'Video-Clip-Preview-${widget.clip.id}',
+            child: Image.file(File(widget.clip.thumbnailPath!), fit: .cover),
+          );
         }
 
         return const Icon(Icons.videocam, color: Colors.grey, size: 32);
@@ -234,14 +237,14 @@ class _SelectionOverlay extends StatelessWidget {
           child: Container(
             width: 32,
             height: 32,
-            padding: const .all(8),
+            padding: const .all(5),
             decoration: const BoxDecoration(
               shape: .circle,
               color: VineTheme.tabIndicatorGreen,
             ),
             child: SvgPicture.asset(
               'assets/icon/Check.svg',
-              colorFilter: const ColorFilter.mode(Color(0xFF002C1C), .srcIn),
+              colorFilter: const .mode(Color(0xFF002C1C), .srcIn),
             ),
           ),
         ),

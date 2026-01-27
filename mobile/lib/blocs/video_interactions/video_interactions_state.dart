@@ -1,5 +1,5 @@
 // ABOUTME: State for VideoInteractionsBloc
-// ABOUTME: Tracks like status, counts, and loading states for a single video
+// ABOUTME: Tracks like/repost status, counts, and loading states for a video
 
 part of 'video_interactions_bloc.dart';
 
@@ -23,15 +23,21 @@ enum VideoInteractionsStatus {
 /// Contains:
 /// - [isLiked]: Whether the current user has liked this video
 /// - [likeCount]: Total number of likes on this video
+/// - [isReposted]: Whether the current user has reposted this video
+/// - [repostCount]: Total number of reposts on this video
 /// - [commentCount]: Total number of comments on this video
 /// - [isLikeInProgress]: Whether a like/unlike operation is in progress
+/// - [isRepostInProgress]: Whether a repost/unrepost operation is in progress
 class VideoInteractionsState extends Equatable {
   const VideoInteractionsState({
     this.status = VideoInteractionsStatus.initial,
     this.isLiked = false,
     this.likeCount,
+    this.isReposted = false,
+    this.repostCount,
     this.commentCount,
     this.isLikeInProgress = false,
+    this.isRepostInProgress = false,
     this.error,
   });
 
@@ -45,12 +51,22 @@ class VideoInteractionsState extends Equatable {
   /// Null if not yet fetched.
   final int? likeCount;
 
+  /// Whether the current user has reposted this video.
+  final bool isReposted;
+
+  /// Total number of reposts on this video.
+  /// Null if not yet fetched.
+  final int? repostCount;
+
   /// Total number of comments on this video.
   /// Null if not yet fetched.
   final int? commentCount;
 
   /// Whether a like/unlike operation is currently in progress.
   final bool isLikeInProgress;
+
+  /// Whether a repost/unrepost operation is currently in progress.
+  final bool isRepostInProgress;
 
   /// Error that occurred, if any.
   final VideoInteractionsError? error;
@@ -63,8 +79,11 @@ class VideoInteractionsState extends Equatable {
     VideoInteractionsStatus? status,
     bool? isLiked,
     int? likeCount,
+    bool? isReposted,
+    int? repostCount,
     int? commentCount,
     bool? isLikeInProgress,
+    bool? isRepostInProgress,
     VideoInteractionsError? error,
     bool clearError = false,
   }) {
@@ -72,8 +91,11 @@ class VideoInteractionsState extends Equatable {
       status: status ?? this.status,
       isLiked: isLiked ?? this.isLiked,
       likeCount: likeCount ?? this.likeCount,
+      isReposted: isReposted ?? this.isReposted,
+      repostCount: repostCount ?? this.repostCount,
       commentCount: commentCount ?? this.commentCount,
       isLikeInProgress: isLikeInProgress ?? this.isLikeInProgress,
+      isRepostInProgress: isRepostInProgress ?? this.isRepostInProgress,
       error: clearError ? null : (error ?? this.error),
     );
   }
@@ -83,8 +105,11 @@ class VideoInteractionsState extends Equatable {
     status,
     isLiked,
     likeCount,
+    isReposted,
+    repostCount,
     commentCount,
     isLikeInProgress,
+    isRepostInProgress,
     error,
   ];
 }
@@ -96,4 +121,7 @@ enum VideoInteractionsError {
 
   /// Failed to toggle like.
   likeFailed,
+
+  /// Failed to toggle repost.
+  repostFailed,
 }

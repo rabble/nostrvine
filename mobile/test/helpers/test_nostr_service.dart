@@ -175,7 +175,6 @@ class TestNostrService implements NostrClient {
     List<String>? tempRelays,
     List<int> relayTypes = const [],
     bool sendAfterAuth = false,
-    bool useGateway = false,
     bool useCache = true,
   }) async {
     final matchingEvents = <Event>[];
@@ -204,7 +203,6 @@ class TestNostrService implements NostrClient {
   Future<Event?> fetchEventById(
     String eventId, {
     String? relayUrl,
-    bool useGateway = false,
     bool useCache = true,
   }) async {
     // Search through stored events for matching ID

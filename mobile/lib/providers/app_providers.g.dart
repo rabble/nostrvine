@@ -426,6 +426,62 @@ final class RelayStatisticsBridgeProvider
 String _$relayStatisticsBridgeHash() =>
     r'8e5867762c8201c7244d2f44ba3bc84cbc63f012';
 
+/// Bridge provider that detects when the configured relay set changes
+/// (relays added or removed) and triggers a full feed reset+resubscribe.
+/// Debounces for 2 seconds to collapse rapid add/remove operations.
+/// Only reacts to set membership changes, not connection state flapping.
+
+@ProviderFor(relaySetChangeBridge)
+const relaySetChangeBridgeProvider = RelaySetChangeBridgeProvider._();
+
+/// Bridge provider that detects when the configured relay set changes
+/// (relays added or removed) and triggers a full feed reset+resubscribe.
+/// Debounces for 2 seconds to collapse rapid add/remove operations.
+/// Only reacts to set membership changes, not connection state flapping.
+
+final class RelaySetChangeBridgeProvider
+    extends $FunctionalProvider<void, void, void>
+    with $Provider<void> {
+  /// Bridge provider that detects when the configured relay set changes
+  /// (relays added or removed) and triggers a full feed reset+resubscribe.
+  /// Debounces for 2 seconds to collapse rapid add/remove operations.
+  /// Only reacts to set membership changes, not connection state flapping.
+  const RelaySetChangeBridgeProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'relaySetChangeBridgeProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$relaySetChangeBridgeHash();
+
+  @$internal
+  @override
+  $ProviderElement<void> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  void create(Ref ref) {
+    return relaySetChangeBridge(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(void value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<void>(value),
+    );
+  }
+}
+
+String _$relaySetChangeBridgeHash() =>
+    r'd57982bcec97c066fb5db91322facf82744f8e60';
+
 /// Analytics service with opt-out support
 
 @ProviderFor(analyticsService)
@@ -841,6 +897,55 @@ final class SecureKeycastStorageProvider
 String _$secureKeycastStorageHash() =>
     r'c57c0ec02e36cd1a0cc8b850c450af2eb4c496b3';
 
+@ProviderFor(pendingVerificationService)
+const pendingVerificationServiceProvider =
+    PendingVerificationServiceProvider._();
+
+final class PendingVerificationServiceProvider
+    extends
+        $FunctionalProvider<
+          PendingVerificationService,
+          PendingVerificationService,
+          PendingVerificationService
+        >
+    with $Provider<PendingVerificationService> {
+  const PendingVerificationServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'pendingVerificationServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$pendingVerificationServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<PendingVerificationService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  PendingVerificationService create(Ref ref) {
+    return pendingVerificationService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(PendingVerificationService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<PendingVerificationService>(value),
+    );
+  }
+}
+
+String _$pendingVerificationServiceHash() =>
+    r'9b524b7d7fd20c98b2e0942e9ea6358419dc9dd4';
+
 @ProviderFor(oauthClient)
 const oauthClientProvider = OauthClientProvider._();
 
@@ -929,6 +1034,54 @@ final class PasswordResetListenerProvider
 
 String _$passwordResetListenerHash() =>
     r'e9469a2977559d922c965f6441a71b6cc3626ec2';
+
+@ProviderFor(emailVerificationListener)
+const emailVerificationListenerProvider = EmailVerificationListenerProvider._();
+
+final class EmailVerificationListenerProvider
+    extends
+        $FunctionalProvider<
+          EmailVerificationListener,
+          EmailVerificationListener,
+          EmailVerificationListener
+        >
+    with $Provider<EmailVerificationListener> {
+  const EmailVerificationListenerProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'emailVerificationListenerProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$emailVerificationListenerHash();
+
+  @$internal
+  @override
+  $ProviderElement<EmailVerificationListener> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  EmailVerificationListener create(Ref ref) {
+    return emailVerificationListener(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(EmailVerificationListener value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<EmailVerificationListener>(value),
+    );
+  }
+}
+
+String _$emailVerificationListenerHash() =>
+    r'50a030c1a6ad7737b95af287baccb5eccddf05d0';
 
 /// Web authentication service (for web platform only)
 
@@ -1287,17 +1440,80 @@ final class ContentBlocklistServiceProvider
 String _$contentBlocklistServiceHash() =>
     r'a05020e10b4402686d4630f99b020c4f0e58eab3';
 
-/// NIP-05 service for username registration and verification
+/// Version counter to trigger rebuilds when blocklist changes.
+/// Widgets watching this will rebuild when block/unblock actions occur.
+
+@ProviderFor(BlocklistVersion)
+const blocklistVersionProvider = BlocklistVersionProvider._();
+
+/// Version counter to trigger rebuilds when blocklist changes.
+/// Widgets watching this will rebuild when block/unblock actions occur.
+final class BlocklistVersionProvider
+    extends $NotifierProvider<BlocklistVersion, int> {
+  /// Version counter to trigger rebuilds when blocklist changes.
+  /// Widgets watching this will rebuild when block/unblock actions occur.
+  const BlocklistVersionProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'blocklistVersionProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$blocklistVersionHash();
+
+  @$internal
+  @override
+  BlocklistVersion create() => BlocklistVersion();
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(int value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<int>(value),
+    );
+  }
+}
+
+String _$blocklistVersionHash() => r'ae0ea100b12ecea021ad9beded8cfe790665a532';
+
+/// Version counter to trigger rebuilds when blocklist changes.
+/// Widgets watching this will rebuild when block/unblock actions occur.
+
+abstract class _$BlocklistVersion extends $Notifier<int> {
+  int build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<int, int>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<int, int>,
+              int,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}
+
+/// NIP-05 service for username availability checking
 
 @ProviderFor(nip05Service)
 const nip05ServiceProvider = Nip05ServiceProvider._();
 
-/// NIP-05 service for username registration and verification
+/// NIP-05 service for username availability checking
 
 final class Nip05ServiceProvider
     extends $FunctionalProvider<Nip05Service, Nip05Service, Nip05Service>
     with $Provider<Nip05Service> {
-  /// NIP-05 service for username registration and verification
+  /// NIP-05 service for username availability checking
   const Nip05ServiceProvider._()
     : super(
         from: null,
@@ -1331,14 +1547,14 @@ final class Nip05ServiceProvider
   }
 }
 
-String _$nip05ServiceHash() => r'1d27e1b137a09246fedc50586a7a28bcf37542b0';
+String _$nip05ServiceHash() => r'b7f7e1471a3783305bf1070cb64f1b95c4bdb516';
 
-/// Username repository for availability checking and registration
+/// Username repository for availability checking
 
 @ProviderFor(usernameRepository)
 const usernameRepositoryProvider = UsernameRepositoryProvider._();
 
-/// Username repository for availability checking and registration
+/// Username repository for availability checking
 
 final class UsernameRepositoryProvider
     extends
@@ -1348,7 +1564,7 @@ final class UsernameRepositoryProvider
           UsernameRepository
         >
     with $Provider<UsernameRepository> {
-  /// Username repository for availability checking and registration
+  /// Username repository for availability checking
   const UsernameRepositoryProvider._()
     : super(
         from: null,
@@ -1530,49 +1746,59 @@ final class AuthServiceProvider
   }
 }
 
-String _$authServiceHash() => r'94a2bd6d38b6063777d3442f2383752fe6a885d8';
+String _$authServiceHash() => r'2a8e1a700090afc3a4f2bd738032b7eef33f1c46';
 
-/// Stream provider for reactive auth state changes
-/// Widgets should watch this instead of authService.authState to get rebuilds
+/// Provider that returns current auth state and rebuilds when it changes.
+/// Widgets should watch this instead of authService.authState directly
+/// to get automatic rebuilds when authentication state changes.
 
-@ProviderFor(authStateStream)
-const authStateStreamProvider = AuthStateStreamProvider._();
+@ProviderFor(currentAuthState)
+const currentAuthStateProvider = CurrentAuthStateProvider._();
 
-/// Stream provider for reactive auth state changes
-/// Widgets should watch this instead of authService.authState to get rebuilds
+/// Provider that returns current auth state and rebuilds when it changes.
+/// Widgets should watch this instead of authService.authState directly
+/// to get automatic rebuilds when authentication state changes.
 
-final class AuthStateStreamProvider
-    extends
-        $FunctionalProvider<AsyncValue<AuthState>, AuthState, Stream<AuthState>>
-    with $FutureModifier<AuthState>, $StreamProvider<AuthState> {
-  /// Stream provider for reactive auth state changes
-  /// Widgets should watch this instead of authService.authState to get rebuilds
-  const AuthStateStreamProvider._()
+final class CurrentAuthStateProvider
+    extends $FunctionalProvider<AuthState, AuthState, AuthState>
+    with $Provider<AuthState> {
+  /// Provider that returns current auth state and rebuilds when it changes.
+  /// Widgets should watch this instead of authService.authState directly
+  /// to get automatic rebuilds when authentication state changes.
+  const CurrentAuthStateProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'authStateStreamProvider',
-        isAutoDispose: true,
+        name: r'currentAuthStateProvider',
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$authStateStreamHash();
+  String debugGetCreateSourceHash() => _$currentAuthStateHash();
 
   @$internal
   @override
-  $StreamProviderElement<AuthState> $createElement($ProviderPointer pointer) =>
-      $StreamProviderElement(pointer);
+  $ProviderElement<AuthState> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
 
   @override
-  Stream<AuthState> create(Ref ref) {
-    return authStateStream(ref);
+  AuthState create(Ref ref) {
+    return currentAuthState(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AuthState value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AuthState>(value),
+    );
   }
 }
 
-String _$authStateStreamHash() => r'bd5c1864e57cfd46c9676d3dc1fe3aa358c2a14b';
+String _$currentAuthStateHash() => r'41c987ffc8f661555bab3ebec9078180411f66eb';
 
 /// Provider that sets Zendesk user identity when auth state changes
 /// Watch this provider at app startup to keep Zendesk identity in sync with auth
@@ -2002,6 +2228,76 @@ final class FollowRepositoryProvider
 
 String _$followRepositoryHash() => r'ed2a3c727eb23941dbddd5c5e9689b01a37a1ae6';
 
+/// Provider for ProfileRepository instance
+///
+/// Creates a ProfileRepository for managing user profiles (Kind 0 metadata).
+/// Requires authentication.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+
+@ProviderFor(profileRepository)
+const profileRepositoryProvider = ProfileRepositoryProvider._();
+
+/// Provider for ProfileRepository instance
+///
+/// Creates a ProfileRepository for managing user profiles (Kind 0 metadata).
+/// Requires authentication.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+
+final class ProfileRepositoryProvider
+    extends
+        $FunctionalProvider<
+          ProfileRepository,
+          ProfileRepository,
+          ProfileRepository
+        >
+    with $Provider<ProfileRepository> {
+  /// Provider for ProfileRepository instance
+  ///
+  /// Creates a ProfileRepository for managing user profiles (Kind 0 metadata).
+  /// Requires authentication.
+  ///
+  /// Uses:
+  /// - NostrClient from nostrServiceProvider (for relay communication)
+  const ProfileRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'profileRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$profileRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<ProfileRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ProfileRepository create(Ref ref) {
+    return profileRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ProfileRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ProfileRepository>(value),
+    );
+  }
+}
+
+String _$profileRepositoryHash() => r'459296fae107428ffb6a50d27d57f501f21663c5';
+
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
 @ProviderFor(notificationServiceEnhanced)
@@ -2410,6 +2706,68 @@ final class VideoEventPublisherProvider
 
 String _$videoEventPublisherHash() =>
     r'b14b2c63806aa23370d43e14d9a047b36dcde180';
+
+/// View event publisher for kind 22236 ephemeral analytics events
+///
+/// Publishes video view events to track watch time, traffic sources,
+/// and enable creator analytics and recommendation systems.
+
+@ProviderFor(viewEventPublisher)
+const viewEventPublisherProvider = ViewEventPublisherProvider._();
+
+/// View event publisher for kind 22236 ephemeral analytics events
+///
+/// Publishes video view events to track watch time, traffic sources,
+/// and enable creator analytics and recommendation systems.
+
+final class ViewEventPublisherProvider
+    extends
+        $FunctionalProvider<
+          ViewEventPublisher,
+          ViewEventPublisher,
+          ViewEventPublisher
+        >
+    with $Provider<ViewEventPublisher> {
+  /// View event publisher for kind 22236 ephemeral analytics events
+  ///
+  /// Publishes video view events to track watch time, traffic sources,
+  /// and enable creator analytics and recommendation systems.
+  const ViewEventPublisherProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'viewEventPublisherProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$viewEventPublisherHash();
+
+  @$internal
+  @override
+  $ProviderElement<ViewEventPublisher> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ViewEventPublisher create(Ref ref) {
+    return viewEventPublisher(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ViewEventPublisher value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ViewEventPublisher>(value),
+    );
+  }
+}
+
+String _$viewEventPublisherHash() =>
+    r'33477998370aad03ce25bb4beff38a28da291d64';
 
 /// Curation Service - manages NIP-51 video curation sets
 
@@ -3142,6 +3500,8 @@ String _$commentsRepositoryHash() =>
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - ContentBlocklistService for filtering blocked/muted users
+/// - AgeVerificationService for filtering NSFW content based on user preference
 
 @ProviderFor(videosRepository)
 const videosRepositoryProvider = VideosRepositoryProvider._();
@@ -3153,6 +3513,8 @@ const videosRepositoryProvider = VideosRepositoryProvider._();
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - ContentBlocklistService for filtering blocked/muted users
+/// - AgeVerificationService for filtering NSFW content based on user preference
 
 final class VideosRepositoryProvider
     extends
@@ -3169,6 +3531,8 @@ final class VideosRepositoryProvider
   ///
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
+  /// - ContentBlocklistService for filtering blocked/muted users
+  /// - AgeVerificationService for filtering NSFW content based on user preference
   const VideosRepositoryProvider._()
     : super(
         from: null,
@@ -3202,7 +3566,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'b79158c61e075cc29bc9205dda3c03576244e47a';
+String _$videosRepositoryHash() => r'3e9ad46c21e9eee2a019898e4048a86871afab53';
 
 /// Provider for LikesRepository instance
 ///
@@ -3270,4 +3634,77 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'3a2aed2fcddf0b6d6143c00e48e4bfd89a3cbec9';
+String _$likesRepositoryHash() => r'22888a04bfa6cff194c104b5be555fdf22062e40';
+
+/// Provider for RepostsRepository instance
+///
+/// Creates a RepostsRepository for managing user reposts (Kind 16 generic
+/// reposts).
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalRepostsDao from databaseProvider (for local storage)
+
+@ProviderFor(repostsRepository)
+const repostsRepositoryProvider = RepostsRepositoryProvider._();
+
+/// Provider for RepostsRepository instance
+///
+/// Creates a RepostsRepository for managing user reposts (Kind 16 generic
+/// reposts).
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalRepostsDao from databaseProvider (for local storage)
+
+final class RepostsRepositoryProvider
+    extends
+        $FunctionalProvider<
+          RepostsRepository,
+          RepostsRepository,
+          RepostsRepository
+        >
+    with $Provider<RepostsRepository> {
+  /// Provider for RepostsRepository instance
+  ///
+  /// Creates a RepostsRepository for managing user reposts (Kind 16 generic
+  /// reposts).
+  ///
+  /// Uses:
+  /// - NostrClient from nostrServiceProvider (for relay communication)
+  /// - PersonalRepostsDao from databaseProvider (for local storage)
+  const RepostsRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'repostsRepositoryProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$repostsRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<RepostsRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  RepostsRepository create(Ref ref) {
+    return repostsRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(RepostsRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<RepostsRepository>(value),
+    );
+  }
+}
+
+String _$repostsRepositoryHash() => r'5676fc10ff4d2bb059f3348f3f3d8a77a14826f4';
