@@ -211,11 +211,6 @@ class VideoStats {
 
   /// Convert to VideoEvent for use in the app
   VideoEvent toVideoEvent() {
-    // Use dTag if available, otherwise fall back to event ID for addressability
-    // This mirrors the behavior in VideoEvent.fromNostrEvent() which ensures
-    // all videos have a vineId for repost functionality
-    final effectiveVineId = dTag.isNotEmpty ? dTag : id;
-
     return VideoEvent(
       id: id,
       pubkey: pubkey,
@@ -225,7 +220,7 @@ class VideoStats {
       title: title.isNotEmpty ? title : null,
       videoUrl: videoUrl.isNotEmpty ? videoUrl : null,
       thumbnailUrl: thumbnail.isNotEmpty ? thumbnail : null,
-      vineId: effectiveVineId,
+      vineId: dTag.isNotEmpty ? dTag : null,
       sha256: sha256,
       authorName: authorName,
       authorAvatar: authorAvatar,
