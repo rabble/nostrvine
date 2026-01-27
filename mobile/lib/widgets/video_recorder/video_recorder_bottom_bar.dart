@@ -88,7 +88,6 @@ class VideoRecorderBottomBar extends ConsumerWidget {
                   _showSnackBar(context: context, message: 'Clip removed');
                 }
               : null,
-          isDestructive: true,
         ),
         VineBottomSheetActionData(
           iconPath: 'assets/icon/trash.svg',
