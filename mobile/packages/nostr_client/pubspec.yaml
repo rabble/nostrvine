@@ -15,8 +15,6 @@ dependencies:
     path: ../db_client
   equatable: ^2.0.7
   meta: ^1.17.0
-  nostr_gateway:
-    path: ../nostr_gateway
   nostr_sdk:
     path: ../nostr_sdk
   shared_preferences: ^2.5.3

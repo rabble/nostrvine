@@ -227,6 +227,10 @@ class _PooledVideoFeedItem extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final likesRepository = ref.read(likesRepositoryProvider);
     final commentsRepository = ref.read(commentsRepositoryProvider);
+    final repostsRepository = ref.read(repostsRepositoryProvider);
+
+    // Build addressable ID for reposts if video has a d-tag (vineId)
+    final addressableId = video.addressableId;
 
     return BlocProvider<VideoInteractionsBloc>(
       create: (_) =>
@@ -235,6 +239,8 @@ class _PooledVideoFeedItem extends ConsumerWidget {
               authorPubkey: video.pubkey,
               likesRepository: likesRepository,
               commentsRepository: commentsRepository,
+              repostsRepository: repostsRepository,
+              addressableId: addressableId,
             )
             ..add(const VideoInteractionsSubscriptionRequested())
             ..add(const VideoInteractionsFetchRequested()),

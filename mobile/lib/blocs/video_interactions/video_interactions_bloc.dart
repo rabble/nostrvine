@@ -1,5 +1,5 @@
 // ABOUTME: BLoC for managing interactions on a single video
-// ABOUTME: Handles like status, like count, and comment count per video item
+// ABOUTME: Handles like/repost status and counts per video item
 
 import 'dart:async';
 
@@ -8,6 +8,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:reposts_repository/reposts_repository.dart';
 
 part 'video_interactions_event.dart';
 part 'video_interactions_state.dart';
@@ -17,10 +18,12 @@ part 'video_interactions_state.dart';
 /// This bloc is created per-VideoFeedItem and manages:
 /// - Like status (from LikesRepository)
 /// - Like count (from relays via LikesRepository)
+/// - Repost status (from RepostsRepository)
+/// - Repost count (from video metadata)
 /// - Comment count (from relays via CommentsRepository)
 ///
-/// The bloc subscribes to the repository's liked IDs stream to stay
-/// in sync when likes change from other sources (e.g., liked videos grid).
+/// The bloc subscribes to the repository's liked/reposted IDs streams to stay
+/// in sync when interactions change from other sources (e.g., profile grids).
 class VideoInteractionsBloc
     extends Bloc<VideoInteractionsEvent, VideoInteractionsState> {
   VideoInteractionsBloc({
@@ -28,13 +31,18 @@ class VideoInteractionsBloc
     required String authorPubkey,
     required LikesRepository likesRepository,
     required CommentsRepository commentsRepository,
+    required RepostsRepository repostsRepository,
+    String? addressableId,
   }) : _eventId = eventId,
        _authorPubkey = authorPubkey,
        _likesRepository = likesRepository,
        _commentsRepository = commentsRepository,
+       _repostsRepository = repostsRepository,
+       _addressableId = addressableId,
        super(const VideoInteractionsState()) {
     on<VideoInteractionsFetchRequested>(_onFetchRequested);
     on<VideoInteractionsLikeToggled>(_onLikeToggled);
+    on<VideoInteractionsRepostToggled>(_onRepostToggled);
     on<VideoInteractionsSubscriptionRequested>(_onSubscriptionRequested);
   }
 
@@ -42,28 +50,54 @@ class VideoInteractionsBloc
   final String _authorPubkey;
   final LikesRepository _likesRepository;
   final CommentsRepository _commentsRepository;
+  final RepostsRepository _repostsRepository;
 
-  /// Subscribe to liked IDs changes and update like status reactively.
+  /// Addressable ID for repost operations (format: `kind:pubkey:d-tag`).
+  /// Null if the video doesn't have a d-tag (non-addressable event).
+  final String? _addressableId;
+
+  /// Subscribe to liked/reposted IDs changes and update status reactively.
   Future<void> _onSubscriptionRequested(
     VideoInteractionsSubscriptionRequested event,
     Emitter<VideoInteractionsState> emit,
-  ) async {
-    await emit.forEach<Set<String>>(
-      _likesRepository.watchLikedEventIds(),
-      onData: (likedIds) {
-        final isLiked = likedIds.contains(_eventId);
-        if (isLiked == state.isLiked) return state;
+  ) {
+    final subscriptions = [
+      emit.forEach<Set<String>>(
+        _likesRepository.watchLikedEventIds(),
+        onData: (likedIds) {
+          final isLiked = likedIds.contains(_eventId);
+          if (isLiked == state.isLiked) return state;
 
-        // Update like status and adjust count
-        final currentCount = state.likeCount ?? 0;
-        final newCount = isLiked ? currentCount + 1 : currentCount - 1;
+          // Update like status and adjust count
+          final currentCount = state.likeCount ?? 0;
+          final newCount = isLiked ? currentCount + 1 : currentCount - 1;
 
-        return state.copyWith(
-          isLiked: isLiked,
-          likeCount: newCount < 0 ? 0 : newCount,
-        );
-      },
-    );
+          return state.copyWith(
+            isLiked: isLiked,
+            likeCount: newCount < 0 ? 0 : newCount,
+          );
+        },
+      ),
+      if (_addressableId != null)
+        emit.forEach<Set<String>>(
+          _repostsRepository.watchRepostedAddressableIds(),
+          onData: (repostedIds) {
+            final isReposted = repostedIds.contains(_addressableId);
+            if (isReposted == state.isReposted) return state;
+
+            // Update repost status and adjust count
+            final currentCount = state.repostCount ?? 0;
+            final newCount = isReposted ? currentCount + 1 : currentCount - 1;
+
+            return state.copyWith(
+              isReposted: isReposted,
+              repostCount: newCount < 0 ? 0 : newCount,
+            );
+          },
+        ),
+    ];
+
+    return subscriptions.wait;
   }
 
   /// Handle request to fetch initial state.
@@ -81,6 +115,11 @@ class VideoInteractionsBloc
       // Check if liked (fast - from local cache)
       final isLiked = await _likesRepository.isLiked(_eventId);
 
+      // Check if reposted (fast - from local cache) if addressable
+      final isReposted = _addressableId != null
+          ? await _repostsRepository.isReposted(_addressableId)
+          : false;
+
       // Fetch counts in parallel
       final results = await Future.wait([
         _likesRepository.getLikeCount(_eventId),
@@ -95,6 +134,7 @@ class VideoInteractionsBloc
           status: VideoInteractionsStatus.success,
           isLiked: isLiked,
           likeCount: likeCount,
+          isReposted: isReposted,
           commentCount: commentCount,
           clearError: true,
         ),
@@ -161,6 +201,67 @@ class VideoInteractionsBloc
         state.copyWith(
           isLikeInProgress: false,
           error: VideoInteractionsError.likeFailed,
+        ),
+      );
+    }
+  }
+
+  /// Handle repost toggle request.
+  Future<void> _onRepostToggled(
+    VideoInteractionsRepostToggled event,
+    Emitter<VideoInteractionsState> emit,
+  ) async {
+    // Prevent double-taps
+    if (state.isRepostInProgress) return;
+
+    // Cannot repost non-addressable events (missing d-tag)
+    if (_addressableId == null) {
+      Log.warning(
+        'VideoInteractionsBloc: Cannot repost - no addressable ID for '
+        '$_eventId',
+        name: 'VideoInteractionsBloc',
+        category: LogCategory.system,
+      );
+      emit(state.copyWith(error: VideoInteractionsError.repostFailed));
+      return;
+    }
+
+    emit(state.copyWith(isRepostInProgress: true, clearError: true));
+
+    try {
+      final isNowReposted = await _repostsRepository.toggleRepost(
+        addressableId: _addressableId,
+        originalAuthorPubkey: _authorPubkey,
+      );
+
+      // Update local state with new repost status and adjusted count
+      final currentCount = state.repostCount ?? 0;
+      final newCount = isNowReposted ? currentCount + 1 : currentCount - 1;
+
+      emit(
+        state.copyWith(
+          isReposted: isNowReposted,
+          repostCount: newCount < 0 ? 0 : newCount,
+          isRepostInProgress: false,
+        ),
+      );
+    } on AlreadyRepostedException {
+      // Already reposted - just update state to reflect reality
+      emit(state.copyWith(isReposted: true, isRepostInProgress: false));
+    } on NotRepostedException {
+      // Not reposted - just update state to reflect reality
+      emit(state.copyWith(isReposted: false, isRepostInProgress: false));
+    } catch (e) {
+      Log.error(
+        'VideoInteractionsBloc: Repost toggle failed for $_eventId - $e',
+        name: 'VideoInteractionsBloc',
+        category: LogCategory.system,
+      );
+
+      emit(
+        state.copyWith(
+          isRepostInProgress: false,
+          error: VideoInteractionsError.repostFailed,
         ),
       );
     }

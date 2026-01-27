@@ -527,17 +527,3 @@ class RepostsRepository {
     return null;
   }
 }
-
-/// Helper function to build an addressable ID for a video.
-///
-/// Format: `34236:<author_pubkey>:<d-tag>`
-String buildAddressableId({
-  required String authorPubkey,
-  required String dTag,
-}) {
-  return AId(
-    kind: EventKind.videoVertical,
-    pubkey: authorPubkey,
-    dTag: dTag,
-  ).toAString();
-}

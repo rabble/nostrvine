@@ -40,6 +40,10 @@ class DeveloperOptionsScreen extends ConsumerWidget {
         environment: AppEnvironment.dev,
         devRelay: DevRelay.funnelcakeProd,
       ),
+      const EnvironmentConfig(
+        environment: AppEnvironment.dev,
+        devRelay: DevRelay.localhost,
+      ),
     ];
 
     return Scaffold(

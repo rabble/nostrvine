@@ -61,6 +61,82 @@ final class AnalyticsApiServiceProvider
 String _$analyticsApiServiceHash() =>
     r'b47808c5318ce0b2f956bcd4b6f290e4dcf48846';
 
+/// Single source of truth for Funnelcake REST API availability.
+///
+/// Uses capability detection - actually probes the API to verify it works.
+/// Re-checks when environment or relay configuration changes.
+///
+/// All feed providers should watch this instead of checking
+/// `analyticsService.isAvailable` directly.
+
+@ProviderFor(FunnelcakeAvailable)
+const funnelcakeAvailableProvider = FunnelcakeAvailableProvider._();
+
+/// Single source of truth for Funnelcake REST API availability.
+///
+/// Uses capability detection - actually probes the API to verify it works.
+/// Re-checks when environment or relay configuration changes.
+///
+/// All feed providers should watch this instead of checking
+/// `analyticsService.isAvailable` directly.
+final class FunnelcakeAvailableProvider
+    extends $AsyncNotifierProvider<FunnelcakeAvailable, bool> {
+  /// Single source of truth for Funnelcake REST API availability.
+  ///
+  /// Uses capability detection - actually probes the API to verify it works.
+  /// Re-checks when environment or relay configuration changes.
+  ///
+  /// All feed providers should watch this instead of checking
+  /// `analyticsService.isAvailable` directly.
+  const FunnelcakeAvailableProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'funnelcakeAvailableProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$funnelcakeAvailableHash();
+
+  @$internal
+  @override
+  FunnelcakeAvailable create() => FunnelcakeAvailable();
+}
+
+String _$funnelcakeAvailableHash() =>
+    r'8851a4927b4764fa2c59ed5c09dd3119c91f4ba1';
+
+/// Single source of truth for Funnelcake REST API availability.
+///
+/// Uses capability detection - actually probes the API to verify it works.
+/// Re-checks when environment or relay configuration changes.
+///
+/// All feed providers should watch this instead of checking
+/// `analyticsService.isAvailable` directly.
+
+abstract class _$FunnelcakeAvailable extends $AsyncNotifier<bool> {
+  FutureOr<bool> build();
+  @$mustCallSuper
+  @override
+  void runBuild() {
+    final created = build();
+    final ref = this.ref as $Ref<AsyncValue<bool>, bool>;
+    final element =
+        ref.element
+            as $ClassProviderElement<
+              AnyNotifier<AsyncValue<bool>, bool>,
+              AsyncValue<bool>,
+              Object?,
+              Object?
+            >;
+    element.handleValue(ref, created);
+  }
+}
+
 /// Main curation provider that manages curated content sets
 /// keepAlive ensures provider persists across tab navigation
 
@@ -221,15 +297,15 @@ final class EditorsPicksProvider
 
 String _$editorsPicksHash() => r'47f6f4c73a8e2f6f8aafa718986c063feb530d08';
 
-/// Provider for analytics-based trending videos
+/// Provider for analytics-based trending videos with cursor pagination
 
 @ProviderFor(AnalyticsTrending)
 const analyticsTrendingProvider = AnalyticsTrendingProvider._();
 
-/// Provider for analytics-based trending videos
+/// Provider for analytics-based trending videos with cursor pagination
 final class AnalyticsTrendingProvider
     extends $NotifierProvider<AnalyticsTrending, List<VideoEvent>> {
-  /// Provider for analytics-based trending videos
+  /// Provider for analytics-based trending videos with cursor pagination
   const AnalyticsTrendingProvider._()
     : super(
         from: null,
@@ -257,9 +333,9 @@ final class AnalyticsTrendingProvider
   }
 }
 
-String _$analyticsTrendingHash() => r'6bf4dd9f6cd1c64c157f7c5733909211e6729a41';
+String _$analyticsTrendingHash() => r'82960b26d866e7c9f9ea3431939ca8e1cf3a6da0';
 
-/// Provider for analytics-based trending videos
+/// Provider for analytics-based trending videos with cursor pagination
 
 abstract class _$AnalyticsTrending extends $Notifier<List<VideoEvent>> {
   List<VideoEvent> build();

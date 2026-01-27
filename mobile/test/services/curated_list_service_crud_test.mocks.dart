@@ -188,7 +188,6 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
     List<String>? tempRelays,
     List<int>? relayTypes = const [1, 2, 3, 4],
     bool? sendAfterAuth = false,
-    bool? useGateway = true,
     bool? useCache = true,
   }) =>
       (super.noSuchMethod(
@@ -200,7 +199,6 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
                 #tempRelays: tempRelays,
                 #relayTypes: relayTypes,
                 #sendAfterAuth: sendAfterAuth,
-                #useGateway: useGateway,
                 #useCache: useCache,
               },
             ),
@@ -267,18 +265,13 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
   _i6.Future<_i7.Event?> fetchEventById(
     String? eventId, {
     String? relayUrl,
-    bool? useGateway = true,
     bool? useCache = true,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
               #fetchEventById,
               [eventId],
-              {
-                #relayUrl: relayUrl,
-                #useGateway: useGateway,
-                #useCache: useCache,
-              },
+              {#relayUrl: relayUrl, #useCache: useCache},
             ),
             returnValue: _i6.Future<_i7.Event?>.value(),
             returnValueForMissingStub: _i6.Future<_i7.Event?>.value(),
@@ -288,15 +281,10 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
   @override
   _i6.Future<_i7.Event?> fetchProfile(
     String? pubkey, {
-    bool? useGateway = true,
     bool? useCache = true,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(
-              #fetchProfile,
-              [pubkey],
-              {#useGateway: useGateway, #useCache: useCache},
-            ),
+            Invocation.method(#fetchProfile, [pubkey], {#useCache: useCache}),
             returnValue: _i6.Future<_i7.Event?>.value(),
             returnValueForMissingStub: _i6.Future<_i7.Event?>.value(),
           )
@@ -564,6 +552,23 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
             returnValueForMissingStub: _i6.Stream<_i7.Event>.empty(),
           )
           as _i6.Stream<_i7.Event>);
+
+  @override
+  _i6.Future<String?> createNip98AuthHeader({
+    required String? url,
+    required String? method,
+    String? payload,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#createNip98AuthHeader, [], {
+              #url: url,
+              #method: method,
+              #payload: payload,
+            }),
+            returnValue: _i6.Future<String?>.value(),
+            returnValueForMissingStub: _i6.Future<String?>.value(),
+          )
+          as _i6.Future<String?>);
 
   @override
   _i6.Future<void> dispose() =>
@@ -862,6 +867,15 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
             returnValueForMissingStub: _i6.Future<_i7.Event?>.value(),
           )
           as _i6.Future<_i7.Event?>);
+
+  @override
+  _i6.Future<void> acceptTerms() =>
+      (super.noSuchMethod(
+            Invocation.method(#acceptTerms, []),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
 
   @override
   _i6.Future<void> dispose() =>

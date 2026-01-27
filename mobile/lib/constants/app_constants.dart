@@ -75,6 +75,20 @@ class AppConstants {
   static const int defaultPaginationSize = 25;
 
   // ============================================================================
+  // PAGINATION THRESHOLDS
+  // ============================================================================
+
+  /// Minimum video count to consider "has more content" for initial load.
+  /// Used by feed providers to determine if loadMore() should be enabled.
+  /// If a feed returns fewer than this many videos, hasMoreContent = false.
+  static const int hasMoreContentThreshold = 10;
+
+  /// Batch size for loadMore pagination requests.
+  /// Used to determine if more content is available based on response size.
+  /// If API returns fewer than this many videos, no more content is available.
+  static const int paginationBatchSize = 50;
+
+  // ============================================================================
   // PRELOADING CONFIGURATION
   // ============================================================================
 
