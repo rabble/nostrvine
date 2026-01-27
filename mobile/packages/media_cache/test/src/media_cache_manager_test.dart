@@ -6,9 +6,9 @@ import 'package:media_cache/media_cache.dart';
 import 'helpers/test_helpers.dart';
 
 void main() {
-  setUpTestEnvironment();
-
   group('MediaCacheManager', () {
+    setUpTestEnvironment();
+
     late MediaCacheManager cacheManager;
 
     setUpAll(() async {

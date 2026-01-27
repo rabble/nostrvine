@@ -6,7 +6,7 @@ resolution: workspace
 
 environment:
   sdk: ^3.10.0
-  flutter: ">=3.29.0"
+  flutter: ^3.38.3
 
 dependencies:
   flutter:
