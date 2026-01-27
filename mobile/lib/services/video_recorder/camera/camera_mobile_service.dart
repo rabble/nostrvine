@@ -178,21 +178,36 @@ class CameraMobileService extends CameraService {
   }
 
   @override
-  Future<void> startRecording({Duration? maxDuration}) async {
-    if (!_isInitialized) return;
+  Future<bool> startRecording({Duration? maxDuration}) async {
+    if (!_isInitialized) return false;
     try {
       Log.info(
         '📷 Starting video recording',
         name: 'CameraMobileService',
         category: .video,
       );
-      await _camera.startRecording(maxDuration: maxDuration);
+      final success = await _camera.startRecording(maxDuration: maxDuration);
+      if (success) {
+        Log.info(
+          '📷 Video recording truly started',
+          name: 'CameraMobileService',
+          category: .video,
+        );
+      } else {
+        Log.warning(
+          '📷 Recording failed to start or was stopped before first keyframe',
+          name: 'CameraMobileService',
+          category: .video,
+        );
+      }
+      return success;
     } catch (e) {
       Log.error(
         '📷 Failed to start recording (unexpected error): $e',
         name: 'CameraMobileService',
         category: .video,
       );
+      return false;
     }
   }
 

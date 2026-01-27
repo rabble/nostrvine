@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
@@ -175,7 +176,12 @@ class VideoEditorBottomBar extends ConsumerWidget {
                             : videoEditorProvider.select(
                                 (s) => s.currentPosition,
                               ),
-                        totalDuration: totalDuration,
+                        totalDuration: Duration(
+                          milliseconds: totalDuration.inMilliseconds.clamp(
+                            0,
+                            VideoEditorConstants.maxDuration.inMilliseconds,
+                          ),
+                        ),
                       );
                     },
                   ),
