@@ -207,7 +207,8 @@ class VideoThumbnailService {
           await CrashReportingService.instance.recordError(
             Exception('Thumbnail extraction failed - thumbnails list is empty'),
             StackTrace.current,
-            reason: 'VideoThumbnailService: Failed to extract thumbnail from '
+            reason:
+                'VideoThumbnailService: Failed to extract thumbnail from '
                 '$videoPath at timestamp: ${timestamp.inMilliseconds}ms',
           );
         }
@@ -233,7 +234,8 @@ class VideoThumbnailService {
         await CrashReportingService.instance.recordError(
           e,
           stackTrace,
-          reason: 'VideoThumbnailService: Failed to extract thumbnail from '
+          reason:
+              'VideoThumbnailService: Failed to extract thumbnail from '
               '$videoPath at timestamp: ${timestamp.inMilliseconds}ms',
         );
       }
