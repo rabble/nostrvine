@@ -486,6 +486,29 @@ class KeycastOAuth {
     }
   }
 
+  /// Verify email using token from email link
+  Future<VerifyEmailResult> verifyEmail({required String token}) async {
+    try {
+      final response = await _client.post(
+        Uri.parse('${config.serverUrl}/api/auth/verify-email'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'token': token}),
+      );
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return VerifyEmailResult.fromJson(json);
+      }
+
+      // Handle server-side errors
+      final message = json['message']?.toString() ?? 'Failed to verify email';
+      return VerifyEmailResult.error(message);
+    } catch (e) {
+      return VerifyEmailResult.error('Network error: $e');
+    }
+  }
+
   /// Delete the user's account permanently from Keycast
   ///
   /// Requires an active bearer token from headless login/register flow.

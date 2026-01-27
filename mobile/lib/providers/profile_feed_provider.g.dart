@@ -13,6 +13,9 @@ part of 'profile_feed_provider.dart';
 /// This is a family provider, so each userId gets its own provider instance
 /// with independent cursor tracking.
 ///
+/// Strategy: Try Funnelcake REST API first for better performance,
+/// fall back to Nostr subscription if unavailable.
+///
 /// Usage:
 /// ```dart
 /// final feed = ref.watch(profileFeedProvider(userId));
@@ -27,6 +30,9 @@ const profileFeedProvider = ProfileFeedFamily._();
 /// This is a family provider, so each userId gets its own provider instance
 /// with independent cursor tracking.
 ///
+/// Strategy: Try Funnelcake REST API first for better performance,
+/// fall back to Nostr subscription if unavailable.
+///
 /// Usage:
 /// ```dart
 /// final feed = ref.watch(profileFeedProvider(userId));
@@ -38,6 +44,9 @@ final class ProfileFeedProvider
   ///
   /// This is a family provider, so each userId gets its own provider instance
   /// with independent cursor tracking.
+  ///
+  /// Strategy: Try Funnelcake REST API first for better performance,
+  /// fall back to Nostr subscription if unavailable.
   ///
   /// Usage:
   /// ```dart
@@ -80,12 +89,15 @@ final class ProfileFeedProvider
   }
 }
 
-String _$profileFeedHash() => r'd7ec7674ec21744aea9e15527ead21a7957ffd36';
+String _$profileFeedHash() => r'7097852e8351c4ed0c641fc3100f8268e9458071';
 
 /// Profile feed provider - shows videos for a specific user with pagination
 ///
 /// This is a family provider, so each userId gets its own provider instance
 /// with independent cursor tracking.
+///
+/// Strategy: Try Funnelcake REST API first for better performance,
+/// fall back to Nostr subscription if unavailable.
 ///
 /// Usage:
 /// ```dart
@@ -116,6 +128,9 @@ final class ProfileFeedFamily extends $Family
   /// This is a family provider, so each userId gets its own provider instance
   /// with independent cursor tracking.
   ///
+  /// Strategy: Try Funnelcake REST API first for better performance,
+  /// fall back to Nostr subscription if unavailable.
+  ///
   /// Usage:
   /// ```dart
   /// final feed = ref.watch(profileFeedProvider(userId));
@@ -133,6 +148,9 @@ final class ProfileFeedFamily extends $Family
 ///
 /// This is a family provider, so each userId gets its own provider instance
 /// with independent cursor tracking.
+///
+/// Strategy: Try Funnelcake REST API first for better performance,
+/// fall back to Nostr subscription if unavailable.
 ///
 /// Usage:
 /// ```dart
