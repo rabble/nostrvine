@@ -84,7 +84,7 @@ class CameraController(
     // Thresholds for "dark" detection:
     // Front camera: Lower thresholds - screen flash helps even in moderate darkness
     // Back camera: Higher thresholds - real flash is more aggressive, only for true darkness
-    private val frontCameraIsoThreshold: Int = 400
+    private val frontCameraIsoThreshold: Int = 650
     private val frontCameraExposureThreshold: Long = 20_000_000L  // 20ms
     private val backCameraIsoThreshold: Int = 800
     private val backCameraExposureThreshold: Long = 33_000_000L  // 33ms

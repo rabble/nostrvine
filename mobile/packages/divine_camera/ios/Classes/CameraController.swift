@@ -45,7 +45,7 @@ class CameraController: NSObject {
     // Thresholds for "dark" detection:
     // Front camera: Lower thresholds - screen flash helps even in moderate darkness
     // Back camera: Higher thresholds - real flash is more aggressive, only for true darkness
-    private let frontCameraIsoThreshold: Float = 400
+    private let frontCameraIsoThreshold: Float = 650
     private let frontCameraExposureThreshold: Float = 1.0 / 50.0  // 20ms (1/50s)
     private let backCameraIsoThreshold: Float = 800
     private let backCameraExposureThreshold: Float = 1.0 / 30.0  // 33ms (1/30s)
