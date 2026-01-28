@@ -18,6 +18,7 @@ export 'src/notification_model.dart';
 export 'src/pending_upload.dart';
 export 'src/ready_event_data.dart';
 export 'src/user_profile.dart';
+export 'src/video_editor/sticker_data.dart';
 export 'src/video_event.dart';
 export 'src/video_state.dart';
 export 'src/vine_draft.dart';
