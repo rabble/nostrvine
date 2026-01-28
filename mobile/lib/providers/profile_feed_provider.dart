@@ -33,6 +33,10 @@ class ProfileFeed extends _$ProfileFeed {
   bool _usingRestApi = false;
   int? _nextCursor; // Cursor for REST API pagination
 
+  // Cache of video metadata from REST API (preserves loops, likes, etc.)
+  // Key: video ID, Value: metadata fields
+  final Map<String, _VideoMetadataCache> _metadataCache = {};
+
   @override
   Future<VideoFeedState> build(String userId) async {
     // Reset cursor state at start of build to ensure clean state
@@ -71,6 +75,9 @@ class ProfileFeed extends _$ProfileFeed {
           // Filter out reposts and store cursor
           authorVideos = apiVideos.where((v) => !v.isRepost).toList();
           _nextCursor = _getOldestTimestamp(apiVideos);
+
+          // Cache metadata for later merging with Nostr data
+          _cacheVideoMetadata(authorVideos);
 
           Log.info(
             '✅ ProfileFeed: Got ${authorVideos.length} videos from REST API for user=$userId, cursor: $_nextCursor',
@@ -144,6 +151,9 @@ class ProfileFeed extends _$ProfileFeed {
           .where((v) => !v.isRepost)
           .toList();
 
+      // Apply cached metadata to preserve engagement stats from previous REST API calls
+      authorVideos = _applyMetadataCache(authorVideos);
+
       Log.info(
         'ProfileFeed: Got ${authorVideos.length} videos from Nostr for user=$userId',
         name: 'ProfileFeedProvider',
@@ -206,15 +216,25 @@ class ProfileFeed extends _$ProfileFeed {
     return videos.map((v) => v.createdAt).reduce((a, b) => a < b ? a : b);
   }
 
-  /// Refresh state from VideoEventService without re-subscribing to relay
+  /// Refresh state - uses REST API when available, otherwise Nostr with metadata preservation
   /// Call this after a video is updated to sync the provider's state
   void refreshFromService() {
+    // Fix #1: If using REST API, refresh from REST API instead of Nostr
+    if (_usingRestApi) {
+      _refreshFromRestApi();
+      return;
+    }
+
+    // Nostr mode: get videos from service
     final videoEventService = ref.read(videoEventServiceProvider);
     // Filter out reposts (originals only)
-    final updatedVideos = videoEventService
+    var updatedVideos = videoEventService
         .authorVideos(userId)
         .where((v) => !v.isRepost)
         .toList();
+
+    // Fix #3: Apply cached metadata to preserve engagement stats
+    updatedVideos = _applyMetadataCache(updatedVideos);
 
     state = AsyncData(
       VideoFeedState(
@@ -225,6 +245,61 @@ class ProfileFeed extends _$ProfileFeed {
         lastUpdated: DateTime.now(),
       ),
     );
+  }
+
+  /// Fix #2: Refresh from REST API when in REST API mode
+  Future<void> _refreshFromRestApi() async {
+    try {
+      final analyticsService = ref.read(analyticsApiServiceProvider);
+      final apiVideos = await analyticsService.getVideosByAuthor(
+        pubkey: userId,
+        limit: 100,
+      );
+
+      if (!ref.mounted) return;
+
+      if (apiVideos.isNotEmpty) {
+        // Filter out reposts
+        final authorVideos = apiVideos.where((v) => !v.isRepost).toList();
+
+        // Update metadata cache with fresh data
+        _cacheVideoMetadata(authorVideos);
+
+        state = AsyncData(
+          VideoFeedState(
+            videos: authorVideos,
+            hasMoreContent:
+                apiVideos.length >= AppConstants.hasMoreContentThreshold,
+            isLoadingMore: false,
+            lastUpdated: DateTime.now(),
+          ),
+        );
+
+        Log.info(
+          'ProfileFeed: Refreshed ${authorVideos.length} videos from REST API for user=$userId',
+          name: 'ProfileFeedProvider',
+          category: LogCategory.video,
+        );
+      } else {
+        // REST API returned empty, fall back to Nostr with metadata cache
+        Log.warning(
+          'ProfileFeed: REST API refresh returned empty, using Nostr with cached metadata',
+          name: 'ProfileFeedProvider',
+          category: LogCategory.video,
+        );
+        _usingRestApi = false;
+        refreshFromService(); // Will now use Nostr path with metadata cache
+      }
+    } catch (e) {
+      Log.warning(
+        'ProfileFeed: REST API refresh failed ($e), using Nostr with cached metadata',
+        name: 'ProfileFeedProvider',
+        category: LogCategory.video,
+      );
+      // Fall back to Nostr with metadata cache on error
+      _usingRestApi = false;
+      refreshFromService();
+    }
   }
 
   /// Load more historical events for this specific user
@@ -289,6 +364,9 @@ class ProfileFeed extends _$ProfileFeed {
 
           // Update cursor for next pagination
           _nextCursor = _getOldestTimestamp(apiVideos);
+
+          // Cache metadata from new videos
+          _cacheVideoMetadata(newVideos);
 
           if (newVideos.isNotEmpty) {
             final allVideos = [...currentState.videos, ...newVideos];
@@ -373,10 +451,13 @@ class ProfileFeed extends _$ProfileFeed {
       );
 
       // Get updated videos, filtering out reposts (originals only)
-      final updatedVideos = videoEventService
+      var updatedVideos = videoEventService
           .authorVideos(userId)
           .where((v) => !v.isRepost)
           .toList();
+
+      // Apply cached metadata to preserve engagement stats
+      updatedVideos = _applyMetadataCache(updatedVideos);
 
       // Update state with new videos
       if (!ref.mounted) return;
@@ -428,6 +509,9 @@ class ProfileFeed extends _$ProfileFeed {
           // Filter out reposts
           final authorVideos = apiVideos.where((v) => !v.isRepost).toList();
 
+          // Cache metadata for future Nostr fallbacks
+          _cacheVideoMetadata(authorVideos);
+
           state = AsyncData(
             VideoFeedState(
               videos: authorVideos,
@@ -454,11 +538,66 @@ class ProfileFeed extends _$ProfileFeed {
       }
     }
 
-    // Reset cursor state before invalidating
+    // Reset cursor state before invalidating (but keep metadata cache!)
     _usingRestApi = false;
     _nextCursor = null;
 
     // Invalidate to re-run build() which will try REST API then Nostr
     ref.invalidateSelf();
   }
+
+  /// Cache metadata from REST API videos for later merging with Nostr data
+  void _cacheVideoMetadata(List<VideoEvent> videos) {
+    for (final video in videos) {
+      if (video.originalLoops != null ||
+          video.originalLikes != null ||
+          video.originalComments != null ||
+          video.originalReposts != null) {
+        _metadataCache[video.id] = _VideoMetadataCache(
+          originalLoops: video.originalLoops,
+          originalLikes: video.originalLikes,
+          originalComments: video.originalComments,
+          originalReposts: video.originalReposts,
+        );
+      }
+    }
+  }
+
+  /// Apply cached metadata to videos that may be missing it (from Nostr)
+  List<VideoEvent> _applyMetadataCache(List<VideoEvent> videos) {
+    return videos.map((video) {
+      final cached = _metadataCache[video.id];
+      if (cached == null) return video;
+
+      // Only apply if video is missing metadata but cache has it
+      if (video.originalLoops == null && cached.originalLoops != null ||
+          video.originalLikes == null && cached.originalLikes != null ||
+          video.originalComments == null && cached.originalComments != null ||
+          video.originalReposts == null && cached.originalReposts != null) {
+        return video.copyWith(
+          originalLoops: video.originalLoops ?? cached.originalLoops,
+          originalLikes: video.originalLikes ?? cached.originalLikes,
+          originalComments: video.originalComments ?? cached.originalComments,
+          originalReposts: video.originalReposts ?? cached.originalReposts,
+        );
+      }
+      return video;
+    }).toList();
+  }
+}
+
+/// Cached video metadata from REST API
+/// Used to preserve engagement stats when refreshing from Nostr
+class _VideoMetadataCache {
+  const _VideoMetadataCache({
+    this.originalLoops,
+    this.originalLikes,
+    this.originalComments,
+    this.originalReposts,
+  });
+
+  final int? originalLoops;
+  final int? originalLikes;
+  final int? originalComments;
+  final int? originalReposts;
 }
