@@ -741,7 +741,7 @@ class CameraController: NSObject {
                 // Check and enable auto-flash if needed
                 self.checkAndEnableAutoFlash()
                 
-                print("DivineCamera: Recording started to \(outputURL.path)"))
+                print("DivineCamera: Recording started to \(outputURL.path)")
                 
                 // Schedule max duration timer if specified
                 if let maxMs = maxDurationMs, maxMs > 0 {
