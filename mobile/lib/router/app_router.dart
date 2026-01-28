@@ -54,6 +54,7 @@ import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -283,6 +284,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   final authService = ref.read(authServiceProvider);
   final authListenable = _AuthStateListenable(authService);
 
+  // Cache SharedPreferences to avoid slow getInstance() calls in redirect
+  final prefs = ref.read(sharedPreferencesProvider);
+
   return GoRouter(
     navigatorKey: _rootKey,
     // Start at /welcome - redirect logic will navigate to appropriate route
@@ -300,17 +304,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'AppRouter',
         category: LogCategory.ui,
       );
-      Log.debug(
-        'Getting SharedPreferences...',
-        name: 'AppRouter',
-        category: LogCategory.ui,
-      );
-      final prefs = await SharedPreferences.getInstance();
-      Log.debug(
-        'SharedPreferences obtained',
-        name: 'AppRouter',
-        category: LogCategory.ui,
-      );
+      // Use cached prefs from provider instead of slow getInstance() call
 
       final authState = ref.read(authServiceProvider).authState;
       if (authState == AuthState.authenticated &&
@@ -319,7 +313,24 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               location == WelcomeScreen.loginOptionsPath ||
               location == WelcomeScreen.resetPasswordPath ||
               location == EmailVerificationScreen.path)) {
-        debugPrint('[Router] Authenticated. moving to /home/0');
+        // Check following list here since GoRouter doesn't re-run redirect for target location
+        // New users with no following should go to explore, not empty home feed
+        _hasNavigated = true;
+        final hasFollowing = await hasAnyFollowingInCache(prefs);
+        Log.debug(
+          'Auth route redirect: hasFollowing=$hasFollowing',
+          name: 'AppRouter',
+          category: LogCategory.ui,
+        );
+        if (!hasFollowing) {
+          debugPrint(
+            '[Router] New user with no following, redirecting to /explore',
+          );
+          return ExploreScreen.path;
+        }
+        debugPrint(
+          '[Router] Authenticated user with following, redirecting to /home/0',
+        );
         return HomeScreenRouter.pathForIndex(0);
       }
 
@@ -382,25 +393,48 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
       // Only redirect to explore on very first navigation if user follows nobody
       // After that, let users navigate to home freely (they'll see a message to follow people)
+      // Skip this check if user is not authenticated (e.g., during logout)
       if (!_hasNavigated && location.startsWith(HomeScreenRouter.path)) {
-        _hasNavigated = true;
-
-        // Check SharedPreferences cache directly for following list
-        // This is more reliable than checking socialProvider state which may not be initialized
-        final prefs = await SharedPreferences.getInstance();
-        final hasFollowing = await hasAnyFollowingInCache(prefs);
         Log.debug(
-          'Empty contacts check: hasFollowing=$hasFollowing, redirecting=${!hasFollowing}',
+          'First home navigation check: _hasNavigated=$_hasNavigated, authState=$authState',
           name: 'AppRouter',
           category: LogCategory.ui,
         );
-        if (!hasFollowing) {
+
+        // Only do the following-list check if user is authenticated
+        // During logout, auth state may still be 'authenticated' but we should skip
+        // this check to avoid unnecessary redirect to explore
+        if (authState == AuthState.authenticated) {
+          _hasNavigated = true;
           Log.debug(
-            'Redirecting to /explore because no following list found',
+            '✅ Set _hasNavigated = true (first home navigation while authenticated)',
             name: 'AppRouter',
             category: LogCategory.ui,
           );
-          return ExploreScreen.path;
+
+          // Check SharedPreferences cache directly for following list
+          // This is more reliable than checking socialProvider state which may not be initialized
+          // Uses cached prefs from provider instead of slow getInstance() call
+          final hasFollowing = await hasAnyFollowingInCache(prefs);
+          Log.debug(
+            'Empty contacts check: hasFollowing=$hasFollowing, redirecting=${!hasFollowing}',
+            name: 'AppRouter',
+            category: LogCategory.ui,
+          );
+          if (!hasFollowing) {
+            Log.debug(
+              'Redirecting to /explore because no following list found',
+              name: 'AppRouter',
+              category: LogCategory.ui,
+            );
+            return ExploreScreen.path;
+          }
+        } else {
+          Log.debug(
+            'Skipping following check - not authenticated',
+            name: 'AppRouter',
+            category: LogCategory.ui,
+          );
         }
       } else if (location.startsWith(HomeScreenRouter.path)) {
         Log.debug(
