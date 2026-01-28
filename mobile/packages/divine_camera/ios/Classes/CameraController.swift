@@ -34,6 +34,10 @@ class CameraController: NSObject {
     private var isRecording: Bool = false
     private var isPaused: Bool = false
     
+    // Screen brightness for front camera "torch" mode
+    private var originalBrightness: CGFloat?
+    private var screenFlashFeatureEnabled: Bool = true
+    
     private var minZoom: CGFloat = 1.0
     private var maxZoom: CGFloat = 1.0
     private var currentZoom: CGFloat = 1.0
@@ -85,8 +89,18 @@ class CameraController: NSObject {
     private var videoQualityPreset: AVCaptureSession.Preset = .high
     
     /// Initializes the camera with the specified lens and video quality.
-    func initialize(lens: String, videoQuality: String, completion: @escaping ([String: Any]?, String?) -> Void) {
+    func initialize(lens: String, videoQuality: String, enableScreenFlash: Bool = true, completion: @escaping ([String: Any]?, String?) -> Void) {
         currentLens = lens == "front" ? .front : .back
+        screenFlashFeatureEnabled = enableScreenFlash
+        
+        // Fallback to available camera if requested camera is not available
+        if currentLens == .front && !hasFrontCamera && hasBackCamera {
+            print("[DivineCameraController] Front camera requested but not available, falling back to back camera")
+            currentLens = .back
+        } else if currentLens == .back && !hasBackCamera && hasFrontCamera {
+            print("[DivineCameraController] Back camera requested but not available, falling back to front camera")
+            currentLens = .front
+        }
         
         // Map video quality string to AVCaptureSession.Preset
         switch videoQuality {
@@ -292,7 +306,8 @@ class CameraController: NSObject {
         minZoom = 1.0
         maxZoom = min(device.activeFormat.videoMaxZoomFactor, 10.0)
         currentZoom = device.videoZoomFactor
-        hasFlash = device.hasFlash
+        // Front camera has "flash" via screen brightness when feature is enabled
+        hasFlash = device.hasFlash || (screenFlashFeatureEnabled && currentLens == .front)
         isFocusPointSupported = device.isFocusPointOfInterestSupported
         isExposurePointSupported = device.isExposurePointOfInterestSupported
         
@@ -307,6 +322,9 @@ class CameraController: NSObject {
     
     /// Switches to a different camera lens.
     func switchCamera(lens: String, completion: @escaping ([String: Any]?, String?) -> Void) {
+        // Disable screen flash when switching cameras
+        disableScreenFlash()
+        
         sessionQueue.async { [weak self] in
             guard let self = self, let session = self.captureSession else {
                 completion(nil, "Session not available")
@@ -367,8 +385,20 @@ class CameraController: NSObject {
     }
     
     /// Sets the flash mode.
+    /// For front camera with torch mode, maximizes screen brightness instead.
     func setFlashMode(mode: String) -> Bool {
         guard let device = videoDevice else { return false }
+        
+        // Handle screen brightness for front camera "torch" mode
+        if currentLens == .front {
+            if mode == "torch" {
+                enableScreenFlash()
+                currentTorchMode = .on
+                return true
+            } else {
+                disableScreenFlash()
+            }
+        }
         
         do {
             try device.lockForConfiguration()
@@ -405,6 +435,32 @@ class CameraController: NSObject {
             return true
         } catch {
             return false
+        }
+    }
+    
+    /// Enables screen flash by setting brightness to maximum (for front camera).
+    private func enableScreenFlash() {
+        guard screenFlashFeatureEnabled else { return }
+        
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            // Save original brightness if not already saved
+            if self.originalBrightness == nil {
+                self.originalBrightness = UIScreen.main.brightness
+            }
+            // Set brightness to maximum (1.0 = 100%)
+            UIScreen.main.brightness = 1.0
+        }
+    }
+    
+    /// Disables screen flash by restoring original brightness.
+    private func disableScreenFlash() {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            if let brightness = self.originalBrightness {
+                UIScreen.main.brightness = brightness
+                self.originalBrightness = nil
+            }
         }
     }
     
@@ -464,7 +520,11 @@ class CameraController: NSObject {
     }
     
     /// Starts video recording using AVAssetWriter.
-    func startRecording(maxDurationMs: Int?, completion: @escaping (String?) -> Void) {
+    /// - Parameters:
+    ///   - maxDurationMs: Optional maximum duration in milliseconds. Recording stops automatically when reached.
+    ///   - useCache: If true, saves video to temporary directory. If false, saves to documents directory (permanent).
+    ///   - completion: Callback with error message if failed, nil if successful.
+    func startRecording(maxDurationMs: Int?, useCache: Bool = true, completion: @escaping (String?) -> Void) {
         if isRecording {
             completion("Already recording")
             return
@@ -475,11 +535,17 @@ class CameraController: NSObject {
         videoOutputQueue.async { [weak self] in
             guard let self = self else { return }
             
-            // Create output file
-            let tempDir = FileManager.default.temporaryDirectory
+            // Create output file - use temporary or documents directory based on useCache parameter
+            let outputDir: URL
+            if useCache {
+                outputDir = FileManager.default.temporaryDirectory
+            } else {
+                let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
+                outputDir = paths[0]
+            }
             let timestamp = ISO8601DateFormatter().string(from: Date())
                 .replacingOccurrences(of: ":", with: "-")
-            let outputURL = tempDir.appendingPathComponent("VID_\(timestamp).mp4")
+            let outputURL = outputDir.appendingPathComponent("VID_\(timestamp).mp4")
             self.currentRecordingURL = outputURL
             
             // Remove existing file if any
@@ -681,6 +747,7 @@ class CameraController: NSObject {
     
     /// Pauses the camera preview.
     func pausePreview() {
+        disableScreenFlash()
         isPaused = true
         sessionQueue.async { [weak self] in
             self?.captureSession?.stopRunning()
@@ -690,6 +757,12 @@ class CameraController: NSObject {
     /// Resumes the camera preview.
     func resumePreview(completion: @escaping ([String: Any]?, String?) -> Void) {
         isPaused = false
+        
+        // Re-enable screen flash if front camera torch mode was active
+        if currentLens == .front && currentTorchMode == .on {
+            enableScreenFlash()
+        }
+        
         sessionQueue.async { [weak self] in
             self?.captureSession?.startRunning()
             
@@ -739,6 +812,9 @@ class CameraController: NSObject {
     
     /// Releases all camera resources.
     func release() {
+        // Restore screen brightness if screen flash was enabled
+        disableScreenFlash()
+        
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
             

@@ -1,11 +1,14 @@
 // ABOUTME: Home feed provider that shows videos only from people you follow
 // ABOUTME: Filters video events by the user's following list for a personalized feed
+// ABOUTME: Tries REST API first for better performance, falls back to Nostr subscription
 
 import 'dart:async';
 
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
@@ -38,8 +41,18 @@ class HomeFeed extends _$HomeFeed {
   static int _buildCounter = 0;
   static DateTime? _lastBuildTime;
 
+  // REST API mode state
+  bool _usingRestApi = false;
+  int? _nextCursor; // Cursor for REST API pagination
+  bool _hasMoreFromApi = true;
+
   @override
   Future<VideoFeedState> build() async {
+    // Reset cursor state at start of build to ensure clean state
+    _usingRestApi = false;
+    _nextCursor = null;
+    _hasMoreFromApi = true;
+
     // Prevent auto-dispose during async operations
     final keepAliveLink = ref.keepAlive();
 
@@ -212,14 +225,72 @@ class HomeFeed extends _$HomeFeed {
       VideoFeedState(videos: [], hasMoreContent: false, isInitialLoad: true),
     );
 
-    // Only subscribe to home feed if we have following pubkeys
-    if (followingPubkeys.isNotEmpty) {
+    // Get current user pubkey for REST API
+    final authService = ref.read(authServiceProvider);
+    final currentUserPubkey = authService.currentPublicKeyHex;
+
+    // Will hold videos from either REST API or Nostr
+    List<VideoEvent> followingVideosFromSource = [];
+
+    // Try REST API first if available and user is authenticated
+    // Use centralized availability check
+    final funnelcakeAvailable =
+        ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
+    final analyticsService = ref.read(analyticsApiServiceProvider);
+    if (funnelcakeAvailable &&
+        currentUserPubkey != null &&
+        followingPubkeys.isNotEmpty) {
+      Log.info(
+        '🏠 HomeFeed: Trying Funnelcake REST API first',
+        name: 'HomeFeedProvider',
+        category: LogCategory.video,
+      );
+
+      try {
+        final feedResult = await analyticsService.getHomeFeed(
+          pubkey: currentUserPubkey,
+          limit: 100,
+          sort: 'recent',
+        );
+
+        if (feedResult.videos.isNotEmpty) {
+          _usingRestApi = true;
+          _nextCursor = feedResult.nextCursor;
+          _hasMoreFromApi = feedResult.hasMore;
+          followingVideosFromSource = feedResult.videos;
+
+          Log.info(
+            '✅ HomeFeed: Got ${feedResult.videos.length} videos from REST API, '
+            'hasMore: ${feedResult.hasMore}, cursor: ${feedResult.nextCursor}',
+            name: 'HomeFeedProvider',
+            category: LogCategory.video,
+          );
+        } else {
+          Log.warning(
+            '🏠 HomeFeed: REST API returned empty, falling back to Nostr',
+            name: 'HomeFeedProvider',
+            category: LogCategory.video,
+          );
+          _usingRestApi = false;
+        }
+      } catch (e) {
+        Log.warning(
+          '🏠 HomeFeed: REST API failed ($e), falling back to Nostr',
+          name: 'HomeFeedProvider',
+          category: LogCategory.video,
+        );
+        _usingRestApi = false;
+      }
+    }
+
+    // Fall back to Nostr subscription if REST API not used
+    if (!_usingRestApi && followingPubkeys.isNotEmpty) {
       // Subscribe to home feed videos from followed authors using dedicated subscription type
       // NostrService now handles deduplication automatically
       // Request server-side sorting by created_at (newest first) if relay supports it
       // Use force: true to ensure new subscription even if params seem similar
       Log.info(
-        '🏠 HomeFeed: Subscribing with ${followingPubkeys.length} authors',
+        '🏠 HomeFeed: Using Nostr subscription with ${followingPubkeys.length} authors',
         name: 'HomeFeedProvider',
         category: LogCategory.video,
       );
@@ -281,7 +352,12 @@ class HomeFeed extends _$HomeFeed {
         name: 'HomeFeedProvider',
         category: LogCategory.video,
       );
-    } else {
+
+      // Get videos from Nostr service
+      followingVideosFromSource = List<VideoEvent>.from(
+        videoEventService.homeFeedVideos,
+      );
+    } else if (!_usingRestApi) {
       // Not following anyone - need subscribed list cache to show any content
       Log.info(
         '🏠 HomeFeed: Not following anyone, waiting for subscribed list cache',
@@ -385,13 +461,14 @@ class HomeFeed extends _$HomeFeed {
       );
     }
 
-    // Get videos from the dedicated home feed list
-    var followingVideos = List<VideoEvent>.from(
-      videoEventService.homeFeedVideos,
-    );
+    // Use videos from REST API or Nostr based on mode
+    var followingVideos = _usingRestApi
+        ? followingVideosFromSource
+        : List<VideoEvent>.from(videoEventService.homeFeedVideos);
 
     // Client-side filter to ensure only videos from currently followed users are shown
     // This handles the case where cache contains videos from recently unfollowed users
+    // REST API already filters server-side, but we apply for consistency and edge cases
     final followingSet = followingPubkeys.toSet();
     final beforeClientFilter = followingVideos.length;
     followingVideos = followingVideos
@@ -406,7 +483,7 @@ class HomeFeed extends _$HomeFeed {
     }
 
     Log.info(
-      '🏠 HomeFeed: ${followingVideos.length} videos from following',
+      '🏠 HomeFeed: ${followingVideos.length} videos from following (REST API: $_usingRestApi)',
       name: 'HomeFeedProvider',
       category: LogCategory.video,
     );
@@ -496,7 +573,8 @@ class HomeFeed extends _$HomeFeed {
 
     final feedState = VideoFeedState(
       videos: followingVideos,
-      hasMoreContent: followingVideos.length >= 10,
+      hasMoreContent:
+          followingVideos.length >= AppConstants.hasMoreContentThreshold,
       isLoadingMore: false,
       isInitialLoad: stillLoadingLists,
       error: null,
@@ -579,7 +657,7 @@ class HomeFeed extends _$HomeFeed {
     if (!ref.mounted) return;
 
     Log.info(
-      'HomeFeed: loadMore() called - isLoadingMore: ${currentState.isLoadingMore}',
+      'HomeFeed: loadMore() called - isLoadingMore: ${currentState.isLoadingMore}, usingRestApi: $_usingRestApi',
       name: 'HomeFeedProvider',
       category: LogCategory.video,
     );
@@ -592,6 +670,102 @@ class HomeFeed extends _$HomeFeed {
     state = AsyncData(currentState.copyWith(isLoadingMore: true));
 
     try {
+      // If using REST API, load more using cursor-based pagination
+      if (_usingRestApi) {
+        if (!_hasMoreFromApi) {
+          Log.info(
+            'HomeFeed: No more content available from REST API',
+            name: 'HomeFeedProvider',
+            category: LogCategory.video,
+          );
+          if (!ref.mounted) return;
+          state = AsyncData(
+            currentState.copyWith(isLoadingMore: false, hasMoreContent: false),
+          );
+          return;
+        }
+
+        final authService = ref.read(authServiceProvider);
+        final currentUserPubkey = authService.currentPublicKeyHex;
+        if (currentUserPubkey == null) {
+          if (!ref.mounted) return;
+          state = AsyncData(
+            currentState.copyWith(isLoadingMore: false, hasMoreContent: false),
+          );
+          return;
+        }
+
+        final analyticsService = ref.read(analyticsApiServiceProvider);
+        Log.info(
+          'HomeFeed: Loading more from REST API with cursor: $_nextCursor',
+          name: 'HomeFeedProvider',
+          category: LogCategory.video,
+        );
+
+        final feedResult = await analyticsService.getHomeFeed(
+          pubkey: currentUserPubkey,
+          limit: 50,
+          sort: 'recent',
+          before: _nextCursor,
+        );
+
+        if (!ref.mounted) return;
+
+        if (feedResult.videos.isNotEmpty) {
+          // Deduplicate and merge
+          final existingIds = currentState.videos.map((v) => v.id).toSet();
+          final newVideos = feedResult.videos
+              .where((v) => !existingIds.contains(v.id))
+              .where((v) => v.isSupportedOnCurrentPlatform)
+              .toList();
+
+          // Update cursor for next pagination
+          _nextCursor = feedResult.nextCursor;
+          _hasMoreFromApi = feedResult.hasMore;
+
+          if (newVideos.isNotEmpty) {
+            final allVideos = [...currentState.videos, ...newVideos];
+            Log.info(
+              'HomeFeed: Loaded ${newVideos.length} new videos from REST API (total: ${allVideos.length})',
+              name: 'HomeFeedProvider',
+              category: LogCategory.video,
+            );
+
+            state = AsyncData(
+              currentState.copyWith(
+                videos: allVideos,
+                hasMoreContent: feedResult.hasMore,
+                isLoadingMore: false,
+              ),
+            );
+          } else {
+            Log.info(
+              'HomeFeed: All returned videos already in state',
+              name: 'HomeFeedProvider',
+              category: LogCategory.video,
+            );
+            state = AsyncData(
+              currentState.copyWith(
+                hasMoreContent: feedResult.hasMore,
+                isLoadingMore: false,
+              ),
+            );
+          }
+        } else {
+          _hasMoreFromApi = false;
+          Log.info(
+            'HomeFeed: No more videos available from REST API',
+            name: 'HomeFeedProvider',
+            category: LogCategory.video,
+          );
+          state = AsyncData(
+            currentState.copyWith(hasMoreContent: false, isLoadingMore: false),
+          );
+        }
+        return;
+      }
+
+      // Nostr mode - load more from relay
       final videoEventService = ref.read(videoEventServiceProvider);
       final followRepository = ref.read(followRepositoryProvider);
       final followingPubkeys = followRepository.followingPubkeys;
@@ -624,7 +798,7 @@ class HomeFeed extends _$HomeFeed {
       final newEventsLoaded = eventCountAfter - eventCountBefore;
 
       Log.info(
-        'HomeFeed: Loaded $newEventsLoaded new events from following (total: $eventCountAfter)',
+        'HomeFeed: Loaded $newEventsLoaded new events from Nostr (total: $eventCountAfter)',
         name: 'HomeFeedProvider',
         category: LogCategory.video,
       );
@@ -698,7 +872,8 @@ class HomeFeed extends _$HomeFeed {
     state = AsyncData(
       VideoFeedState(
         videos: updatedVideos,
-        hasMoreContent: updatedVideos.length >= 10,
+        hasMoreContent:
+            updatedVideos.length >= AppConstants.hasMoreContentThreshold,
         isLoadingMore: false,
         lastUpdated: DateTime.now(),
         videoListSources: videoListSources,

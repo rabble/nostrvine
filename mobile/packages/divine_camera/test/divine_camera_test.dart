@@ -30,6 +30,7 @@ class MockDivineCameraPlatform
   Future<CameraState> initializeCamera({
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
   }) async {
     return _state = CameraState(
       isInitialized: true,
@@ -75,8 +76,12 @@ class MockDivineCameraPlatform
   }
 
   @override
-  Future<void> startRecording({Duration? maxDuration}) async {
+  Future<bool> startRecording({
+    Duration? maxDuration,
+    bool useCache = true,
+  }) async {
     _isRecording = true;
+    return true;
   }
 
   @override
@@ -152,6 +157,20 @@ void main() {
       test('initializes with video quality', () async {
         final state = await DivineCamera.instance.initialize(
           videoQuality: DivineVideoQuality.uhd,
+        );
+
+        expect(state.isInitialized, isTrue);
+      });
+
+      test('initializes with enableScreenFlash true (default)', () async {
+        final state = await DivineCamera.instance.initialize();
+
+        expect(state.isInitialized, isTrue);
+      });
+
+      test('initializes with enableScreenFlash false', () async {
+        final state = await DivineCamera.instance.initialize(
+          enableScreenFlash: false,
         );
 
         expect(state.isInitialized, isTrue);
@@ -536,4 +555,477 @@ void main() {
       expect(DivineVideoQuality.lowest.value, 'lowest');
     });
   });
+
+  group('CameraState additional tests', () {
+    test('toMap converts state to map', () {
+      const state = CameraState(
+        isInitialized: true,
+        isRecording: true,
+        flashMode: DivineCameraFlashMode.torch,
+        lens: DivineCameraLens.front,
+        zoomLevel: 2,
+        maxZoomLevel: 8,
+        aspectRatio: 1.777,
+        hasFlash: true,
+        hasFrontCamera: true,
+        hasBackCamera: true,
+        isFocusPointSupported: true,
+        isExposurePointSupported: true,
+        textureId: 42,
+      );
+
+      final map = state.toMap();
+
+      expect(map['isInitialized'], isTrue);
+      expect(map['isRecording'], isTrue);
+      expect(map['isSwitchingCamera'], isFalse);
+      expect(map['flashMode'], 'torch');
+      expect(map['lens'], 'front');
+      expect(map['zoomLevel'], 2.0);
+      expect(map['minZoomLevel'], 1.0);
+      expect(map['maxZoomLevel'], 8.0);
+      expect(map['aspectRatio'], closeTo(1.777, 0.001));
+      expect(map['hasFlash'], isTrue);
+      expect(map['hasFrontCamera'], isTrue);
+      expect(map['hasBackCamera'], isTrue);
+      expect(map['isFocusPointSupported'], isTrue);
+      expect(map['isExposurePointSupported'], isTrue);
+      expect(map['textureId'], 42);
+    });
+
+    test('toString returns formatted string', () {
+      const state = CameraState(
+        isInitialized: true,
+        textureId: 1,
+      );
+
+      final str = state.toString();
+
+      expect(str, contains('CameraState'));
+      expect(str, contains('isInitialized: true'));
+      expect(str, contains('isRecording: false'));
+      expect(str, contains('lens: DivineCameraLens.back'));
+      expect(str, contains('textureId: 1'));
+    });
+
+    test('props returns correct list of properties', () {
+      const state = CameraState(
+        isInitialized: true,
+        maxZoomLevel: 8,
+        aspectRatio: 1.777,
+        hasFlash: true,
+        hasFrontCamera: true,
+        hasBackCamera: true,
+        textureId: 1,
+      );
+
+      final props = state.props;
+
+      expect(props.length, 15);
+      expect(props[0], isTrue); // isInitialized
+      expect(props[1], isFalse); // isRecording
+      expect(props[4], DivineCameraLens.back); // lens
+      expect(props[14], 1); // textureId
+    });
+
+    test('equality works correctly', () {
+      const state1 = CameraState(isInitialized: true, textureId: 1);
+      const state2 = CameraState(isInitialized: true, textureId: 1);
+      const state3 = CameraState(isInitialized: true, textureId: 2);
+
+      expect(state1, equals(state2));
+      expect(state1, isNot(equals(state3)));
+    });
+
+    test('copyWith with all parameters', () {
+      const original = CameraState();
+
+      final copied = original.copyWith(
+        isInitialized: true,
+        isRecording: true,
+        isSwitchingCamera: true,
+        flashMode: DivineCameraFlashMode.torch,
+        lens: DivineCameraLens.front,
+        zoomLevel: 5,
+        minZoomLevel: 1,
+        maxZoomLevel: 10,
+        aspectRatio: 1.5,
+        hasFlash: true,
+        hasFrontCamera: true,
+        hasBackCamera: true,
+        isFocusPointSupported: true,
+        isExposurePointSupported: true,
+        textureId: 99,
+      );
+
+      expect(copied.isInitialized, isTrue);
+      expect(copied.isRecording, isTrue);
+      expect(copied.isSwitchingCamera, isTrue);
+      expect(copied.flashMode, DivineCameraFlashMode.torch);
+      expect(copied.lens, DivineCameraLens.front);
+      expect(copied.zoomLevel, 5.0);
+      expect(copied.minZoomLevel, 1.0);
+      expect(copied.maxZoomLevel, 10.0);
+      expect(copied.aspectRatio, 1.5);
+      expect(copied.hasFlash, isTrue);
+      expect(copied.hasFrontCamera, isTrue);
+      expect(copied.hasBackCamera, isTrue);
+      expect(copied.isFocusPointSupported, isTrue);
+      expect(copied.isExposurePointSupported, isTrue);
+      expect(copied.textureId, 99);
+    });
+
+    test('fromMap with missing values uses defaults', () {
+      final state = CameraState.fromMap(const {});
+
+      expect(state.isInitialized, isFalse);
+      expect(state.isRecording, isFalse);
+      expect(state.flashMode, DivineCameraFlashMode.off);
+      expect(state.lens, DivineCameraLens.back);
+      expect(state.zoomLevel, 1.0);
+      expect(state.aspectRatio, closeTo(16 / 9, 0.01));
+      expect(state.textureId, isNull);
+    });
+
+    test('fromMap with isSwitchingCamera', () {
+      final state = CameraState.fromMap(const {'isSwitchingCamera': true});
+
+      expect(state.isSwitchingCamera, isTrue);
+    });
+  });
+
+  group('VideoRecordingResult additional tests', () {
+    test('toString returns formatted string', () {
+      const result = VideoRecordingResult(
+        filePath: '/path/to/video.mp4',
+        durationMs: 5000,
+        width: 1920,
+        height: 1080,
+      );
+
+      final str = result.toString();
+
+      expect(str, contains('VideoRecordingResult'));
+      expect(str, contains('filePath: /path/to/video.mp4'));
+      expect(str, contains('durationMs: 5000'));
+      expect(str, contains('width: 1920'));
+      expect(str, contains('height: 1080'));
+    });
+
+    test('props returns correct list of properties', () {
+      const result = VideoRecordingResult(
+        filePath: '/test.mp4',
+        durationMs: 1000,
+        width: 1280,
+        height: 720,
+      );
+
+      final props = result.props;
+
+      expect(props.length, 4);
+      expect(props[0], '/test.mp4');
+      expect(props[1], 1000);
+      expect(props[2], 1280);
+      expect(props[3], 720);
+    });
+
+    test('equality works correctly', () {
+      const result1 = VideoRecordingResult(
+        filePath: '/test.mp4',
+        durationMs: 1000,
+      );
+      const result2 = VideoRecordingResult(
+        filePath: '/test.mp4',
+        durationMs: 1000,
+      );
+      const result3 = VideoRecordingResult(
+        filePath: '/other.mp4',
+        durationMs: 1000,
+      );
+
+      expect(result1, equals(result2));
+      expect(result1, isNot(equals(result3)));
+    });
+
+    test('file getter returns File object', () {
+      const result = VideoRecordingResult(
+        filePath: '/path/to/video.mp4',
+      );
+
+      expect(result.file.path, '/path/to/video.mp4');
+    });
+  });
+
+  group('DivineCameraLens', () {
+    test('opposite returns the other lens', () {
+      expect(DivineCameraLens.back.opposite, DivineCameraLens.front);
+      expect(DivineCameraLens.front.opposite, DivineCameraLens.back);
+    });
+  });
+
+  group('DivineCamera additional tests', () {
+    late MockDivineCameraPlatform mockPlatform;
+
+    setUp(() {
+      mockPlatform = MockDivineCameraPlatform();
+      DivineCameraPlatform.instance = mockPlatform;
+    });
+
+    test('onRecordingAutoStopped callback is invoked', () async {
+      VideoRecordingResult? receivedResult;
+      DivineCamera.instance.onRecordingAutoStopped = (result) {
+        receivedResult = result;
+      };
+
+      await DivineCamera.instance.initialize();
+
+      // Simulate auto-stop from platform
+      const autoStopResult = VideoRecordingResult(
+        filePath: '/auto/stopped.mp4',
+        durationMs: 30000,
+      );
+      mockPlatform.onRecordingAutoStopped?.call(autoStopResult);
+
+      expect(receivedResult, isNotNull);
+      expect(receivedResult!.filePath, '/auto/stopped.mp4');
+      expect(DivineCamera.instance.isRecording, isFalse);
+    });
+
+    test('setFocusPoint returns false when not supported', () async {
+      // Create mock that doesn't support focus
+      final noFocusMock = _NoFocusSupportMock();
+      DivineCameraPlatform.instance = noFocusMock;
+
+      await DivineCamera.instance.initialize();
+
+      final result = await DivineCamera.instance.setFocusPoint(
+        const Offset(0.5, 0.5),
+      );
+
+      expect(result, isFalse);
+    });
+
+    test('setExposurePoint returns false when not supported', () async {
+      // Create mock that doesn't support exposure
+      final noExposureMock = _NoExposureSupportMock();
+      DivineCameraPlatform.instance = noExposureMock;
+
+      await DivineCamera.instance.initialize();
+
+      final result = await DivineCamera.instance.setExposurePoint(
+        const Offset(0.5, 0.5),
+      );
+
+      expect(result, isFalse);
+    });
+
+    test('setZoomLevel clamps level within bounds', () async {
+      await DivineCamera.instance.initialize();
+
+      // Try to set zoom below min
+      await DivineCamera.instance.setZoomLevel(0.1);
+      expect(DivineCamera.instance.zoomLevel, 1.0);
+
+      // Try to set zoom above max
+      await DivineCamera.instance.setZoomLevel(100);
+      expect(DivineCamera.instance.zoomLevel, 10.0);
+    });
+
+    test('switchCamera returns false when cannot switch', () async {
+      // Create mock with only one camera
+      final singleCameraMock = _SingleCameraMock();
+      DivineCameraPlatform.instance = singleCameraMock;
+
+      await DivineCamera.instance.initialize();
+
+      final result = await DivineCamera.instance.switchCamera();
+
+      expect(result, isFalse);
+    });
+
+    test('startRecording does nothing when cannot record', () async {
+      await DivineCamera.instance.dispose(); // Not initialized
+
+      await DivineCamera.instance.startRecording();
+
+      expect(DivineCamera.instance.isRecording, isFalse);
+    });
+
+    test('startRecording with maxDuration', () async {
+      await DivineCamera.instance.initialize();
+
+      await DivineCamera.instance.startRecording(
+        maxDuration: const Duration(seconds: 30),
+      );
+
+      expect(DivineCamera.instance.isRecording, isTrue);
+    });
+
+    test('startRecording with useCache false', () async {
+      await DivineCamera.instance.initialize();
+
+      await DivineCamera.instance.startRecording(useCache: false);
+
+      expect(DivineCamera.instance.isRecording, isTrue);
+    });
+
+    test('stopRecording returns null when not recording', () async {
+      await DivineCamera.instance.initialize();
+      // Don't start recording
+
+      final result = await DivineCamera.instance.stopRecording();
+
+      expect(result, isNull);
+    });
+
+    test('handleAppLifecycleState paused calls pausePreview', () async {
+      await DivineCamera.instance.initialize();
+
+      // pausePreview is called - no exception means it worked
+      await DivineCamera.instance.handleAppLifecycleState(
+        AppLifecycleState.paused,
+      );
+
+      // Camera should still be initialized after pause
+      expect(DivineCamera.instance.isInitialized, isTrue);
+    });
+
+    test('handleAppLifecycleState inactive calls pausePreview', () async {
+      await DivineCamera.instance.initialize();
+
+      await DivineCamera.instance.handleAppLifecycleState(
+        AppLifecycleState.inactive,
+      );
+
+      expect(DivineCamera.instance.isInitialized, isTrue);
+    });
+
+    test('handleAppLifecycleState detached calls pausePreview', () async {
+      await DivineCamera.instance.initialize();
+
+      await DivineCamera.instance.handleAppLifecycleState(
+        AppLifecycleState.detached,
+      );
+
+      expect(DivineCamera.instance.isInitialized, isTrue);
+    });
+
+    test('handleAppLifecycleState hidden calls pausePreview', () async {
+      await DivineCamera.instance.initialize();
+
+      await DivineCamera.instance.handleAppLifecycleState(
+        AppLifecycleState.hidden,
+      );
+
+      expect(DivineCamera.instance.isInitialized, isTrue);
+    });
+
+    test('handleAppLifecycleState resumed updates state', () async {
+      await DivineCamera.instance.initialize();
+
+      // Set callback AFTER initialize to test that resumed triggers it
+      CameraState? receivedState;
+      DivineCamera.instance.onStateChanged = (state) {
+        receivedState = state;
+      };
+
+      // Verify callback hasn't been called yet (since we set it after init)
+      expect(receivedState, isNull);
+
+      await DivineCamera.instance.handleAppLifecycleState(
+        AppLifecycleState.resumed,
+      );
+
+      // Now onStateChanged should be called by handleAppLifecycleState
+      expect(receivedState, isNotNull);
+      expect(receivedState!.isInitialized, isTrue);
+    });
+
+    test('handleAppLifecycleState does nothing when not initialized', () async {
+      await DivineCamera.instance.dispose();
+
+      CameraState? receivedState;
+      DivineCamera.instance.onStateChanged = (state) {
+        receivedState = state;
+      };
+
+      await DivineCamera.instance.handleAppLifecycleState(
+        AppLifecycleState.paused,
+      );
+
+      // onStateChanged should NOT be called since camera is not initialized
+      expect(receivedState, isNull);
+      expect(DivineCamera.instance.isInitialized, isFalse);
+    });
+
+    test('getter properties return correct values', () async {
+      await DivineCamera.instance.initialize();
+
+      expect(DivineCamera.instance.cameraAspectRatio, isA<double>());
+      expect(DivineCamera.instance.hasFlash, isTrue);
+      expect(DivineCamera.instance.hasFrontCamera, isTrue);
+      expect(DivineCamera.instance.hasBackCamera, isTrue);
+      expect(DivineCamera.instance.isFocusPointSupported, isTrue);
+      expect(DivineCamera.instance.isExposurePointSupported, isTrue);
+      expect(DivineCamera.instance.isSwitchingCamera, isFalse);
+      expect(DivineCamera.instance.textureId, 1);
+      expect(DivineCamera.instance.lens, DivineCameraLens.back);
+    });
+
+    test('dispose clears callbacks', () async {
+      DivineCamera.instance.onStateChanged = (_) {};
+      DivineCamera.instance.onRecordingAutoStopped = (_) {};
+
+      await DivineCamera.instance.initialize();
+      await DivineCamera.instance.dispose();
+
+      expect(DivineCamera.instance.onStateChanged, isNull);
+      expect(DivineCamera.instance.onRecordingAutoStopped, isNull);
+    });
+  });
+}
+
+/// Mock that doesn't support focus point
+class _NoFocusSupportMock extends MockDivineCameraPlatform {
+  @override
+  Future<CameraState> initializeCamera({
+    DivineCameraLens lens = DivineCameraLens.back,
+    DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
+  }) async {
+    return const CameraState(
+      isInitialized: true,
+      isExposurePointSupported: true,
+    );
+  }
+}
+
+/// Mock that doesn't support exposure point
+class _NoExposureSupportMock extends MockDivineCameraPlatform {
+  @override
+  Future<CameraState> initializeCamera({
+    DivineCameraLens lens = DivineCameraLens.back,
+    DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
+  }) async {
+    return const CameraState(
+      isInitialized: true,
+      isFocusPointSupported: true,
+    );
+  }
+}
+
+/// Mock with only one camera (cannot switch)
+class _SingleCameraMock extends MockDivineCameraPlatform {
+  @override
+  Future<CameraState> initializeCamera({
+    DivineCameraLens lens = DivineCameraLens.back,
+    DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
+  }) async {
+    return const CameraState(
+      isInitialized: true,
+      hasBackCamera: true,
+    );
+  }
 }

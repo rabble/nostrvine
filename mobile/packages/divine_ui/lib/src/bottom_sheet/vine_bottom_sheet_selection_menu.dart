@@ -53,6 +53,7 @@ class VineBottomSheetSelectionMenu {
       context: context,
       title: title,
       expanded: false,
+      scrollable: false,
       isScrollControlled: true,
       body: SingleChildScrollView(
         child: Column(

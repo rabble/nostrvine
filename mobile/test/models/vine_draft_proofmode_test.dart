@@ -2,10 +2,11 @@
 // ABOUTME: Validates that native proof JSON is stored and retrieved correctly
 
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/vine_draft.dart';
-import 'package:models/models.dart' show NativeProofData;
+import 'package:openvine/models/recording_clip.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:models/models.dart' show NativeProofData, AspectRatio;
 
 void main() {
   group('VineDraft NativeProof serialization', () {
@@ -24,11 +25,18 @@ void main() {
 
       // Create draft with proofManifestJson
       final draft = VineDraft.create(
-        videoFile: File('/path/to/video.mp4'),
+        clips: [
+          RecordingClip(
+            id: 'test_clip',
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: Duration(seconds: 6),
+            recordedAt: DateTime.now(),
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Test Video',
         description: 'Test with ProofMode',
-        hashtags: ['test'],
-        frameCount: 30,
+        hashtags: {'test'},
         selectedApproach: 'native',
         proofManifestJson: proofJson,
       );
@@ -54,11 +62,18 @@ void main() {
 
     test('should handle drafts without proofManifestJson', () {
       final draft = VineDraft.create(
-        videoFile: File('/path/to/video.mp4'),
+        clips: [
+          RecordingClip(
+            id: 'test_clip',
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: Duration(seconds: 6),
+            recordedAt: DateTime.now(),
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Test Video',
         description: 'No ProofMode',
-        hashtags: ['test'],
-        frameCount: 30,
+        hashtags: {'test'},
         selectedApproach: 'native',
         // proofManifestJson: null (not provided)
       );
@@ -105,11 +120,18 @@ void main() {
       final proofJson = jsonEncode(proofData.toJson());
 
       final draft = VineDraft.create(
-        videoFile: File('/path/to/video.mp4'),
+        clips: [
+          RecordingClip(
+            id: 'test_clip',
+            video: EditorVideo.file('/path/to/video.mp4'),
+            duration: Duration(seconds: 6),
+            recordedAt: DateTime.now(),
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Original',
         description: '',
-        hashtags: [],
-        frameCount: 30,
+        hashtags: {},
         selectedApproach: 'native',
         proofManifestJson: proofJson,
       );

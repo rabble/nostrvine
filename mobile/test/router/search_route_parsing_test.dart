@@ -21,7 +21,7 @@ void main() {
       () {
         const context = RouteContext(type: RouteType.search);
 
-        final result = buildCanonicalPath(context);
+        final result = buildRoute(context);
 
         expect(result, SearchScreenPure.path);
       },

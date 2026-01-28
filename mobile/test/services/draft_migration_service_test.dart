@@ -6,6 +6,8 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/recording_clip.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_migration_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -48,18 +50,24 @@ void main() {
       final videoFile = createTempVideo('draft_video');
       final draft = VineDraft(
         id: 'draft_123',
-        videoFile: videoFile,
+        clips: [
+          RecordingClip(
+            id: 'clip_123',
+            video: EditorVideo.file(videoFile.path),
+            duration: Duration(seconds: 6),
+            recordedAt: DateTime(2025, 12, 18, 10, 0),
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Test Draft',
         description: 'Description',
-        hashtags: ['test'],
-        frameCount: 30,
+        hashtags: {'test'},
         selectedApproach: 'native',
         createdAt: DateTime(2025, 12, 18, 10, 0),
         lastModified: DateTime(2025, 12, 18, 10, 0),
         publishStatus: PublishStatus.draft,
         publishError: null,
         publishAttempts: 0,
-        aspectRatio: AspectRatio.square,
       );
 
       await draftService.saveDraft(draft);
@@ -78,18 +86,24 @@ void main() {
     test('should skip drafts with missing video files', () async {
       final draft = VineDraft(
         id: 'draft_orphan',
-        videoFile: File('/nonexistent/video.mp4'),
+        clips: [
+          RecordingClip(
+            id: 'clip_orphan',
+            video: EditorVideo.file('/nonexistent/video.mp4'),
+            duration: Duration.zero,
+            recordedAt: DateTime.now(),
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Orphan Draft',
         description: '',
-        hashtags: [],
-        frameCount: 0,
+        hashtags: {},
         selectedApproach: 'native',
         createdAt: DateTime.now(),
         lastModified: DateTime.now(),
         publishStatus: PublishStatus.draft,
         publishError: null,
         publishAttempts: 0,
-        aspectRatio: AspectRatio.square,
       );
 
       await draftService.saveDraft(draft);
@@ -104,18 +118,24 @@ void main() {
       final videoFile = createTempVideo('draft_video');
       final draft = VineDraft(
         id: 'draft_456',
-        videoFile: videoFile,
+        clips: [
+          RecordingClip(
+            id: 'clip_456',
+            video: EditorVideo.file(videoFile.path),
+            duration: Duration.zero,
+            recordedAt: DateTime.now(),
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Test',
         description: '',
-        hashtags: [],
-        frameCount: 0,
+        hashtags: {},
         selectedApproach: 'native',
         createdAt: DateTime.now(),
         lastModified: DateTime.now(),
         publishStatus: PublishStatus.draft,
         publishError: null,
         publishAttempts: 0,
-        aspectRatio: AspectRatio.square,
       );
 
       await draftService.saveDraft(draft);
@@ -134,18 +154,24 @@ void main() {
       final videoFile = createTempVideo('draft_video');
       final draft = VineDraft(
         id: 'draft_789',
-        videoFile: videoFile,
+        clips: [
+          RecordingClip(
+            id: 'clip_789',
+            video: EditorVideo.file(videoFile.path),
+            duration: Duration.zero,
+            recordedAt: DateTime.now(),
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Test',
         description: '',
-        hashtags: [],
-        frameCount: 0,
+        hashtags: {},
         selectedApproach: 'native',
         createdAt: DateTime.now(),
         lastModified: DateTime.now(),
         publishStatus: PublishStatus.draft,
         publishError: null,
         publishAttempts: 0,
-        aspectRatio: AspectRatio.square,
       );
 
       await draftService.saveDraft(draft);

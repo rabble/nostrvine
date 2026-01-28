@@ -240,6 +240,8 @@ void main() {
     // These tests verify the migration from first_unlock_this_device
     // to first_unlock. Tests the migration logic that runs on upgrade.
 
+    setUp(setupTestEnvironment);
+
     test('hasKeys() should detect keys in legacy storage', () async {
       // This simulates: User has a key from before the fix
       // (stored with first_unlock_this_device)

@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/proofmode_badge.dart';
@@ -144,7 +145,7 @@ class _CreatorInfo extends ConsumerWidget {
 
     final displayName = switch (profileAsync) {
       AsyncData(:final value) when value != null => value.bestDisplayName,
-      AsyncData() || AsyncError() => 'Unknown',
+      AsyncData() || AsyncError() => NostrKeyUtils.truncateNpub(pubkey),
       AsyncLoading() => 'Loading...',
     };
 

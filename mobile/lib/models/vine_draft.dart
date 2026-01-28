@@ -2,97 +2,125 @@
 // ABOUTME: Includes video file path, metadata, publish status, and timestamps
 
 import 'dart:convert';
-import 'dart:io';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:models/models.dart' show NativeProofData;
+import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 enum PublishStatus { draft, publishing, failed, published }
 
 class VineDraft {
   const VineDraft({
     required this.id,
-    required this.videoFile,
+    required this.clips,
     required this.title,
     required this.description,
     required this.hashtags,
-    required this.frameCount,
     required this.selectedApproach,
     required this.createdAt,
     required this.lastModified,
     required this.publishStatus,
     this.publishError,
+    this.allowAudioReuse = false,
+    this.expireTime,
     required this.publishAttempts,
     this.proofManifestJson,
-    required this.aspectRatio,
   });
 
   factory VineDraft.create({
-    required File videoFile,
+    required List<RecordingClip> clips,
     required String title,
     required String description,
-    required List<String> hashtags,
-    required int frameCount,
+    required Set<String> hashtags,
     required String selectedApproach,
+    bool allowAudioReuse = false,
+    Duration? expireTime,
+    String? id,
     String? proofManifestJson,
-    AspectRatio aspectRatio = AspectRatio.square,
   }) {
     final now = DateTime.now();
     return VineDraft(
-      id: 'draft_${now.millisecondsSinceEpoch}',
-      videoFile: videoFile,
+      id: id ?? 'draft_${now.millisecondsSinceEpoch}',
+      clips: clips,
       title: title,
       description: description,
       hashtags: hashtags,
-      frameCount: frameCount,
       selectedApproach: selectedApproach,
       createdAt: now,
       lastModified: now,
+      allowAudioReuse: allowAudioReuse,
+      expireTime: expireTime,
       publishStatus: PublishStatus.draft,
       publishError: null,
       publishAttempts: 0,
       proofManifestJson: proofManifestJson,
-      aspectRatio: aspectRatio,
     );
   }
 
-  factory VineDraft.fromJson(Map<String, dynamic> json) => VineDraft(
-    id: json['id'] as String,
-    videoFile: File(json['videoFilePath'] as String),
-    title: json['title'] as String,
-    description: json['description'] as String,
-    hashtags: List<String>.from(json['hashtags'] as Iterable),
-    frameCount: json['frameCount'] as int,
-    selectedApproach: json['selectedApproach'] as String,
-    createdAt: DateTime.parse(json['createdAt'] as String),
-    lastModified: DateTime.parse(json['lastModified'] as String),
-    publishStatus: json['publishStatus'] != null
-        ? PublishStatus.values.byName(json['publishStatus'] as String)
-        : PublishStatus.draft, // Migration: default for old drafts
-    publishError: json['publishError'] as String?,
-    publishAttempts: json['publishAttempts'] as int? ?? 0,
-    proofManifestJson: json['proofManifestJson'] as String?,
-    aspectRatio: json['aspectRatio'] != null
-        ? AspectRatio.values.firstWhere(
+  factory VineDraft.fromJson(Map<String, dynamic> json) {
+    final List<RecordingClip> clips = [];
+
+    // Backward compatibility: Handle old draft format with single videoFilePath
+    // instead of the newer clips array format
+    if (json['videoFilePath'] != null) {
+      final now = DateTime.now();
+      clips.add(
+        RecordingClip(
+          id: 'draft_${now.millisecondsSinceEpoch}',
+          video: EditorVideo.file(json['videoFilePath']),
+          duration: .zero,
+          recordedAt: DateTime.parse(json['createdAt'] as String),
+          aspectRatio: AspectRatio.values.firstWhere(
             (e) => e.name == json['aspectRatio'],
-            orElse: () => AspectRatio.square,
-          )
-        : AspectRatio.square, // Default for legacy drafts
-  );
+            orElse: () => .square,
+          ),
+        ),
+      );
+    } else {
+      clips.addAll(
+        List.from(
+          json['clips'] ?? [],
+        ).map((jsonClip) => RecordingClip.fromJson(jsonClip)),
+      );
+    }
+
+    return VineDraft(
+      id: json['id'] as String,
+      clips: clips,
+      title: json['title'] as String,
+      description: json['description'] as String,
+      hashtags: Set<String>.from(json['hashtags'] as Iterable),
+      selectedApproach: json['selectedApproach'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      lastModified: DateTime.parse(json['lastModified'] as String),
+      expireTime: json['expireTime'] != null
+          ? Duration(milliseconds: json['expireTime'] as int)
+          : null,
+      publishStatus: json['publishStatus'] != null
+          ? PublishStatus.values.byName(json['publishStatus'] as String)
+          : PublishStatus.draft, // Migration: default for old drafts
+      allowAudioReuse: json['allowAudioReuse'] ?? false,
+      publishError: json['publishError'] as String?,
+      publishAttempts: json['publishAttempts'] as int? ?? 0,
+      proofManifestJson: json['proofManifestJson'] as String?,
+    );
+  }
+
+  final List<RecordingClip> clips;
   final String id;
-  final File videoFile;
   final String title;
   final String description;
-  final List<String> hashtags;
-  final int frameCount;
+  final Set<String> hashtags;
   final String selectedApproach;
   final DateTime createdAt;
   final DateTime lastModified;
+  final Duration? expireTime;
   final PublishStatus publishStatus;
+  final String? proofManifestJson;
   final String? publishError;
   final int publishAttempts;
-  final String? proofManifestJson;
-  final AspectRatio aspectRatio;
+  final bool allowAudioReuse;
 
   /// Check if this draft has ProofMode data
   bool get hasProofMode => proofManifestJson != null;
@@ -119,25 +147,27 @@ class VineDraft {
   }
 
   VineDraft copyWith({
-    File? videoFile,
+    List<RecordingClip>? clips,
     String? title,
     String? description,
-    List<String>? hashtags,
+    Set<String>? hashtags,
     PublishStatus? publishStatus,
     Object? publishError = _sentinel,
+    Duration? expireTime,
+    bool? allowAudioReuse,
     int? publishAttempts,
     Object? proofManifestJson = _sentinel,
-    AspectRatio? aspectRatio,
   }) => VineDraft(
     id: id,
-    videoFile: videoFile ?? this.videoFile,
+    clips: clips ?? this.clips,
     title: title ?? this.title,
     description: description ?? this.description,
     hashtags: hashtags ?? this.hashtags,
-    frameCount: frameCount,
     selectedApproach: selectedApproach,
     createdAt: createdAt,
     lastModified: DateTime.now(),
+    expireTime: expireTime ?? this.expireTime,
+    allowAudioReuse: allowAudioReuse ?? this.allowAudioReuse,
     publishStatus: publishStatus ?? this.publishStatus,
     publishError: publishError == _sentinel
         ? this.publishError
@@ -146,26 +176,25 @@ class VineDraft {
     proofManifestJson: proofManifestJson == _sentinel
         ? this.proofManifestJson
         : proofManifestJson as String?,
-    aspectRatio: aspectRatio ?? this.aspectRatio,
   );
 
   static const _sentinel = Object();
 
   Map<String, dynamic> toJson() => {
     'id': id,
-    'videoFilePath': videoFile.path,
+    'clips': clips.map((clip) => clip.toJson()).toList(),
     'title': title,
     'description': description,
-    'hashtags': hashtags,
-    'frameCount': frameCount,
+    'hashtags': hashtags.toList(),
     'selectedApproach': selectedApproach,
     'createdAt': createdAt.toIso8601String(),
     'lastModified': lastModified.toIso8601String(),
+    if (expireTime != null) 'expireTime': expireTime!.inMilliseconds,
+    'allowAudioReuse': allowAudioReuse,
     'publishStatus': publishStatus.name,
     'publishError': publishError,
     'publishAttempts': publishAttempts,
     'proofManifestJson': proofManifestJson,
-    'aspectRatio': aspectRatio.name,
   };
 
   String get displayDuration {

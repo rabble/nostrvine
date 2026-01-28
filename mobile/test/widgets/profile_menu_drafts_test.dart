@@ -2,6 +2,7 @@
 // ABOUTME: Tests that Drafts menu item exists and navigates correctly
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -133,57 +134,59 @@ void main() {
 
     testWidgets('should close menu after navigating to drafts', (tester) async {
       await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            body: Builder(
-              builder: (context) => ElevatedButton(
-                onPressed: () {
-                  showModalBottomSheet(
-                    context: context,
-                    backgroundColor: Colors.grey[900],
-                    builder: (context) => SafeArea(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          ListTile(
-                            key: const Key('settings-menu-item'),
-                            leading: const Icon(
-                              Icons.settings,
-                              color: VineTheme.vineGreen,
+        ProviderScope(
+          child: MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      backgroundColor: Colors.grey[900],
+                      builder: (context) => SafeArea(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              key: const Key('settings-menu-item'),
+                              leading: const Icon(
+                                Icons.settings,
+                                color: VineTheme.vineGreen,
+                              ),
+                              title: const Text(
+                                'Settings',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              onTap: () {},
                             ),
-                            title: const Text(
-                              'Settings',
-                              style: TextStyle(color: Colors.white),
+                            ListTile(
+                              key: const Key('drafts-menu-item'),
+                              leading: const Icon(
+                                Icons.drafts,
+                                color: VineTheme.vineGreen,
+                              ),
+                              title: const Text(
+                                'Drafts',
+                                style: TextStyle(color: Colors.white),
+                              ),
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const ClipLibraryScreen(),
+                                  ),
+                                );
+                              },
                             ),
-                            onTap: () {},
-                          ),
-                          ListTile(
-                            key: const Key('drafts-menu-item'),
-                            leading: const Icon(
-                              Icons.drafts,
-                              color: VineTheme.vineGreen,
-                            ),
-                            title: const Text(
-                              'Drafts',
-                              style: TextStyle(color: Colors.white),
-                            ),
-                            onTap: () {
-                              Navigator.pop(context);
-                              Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (context) =>
-                                      const ClipLibraryScreen(),
-                                ),
-                              );
-                            },
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  );
-                },
-                child: const Text('Open Menu'),
+                    );
+                  },
+                  child: const Text('Open Menu'),
+                ),
               ),
             ),
           ),

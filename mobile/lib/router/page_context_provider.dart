@@ -1,9 +1,42 @@
 // ABOUTME: Derived provider that parses router location into structured context
 // ABOUTME: Single source of truth for "what page are we on?" with route types and parsing
 
+import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/auth/divine_auth_screen.dart';
+import 'package:openvine/screens/auth/login_options_screen.dart';
+import 'package:openvine/screens/auth/secure_account_screen.dart';
+import 'package:openvine/screens/blossom_settings_screen.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/discover_lists_screen.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/key_import_screen.dart';
+import 'package:openvine/screens/key_management_screen.dart';
+import 'package:openvine/screens/liked_videos_screen_router.dart';
+import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/profile_setup_screen.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/screens/relay_diagnostic_screen.dart';
+import 'package:openvine/screens/relay_settings_screen.dart';
+import 'package:openvine/screens/safety_settings_screen.dart';
+import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/sound_detail_screen.dart';
+import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
+import 'package:openvine/screens/video_editor/video_editor_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/screens/welcome_screen.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:openvine/router/router_location_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/screens/developer_options_screen.dart';
 
 /// Route types supported by the app
 enum RouteType {
@@ -14,9 +47,10 @@ enum RouteType {
   likedVideos, // Current user's liked videos feed
   hashtag, // Still supported as push route within explore
   search,
-  camera,
-  clipManager, // Clip management screen for recorded segments
-  editVideo, // Video editor screen for text/sound overlays
+  videoRecorder, // Video recorder screen
+  videoClipEditor, // Video clip editor screen
+  videoEditor, // Video editor screen
+  videoMetadata, // Video editor meta screen
   importKey,
   settings,
   relaySettings, // Relay configuration screen
@@ -168,14 +202,17 @@ RouteContext parseRoute(String path) {
         videoIndex: index,
       );
 
-    case 'camera':
-      return const RouteContext(type: RouteType.camera);
+    case 'video-recorder':
+      return const RouteContext(type: RouteType.videoRecorder);
 
-    case 'clip-manager':
-      return const RouteContext(type: RouteType.clipManager);
+    case 'video-editor':
+      return const RouteContext(type: RouteType.videoEditor);
 
-    case 'edit-video':
-      return const RouteContext(type: RouteType.editVideo);
+    case 'video-clip-editor':
+      return const RouteContext(type: RouteType.videoClipEditor);
+
+    case 'video-metadata':
+      return const RouteContext(type: RouteType.videoMetadata);
 
     case 'settings':
       return const RouteContext(type: RouteType.settings);
@@ -267,134 +304,157 @@ RouteContext parseRoute(String path) {
   }
 }
 
-/// Build a canonical path string from a RouteContext
-/// Used for route normalization to ensure consistent URL formats
-String buildCanonicalPath(RouteContext context) {
-  int normalizeIndex(int? raw) => (raw ?? 0) < 0 ? 0 : (raw ?? 0);
-
+/// Build a URL path from a RouteContext
+/// Encodes dynamic parameters and normalizes indices to >= 0
+String buildRoute(RouteContext context) {
   switch (context.type) {
     case RouteType.home:
-      return '/home/${normalizeIndex(context.videoIndex)}';
+      final rawIndex = context.videoIndex ?? 0;
+      final index = rawIndex < 0 ? 0 : rawIndex;
+      return HomeScreenRouter.pathForIndex(index);
 
     case RouteType.explore:
       if (context.videoIndex != null) {
-        return '/explore/${normalizeIndex(context.videoIndex)}';
+        final rawIndex = context.videoIndex!;
+        final index = rawIndex < 0 ? 0 : rawIndex;
+        return ExploreScreen.pathForIndex(index);
       }
-      return '/explore';
+      return ExploreScreen.path;
 
     case RouteType.notifications:
-      return '/notifications/${normalizeIndex(context.videoIndex)}';
+      if (context.videoIndex != null) {
+        final rawIndex = context.videoIndex!;
+        final index = rawIndex < 0 ? 0 : rawIndex;
+        return NotificationsScreen.pathForIndex(index);
+      }
+      return NotificationsScreen.path;
 
     case RouteType.profile:
       final npub = Uri.encodeComponent(context.npub ?? '');
       if (context.videoIndex != null) {
-        return '/profile/$npub/${normalizeIndex(context.videoIndex)}';
+        final rawIndex = context.videoIndex!;
+        final index = rawIndex < 0 ? 0 : rawIndex;
+        return ProfileScreenRouter.pathForIndex(npub, index);
       }
-      return '/profile/$npub';
+      return ProfileScreenRouter.pathForNpub(npub);
 
     case RouteType.likedVideos:
       if (context.videoIndex != null) {
-        return '/liked-videos/${normalizeIndex(context.videoIndex)}';
+        final rawIndex = context.videoIndex!;
+        final index = rawIndex < 0 ? 0 : rawIndex;
+        return LikedVideosScreenRouter.pathForIndex(index);
       }
-      return '/liked-videos';
+      return LikedVideosScreenRouter.path;
 
     case RouteType.hashtag:
-      final tag = Uri.encodeComponent(context.hashtag ?? '');
-      if (context.videoIndex != null) {
-        return '/hashtag/$tag/${normalizeIndex(context.videoIndex)}';
-      }
-      return '/hashtag/$tag';
+      final hashtag = context.hashtag ?? '';
+      final rawIndex = context.videoIndex;
+      final index = rawIndex != null && rawIndex < 0 ? 0 : rawIndex;
+      return HashtagScreenRouter.pathForTag(hashtag, index: index);
 
     case RouteType.search:
+      // Grid mode (null videoIndex):
+      //   - With term: '/search/{term}'
+      //   - Without term: '/search'
+      // Feed mode (videoIndex set):
+      //   - With term: '/search/{term}/{index}'
+      //   - Without term (legacy): '/search/{index}'
       if (context.searchTerm != null) {
-        final term = Uri.encodeComponent(context.searchTerm!);
-        if (context.videoIndex != null) {
-          return '/search/$term/${normalizeIndex(context.videoIndex)}';
-        }
-        return '/search/$term';
+        final rawIndex = context.videoIndex;
+        final index = rawIndex != null && rawIndex < 0 ? 0 : rawIndex;
+        return SearchScreenPure.pathForTerm(
+          term: context.searchTerm,
+          index: index,
+        );
       }
-      if (context.videoIndex != null) {
-        return '/search/${normalizeIndex(context.videoIndex)}';
-      }
-      return '/search';
 
-    case RouteType.camera:
-      return '/camera';
+      // Legacy format without search term
+      if (context.videoIndex == null) return SearchScreenPure.path;
+      final rawIndex = context.videoIndex!;
+      final index = rawIndex < 0 ? 0 : rawIndex;
+      return '${SearchScreenPure.path}/$index';
 
-    case RouteType.clipManager:
-      return '/clip-manager';
+    case RouteType.videoRecorder:
+      return VideoRecorderScreen.path;
 
-    case RouteType.editVideo:
-      return '/edit-video';
+    case RouteType.videoEditor:
+      return VideoEditorScreen.path;
+
+    case RouteType.videoClipEditor:
+      return VideoClipEditorScreen.path;
+
+    case RouteType.videoMetadata:
+      return VideoMetadataScreen.path;
 
     case RouteType.settings:
-      return '/settings';
+      return SettingsScreen.path;
 
     case RouteType.relaySettings:
-      return '/relay-settings';
+      return RelaySettingsScreen.path;
 
     case RouteType.relayDiagnostic:
-      return '/relay-diagnostic';
+      return RelayDiagnosticScreen.path;
 
     case RouteType.blossomSettings:
-      return '/blossom-settings';
+      return BlossomSettingsScreen.path;
 
     case RouteType.notificationSettings:
-      return '/notification-settings';
+      return NotificationSettingsScreen.path;
 
     case RouteType.keyManagement:
-      return '/key-management';
+      return KeyManagementScreen.path;
 
     case RouteType.safetySettings:
-      return '/safety-settings';
+      return SafetySettingsScreen.path;
 
     case RouteType.editProfile:
-      return '/edit-profile';
-
-    case RouteType.clips:
-      return '/clips';
+      return ProfileSetupScreen.editPath;
 
     case RouteType.importKey:
-      return '/import-key';
+      return KeyImportScreen.path;
+
+    case RouteType.clips:
+      return ClipLibraryScreen.clipsPath;
 
     case RouteType.welcome:
-      return '/welcome';
+      return WelcomeScreen.path;
 
     case RouteType.developerOptions:
-      return '/developer-options';
+      return DeveloperOptionsScreen.path;
 
     case RouteType.loginOptions:
-      return '/login-options';
+      return LoginOptionsScreen.path;
 
     case RouteType.authNative:
-      return '/auth-native';
+      return DivineAuthScreen.path;
 
     case RouteType.following:
-      return '/following/${Uri.encodeComponent(context.npub ?? '')}';
+      return FollowingRoutes.pathForPubkey(context.npub ?? '');
 
     case RouteType.followers:
-      return '/followers/${Uri.encodeComponent(context.npub ?? '')}';
+      return FollowersRoutes.pathForPubkey(context.npub ?? '');
 
     case RouteType.videoFeed:
-      return '/video-feed';
+      return FullscreenVideoFeedScreen.path;
 
     case RouteType.profileView:
-      return '/profile-view/${Uri.encodeComponent(context.npub ?? '')}';
+      final npub = Uri.encodeComponent(context.npub ?? '');
+      return OtherProfileScreen.pathForNpub(npub);
 
     case RouteType.curatedList:
-      return '/list/${Uri.encodeComponent(context.listId ?? '')}';
+      return CuratedListFeedScreen.pathForId(context.listId ?? '');
 
     case RouteType.discoverLists:
-      return '/discover-lists';
+      return DiscoverListsScreen.path;
 
     case RouteType.sound:
-      return '/sound/${Uri.encodeComponent(context.soundId ?? '')}';
+      return SoundDetailScreen.pathForId(context.soundId ?? '');
 
     case RouteType.secureAccount:
-      return '/secure-account';
+      return SecureAccountScreen.path;
 
     case RouteType.newVideoFeed:
-      return '/new-video-feed';
+      return VideoFeedPage.path;
   }
 }
 

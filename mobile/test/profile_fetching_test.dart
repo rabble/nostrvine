@@ -286,15 +286,18 @@ void main() {
     test(
       'should provide fallback display name when profile not available',
       () async {
-        // Arrange
-        const testPubkey = 'no_profile_pubkey_123456789';
+        // Arrange - Use valid 64-char hex pubkey for realistic testing
+        const testPubkey =
+            'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
 
         // Act
         await profileService.initialize();
         final displayName = profileService.getDisplayName(testPubkey);
 
-        // Assert - Verify fallback display name format
-        expect(displayName, equals('User no_pro...'));
+        // Assert - Verify fallback display name is truncated npub format
+        // NostrKeyUtils.truncateNpub returns "npub1xxxx...yyyyyy" format
+        expect(displayName, startsWith('npub1'));
+        expect(displayName, contains('...'));
         expect(profileService.hasProfile(testPubkey), isFalse);
       },
     );

@@ -11,7 +11,7 @@ import 'package:models/models.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/video_editor_screen.dart';
+import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
 void main() {
@@ -56,13 +56,13 @@ void main() {
                 icon: const Icon(Icons.edit),
                 onPressed: () {
                   // Simulate the navigation call we expect to see
-                  context.push(VideoEditorScreen.path, extra: testVideo);
+                  context.push(VideoClipEditorScreen.path, extra: testVideo);
                 },
               ),
             ),
           ),
           GoRoute(
-            path: VideoEditorScreen.path,
+            path: VideoClipEditorScreen.path,
             builder: (context, state) {
               capturedRoute = state.uri.toString();
               capturedExtra = state.extra;
@@ -100,7 +100,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Verify navigation to /edit-video
-      expect(capturedRoute, VideoEditorScreen.path);
+      expect(capturedRoute, VideoClipEditorScreen.path);
       expect(capturedExtra, testVideo);
       expect(find.text('Video Editor Screen'), findsOneWidget);
     },
@@ -121,13 +121,13 @@ void main() {
               key: const Key('edit-button'),
               icon: const Icon(Icons.edit),
               onPressed: () {
-                context.push(VideoEditorScreen.path, extra: testVideo);
+                context.push(VideoClipEditorScreen.path, extra: testVideo);
               },
             ),
           ),
         ),
         GoRoute(
-          path: VideoEditorScreen.path,
+          path: VideoClipEditorScreen.path,
           builder: (context, state) {
             passedVideo = state.extra as VideoEvent?;
             return Scaffold(

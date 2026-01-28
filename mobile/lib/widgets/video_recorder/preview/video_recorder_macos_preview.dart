@@ -1,8 +1,11 @@
+import 'dart:async';
+
 import 'package:camera_macos_plus/widgets/camera_macos_raw_view.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 
+/// Camera preview widget for macOS with gesture and lifecycle handling.
 class VideoRecorderMacosPreview extends ConsumerStatefulWidget {
   const VideoRecorderMacosPreview({super.key});
 
@@ -15,7 +18,7 @@ class _VideoRecorderMacosPreviewState
     extends ConsumerState<VideoRecorderMacosPreview>
     with WidgetsBindingObserver {
   TapDownDetails? _tapDownDetails;
-  final _isInBackgroundNotifier = ValueNotifier(false);
+  final ValueNotifier<bool> _isInBackgroundNotifier = ValueNotifier(false);
 
   @override
   void initState() {
@@ -32,7 +35,9 @@ class _VideoRecorderMacosPreviewState
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    ref.read(videoRecorderProvider.notifier).handleAppLifecycleState(state);
+    unawaited(
+      ref.read(videoRecorderProvider.notifier).handleAppLifecycleState(state),
+    );
 
     switch (state) {
       case .hidden:
@@ -84,8 +89,8 @@ class _VideoRecorderMacosPreviewState
           child: ValueListenableBuilder(
             valueListenable: _isInBackgroundNotifier,
             builder: (_, isInBackground, _) {
-              if (isInBackground) return SizedBox.shrink();
-              return CameraMacOSRawView();
+              if (isInBackground) return const SizedBox.shrink();
+              return const CameraMacOSRawView();
             },
           ),
         );

@@ -227,7 +227,7 @@ class CameraMacOSService extends CameraService {
   }
 
   @override
-  Future<void> startRecording({Duration? maxDuration}) async {
+  Future<bool> startRecording({Duration? maxDuration}) async {
     try {
       Log.info(
         '📷 Starting macOS video recording',
@@ -266,12 +266,14 @@ class CameraMacOSService extends CameraService {
         name: 'CameraMacOSService',
         category: .video,
       );
+      return true;
     } catch (e) {
       Log.error(
         '📷 Failed to start recording: $e',
         name: 'CameraMacOSService',
         category: .video,
       );
+      return false;
     }
   }
 

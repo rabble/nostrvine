@@ -174,21 +174,7 @@ class UserProfile {
   }
 
   /// Get truncated npub for display (e.g., "npub1abc...xyz")
-  String get truncatedNpub => makeTruncatedNpub(pubkey);
-
-  /// Generate a truncated npub string for display purposes
-  static makeTruncatedNpub(String hexPubKey) {
-    try {
-      final fullNpub = NostrKeyUtils.encodePubKey(hexPubKey);
-      if (fullNpub.length <= 16) return fullNpub;
-      // Show first 10 chars + "..." + last 6 chars (npub1abc...xyz format)
-      return '${fullNpub.substring(0, 10)}...${fullNpub.substring(fullNpub.length - 6)}';
-    } catch (e) {
-      // Fallback to shortened hex pubkey if encoding fails
-      if (hexPubKey.length <= 16) return hexPubKey;
-      return '${hexPubKey.substring(0, 8)}...${hexPubKey.substring(hexPubKey.length - 6)}';
-    }
-  }
+  String get truncatedNpub => NostrKeyUtils.truncateNpub(pubkey);
 
   /// Check if profile has basic information
   bool get hasBasicInfo =>
@@ -204,6 +190,20 @@ class UserProfile {
 
   /// Check if profile has verified NIP-05 identifier
   bool get hasNip05 => nip05?.isNotEmpty == true;
+
+  /// Get NIP-05 formatted for display.
+  ///
+  /// In NIP-05, `_@domain` means the root identity for that domain.
+  /// For subdomains like `_@loganpaul.divine.video`, the underscore is a
+  /// placeholder and should be hidden, displaying as `@loganpaul.divine.video`.
+  String? get displayNip05 {
+    if (nip05 == null || nip05!.isEmpty) return null;
+    // Strip leading underscore from _@domain format
+    if (nip05!.startsWith('_@')) {
+      return nip05!.substring(1);
+    }
+    return nip05;
+  }
 
   /// Check if profile has Lightning support
   bool get hasLightning =>

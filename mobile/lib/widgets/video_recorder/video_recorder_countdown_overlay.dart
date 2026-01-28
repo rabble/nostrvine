@@ -32,8 +32,10 @@ class VideoRecorderCountdownOverlay extends ConsumerWidget {
               countdownValue.toString(),
               style: const TextStyle(
                 color: Color(0xFFFFFFFF),
-                fontSize: 100,
-                fontWeight: .bold,
+                fontSize: 114,
+                fontFamily: 'BricolageGrotesque',
+                fontWeight: .w700,
+                height: 1.12,
               ),
             ),
           ),
