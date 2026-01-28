@@ -242,38 +242,8 @@ class _VinerAvatar extends StatelessWidget {
   }
 
   void onTap(BuildContext context) async {
-    // Handle 'me' special case - redirect to own profile tab instead
-    final identifier = viner.pubkey;
-    if (identifier == 'me') {
-      // Handle 'me' special case - need to get current user's hex
-      String? currentUserHex;
-      if (identifier == 'me') {
-        // Access container to get auth service
-        final container = ProviderScope.containerOf(context, listen: false);
-        final authService = container.read(authServiceProvider);
-        currentUserHex = authService.currentPublicKeyHex;
-      }
-
-      // Normalize any format (npub/nprofile/hex/me) to npub for URL
-      final npub = normalizeToNpub(identifier, currentUserHex: currentUserHex);
-      if (npub == null) {
-        // Invalid identifier - log warning and don't navigate
-        debugPrint('⚠️ Invalid public identifier: $identifier');
-        return;
-      }
-
-      return context.go(
-        buildRoute(
-          RouteContext(
-            type: RouteType.profile,
-            npub: npub,
-            videoIndex: null, // Grid mode - no active video
-          ),
-        ),
-      );
-    }
-
     // Get current user's hex for normalization if needed
+    final identifier = viner.pubkey;
     final container = ProviderScope.containerOf(context, listen: false);
     final authService = container.read(authServiceProvider);
     final currentUserHex = authService.currentPublicKeyHex;
@@ -286,12 +256,26 @@ class _VinerAvatar extends StatelessWidget {
       return;
     }
 
+    // Handle 'me' special case - redirect to own profile tab instead
+    if (identifier == 'me') {
+      return context.go(
+        buildRoute(
+          RouteContext(
+            type: RouteType.profile,
+            npub: npub,
+            videoIndex: null, // Grid mode - no active video
+          ),
+        ),
+      );
+    }
+
     // Pass profile hints via extra for users without Kind 0 profiles
     final extra = <String, String?>{};
-    final avatarUrl = viner.authorAvatar;
     final authorName = viner.authorName;
+    final authorAvatar = viner.authorAvatar;
+
     if (authorName != null) extra['displayName'] = authorName;
-    if (avatarUrl != null) extra['avatarUrl'] = avatarUrl;
+    if (authorAvatar != null) extra['avatarUrl'] = authorAvatar;
 
     await context.push(
       OtherProfileScreen.pathForNpub(npub),
