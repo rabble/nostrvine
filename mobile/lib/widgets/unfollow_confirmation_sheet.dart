@@ -41,9 +41,7 @@ Future<bool?> showUnfollowConfirmation(
                 ),
                 child: Text(
                   'Cancel',
-                  style: VineTheme.titleMediumFont(
-                    color: VineTheme.vineGreen,
-                  ),
+                  style: VineTheme.titleMediumFont(color: VineTheme.vineGreen),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
@@ -66,9 +64,7 @@ Future<bool?> showUnfollowConfirmation(
                 ),
                 child: Text(
                   'Unfollow',
-                  style: VineTheme.titleMediumFont(
-                    color: VineTheme.onPrimary,
-                  ),
+                  style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                 ),
