@@ -1800,6 +1800,66 @@ final class CurrentAuthStateProvider
 
 String _$currentAuthStateHash() => r'41c987ffc8f661555bab3ebec9078180411f66eb';
 
+/// Provider that returns true only when NostrClient is fully ready for operations.
+/// Combines auth state check AND nostrClient.hasKeys verification.
+/// Use this to guard providers that require authenticated NostrClient access.
+///
+/// This prevents race conditions where auth state is 'authenticated' but
+/// the NostrClient hasn't yet rebuilt with the new keys.
+
+@ProviderFor(isNostrReady)
+const isNostrReadyProvider = IsNostrReadyProvider._();
+
+/// Provider that returns true only when NostrClient is fully ready for operations.
+/// Combines auth state check AND nostrClient.hasKeys verification.
+/// Use this to guard providers that require authenticated NostrClient access.
+///
+/// This prevents race conditions where auth state is 'authenticated' but
+/// the NostrClient hasn't yet rebuilt with the new keys.
+
+final class IsNostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
+    with $Provider<bool> {
+  /// Provider that returns true only when NostrClient is fully ready for operations.
+  /// Combines auth state check AND nostrClient.hasKeys verification.
+  /// Use this to guard providers that require authenticated NostrClient access.
+  ///
+  /// This prevents race conditions where auth state is 'authenticated' but
+  /// the NostrClient hasn't yet rebuilt with the new keys.
+  const IsNostrReadyProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'isNostrReadyProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$isNostrReadyHash();
+
+  @$internal
+  @override
+  $ProviderElement<bool> $createElement($ProviderPointer pointer) =>
+      $ProviderElement(pointer);
+
+  @override
+  bool create(Ref ref) {
+    return isNostrReady(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(bool value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<bool>(value),
+    );
+  }
+}
+
+String _$isNostrReadyHash() => r'555da82d3449835978ad9d745e478332f179c4f5';
+
 /// Provider that sets Zendesk user identity when auth state changes
 /// Watch this provider at app startup to keep Zendesk identity in sync with auth
 
@@ -2180,11 +2240,11 @@ const followRepositoryProvider = FollowRepositoryProvider._();
 final class FollowRepositoryProvider
     extends
         $FunctionalProvider<
-          FollowRepository,
-          FollowRepository,
-          FollowRepository
+          FollowRepository?,
+          FollowRepository?,
+          FollowRepository?
         >
-    with $Provider<FollowRepository> {
+    with $Provider<FollowRepository?> {
   /// Provider for FollowRepository instance
   ///
   /// Creates a FollowRepository for managing follow relationships.
@@ -2209,24 +2269,25 @@ final class FollowRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<FollowRepository> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
+  $ProviderElement<FollowRepository?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
 
   @override
-  FollowRepository create(Ref ref) {
+  FollowRepository? create(Ref ref) {
     return followRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(FollowRepository value) {
+  Override overrideWithValue(FollowRepository? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<FollowRepository>(value),
+      providerOverride: $SyncValueProvider<FollowRepository?>(value),
     );
   }
 }
 
-String _$followRepositoryHash() => r'ed2a3c727eb23941dbddd5c5e9689b01a37a1ae6';
+String _$followRepositoryHash() => r'97f26591526d0afb776def48904f4562a5338d42';
 
 /// Provider for ProfileRepository instance
 ///
@@ -2250,11 +2311,11 @@ const profileRepositoryProvider = ProfileRepositoryProvider._();
 final class ProfileRepositoryProvider
     extends
         $FunctionalProvider<
-          ProfileRepository,
-          ProfileRepository,
-          ProfileRepository
+          ProfileRepository?,
+          ProfileRepository?,
+          ProfileRepository?
         >
-    with $Provider<ProfileRepository> {
+    with $Provider<ProfileRepository?> {
   /// Provider for ProfileRepository instance
   ///
   /// Creates a ProfileRepository for managing user profiles (Kind 0 metadata).
@@ -2278,25 +2339,25 @@ final class ProfileRepositoryProvider
 
   @$internal
   @override
-  $ProviderElement<ProfileRepository> $createElement(
+  $ProviderElement<ProfileRepository?> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  ProfileRepository create(Ref ref) {
+  ProfileRepository? create(Ref ref) {
     return profileRepository(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(ProfileRepository value) {
+  Override overrideWithValue(ProfileRepository? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<ProfileRepository>(value),
+      providerOverride: $SyncValueProvider<ProfileRepository?>(value),
     );
   }
 }
 
-String _$profileRepositoryHash() => r'459296fae107428ffb6a50d27d57f501f21663c5';
+String _$profileRepositoryHash() => r'0454d90570f71f0bae362a0e84d9d61cce253f93';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 

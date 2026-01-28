@@ -12,7 +12,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/router/app_shell.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/auth/divine_auth_screen.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
@@ -47,14 +46,15 @@ import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
-import 'package:openvine/screens/video_editor_screen.dart';
+import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -90,6 +90,36 @@ class FollowingRoutes {
 
   /// Build path for a specific user's following list.
   static String pathForPubkey(String pubkey) => '$basePath/$pubkey';
+}
+
+/// Extra data for curated list route (passed via GoRouter extra)
+class CuratedListRouteExtra {
+  const CuratedListRouteExtra({
+    required this.listName,
+    this.videoIds,
+    this.authorPubkey,
+  });
+
+  final String listName;
+  final List<String>? videoIds;
+  final String? authorPubkey;
+}
+
+/// Extra data for video editor route (passed via GoRouter extra)
+class VideoEditorRouteExtra {
+  const VideoEditorRouteExtra({
+    required this.videoPath,
+    this.externalAudioEventId,
+    this.externalAudioUrl,
+    this.externalAudioIsBundled = false,
+    this.externalAudioAssetPath,
+  });
+
+  final String videoPath;
+  final String? externalAudioEventId;
+  final String? externalAudioUrl;
+  final bool externalAudioIsBundled;
+  final String? externalAudioAssetPath;
 }
 
 // Navigator keys for per-tab state preservation
@@ -223,6 +253,42 @@ Future<bool> hasAnyFollowingInCache(SharedPreferences prefs) async {
   }
 }
 
+/// Check if we should redirect to explore because user has no following list
+/// Returns the redirect path (/explore) or null if no redirect needed
+Future<String?> _checkEmptyFollowingRedirect({
+  required String location,
+  required SharedPreferences prefs,
+  required String routePath,
+}) async {
+  // Only redirect to explore on very first navigation if user follows nobody
+  // After that, let users navigate to home freely (they'll see a message to follow people)
+  if (!_hasNavigated && location.startsWith(routePath)) {
+    _hasNavigated = true;
+
+    final hasFollowing = await hasAnyFollowingInCache(prefs);
+    Log.debug(
+      'Empty contacts check: hasFollowing=$hasFollowing, redirecting=${!hasFollowing}',
+      name: 'AppRouter',
+      category: LogCategory.ui,
+    );
+    if (!hasFollowing) {
+      Log.debug(
+        'Redirecting to /explore because no following list found',
+        name: 'AppRouter',
+        category: LogCategory.ui,
+      );
+      return ExploreScreen.path;
+    }
+  } else if (location.startsWith(routePath)) {
+    Log.debug(
+      'Skipping empty contacts check: _hasNavigated=$_hasNavigated',
+      name: 'AppRouter',
+      category: LogCategory.ui,
+    );
+  }
+  return null;
+}
+
 /// Listenable that notifies when auth state changes to/from authenticated
 /// Only notifies on meaningful state changes to avoid unnecessary router refreshes
 class _AuthStateListenable extends ChangeNotifier {
@@ -290,6 +356,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               location == WelcomeScreen.resetPasswordPath ||
               location == EmailVerificationScreen.path)) {
         debugPrint('[Router] Authenticated. moving to /home/0');
+        final emptyFollowingRedirect = await _checkEmptyFollowingRedirect(
+          location: location,
+          prefs: prefs,
+          routePath: WelcomeScreen.path,
+        );
+        if (emptyFollowingRedirect != null) {
+          return emptyFollowingRedirect;
+        }
         return HomeScreenRouter.pathForIndex(0);
       }
 
@@ -350,34 +424,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         }
       }
 
-      // Only redirect to explore on very first navigation if user follows nobody
-      // After that, let users navigate to home freely (they'll see a message to follow people)
-      if (!_hasNavigated && location.startsWith(HomeScreenRouter.path)) {
-        _hasNavigated = true;
-
-        // Check SharedPreferences cache directly for following list
-        // This is more reliable than checking socialProvider state which may not be initialized
-        final prefs = await SharedPreferences.getInstance();
-        final hasFollowing = await hasAnyFollowingInCache(prefs);
-        Log.debug(
-          'Empty contacts check: hasFollowing=$hasFollowing, redirecting=${!hasFollowing}',
-          name: 'AppRouter',
-          category: LogCategory.ui,
-        );
-        if (!hasFollowing) {
-          Log.debug(
-            'Redirecting to /explore because no following list found',
-            name: 'AppRouter',
-            category: LogCategory.ui,
-          );
-          return ExploreScreen.path;
-        }
-      } else if (location.startsWith(HomeScreenRouter.path)) {
-        Log.debug(
-          'Skipping empty contacts check: _hasNavigated=$_hasNavigated',
-          name: 'AppRouter',
-          category: LogCategory.ui,
-        );
+      // Check if we should redirect to explore because user has no following list
+      final emptyFollowingRedirect = await _checkEmptyFollowingRedirect(
+        location: location,
+        prefs: prefs,
+        routePath: HomeScreenRouter.path,
+      );
+      if (emptyFollowingRedirect != null) {
+        return emptyFollowingRedirect;
       }
 
       Log.debug(
@@ -933,21 +987,26 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: VideoEditorScreen.path,
         name: VideoEditorScreen.routeName,
+        builder: (_, st) => const VideoEditorScreen(),
+      ),
+      GoRoute(
+        path: VideoClipEditorScreen.path,
+        name: VideoClipEditorScreen.routeName,
         builder: (_, st) {
           final extra = st.extra as Map<String, dynamic>?;
           final fromLibrary = extra?['fromLibrary'] as bool? ?? false;
-          return VideoEditorScreen(fromLibrary: fromLibrary);
+          return VideoClipEditorScreen(fromLibrary: fromLibrary);
         },
       ),
       GoRoute(
-        path: '${VideoEditorScreen.path}/:draftId',
-        name: '${VideoEditorScreen.routeName}-draft',
+        path: '${VideoClipEditorScreen.path}/:draftId',
+        name: '${VideoClipEditorScreen.routeName}-draft',
         builder: (_, st) {
           // The draft ID is optional if the user wants to continue editing
           // the draft.
           final draftId = st.pathParameters['draftId'];
 
-          return VideoEditorScreen(
+          return VideoClipEditorScreen(
             draftId: draftId == null || draftId.isEmpty ? null : draftId,
           );
         },
@@ -1081,10 +1140,7 @@ class _SoundDetailLoader extends ConsumerWidget {
         }
         return SoundDetailScreen(sound: sound);
       },
-      loading: () => const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(child: BrandedLoadingIndicator(size: 60)),
-      ),
+      loading: () => const BrandedLoadingScaffold(),
       error: (error, stack) => Scaffold(
         backgroundColor: Colors.black,
         appBar: AppBar(

@@ -50,4 +50,21 @@ class NostrKeyUtils {
       return false;
     }
   }
+
+  /// Create a truncated npub for display (e.g., "npub1abc...xyz")
+  ///
+  /// Converts a hex pubkey to npub format and truncates for UI display.
+  /// Shows first 10 characters + "..." + last 6 characters.
+  /// Use this when displaying usernames for users without a Kind 0 profile.
+  static String truncateNpub(String hexPubkey) {
+    try {
+      final fullNpub = encodePubKey(hexPubkey);
+      if (fullNpub.length <= 16) return fullNpub;
+      return '${fullNpub.substring(0, 10)}...${fullNpub.substring(fullNpub.length - 6)}';
+    } catch (e) {
+      // Fallback to shortened hex pubkey if encoding fails
+      if (hexPubkey.length <= 16) return hexPubkey;
+      return '${hexPubkey.substring(0, 8)}...${hexPubkey.substring(hexPubkey.length - 6)}';
+    }
+  }
 }

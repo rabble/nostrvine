@@ -12,7 +12,8 @@ import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/screens/settings_screen.dart';
-import 'package:openvine/screens/video_editor_screen.dart';
+import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
+import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 
 void main() {
   group('Real Navigation Scenarios', () {
@@ -352,13 +353,36 @@ void main() {
 
       final router = container.read(goRouterProvider);
 
-      // Edit video route exists (accessed via context.push with video extra)
       router.go(VideoEditorScreen.path);
       await tester.pumpAndSettle();
       expect(
         router.routeInformationProvider.value.uri.toString(),
         VideoEditorScreen.path,
         reason: 'Edit video route should exist',
+      );
+    });
+
+    testWidgets('Edit video-clip route', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: container.read(goRouterProvider),
+          ),
+        ),
+      );
+
+      final router = container.read(goRouterProvider);
+
+      router.go(VideoClipEditorScreen.path);
+      await tester.pumpAndSettle();
+      expect(
+        router.routeInformationProvider.value.uri.toString(),
+        VideoClipEditorScreen.path,
+        reason: 'Edit video-clip route should exist',
       );
     });
 

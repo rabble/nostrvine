@@ -3,9 +3,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/popular_videos_feed_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
@@ -195,10 +195,13 @@ class _PopularVideosTrendingContent extends ConsumerWidget {
                 category: LogCategory.video,
               );
               // Navigate to fullscreen video feed
-              context.pushVideoFeed(
-                source: StaticFeedSource(videoList),
-                initialIndex: index,
-                contextTitle: 'Popular Videos',
+              context.push(
+                FullscreenVideoFeedScreen.path,
+                extra: FullscreenVideoFeedArgs(
+                  source: StaticFeedSource(videoList),
+                  initialIndex: index,
+                  contextTitle: 'Popular Videos',
+                ),
               );
             },
             onRefresh: () async {

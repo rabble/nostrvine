@@ -37,10 +37,12 @@ class TestDivineCameraPlatform extends DivineCameraPlatform
       CameraState(isInitialized: true, lens: lens);
 
   @override
-  Future<void> startRecording({
+  Future<bool> startRecording({
     Duration? maxDuration,
     bool useCache = true,
-  }) async {}
+  }) async {
+    return true;
+  }
 
   @override
   Future<VideoRecordingResult?> stopRecording() async => null;

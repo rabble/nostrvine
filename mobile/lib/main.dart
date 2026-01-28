@@ -31,7 +31,6 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/last_tab_position_provider.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_normalization_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/router/tab_history_provider.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -965,27 +964,21 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       // For notifications: go to index 0 (notifications always has an index)
       // For other routes: go to grid mode (null index)
       if (ctx.videoIndex != null && ctx.videoIndex != 0) {
-        RouteContext gridCtx;
-        if (ctx.type == RouteType.notifications) {
+        final newRoute = switch (ctx.type) {
           // Notifications always has an index, go to index 0
-          gridCtx = RouteContext(
-            type: ctx.type,
-            hashtag: ctx.hashtag,
-            searchTerm: ctx.searchTerm,
-            npub: ctx.npub,
-            videoIndex: 0,
-          );
-        } else {
-          // For explore and other routes, go to grid mode (null index)
-          gridCtx = RouteContext(
-            type: ctx.type,
-            hashtag: ctx.hashtag,
-            searchTerm: ctx.searchTerm,
-            npub: ctx.npub,
-            videoIndex: null,
-          );
-        }
-        final newRoute = buildRoute(gridCtx);
+          RouteType.notifications => NotificationsScreen.pathForIndex(0),
+          RouteType.explore => ExploreScreen.path,
+          RouteType.profile => ProfileScreenRouter.pathForNpub(
+            ctx.npub ?? 'me',
+          ),
+          RouteType.hashtag => HashtagScreenRouter.pathForTag(
+            ctx.hashtag ?? '',
+          ),
+          RouteType.search => SearchScreenPure.path,
+          RouteType.home => HomeScreenRouter.pathForIndex(0),
+          _ => ExploreScreen.path,
+        };
+
         router.go(newRoute);
         return true; // Handled
       }

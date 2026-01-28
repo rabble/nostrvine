@@ -100,8 +100,13 @@ class _VideoMetadataTagsInputState
     final updatedTags = {...oldTags, ...newTags};
     ref.read(videoEditorProvider.notifier).updateMetadata(tags: updatedTags);
     _controller.clear();
-    // Keep focus to prevent keyboard from closing (after rebuild)
+    // Keep focus to prevent keyboard from closing (after rebuild).
+    //
+    // We request focus twice: once immediately and once in a post-frame
+    // callback to prevent an issue where focus could be lost during the widget
+    // rebuild triggered by the state update.
     if (updatedTags.length < VideoEditorConstants.tagLimit) {
+      _focusNode.requestFocus();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) _focusNode.requestFocus();
       });
@@ -227,15 +232,17 @@ class _TagChip extends ConsumerWidget {
           ),
           const SizedBox(width: 4),
           // Tag text
-          Text(
-            tag,
-            overflow: .ellipsis,
-            style: GoogleFonts.bricolageGrotesque(
-              color: VineTheme.onSurface,
-              fontSize: 14,
-              fontWeight: .w800,
-              height: 1.43,
-              letterSpacing: 0.10,
+          Flexible(
+            child: Text(
+              tag,
+              overflow: .ellipsis,
+              style: GoogleFonts.bricolageGrotesque(
+                color: VineTheme.onSurface,
+                fontSize: 14,
+                fontWeight: .w800,
+                height: 1.43,
+                letterSpacing: 0.10,
+              ),
             ),
           ),
           const SizedBox(width: 8),

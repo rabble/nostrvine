@@ -11,7 +11,8 @@ import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -38,6 +39,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
   double _baseZoomLevel = 1;
   bool _isDestroyed = false;
+
+  // Flag to track if startRecording is in progress (waiting for first keyframe)
+  bool _isStartingRecording = false;
 
   @override
   VideoRecorderProviderState build() {
@@ -289,12 +293,13 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     // remaining duration is less than one frame.
     if (!_cameraService.canRecord ||
         state.isRecording ||
+        _isStartingRecording ||
         remainingDuration < const Duration(milliseconds: 30)) {
       return;
     }
 
     _baseZoomLevel = state.zoomLevel;
-    state = state.copyWith(recordingState: .recording);
+    _isStartingRecording = true;
 
     // Handle timer countdown
     if (state.timerDuration != .off) {
@@ -305,23 +310,56 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         category: .video,
       );
 
+      // Set recording state during countdown so UI shows countdown
+      state = state.copyWith(recordingState: .recording);
+
       for (var i = seconds; i > 0 && !_isDestroyed; i--) {
         state = state.copyWith(countdownValue: i);
         await Future<void>.delayed(const Duration(seconds: 1));
       }
-      if (_isDestroyed) return; // Stop before starting recording if disposed
+      if (_isDestroyed) {
+        _isStartingRecording = false;
+        state = state.copyWith(recordingState: .idle);
+        return;
+      }
       state = state.copyWith(countdownValue: 0);
     }
 
-    if (_isDestroyed) return; // Don't start recording if disposed
+    if (_isDestroyed) {
+      _isStartingRecording = false;
+      return;
+    }
+
+    // Set recording state before starting (UI feedback)
+    state = state.copyWith(recordingState: .recording);
+
     Log.info(
-      '🎥 Recording started - aspect ratio: ${state.aspectRatio.name}',
+      '🎥 Starting recording - aspect ratio: ${state.aspectRatio.name}',
       name: 'VideoRecorderNotifier',
       category: .video,
     );
 
-    await _cameraService.startRecording(maxDuration: remainingDuration);
-    clipProvider.startRecording();
+    final success = await _cameraService.startRecording(
+      maxDuration: remainingDuration,
+    );
+
+    _isStartingRecording = false;
+
+    if (success) {
+      Log.info(
+        '✅ Recording truly started',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+      clipProvider.startRecording();
+    } else {
+      Log.warning(
+        '⚠️ Recording failed to start or was stopped early',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+      state = state.copyWith(recordingState: .idle);
+    }
   }
 
   /// Stop recording and process clip (metadata, thumbnail).
@@ -329,7 +367,22 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   /// Stops camera recording, extracts video metadata for exact duration,
   /// generates thumbnail, and adds clip to clip manager.
   Future<void> stopRecording([EditorVideo? result]) async {
-    if (!state.isRecording && result != null) return;
+    // If we're still starting up (waiting for first keyframe), just call native stop
+    // The native Finalize event will trigger startRecordingCallback with error,
+    // which makes startRecording return false and set state to idle
+    if (_isStartingRecording) {
+      Log.info(
+        '⏳ Stop requested during startup - calling native stop (startRecording will handle state)',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+      // Don't await - let native handle it asynchronously
+      // The startRecording method will get the error callback and set state to idle
+      unawaited(_cameraService.stopRecording());
+      return;
+    }
+
+    if (!state.isRecording && result == null) return;
 
     Log.info(
       '⏹️  Stopping recording and processing clip...',
@@ -342,17 +395,16 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       ..stopRecording();
     final remainingMs = clipProvider.remainingDuration.inMilliseconds;
 
+    state = state.copyWith(recordingState: .idle);
     if (videoResult == null) {
       Log.warning(
         '⚠️ Recording stopped but no video file returned from camera service',
         name: 'VideoRecorderNotifier',
         category: .video,
       );
-      state = state.copyWith(recordingState: .idle);
+      clipProvider.resetRecording();
       return;
     }
-
-    state = state.copyWith(recordingState: .idle);
 
     /// Add the recorded clip to ClipManager
     final clip = clipProvider.addClip(
@@ -471,7 +523,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       context.pop();
     } else {
       // No screen to pop to (navigated via go), go home instead.
-      context.goHome();
+      context.go(HomeScreenRouter.pathForIndex(0));
     }
   }
 
@@ -481,7 +533,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   /// return.
   Future<void> openVideoEditor(BuildContext context) async {
     await Future.wait([
-      context.pushVideoEditor(),
+      context.push(VideoClipEditorScreen.path),
       // We delay camera dispose so that the screen animation can finish
       // before the editor open. Without that it will look weird to the user
       // because the initialization screen will show up quickly.

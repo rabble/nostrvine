@@ -480,7 +480,12 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     );
 
     try {
-      await Future.wait(_clips.map(saveClipToLibrary));
+      // IMPORTANT: Do not change to Future.wait or parallel execution.
+      // Sequential saving ensures each clip is fully persisted before the next,
+      // preventing file conflicts and ensuring data integrity.
+      for (final clip in _clips) {
+        await saveClipToLibrary(clip);
+      }
 
       Log.info(
         '💾 Successfully saved clips to library',

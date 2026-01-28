@@ -102,43 +102,32 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
                   ),
                 ),
               ),
-              body: LayoutBuilder(
-                builder: (_, constraints) {
-                  return SingleChildScrollView(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                      ),
+              body: Column(
+                spacing: 12,
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
                       child: Column(
-                        mainAxisAlignment: .spaceBetween,
+                        mainAxisSize: .min,
+                        crossAxisAlignment: .stretch,
                         children: [
-                          // Metadata form section
-                          Column(
-                            mainAxisSize: .min,
-                            crossAxisAlignment: .stretch,
-                            children: [
-                              // Video preview at top
-                              const VideoMetadataClipPreview(),
+                          // Video preview at top
+                          const VideoMetadataClipPreview(),
 
-                              // Form fields
-                              _FormData(
-                                titleController: _titleController,
-                                descriptionController: _descriptionController,
-                                titleFocusNode: _titleFocusNode,
-                                descriptionFocusNode: _descriptionFocusNode,
-                              ),
-                            ],
-                          ),
-                          // Post button at bottom
-                          const SafeArea(
-                            top: false,
-                            child: VideoMetadataBottomBar(),
+                          // Form fields
+                          _FormData(
+                            titleController: _titleController,
+                            descriptionController: _descriptionController,
+                            titleFocusNode: _titleFocusNode,
+                            descriptionFocusNode: _descriptionFocusNode,
                           ),
                         ],
                       ),
                     ),
-                  );
-                },
+                  ),
+                  // Post button at bottom
+                  const SafeArea(top: false, child: VideoMetadataBottomBar()),
+                ],
               ),
             ),
             const VideoMetadataUploadStatus(),

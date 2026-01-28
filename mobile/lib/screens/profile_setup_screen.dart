@@ -20,6 +20,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/username_notifier.dart';
 import 'package:openvine/state/username_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -44,6 +45,11 @@ class ProfileSetupScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileRepository = ref.watch(profileRepositoryProvider);
     final userProfileService = ref.watch(userProfileServiceProvider);
+
+    // Show loading until NostrClient has keys
+    if (profileRepository == null) {
+      return const BrandedLoadingScaffold();
+    }
 
     return BlocProvider<ProfileEditorBloc>(
       create: (context) => ProfileEditorBloc(
@@ -121,9 +127,12 @@ class _ProfileSetupScreenViewState
         final authService = ref.read(authServiceProvider);
 
         if (authService.currentPublicKeyHex != null) {
-          final repoProfile = await ref
-              .read(profileRepositoryProvider)
-              .getProfile(pubkey: authService.currentPublicKeyHex!);
+          final profileRepo = ref.read(profileRepositoryProvider);
+          // Return early if NostrClient doesn't have keys yet
+          if (profileRepo == null) return;
+          final repoProfile = await profileRepo.getProfile(
+            pubkey: authService.currentPublicKeyHex!,
+          );
           final profile = repoProfile != null
               ? UserProfile.fromJson(repoProfile.toJson())
               : null;

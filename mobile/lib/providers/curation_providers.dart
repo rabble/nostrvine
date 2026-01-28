@@ -414,10 +414,13 @@ class TrendingHashtags extends _$TrendingHashtags {
     return service.getTrendingHashtags();
   }
 
-  /// Refresh trending hashtags
-  void refresh() {
+  /// Refresh trending hashtags from REST API
+  ///
+  /// This fetches fresh data from the API with forceRefresh to bypass cache.
+  Future<void> refresh() async {
     final service = ref.read(analyticsApiServiceProvider);
-    final hashtags = service.getTrendingHashtags();
+    // Fetch from API with force refresh to bypass 5-minute cache
+    final hashtags = await service.fetchTrendingHashtags(forceRefresh: true);
     state = hashtags;
   }
 }

@@ -10,9 +10,10 @@ import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/screens/user_list_people_screen.dart';
@@ -239,7 +240,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
     // Navigate to update URL - URL will drive the UI state (no internal state needed!)
     // videoIndex maps directly to list index (0=first video, 1=second video)
-    context.goExplore(startIndex);
+    context.go(ExploreScreen.pathForIndex(startIndex));
 
     Log.info(
       '🎯 ExploreScreenPure: Entered feed mode at index $startIndex with ${videos.length} videos',
@@ -504,7 +505,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 );
                 // Stop any playing videos before navigating
                 disposeAllVideoControllers(ref);
-                context.pushDiscoverLists();
+                context.push(DiscoverListsScreen.path);
               },
               icon: Icon(Icons.search, color: VineTheme.backgroundColor),
               label: Text(
@@ -689,9 +690,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                           );
                           // Stop any playing videos before navigating
                           disposeAllVideoControllers(ref);
-                          context.pushCuratedList(
-                            listId: curatedList.id,
-                            listName: curatedList.name,
+                          context.push(
+                            CuratedListFeedScreen.pathForId(curatedList.id),
+                            extra: CuratedListRouteExtra(
+                              listName: curatedList.name,
+                            ),
                           );
                         },
                       ),
@@ -851,9 +854,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               );
               // Stop any playing videos before navigating
               disposeAllVideoControllers(ref);
-              context.pushCuratedList(
-                listId: curatedList.id,
-                listName: curatedList.name,
+              context.push(
+                CuratedListFeedScreen.pathForId(curatedList.id),
+                extra: CuratedListRouteExtra(listName: curatedList.name),
               );
             },
           ),

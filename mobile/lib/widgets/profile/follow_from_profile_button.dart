@@ -36,6 +36,11 @@ class FollowFromProfileButton extends ConsumerWidget {
     final nostrClient = ref.watch(nostrServiceProvider);
     final currentUserPubkey = nostrClient.publicKey;
 
+    // Don't show button until NostrClient has keys
+    if (followRepository == null) {
+      return const SizedBox.shrink();
+    }
+
     // Watch blocklist version to trigger rebuilds when block/unblock occurs
     ref.watch(blocklistVersionProvider);
 
