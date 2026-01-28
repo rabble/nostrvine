@@ -91,7 +91,33 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       name: 'VideoRecorderNotifier',
       category: .video,
     );
-    await _cameraService.initialize();
+
+    try {
+      await _cameraService.initialize();
+    } catch (e) {
+      Log.error(
+        '📹 Camera service initialization threw exception: $e',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+      state = state.copyWith(
+        initializationErrorMessage: 'Camera initialization failed: $e',
+      );
+      return;
+    }
+
+    // Check if camera initialization failed
+    if (!_cameraService.isInitialized) {
+      final error =
+          _cameraService.initializationError ?? 'Camera initialization failed';
+      Log.warning(
+        '⚠️ Camera failed to initialize: $error',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+      state = state.copyWith(initializationErrorMessage: error);
+      return;
+    }
 
     // If the user has recorded clips in the clip manager, we use this
     // aspect-ratio to prevent mixing different ratios.

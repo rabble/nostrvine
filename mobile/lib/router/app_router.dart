@@ -254,6 +254,42 @@ Future<bool> hasAnyFollowingInCache(SharedPreferences prefs) async {
   }
 }
 
+/// Check if we should redirect to explore because user has no following list
+/// Returns the redirect path (/explore) or null if no redirect needed
+Future<String?> _checkEmptyFollowingRedirect({
+  required String location,
+  required SharedPreferences prefs,
+  required String routePath,
+}) async {
+  // Only redirect to explore on very first navigation if user follows nobody
+  // After that, let users navigate to home freely (they'll see a message to follow people)
+  if (!_hasNavigated && location.startsWith(routePath)) {
+    _hasNavigated = true;
+
+    final hasFollowing = await hasAnyFollowingInCache(prefs);
+    Log.debug(
+      'Empty contacts check: hasFollowing=$hasFollowing, redirecting=${!hasFollowing}',
+      name: 'AppRouter',
+      category: LogCategory.ui,
+    );
+    if (!hasFollowing) {
+      Log.debug(
+        'Redirecting to /explore because no following list found',
+        name: 'AppRouter',
+        category: LogCategory.ui,
+      );
+      return ExploreScreen.path;
+    }
+  } else if (location.startsWith(routePath)) {
+    Log.debug(
+      'Skipping empty contacts check: _hasNavigated=$_hasNavigated',
+      name: 'AppRouter',
+      category: LogCategory.ui,
+    );
+  }
+  return null;
+}
+
 /// Listenable that notifies when auth state changes to/from authenticated
 /// Only notifies on meaningful state changes to avoid unnecessary router refreshes
 class _AuthStateListenable extends ChangeNotifier {
@@ -313,24 +349,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               location == WelcomeScreen.loginOptionsPath ||
               location == WelcomeScreen.resetPasswordPath ||
               location == EmailVerificationScreen.path)) {
-        // Check following list here since GoRouter doesn't re-run redirect for target location
-        // New users with no following should go to explore, not empty home feed
-        _hasNavigated = true;
-        final hasFollowing = await hasAnyFollowingInCache(prefs);
-        Log.debug(
-          'Auth route redirect: hasFollowing=$hasFollowing',
-          name: 'AppRouter',
-          category: LogCategory.ui,
+        debugPrint('[Router] Authenticated. moving to /home/0');
+        final emptyFollowingRedirect = await _checkEmptyFollowingRedirect(
+          location: location,
+          prefs: prefs,
+          routePath: WelcomeScreen.path,
         );
-        if (!hasFollowing) {
-          debugPrint(
-            '[Router] New user with no following, redirecting to /explore',
-          );
-          return ExploreScreen.path;
+        if (emptyFollowingRedirect != null) {
+          return emptyFollowingRedirect;
         }
-        debugPrint(
-          '[Router] Authenticated user with following, redirecting to /home/0',
-        );
         return HomeScreenRouter.pathForIndex(0);
       }
 
@@ -391,57 +418,14 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         }
       }
 
-      // Only redirect to explore on very first navigation if user follows nobody
-      // After that, let users navigate to home freely (they'll see a message to follow people)
-      // Skip this check if user is not authenticated (e.g., during logout)
-      if (!_hasNavigated && location.startsWith(HomeScreenRouter.path)) {
-        Log.debug(
-          'First home navigation check: _hasNavigated=$_hasNavigated, authState=$authState',
-          name: 'AppRouter',
-          category: LogCategory.ui,
-        );
-
-        // Only do the following-list check if user is authenticated
-        // During logout, auth state may still be 'authenticated' but we should skip
-        // this check to avoid unnecessary redirect to explore
-        if (authState == AuthState.authenticated) {
-          _hasNavigated = true;
-          Log.debug(
-            '✅ Set _hasNavigated = true (first home navigation while authenticated)',
-            name: 'AppRouter',
-            category: LogCategory.ui,
-          );
-
-          // Check SharedPreferences cache directly for following list
-          // This is more reliable than checking socialProvider state which may not be initialized
-          // Uses cached prefs from provider instead of slow getInstance() call
-          final hasFollowing = await hasAnyFollowingInCache(prefs);
-          Log.debug(
-            'Empty contacts check: hasFollowing=$hasFollowing, redirecting=${!hasFollowing}',
-            name: 'AppRouter',
-            category: LogCategory.ui,
-          );
-          if (!hasFollowing) {
-            Log.debug(
-              'Redirecting to /explore because no following list found',
-              name: 'AppRouter',
-              category: LogCategory.ui,
-            );
-            return ExploreScreen.path;
-          }
-        } else {
-          Log.debug(
-            'Skipping following check - not authenticated',
-            name: 'AppRouter',
-            category: LogCategory.ui,
-          );
-        }
-      } else if (location.startsWith(HomeScreenRouter.path)) {
-        Log.debug(
-          'Skipping empty contacts check: _hasNavigated=$_hasNavigated',
-          name: 'AppRouter',
-          category: LogCategory.ui,
-        );
+      // Check if we should redirect to explore because user has no following list
+      final emptyFollowingRedirect = await _checkEmptyFollowingRedirect(
+        location: location,
+        prefs: prefs,
+        routePath: HomeScreenRouter.path,
+      );
+      if (emptyFollowingRedirect != null) {
+        return emptyFollowingRedirect;
       }
 
       Log.debug(

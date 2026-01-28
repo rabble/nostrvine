@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_segment_bar.dart';
@@ -40,12 +41,28 @@ class _CameraPermissionGateState extends State<CameraPermissionGate>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
 
+    Log.info(
+      '🔐 CameraPermissionGate initState',
+      name: 'CameraPermissionGate',
+      category: LogCategory.video,
+    );
+
     // Always refresh permission check when screen opens
     // This handles cases where user denied previously and is returning
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final bloc = context.read<CameraPermissionBloc>();
+      Log.info(
+        '🔐 Current permission state: ${bloc.state.runtimeType}',
+        name: 'CameraPermissionGate',
+        category: LogCategory.video,
+      );
       if (bloc.state is! CameraPermissionLoaded) {
+        Log.info(
+          '🔐 Triggering permission refresh',
+          name: 'CameraPermissionGate',
+          category: LogCategory.video,
+        );
         bloc.add(const CameraPermissionRefresh());
       }
     });
@@ -93,12 +110,22 @@ class _CameraPermissionGateState extends State<CameraPermissionGate>
   Widget build(BuildContext context) {
     return BlocConsumer<CameraPermissionBloc, CameraPermissionState>(
       listener: (context, state) {
+        Log.info(
+          '🔐 Permission state changed: ${state.runtimeType}',
+          name: 'CameraPermissionGate',
+          category: LogCategory.video,
+        );
         // When user denies native permission dialog, pop back to home
         if (state is CameraPermissionDenied) {
           _popBack();
         }
       },
       builder: (context, state) {
+        Log.debug(
+          '🔐 Building with state: ${state.runtimeType}',
+          name: 'CameraPermissionGate',
+          category: LogCategory.video,
+        );
         return switch (state) {
           CameraPermissionInitial() => _CameraPlaceholderScaffold(
             onClose: _popBack,

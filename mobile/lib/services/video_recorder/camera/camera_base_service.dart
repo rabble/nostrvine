@@ -92,4 +92,7 @@ abstract class CameraService {
 
   /// Whether the device can active the camera-flash.
   bool get hasFlash;
+
+  /// Error message if initialization failed, null if successful.
+  String? get initializationError;
 }

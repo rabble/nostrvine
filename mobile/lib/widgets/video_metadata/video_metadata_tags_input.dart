@@ -232,15 +232,17 @@ class _TagChip extends ConsumerWidget {
           ),
           const SizedBox(width: 4),
           // Tag text
-          Text(
-            tag,
-            overflow: .ellipsis,
-            style: GoogleFonts.bricolageGrotesque(
-              color: VineTheme.onSurface,
-              fontSize: 14,
-              fontWeight: .w800,
-              height: 1.43,
-              letterSpacing: 0.10,
+          Flexible(
+            child: Text(
+              tag,
+              overflow: .ellipsis,
+              style: GoogleFonts.bricolageGrotesque(
+                color: VineTheme.onSurface,
+                fontSize: 14,
+                fontWeight: .w800,
+                height: 1.43,
+                letterSpacing: 0.10,
+              ),
             ),
           ),
           const SizedBox(width: 8),

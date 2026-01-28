@@ -9,6 +9,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/services/image_cache_manager.dart';
+import 'package:openvine/widgets/unfollow_confirmation_sheet.dart';
 
 /// A tile widget for displaying user profile information in lists.
 ///
@@ -153,6 +154,7 @@ class UserProfileTile extends ConsumerWidget {
                     _FollowButton(
                       isFollowing: isFollowing!,
                       onToggleFollow: onToggleFollow!,
+                      displayName: displayName,
                     ),
                   ],
                 ],
@@ -170,17 +172,30 @@ class _FollowButton extends StatelessWidget {
   const _FollowButton({
     required this.isFollowing,
     required this.onToggleFollow,
+    required this.displayName,
   });
 
   final bool isFollowing;
   final VoidCallback onToggleFollow;
+  final String displayName;
+
+  Future<void> _confirmUnfollow(BuildContext context) async {
+    final result = await showUnfollowConfirmation(
+      context,
+      displayName: displayName,
+    );
+
+    if (result == true && context.mounted) {
+      onToggleFollow();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     if (isFollowing) {
       // Following state: surfaceContainer bg, outlineMuted border, userMinus icon
       return GestureDetector(
-        onTap: onToggleFollow,
+        onTap: () => _confirmUnfollow(context),
         child: Container(
           width: 40,
           height: 40,
