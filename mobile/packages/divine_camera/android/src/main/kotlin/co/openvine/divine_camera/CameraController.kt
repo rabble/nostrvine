@@ -87,7 +87,7 @@ class CameraController(
     private val frontCameraIsoThreshold: Int = 650
     private val frontCameraExposureThreshold: Long = 20_000_000L  // 20ms
     private val backCameraIsoThreshold: Int = 800
-    private val backCameraExposureThreshold: Long = 33_000_000L  // 33ms
+    private val backCameraExposureThreshold: Long = 40_000_000L  // 40ms
     
     // Camera2 CaptureCallback to monitor exposure values continuously
     private val exposureCaptureCallback = object : CameraCaptureSession.CaptureCallback() {
