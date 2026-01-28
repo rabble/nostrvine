@@ -2,12 +2,12 @@
 // ABOUTME: Tests immutability, copyWith, computed properties, and state transitions
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/video_editor_state.dart';
+import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 
 void main() {
   group('EditorState', () {
     test('creates instance with default values', () {
-      const state = EditorState();
+      final state = VideoEditorProviderState();
 
       expect(state.currentClipIndex, 0);
       expect(state.currentPosition, Duration.zero);
@@ -20,7 +20,10 @@ void main() {
     });
 
     test('copyWith updates specified fields only', () {
-      const initial = EditorState(currentClipIndex: 1, isPlaying: true);
+      final initial = VideoEditorProviderState(
+        currentClipIndex: 1,
+        isPlaying: true,
+      );
 
       final updated = initial.copyWith(isEditing: true, isMuted: true);
 
@@ -32,7 +35,7 @@ void main() {
     });
 
     test('copyWith preserves all fields when none specified', () {
-      const state = EditorState(
+      final state = VideoEditorProviderState(
         currentClipIndex: 2,
         currentPosition: Duration(seconds: 5),
         isEditing: true,

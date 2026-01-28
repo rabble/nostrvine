@@ -17,13 +17,7 @@ import 'package:openvine/widgets/video_recorder/video_recorder_focus_point.dart'
 /// functionality.
 class VideoRecorderCameraPreview extends ConsumerStatefulWidget {
   /// Creates a camera preview widget.
-  const VideoRecorderCameraPreview({
-    required this.previewWidgetRadius,
-    super.key,
-  });
-
-  /// Radius for rounded corners of the preview widget.
-  final double previewWidgetRadius;
+  const VideoRecorderCameraPreview({super.key});
 
   @override
   ConsumerState<ConsumerStatefulWidget> createState() =>
@@ -34,29 +28,39 @@ class _VideoRecorderCameraPreviewState
     extends ConsumerState<VideoRecorderCameraPreview> {
   @override
   Widget build(BuildContext context) {
-    final aspectRatio = ref.watch(
-      videoRecorderProvider.select((s) => s.aspectRatio.value),
-    );
-
     return SafeArea(
-      child: Center(
-        child: Padding(
-          padding: const .symmetric(horizontal: 4),
-          child: TweenAnimationBuilder<double>(
-            duration: const Duration(milliseconds: 220),
-            curve: Curves.easeInOut,
-            tween: Tween(begin: aspectRatio, end: aspectRatio),
-            builder: (context, aspectRatio, _) {
-              return AspectRatio(
-                aspectRatio: aspectRatio,
-                child: ClipRRect(
-                  clipBehavior: .hardEdge,
-                  borderRadius: .circular(widget.previewWidgetRadius),
-                  child: _StackItems(),
-                ),
-              );
-            },
-          ),
+      bottom: false,
+      child: Padding(
+        padding: const .only(top: 8),
+        child: LayoutBuilder(
+          builder: (_, constraints) {
+            final aspectRatio = ref.watch(
+              videoRecorderProvider.select((s) => s.aspectRatio),
+            );
+            // In vertical mode, we use the full available screen size,
+            // even if it's not exactly 16:9.
+            final aspectRatioValue = aspectRatio == .vertical
+                ? constraints.biggest.aspectRatio
+                : 1.0;
+
+            return Center(
+              child: TweenAnimationBuilder<double>(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeInOut,
+                tween: Tween(begin: aspectRatioValue, end: aspectRatioValue),
+                builder: (context, aspectRatio, _) {
+                  return AspectRatio(
+                    aspectRatio: aspectRatio,
+                    child: ClipRRect(
+                      clipBehavior: .hardEdge,
+                      borderRadius: .circular(16),
+                      child: const _StackItems(),
+                    ),
+                  );
+                },
+              ),
+            );
+          },
         ),
       ),
     );
@@ -111,9 +115,9 @@ class _CameraPreview extends ConsumerWidget {
 
             /// Preview widget
             if (!kIsWeb && Platform.isMacOS)
-              VideoRecorderMacosPreview()
+              const VideoRecorderMacosPreview()
             else
-              VideoRecorderMobilePreview(),
+              const VideoRecorderMobilePreview(),
           ],
         ),
       ),

@@ -202,6 +202,31 @@ class VideoErrorOverlay extends ConsumerWidget {
   }
 }
 
+/// Extract sha256 hash from a CDN URL path
+/// CDN URLs often follow the pattern: https://cdn.domain.com/{sha256hash}
+/// Returns null if URL doesn't match expected pattern
+String? _extractSha256FromUrl(String url) {
+  try {
+    final uri = Uri.parse(url);
+    final pathSegments = uri.pathSegments;
+
+    // The last path segment is often the sha256 hash
+    if (pathSegments.isNotEmpty) {
+      final lastSegment = pathSegments.last;
+      // SHA256 hashes are 64 hex characters
+      // Also handle filenames like "hash.mp4" by stripping extension
+      final cleanSegment = lastSegment.split('.').first;
+      if (cleanSegment.length == 64 &&
+          RegExp(r'^[a-fA-F0-9]+$').hasMatch(cleanSegment)) {
+        return cleanSegment.toLowerCase();
+      }
+    }
+    return null;
+  } catch (e) {
+    return null;
+  }
+}
+
 /// Pre-cache authentication headers for a video before retrying
 /// This ensures the retry will have headers available immediately without a second 401 failure
 Future<void> _precacheAuthHeaders(
@@ -225,21 +250,28 @@ Future<void> _precacheAuthHeaders(
       return;
     }
 
-    if (controllerParams.videoEvent == null) {
-      Log.warning(
-        '🔐 [PRECACHE] No videoEvent on controllerParams',
-        name: 'VideoErrorOverlay',
-        category: LogCategory.video,
-      );
-      return;
+    // Try to get sha256 from video event first
+    String? sha256;
+    if (controllerParams.videoEvent != null) {
+      final videoEvent = controllerParams.videoEvent as dynamic;
+      sha256 = videoEvent.sha256 as String?;
     }
 
-    final videoEvent = controllerParams.videoEvent as dynamic;
-    final sha256 = videoEvent.sha256 as String?;
+    // If no sha256 in event, try to extract from URL
+    if (sha256 == null || sha256.isEmpty) {
+      sha256 = _extractSha256FromUrl(controllerParams.videoUrl);
+      if (sha256 != null) {
+        Log.debug(
+          '🔐 [PRECACHE] Extracted sha256 from URL: ${sha256.substring(0, 8)}...',
+          name: 'VideoErrorOverlay',
+          category: LogCategory.video,
+        );
+      }
+    }
 
     if (sha256 == null || sha256.isEmpty) {
       Log.warning(
-        '🔐 [PRECACHE] No sha256 hash on video event',
+        '🔐 [PRECACHE] No sha256 available - cannot generate auth header',
         name: 'VideoErrorOverlay',
         category: LogCategory.video,
       );

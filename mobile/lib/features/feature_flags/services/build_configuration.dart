@@ -47,6 +47,11 @@ class BuildConfiguration {
           'FF_ENABLE_VIDEO_EDITOR_V1',
           defaultValue: true,
         );
+      case FeatureFlag.classicsHashtags:
+        return const bool.fromEnvironment(
+          'FF_CLASSICS_HASHTAGS',
+          defaultValue: false,
+        );
     }
   }
 
@@ -75,6 +80,8 @@ class BuildConfiguration {
         return 'FF_ROUTER_DRIVEN_HOME';
       case FeatureFlag.enableVideoEditorV1:
         return 'FF_ENABLE_VIDEO_EDITOR_V1';
+      case FeatureFlag.classicsHashtags:
+        return 'FF_CLASSICS_HASHTAGS';
     }
   }
 }

@@ -22,6 +22,7 @@ import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/ui/overlay_policy.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
@@ -37,7 +38,6 @@ import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
-import 'package:reposts_repository/reposts_repository.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
@@ -928,6 +928,7 @@ class VideoOverlayActions extends ConsumerWidget {
     this.isFullscreen = false,
     this.listSources,
     this.showListAttribution = false,
+    this.isPreviewMode = false,
     this.hideFollowButtonIfFollowing = false,
   });
 
@@ -937,6 +938,11 @@ class VideoOverlayActions extends ConsumerWidget {
   final bool hasBottomNavigation;
   final String? contextTitle;
   final bool isFullscreen;
+
+  /// Displays the overlay in preview mode during video creation.
+  /// When true, users can preview how their video will appear to other users
+  /// before publishing.
+  final bool isPreviewMode;
 
   /// Set of curated list IDs this video is from (for list attribution display).
   final Set<String>? listSources;
@@ -999,16 +1005,17 @@ class VideoOverlayActions extends ConsumerWidget {
           ),
         ),
         // ProofMode and Vine badges in upper right corner (tappable)
-        Positioned(
-          top: MediaQuery.of(context).viewPadding.top + topOffset,
-          right: 16,
-          child: GestureDetector(
-            onTap: () {
-              _showBadgeExplanationModal(context, ref, video, isActive);
-            },
-            child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
+        if (!isPreviewMode)
+          Positioned(
+            top: MediaQuery.viewPaddingOf(context).top + topOffset,
+            right: 16,
+            child: GestureDetector(
+              onTap: () {
+                _showBadgeExplanationModal(context, ref, video, isActive);
+              },
+              child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
+            ),
           ),
-        ),
         // Author info and video description overlay at bottom left
         Positioned(
           bottom: bottomOffset,
@@ -1037,7 +1044,8 @@ class VideoOverlayActions extends ConsumerWidget {
                     );
                     final avatarUrl = profile?.picture;
                     final displayName =
-                        profile?.bestDisplayName ?? 'Loading...';
+                        profile?.bestDisplayName ??
+                        NostrKeyUtils.truncateNpub(video.pubkey);
                     final loopCount = video.originalLoops ?? 0;
 
                     void navigateToProfile() {
@@ -1285,7 +1293,8 @@ class VideoOverlayActions extends ConsumerWidget {
                 children: [
                   // Edit button (only show for owned videos when feature is enabled)
                   // Hide in fullscreen mode since it's shown in AppBar instead
-                  if (!isFullscreen) _VideoEditButton(video: video),
+                  if (!isFullscreen && !isPreviewMode)
+                    _VideoEditButton(video: video),
 
                   // Flag/Report button for content moderation
                   Semantics(
@@ -1701,7 +1710,8 @@ class VideoRepostHeader extends ConsumerWidget {
     }
 
     final displayName =
-        reposterProfile?.bestDisplayName ?? reposterPubkey.substring(0, 8);
+        reposterProfile?.bestDisplayName ??
+        NostrKeyUtils.truncateNpub(reposterPubkey);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

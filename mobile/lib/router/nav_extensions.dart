@@ -6,13 +6,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 
 import 'app_router.dart';
@@ -204,7 +207,15 @@ extension NavX on BuildContext {
   );
 
   // Optional pushes (non-tab routes)
-  Future<void> pushCamera() => push(UniversalCameraScreenPure.path);
+  Future<void> pushVideoRecorder() => push(VideoRecorderScreen.path);
+  Future<void> pushVideoEditor({String? draftId, bool fromLibrary = false}) =>
+      push(
+        '${VideoClipEditorScreen.path}${draftId != null ? '/$draftId' : ''}',
+        extra: fromLibrary ? {'fromLibrary': true} : null,
+      );
+  Future<void> pushVideoMetadata() => push(VideoMetadataScreen.path);
+  Future<void> pushClipLibrary() => push(ClipLibraryScreen.clipsPath);
+  Future<void> pushDraftLibrary() => push(ClipLibraryScreen.draftsPath);
   Future<void> pushSettings() => push(SettingsScreen.path);
   Future<void> pushComments(VideoEvent video) =>
       CommentsScreen.show(this, video);
@@ -236,7 +247,15 @@ extension NavX on BuildContext {
   /// Use this when navigating to another user's profile from video feeds,
   /// search results, comments, etc. For navigating to own profile, use
   /// goProfileGrid('me') instead.
-  Future<void> pushOtherProfile(String identifier) async {
+  /// Push to another user's profile screen.
+  ///
+  /// Optional [displayName] and [avatarUrl] can be provided as hints
+  /// for users without Nostr Kind 0 profiles (e.g., classic Viners).
+  Future<void> pushOtherProfile(
+    String identifier, {
+    String? displayName,
+    String? avatarUrl,
+  }) async {
     // Handle 'me' special case - redirect to own profile tab instead
     if (identifier == 'me') {
       goProfileGrid('me');
@@ -256,7 +275,15 @@ extension NavX on BuildContext {
       return;
     }
 
-    await push(OtherProfileScreen.pathForNpub(npub));
+    // Pass profile hints via extra for users without Kind 0 profiles
+    final extra = <String, String?>{};
+    if (displayName != null) extra['displayName'] = displayName;
+    if (avatarUrl != null) extra['avatarUrl'] = avatarUrl;
+
+    await push(
+      OtherProfileScreen.pathForNpub(npub),
+      extra: extra.isEmpty ? null : extra,
+    );
   }
 
   /// Push curated list screen (NIP-51 kind 30005 video lists)

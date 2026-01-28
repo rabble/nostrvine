@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -165,7 +166,17 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                 '🔄 HashtagFeedScreen: Refreshing hashtag #${widget.hashtag}',
                 category: LogCategory.video,
               );
-              // Resubscribe to hashtag to fetch fresh data
+              // Fetch fresh data from REST API (force bypasses 5-min cache)
+              final analyticsService = ref.read(analyticsApiServiceProvider);
+              final funnelcakeAvailable =
+                  ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
+              if (funnelcakeAvailable) {
+                await analyticsService.getVideosByHashtag(
+                  hashtag: widget.hashtag,
+                  forceRefresh: true,
+                );
+              }
+              // Resubscribe to hashtag to fetch fresh WebSocket data
               await hashtagService.subscribeToHashtagVideos([widget.hashtag]);
             },
           );
@@ -183,7 +194,17 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
               '🔄 HashtagFeedScreen: Refreshing hashtag #${widget.hashtag}',
               category: LogCategory.video,
             );
-            // Resubscribe to hashtag to fetch fresh data
+            // Fetch fresh data from REST API (force bypasses 5-min cache)
+            final analyticsService = ref.read(analyticsApiServiceProvider);
+            final funnelcakeAvailable =
+                ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
+            if (funnelcakeAvailable) {
+              await analyticsService.getVideosByHashtag(
+                hashtag: widget.hashtag,
+                forceRefresh: true,
+              );
+            }
+            // Resubscribe to hashtag to fetch fresh WebSocket data
             await hashtagService.subscribeToHashtagVideos([widget.hashtag]);
           },
           child: ListView.builder(

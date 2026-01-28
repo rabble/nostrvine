@@ -15,11 +15,11 @@ import 'package:openvine/router/app_shell.dart';
 import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/auth/divine_auth_screen.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
+import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
@@ -41,14 +41,16 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
-import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/screens/video_editor_screen.dart';
+import 'package:openvine/screens/video_editor/video_editor_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
+import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
@@ -143,9 +145,10 @@ int tabIndexFromLocation(String loc) {
     case 'setup-profile':
     case 'import-key':
     case 'welcome':
-    case 'camera':
+    case 'video-recorder':
+    case 'video-editor':
+    case 'video-metadata':
     case 'clip-manager':
-    case 'edit-video':
     case 'drafts':
     case 'followers':
     case 'following':
@@ -285,7 +288,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           (location == WelcomeScreen.path ||
               location == KeyImportScreen.path ||
               location == WelcomeScreen.loginOptionsPath ||
-              location == WelcomeScreen.resetPasswordPath)) {
+              location == WelcomeScreen.resetPasswordPath ||
+              location == EmailVerificationScreen.path)) {
         debugPrint('[Router] Authenticated. moving to /home/0');
         return HomeScreenRouter.pathForIndex(0);
       }
@@ -294,7 +298,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final isAuthRoute =
           location.startsWith(WelcomeScreen.path) ||
           location.startsWith(KeyImportScreen.path) ||
-          location.startsWith(WelcomeScreen.resetPasswordPath);
+          location.startsWith(WelcomeScreen.resetPasswordPath) ||
+          location.startsWith(EmailVerificationScreen.path);
 
       // Check TOS acceptance for non-auth routes
       if (!isAuthRoute) {
@@ -704,17 +709,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return '${WelcomeScreen.resetPasswordPath}?token=$token';
         },
       ),
-
+      // Email verification route - supports both modes:
+      // - Token mode (deep link): /verify-email?token=xyz
+      // - Polling mode (after registration): /verify-email?deviceCode=abc&verifier=def&email=user@example.com
       GoRoute(
-        path: UniversalCameraScreenPure.path,
-        name: UniversalCameraScreenPure.routeName,
-        builder: (_, __) =>
-            const CameraPermissionGate(child: UniversalCameraScreenPure()),
-      ),
-      GoRoute(
-        path: ClipManagerScreen.path,
-        name: ClipManagerScreen.routeName,
-        builder: (_, __) => const ClipManagerScreen(),
+        path: EmailVerificationScreen.path,
+        name: EmailVerificationScreen.routeName,
+        builder: (context, state) {
+          final params = state.uri.queryParameters;
+          return EmailVerificationScreen(
+            token: params['token'],
+            deviceCode: params['deviceCode'],
+            verifier: params['verifier'],
+            email: params['email'],
+          );
+        },
       ),
       GoRoute(
         path: SettingsScreen.path,
@@ -916,31 +925,43 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Video editor route (requires video passed via extra)
       GoRoute(
+        path: VideoRecorderScreen.path,
+        name: VideoRecorderScreen.routeName,
+        builder: (_, _) =>
+            const CameraPermissionGate(child: VideoRecorderScreen()),
+      ),
+      // Video editor route
+      GoRoute(
         path: VideoEditorScreen.path,
         name: VideoEditorScreen.routeName,
-        builder: (ctx, st) {
-          // Support both simple String (videoPath only) and VideoEditorRouteExtra
-          final extra = st.extra;
-          if (extra is VideoEditorRouteExtra) {
-            return VideoEditorScreen(
-              videoPath: extra.videoPath,
-              externalAudioEventId: extra.externalAudioEventId,
-              externalAudioUrl: extra.externalAudioUrl,
-              externalAudioIsBundled: extra.externalAudioIsBundled,
-              externalAudioAssetPath: extra.externalAudioAssetPath,
-            );
-          }
-          // Legacy support: simple String path
-          final videoPath = extra as String?;
-          if (videoPath == null) {
-            // If no video provided, show error screen
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('No video selected for editing')),
-            );
-          }
-          return VideoEditorScreen(videoPath: videoPath);
+        builder: (_, st) => const VideoEditorScreen(),
+      ),
+      GoRoute(
+        path: VideoClipEditorScreen.path,
+        name: VideoClipEditorScreen.routeName,
+        builder: (_, st) {
+          final extra = st.extra as Map<String, dynamic>?;
+          final fromLibrary = extra?['fromLibrary'] as bool? ?? false;
+          return VideoClipEditorScreen(fromLibrary: fromLibrary);
         },
+      ),
+      GoRoute(
+        path: '${VideoClipEditorScreen.path}/:draftId',
+        name: '${VideoClipEditorScreen.routeName}-draft',
+        builder: (_, st) {
+          // The draft ID is optional if the user wants to continue editing
+          // the draft.
+          final draftId = st.pathParameters['draftId'];
+
+          return VideoClipEditorScreen(
+            draftId: draftId == null || draftId.isEmpty ? null : draftId,
+          );
+        },
+      ),
+      GoRoute(
+        path: VideoMetadataScreen.path,
+        name: VideoMetadataScreen.routeName,
+        builder: (_, st) => const VideoMetadataScreen(),
       ),
       // Fullscreen video feed route (no bottom nav, used from profile/hashtag grids)
       GoRoute(
@@ -973,7 +994,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               body: const Center(child: Text('Invalid profile ID')),
             );
           }
-          return OtherProfileScreen(npub: npub);
+          // Extract profile hints from extra (for users without Kind 0 profiles)
+          final extra = st.extra as Map<String, String?>?;
+          final displayNameHint = extra?['displayName'];
+          final avatarUrlHint = extra?['avatarUrl'];
+          return OtherProfileScreen(
+            npub: npub,
+            displayNameHint: displayNameHint,
+            avatarUrlHint: avatarUrlHint,
+          );
         },
       ),
     ],

@@ -1,0 +1,26 @@
+# ABOUTME: CI workflow for the media_cache package.
+# ABOUTME: Runs tests, formatting, and analysis only when media_cache files change.
+
+name: Media Cache CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/packages/media_cache/**"
+      - ".github/workflows/media_cache.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/packages/media_cache/**"
+      - ".github/workflows/media_cache.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
+    with:
+      working_directory: "mobile/packages/media_cache"

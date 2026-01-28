@@ -4,10 +4,11 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i4;
-import 'dart:io' as _i6;
+import 'dart:io' as _i7;
 
+import 'package:flutter/foundation.dart' as _i6;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:models/models.dart' as _i7;
+import 'package:models/models.dart' as _i8;
 import 'package:openvine/models/pending_upload.dart' as _i2;
 import 'package:openvine/models/vine_draft.dart' as _i5;
 import 'package:openvine/services/upload_manager.dart' as _i3;
@@ -145,12 +146,14 @@ class MockUploadManager extends _i1.Mock implements _i3.UploadManager {
     required _i5.VineDraft? draft,
     required String? nostrPubkey,
     Duration? videoDuration,
+    _i6.ValueChanged<double>? onProgress,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#startUploadFromDraft, [], {
               #draft: draft,
               #nostrPubkey: nostrPubkey,
               #videoDuration: videoDuration,
+              #onProgress: onProgress,
             }),
             returnValue: _i4.Future<_i2.PendingUpload>.value(
               _FakePendingUpload_0(
@@ -159,6 +162,7 @@ class MockUploadManager extends _i1.Mock implements _i3.UploadManager {
                   #draft: draft,
                   #nostrPubkey: nostrPubkey,
                   #videoDuration: videoDuration,
+                  #onProgress: onProgress,
                 }),
               ),
             ),
@@ -167,8 +171,9 @@ class MockUploadManager extends _i1.Mock implements _i3.UploadManager {
 
   @override
   _i4.Future<_i2.PendingUpload> startUpload({
-    required _i6.File? videoFile,
+    required _i7.File? videoFile,
     required String? nostrPubkey,
+    _i6.ValueChanged<double>? onProgress,
     String? thumbnailPath,
     String? title,
     String? description,
@@ -176,12 +181,13 @@ class MockUploadManager extends _i1.Mock implements _i3.UploadManager {
     int? videoWidth,
     int? videoHeight,
     Duration? videoDuration,
-    _i7.NativeProofData? nativeProof,
+    _i8.NativeProofData? nativeProof,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#startUpload, [], {
               #videoFile: videoFile,
               #nostrPubkey: nostrPubkey,
+              #onProgress: onProgress,
               #thumbnailPath: thumbnailPath,
               #title: title,
               #description: description,
@@ -197,6 +203,7 @@ class MockUploadManager extends _i1.Mock implements _i3.UploadManager {
                 Invocation.method(#startUpload, [], {
                   #videoFile: videoFile,
                   #nostrPubkey: nostrPubkey,
+                  #onProgress: onProgress,
                   #thumbnailPath: thumbnailPath,
                   #title: title,
                   #description: description,

@@ -1,4 +1,4 @@
-// ABOUTME: Repository for username availability checking and registration
+// ABOUTME: Repository for username availability checking
 // ABOUTME: Wraps Nip05Service to provide a clean data layer interface
 
 import 'package:openvine/services/nip05_service.dart';
@@ -15,39 +15,12 @@ enum UsernameAvailability {
   error,
 }
 
-/// Sealed class representing the result of a username claim attempt.
-sealed class UsernameClaimResult {
-  const UsernameClaimResult();
-}
-
-/// Username was successfully claimed.
-class UsernameClaimSuccess extends UsernameClaimResult {
-  const UsernameClaimSuccess();
-}
-
-/// Username is already taken by another user.
-class UsernameClaimTaken extends UsernameClaimResult {
-  const UsernameClaimTaken();
-}
-
-/// Username is reserved and requires contacting support to claim.
-class UsernameClaimReserved extends UsernameClaimResult {
-  const UsernameClaimReserved();
-}
-
-/// An error occurred during username registration.
-class UsernameClaimError extends UsernameClaimResult {
-  /// Creates an error result with the given [message].
-  const UsernameClaimError(this.message);
-
-  /// Description of what went wrong.
-  final String message;
-}
-
-/// Repository that handles username-related data operations
+/// Repository that handles username availability checking.
 ///
 /// This sits between the controller and service layers, providing
 /// a clean interface for the presentation layer to use.
+///
+/// Note: Username claiming/registration is handled by ProfileRepository.
 class UsernameRepository {
   UsernameRepository(this._nip05Service);
 
@@ -68,25 +41,6 @@ class UsernameRepository {
           : UsernameAvailability.taken;
     } catch (e) {
       return UsernameAvailability.error;
-    }
-  }
-
-  /// Register a username for the given pubkey
-  ///
-  /// Delegates to [Nip05Service.registerUsername] and returns the result.
-  Future<UsernameClaimResult> register({
-    required String username,
-    required String pubkey,
-  }) async {
-    try {
-      await _nip05Service.registerUsername(username, pubkey);
-      return const UsernameClaimSuccess();
-    } on UsernameTakenException {
-      return const UsernameClaimTaken();
-    } on UsernameReservedException {
-      return const UsernameClaimReserved();
-    } on Nip05ServiceException catch (e) {
-      return UsernameClaimError(e.message ?? 'Unknown error');
     }
   }
 }

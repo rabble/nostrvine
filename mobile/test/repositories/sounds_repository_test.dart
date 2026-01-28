@@ -46,7 +46,6 @@ void main() {
           tempRelays: any(named: 'tempRelays'),
           relayTypes: any(named: 'relayTypes'),
           sendAfterAuth: any(named: 'sendAfterAuth'),
-          useGateway: any(named: 'useGateway'),
           useCache: any(named: 'useCache'),
         ),
       ).thenAnswer((_) async => []);

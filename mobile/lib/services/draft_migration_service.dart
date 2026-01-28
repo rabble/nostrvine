@@ -1,11 +1,15 @@
 // ABOUTME: One-time migration service to convert VineDrafts to SavedClips
 // ABOUTME: Preserves video files, creates clips with migrated session IDs
 
+import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/platform_io.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MigrationResult {
@@ -55,46 +59,66 @@ class DraftMigrationService {
     var skippedCount = 0;
 
     for (final draft in drafts) {
-      if (!draft.videoFile.existsSync()) {
-        Log.warning(
-          '📦 Skipping draft ${draft.id} - video file missing',
+      for (RecordingClip draftClip in draft.clips) {
+        final videoPath = await draftClip.video.safeFilePath();
+
+        if (!File(videoPath).existsSync()) {
+          Log.warning(
+            '📦 Skipping draft ${draft.id} - video ${draftClip.id} file missing',
+            name: 'DraftMigrationService',
+          );
+          skippedCount++;
+          continue;
+        }
+
+        // Extract thumbnail if missing from legacy draft
+        String? thumbnailPath = draftClip.thumbnailPath;
+        if (thumbnailPath == null || thumbnailPath.isEmpty) {
+          try {
+            thumbnailPath = await VideoThumbnailService.extractThumbnail(
+              videoPath: videoPath,
+            );
+          } catch (e) {
+            Log.warning(
+              '📦 Failed to generate thumbnail for draft ${draft.id}: $e',
+              name: 'DraftMigrationService',
+            );
+          }
+        }
+        // Extract duration from video metadata if not set
+        Duration? clipDuration = draftClip.duration;
+        if (clipDuration == .zero) {
+          try {
+            final meta = await ProVideoEditor.instance.getMetadata(
+              draftClip.video,
+            );
+            clipDuration = meta.duration;
+          } catch (e) {
+            Log.warning(
+              '📦 Failed to read video-duration for draft ${draft.id}: $e',
+              name: 'DraftMigrationService',
+            );
+          }
+        }
+
+        final clip = SavedClip(
+          id: 'clip_migrated_${draft.id}',
+          filePath: videoPath,
+          thumbnailPath: thumbnailPath,
+          duration: clipDuration ?? VideoEditorConstants.maxDuration,
+          createdAt: draft.createdAt,
+          aspectRatio: draftClip.aspectRatio.name,
+          sessionId: 'migrated_${draft.id}',
+        );
+
+        await clipService.saveClip(clip);
+        migratedCount++;
+
+        Log.info(
+          '📦 Migrated draft ${draft.id} to clip ${clip.id}',
           name: 'DraftMigrationService',
         );
-        skippedCount++;
-        continue;
       }
-
-      // Generate thumbnail for the clip
-      String? thumbnailPath;
-      try {
-        thumbnailPath = await VideoThumbnailService.extractThumbnail(
-          videoPath: draft.videoFile.path,
-          timeMs: 100,
-        );
-      } catch (e) {
-        Log.warning(
-          '📦 Failed to generate thumbnail for draft ${draft.id}: $e',
-          name: 'DraftMigrationService',
-        );
-      }
-
-      final clip = SavedClip(
-        id: 'clip_migrated_${draft.id}',
-        filePath: draft.videoFile.path,
-        thumbnailPath: thumbnailPath,
-        duration: const Duration(seconds: 6), // Assume max duration for legacy
-        createdAt: draft.createdAt,
-        aspectRatio: draft.aspectRatio.name,
-        sessionId: 'migrated_${draft.id}',
-      );
-
-      await clipService.saveClip(clip);
-      migratedCount++;
-
-      Log.info(
-        '📦 Migrated draft ${draft.id} to clip ${clip.id}',
-        name: 'DraftMigrationService',
-      );
     }
 
     // Clear all drafts after successful migration

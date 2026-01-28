@@ -29,7 +29,7 @@ class EmbeddedThumbnailGenerator {
       // Extract thumbnail bytes from video
       final thumbnailBytes = await VideoThumbnailService.extractThumbnailBytes(
         videoPath: videoPath,
-        timeMs: timeMs,
+        timestamp: Duration(milliseconds: timeMs),
         quality: quality,
       );
 

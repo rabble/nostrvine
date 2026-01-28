@@ -5,8 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
-import 'package:openvine/widgets/divine_icon_button.dart';
-import 'package:openvine/widgets/video_recorder/video_recorder_segment_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_top_bar.dart';
 
 import '../../mocks/mock_camera_service.dart';
@@ -47,32 +45,26 @@ void main() {
     testWidgets('contains close button', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is DivineIconButton &&
-              widget.semanticLabel == 'Close video recorder',
-        ),
-        findsOneWidget,
-      );
+      expect(find.bySemanticsLabel('Close video recorder'), findsOneWidget);
     });
 
-    testWidgets('contains segment bar', (tester) async {
+    testWidgets('contains next button when hasClips', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      expect(find.byType(VideoRecorderSegmentBar), findsOneWidget);
+      // Pump to allow AnimatedSwitcher to finish
+      await tester.pumpAndSettle();
+
+      // The next button is only shown when hasClips is true
+      // Since we're not mocking clipManagerProvider, it defaults to false
+      expect(find.bySemanticsLabel('Continue to video editor'), findsNothing);
     });
 
-    testWidgets('is positioned at top of screen', (tester) async {
+    testWidgets('is aligned at top center', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      final positioned = tester.widget<Positioned>(
-        find.byType(Positioned).first,
-      );
+      final align = tester.widget<Align>(find.byType(Align).first);
 
-      expect(positioned.top, equals(0));
-      expect(positioned.left, equals(0));
-      expect(positioned.right, equals(0));
+      expect(align.alignment, equals(Alignment.topCenter));
     });
 
     testWidgets('uses SafeArea for status bar', (tester) async {

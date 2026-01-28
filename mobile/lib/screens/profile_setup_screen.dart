@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -13,12 +14,11 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/username_notifier.dart';
 import 'package:openvine/state/username_state.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -43,13 +43,11 @@ class ProfileSetupScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final profileRepository = ref.watch(profileRepositoryProvider);
-    final usernameRepository = ref.watch(usernameRepositoryProvider);
     final userProfileService = ref.watch(userProfileServiceProvider);
 
     return BlocProvider<ProfileEditorBloc>(
       create: (context) => ProfileEditorBloc(
         profileRepository: profileRepository,
-        usernameRepository: usernameRepository,
         userProfileService: userProfileService,
       ),
       child: ProfileSetupScreenView(isNewUser: isNewUser),
@@ -84,8 +82,6 @@ class _ProfileSetupScreenViewState
   bool _isFormValid = false;
   File? _selectedImage;
   String? _uploadedImageUrl;
-  // Store notifier reference to safely call in deactivate
-  OverlayVisibility? _overlayNotifier;
   String? _initialUsername;
 
   @override
@@ -96,29 +92,10 @@ class _ProfileSetupScreenViewState
     _nameFocusNode.addListener(_onFocusChange);
     _bioFocusNode.addListener(_onFocusChange);
     _usernameFocusNode.addListener(_onFocusChange);
-    // Mark settings as open to pause video playback
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _overlayNotifier = ref.read(overlayVisibilityProvider.notifier);
-      _overlayNotifier?.setSettingsOpen(true);
-    });
   }
 
   void _onFocusChange() {
     setState(() {});
-  }
-
-  @override
-  void deactivate() {
-    // Mark settings as closed when leaving
-    // Use cached notifier reference since ref is invalid during deactivate
-    // Must use Future to avoid modifying provider during widget tree build
-    final notifier = _overlayNotifier;
-    if (notifier != null) {
-      Future(() {
-        notifier.setSettingsOpen(false);
-      });
-    }
-    super.deactivate();
   }
 
   @override
@@ -141,13 +118,15 @@ class _ProfileSetupScreenViewState
     if (!widget.isNewUser) {
       // For imported users, try to load their existing profile
       try {
-        final userProfileService = ref.read(userProfileServiceProvider);
         final authService = ref.read(authServiceProvider);
 
         if (authService.currentPublicKeyHex != null) {
-          final profile = await userProfileService.fetchProfile(
-            authService.currentPublicKeyHex!,
-          );
+          final repoProfile = await ref
+              .read(profileRepositoryProvider)
+              .getProfile(pubkey: authService.currentPublicKeyHex!);
+          final profile = repoProfile != null
+              ? UserProfile.fromJson(repoProfile.toJson())
+              : null;
           if (profile != null && mounted) {
             setState(() {
               // Use bestDisplayName which handles name/displayName fallback properly
@@ -224,6 +203,8 @@ class _ProfileSetupScreenViewState
 
   @override
   Widget build(BuildContext context) {
+    // TODO(refactor): Migrate usernameProvider to ProfileEditorBloc with
+    // debounced username validation
     final usernameState = ref.watch(usernameProvider);
     final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
 
@@ -305,7 +286,9 @@ class _ProfileSetupScreenViewState
               showDialog<void>(
                 context: context,
                 builder: (context) => UsernameReservedDialog(username),
-              );
+              ).then((_) {
+                ref.read(usernameProvider.notifier).setReserved(username);
+              });
             case ProfileEditorError.publishFailed:
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(

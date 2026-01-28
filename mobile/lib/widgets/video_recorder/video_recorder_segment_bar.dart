@@ -1,33 +1,30 @@
 // ABOUTME: Widget that displays recording progress as a segmented bar
 // ABOUTME: Shows filled segments for recorded clips with remaining space for more recording
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/models/clip_manager_state.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:divine_ui/divine_ui.dart';
 
 /// Displays a horizontal bar showing recording segments.
 ///
 /// Each segment represents a recorded clip, with dividers between them.
 /// Remaining space is shown as transparent, indicating available recording
 /// time.
-class VideoRecorderSegmentBar extends ConsumerWidget {
+class VideoRecorderSegmentBar extends StatelessWidget {
   /// Creates a segment bar widget.
   const VideoRecorderSegmentBar({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Expanded(
-      child: SizedBox(
-        height: 20,
-        child: ClipRRect(
-          borderRadius: .circular(8),
-          child: ColoredBox(
-            color: const Color(0xBEFFFFFF),
-            child: LayoutBuilder(
-              builder: (_, constraints) => _Segments(constraints: constraints),
-            ),
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: .topCenter,
+      child: SafeArea(
+        child: SizedBox(
+          height: 32,
+          child: LayoutBuilder(
+            builder: (_, constraints) => _Segments(constraints: constraints),
           ),
         ),
       ),
@@ -39,7 +36,7 @@ class _Segments extends ConsumerWidget {
   const _Segments({required this.constraints});
 
   /// Maximum allowed recording duration.
-  static const Duration _maxDuration = ClipManagerState.maxDuration;
+  static const Duration _maxDuration = VideoEditorConstants.maxDuration;
 
   final BoxConstraints constraints;
 
@@ -47,12 +44,7 @@ class _Segments extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(
       clipManagerProvider.select(
-        (s) => (
-          clips: s.clips,
-          // TODO(@hm21): Temporary "set to zero" create PR with only new files
-          // activeRecording: s.activeRecordingDuration,
-          activeRecording: Duration.zero,
-        ),
+        (s) => (clips: s.clips, activeRecording: s.activeRecordingDuration),
       ),
     );
 
@@ -78,14 +70,16 @@ class _Segments extends ConsumerWidget {
       segments.add(
         Flexible(
           flex: segmentDuration.inMilliseconds,
-          child: Container(color: VineTheme.tabIndicatorGreen),
+          child: Container(height: 16, color: VineTheme.tabIndicatorGreen),
         ),
       );
 
       // Add divider between segments
       if (i < recordSegments.length - 1 || activeRecordingDuration > .zero) {
         if (used < _maxDuration) {
-          segments.add(Container(width: 2, color: Colors.white));
+          segments.add(
+            Container(height: 16, width: 2, color: const Color(0xFF000A06)),
+          );
         }
       }
     }
@@ -100,7 +94,22 @@ class _Segments extends ConsumerWidget {
       segments.add(
         Flexible(
           flex: activeDuration.inMilliseconds,
-          child: Container(color: VineTheme.tabIndicatorGreen),
+          child: Stack(
+            alignment: .centerRight,
+            children: [
+              Container(height: 16, color: VineTheme.tabIndicatorGreen),
+              Container(
+                width: 4,
+                height: 48,
+                decoration: ShapeDecoration(
+                  color: const Color(0xFFFFF140),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
 
@@ -113,7 +122,7 @@ class _Segments extends ConsumerWidget {
       segments.add(
         Flexible(
           flex: remaining.inMilliseconds,
-          child: Container(color: Colors.transparent),
+          child: Container(height: 16, color: const Color(0xFF7F8482)),
         ),
       );
     }

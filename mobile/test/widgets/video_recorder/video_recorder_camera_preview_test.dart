@@ -29,9 +29,7 @@ void main() {
             ),
           ],
           child: const MaterialApp(
-            home: Scaffold(
-              body: VideoRecorderCameraPreview(previewWidgetRadius: 16.0),
-            ),
+            home: Scaffold(body: VideoRecorderCameraPreview()),
           ),
         ),
       );
@@ -56,9 +54,7 @@ void main() {
             ),
           ],
           child: const MaterialApp(
-            home: Scaffold(
-              body: VideoRecorderCameraPreview(previewWidgetRadius: 16.0),
-            ),
+            home: Scaffold(body: VideoRecorderCameraPreview()),
           ),
         ),
       );
@@ -84,9 +80,7 @@ void main() {
             ),
           ],
           child: const MaterialApp(
-            home: Scaffold(
-              body: VideoRecorderCameraPreview(previewWidgetRadius: 16.0),
-            ),
+            home: Scaffold(body: VideoRecorderCameraPreview()),
           ),
         ),
       );
