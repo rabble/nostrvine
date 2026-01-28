@@ -6,7 +6,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
@@ -35,7 +34,6 @@ void main() {
   late MockDraftStorageService mockDraftService;
   late VideoPublishService service;
 
-  late List<VideoPublishState> stateChanges;
   late List<double> progressChanges;
 
   setUpAll(() {
@@ -59,7 +57,6 @@ void main() {
     mockBlossomService = MockBlossomUploadService();
     mockDraftService = MockDraftStorageService();
 
-    stateChanges = [];
     progressChanges = [];
 
     service = VideoPublishService(
@@ -68,9 +65,9 @@ void main() {
       videoEventPublisher: mockVideoEventPublisher,
       blossomService: mockBlossomService,
       draftService: mockDraftService,
-      onStateChanged: stateChanges.add,
-      onProgressChanged: progressChanges.add,
-      isMounted: () => true,
+      onProgressChanged:
+          ({required double progress, required String draftId}) =>
+              progressChanges.add(progress),
     );
   });
 
@@ -92,7 +89,6 @@ void main() {
           (result as PublishError).userMessage,
           'Please sign in to publish videos.',
         );
-        expect(stateChanges, contains(VideoPublishState.error));
       });
 
       test('returns success when publish completes successfully', () async {
@@ -111,32 +107,8 @@ void main() {
 
         // Assert
         expect(result, isA<PublishSuccess>());
-        expect(stateChanges, contains(VideoPublishState.completed));
         verify(() => mockDraftService.deleteDraft(draft.id)).called(1);
       });
-
-      test(
-        'transitions through correct states during successful publish',
-        () async {
-          // Arrange
-          _setupSuccessfulPublish(
-            mockAuthService: mockAuthService,
-            mockUploadManager: mockUploadManager,
-            mockDraftService: mockDraftService,
-            mockVideoEventPublisher: mockVideoEventPublisher,
-          );
-
-          final draft = _createTestDraft();
-
-          // Act
-          await service.publishVideo(draft: draft);
-
-          // Assert
-          expect(stateChanges, contains(VideoPublishState.uploading));
-          expect(stateChanges, contains(VideoPublishState.publishToNostr));
-          expect(stateChanges, contains(VideoPublishState.completed));
-        },
-      );
 
       test('returns error when video event publishing fails', () async {
         // Arrange
@@ -180,7 +152,6 @@ void main() {
 
         // Assert
         expect(result, isA<PublishError>());
-        expect(stateChanges, contains(VideoPublishState.error));
       });
 
       test('saves draft with publishing status before starting', () async {
@@ -244,7 +215,6 @@ void main() {
 
         // Assert
         verify(() => mockUploadManager.initialize()).called(1);
-        expect(stateChanges, contains(VideoPublishState.initialize));
       });
 
       test('returns error when upload fails', () async {
@@ -284,7 +254,6 @@ void main() {
 
         // Assert
         expect(result, isA<PublishError>());
-        expect(stateChanges, contains(VideoPublishState.error));
       });
     });
 
@@ -363,56 +332,6 @@ void main() {
         // Assert
         expect(result, isA<PublishError>());
         expect((result as PublishError).userMessage, contains('Network error'));
-      });
-    });
-
-    group('isMounted callback', () {
-      test('stops polling when isMounted returns false', () async {
-        // Arrange
-        var mountedCallCount = 0;
-        final unmountingService = VideoPublishService(
-          uploadManager: mockUploadManager,
-          authService: mockAuthService,
-          videoEventPublisher: mockVideoEventPublisher,
-          blossomService: mockBlossomService,
-          draftService: mockDraftService,
-          onStateChanged: stateChanges.add,
-          onProgressChanged: progressChanges.add,
-          isMounted: () {
-            mountedCallCount++;
-            return mountedCallCount < 3; // Unmount after 2 checks
-          },
-        );
-
-        when(() => mockAuthService.isAuthenticated).thenReturn(true);
-        when(
-          () => mockAuthService.currentPublicKeyHex,
-        ).thenReturn('test_pubkey');
-        when(() => mockDraftService.saveDraft(any())).thenAnswer((_) async {});
-        when(() => mockUploadManager.isInitialized).thenReturn(true);
-        when(
-          () => mockUploadManager.startUploadFromDraft(
-            draft: any(named: 'draft'),
-            nostrPubkey: any(named: 'nostrPubkey'),
-            onProgress: any(named: 'onProgress'),
-          ),
-        ).thenAnswer(
-          (_) async => _createPendingUpload(status: UploadStatus.uploading),
-        );
-        when(
-          () => mockUploadManager.getUpload(any()),
-        ).thenReturn(_createPendingUpload(status: UploadStatus.uploading));
-        when(
-          () => mockBlossomService.getBlossomServer(),
-        ).thenAnswer((_) async => 'https://test.server');
-
-        final draft = _createTestDraft();
-
-        // Act
-        final result = await unmountingService.publishVideo(draft: draft);
-
-        // Assert - should fail because polling stopped
-        expect(result, isA<PublishError>());
       });
     });
   });
