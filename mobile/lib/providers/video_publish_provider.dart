@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
 import 'package:openvine/models/vine_draft.dart';
@@ -15,7 +16,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
@@ -176,7 +177,12 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         ),
       );
 
-      context.goMyProfileGrid();
+      // Navigate to current user's profile
+      final authService = ref.read(authServiceProvider);
+      final currentNpub = authService.currentNpub;
+      if (currentNpub != null) {
+        context.go(ProfileScreenRouter.pathForNpub(currentNpub));
+      }
 
       // Wait the publishment process to complete
       // so the data can be properly cleaned up.
