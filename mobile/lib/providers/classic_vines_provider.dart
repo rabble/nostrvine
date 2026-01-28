@@ -1,6 +1,8 @@
 // ABOUTME: ClassicVines feed provider showing pre-2017 Vine archive videos
 // ABOUTME: Uses REST API when available, falls back to Nostr videos with embedded stats
 
+import 'dart:async';
+
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
@@ -265,7 +267,8 @@ class ClassicViner {
 
 /// Provider for top classic Viners derived from classic videos
 ///
-/// Aggregates videos by pubkey and sorts by total loop count
+/// Aggregates videos by pubkey and sorts by total loop count.
+/// Also triggers profile prefetching for Viners without avatars.
 @riverpod
 Future<List<ClassicViner>> topClassicViners(Ref ref) async {
   final classicVinesAsync = ref.watch(classicVinesFeedProvider);
@@ -323,8 +326,30 @@ Future<List<ClassicViner>> topClassicViners(Ref ref) async {
     category: LogCategory.video,
   );
 
-  // Return top 20 Viners
-  return viners.take(20).toList();
+  // Get top 20 Viners
+  final topViners = viners.take(20).toList();
+
+  // Prefetch profiles for Viners without avatars from REST API
+  // This ensures avatar images are available when the slider renders
+  final vinersNeedingProfiles = topViners
+      .where((v) => v.authorAvatar == null || v.authorAvatar!.isEmpty)
+      .map((v) => v.pubkey)
+      .toList();
+
+  if (vinersNeedingProfiles.isNotEmpty) {
+    Log.info(
+      '🎬 TopClassicViners: Prefetching ${vinersNeedingProfiles.length} profiles for Viners without avatars',
+      name: 'ClassicVinesProvider',
+      category: LogCategory.video,
+    );
+    // Fire-and-forget profile prefetch - don't await
+    final userProfileService = ref.read(userProfileServiceProvider);
+    unawaited(
+      userProfileService.prefetchProfilesImmediately(vinersNeedingProfiles),
+    );
+  }
+
+  return topViners;
 }
 
 /// Helper class for aggregating Viner stats
