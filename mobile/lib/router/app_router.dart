@@ -55,7 +55,7 @@ import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -1087,10 +1087,7 @@ class _SoundDetailLoader extends ConsumerWidget {
         }
         return SoundDetailScreen(sound: sound);
       },
-      loading: () => const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(child: BrandedLoadingIndicator(size: 60)),
-      ),
+      loading: () => const BrandedLoadingScaffold(),
       error: (error, stack) => Scaffold(
         backgroundColor: Colors.black,
         appBar: AppBar(

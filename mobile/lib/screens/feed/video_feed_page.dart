@@ -8,7 +8,7 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
-import 'package:openvine/widgets/nostr_not_ready_widget.dart';
+import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:video_player/video_player.dart';
@@ -27,7 +27,7 @@ class VideoFeedPage extends ConsumerWidget {
 
     // Show loading until NostrClient has keys
     if (followRepository == null) {
-      return const NostrNotReadyWidget();
+      return const BrandedLoadingScaffold();
     }
 
     return BlocProvider(

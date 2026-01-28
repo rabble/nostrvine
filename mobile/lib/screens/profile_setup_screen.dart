@@ -20,7 +20,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/username_notifier.dart';
 import 'package:openvine/state/username_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/nostr_not_ready_widget.dart';
+import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -48,7 +48,7 @@ class ProfileSetupScreen extends ConsumerWidget {
 
     // Show loading until NostrClient has keys
     if (profileRepository == null) {
-      return const NostrNotReadyWidget();
+      return const BrandedLoadingScaffold();
     }
 
     return BlocProvider<ProfileEditorBloc>(
