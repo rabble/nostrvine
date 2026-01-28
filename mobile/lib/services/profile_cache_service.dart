@@ -152,7 +152,6 @@ class ProfileCacheService {
     try {
       final existing = _profileBox!.get(profile.pubkey);
 
-      // Only update if the new profile is newer
       if (existing == null ||
           profile.createdAt.isAfter(existing.createdAt) ||
           (profile.eventId != existing.eventId &&
