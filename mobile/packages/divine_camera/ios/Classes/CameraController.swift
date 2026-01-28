@@ -38,6 +38,18 @@ class CameraController: NSObject {
     private var originalBrightness: CGFloat?
     private var screenFlashFeatureEnabled: Bool = true
     
+    // Auto flash mode - checks brightness once when recording starts
+    private var isAutoFlashMode: Bool = false
+    private var autoFlashTorchEnabled: Bool = false
+    
+    // Thresholds for "dark" detection:
+    // Front camera: Lower thresholds - screen flash helps even in moderate darkness
+    // Back camera: Higher thresholds - real flash is more aggressive, only for true darkness
+    private let frontCameraIsoThreshold: Float = 400
+    private let frontCameraExposureThreshold: Float = 1.0 / 50.0  // 20ms (1/50s)
+    private let backCameraIsoThreshold: Float = 800
+    private let backCameraExposureThreshold: Float = 1.0 / 30.0  // 33ms (1/30s)
+    
     private var minZoom: CGFloat = 1.0
     private var maxZoom: CGFloat = 1.0
     private var currentZoom: CGFloat = 1.0
@@ -322,8 +334,10 @@ class CameraController: NSObject {
     
     /// Switches to a different camera lens.
     func switchCamera(lens: String, completion: @escaping ([String: Any]?, String?) -> Void) {
-        // Disable screen flash when switching cameras
+        // Disable screen flash and auto-flash when switching cameras
         disableScreenFlash()
+        disableAutoFlashTorch()
+        isAutoFlashMode = false
         
         sessionQueue.async { [weak self] in
             guard let self = self, let session = self.captureSession else {
@@ -386,17 +400,30 @@ class CameraController: NSObject {
     
     /// Sets the flash mode.
     /// For front camera with torch mode, maximizes screen brightness instead.
+    /// For "auto" mode, brightness will be checked once when recording starts.
     func setFlashMode(mode: String) -> Bool {
         guard let device = videoDevice else { return false }
+        
+        print("DivineCamera: Setting flash mode: \(mode) (currentLens: \(currentLens == .front ? "front" : "back"))")
         
         // Handle screen brightness for front camera "torch" mode
         if currentLens == .front {
             if mode == "torch" {
                 enableScreenFlash()
                 currentTorchMode = .on
+                isAutoFlashMode = false
+                return true
+            } else if mode == "auto" {
+                // Auto mode for front camera - will check brightness when recording starts
+                disableScreenFlash()
+                currentTorchMode = .off
+                isAutoFlashMode = true
+                currentFlashMode = .auto
+                print("DivineCamera: Auto flash mode enabled for front camera")
                 return true
             } else {
                 disableScreenFlash()
+                isAutoFlashMode = false
             }
         }
         
@@ -410,22 +437,30 @@ class CameraController: NSObject {
                 }
                 currentFlashMode = .off
                 currentTorchMode = .off
+                isAutoFlashMode = false
+                autoFlashTorchEnabled = false
                 
             case "auto":
-                if device.isTorchModeSupported(.auto) {
-                    device.torchMode = .auto
+                // Auto mode - will check brightness when recording starts
+                if device.isTorchModeSupported(.off) {
+                    device.torchMode = .off
                 }
+                currentTorchMode = .off
+                isAutoFlashMode = true
+                autoFlashTorchEnabled = false
                 currentFlashMode = .auto
-                currentTorchMode = .auto
+                print("DivineCamera: Auto flash mode enabled - will check brightness when recording starts")
                 
             case "on":
                 currentFlashMode = .on
+                isAutoFlashMode = false
                 
             case "torch":
                 if device.isTorchModeSupported(.on) {
                     device.torchMode = .on
                 }
                 currentTorchMode = .on
+                isAutoFlashMode = false
                 
             default:
                 break
@@ -434,6 +469,7 @@ class CameraController: NSObject {
             device.unlockForConfiguration()
             return true
         } catch {
+            print("DivineCamera: Failed to set flash mode: \(error.localizedDescription)")
             return false
         }
     }
@@ -460,6 +496,85 @@ class CameraController: NSObject {
             if let brightness = self.originalBrightness {
                 UIScreen.main.brightness = brightness
                 self.originalBrightness = nil
+                print("DivineCamera: Screen flash disabled (brightness restored)")
+            }
+        }
+    }
+    
+    /// Checks if the current environment is dark based on camera exposure values.
+    /// Uses ISO and exposure duration as indicators.
+    /// Front camera has lower thresholds since screen flash is less intrusive.
+    private func isEnvironmentDark() -> Bool {
+        guard let device = videoDevice else { return false }
+        
+        let isoThreshold = currentLens == .front ? frontCameraIsoThreshold : backCameraIsoThreshold
+        let exposureThreshold = currentLens == .front ? frontCameraExposureThreshold : backCameraExposureThreshold
+        
+        let currentISO = device.iso
+        let currentExposure = Float(CMTimeGetSeconds(device.exposureDuration))
+        
+        // If ISO is high or exposure time is long, it's dark
+        let isDark = currentISO >= isoThreshold || currentExposure >= exposureThreshold
+        print("DivineCamera: Auto flash: ISO=\(currentISO) (threshold=\(isoThreshold)), " +
+              "ExposureTime=\(currentExposure * 1000)ms (threshold=\(exposureThreshold * 1000)ms) -> isDark=\(isDark)")
+        return isDark
+    }
+    
+    /// Checks the current exposure values and enables auto-flash if needed.
+    /// Called when recording starts.
+    private func checkAndEnableAutoFlash() {
+        guard isAutoFlashMode else { return }
+        
+        if isEnvironmentDark() {
+            print("DivineCamera: Auto flash: Dark environment detected - enabling flash")
+            enableAutoFlashTorch()
+        } else {
+            print("DivineCamera: Auto flash: Bright environment - flash not needed")
+        }
+    }
+    
+    /// Enables torch/screen flash for auto flash mode.
+    private func enableAutoFlashTorch() {
+        autoFlashTorchEnabled = true
+        
+        if currentLens == .front {
+            enableScreenFlash()
+            print("DivineCamera: Auto flash: Screen flash enabled for front camera")
+        } else {
+            guard let device = videoDevice else { return }
+            do {
+                try device.lockForConfiguration()
+                if device.isTorchModeSupported(.on) {
+                    device.torchMode = .on
+                }
+                device.unlockForConfiguration()
+                print("DivineCamera: Auto flash: Torch enabled for back camera")
+            } catch {
+                print("DivineCamera: Auto flash: Failed to enable torch: \(error.localizedDescription)")
+            }
+        }
+    }
+    
+    /// Disables torch/screen flash if it was enabled by auto flash mode.
+    /// Called when recording stops.
+    private func disableAutoFlashTorch() {
+        guard autoFlashTorchEnabled else { return }
+        
+        autoFlashTorchEnabled = false
+        
+        if currentLens == .front {
+            disableScreenFlash()
+        } else {
+            guard let device = videoDevice else { return }
+            do {
+                try device.lockForConfiguration()
+                if device.isTorchModeSupported(.off) {
+                    device.torchMode = .off
+                }
+                device.unlockForConfiguration()
+                print("DivineCamera: Auto flash: Torch disabled for back camera")
+            } catch {
+                print("DivineCamera: Auto flash: Failed to disable torch: \(error.localizedDescription)")
             }
         }
     }
@@ -623,7 +738,10 @@ class CameraController: NSObject {
                 self.isWriterSessionStarted = false  // Will be set to true when first frame is received
                 self.recordingStartTime = Date()
                 
-                print("DivineCamera: Recording started to \(outputURL.path)")
+                // Check and enable auto-flash if needed
+                self.checkAndEnableAutoFlash()
+                
+                print("DivineCamera: Recording started to \(outputURL.path)"))
                 
                 // Schedule max duration timer if specified
                 if let maxMs = maxDurationMs, maxMs > 0 {
@@ -681,6 +799,9 @@ class CameraController: NSObject {
         // Cancel max duration timer if running
         maxDurationTimer?.invalidate()
         maxDurationTimer = nil
+        
+        // Disable auto-flash torch if it was enabled
+        disableAutoFlashTorch()
         
         isRecording = false
         
@@ -814,6 +935,8 @@ class CameraController: NSObject {
     func release() {
         // Restore screen brightness if screen flash was enabled
         disableScreenFlash()
+        // Disable auto-flash if it was enabled
+        disableAutoFlashTorch()
         
         sessionQueue.async { [weak self] in
             guard let self = self else { return }
