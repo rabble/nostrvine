@@ -179,9 +179,7 @@ void main() {
           verify(
             () => mockRepostsRepository.getRepostCountByEventId(testEventId),
           ).called(1);
-          verifyNever(
-            () => mockRepostsRepository.getRepostCount(any()),
-          );
+          verifyNever(() => mockRepostsRepository.getRepostCount(any()));
         },
       );
 
