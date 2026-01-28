@@ -191,6 +191,20 @@ class UserProfile {
   /// Check if profile has verified NIP-05 identifier
   bool get hasNip05 => nip05?.isNotEmpty == true;
 
+  /// Get NIP-05 formatted for display.
+  ///
+  /// In NIP-05, `_@domain` means the root identity for that domain.
+  /// For subdomains like `_@loganpaul.divine.video`, the underscore is a
+  /// placeholder and should be hidden, displaying as `@loganpaul.divine.video`.
+  String? get displayNip05 {
+    if (nip05 == null || nip05!.isEmpty) return null;
+    // Strip leading underscore from _@domain format
+    if (nip05!.startsWith('_@')) {
+      return nip05!.substring(1);
+    }
+    return nip05;
+  }
+
   /// Check if profile has Lightning support
   bool get hasLightning =>
       lud16?.isNotEmpty == true || lud06?.isNotEmpty == true;

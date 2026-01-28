@@ -59,8 +59,8 @@ class UserProfileTile extends ConsumerWidget {
         final displayName = profile?.bestDisplayName ?? truncatedNpub;
 
         // Get unique identifier: NIP-05 if available, otherwise truncated npub
-        final uniqueIdentifier = profile?.nip05?.isNotEmpty == true
-            ? profile!.nip05!
+        final uniqueIdentifier = profile?.displayNip05?.isNotEmpty == true
+            ? profile!.displayNip05!
             : truncatedNpub;
 
         return Semantics(

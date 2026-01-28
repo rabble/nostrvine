@@ -67,7 +67,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
         profile?.name?.isNotEmpty == true ||
         profile?.displayName?.isNotEmpty == true ||
         displayNameHint?.isNotEmpty == true;
-    final nip05 = profile?.nip05;
+    final nip05 = profile?.displayNip05;
     final about = profile?.about;
     final authService = ref.watch(authServiceProvider);
 

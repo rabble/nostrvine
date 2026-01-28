@@ -115,13 +115,15 @@ class _ClassicVinesContent extends ConsumerWidget {
             onVideoTap: onVideoTap,
             onRefresh: () async {
               Log.info(
-                '🔄 ClassicVinesTab: Refreshing',
+                '🔄 ClassicVinesTab: Refreshing from REST API',
                 name: 'ClassicVinesTab',
                 category: LogCategory.video,
               );
-              await ref.read(classicVinesFeedProvider.notifier).refresh();
-              // Also refresh hashtags (synchronous, no await needed)
-              ref.read(trendingHashtagsProvider.notifier).refresh();
+              // Fetch fresh data from both providers concurrently
+              await Future.wait([
+                ref.read(classicVinesFeedProvider.notifier).refresh(),
+                ref.read(trendingHashtagsProvider.notifier).refresh(),
+              ]);
             },
             emptyBuilder: () => const _ClassicVinesEmptyState(),
           ),

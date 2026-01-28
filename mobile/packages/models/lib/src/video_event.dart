@@ -862,8 +862,17 @@ class VideoEvent {
       return '${difference.inHours}h ago';
     } else if (difference.inDays < 7) {
       return '${difference.inDays}d ago';
-    } else {
+    } else if (difference.inDays < 60) {
+      // Less than ~2 months: show weeks
       return '${difference.inDays ~/ 7}w ago';
+    } else if (difference.inDays < 365) {
+      // Less than 1 year: show months
+      final months = difference.inDays ~/ 30;
+      return '${months}mo ago';
+    } else {
+      // 1 year or more: show years
+      final years = difference.inDays ~/ 365;
+      return '${years}y ago';
     }
   }
 
