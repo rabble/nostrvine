@@ -6,9 +6,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/list_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/user_list_service.dart';
+import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -247,7 +248,10 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen> {
 
               return GestureDetector(
                 onTap: () {
-                  context.pushProfile(pubkey);
+                  final npub = normalizeToNpub(pubkey);
+                  if (npub != null) {
+                    context.push(ProfileScreenRouter.pathForIndex(npub, 0));
+                  }
                 },
                 child: Container(
                   width: 80,

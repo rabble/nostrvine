@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_segment_bar.dart';
@@ -85,7 +85,7 @@ class _CameraPermissionGateState extends State<CameraPermissionGate>
     if (router.canPop()) {
       router.pop();
     } else {
-      context.goHome();
+      context.go(HomeScreenRouter.pathForIndex(0));
     }
   }
 

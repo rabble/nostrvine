@@ -11,7 +11,7 @@ import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
@@ -523,7 +523,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       context.pop();
     } else {
       // No screen to pop to (navigated via go), go home instead.
-      context.goHome();
+      context.go(HomeScreenRouter.pathForIndex(0));
     }
   }
 

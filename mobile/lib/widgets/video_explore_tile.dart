@@ -3,10 +3,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
@@ -160,8 +162,11 @@ class _CreatorInfo extends ConsumerWidget {
           name: 'VideoExploreTile',
           category: LogCategory.ui,
         );
-        // Navigate to profile tab using GoRouter
-        context.pushProfile(pubkey, 0);
+        // Navigate to other profile screen using GoRouter
+        final npub = normalizeToNpub(pubkey);
+        if (npub != null) {
+          context.push(OtherProfileScreen.pathForNpub(npub));
+        }
       },
       child: Row(
         mainAxisSize: MainAxisSize.min,

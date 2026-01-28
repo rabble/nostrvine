@@ -12,7 +12,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/router/app_shell.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/auth/divine_auth_screen.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
@@ -91,6 +90,36 @@ class FollowingRoutes {
 
   /// Build path for a specific user's following list.
   static String pathForPubkey(String pubkey) => '$basePath/$pubkey';
+}
+
+/// Extra data for curated list route (passed via GoRouter extra)
+class CuratedListRouteExtra {
+  const CuratedListRouteExtra({
+    required this.listName,
+    this.videoIds,
+    this.authorPubkey,
+  });
+
+  final String listName;
+  final List<String>? videoIds;
+  final String? authorPubkey;
+}
+
+/// Extra data for video editor route (passed via GoRouter extra)
+class VideoEditorRouteExtra {
+  const VideoEditorRouteExtra({
+    required this.videoPath,
+    this.externalAudioEventId,
+    this.externalAudioUrl,
+    this.externalAudioIsBundled = false,
+    this.externalAudioAssetPath,
+  });
+
+  final String videoPath;
+  final String? externalAudioEventId;
+  final String? externalAudioUrl;
+  final bool externalAudioIsBundled;
+  final String? externalAudioAssetPath;
 }
 
 // Navigator keys for per-tab state preservation

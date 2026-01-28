@@ -12,7 +12,6 @@ import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/router/route_utils.dart';
 
 import 'readiness_gate_providers_test.mocks.dart';
 

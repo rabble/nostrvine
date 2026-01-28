@@ -27,7 +27,8 @@ import 'package:share_plus/share_plus.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:openvine/constants/nip71_migration.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/router/app_router.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 
 // TODO(any): Move this to a reusable widget
@@ -3458,11 +3459,13 @@ class _PublicListsSectionState extends ConsumerState<_PublicListsSection> {
     context.pop();
 
     // Navigate to the curated list feed screen
-    context.pushCuratedList(
-      listId: list.id,
-      listName: list.name,
-      videoIds: list.videoEventIds,
-      authorPubkey: list.pubkey,
+    context.push(
+      CuratedListFeedScreen.pathForId(list.id),
+      extra: CuratedListRouteExtra(
+        listName: list.name,
+        videoIds: list.videoEventIds,
+        authorPubkey: list.pubkey,
+      ),
     );
 
     Log.info(

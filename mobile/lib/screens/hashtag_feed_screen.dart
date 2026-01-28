@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -159,7 +159,12 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                 widget.onVideoTap ??
                 (videos, index) {
                   // Default behavior: navigate to hashtag feed mode using GoRouter
-                  context.goHashtag(widget.hashtag, index);
+                  context.go(
+                    HashtagScreenRouter.pathForTag(
+                      widget.hashtag,
+                      index: index,
+                    ),
+                  );
                 },
             onRefresh: () async {
               Log.info(
@@ -248,7 +253,12 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
               return GestureDetector(
                 onTap: () {
                   // Navigate to hashtag feed mode using GoRouter
-                  context.goHashtag(widget.hashtag, index);
+                  context.go(
+                    HashtagScreenRouter.pathForTag(
+                      widget.hashtag,
+                      index: index,
+                    ),
+                  );
                 },
                 child: SizedBox(
                   height: MediaQuery.of(context).size.height,

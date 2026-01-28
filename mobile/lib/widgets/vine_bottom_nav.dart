@@ -3,11 +3,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/router/nav_extensions.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/router/last_tab_position_provider.dart';
+import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Shared bottom navigation bar used by AppShell and standalone profile screens.
@@ -19,18 +24,13 @@ class VineBottomNav extends ConsumerWidget {
 
   /// Maps tab index to RouteType
   RouteType _routeTypeForTab(int index) {
-    switch (index) {
-      case 0:
-        return RouteType.home;
-      case 1:
-        return RouteType.explore;
-      case 2:
-        return RouteType.notifications;
-      case 3:
-        return RouteType.profile;
-      default:
-        return RouteType.home;
-    }
+    return switch (index) {
+      0 => RouteType.home,
+      1 => RouteType.explore,
+      2 => RouteType.notifications,
+      3 => RouteType.profile,
+      _ => RouteType.home,
+    };
   }
 
   /// Handles tab tap - navigates to last known position in that tab
@@ -54,35 +54,22 @@ class VineBottomNav extends ConsumerWidget {
     }
 
     // Navigate to last position in that tab
-    switch (tabIndex) {
-      case 0:
-        context.goHome(lastIndex ?? 0);
-        break;
-      case 1:
-        context.goExplore(null);
-        break;
-      case 2:
-        context.goNotifications(lastIndex ?? 0);
-        break;
-      case 3:
-        context.goProfileGrid('me');
-        break;
-    }
+    return switch (tabIndex) {
+      1 => context.go(ExploreScreen.path),
+      2 => context.go(NotificationsScreen.pathForIndex(lastIndex ?? 0)),
+      3 => context.go(ProfileScreenRouter.pathForIndex('me', lastIndex ?? 0)),
+      _ => context.go(HomeScreenRouter.pathForIndex(lastIndex ?? 0)),
+    };
   }
 
   String _tabName(int index) {
-    switch (index) {
-      case 0:
-        return 'Home';
-      case 1:
-        return 'Explore';
-      case 2:
-        return 'Notifications';
-      case 3:
-        return 'Profile';
-      default:
-        return 'Unknown';
-    }
+    return switch (index) {
+      0 => 'Home',
+      1 => 'Explore',
+      2 => 'Notifications',
+      3 => 'Profile',
+      _ => 'Unknown',
+    };
   }
 
   Widget _buildTabButton(
@@ -150,7 +137,7 @@ class VineBottomNav extends ConsumerWidget {
                     name: 'Navigation',
                     category: LogCategory.ui,
                   );
-                  context.pushVideoRecorder();
+                  context.push(VideoRecorderScreen.path);
                 },
                 child: Container(
                   width: 72,

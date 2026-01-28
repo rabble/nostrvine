@@ -2,7 +2,7 @@
 // ABOUTME: Prevents route definition/parsing drift that caused the relay-settings bug
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';

@@ -5,8 +5,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
-import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -172,9 +172,12 @@ class _RepostGridTile extends StatelessWidget {
         category: LogCategory.video,
       );
       // Use StaticFeedSource for fullscreen playback with the current list
-      context.pushVideoFeed(
-        source: StaticFeedSource(allVideos),
-        initialIndex: index,
+      context.push(
+        FullscreenVideoFeedScreen.path,
+        extra: FullscreenVideoFeedArgs(
+          source: StaticFeedSource(allVideos),
+          initialIndex: index,
+        ),
       );
       Log.info(
         '✅ ProfileRepostsGrid: Called pushVideoFeed with '
