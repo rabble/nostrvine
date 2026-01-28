@@ -56,10 +56,24 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
 
   /// Initialize camera and handle permission failures
   Future<void> _initializeCamera() async {
+    Log.info(
+      '📹 _initializeCamera called',
+      name: 'VideoRecorderScreen',
+      category: LogCategory.video,
+    );
+
     _disposeVideoControllers();
 
-    _notifier = ref.read(videoRecorderProvider.notifier);
-    await _notifier!.initialize(context: context);
+    try {
+      _notifier = ref.read(videoRecorderProvider.notifier);
+      await _notifier!.initialize(context: context);
+    } catch (e) {
+      Log.error(
+        '📹 Camera initialization exception: $e',
+        name: 'VideoRecorderScreen',
+        category: LogCategory.video,
+      );
+    }
   }
 
   Future<void> _checkAutosavedChanges() async {

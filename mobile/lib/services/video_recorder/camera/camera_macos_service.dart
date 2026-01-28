@@ -34,11 +34,15 @@ class CameraMacOSService extends CameraService {
   bool _isRecording = false;
   bool _isInitialized = false;
   bool _isInitialSetupCompleted = false;
+  String? _initializationError;
   Timer? _autoStopTimer;
 
   @override
   Future<void> initialize() async {
     if (_isInitialized) return;
+
+    // Clear any previous error
+    _initializationError = null;
 
     Log.info(
       '📷 Initializing macOS camera',
@@ -46,22 +50,52 @@ class CameraMacOSService extends CameraService {
       category: .video,
     );
 
-    _videoDevices ??= await CameraMacOS.instance.listDevices(
-      deviceType: CameraMacOSDeviceType.video,
-    );
-    _audioDevices ??= await CameraMacOS.instance.listDevices(
-      deviceType: CameraMacOSDeviceType.audio,
-    );
+    try {
+      _videoDevices ??= await CameraMacOS.instance.listDevices(
+        deviceType: CameraMacOSDeviceType.video,
+      );
+      _audioDevices ??= await CameraMacOS.instance.listDevices(
+        deviceType: CameraMacOSDeviceType.audio,
+      );
+    } catch (e) {
+      _initializationError = 'Failed to detect cameras: $e';
+      Log.error(
+        '📷 Failed to list devices: $e',
+        name: 'CameraMacOSService',
+        category: .video,
+      );
+      return;
+    }
 
-    await _initializeCameraController();
-    _isInitialSetupCompleted = true;
+    // Check if any video devices were found
+    if (_videoDevices == null || _videoDevices!.isEmpty) {
+      _initializationError = 'No camera found. Please connect a camera.';
+      Log.warning(
+        '⚠️ No video devices found on macOS',
+        name: 'CameraMacOSService',
+        category: .video,
+      );
+      return;
+    }
 
     Log.info(
-      '📷 macOS camera initialized (${_videoDevices!.length} video, '
-      '${_audioDevices!.length} audio devices)',
+      '📷 Found ${_videoDevices!.length} video device(s)',
       name: 'CameraMacOSService',
       category: .video,
     );
+
+    await _initializeCameraController();
+
+    // Only mark setup as completed if initialization succeeded
+    if (_isInitialized) {
+      _isInitialSetupCompleted = true;
+      Log.info(
+        '📷 macOS camera initialized (${_videoDevices!.length} video, '
+        '${_audioDevices!.length} audio devices)',
+        name: 'CameraMacOSService',
+        category: .video,
+      );
+    }
   }
 
   @override
@@ -84,7 +118,15 @@ class CameraMacOSService extends CameraService {
   ///
   /// Sets up the camera in video mode with the selected devices.
   Future<void> _initializeCameraController() async {
-    if (_videoDevices == null) return;
+    if (_videoDevices == null || _videoDevices!.isEmpty) {
+      _initializationError ??= 'No camera found. Please connect a camera.';
+      Log.warning(
+        '⚠️ Cannot initialize camera controller: no video devices',
+        name: 'CameraMacOSService',
+        category: .video,
+      );
+      return;
+    }
 
     try {
       final deviceId = _videoDevices![_currentCameraIndex].deviceId;
@@ -94,6 +136,7 @@ class CameraMacOSService extends CameraService {
         audioDeviceId: _audioDevices?.first.deviceId,
       );
       _isInitialized = true;
+      _initializationError = null; // Clear error on success
 
       _cameraSensorSize = result?.size ?? const Size(500, 500);
 
@@ -101,6 +144,7 @@ class CameraMacOSService extends CameraService {
       _hasFlash = hasFlash;
       onUpdateState(forceCameraRebuild: true);
     } catch (e) {
+      _initializationError = 'Camera initialization failed: $e';
       Log.error(
         '📷 Failed to initialize camera controller: $e',
         name: 'CameraMacOSService',
@@ -292,22 +336,45 @@ class CameraMacOSService extends CameraService {
       final result = await CameraMacOS.instance.stopVideoRecording();
       _isRecording = false;
 
-      if (result?.bytes == null) {
-        Log.warning(
-          '📷 macOS video recording stopped with null result',
-          name: 'CameraMacOSService',
-          category: .video,
-        );
-        return null;
-      }
-
       Log.info(
-        '📷 macOS video recording stopped',
+        '📷 macOS stopVideoRecording result: '
+        'url=${result?.url}, '
+        'hasBytes=${result?.bytes != null}, '
+        'byteLength=${result?.bytes?.length ?? 0}',
         name: 'CameraMacOSService',
         category: .video,
       );
 
-      return EditorVideo.memory(result!.bytes!);
+      if (result?.bytes == null) {
+        Log.warning(
+          '📷 macOS video recording stopped with null bytes - '
+          'trying file path fallback',
+          name: 'CameraMacOSService',
+          category: .video,
+        );
+        // Try to read from file path if bytes are null but URL exists
+        if (result?.url != null && result!.url!.isNotEmpty) {
+          final file = File(result.url!);
+          if (await file.exists()) {
+            Log.info(
+              '📷 Reading video from file path: ${result.url}',
+              name: 'CameraMacOSService',
+              category: .video,
+            );
+            return EditorVideo.file(result.url!);
+          }
+        }
+        return null;
+      }
+
+      Log.info(
+        '📷 macOS video recording stopped successfully, '
+        '${result!.bytes!.length} bytes',
+        name: 'CameraMacOSService',
+        category: .video,
+      );
+
+      return EditorVideo.memory(result.bytes!);
     } catch (e) {
       Log.error(
         '📷 Failed to stop recording: $e',
@@ -385,4 +452,7 @@ class CameraMacOSService extends CameraService {
   @override
   bool get canSwitchCamera =>
       _videoDevices != null && _videoDevices!.length > 1;
+
+  @override
+  String? get initializationError => _initializationError;
 }
