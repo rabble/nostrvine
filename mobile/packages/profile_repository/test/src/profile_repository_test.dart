@@ -291,7 +291,7 @@ void main() {
     group('searchUsers', () {
       test('returns empty list for empty query', () async {
         // Act
-        final result = await repository.searchUsers(query: '');
+        final result = await profileRepository.searchUsers(query: '');
 
         // Assert
         expect(result, isEmpty);
@@ -302,7 +302,7 @@ void main() {
 
       test('returns empty list for whitespace-only query', () async {
         // Act
-        final result = await repository.searchUsers(query: '   ');
+        final result = await profileRepository.searchUsers(query: '   ');
 
         // Assert
         expect(result, isEmpty);
@@ -317,7 +317,7 @@ void main() {
             .thenAnswer((_) async => [mockProfileEvent]);
 
         // Act
-        final result = await repository.searchUsers(query: 'alice');
+        final result = await profileRepository.searchUsers(query: 'alice');
 
         // Assert
         expect(result, hasLength(1));
@@ -332,7 +332,8 @@ void main() {
             .thenAnswer((_) async => [mockProfileEvent]);
 
         // Act
-        final result = await repository.searchUsers(query: 'bob', limit: 10);
+        final result =
+            await profileRepository.searchUsers(query: 'bob', limit: 10);
 
         // Assert
         expect(result, hasLength(1));
@@ -347,7 +348,7 @@ void main() {
               .thenAnswer((_) async => []);
 
           // Act
-          final result = await repository.searchUsers(query: 'unknown');
+          final result = await profileRepository.searchUsers(query: 'unknown');
 
           // Assert
           expect(result, isEmpty);
@@ -381,7 +382,7 @@ void main() {
           );
 
           // Act
-          final result = await repository.searchUsers(query: 'alice');
+          final result = await profileRepository.searchUsers(query: 'alice');
 
           // Assert
           expect(result, hasLength(2));
