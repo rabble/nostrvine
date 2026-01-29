@@ -12,9 +12,12 @@ import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 import '../helpers/test_helpers.dart';
 import 'search_screen_hybrid_search_test.mocks.dart';
+
+class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 /// Test VideoEvents notifier that returns a fixed stream
 class _TestVideoEvents extends VideoEvents {
@@ -36,10 +39,12 @@ void main() {
   group('SearchScreenPure Hybrid Search Tests', () {
     late MockVideoEventService mockVideoEventService;
     late MockUserProfileService mockUserProfileService;
+    late _MockProfileRepository mockProfileRepository;
 
     setUp(() {
       mockVideoEventService = MockVideoEventService();
       mockUserProfileService = MockUserProfileService();
+      mockProfileRepository = _MockProfileRepository();
 
       // Setup basic mocks
       when(mockVideoEventService.discoveryVideos).thenReturn([]);
@@ -219,6 +224,7 @@ void main() {
             userProfileServiceProvider.overrideWithValue(
               mockUserProfileService,
             ),
+            profileRepositoryProvider.overrideWithValue(mockProfileRepository),
             videoEventsProvider.overrideWith(() => _TestVideoEvents([])),
           ],
           child: const MaterialApp(home: SearchScreenPure()),
