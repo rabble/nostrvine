@@ -63,7 +63,7 @@ class VideoEditorCanvas extends ConsumerWidget {
       fit: .cover,
       clipBehavior: .none,
       child: SizedBox(
-        width: constraints.maxHeight / clip.aspectRatio.value,
+        width: constraints.maxHeight / clip.targetAspectRatio.value,
         height: constraints.maxHeight,
         // TODO(@hm21): Replace with ProImageEditor.video(
         child: ProImageEditor.file(
