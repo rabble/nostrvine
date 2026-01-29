@@ -8,9 +8,6 @@ import 'package:openvine/services/video_publish/video_publish_service.dart';
 part 'background_publish_event.dart';
 part 'background_publish_state.dart';
 
-typedef TimerFactory =
-    Timer Function(Duration duration, void Function() callback);
-
 class BackgroundPublishBloc
     extends Bloc<BackgroundPublishEvent, BackgroundPublishState> {
   BackgroundPublishBloc({
