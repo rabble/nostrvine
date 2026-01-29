@@ -3,9 +3,8 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 
 /// Bottom action bar for the video editor.
 ///
@@ -16,7 +15,7 @@ class VideoEditorMainBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bloc = context.read<VideoEditorMainBloc>();
+    final scope = VideoEditorScope.of(context);
 
     return Padding(
       padding: const .fromLTRB(16, 0, 16, 4),
@@ -28,32 +27,32 @@ class VideoEditorMainBottomBar extends StatelessWidget {
             // TODO(l10n): Replace with context.l10n when localization is added.
             label: 'Text',
             iconPath: 'assets/icon/text.svg',
-            onTap: () => bloc.add(const VideoEditorMainOpenSubEditor(.text)),
+            onTap: () => scope.editor?.openTextEditor(),
           ),
           _ActionButton(
             // TODO(l10n): Replace with context.l10n when localization is added.
             label: 'Draw',
             iconPath: 'assets/icon/draw.svg',
-            onTap: () => bloc.add(const VideoEditorMainOpenSubEditor(.paint)),
+            onTap: () => scope.editor?.openPaintEditor(),
           ),
           _ActionButton(
             // TODO(l10n): Replace with context.l10n when localization is added.
             label: 'Stickers',
             iconPath: 'assets/icon/sticker.svg',
-            onTap: () =>
-                bloc.add(const VideoEditorMainOpenSubEditor(.stickers)),
+            onTap: scope.onAddStickers,
           ),
           _ActionButton(
             // TODO(l10n): Replace with context.l10n when localization is added.
             label: 'Effects',
             iconPath: 'assets/icon/tune.svg',
-            onTap: () => bloc.add(const VideoEditorMainOpenSubEditor(.filter)),
+            onTap: () => scope.editor?.openFilterEditor(),
           ),
           _ActionButton(
             // TODO(l10n): Replace with context.l10n when localization is added.
             label: 'Music',
             iconPath: 'assets/icon/music.svg',
-            onTap: () => bloc.add(const VideoEditorMainOpenSubEditor(.music)),
+            // TODO(@hm21): Implement music editor
+            onTap: () {},
           ),
         ],
       ),

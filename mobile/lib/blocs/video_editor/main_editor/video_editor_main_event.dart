@@ -8,39 +8,23 @@ sealed class VideoEditorMainEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Triggered when a layer is added, removed, or modified.
-class VideoEditorMainLayerChanged extends VideoEditorMainEvent {
-  const VideoEditorMainLayerChanged();
-}
+/// Triggered when editor capabilities change (undo/redo availability, sub-editor state).
+///
+/// This event carries the current state from the editor widget, allowing the
+/// BLoC to update its state without directly accessing the widget.
+class VideoEditorMainCapabilitiesChanged extends VideoEditorMainEvent {
+  const VideoEditorMainCapabilitiesChanged({
+    required this.canUndo,
+    required this.canRedo,
+    required this.isSubEditorOpen,
+  });
 
-/// Triggered when the close/back button is tapped.
-class VideoEditorMainCloseRequested extends VideoEditorMainEvent {
-  const VideoEditorMainCloseRequested();
-}
+  final bool canUndo;
+  final bool canRedo;
+  final bool isSubEditorOpen;
 
-/// Triggered when undo action is requested (from UI button).
-class VideoEditorMainUndoRequested extends VideoEditorMainEvent {
-  const VideoEditorMainUndoRequested();
-}
-
-/// Triggered when redo action is requested (from UI button).
-class VideoEditorMainRedoRequested extends VideoEditorMainEvent {
-  const VideoEditorMainRedoRequested();
-}
-
-/// Triggered when undo was performed (from editor callback).
-class VideoEditorMainUndoPerformed extends VideoEditorMainEvent {
-  const VideoEditorMainUndoPerformed();
-}
-
-/// Triggered when redo was performed (from editor callback).
-class VideoEditorMainRedoPerformed extends VideoEditorMainEvent {
-  const VideoEditorMainRedoPerformed();
-}
-
-/// Triggered when done/complete action is requested.
-class VideoEditorMainDoneRequested extends VideoEditorMainEvent {
-  const VideoEditorMainDoneRequested();
+  @override
+  List<Object?> get props => [canUndo, canRedo, isSubEditorOpen];
 }
 
 /// Triggered when layer interaction (scaling/rotating) starts.
@@ -52,16 +36,3 @@ class VideoEditorLayerInteractionStarted extends VideoEditorMainEvent {
 class VideoEditorLayerInteractionEnded extends VideoEditorMainEvent {
   const VideoEditorLayerInteractionEnded();
 }
-
-/// Triggered when a sub-editor (text, paint, filter) should be opened.
-class VideoEditorMainOpenSubEditor extends VideoEditorMainEvent {
-  const VideoEditorMainOpenSubEditor(this.type);
-
-  final SubEditorType type;
-
-  @override
-  List<Object?> get props => [type];
-}
-
-/// Types of sub-editors that can be opened.
-enum SubEditorType { text, paint, filter, stickers, music }

@@ -4,7 +4,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 
 /// Top action bar for the video editor.
 ///
@@ -29,7 +31,7 @@ class VideoEditorMainTopBar extends StatelessWidget {
                 selector: (state) =>
                     (canUndo: state.canUndo, canRedo: state.canRedo),
                 builder: (context, state) {
-                  final bloc = context.read<VideoEditorMainBloc>();
+                  final scope = VideoEditorScope.of(context);
 
                   return Row(
                     spacing: 8,
@@ -37,24 +39,28 @@ class VideoEditorMainTopBar extends StatelessWidget {
                       _IconButton(
                         semanticsLabel: 'Close',
                         iconPath: 'assets/icon/CaretLeft.svg',
-                        onTap: () =>
-                            bloc.add(const VideoEditorMainCloseRequested()),
+                        onTap: () {
+                          final bloc = context.read<VideoEditorMainBloc>();
+                          if (bloc.state.isSubEditorOpen) {
+                            scope.editor?.closeSubEditor();
+                          } else {
+                            context.pop();
+                          }
+                        },
                       ),
                       const Spacer(),
                       _IconButton(
                         semanticsLabel: 'Undo',
                         iconPath: 'assets/icon/arrow_arc_left.svg',
                         onTap: state.canUndo
-                            ? () =>
-                                  bloc.add(const VideoEditorMainUndoRequested())
+                            ? () => scope.editor?.undoAction()
                             : null,
                       ),
                       _IconButton(
                         semanticsLabel: 'Redo',
                         iconPath: 'assets/icon/arrow_arc_right.svg',
                         onTap: state.canRedo
-                            ? () =>
-                                  bloc.add(const VideoEditorMainRedoRequested())
+                            ? () => scope.editor?.redoAction()
                             : null,
                       ),
                       const Spacer(),
@@ -62,8 +68,7 @@ class VideoEditorMainTopBar extends StatelessWidget {
                       _IconButton(
                         semanticsLabel: 'Done',
                         iconPath: 'assets/icon/Check.svg',
-                        onTap: () =>
-                            bloc.add(const VideoEditorMainDoneRequested()),
+                        onTap: () => scope.editor?.doneEditing(),
                       ),
                     ],
                   );

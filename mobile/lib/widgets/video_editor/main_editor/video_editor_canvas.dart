@@ -77,11 +77,15 @@ class VideoEditorCanvas extends ConsumerWidget {
             },
             mainEditorCallbacks: MainEditorCallbacks(
               onStateHistoryChange: (stateHistory, editor) {
-                bloc.add(const VideoEditorMainLayerChanged());
+                bloc.add(
+                  VideoEditorMainCapabilitiesChanged(
+                    canUndo: editor.canUndo,
+                    canRedo: editor.canRedo,
+                    isSubEditorOpen: editor.isSubEditorOpen,
+                  ),
+                );
                 // TODO(@hm21): Store state history
               },
-              onRedo: () => bloc.add(const VideoEditorMainRedoPerformed()),
-              onUndo: () => bloc.add(const VideoEditorMainUndoPerformed()),
               onScaleStart: (_) =>
                   bloc.add(const VideoEditorLayerInteractionStarted()),
               onScaleEnd: (_) =>

@@ -13,6 +13,7 @@ import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.da
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_canvas.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_bottom_bar.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_main_top_bar.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker_sheet.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -111,41 +112,39 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(
-          create: (context) => VideoEditorMainBloc(
-            editorKey: _editorKey,
-            onClose: () => context.pop(),
-            onAddStickers: _addStickers,
-          ),
-        ),
+        BlocProvider(create: (_) => VideoEditorMainBloc()),
         BlocProvider.value(value: _stickerBloc),
       ],
-      child: Material(
-        color: VineTheme.surfaceContainerHigh,
-        child: Column(
-          children: [
-            Expanded(
-              child: LayoutBuilder(
-                builder: (_, constraints) {
-                  return ClipRRect(
-                    borderRadius: const .vertical(bottom: .circular(32)),
-                    child: Stack(
-                      clipBehavior: .none,
-                      fit: .expand,
-                      children: [
-                        VideoEditorCanvas(
-                          editorKey: _editorKey,
-                          constraints: constraints,
-                        ),
-                        const VideoEditorMainTopBar(),
-                      ],
-                    ),
-                  );
-                },
+      child: VideoEditorScope(
+        editorKey: _editorKey,
+        onAddStickers: _addStickers,
+        child: Material(
+          color: VineTheme.surfaceContainerHigh,
+          child: Column(
+            children: [
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (_, constraints) {
+                    return ClipRRect(
+                      borderRadius: const .vertical(bottom: .circular(32)),
+                      child: Stack(
+                        clipBehavior: .none,
+                        fit: .expand,
+                        children: [
+                          VideoEditorCanvas(
+                            editorKey: _editorKey,
+                            constraints: constraints,
+                          ),
+                          const VideoEditorMainTopBar(),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-            const _BottomActions(),
-          ],
+              const _BottomActions(),
+            ],
+          ),
         ),
       ),
     );
