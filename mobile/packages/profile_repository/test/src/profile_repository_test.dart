@@ -313,8 +313,9 @@ void main() {
 
       test('returns profiles from NostrClient', () async {
         // Arrange
-        when(() => mockNostrClient.queryUsers('test', limit: 200))
-            .thenAnswer((_) async => [mockProfileEvent]);
+        when(
+          () => mockNostrClient.queryUsers('test', limit: 200),
+        ).thenAnswer((_) async => [mockProfileEvent]);
 
         // Act
         final result = await profileRepository.searchUsers(query: 'test');
@@ -328,12 +329,15 @@ void main() {
 
       test('uses custom limit when provided', () async {
         // Arrange
-        when(() => mockNostrClient.queryUsers('test', limit: 10))
-            .thenAnswer((_) async => [mockProfileEvent]);
+        when(
+          () => mockNostrClient.queryUsers('test', limit: 10),
+        ).thenAnswer((_) async => [mockProfileEvent]);
 
         // Act
-        final result =
-            await profileRepository.searchUsers(query: 'test', limit: 10);
+        final result = await profileRepository.searchUsers(
+          query: 'test',
+          limit: 10,
+        );
 
         // Assert
         expect(result, hasLength(1));
@@ -344,8 +348,9 @@ void main() {
         'returns empty list when NostrClient returns empty list',
         () async {
           // Arrange
-          when(() => mockNostrClient.queryUsers('unknown', limit: 200))
-              .thenAnswer((_) async => []);
+          when(
+            () => mockNostrClient.queryUsers('unknown', limit: 200),
+          ).thenAnswer((_) async => []);
 
           // Act
           final result = await profileRepository.searchUsers(query: 'unknown');
@@ -361,13 +366,17 @@ void main() {
           // Arrange
           final mockProfileEvent1 = MockEvent();
           final mockProfileEvent2 = MockEvent();
-          const testPubkey1 = 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+          const testPubkey1 =
+              'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
               'c3d4e5f6a1b2c3d4e5f6a1b2';
-          const testPubkey2 = 'b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+          const testPubkey2 =
+              'b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
               'c3d4e5f6a1b2c3d4e5f6a1b2c3';
-          const testEventId1 = 'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+          const testEventId1 =
+              'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
               'd3c4b5a6f1e2d3c4b5a6f1e2';
-          const testEventId2 = 'e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+          const testEventId2 =
+              'e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
               'd3c4b5a6f1e2d3c4b5a6f1e2d3';
 
           when(() => mockProfileEvent1.kind).thenReturn(0);
@@ -392,8 +401,9 @@ void main() {
             }),
           );
 
-          when(() => mockNostrClient.queryUsers('alice', limit: 200))
-              .thenAnswer(
+          when(
+            () => mockNostrClient.queryUsers('alice', limit: 200),
+          ).thenAnswer(
             (_) async => [mockProfileEvent1, mockProfileEvent2],
           );
 
