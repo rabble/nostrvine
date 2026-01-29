@@ -220,7 +220,10 @@ void main() {
             ),
             videoEditorProvider.overrideWith(
               () => TestVideoEditorNotifier(
-                VideoEditorProviderState(currentPosition: Duration(seconds: 5)),
+                VideoEditorProviderState(
+                  currentPosition: Duration(seconds: 5),
+                  hasPlayedOnce: true, // Required for progress to show
+                ),
               ),
             ),
           ],
