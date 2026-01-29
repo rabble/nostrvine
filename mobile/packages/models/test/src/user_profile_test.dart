@@ -328,7 +328,8 @@ void main() {
           eventId: testEventId,
         );
 
-        final expectedName = '${testPubkey.substring(0, 8)}...'
+        final expectedName =
+            '${testPubkey.substring(0, 8)}...'
             '${testPubkey.substring(testPubkey.length - 6)}';
         expect(profile.bestDisplayName, equals(expectedName));
       });
