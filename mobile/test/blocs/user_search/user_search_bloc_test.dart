@@ -18,9 +18,8 @@ void main() {
       mockProfileRepository = _MockProfileRepository();
     });
 
-    UserSearchBloc createBloc() => UserSearchBloc(
-          profileRepository: mockProfileRepository,
-        );
+    UserSearchBloc createBloc() =>
+        UserSearchBloc(profileRepository: mockProfileRepository);
 
     UserProfile createTestProfile(String pubkey, String displayName) {
       return UserProfile(
@@ -48,8 +47,9 @@ void main() {
       blocTest<UserSearchBloc, UserSearchState>(
         'emits [loading, success] when search succeeds',
         setUp: () {
-          when(() => mockProfileRepository.searchUsers(query: 'alice'))
-              .thenAnswer(
+          when(
+            () => mockProfileRepository.searchUsers(query: 'alice'),
+          ).thenAnswer(
             (_) async => [createTestProfile('${'a' * 64}', 'Alice')],
           );
         },
@@ -72,16 +72,18 @@ void main() {
               ),
         ],
         verify: (_) {
-          verify(() => mockProfileRepository.searchUsers(query: 'alice'))
-              .called(1);
+          verify(
+            () => mockProfileRepository.searchUsers(query: 'alice'),
+          ).called(1);
         },
       );
 
       blocTest<UserSearchBloc, UserSearchState>(
         'emits [loading, failure] when search fails',
         setUp: () {
-          when(() => mockProfileRepository.searchUsers(query: 'error'))
-              .thenThrow(Exception('Network error'));
+          when(
+            () => mockProfileRepository.searchUsers(query: 'error'),
+          ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('error')),
@@ -126,54 +128,46 @@ void main() {
       blocTest<UserSearchBloc, UserSearchState>(
         'trims whitespace from query',
         setUp: () {
-          when(() => mockProfileRepository.searchUsers(query: 'bob'))
-              .thenAnswer((_) async => []);
+          when(
+            () => mockProfileRepository.searchUsers(query: 'bob'),
+          ).thenAnswer((_) async => []);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('  bob  ')),
         wait: debounceDuration,
         expect: () => [
-          const UserSearchState(
-            status: UserSearchStatus.loading,
-            query: 'bob',
-          ),
-          const UserSearchState(
-            status: UserSearchStatus.success,
-            query: 'bob',
-          ),
+          const UserSearchState(status: UserSearchStatus.loading, query: 'bob'),
+          const UserSearchState(status: UserSearchStatus.success, query: 'bob'),
         ],
         verify: (_) {
-          verify(() => mockProfileRepository.searchUsers(query: 'bob'))
-              .called(1);
+          verify(
+            () => mockProfileRepository.searchUsers(query: 'bob'),
+          ).called(1);
         },
       );
 
       blocTest<UserSearchBloc, UserSearchState>(
         'returns empty results when no users match',
         setUp: () {
-          when(() => mockProfileRepository.searchUsers(query: 'xyz'))
-              .thenAnswer((_) async => []);
+          when(
+            () => mockProfileRepository.searchUsers(query: 'xyz'),
+          ).thenAnswer((_) async => []);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UserSearchQueryChanged('xyz')),
         wait: debounceDuration,
         expect: () => [
-          const UserSearchState(
-            status: UserSearchStatus.loading,
-            query: 'xyz',
-          ),
-          const UserSearchState(
-            status: UserSearchStatus.success,
-            query: 'xyz',
-          ),
+          const UserSearchState(status: UserSearchStatus.loading, query: 'xyz'),
+          const UserSearchState(status: UserSearchStatus.success, query: 'xyz'),
         ],
       );
 
       blocTest<UserSearchBloc, UserSearchState>(
         'debounces rapid query changes and only processes final query',
         setUp: () {
-          when(() => mockProfileRepository.searchUsers(query: 'final'))
-              .thenAnswer((_) async => []);
+          when(
+            () => mockProfileRepository.searchUsers(query: 'final'),
+          ).thenAnswer((_) async => []);
         },
         build: createBloc,
         act: (bloc) {
@@ -197,8 +191,9 @@ void main() {
         ],
         verify: (_) {
           // Only the final query should be processed due to debounce
-          verify(() => mockProfileRepository.searchUsers(query: 'final'))
-              .called(1);
+          verify(
+            () => mockProfileRepository.searchUsers(query: 'final'),
+          ).called(1);
           verifyNever(() => mockProfileRepository.searchUsers(query: 'f'));
           verifyNever(() => mockProfileRepository.searchUsers(query: 'fi'));
           verifyNever(() => mockProfileRepository.searchUsers(query: 'fin'));
@@ -211,8 +206,9 @@ void main() {
       blocTest<UserSearchBloc, UserSearchState>(
         'resets to initial state',
         setUp: () {
-          when(() => mockProfileRepository.searchUsers(query: 'alice'))
-              .thenAnswer(
+          when(
+            () => mockProfileRepository.searchUsers(query: 'alice'),
+          ).thenAnswer(
             (_) async => [createTestProfile('${'a' * 64}', 'Alice')],
           );
         },
@@ -263,10 +259,12 @@ void main() {
           errorMessage: null,
         );
 
-        expect(
-          state.props,
-          [UserSearchStatus.success, 'alice', [profile], null],
-        );
+        expect(state.props, [
+          UserSearchStatus.success,
+          'alice',
+          [profile],
+          null,
+        ]);
       });
     });
   });

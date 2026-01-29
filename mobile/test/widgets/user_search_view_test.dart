@@ -63,7 +63,10 @@ void main() {
         tester,
       ) async {
         when(() => mockBloc.state).thenReturn(
-          const UserSearchState(status: UserSearchStatus.loading, query: 'test'),
+          const UserSearchState(
+            status: UserSearchStatus.loading,
+            query: 'test',
+          ),
         );
 
         await tester.pumpWidget(createTestWidget());
@@ -78,10 +81,7 @@ void main() {
         tester,
       ) async {
         when(() => mockBloc.state).thenReturn(
-          const UserSearchState(
-            status: UserSearchStatus.success,
-            query: 'xyz',
-          ),
+          const UserSearchState(status: UserSearchStatus.success, query: 'xyz'),
         );
 
         await tester.pumpWidget(createTestWidget());

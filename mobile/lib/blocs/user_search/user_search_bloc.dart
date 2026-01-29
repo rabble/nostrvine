@@ -29,10 +29,9 @@ EventTransformer<E> _debounceRestartable<E>() {
 /// - Clearing search results
 /// - Debouncing search queries (300ms)
 class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
-  UserSearchBloc({
-    required ProfileRepository profileRepository,
-  }) : _profileRepository = profileRepository,
-       super(const UserSearchState()) {
+  UserSearchBloc({required ProfileRepository profileRepository})
+    : _profileRepository = profileRepository,
+      super(const UserSearchState()) {
     on<UserSearchQueryChanged>(
       _onQueryChanged,
       transformer: _debounceRestartable(),
@@ -59,12 +58,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     try {
       final results = await _profileRepository.searchUsers(query: query);
 
-      emit(
-        state.copyWith(
-          status: UserSearchStatus.success,
-          results: results,
-        ),
-      );
+      emit(state.copyWith(status: UserSearchStatus.success, results: results));
     } catch (e) {
       emit(
         state.copyWith(
