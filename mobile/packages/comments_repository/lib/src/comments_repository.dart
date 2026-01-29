@@ -49,7 +49,8 @@ class CommentsRepository {
   /// - [rootEventId]: The ID of the event to load comments for
   /// - [rootEventKind]: The kind of the root event (e.g., 34236 for videos)
   /// - [limit]: Maximum number of comments to fetch (default: 100)
-  /// - [before]: Cursor for pagination - fetch comments created before this time.
+  /// - [before]: Cursor for pagination - fetch comments created
+  ///   before this time.
   ///   Note: Nostr `until` filter is inclusive, so subtract 1 second from the
   ///   oldest loaded comment's timestamp when paginating.
   ///

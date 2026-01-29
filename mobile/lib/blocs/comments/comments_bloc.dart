@@ -73,7 +73,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       // 1. If we have a known total count, compare loaded count to it
       // 2. Otherwise, use page size heuristic (if we got a full page, there might be more)
       final hasMore = _initialTotalCount != null
-          ? thread.comments.length < _initialTotalCount!
+          ? thread.comments.length < _initialTotalCount
           : thread.comments.length >= _pageSize;
 
       emit(
@@ -141,7 +141,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       // 1. If we have a known total count, compare loaded count to it
       // 2. Otherwise, use page size heuristic (if we got a full page, there might be more)
       final hasMore = _initialTotalCount != null
-          ? allComments.length < _initialTotalCount!
+          ? allComments.length < _initialTotalCount
           : thread.comments.length >= _pageSize;
 
       emit(
