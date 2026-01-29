@@ -200,20 +200,27 @@ void main() {
     group('Feed Registration', () {
       test('registerFeed adds feed to set', () async {
         final manager = await initializeTestPoolManager();
-        final videos = createTestVideos(3);
 
-        final feed = VideoFeedController(feedId: 'test-feed', videos: videos);
-        addTearDown(feed.dispose);
+        // Use empty videos to avoid async preloading race conditions
+        final feed = VideoFeedController(
+          feedId: 'test-feed',
+          videos: const [],
+        );
 
         // Feed auto-registers in constructor
         expect(manager.registeredFeeds, contains(feed));
+
+        await feed.disposeAsync();
       });
 
       test('unregisterFeed removes feed from set', () async {
         final manager = await initializeTestPoolManager();
-        final videos = createTestVideos(3);
 
-        final feed = VideoFeedController(feedId: 'test-feed', videos: videos);
+        // Use empty videos to avoid async preloading race conditions
+        final feed = VideoFeedController(
+          feedId: 'test-feed',
+          videos: const [],
+        );
 
         expect(manager.registeredFeeds, contains(feed));
 
@@ -221,7 +228,7 @@ void main() {
 
         expect(manager.registeredFeeds, isNot(contains(feed)));
 
-        feed.dispose();
+        await feed.disposeAsync();
       });
 
       test('registeredFeeds returns unmodifiable set', () async {

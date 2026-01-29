@@ -347,57 +347,52 @@ void main() {
 
     group('Navigation', () {
       group('onPageChanged', () {
-        test('updates currentIndex', () {
+        test('updates currentIndex', () async {
           final videos = createTestVideos(5);
           final controller = VideoFeedController(
             feedId: 'test-feed',
             videos: const [],
-          );
-          addTearDown(controller.dispose);
-
-          // Add videos without triggering preloading
-          controller.addVideos(videos);
+          )..addVideos(videos);
 
           expect(controller.currentIndex, 0);
           controller.onPageChanged(2);
           expect(controller.currentIndex, 2);
+
+          await controller.disposeAsync();
         });
 
-        test('detects forward scroll direction', () {
+        test('detects forward scroll direction', () async {
           final controller = VideoFeedController(
             feedId: 'test-feed',
             videos: const [],
-          );
-          addTearDown(controller.dispose);
-
-          controller.addVideos(createTestVideos(3));
-          controller.onPageChanged(1);
+          )
+            ..addVideos(createTestVideos(3))
+            ..onPageChanged(1);
 
           expect(controller.scrollDirection, ScrollDirection.forward);
+
+          await controller.disposeAsync();
         });
 
-        test('detects backward scroll direction', () {
+        test('detects backward scroll direction', () async {
           final controller = VideoFeedController(
             feedId: 'test-feed',
             videos: const [],
-          );
-          addTearDown(controller.dispose);
-
-          controller.addVideos(createTestVideos(5));
-          controller.onPageChanged(3);
-          controller.onPageChanged(1);
+          )
+            ..addVideos(createTestVideos(5))
+            ..onPageChanged(3)
+            ..onPageChanged(1);
 
           expect(controller.scrollDirection, ScrollDirection.backward);
+
+          await controller.disposeAsync();
         });
 
-        test('notifies listeners', () {
+        test('notifies listeners', () async {
           final controller = VideoFeedController(
             feedId: 'test-feed',
             videos: const [],
-          );
-          addTearDown(controller.dispose);
-
-          controller.addVideos(createTestVideos(3));
+          )..addVideos(createTestVideos(3));
 
           var notified = false;
           controller.addListener(() => notified = true);
@@ -405,32 +400,34 @@ void main() {
           controller.onPageChanged(1);
 
           expect(notified, true);
+
+          await controller.disposeAsync();
         });
       });
     });
 
     group('Video Management', () {
       group('addVideos', () {
-        test('appends videos to list', () {
+        test('appends videos to list', () async {
           final controller = VideoFeedController(
             feedId: 'test-feed',
             videos: const [],
           );
-          addTearDown(controller.dispose);
 
           expect(controller.videoCount, 0);
 
           controller.addVideos(createTestVideos(3));
 
           expect(controller.videoCount, 3);
+
+          await controller.disposeAsync();
         });
 
-        test('notifies listeners', () {
+        test('notifies listeners', () async {
           final controller = VideoFeedController(
             feedId: 'test-feed',
             videos: const [],
           );
-          addTearDown(controller.dispose);
 
           var notified = false;
           controller.addListener(() => notified = true);
@@ -438,6 +435,8 @@ void main() {
           controller.addVideos([createTestVideo()]);
 
           expect(notified, true);
+
+          await controller.disposeAsync();
         });
 
         test('no-op for empty list', () {
@@ -448,54 +447,51 @@ void main() {
           addTearDown(controller.dispose);
 
           var notified = false;
-          controller.addListener(() => notified = true);
-
-          controller.addVideos([]);
+          controller
+            ..addListener(() => notified = true)
+            ..addVideos([]);
 
           expect(notified, false);
         });
       });
 
       group('addVideo', () {
-        test('adds single video', () {
+        test('adds single video', () async {
           final controller = VideoFeedController(
             feedId: 'test-feed',
             videos: const [],
           );
-          addTearDown(controller.dispose);
 
           expect(controller.videoCount, 0);
 
           controller.addVideo(createTestVideo(id: 'new-video'));
 
           expect(controller.videoCount, 1);
+
+          await controller.disposeAsync();
         });
       });
 
       group('removeVideo', () {
-        test('removes video at index', () {
+        test('removes video at index', () async {
           final controller = VideoFeedController(
             feedId: 'test-feed',
             videos: const [],
-          );
-          addTearDown(controller.dispose);
-
-          controller.addVideos(createTestVideos(5));
+          )..addVideos(createTestVideos(5));
           expect(controller.videoCount, 5);
 
           controller.removeVideo(2);
 
           expect(controller.videoCount, 4);
+
+          await controller.disposeAsync();
         });
 
-        test('notifies listeners', () {
+        test('notifies listeners', () async {
           final controller = VideoFeedController(
             feedId: 'test-feed',
             videos: const [],
-          );
-          addTearDown(controller.dispose);
-
-          controller.addVideos(createTestVideos(3));
+          )..addVideos(createTestVideos(3));
 
           var notified = false;
           controller.addListener(() => notified = true);
@@ -503,50 +499,50 @@ void main() {
           controller.removeVideo(0);
 
           expect(notified, true);
+
+          await controller.disposeAsync();
         });
 
-        test('no-op for invalid index (negative)', () {
+        test('no-op for invalid index (negative)', () async {
           final controller = VideoFeedController(
             feedId: 'test-feed',
             videos: const [],
-          );
-          addTearDown(controller.dispose);
-
-          controller.addVideos(createTestVideos(3));
-
-          controller.removeVideo(-1);
+          )
+            ..addVideos(createTestVideos(3))
+            ..removeVideo(-1);
 
           expect(controller.videoCount, 3);
+
+          await controller.disposeAsync();
         });
 
-        test('no-op for invalid index (out of bounds)', () {
+        test('no-op for invalid index (out of bounds)', () async {
           final controller = VideoFeedController(
             feedId: 'test-feed',
             videos: const [],
-          );
-          addTearDown(controller.dispose);
-
-          controller.addVideos(createTestVideos(3));
-
-          controller.removeVideo(100);
+          )
+            ..addVideos(createTestVideos(3))
+            ..removeVideo(100);
 
           expect(controller.videoCount, 3);
+
+          await controller.disposeAsync();
         });
 
-        test('adjusts currentIndex when removing before current', () {
+        test('adjusts currentIndex when removing before current', () async {
           final controller = VideoFeedController(
             feedId: 'test-feed',
             videos: const [],
-          );
-          addTearDown(controller.dispose);
-
-          controller.addVideos(createTestVideos(5));
-          controller.onPageChanged(3);
+          )
+            ..addVideos(createTestVideos(5))
+            ..onPageChanged(3);
           expect(controller.currentIndex, 3);
 
           controller.removeVideo(1);
 
           expect(controller.currentIndex, 2);
+
+          await controller.disposeAsync();
         });
       });
     });
