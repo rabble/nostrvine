@@ -104,6 +104,27 @@ void main() {
       // Should return null or handle gracefully
       expect(video, anyOf(isNull, isA<Object>()));
     });
+
+    testWidgets('multiple simultaneous stop calls are handled safely', (
+      tester,
+    ) async {
+      await cameraService.startRecording();
+      await tester.pump(Duration(seconds: 1));
+
+      // Fire multiple stop calls simultaneously without awaiting
+      final stopFutures = [
+        cameraService.stopRecording(),
+        cameraService.stopRecording(),
+        cameraService.stopRecording(),
+      ];
+
+      // All should complete without throwing
+      final results = await Future.wait(stopFutures);
+
+      // At least one should return a result, others may return null
+      // The important thing is no crash or exception occurred
+      expect(results, isA<List>());
+    });
   });
 
   group('Video Recorder Widget Tests', () {

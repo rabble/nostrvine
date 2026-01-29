@@ -42,6 +42,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
   // Flag to track if startRecording is in progress (waiting for first keyframe)
   bool _isStartingRecording = false;
+
+  // Flag to prevent multiple simultaneous stopRecording calls
   bool _isStoppingRecording = false;
 
   @override
