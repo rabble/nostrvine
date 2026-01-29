@@ -139,5 +139,63 @@ void main() {
         expect: () => [BackgroundPublishState(uploads: [])],
       );
     });
+
+    group('BackgroundPublishRetryRequested', () {
+      late _MockVineDraft draft;
+      late _MockVideoPublishService mockPublishService;
+
+      const draftId = '1';
+
+      setUp(() {
+        draft = _MockVineDraft();
+        mockPublishService = _MockVideoPublishService();
+        when(() => draft.id).thenReturn(draftId);
+      });
+
+      blocTest<BackgroundPublishBloc, BackgroundPublishState>(
+        'creates new publish service and retries the upload',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory:
+              ({required OnProgressChanged onProgress}) {
+                return Future.value(mockPublishService);
+              },
+        ),
+        setUp: () {
+          when(
+            () => mockPublishService.publishVideo(draft: draft),
+          ).thenAnswer((_) => Future.value(const PublishSuccess()));
+        },
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: draft,
+              result: const PublishError('Previous error'),
+              progress: 1.0,
+            ),
+          ],
+        ),
+        act: (bloc) =>
+            bloc.add(BackgroundPublishRetryRequested(draftId: draftId)),
+        expect: () => [
+          // First: new upload is added (from BackgroundPublishRequested)
+          BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(
+                draft: draft,
+                result: const PublishError('Previous error'),
+                progress: 1.0,
+              ),
+              BackgroundUpload(draft: draft, result: null, progress: 0),
+            ],
+          ),
+          // Then: successful retry removes ALL uploads with same draft.id
+          // (both the old failed upload and the new successful one)
+          BackgroundPublishState(uploads: []),
+        ],
+        verify: (_) {
+          verify(() => mockPublishService.publishVideo(draft: draft)).called(1);
+        },
+      );
+    });
   });
 }

@@ -525,7 +525,7 @@ class _ProfileDataView extends ConsumerWidget {
       child: switch (videosAsync) {
         AsyncLoading() => const ProfileLoadingView(),
         AsyncError(:final error) => Center(child: Text('Error: $error')),
-        AsyncData(:final value) => _ProfileViewSwitcher(
+        AsyncData(:final value) => ProfileViewSwitcher(
           npub: npub,
           userIdHex: userIdHex,
           isOwnProfile: isOwnProfile,
@@ -544,8 +544,10 @@ class _ProfileDataView extends ConsumerWidget {
 }
 
 /// Switches between grid view and video feed view based on videoIndex.
-class _ProfileViewSwitcher extends StatelessWidget {
-  const _ProfileViewSwitcher({
+class ProfileViewSwitcher extends StatelessWidget {
+  /// Creates a ProfileViewSwitcher widget.
+  @visibleForTesting
+  const ProfileViewSwitcher({
     required this.npub,
     required this.userIdHex,
     required this.isOwnProfile,
@@ -557,6 +559,8 @@ class _ProfileViewSwitcher extends StatelessWidget {
     required this.onEditProfile,
     required this.onOpenClips,
     this.displayName,
+    this.childOverride,
+    super.key,
   });
 
   final String npub;
@@ -571,37 +575,41 @@ class _ProfileViewSwitcher extends StatelessWidget {
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
 
+  /// Override for the child widget, used for testing.
+  @visibleForTesting
+  final Widget? childOverride;
+
   @override
   Widget build(BuildContext context) {
     final backgroundPublishBloc = context.watch<BackgroundPublishBloc>();
 
-    // If videoIndex is set, show fullscreen video mode
-    // Note: videoIndex maps directly to list index (0 = first video, 1 = second video, etc.)
-    // When videoIndex is null, show grid mode
-    final child = (videoIndex != null && videos.isNotEmpty)
-        ? ProfileVideoFeedView(
-            npub: npub,
-            userIdHex: userIdHex,
-            isOwnProfile: isOwnProfile,
-            videos: videos,
-            videoIndex: videoIndex!,
-            onPageChanged: (newIndex) {
-              context.go(ProfileScreenRouter.pathForIndex(npub, newIndex));
-            },
-          )
-        :
-          // Otherwise show Instagram-style grid view
-          ProfileGridView(
-            userIdHex: userIdHex,
-            isOwnProfile: isOwnProfile,
-            displayName: displayName,
-            videos: videos,
-            profileStatsAsync: profileStatsAsync,
-            scrollController: scrollController,
-            onSetupProfile: onSetupProfile,
-            onEditProfile: onEditProfile,
-            onOpenClips: onOpenClips,
-          );
+    // Use childOverride if provided (for testing), otherwise build the default
+    final child =
+        childOverride ??
+        ((videoIndex != null && videos.isNotEmpty)
+            ? ProfileVideoFeedView(
+                npub: npub,
+                userIdHex: userIdHex,
+                isOwnProfile: isOwnProfile,
+                videos: videos,
+                videoIndex: videoIndex!,
+                onPageChanged: (newIndex) {
+                  context.go(ProfileScreenRouter.pathForIndex(npub, newIndex));
+                },
+              )
+            :
+              // Otherwise show Instagram-style grid view
+              ProfileGridView(
+                userIdHex: userIdHex,
+                isOwnProfile: isOwnProfile,
+                displayName: displayName,
+                videos: videos,
+                profileStatsAsync: profileStatsAsync,
+                scrollController: scrollController,
+                onSetupProfile: onSetupProfile,
+                onEditProfile: onEditProfile,
+                onOpenClips: onOpenClips,
+              ));
 
     final completedWithErrorUploads = backgroundPublishBloc.state.uploads
         .where((upload) => upload.result != null)
