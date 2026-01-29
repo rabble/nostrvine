@@ -313,38 +313,38 @@ void main() {
 
       test('returns profiles from NostrClient', () async {
         // Arrange
-        when(() => mockNostrClient.queryUsers('alice', limit: 50))
+        when(() => mockNostrClient.queryUsers('test', limit: 200))
             .thenAnswer((_) async => [mockProfileEvent]);
 
         // Act
-        final result = await profileRepository.searchUsers(query: 'alice');
+        final result = await profileRepository.searchUsers(query: 'test');
 
         // Assert
         expect(result, hasLength(1));
         expect(result.first.pubkey, equals(testPubkey));
         expect(result.first.displayName, equals('Test User'));
-        verify(() => mockNostrClient.queryUsers('alice', limit: 50)).called(1);
+        verify(() => mockNostrClient.queryUsers('test', limit: 200)).called(1);
       });
 
       test('uses custom limit when provided', () async {
         // Arrange
-        when(() => mockNostrClient.queryUsers('bob', limit: 10))
+        when(() => mockNostrClient.queryUsers('test', limit: 10))
             .thenAnswer((_) async => [mockProfileEvent]);
 
         // Act
         final result =
-            await profileRepository.searchUsers(query: 'bob', limit: 10);
+            await profileRepository.searchUsers(query: 'test', limit: 10);
 
         // Assert
         expect(result, hasLength(1));
-        verify(() => mockNostrClient.queryUsers('bob', limit: 10)).called(1);
+        verify(() => mockNostrClient.queryUsers('test', limit: 10)).called(1);
       });
 
       test(
         'returns empty list when NostrClient returns empty list',
         () async {
           // Arrange
-          when(() => mockNostrClient.queryUsers('unknown', limit: 50))
+          when(() => mockNostrClient.queryUsers('unknown', limit: 200))
               .thenAnswer((_) async => []);
 
           // Act
@@ -359,11 +359,27 @@ void main() {
         'returns multiple profiles when NostrClient returns multiple events',
         () async {
           // Arrange
+          final mockProfileEvent1 = MockEvent();
           final mockProfileEvent2 = MockEvent();
+          const testPubkey1 = 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+              'c3d4e5f6a1b2c3d4e5f6a1b2';
           const testPubkey2 = 'b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
               'c3d4e5f6a1b2c3d4e5f6a1b2c3';
+          const testEventId1 = 'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+              'd3c4b5a6f1e2d3c4b5a6f1e2';
           const testEventId2 = 'e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
               'd3c4b5a6f1e2d3c4b5a6f1e2d3';
+
+          when(() => mockProfileEvent1.kind).thenReturn(0);
+          when(() => mockProfileEvent1.pubkey).thenReturn(testPubkey1);
+          when(() => mockProfileEvent1.createdAt).thenReturn(1704067200);
+          when(() => mockProfileEvent1.id).thenReturn(testEventId1);
+          when(() => mockProfileEvent1.content).thenReturn(
+            jsonEncode({
+              'display_name': 'Alice Wonder',
+              'about': 'A test user',
+            }),
+          );
 
           when(() => mockProfileEvent2.kind).thenReturn(0);
           when(() => mockProfileEvent2.pubkey).thenReturn(testPubkey2);
@@ -376,9 +392,9 @@ void main() {
             }),
           );
 
-          when(() => mockNostrClient.queryUsers('alice', limit: 50))
+          when(() => mockNostrClient.queryUsers('alice', limit: 200))
               .thenAnswer(
-            (_) async => [mockProfileEvent, mockProfileEvent2],
+            (_) async => [mockProfileEvent1, mockProfileEvent2],
           );
 
           // Act
@@ -386,7 +402,7 @@ void main() {
 
           // Assert
           expect(result, hasLength(2));
-          expect(result[0].displayName, equals('Test User'));
+          expect(result[0].displayName, equals('Alice Wonder'));
           expect(result[1].displayName, equals('Alice Smith'));
         },
       );
