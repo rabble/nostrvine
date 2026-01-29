@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ClipLibraryService {
@@ -61,16 +62,35 @@ class ClipLibraryService {
     }
   }
 
-  /// Delete a clip by ID
+  /// Delete a clip by ID and remove associated files if not referenced
   Future<void> deleteClip(String id) async {
     final clips = await getAllClips();
-    clips.removeWhere((clip) => clip.id == id);
+    final clipIndex = clips.indexWhere((clip) => clip.id == id);
+
+    if (clipIndex != -1) {
+      final clip = clips[clipIndex];
+      clips.removeAt(clipIndex);
+
+      // Save first, then delete files (so reference check sees updated state)
+      await _saveClips(clips);
+
+      // Delete files only if not referenced by drafts
+      await FileCleanupService.deleteSavedClipFiles(clip);
+      return;
+    }
+
     await _saveClips(clips);
   }
 
-  /// Clear all clips from the library
+  /// Clear all clips from the library and delete associated files
   Future<void> clearAllClips() async {
+    final clips = await getAllClips();
+
+    // Clear storage first, then delete files (so reference check sees updated state)
     await _prefs.remove(_storageKey);
+
+    // Delete files only if not referenced by drafts
+    await FileCleanupService.deleteSavedClipsFiles(clips);
   }
 
   /// Internal helper to save clips list to storage

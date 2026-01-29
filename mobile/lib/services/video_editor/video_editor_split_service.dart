@@ -93,7 +93,7 @@ class VideoEditorSplitService {
       processingCompleter: Completer<bool>(),
     );
 
-    final cachedDirectory = await getApplicationCacheDirectory();
+    final cachedDirectory = await getApplicationDocumentsDirectory();
     final startClipPath = '${cachedDirectory.path}/${startClipId}_start.mp4';
     final endClipPath = '${cachedDirectory.path}/${endClipId}_end.mp4';
 

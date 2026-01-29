@@ -1,6 +1,8 @@
 // ABOUTME: Bottom bar widget for video recorder screen
 // ABOUTME: Contains flash, timer, record button, camera flip, and more options
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -83,7 +85,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
           label: 'Remove last clip',
           onTap: clipManager.hasClips
               ? () {
-                  clipsNotifier.removeLastClip();
+                  unawaited(clipsNotifier.removeLastClip());
                   // TODO(l10n): Replace with context.l10n when localization is added.
                   _showSnackBar(context: context, message: 'Clip removed');
                 }
@@ -95,7 +97,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
           label: 'Clear all clips',
           onTap: clipManager.hasClips
               ? () {
-                  clipsNotifier.clearAll();
+                  unawaited(clipsNotifier.clearAll());
                   // TODO(l10n): Replace with context.l10n when localization is added.
                   _showSnackBar(context: context, message: 'All clips cleared');
                 }

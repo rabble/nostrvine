@@ -125,7 +125,7 @@ class _VideoEditorMoreButtonState
   /// If no clips remain, navigates back to the previous screen.
   Future<void> _removeClip() async {
     final clipManager = ref.read(clipManagerProvider.notifier);
-    final success = clipManager.removeClipById(_currentClip.id);
+    final success = await clipManager.removeClipById(_currentClip.id);
 
     if (!success) {
       // TODO(l10n): Replace with context.l10n when localization is added.

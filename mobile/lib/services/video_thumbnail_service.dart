@@ -54,7 +54,7 @@ class VideoThumbnailService {
       }
 
       final destPath =
-          '${(await getTemporaryDirectory()).path}/'
+          '${(await getApplicationDocumentsDirectory()).path}/'
           'thumbnail_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
       try {
