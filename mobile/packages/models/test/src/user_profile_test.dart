@@ -328,12 +328,9 @@ void main() {
           eventId: testEventId,
         );
 
-        expect(
-          profile.bestDisplayName,
-          equals(
-            '${testPubkey.substring(0, 8)}...${testPubkey.substring(testPubkey.length - 6)}',
-          ),
-        );
+        final expectedName = '${testPubkey.substring(0, 8)}...'
+            '${testPubkey.substring(testPubkey.length - 6)}';
+        expect(profile.bestDisplayName, equals(expectedName));
       });
 
       test('returns full pubkey when pubkey is short', () {
