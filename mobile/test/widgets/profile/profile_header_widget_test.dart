@@ -2,21 +2,28 @@
 // ABOUTME: Verifies profile header displays avatar, stats, name, bio, and npub correctly
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mockito/mockito.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helpers/test_provider_overrides.dart';
+
+// Mock for KeycastOAuth used by EmailVerificationCubit
+class MockKeycastOAuth extends Mock implements KeycastOAuth {}
 
 // Mock classes
 class MockFollowRepository extends Mock implements FollowRepository {
@@ -49,6 +56,25 @@ class MockNostrClient extends Mock implements NostrClient {
 
   @override
   int get connectedRelayCount => 1;
+}
+
+class MockAuthService extends Mock implements AuthService {
+  MockAuthService({this.isAnonymousValue = false});
+
+  final bool isAnonymousValue;
+
+  @override
+  bool get isAnonymous => isAnonymousValue;
+
+  @override
+  bool get isAuthenticated => true;
+
+  @override
+  String? get currentPublicKeyHex => testUserHex;
+
+  @override
+  Stream<AuthState> get authStateStream =>
+      Stream.value(AuthState.authenticated);
 }
 
 const testUserHex =
@@ -112,7 +138,9 @@ void main() {
       int videoCount = 10,
       UserProfile? profile,
       VoidCallback? onSetupProfile,
+      bool isAnonymous = false,
     }) {
+      final authService = MockAuthService(isAnonymousValue: isAnonymous);
       return ProviderScope(
         overrides: [
           ...getStandardTestOverrides(),
@@ -121,16 +149,26 @@ void main() {
           ).overrideWith((ref) async => profile),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
           nostrServiceProvider.overrideWithValue(mockNostrClient),
+          authServiceProvider.overrideWithValue(authService),
+          currentAuthStateProvider.overrideWith(
+            (ref) => AuthState.authenticated,
+          ),
         ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: ProfileHeaderWidget(
-                userIdHex: userIdHex,
-                isOwnProfile: isOwnProfile,
-                videoCount: videoCount,
-                profileStatsAsync: profileStatsAsync,
-                onSetupProfile: onSetupProfile,
+        child: BlocProvider<EmailVerificationCubit>(
+          create: (_) => EmailVerificationCubit(
+            oauthClient: MockKeycastOAuth(),
+            authService: authService,
+          ),
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ProfileHeaderWidget(
+                  userIdHex: userIdHex,
+                  isOwnProfile: isOwnProfile,
+                  videoCount: videoCount,
+                  profileStatsAsync: profileStatsAsync,
+                  onSetupProfile: onSetupProfile,
+                ),
               ),
             ),
           ),
@@ -298,5 +336,101 @@ void main() {
         expect(find.byType(UserAvatar), findsOneWidget);
       },
     );
+
+    group('Secure Account Banner', () {
+      testWidgets(
+        'shows secure account banner for own profile when anonymous',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Test User');
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profileStatsAsync: AsyncValue.data(createTestStats()),
+              profile: testProfile,
+              isAnonymous: true,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Secure Your Account'), findsOneWidget);
+          expect(find.text('Register'), findsOneWidget);
+          expect(
+            find.text(
+              'Add email & password to recover your account on any device',
+            ),
+            findsOneWidget,
+          );
+        },
+      );
+
+      testWidgets(
+        'hides secure account banner for own profile when not anonymous',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Test User');
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: true,
+              profileStatsAsync: AsyncValue.data(createTestStats()),
+              profile: testProfile,
+              isAnonymous: false,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Secure Your Account'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'hides secure account banner for other profiles even when anonymous',
+        (tester) async {
+          final testProfile = createTestProfile(displayName: 'Test User');
+
+          await tester.pumpWidget(
+            buildTestWidget(
+              userIdHex: testUserHex,
+              isOwnProfile: false,
+              profileStatsAsync: AsyncValue.data(createTestStats()),
+              profile: testProfile,
+              isAnonymous: true,
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          expect(find.text('Secure Your Account'), findsNothing);
+        },
+      );
+
+      testWidgets('secure account banner Register button is tappable', (
+        tester,
+      ) async {
+        final testProfile = createTestProfile(displayName: 'Test User');
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profileStatsAsync: AsyncValue.data(createTestStats()),
+            profile: testProfile,
+            isAnonymous: true,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Secure Your Account'), findsOneWidget);
+
+        // Verify Register button exists and is an ElevatedButton
+        final registerButton = find.widgetWithText(ElevatedButton, 'Register');
+        expect(registerButton, findsOneWidget);
+
+        // Verify the button has correct styling
+        final button = tester.widget<ElevatedButton>(registerButton);
+        expect(button.onPressed, isNotNull);
+      });
+    });
   });
 }
