@@ -1,61 +1,55 @@
-// ABOUTME: States for email verification cubit
-// ABOUTME: Supports both polling mode (after registration) and token mode (deep link)
+// ABOUTME: State for EmailVerificationBloc
+// ABOUTME: Tracks polling status, pending email, and error state
 
 part of 'email_verification_cubit.dart';
 
-/// Mode of email verification
-enum EmailVerificationMode {
-  /// Polling mode: after registration, poll server until email is verified
+/// Status of email verification polling
+enum EmailVerificationStatus {
+  /// Not polling
+  initial,
+
+  /// Actively polling for verification
   polling,
 
-  /// Token mode: verify email via token from deep link
-  token,
+  /// Verification completed successfully
+  success,
+
+  /// Polling failed with an error
+  failure,
 }
 
-/// State for email verification cubit
-sealed class EmailVerificationState extends Equatable {
-  const EmailVerificationState();
-
-  @override
-  List<Object?> get props => [];
-}
-
-/// Initial state before verification starts
-class EmailVerificationInitial extends EmailVerificationState {
-  const EmailVerificationInitial();
-}
-
-/// Verification in progress (polling or token verification)
-class EmailVerificationInProgress extends EmailVerificationState {
-  const EmailVerificationInProgress({required this.mode, this.email});
-
-  final EmailVerificationMode mode;
-  final String? email;
-
-  @override
-  List<Object?> get props => [mode, email];
-}
-
-/// Email verification successful
-class EmailVerificationSuccess extends EmailVerificationState {
-  const EmailVerificationSuccess({required this.mode});
-
-  final EmailVerificationMode mode;
-
-  @override
-  List<Object?> get props => [mode];
-}
-
-/// Email verification failed
-class EmailVerificationFailure extends EmailVerificationState {
-  const EmailVerificationFailure({
-    required this.mode,
-    required this.errorMessage,
+/// State for email verification polling
+final class EmailVerificationState extends Equatable {
+  const EmailVerificationState({
+    this.status = EmailVerificationStatus.initial,
+    this.pendingEmail,
+    this.error,
   });
 
-  final EmailVerificationMode mode;
-  final String errorMessage;
+  /// Current polling status
+  final EmailVerificationStatus status;
+
+  /// Email address being verified (if polling)
+  final String? pendingEmail;
+
+  /// Error message (if failed)
+  final String? error;
+
+  /// Whether currently polling
+  bool get isPolling => status == EmailVerificationStatus.polling;
+
+  EmailVerificationState copyWith({
+    EmailVerificationStatus? status,
+    String? pendingEmail,
+    String? error,
+  }) {
+    return EmailVerificationState(
+      status: status ?? this.status,
+      pendingEmail: pendingEmail ?? this.pendingEmail,
+      error: error,
+    );
+  }
 
   @override
-  List<Object?> get props => [mode, errorMessage];
+  List<Object?> get props => [status, pendingEmail, error];
 }

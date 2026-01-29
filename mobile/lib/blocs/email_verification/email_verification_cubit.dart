@@ -1,5 +1,5 @@
-// ABOUTME: Cubit for managing email verification state
-// ABOUTME: Supports polling mode (after registration) and token mode (deep link)
+// ABOUTME: Cubit for email verification polling that survives navigation
+// ABOUTME: Manages polling lifecycle, timeout, and auth completion
 
 import 'dart:async';
 
@@ -11,264 +11,304 @@ import 'package:openvine/utils/unified_logger.dart';
 
 part 'email_verification_state.dart';
 
-/// Cubit for managing email verification flow.
+/// Cubit for managing email verification polling independently of widget
+/// lifecycle.
 ///
-/// Supports two modes:
-/// - **Polling mode**: After registration, polls the server until email is
-///   verified, then exchanges the authorization code for tokens and logs the
-///   user in.
-/// - **Token mode**: Verifies email using a token from a deep link, then
-///   redirects to login screen.
+/// Handles:
+/// - Starting/stopping polling for email verification
+/// - Periodic polling every 3 seconds
+/// - Timeout after 15 minutes
+/// - Code exchange and authentication on success
+/// - Transient network error handling (continues polling)
+/// - Auth errors (stops polling with error state)
 class EmailVerificationCubit extends Cubit<EmailVerificationState> {
   EmailVerificationCubit({
     required KeycastOAuth oauthClient,
     required AuthService authService,
   }) : _oauthClient = oauthClient,
        _authService = authService,
-       super(const EmailVerificationInitial());
+       super(const EmailVerificationState());
 
   final KeycastOAuth _oauthClient;
   final AuthService _authService;
+
   Timer? _pollTimer;
+  Timer? _timeoutTimer;
+  String? _pendingDeviceCode;
+  String? _pendingVerifier;
 
-  // Polling mode state
-  String? _deviceCode;
-  String? _verifier;
+  /// Polling interval duration
+  static const _pollInterval = Duration(seconds: 3);
 
-  /// Start polling mode verification (after registration)
-  ///
-  /// [deviceCode] - Device code from registration response
-  /// [verifier] - PKCE verifier for code exchange
-  /// [email] - User's email address for display
+  /// Polling timeout duration (15 minutes)
+  static const _pollingTimeout = Duration(minutes: 15);
+
+  /// Start polling for email verification
   void startPolling({
     required String deviceCode,
     required String verifier,
     required String email,
   }) {
-    _deviceCode = deviceCode;
-    _verifier = verifier;
-
     Log.info(
       'Starting email verification polling for $email',
       name: 'EmailVerificationCubit',
       category: LogCategory.auth,
     );
 
+    _pendingDeviceCode = deviceCode;
+    _pendingVerifier = verifier;
+
     emit(
-      EmailVerificationInProgress(
-        mode: EmailVerificationMode.polling,
-        email: email,
+      EmailVerificationState(
+        status: EmailVerificationStatus.polling,
+        pendingEmail: email,
       ),
     );
 
-    _startPollingTimer();
-  }
-
-  /// Start token mode verification (from deep link)
-  ///
-  /// [token] - Verification token from email link
-  Future<void> verifyWithToken(String token) async {
-    Log.info(
-      'Starting email verification with token',
-      name: 'EmailVerificationCubit',
-      category: LogCategory.auth,
-    );
-
-    emit(const EmailVerificationInProgress(mode: EmailVerificationMode.token));
-
-    try {
-      final result = await _oauthClient.verifyEmail(token: token);
-
-      if (!result.success) {
-        Log.warning(
-          'Email verification failed: ${result.error}',
-          name: 'EmailVerificationCubit',
-          category: LogCategory.auth,
-        );
-        emit(
-          EmailVerificationFailure(
-            mode: EmailVerificationMode.token,
-            errorMessage: result.error ?? 'Failed to verify email',
-          ),
-        );
-        return;
-      }
-
-      Log.info(
-        'Email verification successful (token mode)',
-        name: 'EmailVerificationCubit',
-        category: LogCategory.auth,
-      );
-      emit(const EmailVerificationSuccess(mode: EmailVerificationMode.token));
-    } catch (e) {
-      Log.error(
-        'Email verification error: $e',
-        name: 'EmailVerificationCubit',
-        category: LogCategory.auth,
-      );
-      emit(
-        EmailVerificationFailure(
-          mode: EmailVerificationMode.token,
-          errorMessage: 'Network error: $e',
-        ),
-      );
-    }
-  }
-
-  /// Verify email with token without changing state (used during polling mode)
-  ///
-  /// When a deep link arrives while polling, we call verifyEmail to mark
-  /// the email as verified on the server. The polling will then complete
-  /// and handle the login flow.
-  Future<void> verifyEmailOnly(String token) async {
-    Log.info(
-      'Verifying email (polling mode active)',
-      name: 'EmailVerificationCubit',
-      category: LogCategory.auth,
-    );
-
-    try {
-      final result = await _oauthClient.verifyEmail(token: token);
-
-      if (!result.success) {
-        Log.warning(
-          'Email verification failed: ${result.error}',
-          name: 'EmailVerificationCubit',
-          category: LogCategory.auth,
-        );
-        // Don't emit failure - let polling continue and handle errors
-        return;
-      }
-
-      Log.info(
-        'Email verified successfully, polling will complete login',
-        name: 'EmailVerificationCubit',
-        category: LogCategory.auth,
-      );
-      // Don't emit success - polling will handle the login flow
-    } catch (e) {
-      Log.error(
-        'Email verification error: $e',
-        name: 'EmailVerificationCubit',
-        category: LogCategory.auth,
-      );
-      // Don't emit failure - let polling continue
-    }
-  }
-
-  void _startPollingTimer() {
+    // Cancel any existing timers
     _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) => _poll());
+    _timeoutTimer?.cancel();
+
+    // Start periodic polling
+    _pollTimer = Timer.periodic(_pollInterval, (_) => _poll());
+
+    // Set timeout to stop polling after 15 minutes
+    _timeoutTimer = Timer(_pollingTimeout, _onTimeout);
+  }
+
+  /// Stop polling (e.g., user cancelled)
+  void stopPolling() {
+    Log.info(
+      'Stopping email verification polling',
+      name: 'EmailVerificationCubit',
+      category: LogCategory.auth,
+    );
+    _cleanup();
+    emit(const EmailVerificationState());
+  }
+
+  void _onTimeout() {
+    Log.warning(
+      'Email verification polling timed out after '
+      '${_pollingTimeout.inMinutes} minutes',
+      name: 'EmailVerificationCubit',
+      category: LogCategory.auth,
+    );
+    _cleanup();
+    emit(
+      const EmailVerificationState(
+        status: EmailVerificationStatus.failure,
+        error: 'Verification timed out. Please try registering again.',
+      ),
+    );
   }
 
   Future<void> _poll() async {
-    if (_deviceCode == null) {
-      _pollTimer?.cancel();
+    if (_pendingDeviceCode == null) {
+      Log.warning(
+        'Poll called but _pendingDeviceCode is null, cleaning up',
+        name: 'EmailVerificationCubit',
+        category: LogCategory.auth,
+      );
+      _cleanup();
       return;
     }
 
     try {
-      final result = await _oauthClient.pollForCode(_deviceCode!);
+      Log.info(
+        'Polling for email verification',
+        name: 'EmailVerificationCubit',
+        category: LogCategory.auth,
+      );
+      final result = await _oauthClient.pollForCode(_pendingDeviceCode!);
+
+      Log.info(
+        'Poll result: status=${result.status}, hasCode=${result.code != null}, '
+        'error=${result.error}',
+        name: 'EmailVerificationCubit',
+        category: LogCategory.auth,
+      );
 
       switch (result.status) {
         case PollStatus.complete:
+          Log.info(
+            'Email verification complete! code=${result.code != null}, '
+            'verifier=${_pendingVerifier != null}',
+            name: 'EmailVerificationCubit',
+            category: LogCategory.auth,
+          );
           _pollTimer?.cancel();
-          if (result.code != null && _verifier != null) {
-            await _exchangeCodeAndLogin(result.code!, _verifier!);
+          if (result.code != null && _pendingVerifier != null) {
+            await _exchangeCodeAndLogin(result.code!, _pendingVerifier!);
           } else {
+            // Edge case: completion detected but missing code or verifier
+            Log.error(
+              'Verification complete but missing code or verifier! '
+              'code=${result.code}, verifier=$_pendingVerifier',
+              name: 'EmailVerificationCubit',
+              category: LogCategory.auth,
+            );
+            _cleanup();
             emit(
-              const EmailVerificationFailure(
-                mode: EmailVerificationMode.polling,
-                errorMessage: 'Missing authorization code or verifier',
+              const EmailVerificationState(
+                status: EmailVerificationStatus.failure,
+                error: 'Verification failed - missing authorization code',
               ),
             );
           }
 
         case PollStatus.pending:
-          // Keep polling
-          break;
-
-        case PollStatus.error:
-          Log.error(
-            'Polling error: ${result.error}',
+          // Keep polling - use info level so it's visible in logs
+          Log.info(
+            'Email verification still pending, will poll again in 3s',
             name: 'EmailVerificationCubit',
             category: LogCategory.auth,
           );
-          // Don't stop polling on transient errors, but log them
-          break;
+
+        case PollStatus.error:
+          final errorMsg = result.error ?? 'Verification failed';
+          // Check if this is a transient network error vs a real auth error
+          final isNetworkError =
+              errorMsg.contains('Network error') ||
+              errorMsg.contains('SocketException') ||
+              errorMsg.contains('ClientException') ||
+              errorMsg.contains('host lookup');
+
+          if (isNetworkError) {
+            // Network errors are transient - keep polling
+            Log.warning(
+              'Transient network error during poll, will retry: $errorMsg',
+              name: 'EmailVerificationCubit',
+              category: LogCategory.auth,
+            );
+            // Don't stop polling - it will retry in 3 seconds
+          } else {
+            // Real auth error (e.g., expired code, invalid code) - stop polling
+            Log.error(
+              'Email verification polling error (stopping): $errorMsg',
+              name: 'EmailVerificationCubit',
+              category: LogCategory.auth,
+            );
+            _cleanup();
+            emit(
+              EmailVerificationState(
+                status: EmailVerificationStatus.failure,
+                error: errorMsg,
+              ),
+            );
+          }
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       Log.error(
-        'Poll exception: $e',
+        'Email verification polling exception: $e\n$stackTrace',
         name: 'EmailVerificationCubit',
         category: LogCategory.auth,
       );
-      // Continue polling despite errors
+      // Don't stop polling on transient errors, just log
     }
   }
+
+  /// Maximum retries for token exchange on network errors
+  static const _maxExchangeRetries = 3;
+
+  /// Delay between exchange retries
+  static const _exchangeRetryDelay = Duration(seconds: 2);
 
   Future<void> _exchangeCodeAndLogin(String code, String verifier) async {
-    try {
-      Log.info(
-        'Exchanging authorization code for tokens',
-        name: 'EmailVerificationCubit',
-        category: LogCategory.auth,
-      );
+    for (var attempt = 1; attempt <= _maxExchangeRetries; attempt++) {
+      try {
+        Log.info(
+          'Attempting token exchange (attempt $attempt/$_maxExchangeRetries)',
+          name: 'EmailVerificationCubit',
+          category: LogCategory.auth,
+        );
 
-      final tokenResponse = await _oauthClient.exchangeCode(
-        code: code,
-        verifier: verifier,
-      );
+        final tokenResponse = await _oauthClient.exchangeCode(
+          code: code,
+          verifier: verifier,
+        );
 
-      // Create session and sign in
-      final session = KeycastSession.fromTokenResponse(tokenResponse);
-      await _authService.signInWithDivineOAuth(session);
+        // Get the session and sign in
+        final session = KeycastSession.fromTokenResponse(tokenResponse);
+        await _authService.signInWithDivineOAuth(session);
 
-      Log.info(
-        'Email verification and login successful (polling mode)',
-        name: 'EmailVerificationCubit',
-        category: LogCategory.auth,
-      );
+        // Verify sign-in actually succeeded (signInWithDivineOAuth catches
+        // errors internally and sets state to unauthenticated without throwing)
+        if (_authService.isAnonymous) {
+          // Sign-in failed silently - treat as network error and retry
+          throw Exception('Sign-in failed - auth service reports anonymous');
+        }
 
-      emit(const EmailVerificationSuccess(mode: EmailVerificationMode.polling));
-    } on OAuthException catch (e) {
-      Log.error(
-        'OAuth exception during code exchange: ${e.message}',
-        name: 'EmailVerificationCubit',
-        category: LogCategory.auth,
-      );
-      emit(
-        EmailVerificationFailure(
-          mode: EmailVerificationMode.polling,
-          errorMessage: e.message,
-        ),
-      );
-    } catch (e) {
-      Log.error(
-        'Error exchanging code: $e',
-        name: 'EmailVerificationCubit',
-        category: LogCategory.auth,
-      );
-      emit(
-        const EmailVerificationFailure(
-          mode: EmailVerificationMode.polling,
-          errorMessage: 'Failed to complete authentication',
-        ),
-      );
+        Log.info(
+          'Successfully signed in after email verification',
+          name: 'EmailVerificationCubit',
+          category: LogCategory.auth,
+        );
+
+        // Clear state and emit success
+        _cleanup();
+        emit(
+          const EmailVerificationState(status: EmailVerificationStatus.success),
+        );
+        return; // Success - exit the retry loop
+      } on OAuthException catch (e) {
+        // OAuth errors are not retryable (e.g., invalid code, expired code)
+        Log.error(
+          'OAuth exchange failed: ${e.message}',
+          name: 'EmailVerificationCubit',
+          category: LogCategory.auth,
+        );
+        _cleanup();
+        emit(
+          EmailVerificationState(
+            status: EmailVerificationStatus.failure,
+            error: e.message,
+          ),
+        );
+        return; // Don't retry OAuth errors
+      } catch (e) {
+        // Network errors - retry if we have attempts left
+        final isLastAttempt = attempt == _maxExchangeRetries;
+        Log.warning(
+          'Token exchange network error (attempt $attempt/$_maxExchangeRetries): $e',
+          name: 'EmailVerificationCubit',
+          category: LogCategory.auth,
+        );
+
+        if (isLastAttempt) {
+          Log.error(
+            'Token exchange failed after $_maxExchangeRetries attempts',
+            name: 'EmailVerificationCubit',
+            category: LogCategory.auth,
+          );
+          _cleanup();
+          emit(
+            const EmailVerificationState(
+              status: EmailVerificationStatus.failure,
+              error: 'Network error during sign-in. Please try again.',
+            ),
+          );
+          return;
+        }
+
+        // Wait before retrying
+        await Future<void>.delayed(_exchangeRetryDelay);
+      }
     }
   }
 
-  /// Cancel polling and clean up
-  void cancelPolling() {
+  void _cleanup() {
     _pollTimer?.cancel();
     _pollTimer = null;
-    _deviceCode = null;
-    _verifier = null;
+    _timeoutTimer?.cancel();
+    _timeoutTimer = null;
+    _pendingDeviceCode = null;
+    _pendingVerifier = null;
   }
 
   @override
   Future<void> close() {
-    _pollTimer?.cancel();
+    _cleanup();
     return super.close();
   }
 }

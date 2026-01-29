@@ -147,10 +147,11 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
         video: EditorVideo.file(clip.filePath),
         duration: clip.duration,
         thumbnailPath: clip.thumbnailPath,
-        aspectRatio: model.AspectRatio.values.firstWhere(
+        targetAspectRatio: model.AspectRatio.values.firstWhere(
           (el) => el.name == clip.aspectRatio,
           orElse: () => .vertical,
         ),
+        originalAspectRatio: 9 / 16,
       );
     }
 
@@ -186,7 +187,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     final clips = ref.watch(clipManagerProvider).clips;
 
     final targetAspectRatio = clips.isNotEmpty
-        ? clips.first.aspectRatio.value
+        ? clips.first.targetAspectRatio.value
         : _selectedClipIds.isNotEmpty
         ? _clips
               .firstWhere((el) => el.id == _selectedClipIds.first)

@@ -13,6 +13,11 @@ final class CommentsLoadRequested extends CommentsEvent {
   const CommentsLoadRequested();
 }
 
+/// Request to load more (older) comments for pagination
+final class CommentsLoadMoreRequested extends CommentsEvent {
+  const CommentsLoadMoreRequested();
+}
+
 /// Update text for main input or a reply
 ///
 /// If [commentId] is null, updates the main input text.

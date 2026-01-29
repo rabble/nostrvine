@@ -25,7 +25,8 @@ void main() {
           video: EditorVideo.file('assets/videos/default_intro.mp4'),
           duration: const Duration(seconds: 2),
           recordedAt: DateTime.now(),
-          aspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          targetAspectRatio: .vertical,
         ),
       );
 
@@ -64,7 +65,8 @@ void main() {
           video: EditorVideo.file('assets/videos/default_intro.mp4'),
           duration: const Duration(seconds: 2),
           recordedAt: DateTime.now(),
-          aspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          targetAspectRatio: .vertical,
         ),
       );
 
@@ -98,7 +100,8 @@ void main() {
           video: EditorVideo.file('assets/videos/default_intro.mp4'),
           duration: const Duration(seconds: 2),
           recordedAt: DateTime.now(),
-          aspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          targetAspectRatio: .vertical,
         ),
       ];
 
@@ -133,7 +136,8 @@ void main() {
           video: EditorVideo.file('assets/videos/default_intro.mp4'),
           duration: const Duration(seconds: 2),
           recordedAt: DateTime.now(),
-          aspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+          targetAspectRatio: .vertical,
         ),
       );
 

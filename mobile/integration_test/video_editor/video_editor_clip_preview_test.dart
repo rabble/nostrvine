@@ -23,7 +23,8 @@ void main() {
         video: EditorVideo.file('assets/videos/default_intro.mp4'),
         duration: const Duration(seconds: 2),
         recordedAt: DateTime.now(),
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
 
       await tester.pumpWidget(
@@ -54,7 +55,8 @@ void main() {
         video: EditorVideo.file('assets/videos/default_intro.mp4'),
         duration: const Duration(seconds: 2),
         recordedAt: DateTime.now(),
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
 
       var tapped = false;
@@ -94,7 +96,8 @@ void main() {
         video: EditorVideo.file('assets/videos/default_intro.mp4'),
         duration: const Duration(seconds: 2),
         recordedAt: DateTime.now(),
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
 
       await tester.pumpWidget(
@@ -129,7 +132,8 @@ void main() {
         video: EditorVideo.file('assets/videos/default_intro.mp4'),
         duration: const Duration(seconds: 2),
         recordedAt: DateTime.now(),
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
 
       await tester.pumpWidget(

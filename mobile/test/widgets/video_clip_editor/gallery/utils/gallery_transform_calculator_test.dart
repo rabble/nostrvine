@@ -19,7 +19,8 @@ void main() {
         video: EditorVideo.memory(Uint8List(0)),
         duration: const Duration(seconds: 3),
         recordedAt: DateTime.now(),
-        aspectRatio: ratio,
+        targetAspectRatio: ratio,
+        originalAspectRatio: 9 / 16,
       );
     }
 

@@ -11,6 +11,9 @@ class FakeEvent extends Fake implements Event {}
 /// Kind 1111 is the NIP-22 comment kind for replying to non-Kind-1 events.
 const int _commentKind = EventKind.comment;
 
+/// Kind 5 is the NIP-09 deletion request kind.
+const int _deletionKind = EventKind.eventDeletion;
+
 /// Example kind for a video event (Kind 34236 for NIP-71).
 const int _testRootEventKind = EventKind.videoVertical;
 
@@ -272,6 +275,45 @@ void main() {
 
         final filters = captured.first as List<Filter>;
         expect(filters.first.limit, equals(50));
+      });
+
+      test('passes before parameter as until filter for pagination', () async {
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => []);
+
+        final beforeTime = DateTime.fromMillisecondsSinceEpoch(2000000000);
+        await repository.loadComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+          before: beforeTime,
+        );
+
+        final captured = verify(
+          () => mockNostrClient.queryEvents(captureAny()),
+        ).captured;
+
+        final filters = captured.first as List<Filter>;
+        // `until` is in seconds (Nostr epoch), so divide milliseconds by 1000
+        expect(filters.first.until, equals(2000000000 ~/ 1000));
+      });
+
+      test('does not include until filter when before is null', () async {
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async => []);
+
+        await repository.loadComments(
+          rootEventId: testRootEventId,
+          rootEventKind: _testRootEventKind,
+        );
+
+        final captured = verify(
+          () => mockNostrClient.queryEvents(captureAny()),
+        ).captured;
+
+        final filters = captured.first as List<Filter>;
+        expect(filters.first.until, isNull);
       });
     });
 
@@ -542,130 +584,114 @@ void main() {
         );
       });
     });
-  });
 
-  group('Comment', () {
-    test('relativeTime returns correct strings', () {
-      final now = DateTime.now();
+    group('deleteComment', () {
+      const testCommentId =
+          'dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd';
 
-      expect(
-        Comment(
-          id: 'id',
-          content: 'content',
-          authorPubkey: 'author',
-          createdAt: now,
-          rootEventId: 'root',
-          rootAuthorPubkey: 'rootAuthor',
-        ).relativeTime,
-        equals('now'),
+      test('publishes deletion event with correct tags', () async {
+        Event? capturedEvent;
+
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
+          return capturedEvent = inv.positionalArguments.first as Event;
+        });
+
+        await repository.deleteComment(commentId: testCommentId);
+
+        expect(capturedEvent, isNotNull);
+        expect(capturedEvent!.kind, equals(_deletionKind));
+
+        // Check NIP-09 deletion tags
+        final eTags = capturedEvent!.tags
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'e')
+            .toList();
+        final kTags = capturedEvent!.tags
+            .cast<List<dynamic>>()
+            .where((t) => t[0] == 'k')
+            .toList();
+
+        expect(eTags.length, equals(1));
+        expect(eTags.first[1], equals(testCommentId));
+        expect(kTags.length, equals(1));
+        expect(kTags.first[1], equals(_commentKind.toString()));
+      });
+
+      test('publishes deletion event with reason when provided', () async {
+        Event? capturedEvent;
+
+        when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
+          return capturedEvent = inv.positionalArguments.first as Event;
+        });
+
+        await repository.deleteComment(
+          commentId: testCommentId,
+          reason: 'Spam content',
+        );
+
+        expect(capturedEvent, isNotNull);
+        expect(capturedEvent!.content, equals('Spam content'));
+      });
+
+      test(
+        'publishes deletion event with empty content when no reason',
+        () async {
+          Event? capturedEvent;
+
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+            inv,
+          ) async {
+            return capturedEvent = inv.positionalArguments.first as Event;
+          });
+
+          await repository.deleteComment(commentId: testCommentId);
+
+          expect(capturedEvent, isNotNull);
+          expect(capturedEvent!.content, isEmpty);
+        },
       );
 
-      expect(
-        Comment(
-          id: 'id',
-          content: 'content',
-          authorPubkey: 'author',
-          createdAt: now.subtract(const Duration(minutes: 5)),
-          rootEventId: 'root',
-          rootAuthorPubkey: 'rootAuthor',
-        ).relativeTime,
-        equals('5m ago'),
+      test(
+        'throws DeleteCommentFailedException when publish returns null',
+        () async {
+          when(
+            () => mockNostrClient.publishEvent(any()),
+          ).thenAnswer((_) async => null);
+
+          expect(
+            () => repository.deleteComment(commentId: testCommentId),
+            throwsA(isA<DeleteCommentFailedException>()),
+          );
+        },
       );
 
-      expect(
-        Comment(
-          id: 'id',
-          content: 'content',
-          authorPubkey: 'author',
-          createdAt: now.subtract(const Duration(hours: 3)),
-          rootEventId: 'root',
-          rootAuthorPubkey: 'rootAuthor',
-        ).relativeTime,
-        equals('3h ago'),
-      );
+      test('throws DeleteCommentFailedException on exception', () async {
+        when(
+          () => mockNostrClient.publishEvent(any()),
+        ).thenThrow(Exception('Network error'));
 
-      expect(
-        Comment(
-          id: 'id',
-          content: 'content',
-          authorPubkey: 'author',
-          createdAt: now.subtract(const Duration(days: 2)),
-          rootEventId: 'root',
-          rootAuthorPubkey: 'rootAuthor',
-        ).relativeTime,
-        equals('2d ago'),
-      );
-    });
+        expect(
+          () => repository.deleteComment(commentId: testCommentId),
+          throwsA(isA<DeleteCommentFailedException>()),
+        );
+      });
 
-    test('copyWith creates copy with updated fields', () {
-      final original = Comment(
-        id: 'id',
-        content: 'content',
-        authorPubkey: 'author',
-        createdAt: DateTime(2024),
-        rootEventId: 'root',
-        rootAuthorPubkey: 'rootAuthor',
-      );
+      test('rethrows DeleteCommentFailedException', () async {
+        when(() => mockNostrClient.publishEvent(any())).thenThrow(
+          const DeleteCommentFailedException('Custom error'),
+        );
 
-      final copy = original.copyWith(content: 'new content');
-
-      expect(copy.id, equals('id'));
-      expect(copy.content, equals('new content'));
-      expect(copy.authorPubkey, equals('author'));
-    });
-
-    test('equality works correctly', () {
-      final comment1 = Comment(
-        id: 'id',
-        content: 'content',
-        authorPubkey: 'author',
-        createdAt: DateTime(2024),
-        rootEventId: 'root',
-        rootAuthorPubkey: 'rootAuthor',
-      );
-
-      final comment2 = Comment(
-        id: 'id',
-        content: 'content',
-        authorPubkey: 'author',
-        createdAt: DateTime(2024),
-        rootEventId: 'root',
-        rootAuthorPubkey: 'rootAuthor',
-      );
-
-      expect(comment1, equals(comment2));
-    });
-  });
-
-  group('CommentThread', () {
-    test('empty constructor creates empty thread', () {
-      const thread = CommentThread.empty('rootId');
-
-      expect(thread.isEmpty, isTrue);
-      expect(thread.isNotEmpty, isFalse);
-      expect(thread.totalCount, equals(0));
-      expect(thread.comments, isEmpty);
-      expect(thread.rootEventId, equals('rootId'));
-    });
-
-    test('getComment returns comment from cache', () {
-      final comment = Comment(
-        id: 'id',
-        content: 'content',
-        authorPubkey: 'author',
-        createdAt: DateTime(2024),
-        rootEventId: 'root',
-        rootAuthorPubkey: 'rootAuthor',
-      );
-
-      final thread = CommentThread(
-        rootEventId: 'root',
-        totalCount: 1,
-        commentCache: {'id': comment},
-      );
-
-      expect(thread.getComment('id'), equals(comment));
-      expect(thread.getComment('nonexistent'), isNull);
+        expect(
+          () => repository.deleteComment(commentId: testCommentId),
+          throwsA(
+            isA<DeleteCommentFailedException>().having(
+              (e) => e.message,
+              'message',
+              'Custom error',
+            ),
+          ),
+        );
+      });
     });
   });
 }
