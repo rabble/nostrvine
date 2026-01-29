@@ -41,12 +41,12 @@ class RecordingClip {
   bool get isProcessing =>
       processingCompleter != null && !processingCompleter!.isCompleted;
 
-  /// Returns the thumbnail timestamp, or a fallback of 250ms or half the
+  /// Returns the thumbnail timestamp, or a fallback of 210ms or half the
   /// video duration (whichever is smaller) if not set.
   Duration get thumbnailTimestamp {
     if (_thumbnailTimestamp != null) return _thumbnailTimestamp;
     final halfDuration = Duration(milliseconds: duration.inMilliseconds ~/ 2);
-    const fallback = Duration(milliseconds: 250);
+    const fallback = Duration(milliseconds: 210);
     return halfDuration < fallback ? halfDuration : fallback;
   }
 
