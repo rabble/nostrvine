@@ -115,10 +115,56 @@ class _FullscreenVideoFeedScreenState
   @override
   void deactivate() {
     // Pause video when widget is deactivated (before dispose).
-    // This is called before the widget is removed from the tree,
-    // so ref is still safe to use here.
-    _pauseCurrentVideo();
+    // IMPORTANT: We must defer the pause to after the current frame to avoid
+    // "setState() called during build" errors. This happens because pause()
+    // notifies ValueListenableBuilder listeners synchronously, which triggers
+    // rebuilds during the widget tree teardown phase.
+    //
+    // We capture the video info now (while ref is still valid) and defer
+    // the actual pause operation.
+    _schedulePauseCurrentVideo();
     super.deactivate();
+  }
+
+  /// Schedule pause for after the current frame to avoid build conflicts
+  void _schedulePauseCurrentVideo() {
+    final videos = _getVideos();
+    if (_currentIndex < 0 || _currentIndex >= videos.length) {
+      return;
+    }
+
+    final video = videos[_currentIndex];
+    if (video.videoUrl == null) {
+      return;
+    }
+
+    VideoPlayerController? controller;
+    try {
+      final controllerParams = VideoControllerParams(
+        videoId: video.id,
+        videoUrl: video.videoUrl!,
+        videoEvent: video,
+      );
+      controller = ref.read(
+        individualVideoControllerProvider(controllerParams),
+      );
+    } catch (e) {
+      // Controller may not exist yet
+      return;
+    }
+
+    if (controller == null || !controller.value.isInitialized) {
+      return;
+    }
+
+    // Defer the pause to after the current frame
+    final videoId = video.id;
+    final controllerToClose = controller;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (controllerToClose.value.isPlaying) {
+        safePause(controllerToClose, videoId);
+      }
+    });
   }
 
   @override
@@ -160,43 +206,6 @@ class _FullscreenVideoFeedScreenState
         // Static source uses callback for loading more
         onLoadMore?.call();
     }
-  }
-
-  /// Pause the currently active video to prevent background playback.
-  /// Called when navigating away from this screen.
-  void _pauseCurrentVideo() {
-    final videos = _getVideos();
-    if (_currentIndex < 0 || _currentIndex >= videos.length) {
-      return;
-    }
-
-    final video = videos[_currentIndex];
-    if (video.videoUrl == null) {
-      return;
-    }
-
-    VideoPlayerController? controller;
-    try {
-      final controllerParams = VideoControllerParams(
-        videoId: video.id,
-        videoUrl: video.videoUrl!,
-        videoEvent: video,
-      );
-      controller = ref.read(
-        individualVideoControllerProvider(controllerParams),
-      );
-    } catch (e) {
-      // Controller may not exist yet
-      return;
-    }
-
-    if (controller == null ||
-        !controller.value.isInitialized ||
-        !controller.value.isPlaying) {
-      return;
-    }
-
-    safePause(controller, video.id);
   }
 
   void _onPageChanged(int newIndex, List<VideoEvent> videos) {

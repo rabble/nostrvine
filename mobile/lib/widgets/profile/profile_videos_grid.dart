@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -162,9 +162,12 @@ class _VideoGridTile extends StatelessWidget {
         category: LogCategory.video,
       );
       // Use ProfileFeedSource for reactive updates when loadMore fetches new videos
-      context.pushVideoFeed(
-        source: ProfileFeedSource(userIdHex),
-        initialIndex: index,
+      context.push(
+        FullscreenVideoFeedScreen.path,
+        extra: FullscreenVideoFeedArgs(
+          source: ProfileFeedSource(userIdHex),
+          initialIndex: index,
+        ),
       );
       Log.info(
         '✅ ProfileVideosGrid: Called pushVideoFeed with ProfileFeedSource($userIdHex) at index $index',

@@ -287,7 +287,7 @@ class _CloseButton extends StatelessWidget {
           backgroundColor: Color(0x26000000),
           // TODO(l10n): Replace with context.l10n when localization is added.
           semanticLabel: 'Close video recorder',
-          iconPath: 'assets/icon/close.svg',
+          iconPath: 'assets/icon/CaretLeft.svg',
           onTap: () => context.pop(),
         ),
       ),

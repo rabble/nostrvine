@@ -705,22 +705,34 @@ class NostrClient {
   /// - [content]: Optional content for the repost (usually empty)
   ///
   /// Successfully sent events are cached locally with 1-day expiry.
+  ///
+  /// Note: Including [eventId] is recommended for better relay compatibility.
+  /// Some relays don't properly index `#a` tags, but `#e` tags are universally
+  /// supported.
   Future<Event?> sendGenericRepost({
     required String addressableId,
     required int targetKind,
     required String authorPubkey,
+    String? eventId,
     String content = '',
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
+    final tags = <List<String>>[
+      ['k', '$targetKind'],
+      ['a', addressableId],
+      ['p', authorPubkey],
+    ];
+
+    // Include e tag for better relay compatibility (NIP-18 recommends this)
+    if (eventId != null) {
+      tags.add(['e', eventId]);
+    }
+
     final event = Event(
       publicKey,
       EventKind.genericRepost,
-      [
-        ['k', '$targetKind'],
-        ['a', addressableId],
-        ['p', authorPubkey],
-      ],
+      tags,
       content,
     );
 

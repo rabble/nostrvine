@@ -26,6 +26,10 @@ class Filter {
   /// a list of values that are referenced in a "d" tag (NIP-33 addressable events)
   List<String>? d;
 
+  /// a list of addressable IDs referenced in an "a" tag (NIP-33 addressable events)
+  /// Format: `kind:pubkey:d-tag`
+  List<String>? a;
+
   /// a list of event ids that are referenced in an uppercase "E" tag (NIP-22 root scope)
   List<String>? uppercaseE;
 
@@ -54,6 +58,7 @@ class Filter {
     this.t,
     this.h,
     this.d,
+    this.a,
     this.uppercaseE,
     this.uppercaseK,
     this.since,
@@ -74,6 +79,7 @@ class Filter {
     t = json['#t'] == null ? null : List<String>.from(json['#t']);
     h = json['#h'] == null ? null : List<String>.from(json['#h']);
     d = json['#d'] == null ? null : List<String>.from(json['#d']);
+    a = json['#a'] == null ? null : List<String>.from(json['#a']);
     uppercaseE = json['#E'] == null ? null : List<String>.from(json['#E']);
     uppercaseK = json['#K'] == null ? null : List<String>.from(json['#K']);
     since = json['since'];
@@ -108,6 +114,9 @@ class Filter {
     }
     if (d != null) {
       data['#d'] = d;
+    }
+    if (a != null) {
+      data['#a'] = a;
     }
     if (uppercaseE != null) {
       data['#E'] = uppercaseE;
@@ -152,6 +161,7 @@ class Filter {
     List<String> ts = [];
     List<String> hs = [];
     List<String> ds = [];
+    List<String> as_ = [];
     List<String> uppercaseEs = [];
     List<String> uppercaseKs = [];
     for (var tag in event.tags) {
@@ -169,6 +179,8 @@ class Filter {
           hs.add(v);
         } else if (k == "d") {
           ds.add(v);
+        } else if (k == "a") {
+          as_.add(v);
         } else if (k == "E") {
           uppercaseEs.add(v);
         } else if (k == "K") {
@@ -209,6 +221,13 @@ class Filter {
           return d!.contains(v);
         })))) {
       // filter query d but ds don't contains d.
+      return false;
+    }
+    if (a != null &&
+        (!(as_.any((v) {
+          return a!.contains(v);
+        })))) {
+      // filter query a but as don't contains a.
       return false;
     }
     if (uppercaseE != null &&

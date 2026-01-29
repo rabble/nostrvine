@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/divine_icon_button.dart';
 
 /// Top bar with close button, segment bar, and forward button.
@@ -15,9 +16,18 @@ class VideoRecorderTopBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final notifier = ref.read(videoRecorderProvider.notifier);
-    final hasClips = ref.watch(clipManagerProvider.select((s) => s.hasClips));
+    final clipCount = ref.watch(clipManagerProvider.select((s) => s.clipCount));
+    final hasClips = clipCount > 0;
     final isRecording = ref.watch(
       videoRecorderProvider.select((s) => s.isRecording),
+    );
+
+    // Debug logging for Next button visibility
+    Log.debug(
+      '🔝 TopBar build: hasClips=$hasClips, clipCount=$clipCount, '
+      'isRecording=$isRecording',
+      name: 'VideoRecorderTopBar',
+      category: LogCategory.video,
     );
 
     return Align(

@@ -451,7 +451,7 @@ final class TrendingHashtagsProvider
   }
 }
 
-String _$trendingHashtagsHash() => r'f0f850462be2912bc79cc132077c1a026272d1ba';
+String _$trendingHashtagsHash() => r'3946913e36f7c8e8e59be05f1db16665bd2f3367';
 
 /// Provider for trending hashtags
 

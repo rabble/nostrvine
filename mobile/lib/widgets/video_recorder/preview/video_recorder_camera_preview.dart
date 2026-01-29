@@ -78,6 +78,7 @@ class _StackItems extends ConsumerWidget {
         (s) => (
           isCameraInitialized: s.isCameraInitialized,
           cameraRebuildCount: s.cameraRebuildCount,
+          initializationErrorMessage: s.initializationErrorMessage,
         ),
       ),
     );
@@ -88,7 +89,9 @@ class _StackItems extends ConsumerWidget {
         if (state.isCameraInitialized)
           const _CameraPreview()
         else
-          const VideoRecorderCameraPlaceholder(),
+          VideoRecorderCameraPlaceholder(
+            errorMessage: state.initializationErrorMessage,
+          ),
         const _OverlayGrid(),
         const VideoRecorderFocusPoint(),
       ],

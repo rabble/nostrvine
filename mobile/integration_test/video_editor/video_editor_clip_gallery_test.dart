@@ -10,7 +10,7 @@ import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/video_editor/gallery/video_editor_clip_gallery.dart';
+import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_clip_gallery.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
@@ -122,7 +122,10 @@ void main() {
       await tester.pump();
 
       // Instruction text should be visible
-      expect(find.text('Tap to edit. Drag to reorder.'), findsOneWidget);
+      expect(
+        find.text('Tap to edit. Hold and drag to reorder.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('can scroll through clips', (tester) async {

@@ -3,7 +3,8 @@
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:go_router/go_router.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/utils/hashtag_extractor.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -109,6 +110,6 @@ class ClickableHashtagText extends StatelessWidget {
     onVideoStateChange?.call();
 
     // Navigate to hashtag grid view (no index = grid mode)
-    context.goHashtag(hashtag);
+    context.go(HashtagScreenRouter.pathForTag(hashtag));
   }
 }

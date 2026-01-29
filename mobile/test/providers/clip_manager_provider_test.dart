@@ -178,5 +178,47 @@ void main() {
       final state = container.read(clipManagerProvider);
       expect(state.canRecordMore, isFalse);
     });
+
+    test('addClip allows adding duplicate clips with same id', () {
+      final notifier = container.read(clipManagerProvider.notifier);
+
+      // Simulate adding the same clip multiple times (like from library selection)
+      const sharedFilePath = '/path/to/library/clip.mp4';
+      const clipDuration = Duration(seconds: 2);
+
+      final clip1 = notifier.addClip(
+        video: EditorVideo.file(sharedFilePath),
+        duration: clipDuration,
+        aspectRatio: .vertical,
+        thumbnailPath: '/path/to/thumb.jpg',
+      );
+
+      final clip2 = notifier.addClip(
+        video: EditorVideo.file(sharedFilePath),
+        duration: clipDuration,
+        aspectRatio: .vertical,
+        thumbnailPath: '/path/to/thumb.jpg',
+      );
+
+      final clip3 = notifier.addClip(
+        video: EditorVideo.file(sharedFilePath),
+        duration: clipDuration,
+        aspectRatio: .vertical,
+        thumbnailPath: '/path/to/thumb.jpg',
+      );
+
+      final state = container.read(clipManagerProvider);
+
+      // All three clips should be added
+      expect(state.clips.length, equals(3));
+
+      // Each clip should have a unique ID
+      expect(clip1.id, isNot(equals(clip2.id)));
+      expect(clip2.id, isNot(equals(clip3.id)));
+      expect(clip1.id, isNot(equals(clip3.id)));
+
+      // Total duration should account for all clips
+      expect(state.totalDuration, equals(const Duration(seconds: 6)));
+    });
   });
 }

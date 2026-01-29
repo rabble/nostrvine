@@ -8,7 +8,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
 /// Temporary provider to hold the explore tab's current video list

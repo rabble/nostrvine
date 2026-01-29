@@ -96,10 +96,9 @@ class VideoEditorProviderState {
   ///
   /// Returns true if:
   /// - Metadata is within the 64KB limit
-  /// - Title is not empty
   /// - Final rendered clip is available
   bool get isValidToPost =>
-      !metadataLimitReached && title.isNotEmpty && finalRenderedClip != null;
+      !metadataLimitReached && !isProcessing && finalRenderedClip != null;
 
   /// Creates a copy of this state with updated fields.
   ///

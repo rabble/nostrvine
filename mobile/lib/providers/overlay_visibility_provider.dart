@@ -11,32 +11,25 @@ part 'overlay_visibility_provider.g.dart';
 class OverlayVisibilityState {
   const OverlayVisibilityState({
     this.isDrawerOpen = false,
-    this.isSettingsOpen = false,
     this.isModalOpen = false,
   });
 
   final bool isDrawerOpen;
-  final bool isSettingsOpen;
   final bool isModalOpen;
 
   /// Returns true if any overlay that should pause videos is visible
-  bool get hasVisibleOverlay => isDrawerOpen || isSettingsOpen || isModalOpen;
+  bool get hasVisibleOverlay => isDrawerOpen || isModalOpen;
 
-  OverlayVisibilityState copyWith({
-    bool? isDrawerOpen,
-    bool? isSettingsOpen,
-    bool? isModalOpen,
-  }) {
+  OverlayVisibilityState copyWith({bool? isDrawerOpen, bool? isModalOpen}) {
     return OverlayVisibilityState(
       isDrawerOpen: isDrawerOpen ?? this.isDrawerOpen,
-      isSettingsOpen: isSettingsOpen ?? this.isSettingsOpen,
       isModalOpen: isModalOpen ?? this.isModalOpen,
     );
   }
 
   @override
   String toString() =>
-      'OverlayVisibilityState(drawer=$isDrawerOpen, settings=$isSettingsOpen, modal=$isModalOpen)';
+      'OverlayVisibilityState(drawer=$isDrawerOpen, modal=$isModalOpen)';
 }
 
 /// Notifier for managing overlay visibility state
@@ -53,17 +46,6 @@ class OverlayVisibility extends _$OverlayVisibility {
         category: LogCategory.ui,
       );
       state = state.copyWith(isDrawerOpen: isOpen);
-    }
-  }
-
-  void setSettingsOpen(bool isOpen) {
-    if (state.isSettingsOpen != isOpen) {
-      Log.info(
-        '📱 Settings ${isOpen ? 'opened' : 'closed'}',
-        name: 'OverlayVisibility',
-        category: LogCategory.ui,
-      );
-      state = state.copyWith(isSettingsOpen: isOpen);
     }
   }
 

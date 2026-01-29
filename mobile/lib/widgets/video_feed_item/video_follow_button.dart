@@ -32,6 +32,11 @@ class VideoFollowButton extends ConsumerWidget {
     final followRepository = ref.watch(followRepositoryProvider);
     final nostrClient = ref.watch(nostrServiceProvider);
 
+    // Don't show follow button until NostrClient has keys
+    if (followRepository == null) {
+      return const SizedBox.shrink();
+    }
+
     // Don't show follow button for own videos
     if (nostrClient.publicKey == pubkey) {
       return const SizedBox.shrink();

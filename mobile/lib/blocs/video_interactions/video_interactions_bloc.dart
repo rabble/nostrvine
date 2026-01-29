@@ -85,14 +85,7 @@ class VideoInteractionsBloc
             final isReposted = repostedIds.contains(_addressableId);
             if (isReposted == state.isReposted) return state;
 
-            // Update repost status and adjust count
-            final currentCount = state.repostCount ?? 0;
-            final newCount = isReposted ? currentCount + 1 : currentCount - 1;
-
-            return state.copyWith(
-              isReposted: isReposted,
-              repostCount: newCount < 0 ? 0 : newCount,
-            );
+            return state.copyWith(isReposted: isReposted);
           },
         ),
     ];
@@ -121,13 +114,22 @@ class VideoInteractionsBloc
           : false;
 
       // Fetch counts in parallel
+      // Query repost count by addressable ID when available (NIP-18 specifies
+      // that generic reposts of addressable events use the `a` tag).
+      // Fall back to event ID for non-addressable videos.
+      final repostCountFuture = _addressableId != null
+          ? _repostsRepository.getRepostCount(_addressableId)
+          : _repostsRepository.getRepostCountByEventId(_eventId);
+
       final results = await Future.wait([
         _likesRepository.getLikeCount(_eventId),
         _commentsRepository.getCommentsCount(_eventId),
+        repostCountFuture,
       ]);
 
       final likeCount = results[0];
       final commentCount = results[1];
+      final repostCount = results[2];
 
       emit(
         state.copyWith(
@@ -135,6 +137,7 @@ class VideoInteractionsBloc
           isLiked: isLiked,
           likeCount: likeCount,
           isReposted: isReposted,
+          repostCount: repostCount,
           commentCount: commentCount,
           clearError: true,
         ),
@@ -232,6 +235,7 @@ class VideoInteractionsBloc
       final isNowReposted = await _repostsRepository.toggleRepost(
         addressableId: _addressableId,
         originalAuthorPubkey: _authorPubkey,
+        eventId: _eventId,
       );
 
       // Update local state with new repost status and adjusted count

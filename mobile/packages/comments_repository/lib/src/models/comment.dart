@@ -52,19 +52,30 @@ class Comment extends Equatable {
   /// If this is a reply, the public key of the parent comment author.
   final String? replyToAuthorPubkey;
 
-  /// Get relative time string (e.g., "2h ago", "1d ago").
+  /// Get relative time string (e.g., "2h ago", "1d ago", "3mo ago", "2y ago").
   String get relativeTime {
     final now = DateTime.now();
     final difference = now.difference(createdAt);
 
-    if (difference.inDays > 0) {
-      return '${difference.inDays}d ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes}m ago';
-    } else {
+    if (difference.inMinutes < 1) {
       return 'now';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays}d ago';
+    } else if (difference.inDays < 60) {
+      // Less than ~2 months: show weeks
+      return '${difference.inDays ~/ 7}w ago';
+    } else if (difference.inDays < 365) {
+      // Less than 1 year: show months
+      final months = difference.inDays ~/ 30;
+      return '${months}mo ago';
+    } else {
+      // 1 year or more: show years
+      final years = difference.inDays ~/ 365;
+      return '${years}y ago';
     }
   }
 

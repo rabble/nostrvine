@@ -5,9 +5,14 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/services/image_cache_manager.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
 /// Horizontal slider displaying top classic Viners sorted by loop count.
@@ -132,15 +137,12 @@ class _VinerAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Use authorName from classic Vine data, clean up social media prefixes
-    final rawName = viner.authorName ?? _formatPubkey(viner.pubkey);
+    final rawName =
+        viner.authorName ?? NostrKeyUtils.truncateNpub(viner.pubkey);
     final displayName = _cleanDisplayName(rawName);
 
     return GestureDetector(
-      onTap: () => context.pushOtherProfile(
-        viner.pubkey,
-        displayName: viner.authorName,
-        avatarUrl: viner.authorAvatar,
-      ),
+      onTap: () => onTap(context),
       child: Padding(
         padding: const EdgeInsets.only(right: 16),
         child: Column(
@@ -182,11 +184,6 @@ class _VinerAvatar extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  String _formatPubkey(String pubkey) {
-    if (pubkey.length <= 8) return pubkey;
-    return '${pubkey.substring(0, 4)}...${pubkey.substring(pubkey.length - 4)}';
   }
 
   Widget _buildAvatar(String displayName) {
@@ -242,5 +239,47 @@ class _VinerAvatar extends StatelessWidget {
     }
 
     return cleaned.trim();
+  }
+
+  void onTap(BuildContext context) async {
+    // Get current user's hex for normalization if needed
+    final identifier = viner.pubkey;
+    final container = ProviderScope.containerOf(context, listen: false);
+    final authService = container.read(authServiceProvider);
+    final currentUserHex = authService.currentPublicKeyHex;
+
+    // Normalize any format (npub/nprofile/hex) to npub for URL
+    final npub = normalizeToNpub(identifier, currentUserHex: currentUserHex);
+    if (npub == null) {
+      // Invalid identifier - log warning and don't push
+      debugPrint('⚠️ Invalid public identifier: $identifier');
+      return;
+    }
+
+    // Handle 'me' special case - redirect to own profile tab instead
+    if (identifier == 'me') {
+      return context.go(
+        buildRoute(
+          RouteContext(
+            type: RouteType.profile,
+            npub: npub,
+            videoIndex: null, // Grid mode - no active video
+          ),
+        ),
+      );
+    }
+
+    // Pass profile hints via extra for users without Kind 0 profiles
+    final extra = <String, String?>{};
+    final authorName = viner.authorName;
+    final authorAvatar = viner.authorAvatar;
+
+    if (authorName != null) extra['displayName'] = authorName;
+    if (authorAvatar != null) extra['avatarUrl'] = authorAvatar;
+
+    await context.push(
+      OtherProfileScreen.pathForNpub(npub),
+      extra: extra.isEmpty ? null : extra,
+    );
   }
 }

@@ -6,8 +6,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/services/image_cache_manager.dart';
+import 'package:openvine/widgets/unfollow_confirmation_sheet.dart';
 
 /// A tile widget for displaying user profile information in lists.
 ///
@@ -53,13 +55,14 @@ class UserProfileTile extends ConsumerWidget {
       builder: (context, snapshot) {
         final profile = userProfileService.getCachedProfile(pubkey);
         // wrapping with Semantics for testability and accessibility
-        // Get display name or truncated npub
-        final displayName = profile?.bestDisplayName ?? 'Loading...';
+        // Get display name or truncated npub (fallback for users without Kind 0)
+        final truncatedNpub = NostrKeyUtils.truncateNpub(pubkey);
+        final displayName = profile?.bestDisplayName ?? truncatedNpub;
 
-        // Get unique identifier: NIP-05 if available, otherwise npub
-        final uniqueIdentifier = profile?.nip05?.isNotEmpty == true
-            ? profile!.nip05!
-            : profile?.npub ?? 'Loading...';
+        // Get unique identifier: NIP-05 if available, otherwise truncated npub
+        final uniqueIdentifier = profile?.displayNip05?.isNotEmpty == true
+            ? profile!.displayNip05!
+            : truncatedNpub;
 
         return Semantics(
           identifier: 'user_profile_tile_$pubkey',
@@ -151,6 +154,7 @@ class UserProfileTile extends ConsumerWidget {
                     _FollowButton(
                       isFollowing: isFollowing!,
                       onToggleFollow: onToggleFollow!,
+                      displayName: displayName,
                     ),
                   ],
                 ],
@@ -168,17 +172,30 @@ class _FollowButton extends StatelessWidget {
   const _FollowButton({
     required this.isFollowing,
     required this.onToggleFollow,
+    required this.displayName,
   });
 
   final bool isFollowing;
   final VoidCallback onToggleFollow;
+  final String displayName;
+
+  Future<void> _confirmUnfollow(BuildContext context) async {
+    final result = await showUnfollowConfirmation(
+      context,
+      displayName: displayName,
+    );
+
+    if (result == true && context.mounted) {
+      onToggleFollow();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     if (isFollowing) {
       // Following state: surfaceContainer bg, outlineMuted border, userMinus icon
       return GestureDetector(
-        onTap: onToggleFollow,
+        onTap: () => _confirmUnfollow(context),
         child: Container(
           width: 40,
           height: 40,

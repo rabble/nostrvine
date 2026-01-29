@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -172,9 +172,12 @@ class _LikedGridTile extends StatelessWidget {
         category: LogCategory.video,
       );
       // Use LikedVideosFeedSource for fullscreen playback
-      context.pushVideoFeed(
-        source: LikedVideosFeedSource(allVideos),
-        initialIndex: index,
+      context.push(
+        FullscreenVideoFeedScreen.path,
+        extra: FullscreenVideoFeedArgs(
+          source: LikedVideosFeedSource(allVideos),
+          initialIndex: index,
+        ),
       );
       Log.info(
         '✅ ProfileLikedGrid: Called pushVideoFeed with '

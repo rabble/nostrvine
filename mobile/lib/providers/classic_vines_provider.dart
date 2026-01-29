@@ -199,15 +199,21 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
   }
 
   /// Refresh the classic vines feed
+  ///
+  /// Forces a fresh fetch from the REST API by:
+  /// 1. Resetting the limit
+  /// 2. Invalidating the provider
+  /// 3. Waiting for the rebuild to complete (ensures pull-to-refresh shows properly)
   Future<void> refresh() async {
     Log.info(
-      '🎬 ClassicVinesFeed: Refreshing feed',
+      '🎬 ClassicVinesFeed: Refreshing feed - fetching fresh data from API',
       name: 'ClassicVinesFeedProvider',
       category: LogCategory.video,
     );
 
     _currentLimit = 100; // Reset limit on refresh
     ref.invalidateSelf();
+    await future; // Wait for rebuild to complete so refresh indicator shows properly
   }
 }
 

@@ -45,8 +45,14 @@ String resolveActorName(UserProfile? profile) {
   }
 
   // Try nip05 username third
-  if (profile.nip05 != null) {
-    final nip05Parts = profile.nip05!.split('@');
+  if (profile.displayNip05 != null) {
+    final nip05Parts = profile.displayNip05!.split('@');
+    // For subdomain-style NIP-05 like @loganpaul.divine.video,
+    // the first part is empty and username is in the subdomain
+    if (nip05Parts.length > 1 && nip05Parts.first.isEmpty) {
+      return nip05Parts[1].split('.').first;
+    }
+    // Traditional NIP-05 like alice@example.com - username is before @
     return nip05Parts.first;
   }
 
