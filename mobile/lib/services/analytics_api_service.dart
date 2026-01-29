@@ -873,6 +873,87 @@ class AnalyticsApiService {
     }
   }
 
+  /// Get user profile data from FunnelCake REST API
+  ///
+  /// Uses the /api/users/{pubkey} endpoint which returns profile data
+  /// along with social stats. This is faster than WebSocket relay queries
+  /// for profiles that exist in the ClickHouse database.
+  ///
+  /// Returns null if user not found or API unavailable.
+  Future<Map<String, dynamic>?> getUserProfile(String pubkey) async {
+    if (!isAvailable || pubkey.isEmpty) return null;
+
+    try {
+      final url = '$_baseUrl/api/users/$pubkey';
+      Log.info(
+        '🔍 Fetching profile from FunnelCake REST API: $pubkey',
+        name: 'AnalyticsApiService',
+        category: LogCategory.system,
+      );
+
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final profile = data['profile'] as Map<String, dynamic>?;
+
+        if (profile != null &&
+            (profile['name'] != null || profile['display_name'] != null)) {
+          Log.info(
+            '✅ Got profile from FunnelCake: ${profile['display_name'] ?? profile['name']}',
+            name: 'AnalyticsApiService',
+            category: LogCategory.system,
+          );
+          return {
+            'pubkey': pubkey,
+            'name': profile['name'],
+            'display_name': profile['display_name'],
+            'about': profile['about'],
+            'picture': profile['picture'],
+            'banner': profile['banner'],
+            'nip05': profile['nip05'],
+            'lud16': profile['lud16'],
+          };
+        }
+        Log.debug(
+          'FunnelCake returned user but no profile data',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+        return null;
+      } else if (response.statusCode == 404) {
+        Log.debug(
+          'Profile not found in FunnelCake: $pubkey',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+        return null;
+      } else {
+        Log.warning(
+          'FunnelCake profile fetch failed: ${response.statusCode}',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+        return null;
+      }
+    } catch (e) {
+      Log.debug(
+        'FunnelCake profile fetch error (will fall back to relay): $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+  }
+
   /// Get personalized home feed for a user (videos from followed accounts)
   ///
   /// Uses the /api/users/{pubkey}/feed endpoint which returns videos

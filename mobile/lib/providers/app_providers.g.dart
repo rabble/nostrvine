@@ -2168,7 +2168,7 @@ final class UserProfileServiceProvider
 }
 
 String _$userProfileServiceHash() =>
-    r'abc2ef09d33c40550c1bdaf52206aa650c5e97b5';
+    r'c794efc557e51b13c9cf3ff59fd3f56f1582cbd0';
 
 /// Social service depends on Nostr service, Auth service, and SubscriptionManager
 

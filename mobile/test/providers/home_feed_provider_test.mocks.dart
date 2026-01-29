@@ -1576,6 +1576,14 @@ class MockAnalyticsApiService extends _i1.Mock
           as _i12.Future<List<_i5.VideoEvent>>);
 
   @override
+  _i12.Future<Map<String, dynamic>?> getUserProfile(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#getUserProfile, [pubkey]),
+            returnValue: _i12.Future<Map<String, dynamic>?>.value(),
+          )
+          as _i12.Future<Map<String, dynamic>?>);
+
+  @override
   _i12.Future<_i3.HomeFeedResult> getHomeFeed({
     required String? pubkey,
     int? limit = 50,

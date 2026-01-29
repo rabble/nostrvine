@@ -13,6 +13,7 @@ import 'package:likes_repository/likes_repository.dart';
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -657,15 +658,27 @@ UserProfileService userProfileService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final subscriptionManager = ref.watch(subscriptionManagerProvider);
   final profileCache = ref.watch(profileCacheServiceProvider);
+  final analyticsService = ref.watch(analyticsApiServiceProvider);
+
+  // Use centralized funnelcake availability check (capability detection)
+  final funnelcakeAvailable =
+      ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
 
   final service = UserProfileService(
     nostrService,
     subscriptionManager: subscriptionManager,
+    analyticsApiService: analyticsService,
+    funnelcakeAvailable: funnelcakeAvailable,
   );
   service.setPersistentCache(profileCache);
 
   // Inject profile cache lookup into SubscriptionManager to avoid redundant relay requests
   subscriptionManager.setCacheLookup(hasProfileCached: service.hasProfile);
+
+  // Listen for funnelcake availability changes
+  ref.listen<AsyncValue<bool>>(funnelcakeAvailableProvider, (previous, next) {
+    service.setFunnelcakeAvailable(next.asData?.value ?? false);
+  });
 
   // Ensure cleanup on disposal
   ref.onDispose(() {
