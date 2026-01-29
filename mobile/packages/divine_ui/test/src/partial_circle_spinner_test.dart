@@ -52,7 +52,7 @@ void main() {
     });
 
     testWidgets('animates when progress changes', (tester) async {
-      await tester.pumpWidget(buildTestWidget(progress: 0.0));
+      await tester.pumpWidget(buildTestWidget());
 
       // Change progress
       await tester.pumpWidget(buildTestWidget(progress: 0.5));
@@ -65,8 +65,8 @@ void main() {
     });
 
     testWidgets('completes animation to final progress value', (tester) async {
-      await tester.pumpWidget(buildTestWidget(progress: 0.0));
-      await tester.pumpWidget(buildTestWidget(progress: 1.0));
+      await tester.pumpWidget(buildTestWidget());
+      await tester.pumpWidget(buildTestWidget(progress: 1));
 
       // Complete the animation
       await tester.pumpAndSettle();

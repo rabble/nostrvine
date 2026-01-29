@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -45,10 +46,11 @@ class _PartialCircleSpinnerState extends State<PartialCircleSpinner>
   void didUpdateWidget(PartialCircleSpinner oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.progress != oldWidget.progress) {
-      _controller.animateTo(
-        widget.progress,
-        duration: const Duration(milliseconds: 200),
-        curve: Curves.linear,
+      unawaited(
+        _controller.animateTo(
+          widget.progress,
+          duration: const Duration(milliseconds: 200),
+        ),
       );
     }
   }
