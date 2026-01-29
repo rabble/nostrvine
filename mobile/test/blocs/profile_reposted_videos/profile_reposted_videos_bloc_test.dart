@@ -460,6 +460,7 @@ void main() {
         },
         wait: const Duration(milliseconds: 100),
         expect: () => [
+          // IDs are updated, video will be fetched on next sync
           isA<ProfileRepostedVideosState>().having(
             (s) => s.repostedAddressableIds,
             'repostedAddressableIds',

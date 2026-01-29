@@ -32,6 +32,15 @@ class ProfileFollowingStat extends ConsumerWidget {
     final nostrClient = ref.watch(nostrServiceProvider);
     final isCurrentUser = pubkey == nostrClient.publicKey;
 
+    // Don't show stats until NostrClient has keys
+    if (followRepository == null) {
+      return const ProfileStatColumn(
+        count: null,
+        label: 'Following',
+        isLoading: true,
+      );
+    }
+
     if (isCurrentUser) {
       return BlocProvider(
         create: (_) =>

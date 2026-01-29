@@ -8,7 +8,7 @@ import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
 import 'package:openvine/mixins/page_controller_sync_mixin.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 
 /// Router-driven ExploreScreen - PageView syncs with URL bidirectionally
@@ -16,8 +16,9 @@ class ExploreScreenRouter extends ConsumerStatefulWidget {
   const ExploreScreenRouter({super.key});
 
   @override
-  ConsumerState<ExploreScreenRouter> createState() =>
-      _ExploreScreenRouterState();
+  ConsumerState<ExploreScreenRouter> createState() {
+    return _ExploreScreenRouterState();
+  }
 }
 
 class _ExploreScreenRouterState extends ConsumerState<ExploreScreenRouter>
@@ -91,14 +92,7 @@ class _ExploreScreenRouterState extends ConsumerState<ExploreScreenRouter>
                 // Guard: only navigate if URL doesn't match
                 if (newIndex != urlIndex) {
                   // Use event-based routing
-                  context.go(
-                    buildRoute(
-                      RouteContext(
-                        type: RouteType.explore,
-                        videoIndex: newIndex,
-                      ),
-                    ),
-                  );
+                  context.go(ExploreScreen.pathForIndex(newIndex));
                 }
 
                 // Prefetch videos around current index

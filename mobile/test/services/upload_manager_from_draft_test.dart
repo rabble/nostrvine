@@ -5,6 +5,9 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/recording_clip.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import '../helpers/test_helpers.dart';
@@ -33,11 +36,18 @@ void main() {
       final proofJson = '{"segments":[],"deviceAttestation":null}';
 
       final draft = VineDraft.create(
-        videoFile: testFile,
+        clips: [
+          RecordingClip(
+            id: 'test_clip',
+            video: EditorVideo.file(testFile.path),
+            duration: Duration(seconds: 6),
+            recordedAt: DateTime.now(),
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Test Video',
         description: 'Test Description',
-        hashtags: ['test'],
-        frameCount: 10,
+        hashtags: {'test'},
         selectedApproach: 'native',
         proofManifestJson: proofJson,
       );
@@ -63,11 +73,18 @@ void main() {
       final proofJson = '{"segments":[],"deviceAttestation":null}';
 
       final originalDraft = VineDraft.create(
-        videoFile: testFile,
+        clips: [
+          RecordingClip(
+            id: 'test_clip',
+            video: EditorVideo.file(testFile.path),
+            duration: Duration(seconds: 6),
+            recordedAt: DateTime.now(),
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Original Title',
         description: 'Original Description',
-        hashtags: ['original'],
-        frameCount: 10,
+        hashtags: {'original'},
         selectedApproach: 'native',
         proofManifestJson: proofJson,
       );
@@ -76,7 +93,7 @@ void main() {
       final updatedDraft = originalDraft.copyWith(
         title: 'Updated Title',
         description: 'Updated Description',
-        hashtags: ['updated'],
+        hashtags: {'updated'},
       );
 
       expect(updatedDraft.title, equals('Updated Title'));
@@ -99,11 +116,18 @@ void main() {
       final testFile = File('test_video.mp4');
 
       final draft = VineDraft.create(
-        videoFile: testFile,
+        clips: [
+          RecordingClip(
+            id: 'test_clip',
+            video: EditorVideo.file(testFile.path),
+            duration: Duration(seconds: 6),
+            recordedAt: DateTime.now(),
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Test Video',
         description: 'Test Description',
-        hashtags: ['test'],
-        frameCount: 10,
+        hashtags: {'test'},
         selectedApproach: 'native',
       );
 

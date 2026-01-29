@@ -3,16 +3,20 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/models/notification_model.dart';
 import 'package:openvine/models/user_profile.dart' as models;
 import 'package:models/models.dart'
     hide LogCategory, NotificationModel, NotificationType, UserProfile;
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/comments/comments.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -42,12 +46,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
 
   @override
   Widget build(BuildContext context) {
-    final authStateAsync = ref.watch(authStateStreamProvider);
-    final isAuthenticated = authStateAsync.when(
-      data: (state) => state == AuthState.authenticated,
-      loading: () => false,
-      error: (_, __) => false,
-    );
+    final authState = ref.watch(currentAuthStateProvider);
+    final isAuthenticated = authState == AuthState.authenticated;
 
     if (!isAuthenticated) {
       return _buildUnauthenticatedState();
@@ -282,8 +282,11 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
   }
 
   void _openUserProfile(String pubkey) {
-    // Navigate to profile tab using GoRouter
-    context.pushProfile(pubkey, 0);
+    // Navigate to profile using GoRouter
+    final npub = normalizeToNpub(pubkey);
+    if (npub != null) {
+      context.push(ProfileScreenRouter.pathForIndex(npub, 0));
+    }
   }
 
   void _openComments(VideoEvent video) {
@@ -294,7 +297,7 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
     );
 
     // Navigate to comments screen with the video
-    context.pushComments(video);
+    CommentsScreen.show(context, video);
   }
 
   void _openVideo(VideoEvent video, VideoEventService videoEventService) {
@@ -362,7 +365,9 @@ class _NotificationItem extends ConsumerWidget {
     final profile = userProfileService.getCachedProfile(
       notification.actorPubkey,
     );
-    final userName = profile?.bestDisplayName ?? 'Unknown User';
+    final userName =
+        profile?.bestDisplayName ??
+        NostrKeyUtils.truncateNpub(notification.actorPubkey);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -484,7 +489,7 @@ class _FollowingItem extends StatelessWidget {
         children: [
           Flexible(
             child: Text(
-              profile?.bestDisplayName ?? 'Unknown User',
+              profile?.bestDisplayName ?? NostrKeyUtils.truncateNpub(pubkey),
               style: const TextStyle(
                 color: VineTheme.whiteText,
                 fontWeight: FontWeight.bold,

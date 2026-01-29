@@ -9,10 +9,113 @@ import 'package:google_fonts/google_fonts.dart';
 /// This is a dark-mode only design system matching the classic Vine app
 /// aesthetic with proper color scheme and typography.
 class VineTheme {
+  // ==========================================================================
   // Typography - Google Fonts
-  // Bricolage Grotesque for titles (bold 800, 22px with 28px line height)
+  // ==========================================================================
 
-  /// Title font style using Bricolage Grotesque.
+  // --------------------------------------------------------------------------
+  // Display styles (Bricolage Grotesque, weight 700)
+  // --------------------------------------------------------------------------
+
+  /// Display large: Bricolage Grotesque 700 57/64/0
+  static TextStyle displayLargeFont({Color color = whiteText}) =>
+      GoogleFonts.bricolageGrotesque(
+        fontSize: 57,
+        fontWeight: FontWeight.w700,
+        height: 64 / 57,
+        letterSpacing: 0,
+        color: color,
+      );
+
+  /// Display medium: Bricolage Grotesque 700 45/52/0
+  static TextStyle displayMediumFont({Color color = whiteText}) =>
+      GoogleFonts.bricolageGrotesque(
+        fontSize: 45,
+        fontWeight: FontWeight.w700,
+        height: 52 / 45,
+        letterSpacing: 0,
+        color: color,
+      );
+
+  /// Display small: Bricolage Grotesque 700 36/44/0
+  static TextStyle displaySmallFont({Color color = whiteText}) =>
+      GoogleFonts.bricolageGrotesque(
+        fontSize: 36,
+        fontWeight: FontWeight.w700,
+        height: 44 / 36,
+        letterSpacing: 0,
+        color: color,
+      );
+
+  // --------------------------------------------------------------------------
+  // Headline styles (Bricolage Grotesque, weight 700)
+  // --------------------------------------------------------------------------
+
+  /// Headline large: Bricolage Grotesque 700 32/40/0
+  static TextStyle headlineLargeFont({Color color = whiteText}) =>
+      GoogleFonts.bricolageGrotesque(
+        fontSize: 32,
+        fontWeight: FontWeight.w700,
+        height: 40 / 32,
+        letterSpacing: 0,
+        color: color,
+      );
+
+  /// Headline medium: Bricolage Grotesque 700 28/36/0
+  static TextStyle headlineMediumFont({Color color = whiteText}) =>
+      GoogleFonts.bricolageGrotesque(
+        fontSize: 28,
+        fontWeight: FontWeight.w700,
+        height: 36 / 28,
+        letterSpacing: 0,
+        color: color,
+      );
+
+  /// Headline small: Bricolage Grotesque 700 24/32/0
+  static TextStyle headlineSmallFont({Color color = whiteText}) =>
+      GoogleFonts.bricolageGrotesque(
+        fontSize: 24,
+        fontWeight: FontWeight.w700,
+        height: 32 / 24,
+        letterSpacing: 0,
+        color: color,
+      );
+
+  // --------------------------------------------------------------------------
+  // Title styles (Bricolage Grotesque, weight 800)
+  // --------------------------------------------------------------------------
+
+  /// Title large: Bricolage Grotesque 800 22/28/0
+  static TextStyle titleLargeFont({Color color = whiteText}) =>
+      GoogleFonts.bricolageGrotesque(
+        fontSize: 22,
+        fontWeight: FontWeight.w800,
+        height: 28 / 22,
+        letterSpacing: 0,
+        color: color,
+      );
+
+  /// Title medium: Bricolage Grotesque 800 18/24/0.15
+  static TextStyle titleMediumFont({Color color = whiteText}) =>
+      GoogleFonts.bricolageGrotesque(
+        fontSize: 18,
+        fontWeight: FontWeight.w800,
+        height: 24 / 18,
+        letterSpacing: 0.15,
+        color: color,
+      );
+
+  /// Title small: Bricolage Grotesque 800 14/20/0.1
+  static TextStyle titleSmallFont({Color color = whiteText}) =>
+      GoogleFonts.bricolageGrotesque(
+        fontSize: 14,
+        fontWeight: FontWeight.w800,
+        height: 20 / 14,
+        letterSpacing: 0.1,
+        color: color,
+      );
+
+  /// @Deprecated Use [titleLargeFont] instead.
   static TextStyle titleFont({
     double fontSize = 22,
     double? height,
@@ -26,7 +129,41 @@ class VineTheme {
     letterSpacing: letterSpacing,
   );
 
-  /// Body font style using Inter.
+  // --------------------------------------------------------------------------
+  // Body styles (Inter, weight 400)
+  // --------------------------------------------------------------------------
+
+  /// Body large: Inter 400 16/24/0.15
+  static TextStyle bodyLargeFont({Color color = whiteText}) =>
+      GoogleFonts.inter(
+        fontSize: 16,
+        fontWeight: FontWeight.w400,
+        height: 24 / 16,
+        letterSpacing: 0.15,
+        color: color,
+      );
+
+  /// Body medium: Inter 400 14/20/0.25
+  static TextStyle bodyMediumFont({Color color = whiteText}) =>
+      GoogleFonts.inter(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        height: 20 / 14,
+        letterSpacing: 0.25,
+        color: color,
+      );
+
+  /// Body small: Inter 400 12/16/0.4
+  static TextStyle bodySmallFont({Color color = whiteText}) =>
+      GoogleFonts.inter(
+        fontSize: 12,
+        fontWeight: FontWeight.w400,
+        height: 16 / 12,
+        letterSpacing: 0.4,
+        color: color,
+      );
+
+  /// @Deprecated Use [bodyLargeFont], [bodyMediumFont], or [bodySmallFont].
   static TextStyle bodyFont({
     double fontSize = 16,
     FontWeight fontWeight = FontWeight.w400,
@@ -41,10 +178,47 @@ class VineTheme {
     letterSpacing: letterSpacing,
   );
 
+  // --------------------------------------------------------------------------
+  // Label styles (Inter, weight 600)
+  // --------------------------------------------------------------------------
+
+  /// Label large: Inter 600 14/20/0.1
+  static TextStyle labelLargeFont({Color color = whiteText}) =>
+      GoogleFonts.inter(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        height: 20 / 14,
+        letterSpacing: 0.1,
+        color: color,
+      );
+
+  /// Label medium: Inter 600 12/16/0.5
+  static TextStyle labelMediumFont({Color color = whiteText}) =>
+      GoogleFonts.inter(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        height: 16 / 12,
+        letterSpacing: 0.5,
+        color: color,
+      );
+
+  /// Label small: Inter 600 11/16/0.5
+  static TextStyle labelSmallFont({Color color = whiteText}) =>
+      GoogleFonts.inter(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        height: 16 / 11,
+        letterSpacing: 0.5,
+        color: color,
+      );
+
   // Classic Vine green color palette
 
   /// Primary brand green color.
   static const Color vineGreen = Color(0xFF00B488);
+
+  /// On-primary color (text/icons on primary background).
+  static const Color onPrimary = Color(0xFF00150D);
 
   /// Darker variant of the brand green.
   static const Color vineGreenDark = Color(0xFF009A72);
@@ -77,14 +251,29 @@ class VineTheme {
   /// Background color for surfaces like bottom sheets.
   static const Color surfaceBackground = Color(0xFF00150D);
 
+  /// Border radius for bottom sheets.
+  static const double bottomSheetBorderRadius = 32;
+
   /// Primary content color on surfaces (95% white).
   static const Color onSurface = Color(0xF2FFFFFF);
+
+  /// Muted content color on surfaces (50% white).
+  static const Color onSurfaceMuted = Color(0x80FFFFFF);
 
   /// Variant content color on surfaces (75% white).
   static const Color onSurfaceVariant = Color(0xBFFFFFFF);
 
-  /// Muted content color on surfaces (50% white).
-  static const Color onSurfaceMuted = Color(0x80FFFFFF);
+  /// Disabled content color on surfaces (25% white).
+  static const Color onSurfaceDisabled = Color(0x40FFFFFF);
+
+  /// Error container background color.
+  static const Color errorContainer = Color(0xFF410001);
+
+  /// Error color for icons and text.
+  static const Color error = Color(0xFFF44336);
+
+  /// On-error-container color for text/icons on error container backgrounds.
+  static const Color onErrorContainer = Color(0xFFFFEDEA);
 
   /// Light alpha overlay (25% white).
   static const Color alphaLight25 = Color(0x40FFFFFF);
@@ -101,8 +290,17 @@ class VineTheme {
   /// Low-emphasis container background.
   static const Color containerLow = Color(0xFF0E2B21);
 
-  /// Surface container background (for selected items, cards on surfaces).
+  /// Surface container background (bg/surface-container).
   static const Color surfaceContainer = Color(0xFF032017);
+
+  /// Surface container high background (bg/surface-container-high).
+  static const Color surfaceContainerHigh = Color(0xFF000A06);
+
+  /// Muted outline color (outline/outline-muted).
+  static const Color outlineMuted = Color(0xFF0E2B21);
+
+  /// Neutral 10 color for subtle borders.
+  static const Color neutral10 = Color(0xFF1B1C1C);
 
   /// Tab text style using Bricolage Grotesque bold.
   static TextStyle tabTextStyle({Color color = whiteText}) =>
@@ -123,6 +321,9 @@ class VineTheme {
 
   /// Dark overlay color.
   static const Color darkOverlay = Color(0x88000000);
+
+  /// Scrim at 15% opacity (black 15%).
+  static const Color scrim15 = Color(0x26000000);
 
   // Text colors (dark theme optimized)
 
@@ -197,11 +398,6 @@ class VineTheme {
         fontSize: 12,
         fontWeight: FontWeight.w400,
       ),
-    ),
-    textSelectionTheme: TextSelectionThemeData(
-      cursorColor: primary,
-      selectionColor: primary.withAlpha(80),
-      selectionHandleColor: primary,
     ),
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(

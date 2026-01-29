@@ -1,3 +1,6 @@
+// ABOUTME: Flash mode enum for camera recording
+// ABOUTME: Defines flash modes (auto, torch, off) with corresponding icon assets
+
 /// Camera flash mode options.
 enum DivineFlashMode {
   /// Auto flash mode.

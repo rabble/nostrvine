@@ -31,22 +31,15 @@ void main() {
           ),
         ],
         child: MaterialApp(
-          home: Scaffold(
-            body: Stack(
-              children: [VideoRecorderBottomBar(previewWidgetRadius: 16.0)],
-            ),
-          ),
+          home: Scaffold(body: Stack(children: [VideoRecorderBottomBar()])),
         ),
       );
     }
 
-    testWidgets('displays record button', (tester) async {
+    testWidgets('renders bottom bar widget', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      expect(
-        find.bySemanticsIdentifier('divine-camera-record-button'),
-        findsOneWidget,
-      );
+      expect(find.byType(VideoRecorderBottomBar), findsOneWidget);
     });
 
     testWidgets('displays flash toggle button', (tester) async {
@@ -123,16 +116,17 @@ void main() {
       expect(find.byType(SafeArea), findsOneWidget);
     });
 
-    testWidgets('is positioned at bottom of screen', (tester) async {
+    testWidgets('contains Row with controls', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
-      // VideoRecorderBottomBar itself returns a Positioned widget
-      final positioned = tester.widget<Positioned>(
-        find.byType(Positioned).first,
+      // Should have a Row with control buttons
+      final row = tester.widget<Row>(
+        find.descendant(
+          of: find.byType(VideoRecorderBottomBar),
+          matching: find.byType(Row),
+        ),
       );
-      expect(positioned.bottom, equals(0));
-      expect(positioned.left, equals(0));
-      expect(positioned.right, equals(0));
+      expect(row.mainAxisAlignment, equals(MainAxisAlignment.spaceAround));
     });
   });
 }

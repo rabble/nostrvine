@@ -3,7 +3,6 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 
 /// Tracks the last video index for each route type
 /// This preserves scroll position when switching between tabs
@@ -16,7 +15,9 @@ class LastTabPosition extends Notifier<Map<RouteType, int>> {
       if (ctx == null) return;
 
       // Only track video-based routes
-      if (ctx.type == RouteType.camera || ctx.type == RouteType.settings)
+      if (ctx.type == RouteType.videoRecorder ||
+          ctx.type == RouteType.videoEditor ||
+          ctx.type == RouteType.settings)
         return;
 
       final index = ctx.videoIndex ?? 0;

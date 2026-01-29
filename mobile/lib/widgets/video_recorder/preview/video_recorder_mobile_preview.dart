@@ -3,6 +3,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 
+/// Camera preview widget for mobile platforms with touch gestures.
 class VideoRecorderMobilePreview extends ConsumerWidget {
   const VideoRecorderMobilePreview({super.key});
 

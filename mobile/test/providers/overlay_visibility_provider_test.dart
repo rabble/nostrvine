@@ -8,7 +8,6 @@ import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
@@ -24,11 +23,6 @@ void main() {
       expect(state.hasVisibleOverlay, isTrue);
     });
 
-    test('hasVisibleOverlay returns true when settings is open', () {
-      const state = OverlayVisibilityState(isSettingsOpen: true);
-      expect(state.hasVisibleOverlay, isTrue);
-    });
-
     test('hasVisibleOverlay returns true when modal is open', () {
       const state = OverlayVisibilityState(isModalOpen: true);
       expect(state.hasVisibleOverlay, isTrue);
@@ -40,7 +34,6 @@ void main() {
 
       expect(state.isDrawerOpen, isFalse);
       expect(withDrawer.isDrawerOpen, isTrue);
-      expect(withDrawer.isSettingsOpen, isFalse);
       expect(withDrawer.isModalOpen, isFalse);
     });
   });
@@ -57,16 +50,6 @@ void main() {
 
       container.read(overlayVisibilityProvider.notifier).setDrawerOpen(false);
       expect(container.read(overlayVisibilityProvider).isDrawerOpen, isFalse);
-    });
-
-    test('setSettingsOpen updates state', () {
-      final container = ProviderContainer();
-      addTearDown(container.dispose);
-
-      expect(container.read(overlayVisibilityProvider).isSettingsOpen, isFalse);
-
-      container.read(overlayVisibilityProvider.notifier).setSettingsOpen(true);
-      expect(container.read(overlayVisibilityProvider).isSettingsOpen, isTrue);
     });
 
     test('setModalOpen updates state', () {
@@ -172,33 +155,6 @@ void main() {
 
       // Open drawer - video should pause (return null)
       container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
-      expect(container.read(activeVideoIdProvider), isNull);
-    });
-
-    test('activeVideoIdProvider returns null when settings is open', () {
-      final container = ProviderContainer(
-        overrides: [
-          appForegroundProvider.overrideWithValue(const AsyncValue.data(true)),
-          pageContextProvider.overrideWithValue(
-            const AsyncValue.data(
-              RouteContext(type: RouteType.home, videoIndex: 0),
-            ),
-          ),
-          videosForHomeRouteProvider.overrideWith((ref) {
-            return AsyncValue.data(
-              VideoFeedState(
-                videos: mockVideos,
-                hasMoreContent: false,
-                isLoadingMore: false,
-              ),
-            );
-          }),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      // Open settings - video should pause (return null)
-      container.read(overlayVisibilityProvider.notifier).setSettingsOpen(true);
       expect(container.read(activeVideoIdProvider), isNull);
     });
 

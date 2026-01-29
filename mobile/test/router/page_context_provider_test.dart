@@ -6,12 +6,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/screens/settings_screen.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 
 void main() {
   group('Page Context Provider', () {
@@ -109,7 +108,7 @@ void main() {
       expect(context.videoIndex, 2);
     });
 
-    testWidgets('parses camera route correctly', (tester) async {
+    testWidgets('parses video-recorder route correctly', (tester) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -122,13 +121,36 @@ void main() {
         ),
       );
 
-      // Navigate to camera
-      container.read(goRouterProvider).go(UniversalCameraScreenPure.path);
+      // Navigate to video-recorder
+      container.read(goRouterProvider).go(VideoRecorderScreen.path);
       await tester.pumpAndSettle();
 
       final contextAsync = container.read(pageContextProvider);
       final context = contextAsync.value!;
-      expect(context.type, RouteType.camera);
+      expect(context.type, RouteType.videoRecorder);
+      expect(context.videoIndex, isNull);
+    });
+
+    testWidgets('parses video-editor route correctly', (tester) async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      await tester.pumpWidget(
+        UncontrolledProviderScope(
+          container: container,
+          child: MaterialApp.router(
+            routerConfig: container.read(goRouterProvider),
+          ),
+        ),
+      );
+
+      // Navigate to video-editor
+      container.read(goRouterProvider).go('/video-editor');
+      await tester.pumpAndSettle();
+
+      final contextAsync = container.read(pageContextProvider);
+      final context = contextAsync.value!;
+      expect(context.type, RouteType.videoEditor);
       expect(context.videoIndex, isNull);
     });
 

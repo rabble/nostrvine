@@ -6,6 +6,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/recording_clip.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:models/models.dart' show AspectRatio;
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -36,11 +39,18 @@ void main() {
       // 1. Create a draft with default metadata
       final videoFile = File('/tmp/test_video.mp4');
       final draft = VineDraft.create(
-        videoFile: videoFile,
+        clips: [
+          RecordingClip(
+            id: 'test_clip',
+            video: EditorVideo.file(videoFile.path),
+            duration: Duration(seconds: 6),
+            recordedAt: DateTime.now(),
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Do it for the Vine!',
         description: '',
-        hashtags: ['openvine', 'vine'],
-        frameCount: 30,
+        hashtags: {'openvine', 'vine'},
         selectedApproach: 'native',
       );
 
@@ -57,11 +67,18 @@ void main() {
       // Create draft with expected default values
       final videoFile = File('/tmp/test_video.mp4');
       final draft = VineDraft.create(
-        videoFile: videoFile,
+        clips: [
+          RecordingClip(
+            id: 'test_clip',
+            video: EditorVideo.file(videoFile.path),
+            duration: Duration(seconds: 6),
+            recordedAt: DateTime.now(),
+            aspectRatio: AspectRatio.square,
+          ),
+        ],
         title: 'Do it for the Vine!',
         description: '',
-        hashtags: ['openvine', 'vine'],
-        frameCount: 30,
+        hashtags: {'openvine', 'vine'},
         selectedApproach: 'native',
       );
 

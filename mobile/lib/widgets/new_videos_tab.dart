@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/popular_now_feed_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -184,14 +184,16 @@ class _NewVideosContent extends ConsumerWidget {
           category: LogCategory.video,
         );
         // Navigate to fullscreen video feed
-        context.pushVideoFeed(
-          source: StaticFeedSource(
-            videoList,
-            onLoadMore: () =>
-                ref.read(popularNowFeedProvider.notifier).loadMore(),
+        context.push(
+          FullscreenVideoFeedScreen.path,
+          extra: FullscreenVideoFeedArgs(
+            initialIndex: index,
+            contextTitle: 'New Videos',
+            source: StaticFeedSource(
+              videoList,
+              onLoadMore: ref.read(popularNowFeedProvider.notifier).loadMore,
+            ),
           ),
-          initialIndex: index,
-          contextTitle: 'New Videos',
         );
       },
       onRefresh: () async {
@@ -201,7 +203,7 @@ class _NewVideosContent extends ConsumerWidget {
         );
         await ref.read(popularNowFeedProvider.notifier).refresh();
       },
-      emptyBuilder: () => const _NewVideosEmptyState(),
+      emptyBuilder: _NewVideosEmptyState.new,
     );
   }
 }

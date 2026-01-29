@@ -7,6 +7,119 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - Explore Tab Improvements (2026-01-26)
+
+#### Features
+- **Dynamic Classics tab** - Classics tab now only shows when connected to a Funnelcake-enabled relay
+  - Tab is completely hidden when Funnelcake API unavailable (no "unavailable" message)
+  - Uses `TickerProviderStateMixin` for dynamic TabController rebuilding
+  - Tab count changes reactively when switching environments
+
+- **Popular Videos uses trending** - Changed from historical loops to recent engagement
+  - Uses `sort=trending` API endpoint instead of `sort=loops`
+  - Shows videos with recent likes/engagement, can include both classic and new videos
+  - Falls back to supplementing with recent videos if trending returns < 10 results
+  - Nostr fallback sorts by `nostrLikeCount` instead of historical `originalLoops`
+
+- **Centralized Funnelcake availability** - Added single source of truth for API availability
+  - New `funnelcakeAvailableProvider` in curation_providers.dart
+  - All providers watch this instead of checking individually
+  - Invalidates automatically when environment changes
+
+#### Technical Details
+- Modified `lib/screens/explore_screen.dart`:
+  - Dynamic `_tabCount` getter (3 or 4 based on availability)
+  - Watch `classicVinesAvailableProvider` and rebuild TabController on change
+  - Conditional tabs and TabBarView children using `if (_classicsAvailable)`
+
+- Modified `lib/providers/popular_videos_feed_provider.dart`:
+  - Changed from `getVideosByLoops()` to `getTrendingVideos()`
+  - Added fallback to supplement with `getRecentVideos()` if trending < 10 videos
+  - Nostr fallback sorts by likes instead of loops
+
+- Modified `lib/providers/curation_providers.dart`:
+  - Added `funnelcakeAvailableProvider` with 30-second cache timeout
+  - Added `classicVinesAvailableProvider` that delegates to Funnelcake check
+
+### Fixed - Relay Management Improvements (2026-01-24)
+
+#### Bug Fixes
+- **Allow removing default relay** - Users can now remove any relay including the environment default from relay settings
+  - Previously `RelayManager` silently refused to remove the default relay
+  - UI now checks the removal result and shows appropriate feedback
+- **Refresh feeds when relay set changes** - Adding or removing relays now triggers a feed reset so content from the new relay configuration is fetched
+  - New `relaySetChangeBridge` Riverpod provider watches for relay URL set membership changes
+  - 2-second debounce collapses rapid add/remove operations into a single refresh
+  - Only reacts to set changes (relays added/removed), not connection state flapping
+  - Persistent feeds (home feed, discovery) are automatically resubscribed; ephemeral feeds (search, hashtag) are cleared and re-created on next navigation
+
+#### Technical Details
+- Modified `packages/nostr_client/lib/src/relay_manager.dart`:
+  - Removed guard preventing default relay removal
+- Modified `lib/screens/relay_settings_screen.dart`:
+  - Check `removeRelay()` return value before showing success
+- Modified `lib/services/video_event_service.dart`:
+  - Store `sortBy` and `nip50Sort` in `_subscriptionParams` for resubscription
+  - Added `resetAndResubscribeAll()` method: snapshots persistent feed params, cancels subscriptions, clears events/pagination/buckets, resubscribes with `force: true`
+- Modified `lib/providers/app_providers.dart`:
+  - Added `relaySetChangeBridge` keepAlive provider that listens to `relayStatusStream`, compares URL set, debounces 2s, calls `resetAndResubscribeAll()`
+- Modified `lib/router/app_shell.dart`:
+  - Activated bridge with `ref.watch(relaySetChangeBridgeProvider)`
+
+#### Tests Added
+- `test/unit/services/video_event_service_reset_resubscribe_test.dart` - 8 tests covering reset behavior, listener notifications, resubscription of persistent feeds, ephemeral feed handling, and disposed state
+- `test/unit/providers/relay_set_change_bridge_test.dart` - 6 tests covering relay add/remove detection, connection flapping no-op, debounce behavior, and empty initial state
+
+### Changed - REST API Pagination with Funnelcake (2025-01-14)
+
+#### Features
+- **Funnelcake REST API first, Nostr fallback** - All video feeds now try the Funnelcake REST API first for better performance, falling back to Nostr subscriptions if unavailable
+  - HomeFeedProvider: Fetches personalized feed from `/api/users/{pubkey}/feed`
+  - ProfileFeedProvider: Fetches user videos from `/api/users/{pubkey}/videos`
+  - PopularNowFeedProvider: Fetches recent videos from `/api/videos`
+
+- **Cursor-based pagination** - Fixed pagination to use proper cursor-based approach with `before` timestamp parameter instead of increasing limit
+  - Each `loadMore()` call passes the oldest video timestamp as cursor
+  - Prevents duplicate videos and ensures consistent pagination
+
+- **Localhost Funnelcake support** - Added new Dev environment option for local testing
+  - Relay URL: `ws://localhost:8080`
+  - API URL: `http://localhost:8080`
+  - Access via Settings → Developer Options → Dev - Localhost
+
+#### Technical Details
+- Modified `lib/providers/home_feed_provider.dart`:
+  - Added `_usingRestApi`, `_nextCursor`, `_hasMoreFromApi` state tracking
+  - Reset cursor state at start of `build()` to prevent stale state
+  - `loadMore()` uses cursor-based pagination with `before` parameter
+
+- Modified `lib/providers/profile_feed_provider.dart`:
+  - Added REST API mode with cursor pagination
+  - Added `refresh()` method for pull-to-refresh
+  - Reset cursor state at start of `build()`
+
+- Modified `lib/providers/popular_now_feed_provider.dart`:
+  - Added REST API mode with cursor pagination
+  - Fixed cursor reset on failed refresh before `invalidateSelf()`
+
+- Modified `lib/providers/curation_providers.dart`:
+  - Added `ref.mounted` checks after async operations in `AnalyticsTrending`
+  - Cursor-based pagination for trending videos
+
+- Modified `lib/services/analytics_api_service.dart`:
+  - All endpoints support `before` cursor parameter
+  - Added `getVideosByAuthor()`, `getHomeFeed()`, `getRecentVideos()` endpoints
+
+- Modified `lib/constants/app_constants.dart`:
+  - Added `hasMoreContentThreshold = 10` and `paginationBatchSize = 50`
+
+- Modified `lib/models/environment_config.dart`:
+  - Added `DevRelay.localhost` option
+
+#### Tests
+- Updated `test/providers/home_feed_provider_test.dart` with REST API test stubs
+- Updated `test/providers/popular_now_feed_provider_test.dart` with descriptive skip messages
+
 ### Fixed - NIP-22 Comment Compliance (2026-01-14)
 
 #### Critical Bug Fix

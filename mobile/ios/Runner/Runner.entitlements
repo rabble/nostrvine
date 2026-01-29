@@ -5,6 +5,7 @@
 	<key>com.apple.developer.associated-domains</key>
 	<array>
 		<string>applinks:divine.video</string>
+		<string>applinks:login.divine.video</string>
 	</array>
 </dict>
 </plist>

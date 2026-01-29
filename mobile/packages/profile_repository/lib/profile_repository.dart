@@ -3,3 +3,4 @@ library;
 
 export 'src/exceptions.dart';
 export 'src/profile_repository.dart';
+export 'src/username_claim_result.dart';

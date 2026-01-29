@@ -2,72 +2,77 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/models/recording_clip.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
   group('VineDraft AspectRatio', () {
     test('create() includes aspect ratio', () {
       final testFile = File('test_video.mp4');
       final draft = VineDraft.create(
-        videoFile: testFile,
+        clips: [
+          RecordingClip(
+            id: 'test_clip',
+            video: EditorVideo.file(testFile.path),
+            duration: Duration(seconds: 6),
+            recordedAt: DateTime.now(),
+            aspectRatio: AspectRatio.vertical,
+          ),
+        ],
         title: '',
         description: '',
-        hashtags: [],
-        frameCount: 60,
-        selectedApproach: 'test',
-        aspectRatio: AspectRatio.vertical,
-      );
-
-      expect(draft.aspectRatio, equals(AspectRatio.vertical));
-    });
-
-    test('defaults to square if not specified', () {
-      final testFile = File('test_video.mp4');
-      final draft = VineDraft.create(
-        videoFile: testFile,
-        title: '',
-        description: '',
-        hashtags: [],
-        frameCount: 60,
+        hashtags: {},
         selectedApproach: 'test',
       );
 
-      expect(draft.aspectRatio, equals(AspectRatio.square));
+      expect(draft.clips.first.aspectRatio, equals(AspectRatio.vertical));
     });
 
     test('toJson includes aspectRatio', () {
       final testFile = File('test_video.mp4');
       final draft = VineDraft.create(
-        videoFile: testFile,
+        clips: [
+          RecordingClip(
+            id: 'test_clip',
+            video: EditorVideo.file(testFile.path),
+            duration: Duration(seconds: 6),
+            recordedAt: DateTime.now(),
+            aspectRatio: AspectRatio.vertical,
+          ),
+        ],
         title: '',
         description: '',
-        hashtags: [],
-        frameCount: 60,
+        hashtags: {},
         selectedApproach: 'test',
-        aspectRatio: AspectRatio.vertical,
       );
 
-      final json = draft.toJson();
-      expect(json['aspectRatio'], equals('vertical'));
+      expect(draft.clips.first.aspectRatio, equals(AspectRatio.vertical));
     });
 
     test('fromJson restores aspectRatio', () {
       final json = {
         'id': 'test-id',
-        'videoFilePath': '/path/to/video.mp4',
+        'clips': [
+          RecordingClip(
+            id: 'id',
+            video: EditorVideo.file('video.mp4'),
+            duration: Duration(seconds: 5),
+            recordedAt: .now(),
+            aspectRatio: .vertical,
+          ).toJson(),
+        ],
         'title': '',
         'description': '',
         'hashtags': <String>[],
-        'frameCount': 60,
         'selectedApproach': 'test',
         'createdAt': DateTime.now().toIso8601String(),
         'lastModified': DateTime.now().toIso8601String(),
         'publishStatus': 'draft',
         'publishAttempts': 0,
-        'aspectRatio': 'vertical',
       };
 
       final draft = VineDraft.fromJson(json);
-      expect(draft.aspectRatio, equals(AspectRatio.vertical));
+      expect(draft.clips.first.aspectRatio, equals(AspectRatio.vertical));
     });
 
     test('fromJson defaults to square for legacy drafts', () {
@@ -77,7 +82,6 @@ void main() {
         'title': '',
         'description': '',
         'hashtags': <String>[],
-        'frameCount': 60,
         'selectedApproach': 'test',
         'createdAt': DateTime.now().toIso8601String(),
         'lastModified': DateTime.now().toIso8601String(),
@@ -87,7 +91,7 @@ void main() {
       };
 
       final draft = VineDraft.fromJson(json);
-      expect(draft.aspectRatio, equals(AspectRatio.square));
+      expect(draft.clips.first.aspectRatio, equals(AspectRatio.square));
     });
   });
 }

@@ -351,3 +351,57 @@ class PersonalReactions extends Table {
     ),
   ];
 }
+
+/// Stores the current user's own repost events (Kind 16 generic reposts).
+///
+/// This table tracks the mapping between addressable video IDs and the
+/// user's repost event IDs. This mapping is essential for unreposts, which
+/// require the repost event ID to create a Kind 5 deletion event.
+///
+/// Only stores reposts created by the current user, not reposts from others.
+@DataClassName('PersonalRepostRow')
+class PersonalReposts extends Table {
+  @override
+  String get tableName => 'personal_reposts';
+
+  /// The addressable ID of the video that was reposted.
+  /// Format: `34236:<author_pubkey>:<d-tag>`
+  TextColumn get addressableId => text().named('addressable_id')();
+
+  /// The Kind 16 repost event ID created by the user
+  TextColumn get repostEventId => text().named('repost_event_id')();
+
+  /// The pubkey of the original video author
+  TextColumn get originalAuthorPubkey =>
+      text().named('original_author_pubkey')();
+
+  /// The pubkey of the user who created this repost
+  TextColumn get userPubkey => text().named('user_pubkey')();
+
+  /// Unix timestamp when the repost was created
+  IntColumn get createdAt => integer().named('created_at')();
+
+  @override
+  Set<Column> get primaryKey => {addressableId, userPubkey};
+
+  List<Index> get indexes => [
+    // Index on user_pubkey for fetching all user's reposts
+    Index(
+      'idx_personal_reposts_user',
+      'CREATE INDEX IF NOT EXISTS idx_personal_reposts_user '
+          'ON personal_reposts (user_pubkey)',
+    ),
+    // Index on repost_event_id for lookups when processing deletions
+    Index(
+      'idx_personal_reposts_repost_id',
+      'CREATE INDEX IF NOT EXISTS idx_personal_reposts_repost_id '
+          'ON personal_reposts (repost_event_id)',
+    ),
+    // Composite index for user + created_at for ordered queries
+    Index(
+      'idx_personal_reposts_user_created',
+      'CREATE INDEX IF NOT EXISTS idx_personal_reposts_user_created '
+          'ON personal_reposts (user_pubkey, created_at DESC)',
+    ),
+  ];
+}

@@ -10,7 +10,6 @@ import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
@@ -94,9 +93,10 @@ final activeVideoIdProvider = Provider<String?>((ref) {
       );
       return null;
     case RouteType.notifications:
-    case RouteType.camera:
-    case RouteType.clipManager:
-    case RouteType.editVideo:
+    case RouteType.videoRecorder:
+    case RouteType.videoEditor:
+    case RouteType.videoClipEditor:
+    case RouteType.videoMetadata:
     case RouteType.settings:
     case RouteType.relaySettings:
     case RouteType.relayDiagnostic:

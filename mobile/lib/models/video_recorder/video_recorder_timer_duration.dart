@@ -1,3 +1,6 @@
+// ABOUTME: Timer duration enum for delayed recording start
+// ABOUTME: Provides countdown options (off, 3s, 10s) with duration values and icons
+
 /// Timer duration options for delayed recording.
 enum TimerDuration {
   /// No timer delay.

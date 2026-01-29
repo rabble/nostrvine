@@ -10,6 +10,8 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer, SecureKeyStorage;
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/services/background_activity_manager.dart';
+import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/user_profile_service.dart' as ups;
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -115,17 +117,19 @@ class UserProfile {
 /// Main authentication service for the divine app
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via
 /// Riverpod
-class AuthService {
+class AuthService implements BackgroundAwareService {
   AuthService({
     required UserDataCleanupService userDataCleanupService,
     SecureKeyStorage? keyStorage,
     KeycastOAuth? oauthClient,
     FlutterSecureStorage? flutterSecureStorage,
     OAuthConfig? oauthConfig,
+    PendingVerificationService? pendingVerificationService,
   }) : _keyStorage = keyStorage ?? SecureKeyStorage(),
        _userDataCleanupService = userDataCleanupService,
        _oauthClient = oauthClient,
        _flutterSecureStorage = flutterSecureStorage,
+       _pendingVerificationService = pendingVerificationService,
        _oauthConfig =
            oauthConfig ??
            const OAuthConfig(serverUrl: '', clientId: '', redirectUri: '');
@@ -133,6 +137,7 @@ class AuthService {
   final UserDataCleanupService _userDataCleanupService;
   final KeycastOAuth? _oauthClient;
   final FlutterSecureStorage? _flutterSecureStorage;
+  final PendingVerificationService? _pendingVerificationService;
 
   AuthState _authState = AuthState.checking;
   SecureKeyContainer? _currentKeyContainer;
@@ -198,6 +203,14 @@ class AuthService {
   /// Last authentication error
   String? get lastError => _lastError;
 
+  /// Clear the last authentication error
+  ///
+  /// Call this when navigating away from screens that displayed the error,
+  /// to prevent stale errors from being shown on other screens.
+  void clearError() {
+    _lastError = null;
+  }
+
   /// Initialize the authentication service
   Future<void> initialize() async {
     Log.debug(
@@ -208,6 +221,9 @@ class AuthService {
 
     // Set checking state immediately - we're starting the auth check now
     _setAuthState(AuthState.checking);
+
+    // Register with BackgroundActivityManager for lifecycle callbacks
+    BackgroundActivityManager().registerService(this);
 
     try {
       // Initialize secure key storage
@@ -377,13 +393,11 @@ class AuthService {
       if (bunkerUrl == null || bunkerUrl.isEmpty) return null;
 
       final info = NostrRemoteSignerInfo.parseBunkerUrl(bunkerUrl);
-      if (info != null) {
-        Log.info(
-          'Loaded bunker info from secure storage',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-      }
+      Log.info(
+        'Loaded bunker info from secure storage',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
       return info;
     } catch (e) {
       Log.error(
@@ -520,7 +534,6 @@ class AuthService {
 
     _setAuthState(AuthState.authenticating);
     _lastError = null;
-    await _onTermsAccepted();
 
     try {
       // Validate nsec format
@@ -575,7 +588,6 @@ class AuthService {
 
     _setAuthState(AuthState.authenticating);
     _lastError = null;
-    await _onTermsAccepted();
 
     try {
       // Validate hex format
@@ -633,15 +645,11 @@ class AuthService {
     );
 
     _setAuthState(AuthState.authenticating);
-    await _onTermsAccepted();
     _lastError = null;
 
     try {
       // Parse the bunker URL
       final bunkerInfo = NostrRemoteSignerInfo.parseBunkerUrl(bunkerUrl);
-      if (bunkerInfo == null) {
-        throw Exception('Invalid bunker URL format');
-      }
 
       const authTimeout = Duration(seconds: 120);
 
@@ -743,6 +751,8 @@ class AuthService {
         name: 'AuthService',
         category: LogCategory.auth,
       );
+      // Clean up bunker signer connections before nulling
+      _bunkerSigner?.close();
       _bunkerSigner = null;
       _lastError = 'Bunker connection failed: $e';
       _setAuthState(AuthState.unauthenticated);
@@ -828,7 +838,7 @@ class AuthService {
       if (_authState != AuthState.authenticated) {
         await _checkExistingAuth();
       }
-      await _onTermsAccepted();
+      await acceptTerms();
 
       Log.info(
         'Terms of Service accepted, user is now fully authenticated',
@@ -848,13 +858,12 @@ class AuthService {
   /// Sign in using OAuth 2.0 flow
   Future<void> signInWithDivineOAuth(KeycastSession session) async {
     Log.debug(
-      'Integrating OAuth session into AuthService',
+      'Signing in with Divine OAuth session',
       name: 'AuthService',
       category: LogCategory.auth,
     );
 
     _setAuthState(AuthState.authenticating);
-    await _onTermsAccepted();
     _lastError = null;
 
     try {
@@ -1035,6 +1044,9 @@ class AuthService {
           await KeycastSession.clear(_flutterSecureStorage);
         }
       } catch (_) {}
+
+      // Clear any pending verification data
+      await _pendingVerificationService?.clear();
 
       _setAuthState(AuthState.unauthenticated);
 
@@ -1287,7 +1299,7 @@ class AuthService {
     }
   }
 
-  Future<void> _onTermsAccepted() async {
+  Future<void> acceptTerms() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       'terms_accepted_at',
@@ -1326,7 +1338,7 @@ class AuthService {
           reason: 'identity_change',
         );
         // restore the TOS acceptance since we wouldn't be here otherwise
-        await _onTermsAccepted();
+        await acceptTerms();
       }
       await prefs.setString(
         'current_user_pubkey_hex',
@@ -1389,12 +1401,68 @@ class AuthService {
     'last_error': _lastError,
   };
 
+  // ============================================================
+  // BackgroundAwareService implementation
+  // ============================================================
+
+  @override
+  String get serviceName => 'AuthService';
+
+  @override
+  void onAppBackgrounded() {
+    // Pause bunker signer reconnection attempts when app goes to background
+    if (_bunkerSigner != null) {
+      Log.info(
+        '📱 App backgrounded - pausing bunker signer',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _bunkerSigner!.pause();
+    }
+  }
+
+  @override
+  void onAppResumed() {
+    // Resume bunker signer reconnection attempts when app returns
+    if (_bunkerSigner != null) {
+      Log.info(
+        '📱 App resumed - resuming bunker signer',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _bunkerSigner!.resume();
+    }
+  }
+
+  @override
+  void onExtendedBackground() {
+    // For extended background, we keep the signer paused
+    // No additional action needed - pause() already stops reconnection attempts
+    Log.debug(
+      '📱 Extended background - bunker signer remains paused',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+  }
+
+  @override
+  void onPeriodicCleanup() {
+    // No cleanup needed for auth service during periodic cleanup
+  }
+
   Future<void> dispose() async {
     Log.debug(
       '📱️ Disposing SecureAuthService',
       name: 'AuthService',
       category: LogCategory.auth,
     );
+
+    // Unregister from BackgroundActivityManager
+    BackgroundActivityManager().unregisterService(this);
+
+    // Close bunker signer if active
+    _bunkerSigner?.close();
+    _bunkerSigner = null;
 
     // Securely dispose of key container
     _currentKeyContainer?.dispose();

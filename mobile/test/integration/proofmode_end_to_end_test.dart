@@ -2,11 +2,12 @@
 // ABOUTME: Verifies proof data flows from recording → draft → upload → Nostr publish
 
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show NativeProofData;
+import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/models/pending_upload.dart';
+import 'package:pro_video_editor/core/models/video/editor_video_model.dart';
 
 void main() {
   group('ProofMode End-to-End Flow', () {
@@ -37,11 +38,18 @@ void main() {
 
       // Step 3: Create draft with proof data (as done in VineRecordingProvider:180-189)
       final draft = VineDraft.create(
-        videoFile: File('/tmp/test.mp4'),
+        clips: [
+          RecordingClip(
+            id: 'id',
+            video: EditorVideo.file('/tmp/test.mp4'),
+            duration: Duration(seconds: 4),
+            recordedAt: .now(),
+            aspectRatio: .vertical,
+          ),
+        ],
         title: 'Test Video',
         description: 'Test description',
-        hashtags: ['test'],
-        frameCount: 1,
+        hashtags: {'test'},
         selectedApproach: 'native',
         proofManifestJson: proofJson,
       );
@@ -63,11 +71,11 @@ void main() {
 
       // Step 4: Convert draft to PendingUpload (as done in UploadManager:startUpload)
       final upload = PendingUpload.create(
-        localVideoPath: draft.videoFile.path,
+        localVideoPath: draft.clips.first.video.file!.path,
         nostrPubkey: 'pubkey123',
         title: draft.title,
         description: draft.description,
-        hashtags: draft.hashtags,
+        hashtags: draft.hashtags.toList(),
         proofManifestJson: draft.proofManifestJson,
       );
 
@@ -114,11 +122,18 @@ void main() {
     test('Missing ProofMode data is handled gracefully', () {
       // Draft without ProofMode
       final draft = VineDraft.create(
-        videoFile: File('/tmp/test.mp4'),
+        clips: [
+          RecordingClip(
+            id: 'id',
+            video: EditorVideo.file('/tmp/test.mp4'),
+            duration: Duration(seconds: 4),
+            recordedAt: .now(),
+            aspectRatio: .vertical,
+          ),
+        ],
         title: 'Test Video',
         description: 'Test description',
-        hashtags: ['test'],
-        frameCount: 1,
+        hashtags: {'test'},
         selectedApproach: 'native',
       );
 
@@ -128,7 +143,7 @@ void main() {
 
       // Upload should also not have ProofMode
       final upload = PendingUpload.create(
-        localVideoPath: draft.videoFile.path,
+        localVideoPath: draft.clips.first.video.file!.path,
         nostrPubkey: 'pubkey123',
       );
 

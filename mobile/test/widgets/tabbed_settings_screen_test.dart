@@ -61,6 +61,7 @@ void main() {
       overrides: [
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
         authServiceProvider.overrideWithValue(mockAuthService),
+        currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
         nostrServiceProvider.overrideWithValue(mockNostrService),
         blossomUploadServiceProvider.overrideWithValue(mockBlossomService),
         notificationServiceEnhancedProvider.overrideWithValue(

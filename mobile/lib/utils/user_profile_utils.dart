@@ -21,16 +21,5 @@ extension UserProfileUtils on UserProfile {
   }
 
   /// Get truncated npub for display (e.g., "npub1abc...xyz")
-  String get truncatedNpub {
-    try {
-      final fullNpub = NostrKeyUtils.encodePubKey(pubkey);
-      if (fullNpub.length <= 16) return fullNpub;
-      // Show first 10 chars + "..." + last 6 chars (npub1abc...xyz format)
-      return '${fullNpub.substring(0, 10)}...${fullNpub.substring(fullNpub.length - 6)}';
-    } catch (e) {
-      // Fallback to shortened hex pubkey if encoding fails
-      if (pubkey.length <= 16) return pubkey;
-      return '${pubkey.substring(0, 8)}...${pubkey.substring(pubkey.length - 6)}';
-    }
-  }
+  String get truncatedNpub => NostrKeyUtils.truncateNpub(pubkey);
 }

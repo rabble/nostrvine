@@ -61,7 +61,7 @@ abstract class CameraService {
   Future<bool> switchCamera();
 
   /// Starts video recording.
-  Future<void> startRecording({Duration? maxDuration});
+  Future<bool> startRecording({Duration? maxDuration});
 
   /// Stops video recording.
   Future<EditorVideo?> stopRecording();
@@ -92,4 +92,7 @@ abstract class CameraService {
 
   /// Whether the device can active the camera-flash.
   bool get hasFlash;
+
+  /// Error message if initialization failed, null if successful.
+  String? get initializationError;
 }
