@@ -5,15 +5,17 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
 import 'package:openvine/mixins/pagination_mixin.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
-import 'package:openvine/providers/social_providers.dart' as social;
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
@@ -359,8 +361,21 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
       category: LogCategory.ui,
     );
 
+    // Get follow repository for MyFollowingBloc
+    final followRepository = ref.watch(followRepositoryProvider);
+
     // VideoFeedScreen is now a body widget - parent handles Scaffold
-    return _buildBody();
+    // Wrap with MyFollowingBloc for empty state check
+    if (followRepository == null) {
+      return _buildBody();
+    }
+
+    return BlocProvider(
+      create: (_) =>
+          MyFollowingBloc(followRepository: followRepository)
+            ..add(const MyFollowingListLoadRequested()),
+      child: _buildBody(),
+    );
   }
 
   Widget _buildBody() {
@@ -427,14 +442,15 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
 
   Widget _buildEmptyState() {
     // Check if user is following anyone to show appropriate message
-    final socialData = ref.watch(social.socialProvider);
-    final isFollowingAnyone = socialData.followingPubkeys.isNotEmpty;
+    // Use MyFollowingBloc provided in build() method
+    final myFollowingBloc = context.read<MyFollowingBloc?>();
+    final followingPubkeys = myFollowingBloc?.state.followingPubkeys ?? [];
+    final isFollowingAnyone = followingPubkeys.isNotEmpty;
 
     Log.info(
       '🔍 VideoFeedScreen: Empty state - '
       'isFollowingAnyone=$isFollowingAnyone, '
-      'socialInitialized=${socialData.isInitialized}, '
-      'followingCount=${socialData.followingPubkeys.length}',
+      'followingCount=${followingPubkeys.length}',
       name: 'VideoFeedScreen',
       category: LogCategory.ui,
     );

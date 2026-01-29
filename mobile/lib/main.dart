@@ -26,7 +26,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/providers/social_providers.dart' as social_providers;
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/last_tab_position_provider.dart';
 import 'package:openvine/router/page_context_provider.dart';
@@ -619,23 +618,7 @@ class _DivineAppState extends ConsumerState<DivineApp> {
   /// Initialize non-critical background services.
   /// Critical services are already initialized before runApp in _initializeCoreServices.
   void _initializeBackgroundServices() {
-    // Initialize social provider in background
-    Future.microtask(() async {
-      try {
-        await ref.read(social_providers.socialProvider.notifier).initialize();
-        Log.info(
-          '[INIT] ✅ SocialProvider initialized (background)',
-          name: 'Main',
-          category: LogCategory.system,
-        );
-      } catch (e) {
-        Log.warning(
-          '[INIT] SocialProvider failed (non-critical): $e',
-          name: 'Main',
-          category: LogCategory.system,
-        );
-      }
-    });
+    // FollowRepository is auto-initialized in app_providers.dart
 
     // Initialize mutual mute list sync in background
     Future.microtask(() async {

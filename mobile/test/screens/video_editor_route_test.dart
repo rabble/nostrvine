@@ -12,10 +12,8 @@ import 'package:openvine/features/feature_flags/services/build_configuration.dar
 import 'package:openvine/features/feature_flags/services/feature_flag_service.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/social_providers.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
-import 'package:openvine/state/social_state.dart';
 import 'package:openvine/ui/overlay_policy.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -70,8 +68,6 @@ void main() {
             featureFlagServiceProvider.overrideWith((ref) {
               return _MockFeatureFlagService(enableVideoEditor: true);
             }),
-            // Override social provider
-            socialProvider.overrideWith(() => _MockSocialNotifier()),
             // Force overlay to always be visible
             overlayPolicyProvider.overrideWith((ref) => OverlayPolicy.alwaysOn),
           ],
@@ -117,7 +113,6 @@ void main() {
             featureFlagServiceProvider.overrideWith((ref) {
               return _MockFeatureFlagService(enableVideoEditor: true);
             }),
-            socialProvider.overrideWith(() => _MockSocialNotifier()),
             overlayPolicyProvider.overrideWith((ref) => OverlayPolicy.alwaysOn),
           ],
         );
@@ -163,7 +158,6 @@ void main() {
           featureFlagServiceProvider.overrideWith((ref) {
             return _MockFeatureFlagService(enableVideoEditor: false);
           }),
-          socialProvider.overrideWith(() => _MockSocialNotifier()),
           overlayPolicyProvider.overrideWith((ref) => OverlayPolicy.alwaysOn),
         ],
       );
@@ -285,9 +279,4 @@ class _MockSharedPreferences implements SharedPreferences {
 
   @override
   Object? get(String key) => null;
-}
-
-class _MockSocialNotifier extends SocialNotifier {
-  @override
-  SocialState build() => SocialState.initial;
 }

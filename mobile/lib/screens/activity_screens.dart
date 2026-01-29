@@ -157,8 +157,8 @@ class _ActivityScreenState extends ConsumerState<ActivityScreen>
   }
 
   Widget _buildFollowingActivity() {
-    final socialService = ref.watch(socialServiceProvider);
-    final followingPubkeys = socialService.followingPubkeys;
+    final followRepository = ref.watch(followRepositoryProvider);
+    final followingPubkeys = followRepository?.followingPubkeys ?? [];
 
     if (followingPubkeys.isEmpty) {
       return const Center(
