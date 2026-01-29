@@ -139,7 +139,22 @@ class HomeFeed extends _$HomeFeed {
     startAutoRefresh();
 
     // Read following list from FollowRepository (source of truth for BLoC-based follow actions)
-    final followRepository = ref.read(followRepositoryProvider);
+    // FollowRepository is null until NostrClient is ready with keys
+    final followRepository = ref.watch(followRepositoryProvider);
+    if (followRepository == null) {
+      // NostrClient not ready yet - return loading state
+      // Provider will rebuild when followRepositoryProvider becomes available
+      Log.info(
+        '🏠 HomeFeed: Waiting for FollowRepository (NostrClient not ready)',
+        name: 'HomeFeedProvider',
+        category: LogCategory.video,
+      );
+      return const VideoFeedState(
+        videos: [],
+        hasMoreContent: false,
+        isInitialLoad: true,
+      );
+    }
     final followingPubkeys = followRepository.followingPubkeys;
 
     // Get video event service for subscriptions and cache management
@@ -768,6 +783,13 @@ class HomeFeed extends _$HomeFeed {
       // Nostr mode - load more from relay
       final videoEventService = ref.read(videoEventServiceProvider);
       final followRepository = ref.read(followRepositoryProvider);
+
+      // FollowRepository not ready - can't load more
+      if (followRepository == null) {
+        if (!ref.mounted) return;
+        state = AsyncData(currentState.copyWith(isLoadingMore: false));
+        return;
+      }
       final followingPubkeys = followRepository.followingPubkeys;
 
       if (followingPubkeys.isEmpty) {
@@ -893,6 +915,16 @@ class HomeFeed extends _$HomeFeed {
     // Get video event service and force a fresh subscription
     final videoEventService = ref.read(videoEventServiceProvider);
     final followRepository = ref.read(followRepositoryProvider);
+
+    // Can't refresh if FollowRepository not ready
+    if (followRepository == null) {
+      Log.warning(
+        'HomeFeed: Cannot refresh - FollowRepository not ready',
+        name: 'HomeFeedProvider',
+        category: LogCategory.video,
+      );
+      return;
+    }
     final followingPubkeys = followRepository.followingPubkeys;
 
     if (followingPubkeys.isNotEmpty) {

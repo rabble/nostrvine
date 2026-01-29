@@ -10,10 +10,11 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
+import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -555,9 +556,11 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                 category: LogCategory.video,
               );
               // Navigate using GoRouter to enable router-driven video playback
-              context.goSearch(
-                _currentQuery.isNotEmpty ? _currentQuery : null,
-                index,
+              context.go(
+                SearchScreenPure.pathForTerm(
+                  term: _currentQuery.isNotEmpty ? _currentQuery : null,
+                  index: index,
+                ),
               );
             },
             emptyBuilder: () => Center(
@@ -668,7 +671,10 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
               '🔍 SearchScreenPure: Tapped user: $userPubkey',
               category: LogCategory.video,
             );
-            context.pushProfileGrid(userPubkey);
+            final npub = normalizeToNpub(userPubkey);
+            if (npub != null) {
+              context.push(ProfileScreenRouter.pathForNpub(npub));
+            }
           },
         );
       },
@@ -744,7 +750,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                 category: LogCategory.video,
               );
               // Navigate using GoRouter
-              context.goHashtag(hashtag);
+              context.go(HashtagScreenRouter.pathForTag(hashtag));
             },
           ),
         );

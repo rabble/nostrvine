@@ -11,7 +11,6 @@ import 'package:openvine/providers/home_screen_controllers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -200,14 +199,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                 WidgetsBinding.instance.addPostFrameCallback((_) {
                   if (!mounted) return;
                   _urlUpdateScheduled = false; // Reset flag after update
-                  context.go(
-                    buildRoute(
-                      RouteContext(
-                        type: RouteType.home,
-                        videoIndex: currentVideoIndex,
-                      ),
-                    ),
-                  );
+                  context.go(HomeScreenRouter.pathForIndex(currentVideoIndex));
                 });
                 urlUpdatePending = true;
               }
@@ -283,14 +275,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
 
                   // Guard: only navigate if URL doesn't match
                   if (newIndex != urlIndex) {
-                    context.go(
-                      buildRoute(
-                        RouteContext(
-                          type: RouteType.home,
-                          videoIndex: newIndex,
-                        ),
-                      ),
-                    );
+                    context.go(HomeScreenRouter.pathForIndex(newIndex));
                   }
 
                   // Trigger pagination near end

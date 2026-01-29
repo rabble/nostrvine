@@ -12,8 +12,10 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/masonary_grid.dart';
 import 'package:openvine/widgets/video_clip/video_clip_preview_sheet.dart';
@@ -145,10 +147,11 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
         video: EditorVideo.file(clip.filePath),
         duration: clip.duration,
         thumbnailPath: clip.thumbnailPath,
-        aspectRatio: model.AspectRatio.values.firstWhere(
+        targetAspectRatio: model.AspectRatio.values.firstWhere(
           (el) => el.name == clip.aspectRatio,
           orElse: () => .vertical,
         ),
+        originalAspectRatio: 9 / 16,
       );
     }
 
@@ -156,7 +159,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
       context.pop();
     } else {
       // Navigate to editor with fromLibrary flag so back goes to recorder
-      await context.pushVideoEditor(fromLibrary: true);
+      await context.push(VideoClipEditorScreen.path);
 
       // Clear selection
       _clearSelection();
@@ -184,7 +187,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     final clips = ref.watch(clipManagerProvider).clips;
 
     final targetAspectRatio = clips.isNotEmpty
-        ? clips.first.aspectRatio.value
+        ? clips.first.targetAspectRatio.value
         : _selectedClipIds.isNotEmpty
         ? _clips
               .firstWhere((el) => el.id == _selectedClipIds.first)
@@ -212,7 +215,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
                     if (context.canPop()) {
                       context.pop();
                     } else {
-                      context.goHome();
+                      context.go(HomeScreenRouter.pathForIndex(0));
                     }
                   },
                 ),
@@ -431,7 +434,7 @@ class _EmptyClips extends StatelessWidget {
           if (!isSelectionMode) ...[
             const SizedBox(height: 32),
             ElevatedButton.icon(
-              onPressed: () => context.pushVideoRecorder(),
+              onPressed: () => context.push(VideoRecorderScreen.path),
               icon: const Icon(Icons.videocam),
               label: const Text('Record a Video'),
               style: ElevatedButton.styleFrom(

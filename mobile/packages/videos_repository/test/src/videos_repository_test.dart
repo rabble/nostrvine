@@ -1201,6 +1201,7 @@ void main() {
         expect(filters[0].kinds, equals([EventKind.videoVertical]));
         expect(filters[0].authors, equals(['pubkey1']));
         expect(filters[0].d, equals(['dtag1']));
+        // No limit - addressable events are unique by kind:pubkey:d-tag
         expect(filters[1].kinds, equals([EventKind.videoVertical]));
         expect(filters[1].authors, equals(['pubkey2']));
         expect(filters[1].d, equals(['dtag2']));

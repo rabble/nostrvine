@@ -3,15 +3,17 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:openvine/utils/clipboard_utils.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
+import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/profile/profile_followers_stat.dart';
 import 'package:openvine/widgets/profile/profile_following_stat.dart';
@@ -71,6 +73,11 @@ class ProfileHeaderWidget extends ConsumerWidget {
     final about = profile?.about;
     final authService = ref.watch(authServiceProvider);
 
+    // Watch auth state to rebuild when auth state changes
+    // (e.g., after email verification completes)
+    ref.watch(currentAuthStateProvider);
+    final isAnonymous = authService.isAnonymous;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Column(
@@ -82,8 +89,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
           // Secure account banner for anonymous users (only on own profile)
           // Only shown when headless auth feature is enabled
-          if (isOwnProfile && authService.isAnonymous)
-            _IdentityNotRecoverableBanner(),
+          if (isOwnProfile && isAnonymous) _IdentityNotRecoverableBanner(),
 
           // Profile picture and stats row
           Row(
@@ -201,54 +207,138 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [VineTheme.vineGreen, Color(0xFF2D8B6F)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(Icons.security, color: VineTheme.whiteText, size: 24),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('Secure Your Account', style: VineTheme.titleSmallFont()),
-                const SizedBox(height: 4),
-                Text(
-                  'Add email & password to recover your account on any device',
-                  style: VineTheme.bodySmallFont(
-                    color: VineTheme.onSurfaceMuted,
-                  ),
-                ),
-              ],
+    return BlocBuilder<EmailVerificationCubit, EmailVerificationState>(
+      builder: (context, state) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: state.status == EmailVerificationStatus.failure
+                  ? const [Color(0xFFD32F2F), Color(0xFFB71C1C)]
+                  : const [VineTheme.vineGreen, Color(0xFF2D8B6F)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(12),
           ),
-          ElevatedButton(
-            onPressed: () => context.push(SecureAccountScreen.path),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: VineTheme.whiteText,
-              foregroundColor: VineTheme.vineGreen,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: Text(
-              'Register',
-              style: VineTheme.labelMediumFont(color: VineTheme.vineGreen),
-            ),
+          child: Row(
+            children: [
+              _buildIcon(state),
+              const SizedBox(width: 12),
+              Expanded(child: _buildContent(state)),
+              _buildAction(context, state),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
+  }
+
+  Widget _buildIcon(EmailVerificationState state) {
+    switch (state.status) {
+      case EmailVerificationStatus.polling:
+        return const SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: VineTheme.whiteText,
+          ),
+        );
+      case EmailVerificationStatus.failure:
+        return Icon(Icons.error_outline, color: VineTheme.whiteText, size: 24);
+      case EmailVerificationStatus.initial:
+      case EmailVerificationStatus.success:
+        return Icon(Icons.security, color: VineTheme.whiteText, size: 24);
+    }
+  }
+
+  Widget _buildContent(EmailVerificationState state) {
+    switch (state.status) {
+      case EmailVerificationStatus.polling:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Verifying Email...', style: VineTheme.titleSmallFont()),
+            const SizedBox(height: 4),
+            Text(
+              state.pendingEmail?.isNotEmpty == true
+                  ? 'Check ${state.pendingEmail} for verification link'
+                  : 'Waiting for email verification',
+              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+            ),
+          ],
+        );
+      case EmailVerificationStatus.failure:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Verification Failed', style: VineTheme.titleSmallFont()),
+            const SizedBox(height: 4),
+            Text(
+              state.error ?? 'Please try again',
+              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        );
+      case EmailVerificationStatus.initial:
+      case EmailVerificationStatus.success:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Secure Your Account', style: VineTheme.titleSmallFont()),
+            const SizedBox(height: 4),
+            Text(
+              'Add email & password to recover your account on any device',
+              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+            ),
+          ],
+        );
+    }
+  }
+
+  Widget _buildAction(BuildContext context, EmailVerificationState state) {
+    switch (state.status) {
+      case EmailVerificationStatus.polling:
+        // No action button while polling - user should check email
+        return const SizedBox.shrink();
+      case EmailVerificationStatus.failure:
+        return ElevatedButton(
+          onPressed: () => context.push(SecureAccountScreen.path),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: VineTheme.whiteText,
+            foregroundColor: Colors.red,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            'Retry',
+            style: VineTheme.labelMediumFont(color: Colors.red),
+          ),
+        );
+      case EmailVerificationStatus.initial:
+      case EmailVerificationStatus.success:
+        return ElevatedButton(
+          onPressed: () => context.push(SecureAccountScreen.path),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: VineTheme.whiteText,
+            foregroundColor: VineTheme.vineGreen,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            'Register',
+            style: VineTheme.labelMediumFont(color: VineTheme.vineGreen),
+          ),
+        );
+    }
   }
 }
 

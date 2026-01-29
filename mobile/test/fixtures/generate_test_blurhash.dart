@@ -9,20 +9,22 @@ Future<void> main() async {
   final testVideoPath = 'test/fixtures/test_video.mp4';
 
   print('Extracting thumbnail from test video...');
-  final thumbnailBytes = await VideoThumbnailService.extractThumbnailBytes(
+  final thumbnailResult = await VideoThumbnailService.extractThumbnailBytes(
     videoPath: testVideoPath,
     quality: 75,
   );
 
-  if (thumbnailBytes == null) {
+  if (thumbnailResult == null) {
     print('❌ Failed to extract thumbnail');
     exit(1);
   }
 
-  print('✅ Extracted thumbnail: ${thumbnailBytes.length} bytes');
+  print('✅ Extracted thumbnail: ${thumbnailResult.bytes.length} bytes');
 
   print('Generating blurhash...');
-  final blurhash = await BlurhashService.generateBlurhash(thumbnailBytes);
+  final blurhash = await BlurhashService.generateBlurhash(
+    thumbnailResult.bytes,
+  );
 
   if (blurhash == null) {
     print('❌ Failed to generate blurhash');

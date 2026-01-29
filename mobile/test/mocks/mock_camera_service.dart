@@ -98,4 +98,7 @@ class MockCameraService extends CameraService {
 
   @override
   bool get hasFlash => true;
+
+  @override
+  String? get initializationError => null;
 }

@@ -116,6 +116,10 @@ class CommentsScreen extends ConsumerWidget {
     final commentsRepository = ref.watch(commentsRepositoryProvider);
     final authService = ref.watch(authServiceProvider);
 
+    // Use original comments count for pagination hint
+    // This helps determine hasMoreContent more accurately than page size heuristic
+    final initialCount = videoEvent.originalComments;
+
     return BlocProvider<CommentsBloc>(
       create: (_) => CommentsBloc(
         commentsRepository: commentsRepository,
@@ -123,6 +127,7 @@ class CommentsScreen extends ConsumerWidget {
         rootEventId: videoEvent.id,
         rootEventKind: NIP71VideoKinds.addressableShortVideo,
         rootAuthorPubkey: videoEvent.pubkey,
+        initialTotalCount: initialCount,
       )..add(const CommentsLoadRequested()),
       child: VineBottomSheet(
         title: _CommentsTitle(initialCount: videoEvent.originalComments ?? 0),

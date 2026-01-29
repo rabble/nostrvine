@@ -16,7 +16,6 @@ Thank you for your interest in contributing to diVine! This guide will help you 
 
 ### Required Software
 
-**Mobile Development:**
 - [Flutter SDK](https://flutter.dev/docs/get-started/install) (latest stable - 3.8.0 or higher)
 - [Dart SDK](https://dart.dev/get-dart) (comes with Flutter)
 - **For iOS development**:
@@ -25,11 +24,6 @@ Thank you for your interest in contributing to diVine! This guide will help you 
 - **For Android development**:
   - Android Studio with Android SDK
   - Java Development Kit (JDK) 11+
-
-**Backend Development:**
-- [Node.js](https://nodejs.org/) (LTS version 18+)
-- [npm](https://www.npmjs.com/) or [pnpm](https://pnpm.io/)
-- [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-and-update/) for Cloudflare Workers
 
 ### Recommended Tools
 - [VS Code](https://code.visualstudio.com/) with Flutter and Dart extensions
@@ -41,22 +35,15 @@ Thank you for your interest in contributing to diVine! This guide will help you 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/openvine.git
-cd openvine
+git clone https://github.com/divinevideo/divine-mobile.git
+cd divine-mobile
 ```
 
 ### 2. Install Flutter Dependencies
 
 ```bash
-cd openvine/mobile
+cd divine-mobile/mobile
 flutter pub get
-```
-
-### 3. Install Backend Dependencies (Optional)
-
-```bash
-cd ../backend
-npm install
 ```
 
 ## Building Divine
@@ -339,7 +326,7 @@ ls -la ../flutter_embedded_nostr_relay
 # Recreate if needed
 cd ..
 ln -s /path/to/flutter_embedded_nostr_relay flutter_embedded_nostr_relay
-cd openvine/mobile
+cd divine-mobile/mobile
 flutter pub get
 ```
 

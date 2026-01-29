@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/individual_video_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/circular_icon_button.dart';
@@ -103,6 +103,6 @@ class CommentActionButton extends ConsumerWidget {
       }
     }
 
-    context.pushComments(video);
+    CommentsScreen.show(context, video);
   }
 }

@@ -11,7 +11,7 @@ import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
@@ -42,6 +42,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
   // Flag to track if startRecording is in progress (waiting for first keyframe)
   bool _isStartingRecording = false;
+
+  // Flag to prevent multiple simultaneous stopRecording calls
+  bool _isStoppingRecording = false;
 
   @override
   VideoRecorderProviderState build() {
@@ -91,12 +94,40 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       name: 'VideoRecorderNotifier',
       category: .video,
     );
-    await _cameraService.initialize();
+
+    try {
+      await _cameraService.initialize();
+    } catch (e) {
+      Log.error(
+        '📹 Camera service initialization threw exception: $e',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+      state = state.copyWith(
+        initializationErrorMessage: 'Camera initialization failed: $e',
+      );
+      return;
+    }
+
+    // Check if camera initialization failed
+    if (!_cameraService.isInitialized) {
+      final error =
+          _cameraService.initializationError ?? 'Camera initialization failed';
+      Log.warning(
+        '⚠️ Camera failed to initialize: $error',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+      state = state.copyWith(initializationErrorMessage: error);
+      return;
+    }
 
     // If the user has recorded clips in the clip manager, we use this
     // aspect-ratio to prevent mixing different ratios.
     final clips = ref.read(clipManagerProvider).clips;
-    updateState(aspectRatio: clips.isNotEmpty ? clips.first.aspectRatio : null);
+    updateState(
+      aspectRatio: clips.isNotEmpty ? clips.first.targetAspectRatio : null,
+    );
 
     Log.info(
       '✅ Video recorder initialized successfully',
@@ -294,6 +325,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     if (!_cameraService.canRecord ||
         state.isRecording ||
         _isStartingRecording ||
+        _isStoppingRecording ||
         remainingDuration < const Duration(milliseconds: 30)) {
       return;
     }
@@ -367,6 +399,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   /// Stops camera recording, extracts video metadata for exact duration,
   /// generates thumbnail, and adds clip to clip manager.
   Future<void> stopRecording([EditorVideo? result]) async {
+    // Prevent multiple simultaneous stop calls.
+    if (_isStoppingRecording) {
+      return;
+    }
+
     // If we're still starting up (waiting for first keyframe), just call native stop
     // The native Finalize event will trigger startRecordingCallback with error,
     // which makes startRecording return false and set state to idle
@@ -389,6 +426,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       name: 'VideoRecorderNotifier',
       category: .video,
     );
+    _isStoppingRecording = true;
     final videoResult = result ?? await _cameraService.stopRecording();
 
     final clipProvider = ref.read(clipManagerProvider.notifier)
@@ -396,6 +434,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     final remainingMs = clipProvider.remainingDuration.inMilliseconds;
 
     state = state.copyWith(recordingState: .idle);
+    _isStoppingRecording = false;
     if (videoResult == null) {
       Log.warning(
         '⚠️ Recording stopped but no video file returned from camera service',
@@ -409,7 +448,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     /// Add the recorded clip to ClipManager
     final clip = clipProvider.addClip(
       video: videoResult,
-      aspectRatio: state.aspectRatio,
+      originalAspectRatio: _cameraService.cameraAspectRatio,
+      targetAspectRatio: state.aspectRatio,
     );
 
     Log.info(
@@ -431,21 +471,26 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     );
 
     // Generate and attach thumbnail
-    final thumbnailPath = await VideoThumbnailService.extractThumbnail(
-      videoPath: await videoResult.safeFilePath(),
-      timestamp: Duration(
-        // Use the middle of remaining duration if video is
-        // shorter than remaining time (clip was trimmed), otherwise use default
-        // 210ms which is typically the first keyframe in most MP4 videos
-        milliseconds: remainingMs <= metadata.duration.inMilliseconds
-            ? remainingMs ~/ 2
-            : 210,
-      ),
+    final targetTimestamp = Duration(
+      // Use the middle of remaining duration if video is
+      // shorter than remaining time (clip was trimmed), otherwise use default
+      // 210ms which is typically the first keyframe in most MP4 videos
+      milliseconds: remainingMs <= metadata.duration.inMilliseconds
+          ? remainingMs ~/ 2
+          : 210,
     );
-    if (thumbnailPath != null) {
-      clipProvider.updateThumbnail(clip.id, thumbnailPath);
+    final thumbnailResult = await VideoThumbnailService.extractThumbnail(
+      videoPath: await videoResult.safeFilePath(),
+      targetTimestamp: targetTimestamp,
+    );
+    if (thumbnailResult != null) {
+      clipProvider.updateThumbnail(
+        clipId: clip.id,
+        thumbnailPath: thumbnailResult.path,
+        thumbnailTimestamp: thumbnailResult.timestamp,
+      );
       Log.debug(
-        '🖼️  Thumbnail generated: $thumbnailPath',
+        '🖼️  Thumbnail generated: ${thumbnailResult.path}',
         name: 'VideoRecorderNotifier',
         category: .video,
       );
@@ -523,7 +568,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       context.pop();
     } else {
       // No screen to pop to (navigated via go), go home instead.
-      context.goHome();
+      context.go(HomeScreenRouter.pathForIndex(0));
     }
   }
 

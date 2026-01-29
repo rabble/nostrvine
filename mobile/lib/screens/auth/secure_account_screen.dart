@@ -1,13 +1,14 @@
-// ABOUTME: Native email/password registration screen for diVine
-// ABOUTME: Handles registration with nsec and email verification flow
+// ABOUTME: Native email/password authentication screen for diVine
+// ABOUTME: Handles both login and registration with email verification flow
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/error_message.dart';
@@ -37,6 +38,11 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
 
+  @override
+  void initState() {
+    super.initState();
+  }
+
   void _setErrorMessage(String? message) {
     if (mounted) {
       setState(() => _errorMessage = message);
@@ -48,6 +54,8 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    // Note: Polling is managed by emailVerificationNotifierProvider
+    // which survives navigation, so we don't cancel it here
     super.dispose();
   }
 
@@ -63,14 +71,25 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
       final oauth = ref.read(oauthClientProvider);
       final email = _emailController.text.trim();
       final password = _passwordController.text;
-      ref.read(authServiceProvider).currentKeyContainer?.withNsec((nsec) async {
-        await _handleRegister(
-          oauth: oauth,
-          email: email,
-          password: password,
-          nsec: nsec,
-        );
-      });
+
+      // Use authService.exportNsec() which accesses keys from secure storage
+      // This works for both auto-generated and imported keys
+      final authService = ref.read(authServiceProvider);
+      final nsec = await authService.exportNsec();
+
+      if (nsec == null) {
+        setState(() {
+          _errorMessage = 'Unable to access your keys. Please try again.';
+        });
+        return;
+      }
+
+      await _handleRegister(
+        oauth: oauth,
+        email: email,
+        password: password,
+        nsec: nsec,
+      );
     } catch (e) {
       Log.error(
         'Auth error: $e',
@@ -111,18 +130,54 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
     }
 
     if (result.verificationRequired && result.deviceCode != null) {
-      // Navigate to email verification screen in polling mode
+      // Start polling
       if (mounted) {
-        final encodedEmail = Uri.encodeComponent(email);
-        context.go(
-          '${EmailVerificationScreen.path}'
-          '?deviceCode=${result.deviceCode}'
-          '&verifier=$verifier'
-          '&email=$encodedEmail',
+        context.read<EmailVerificationCubit>().startPolling(
+          deviceCode: result.deviceCode!,
+          verifier: verifier,
+          email: email,
         );
+
+        // Show verification dialog but let user continue
+        _showVerificationDialog(email);
       }
     } else {
       _setErrorMessage('Registration complete. Please check your email.');
+    }
+  }
+
+  void _showVerificationDialog(String email) {
+    showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (dialogContext) => _VerificationDialog(
+        email: email,
+        onContinue: () {
+          Navigator.of(dialogContext).pop();
+          _continueToApp();
+        },
+        onSuccess: () {
+          // Navigate to profile - this closes dialog and replaces screen
+          if (mounted) {
+            final authService = ref.read(authServiceProvider);
+            final npub = authService.currentNpub;
+            if (npub != null) {
+              context.go('/profile/$npub');
+            } else {
+              context.go('/home/0');
+            }
+          }
+        },
+      ),
+    );
+  }
+
+  void _continueToApp() {
+    // User can use the app while waiting for verification
+    // The polling continues in the background
+    // Navigate to home
+    if (mounted) {
+      context.go('/home/0');
     }
   }
 
@@ -292,6 +347,149 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Reactive dialog that watches verification state and auto-closes on success
+class _VerificationDialog extends ConsumerWidget {
+  const _VerificationDialog({
+    required this.email,
+    required this.onContinue,
+    required this.onSuccess,
+  });
+
+  final String email;
+  final VoidCallback onContinue;
+  final VoidCallback onSuccess;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authService = ref.watch(authServiceProvider);
+
+    return BlocBuilder<EmailVerificationCubit, EmailVerificationState>(
+      builder: (context, verificationState) {
+        // Auto-close when verification completes (user is no longer anonymous)
+        if (!verificationState.isPolling &&
+            verificationState.error == null &&
+            !authService.isAnonymous) {
+          // Use post-frame callback to avoid calling Navigator during build
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            onSuccess();
+          });
+        }
+
+        // Show error state if verification failed
+        if (verificationState.error != null) {
+          return AlertDialog(
+            backgroundColor: VineTheme.cardBackground,
+            title: const Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.red),
+                SizedBox(width: 12),
+                Text(
+                  'Verification Failed',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+            content: Text(
+              verificationState.error!,
+              style: TextStyle(color: Colors.grey[400]),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text(
+                  'Close',
+                  style: TextStyle(color: VineTheme.vineGreen),
+                ),
+              ),
+            ],
+          );
+        }
+
+        // Show success state briefly before auto-closing
+        if (!authService.isAnonymous) {
+          return AlertDialog(
+            backgroundColor: VineTheme.cardBackground,
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle, color: VineTheme.vineGreen),
+                SizedBox(width: 12),
+                Text('Account Secured!', style: TextStyle(color: Colors.white)),
+              ],
+            ),
+            content: const Text(
+              'Your account is now linked to your email.',
+              style: TextStyle(color: Colors.white70),
+            ),
+          );
+        }
+
+        // Show waiting state
+        return AlertDialog(
+          backgroundColor: VineTheme.cardBackground,
+          title: const Row(
+            children: [
+              Icon(Icons.email_outlined, color: VineTheme.vineGreen),
+              SizedBox(width: 12),
+              Text('Verify Your Email', style: TextStyle(color: Colors.white)),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'We sent a verification link to:',
+                style: TextStyle(color: Colors.grey[400]),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                email,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Click the link in your email to complete registration. '
+                'You can continue using the app in the meantime.',
+                style: TextStyle(color: Colors.grey[400], fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              const Row(
+                children: [
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: VineTheme.vineGreen,
+                    ),
+                  ),
+                  SizedBox(width: 12),
+                  Text(
+                    'Waiting for verification...',
+                    style: TextStyle(color: VineTheme.vineGreen, fontSize: 12),
+                  ),
+                ],
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: onContinue,
+              child: const Text(
+                'Continue to App',
+                style: TextStyle(color: VineTheme.vineGreen),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 }

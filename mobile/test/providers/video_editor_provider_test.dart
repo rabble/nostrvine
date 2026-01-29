@@ -76,14 +76,16 @@ void main() {
             .read(clipManagerProvider.notifier)
             .addClip(
               video: EditorVideo.file('/test/clip1.mp4'),
-              aspectRatio: .square,
+              targetAspectRatio: .square,
+              originalAspectRatio: 9 / 16,
               duration: const Duration(seconds: 2),
             );
         container
             .read(clipManagerProvider.notifier)
             .addClip(
               video: EditorVideo.file('/test/clip2.mp4'),
-              aspectRatio: .square,
+              targetAspectRatio: .square,
+              originalAspectRatio: 9 / 16,
               duration: const Duration(seconds: 2),
             );
 
@@ -100,14 +102,16 @@ void main() {
             .read(clipManagerProvider.notifier)
             .addClip(
               video: EditorVideo.file('/test/clip1.mp4'),
-              aspectRatio: .square,
+              targetAspectRatio: .square,
+              originalAspectRatio: 9 / 16,
               duration: const Duration(seconds: 2),
             );
         container
             .read(clipManagerProvider.notifier)
             .addClip(
               video: EditorVideo.file('/test/clip2.mp4'),
-              aspectRatio: .square,
+              targetAspectRatio: .square,
+              originalAspectRatio: 9 / 16,
               duration: const Duration(seconds: 3),
             );
 
@@ -151,7 +155,8 @@ void main() {
             .read(clipManagerProvider.notifier)
             .addClip(
               video: EditorVideo.file('/test/clip.mp4'),
-              aspectRatio: .square,
+              targetAspectRatio: .square,
+              originalAspectRatio: 9 / 16,
               duration: const Duration(seconds: 4),
             );
 
@@ -169,7 +174,8 @@ void main() {
               .read(clipManagerProvider.notifier)
               .addClip(
                 video: EditorVideo.file('/test/clip.mp4'),
-                aspectRatio: .square,
+                targetAspectRatio: .square,
+                originalAspectRatio: 9 / 16,
                 duration: const Duration(seconds: 4),
               );
 
@@ -185,7 +191,8 @@ void main() {
             .read(clipManagerProvider.notifier)
             .addClip(
               video: EditorVideo.file('/test/clip.mp4'),
-              aspectRatio: .square,
+              targetAspectRatio: .square,
+              originalAspectRatio: 9 / 16,
               duration: const Duration(seconds: 2),
             );
 
@@ -202,7 +209,8 @@ void main() {
             .read(clipManagerProvider.notifier)
             .addClip(
               video: EditorVideo.file('/test/clip.mp4'),
-              aspectRatio: .square,
+              targetAspectRatio: .square,
+              originalAspectRatio: 9 / 16,
               duration: const Duration(seconds: 2),
             );
 
@@ -224,14 +232,48 @@ void main() {
         expect(state.isPlaying, false);
       });
 
-      test('togglePlayPause should toggle isPlaying state', () {
-        // First toggle: off -> on
-        container.read(videoEditorProvider.notifier).togglePlayPause();
-        expect(container.read(videoEditorProvider).isPlaying, true);
+      test(
+        'togglePlayPause should toggle isPlaying state when player ready',
+        () {
+          // Mark player as ready first
+          container.read(videoEditorProvider.notifier).setPlayerReady(true);
 
-        // Second toggle: on -> off
+          // First toggle: off -> on
+          container.read(videoEditorProvider.notifier).togglePlayPause();
+          expect(container.read(videoEditorProvider).isPlaying, true);
+
+          // Second toggle: on -> off
+          container.read(videoEditorProvider.notifier).togglePlayPause();
+          expect(container.read(videoEditorProvider).isPlaying, false);
+        },
+      );
+
+      test('togglePlayPause should not play when player not ready', () {
+        // Player is not ready by default
+        expect(container.read(videoEditorProvider).isPlayerReady, false);
+
+        // Try to play - should be ignored
         container.read(videoEditorProvider.notifier).togglePlayPause();
         expect(container.read(videoEditorProvider).isPlaying, false);
+      });
+
+      test('setPlayerReady should update isPlayerReady state', () {
+        container.read(videoEditorProvider.notifier).setPlayerReady(true);
+        expect(container.read(videoEditorProvider).isPlayerReady, true);
+
+        container.read(videoEditorProvider.notifier).setPlayerReady(false);
+        expect(container.read(videoEditorProvider).isPlayerReady, false);
+      });
+
+      test('setHasPlayedOnce should set hasPlayedOnce to true', () {
+        expect(container.read(videoEditorProvider).hasPlayedOnce, false);
+
+        container.read(videoEditorProvider.notifier).setHasPlayedOnce();
+        expect(container.read(videoEditorProvider).hasPlayedOnce, true);
+
+        // Calling again should have no effect (already true)
+        container.read(videoEditorProvider.notifier).setHasPlayedOnce();
+        expect(container.read(videoEditorProvider).hasPlayedOnce, true);
       });
     });
 
@@ -247,6 +289,8 @@ void main() {
 
     group('seek and trim', () {
       test('seekToTrimPosition should update splitPosition and pause', () {
+        // Mark player as ready and start playback
+        container.read(videoEditorProvider.notifier).setPlayerReady(true);
         container.read(videoEditorProvider.notifier).togglePlayPause();
         expect(container.read(videoEditorProvider).isPlaying, true);
 
@@ -276,6 +320,7 @@ void main() {
       test('should reset all state to defaults', () {
         // Modify some state first
         container.read(videoEditorProvider.notifier)
+          ..setPlayerReady(true)
           ..togglePlayPause()
           ..toggleMute();
 
@@ -337,29 +382,83 @@ void main() {
 
     group('updatePosition', () {
       test('should update currentPosition clamped to max 6300ms', () {
+        // Add a clip first so updatePosition works
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              video: EditorVideo.file('/test/clip.mp4'),
+              targetAspectRatio: .square,
+              originalAspectRatio: 9 / 16,
+              duration: const Duration(seconds: 5),
+            );
+        final clipId = container.read(clipManagerProvider).clips.first.id;
+
         container
             .read(videoEditorProvider.notifier)
-            .updatePosition(const Duration(seconds: 3));
+            .updatePosition(clipId, const Duration(seconds: 3));
         final state = container.read(videoEditorProvider);
 
         expect(state.currentPosition, const Duration(seconds: 3));
       });
 
       test('should clamp position to max duration', () {
+        // Add a clip first so updatePosition works
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              video: EditorVideo.file('/test/clip.mp4'),
+              targetAspectRatio: .square,
+              originalAspectRatio: 9 / 16,
+              duration: const Duration(seconds: 5),
+            );
+        final clipId = container.read(clipManagerProvider).clips.first.id;
+
         container
             .read(videoEditorProvider.notifier)
-            .updatePosition(const Duration(seconds: 10));
+            .updatePosition(clipId, const Duration(seconds: 10));
         final state = container.read(videoEditorProvider);
 
         expect(state.currentPosition, VideoEditorConstants.maxDuration);
       });
 
       test('should clamp position to min 0', () {
+        // Add a clip first so updatePosition works
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              video: EditorVideo.file('/test/clip.mp4'),
+              targetAspectRatio: .square,
+              originalAspectRatio: 9 / 16,
+              duration: const Duration(seconds: 5),
+            );
+        final clipId = container.read(clipManagerProvider).clips.first.id;
+
         container
             .read(videoEditorProvider.notifier)
-            .updatePosition(const Duration(seconds: -5));
+            .updatePosition(clipId, const Duration(seconds: -5));
         final state = container.read(videoEditorProvider);
 
+        expect(state.currentPosition, Duration.zero);
+      });
+
+      test('should ignore position updates from wrong clipId', () {
+        // Add a clip first
+        container
+            .read(clipManagerProvider.notifier)
+            .addClip(
+              video: EditorVideo.file('/test/clip.mp4'),
+              targetAspectRatio: .square,
+              originalAspectRatio: 9 / 16,
+              duration: const Duration(seconds: 5),
+            );
+
+        // Try to update with wrong clipId - should be ignored
+        container
+            .read(videoEditorProvider.notifier)
+            .updatePosition('wrong-clip-id', const Duration(seconds: 3));
+        final state = container.read(videoEditorProvider);
+
+        // Position should remain at default (zero)
         expect(state.currentPosition, Duration.zero);
       });
 
@@ -369,16 +468,19 @@ void main() {
             .read(clipManagerProvider.notifier)
             .addClip(
               video: EditorVideo.file('/test/clip1.mp4'),
-              aspectRatio: .square,
+              targetAspectRatio: .square,
+              originalAspectRatio: 9 / 16,
               duration: const Duration(seconds: 2),
             );
         container
             .read(clipManagerProvider.notifier)
             .addClip(
               video: EditorVideo.file('/test/clip2.mp4'),
-              aspectRatio: .square,
+              targetAspectRatio: .square,
+              originalAspectRatio: 9 / 16,
               duration: const Duration(seconds: 2),
             );
+        final clip2Id = container.read(clipManagerProvider).clips[1].id;
 
         // Select second clip
         container.read(videoEditorProvider.notifier).selectClipByIndex(1);
@@ -386,7 +488,7 @@ void main() {
         // Update position by 500ms within the clip
         container
             .read(videoEditorProvider.notifier)
-            .updatePosition(const Duration(milliseconds: 500));
+            .updatePosition(clip2Id, const Duration(milliseconds: 500));
 
         final state = container.read(videoEditorProvider);
         // Should be 2000ms (offset) + 500ms (position) = 2500ms
@@ -398,16 +500,19 @@ void main() {
             .read(clipManagerProvider.notifier)
             .addClip(
               video: EditorVideo.file('/test/clip1.mp4'),
-              aspectRatio: .square,
+              targetAspectRatio: .square,
+              originalAspectRatio: 9 / 16,
               duration: const Duration(seconds: 2),
             );
         container
             .read(clipManagerProvider.notifier)
             .addClip(
               video: EditorVideo.file('/test/clip2.mp4'),
-              aspectRatio: .square,
+              targetAspectRatio: .square,
+              originalAspectRatio: 9 / 16,
               duration: const Duration(seconds: 2),
             );
+        final clip2Id = container.read(clipManagerProvider).clips[1].id;
 
         // Select second clip and start editing
         container.read(videoEditorProvider.notifier)
@@ -417,7 +522,7 @@ void main() {
         // Update position by 500ms within the clip
         container
             .read(videoEditorProvider.notifier)
-            .updatePosition(const Duration(milliseconds: 500));
+            .updatePosition(clip2Id, const Duration(milliseconds: 500));
 
         final state = container.read(videoEditorProvider);
         // Should be just 500ms (no offset in editing mode)

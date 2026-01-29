@@ -130,6 +130,8 @@ void main() {
           subscriptionManagerProvider.overrideWithValue(
             mockSubscriptionManager,
           ),
+          // Override isNostrReady to avoid auth dependency in tests
+          isNostrReadyProvider.overrideWithValue(true),
           social.socialProvider.overrideWith(() {
             return TestSocialNotifier(
               const SocialState(followingPubkeys: [], isInitialized: true),

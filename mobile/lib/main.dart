@@ -13,6 +13,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
+import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:window_manager/window_manager.dart';
@@ -31,7 +32,6 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/last_tab_position_provider.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_normalization_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/router/tab_history_provider.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -965,27 +965,21 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       // For notifications: go to index 0 (notifications always has an index)
       // For other routes: go to grid mode (null index)
       if (ctx.videoIndex != null && ctx.videoIndex != 0) {
-        RouteContext gridCtx;
-        if (ctx.type == RouteType.notifications) {
+        final newRoute = switch (ctx.type) {
           // Notifications always has an index, go to index 0
-          gridCtx = RouteContext(
-            type: ctx.type,
-            hashtag: ctx.hashtag,
-            searchTerm: ctx.searchTerm,
-            npub: ctx.npub,
-            videoIndex: 0,
-          );
-        } else {
-          // For explore and other routes, go to grid mode (null index)
-          gridCtx = RouteContext(
-            type: ctx.type,
-            hashtag: ctx.hashtag,
-            searchTerm: ctx.searchTerm,
-            npub: ctx.npub,
-            videoIndex: null,
-          );
-        }
-        final newRoute = buildRoute(gridCtx);
+          RouteType.notifications => NotificationsScreen.pathForIndex(0),
+          RouteType.explore => ExploreScreen.path,
+          RouteType.profile => ProfileScreenRouter.pathForNpub(
+            ctx.npub ?? 'me',
+          ),
+          RouteType.hashtag => HashtagScreenRouter.pathForTag(
+            ctx.hashtag ?? '',
+          ),
+          RouteType.search => SearchScreenPure.path,
+          RouteType.home => HomeScreenRouter.pathForIndex(0),
+          _ => ExploreScreen.path,
+        };
+
         router.go(newRoute);
         return true; // Handled
       }
@@ -1072,11 +1066,41 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           );
 
     // Wrap with geo-blocking check first, then lifecycle handler
-    Widget wrapped = BlocProvider(
-      create: (_) => CameraPermissionBloc(
-        permissionsService: const PermissionHandlerPermissionsService(),
-      )..add(const CameraPermissionRefresh()),
-      child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+    Widget wrapped = MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => CameraPermissionBloc(
+            permissionsService: const PermissionHandlerPermissionsService(),
+          )..add(const CameraPermissionRefresh()),
+        ),
+        BlocProvider(
+          create: (_) => EmailVerificationCubit(
+            oauthClient: ref.read(oauthClientProvider),
+            authService: ref.read(authServiceProvider),
+          ),
+        ),
+      ],
+      // Global listener for email verification failures - shows snackbar
+      // when verification times out or fails while user is elsewhere in app
+      child: BlocListener<EmailVerificationCubit, EmailVerificationState>(
+        listenWhen: (previous, current) =>
+            current.status == EmailVerificationStatus.failure &&
+            previous.status != EmailVerificationStatus.failure,
+        listener: (context, state) {
+          final messenger = ScaffoldMessenger.maybeOf(context);
+          if (messenger != null && state.error != null) {
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(state.error!),
+                backgroundColor: Colors.red[700],
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 5),
+              ),
+            );
+          }
+        },
+        child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+      ),
     );
 
     if (crashProbe) {

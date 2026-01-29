@@ -16,9 +16,17 @@ import 'package:openvine/providers/active_video_provider.dart'; // For isVideoAc
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/comments/comments.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/liked_videos_screen_router.dart';
+import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/ui/overlay_policy.dart';
@@ -108,6 +116,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   bool _showFadingPauseButton = false;
   double _pauseButtonOpacity = 1.0;
 
+  // State for double-tap heart animation
+  bool _showDoubleTapHeart = false;
+  double _heartScale = 0.0;
+  double _heartOpacity = 1.0;
+
   /// Triggers the fading pause button animation.
   /// Shows pause icon that fades from 100% to 0% opacity over 500ms.
   void _triggerPauseButtonFade() {
@@ -132,6 +145,51 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         _pauseButtonOpacity = 1.0; // Reset for next use
       });
     });
+  }
+
+  /// Triggers the double-tap heart animation.
+  /// Shows heart that scales up and fades out over ~1 second.
+  void _triggerDoubleTapHeartAnimation() {
+    setState(() {
+      _showDoubleTapHeart = true;
+      _heartScale = 0.0;
+      _heartOpacity = 1.0;
+    });
+
+    // Scale up quickly
+    Future.delayed(const Duration(milliseconds: 50), () {
+      if (!mounted) return;
+      setState(() => _heartScale = 1.0);
+    });
+
+    // Hold, then fade out
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
+      setState(() => _heartOpacity = 0.0);
+    });
+
+    // Hide completely after animation
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (!mounted) return;
+      setState(() {
+        _showDoubleTapHeart = false;
+        _heartScale = 0.0;
+        _heartOpacity = 1.0;
+      });
+    });
+  }
+
+  /// Handles double-tap to like. Only likes (never unlikes) per Instagram behavior.
+  void _handleDoubleTapLike() {
+    final state = _interactionsBloc.state;
+
+    // Only trigger like if not already liked and not in progress
+    if (!state.isLiked && !state.isLikeInProgress) {
+      _interactionsBloc.add(const VideoInteractionsLikeToggled());
+    }
+
+    // Always show heart animation (even if already liked)
+    _triggerDoubleTapHeartAnimation();
   }
 
   /// Stable video identifier for active state tracking
@@ -579,6 +637,14 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
     final child = GestureDetector(
       behavior: HitTestBehavior.translucent,
+      onDoubleTap: () {
+        Log.debug(
+          '💕 Double-tap detected on VideoFeedItem for ${video.id}',
+          name: 'VideoFeedItem',
+          category: LogCategory.ui,
+        );
+        _handleDoubleTapLike();
+      },
       onTap: () {
         // Lighter debounce - ignore taps within 150ms of previous tap
         // 300ms was too aggressive and was swallowing legitimate pause taps
@@ -662,20 +728,37 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
               final pageContext = ref.read(pageContextProvider);
               pageContext.whenData((ctx) {
                 // Build new route with same type but different index
-                final newRoute = RouteContext(
-                  type: ctx.type,
-                  videoIndex: widget.index,
-                  npub: ctx.npub,
-                  hashtag: ctx.hashtag,
-                );
+                final routePath = switch (ctx.type) {
+                  RouteType.home => HomeScreenRouter.pathForIndex(widget.index),
+                  RouteType.explore => ExploreScreen.pathForIndex(widget.index),
+                  RouteType.notifications => NotificationsScreen.pathForIndex(
+                    widget.index,
+                  ),
+                  RouteType.profile => ProfileScreenRouter.pathForIndex(
+                    ctx.npub ?? 'me',
+                    widget.index,
+                  ),
+                  RouteType.hashtag => HashtagScreenRouter.pathForTag(
+                    ctx.hashtag ?? '',
+                    index: widget.index,
+                  ),
+                  RouteType.likedVideos => LikedVideosScreenRouter.pathForIndex(
+                    widget.index,
+                  ),
+                  RouteType.search => SearchScreenPure.pathForTerm(
+                    term: ctx.searchTerm,
+                    index: widget.index,
+                  ),
+                  _ => ExploreScreen.pathForIndex(widget.index),
+                };
 
                 Log.info(
-                  '🎯 Navigating to route: ${buildRoute(newRoute)}',
+                  '🎯 Navigating to route: $routePath',
                   name: 'VideoFeedItem',
                   category: LogCategory.ui,
                 );
 
-                context.go(buildRoute(newRoute));
+                context.go(routePath);
               });
             }
           }
@@ -843,6 +926,42 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                         'assets/icon/content-controls/pause.svg',
                                         width: 32,
                                         height: 32,
+                                        colorFilter: const ColorFilter.mode(
+                                          Colors.white,
+                                          BlendMode.srcIn,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            // Double-tap heart animation
+                            if (_showDoubleTapHeart)
+                              Center(
+                                child: AnimatedOpacity(
+                                  opacity: _heartOpacity,
+                                  duration: const Duration(milliseconds: 400),
+                                  curve: Curves.easeOut,
+                                  child: AnimatedScale(
+                                    scale: _heartScale,
+                                    duration: const Duration(milliseconds: 200),
+                                    curve: Curves.elasticOut,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            blurRadius: 20,
+                                            spreadRadius: 5,
+                                          ),
+                                        ],
+                                      ),
+                                      child: SvgPicture.asset(
+                                        'assets/icon/content-controls/like.svg',
+                                        width: 120,
+                                        height: 120,
                                         colorFilter: const ColorFilter.mode(
                                           Colors.white,
                                           BlendMode.srcIn,
@@ -1054,7 +1173,10 @@ class VideoOverlayActions extends ConsumerWidget {
                         name: 'VideoFeedItem',
                         category: LogCategory.ui,
                       );
-                      context.pushOtherProfile(video.pubkey);
+                      final npub = normalizeToNpub(video.pubkey);
+                      if (npub != null) {
+                        context.push(OtherProfileScreen.pathForNpub(npub));
+                      }
                     }
 
                     return Row(
@@ -1656,7 +1778,10 @@ class VideoAuthorRow extends ConsumerWidget {
               category: LogCategory.ui,
             );
             // Push other user's profile (fullscreen, no bottom nav)
-            context.pushOtherProfile(video.pubkey);
+            final npub = normalizeToNpub(video.pubkey);
+            if (npub != null) {
+              context.push(OtherProfileScreen.pathForNpub(npub));
+            }
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1821,7 +1946,7 @@ class _CommentActionButton extends StatelessWidget {
                   }
                 }
               }
-              context.pushComments(video);
+              CommentsScreen.show(context, video);
             },
             icon: DecoratedBox(
               decoration: BoxDecoration(

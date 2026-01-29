@@ -23,7 +23,8 @@ void main() {
         duration: const Duration(seconds: 10),
         recordedAt: DateTime.now(),
         thumbnailPath: 'test_thumbnail.jpg',
-        aspectRatio: models.AspectRatio.square,
+        targetAspectRatio: models.AspectRatio.square,
+        originalAspectRatio: 9 / 16,
       );
     });
 
@@ -51,7 +52,8 @@ void main() {
         video: EditorVideo.file('test.mp4'),
         duration: const Duration(seconds: 10),
         recordedAt: DateTime.now(),
-        aspectRatio: models.AspectRatio.square,
+        targetAspectRatio: models.AspectRatio.square,
+        originalAspectRatio: 9 / 16,
       );
 
       await tester.pumpWidget(
@@ -129,7 +131,8 @@ void main() {
         video: EditorVideo.file('final.mp4'),
         duration: const Duration(seconds: 15),
         recordedAt: DateTime.now(),
-        aspectRatio: models.AspectRatio.square,
+        targetAspectRatio: models.AspectRatio.square,
+        originalAspectRatio: 9 / 16,
       );
 
       final state = VideoEditorProviderState(finalRenderedClip: finalClip);
@@ -161,7 +164,8 @@ void main() {
         video: EditorVideo.file('final.mp4'),
         duration: const Duration(seconds: 15),
         recordedAt: DateTime.now(),
-        aspectRatio: models.AspectRatio.square,
+        targetAspectRatio: models.AspectRatio.square,
+        originalAspectRatio: 9 / 16,
       );
 
       final state = VideoEditorProviderState(finalRenderedClip: finalClip);
@@ -203,7 +207,7 @@ void main() {
 
       final aspectRatio = tester.widget<AspectRatio>(find.byType(AspectRatio));
 
-      expect(aspectRatio.aspectRatio, equals(testClip.aspectRatio.value));
+      expect(aspectRatio.aspectRatio, equals(testClip.targetAspectRatio.value));
     });
 
     testWidgets('has Hero widget with correct tag', (tester) async {

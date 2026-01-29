@@ -109,6 +109,11 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     final nostrService = ref.watch(nostrServiceProvider);
     final currentUserPubkey = nostrService.publicKey;
 
+    // Show loading state until NostrClient has keys
+    if (followRepository == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
     // Build the base widget with ProfileLikedVideosBloc and
     // ProfileRepostedVideosBloc
     // Pass userIdHex as targetUserPubkey so the BLoCs know whose

@@ -75,9 +75,11 @@ class DraftMigrationService {
         String? thumbnailPath = draftClip.thumbnailPath;
         if (thumbnailPath == null || thumbnailPath.isEmpty) {
           try {
-            thumbnailPath = await VideoThumbnailService.extractThumbnail(
-              videoPath: videoPath,
-            );
+            final thumbnailResult =
+                await VideoThumbnailService.extractThumbnail(
+                  videoPath: videoPath,
+                );
+            thumbnailPath = thumbnailResult?.path;
           } catch (e) {
             Log.warning(
               '📦 Failed to generate thumbnail for draft ${draft.id}: $e',
@@ -107,7 +109,7 @@ class DraftMigrationService {
           thumbnailPath: thumbnailPath,
           duration: clipDuration ?? VideoEditorConstants.maxDuration,
           createdAt: draft.createdAt,
-          aspectRatio: draftClip.aspectRatio.name,
+          aspectRatio: draftClip.targetAspectRatio.name,
           sessionId: 'migrated_${draft.id}',
         );
 

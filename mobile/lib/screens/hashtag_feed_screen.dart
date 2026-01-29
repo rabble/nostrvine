@@ -7,7 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -32,6 +32,10 @@ class HashtagFeedScreen extends ConsumerStatefulWidget {
 }
 
 class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
+  /// Tracks whether we've completed the initial subscription attempt.
+  /// Used to show loading state until subscription has been tried.
+  bool _subscriptionAttempted = false;
+
   @override
   void initState() {
     super.initState();
@@ -48,12 +52,14 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
             print(
               '[HASHTAG] ✅ Successfully subscribed to hashtag: ${widget.hashtag}',
             );
+            setState(() => _subscriptionAttempted = true);
           })
           .catchError((error) {
             if (!mounted) return; // Safety check before async callback
             print(
               '[HASHTAG] ❌ Failed to subscribe to hashtag ${widget.hashtag}: $error',
             );
+            setState(() => _subscriptionAttempted = true);
           });
     });
   }
@@ -82,7 +88,9 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
         final isLoadingHashtag = videoService.isLoadingForSubscription(
           SubscriptionType.hashtag,
         );
-        print('[HASHTAG] ⏳ Loading state: $isLoadingHashtag');
+        print(
+          '[HASHTAG] ⏳ Loading state: $isLoadingHashtag, subscription attempted: $_subscriptionAttempted',
+        );
 
         // Check if we have videos in different lists
         final discoveryCount = videoService.getEventCount(
@@ -95,7 +103,12 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
           '[HASHTAG] 📊 Discovery videos: $discoveryCount, Hashtag videos: $hashtagCount',
         );
 
-        if (isLoadingHashtag && videos.isEmpty) {
+        // Show loading if:
+        // 1. We haven't attempted subscription yet (initial state), OR
+        // 2. Subscription is actively loading
+        final shouldShowLoading = !_subscriptionAttempted || isLoadingHashtag;
+
+        if (shouldShowLoading && videos.isEmpty) {
           return Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -159,7 +172,12 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                 widget.onVideoTap ??
                 (videos, index) {
                   // Default behavior: navigate to hashtag feed mode using GoRouter
-                  context.goHashtag(widget.hashtag, index);
+                  context.go(
+                    HashtagScreenRouter.pathForTag(
+                      widget.hashtag,
+                      index: index,
+                    ),
+                  );
                 },
             onRefresh: () async {
               Log.info(
@@ -248,7 +266,12 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
               return GestureDetector(
                 onTap: () {
                   // Navigate to hashtag feed mode using GoRouter
-                  context.goHashtag(widget.hashtag, index);
+                  context.go(
+                    HashtagScreenRouter.pathForTag(
+                      widget.hashtag,
+                      index: index,
+                    ),
+                  );
                 },
                 child: SizedBox(
                   height: MediaQuery.of(context).size.height,

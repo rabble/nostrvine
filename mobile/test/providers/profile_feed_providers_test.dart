@@ -9,7 +9,6 @@ import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/router_location_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/services/video_prewarmer.dart';
