@@ -49,7 +49,7 @@ final class CommentsState extends Equatable {
     this.rootEventId = '',
     this.rootEventKind = 0,
     this.rootAuthorPubkey = '',
-    this.comments = const [],
+    this.commentsById = const {},
     this.error,
     this.mainInputText = '',
     this.replyInputText = '',
@@ -71,9 +71,16 @@ final class CommentsState extends Equatable {
   /// The author pubkey of the root event (video)
   final String rootAuthorPubkey;
 
-  /// All comments in chronological order (newest first).
+  /// Comments indexed by ID for O(1) deduplication.
   /// Uses [Comment] from the repository layer.
-  final List<Comment> comments;
+  final Map<String, Comment> commentsById;
+
+  /// All comments in chronological order (newest first).
+  List<Comment> get comments {
+    final list = commentsById.values.toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return list;
+  }
 
   /// Error type for l10n-friendly error handling.
   /// UI layer maps this to localized string via BlocListener.
@@ -107,7 +114,7 @@ final class CommentsState extends Equatable {
     String? rootEventId,
     int? rootEventKind,
     String? rootAuthorPubkey,
-    List<Comment>? comments,
+    Map<String, Comment>? commentsById,
     CommentsError? error,
     String? mainInputText,
     String? replyInputText,
@@ -121,7 +128,7 @@ final class CommentsState extends Equatable {
       rootEventId: rootEventId ?? this.rootEventId,
       rootEventKind: rootEventKind ?? this.rootEventKind,
       rootAuthorPubkey: rootAuthorPubkey ?? this.rootAuthorPubkey,
-      comments: comments ?? this.comments,
+      commentsById: commentsById ?? this.commentsById,
       error: error,
       mainInputText: mainInputText ?? this.mainInputText,
       replyInputText: replyInputText ?? this.replyInputText,
@@ -135,7 +142,7 @@ final class CommentsState extends Equatable {
   /// Creates a copy with the active reply cleared.
   CommentsState clearActiveReply({
     CommentsStatus? status,
-    List<Comment>? comments,
+    Map<String, Comment>? commentsById,
     bool? isPosting,
   }) {
     return CommentsState(
@@ -143,7 +150,7 @@ final class CommentsState extends Equatable {
       rootEventId: rootEventId,
       rootEventKind: rootEventKind,
       rootAuthorPubkey: rootAuthorPubkey,
-      comments: comments ?? this.comments,
+      commentsById: commentsById ?? this.commentsById,
       mainInputText: mainInputText,
       replyInputText: '',
       isPosting: isPosting ?? this.isPosting,
@@ -158,7 +165,7 @@ final class CommentsState extends Equatable {
     rootEventId,
     rootEventKind,
     rootAuthorPubkey,
-    comments,
+    commentsById,
     error,
     mainInputText,
     replyInputText,

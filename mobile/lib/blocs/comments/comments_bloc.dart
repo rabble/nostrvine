@@ -69,6 +69,9 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         limit: _pageSize,
       );
 
+      // Convert to Map for O(1) deduplication on pagination
+      final commentsById = {for (final c in thread.comments) c.id: c};
+
       // Determine if there are more comments to load:
       // 1. If we have a known total count, compare loaded count to it
       // 2. Otherwise, use page size heuristic (if we got a full page, there might be more)
@@ -79,7 +82,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       emit(
         state.copyWith(
           status: CommentsStatus.success,
-          comments: thread.comments,
+          commentsById: commentsById,
           hasMoreContent: hasMore,
         ),
       );
@@ -106,23 +109,21 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     if (state.status != CommentsStatus.success ||
         state.isLoadingMore ||
         !state.hasMoreContent ||
-        state.comments.isEmpty) {
+        state.commentsById.isEmpty) {
       return;
     }
 
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      // Get the oldest comment's timestamp as cursor
-      // Nostr `until` filter is inclusive, so subtract 1 second to avoid
-      // getting the same comment again
+      // Get the oldest comment's timestamp as cursor for pagination
+      // Note: Nostr `until` filter is inclusive, so we may get duplicates
+      // which are automatically deduplicated by the Map
       final oldestComment = state.comments.last;
-      final cursor = oldestComment.createdAt.subtract(
-        const Duration(seconds: 1),
-      );
+      final cursor = oldestComment.createdAt;
 
       Log.info(
-        'Loading more comments before ${oldestComment.createdAt}',
+        'Loading more comments before $cursor',
         name: 'CommentsBloc',
         category: LogCategory.ui,
       );
@@ -134,19 +135,23 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         before: cursor,
       );
 
-      // Append new comments to existing list
-      final allComments = [...state.comments, ...thread.comments];
+      // Merge new comments into the Map - duplicates are automatically replaced
+      // This handles the edge case where multiple comments have the same timestamp
+      final allCommentsById = {
+        ...state.commentsById,
+        for (final c in thread.comments) c.id: c,
+      };
 
       // Determine if there are more comments to load:
       // 1. If we have a known total count, compare loaded count to it
       // 2. Otherwise, use page size heuristic (if we got a full page, there might be more)
       final hasMore = _initialTotalCount != null
-          ? allComments.length < _initialTotalCount
+          ? allCommentsById.length < _initialTotalCount
           : thread.comments.length >= _pageSize;
 
       emit(
         state.copyWith(
-          comments: allComments,
+          commentsById: allCommentsById,
           isLoadingMore: false,
           hasMoreContent: hasMore,
         ),
@@ -154,7 +159,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
 
       Log.info(
         'Loaded ${thread.comments.length} more comments '
-        '(total: ${allComments.length}, hasMore: $hasMore)',
+        '(total: ${allCommentsById.length}, hasMore: $hasMore)',
         name: 'CommentsBloc',
         category: LogCategory.ui,
       );
@@ -217,16 +222,23 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         replyToAuthorPubkey: event.parentAuthorPubkey,
       );
 
-      final updatedComments = _addCommentToList(state.comments, postedComment);
+      // Add new comment to the Map
+      final updatedCommentsById = {
+        ...state.commentsById,
+        postedComment.id: postedComment,
+      };
 
       if (isReply) {
         emit(
-          state.clearActiveReply(comments: updatedComments, isPosting: false),
+          state.clearActiveReply(
+            commentsById: updatedCommentsById,
+            isPosting: false,
+          ),
         );
       } else {
         emit(
           state.copyWith(
-            comments: updatedComments,
+            commentsById: updatedCommentsById,
             mainInputText: '',
             isPosting: false,
           ),
@@ -254,14 +266,6 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     emit(state.copyWith());
   }
 
-  /// Adds a new comment to the flat list.
-  ///
-  /// Comments are prepended to maintain chronological order (newest first).
-  List<Comment> _addCommentToList(List<Comment> comments, Comment newComment) {
-    // Add to beginning (newest first)
-    return [newComment, ...comments];
-  }
-
   Future<void> _onDeleteRequested(
     CommentDeleteRequested event,
     Emitter<CommentsState> emit,
@@ -274,12 +278,11 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     try {
       await _commentsRepository.deleteComment(commentId: event.commentId);
 
-      // Remove the comment from the flat list
-      final updatedComments = state.comments
-          .where((c) => c.id != event.commentId)
-          .toList();
+      // Remove the comment from the Map
+      final updatedCommentsById = Map<String, Comment>.from(state.commentsById)
+        ..remove(event.commentId);
 
-      emit(state.copyWith(comments: updatedComments));
+      emit(state.copyWith(commentsById: updatedCommentsById));
     } catch (e) {
       Log.error(
         'Error deleting comment: $e',
