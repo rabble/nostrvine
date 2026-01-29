@@ -32,12 +32,18 @@ class BackgroundPublishBloc
     BackgroundPublishRequested event,
     Emitter<BackgroundPublishState> emit,
   ) async {
-    final newUpload = BackgroundUpload(
-      draft: event.draft,
-      result: null,
-      progress: 0,
+    // Check if the upload is already in progress
+    final alreadyUploading = state.uploads.any(
+      (upload) => upload.draft.id == event.draft.id,
     );
-    emit(state.copyWith(uploads: [...state.uploads, newUpload]));
+    if (!alreadyUploading) {
+      final newUpload = BackgroundUpload(
+        draft: event.draft,
+        result: null,
+        progress: 0,
+      );
+      emit(state.copyWith(uploads: [...state.uploads, newUpload]));
+    }
 
     final result = await event.publishmentProcess;
 
@@ -92,6 +98,12 @@ class BackgroundPublishBloc
     final uploadToRetry = state.uploads.firstWhere(
       (upload) => upload.draft.id == event.draftId,
     );
+
+    // Clear previous result
+    final clearedUploads = state.uploads.where((upload) {
+      return upload.draft.id != event.draftId;
+    }).toList();
+    emit(state.copyWith(uploads: clearedUploads));
 
     final videoPublishService = await _videoPublishServiceFactory(
       onProgress: ({required String draftId, required double progress}) {

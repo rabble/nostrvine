@@ -85,6 +85,30 @@ void main() {
           ],
         );
       });
+
+      group('when the draft is already uploading', () {
+        blocTest(
+          'does not add duplicate upload',
+          build: () => BackgroundPublishBloc(
+            videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          ),
+          seed: () => BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(draft: draft, result: null, progress: 0.5),
+            ],
+          ),
+          act: (bloc) => bloc.add(
+            BackgroundPublishRequested(
+              draft: draft,
+              publishmentProcess: Future.value(PublishSuccess()),
+            ),
+          ),
+          expect: () => [
+            // Only emits the final state after success, no duplicate added
+            BackgroundPublishState(uploads: []),
+          ],
+        );
+      });
     });
 
     group('BackgroundPublishProgressChanged', () {
@@ -153,7 +177,7 @@ void main() {
       });
 
       blocTest<BackgroundPublishBloc, BackgroundPublishState>(
-        'creates new publish service and retries the upload',
+        'clears previous failed upload and retries',
         build: () => BackgroundPublishBloc(
           videoPublishServiceFactory:
               ({required OnProgressChanged onProgress}) {
@@ -177,19 +201,15 @@ void main() {
         act: (bloc) =>
             bloc.add(BackgroundPublishRetryRequested(draftId: draftId)),
         expect: () => [
-          // First: new upload is added (from BackgroundPublishRequested)
+          // First: old failed upload is cleared
+          BackgroundPublishState(uploads: []),
+          // Then: new upload is added (from BackgroundPublishRequested)
           BackgroundPublishState(
             uploads: [
-              BackgroundUpload(
-                draft: draft,
-                result: const PublishError('Previous error'),
-                progress: 1.0,
-              ),
               BackgroundUpload(draft: draft, result: null, progress: 0),
             ],
           ),
-          // Then: successful retry removes ALL uploads with same draft.id
-          // (both the old failed upload and the new successful one)
+          // Finally: successful retry removes the upload
           BackgroundPublishState(uploads: []),
         ],
         verify: (_) {
