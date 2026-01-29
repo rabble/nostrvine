@@ -152,8 +152,10 @@ class ProfileCacheService {
     try {
       final existing = _profileBox!.get(profile.pubkey);
 
-      // Only update if the new profile is newer
-      if (existing == null || profile.createdAt.isAfter(existing.createdAt)) {
+      if (existing == null ||
+          profile.createdAt.isAfter(existing.createdAt) ||
+          (profile.eventId != existing.eventId &&
+              !profile.createdAt.isBefore(existing.createdAt))) {
         await _profileBox!.put(profile.pubkey, profile);
         Log.debug(
           'Updated cached profile for ${profile.pubkey}... (${profile.bestDisplayName})',
