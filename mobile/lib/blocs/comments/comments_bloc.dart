@@ -24,8 +24,10 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     required String rootEventId,
     required int rootEventKind,
     required String rootAuthorPubkey,
+    int? initialTotalCount,
   }) : _commentsRepository = commentsRepository,
        _authService = authService,
+       _initialTotalCount = initialTotalCount,
        super(
          CommentsState(
            rootEventId: rootEventId,
@@ -34,12 +36,20 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
          ),
        ) {
     on<CommentsLoadRequested>(_onLoadRequested);
+    on<CommentsLoadMoreRequested>(_onLoadMoreRequested);
     on<CommentTextChanged>(_onTextChanged);
     on<CommentReplyToggled>(_onReplyToggled);
     on<CommentSubmitted>(_onSubmitted);
     on<CommentErrorCleared>(_onErrorCleared);
     on<CommentDeleteRequested>(_onDeleteRequested);
   }
+
+  /// Page size for comment loading.
+  static const _pageSize = 50;
+
+  /// Optional initial total count from video metadata or interactions state.
+  /// Used to accurately determine hasMoreContent instead of page size heuristic.
+  final int? _initialTotalCount;
 
   final CommentsRepository _commentsRepository;
   final AuthService _authService;
@@ -56,12 +66,21 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       final thread = await _commentsRepository.loadComments(
         rootEventId: state.rootEventId,
         rootEventKind: state.rootEventKind,
+        limit: _pageSize,
       );
+
+      // Determine if there are more comments to load:
+      // 1. If we have a known total count, compare loaded count to it
+      // 2. Otherwise, use page size heuristic (if we got a full page, there might be more)
+      final hasMore = _initialTotalCount != null
+          ? thread.comments.length < _initialTotalCount!
+          : thread.comments.length >= _pageSize;
 
       emit(
         state.copyWith(
           status: CommentsStatus.success,
           comments: thread.comments,
+          hasMoreContent: hasMore,
         ),
       );
     } catch (e) {
@@ -76,6 +95,76 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
           error: CommentsError.loadFailed,
         ),
       );
+    }
+  }
+
+  Future<void> _onLoadMoreRequested(
+    CommentsLoadMoreRequested event,
+    Emitter<CommentsState> emit,
+  ) async {
+    // Skip if not in success state, already loading more, or no more content
+    if (state.status != CommentsStatus.success ||
+        state.isLoadingMore ||
+        !state.hasMoreContent ||
+        state.comments.isEmpty) {
+      return;
+    }
+
+    emit(state.copyWith(isLoadingMore: true));
+
+    try {
+      // Get the oldest comment's timestamp as cursor
+      // Nostr `until` filter is inclusive, so subtract 1 second to avoid
+      // getting the same comment again
+      final oldestComment = state.comments.last;
+      final cursor = oldestComment.createdAt.subtract(
+        const Duration(seconds: 1),
+      );
+
+      Log.info(
+        'Loading more comments before ${oldestComment.createdAt}',
+        name: 'CommentsBloc',
+        category: LogCategory.ui,
+      );
+
+      final thread = await _commentsRepository.loadComments(
+        rootEventId: state.rootEventId,
+        rootEventKind: state.rootEventKind,
+        limit: _pageSize,
+        before: cursor,
+      );
+
+      // Append new comments to existing list
+      final allComments = [...state.comments, ...thread.comments];
+
+      // Determine if there are more comments to load:
+      // 1. If we have a known total count, compare loaded count to it
+      // 2. Otherwise, use page size heuristic (if we got a full page, there might be more)
+      final hasMore = _initialTotalCount != null
+          ? allComments.length < _initialTotalCount!
+          : thread.comments.length >= _pageSize;
+
+      emit(
+        state.copyWith(
+          comments: allComments,
+          isLoadingMore: false,
+          hasMoreContent: hasMore,
+        ),
+      );
+
+      Log.info(
+        'Loaded ${thread.comments.length} more comments '
+        '(total: ${allComments.length}, hasMore: $hasMore)',
+        name: 'CommentsBloc',
+        category: LogCategory.ui,
+      );
+    } catch (e) {
+      Log.error(
+        'Error loading more comments: $e',
+        name: 'CommentsBloc',
+        category: LogCategory.ui,
+      );
+      emit(state.copyWith(isLoadingMore: false));
     }
   }
 

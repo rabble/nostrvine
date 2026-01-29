@@ -55,6 +55,8 @@ final class CommentsState extends Equatable {
     this.replyInputText = '',
     this.activeReplyCommentId,
     this.isPosting = false,
+    this.isLoadingMore = false,
+    this.hasMoreContent = true,
   });
 
   /// The current status of the comments
@@ -89,6 +91,12 @@ final class CommentsState extends Equatable {
   /// Whether a comment is currently being posted (main or reply)
   final bool isPosting;
 
+  /// Whether more comments are being loaded (pagination)
+  final bool isLoadingMore;
+
+  /// Whether there are more comments to load
+  final bool hasMoreContent;
+
   /// Check if we're posting a reply to a specific comment
   bool isReplyPosting(String commentId) =>
       isPosting && activeReplyCommentId == commentId;
@@ -105,6 +113,8 @@ final class CommentsState extends Equatable {
     String? replyInputText,
     String? activeReplyCommentId,
     bool? isPosting,
+    bool? isLoadingMore,
+    bool? hasMoreContent,
   }) {
     return CommentsState(
       status: status ?? this.status,
@@ -117,6 +127,8 @@ final class CommentsState extends Equatable {
       replyInputText: replyInputText ?? this.replyInputText,
       activeReplyCommentId: activeReplyCommentId ?? this.activeReplyCommentId,
       isPosting: isPosting ?? this.isPosting,
+      isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      hasMoreContent: hasMoreContent ?? this.hasMoreContent,
     );
   }
 
@@ -135,6 +147,8 @@ final class CommentsState extends Equatable {
       mainInputText: mainInputText,
       replyInputText: '',
       isPosting: isPosting ?? this.isPosting,
+      isLoadingMore: isLoadingMore,
+      hasMoreContent: hasMoreContent,
     );
   }
 
@@ -150,5 +164,7 @@ final class CommentsState extends Equatable {
     replyInputText,
     activeReplyCommentId,
     isPosting,
+    isLoadingMore,
+    hasMoreContent,
   ];
 }

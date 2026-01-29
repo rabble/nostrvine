@@ -207,6 +207,250 @@ void main() {
       );
     });
 
+    group('CommentsLoadMoreRequested', () {
+      blocTest<CommentsBloc, CommentsState>(
+        'does nothing when status is not success',
+        build: createBloc,
+        seed: () => const CommentsState(status: CommentsStatus.loading),
+        act: (bloc) => bloc.add(const CommentsLoadMoreRequested()),
+        expect: () => <CommentsState>[],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'does nothing when already loading more',
+        build: createBloc,
+        seed: () => const CommentsState(
+          status: CommentsStatus.success,
+          isLoadingMore: true,
+        ),
+        act: (bloc) => bloc.add(const CommentsLoadMoreRequested()),
+        expect: () => <CommentsState>[],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'does nothing when no more content',
+        build: createBloc,
+        seed: () => const CommentsState(
+          status: CommentsStatus.success,
+          hasMoreContent: false,
+        ),
+        act: (bloc) => bloc.add(const CommentsLoadMoreRequested()),
+        expect: () => <CommentsState>[],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'does nothing when comments list is empty',
+        build: createBloc,
+        seed: () => const CommentsState(
+          status: CommentsStatus.success,
+          hasMoreContent: true,
+          comments: [],
+        ),
+        act: (bloc) => bloc.add(const CommentsLoadMoreRequested()),
+        expect: () => <CommentsState>[],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'loads more comments and appends to list',
+        setUp: () {
+          final olderComment = Comment(
+            id: validId('older'),
+            content: 'Older comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          final thread = CommentThread(
+            rootEventId: validId('root'),
+            comments: [olderComment],
+            totalCount: 1,
+            commentCache: {olderComment.id: olderComment},
+          );
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async => thread);
+        },
+        build: createBloc,
+        seed: () {
+          final existingComment = Comment(
+            id: validId('existing'),
+            content: 'Existing comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(2000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            hasMoreContent: true,
+            comments: [existingComment],
+          );
+        },
+        act: (bloc) => bloc.add(const CommentsLoadMoreRequested()),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<CommentsState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.comments.length, 'comments count', 2),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'sets hasMoreContent to false when fewer than page size returned',
+        setUp: () {
+          // Return only 1 comment (less than page size of 50)
+          final olderComment = Comment(
+            id: validId('older'),
+            content: 'Older comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          final thread = CommentThread(
+            rootEventId: validId('root'),
+            comments: [olderComment],
+            totalCount: 1,
+            commentCache: {olderComment.id: olderComment},
+          );
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async => thread);
+        },
+        build: createBloc,
+        seed: () {
+          final existingComment = Comment(
+            id: validId('existing'),
+            content: 'Existing comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(2000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            hasMoreContent: true,
+            comments: [existingComment],
+          );
+        },
+        act: (bloc) => bloc.add(const CommentsLoadMoreRequested()),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<CommentsState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.hasMoreContent, 'hasMoreContent', false),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'handles error gracefully when loading more fails',
+        setUp: () {
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(Exception('Network error'));
+        },
+        build: createBloc,
+        seed: () {
+          final existingComment = Comment(
+            id: validId('existing'),
+            content: 'Existing comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(2000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            hasMoreContent: true,
+            comments: [existingComment],
+          );
+        },
+        act: (bloc) => bloc.add(const CommentsLoadMoreRequested()),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          // Should reset isLoadingMore but preserve existing comments
+          isA<CommentsState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.comments.length, 'comments count', 1),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'passes correct before cursor to repository',
+        setUp: () {
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async => CommentThread.empty(validId('root')));
+        },
+        build: createBloc,
+        seed: () {
+          // Comment with specific timestamp
+          final existingComment = Comment(
+            id: validId('existing'),
+            content: 'Existing comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(2000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            hasMoreContent: true,
+            comments: [existingComment],
+          );
+        },
+        act: (bloc) => bloc.add(const CommentsLoadMoreRequested()),
+        verify: (_) {
+          // Verify that before cursor is 1 second before the oldest comment
+          final expectedCursor = DateTime.fromMillisecondsSinceEpoch(
+            2000000000,
+          ).subtract(const Duration(seconds: 1));
+
+          verify(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              limit: 50,
+              before: expectedCursor,
+            ),
+          ).called(1);
+        },
+      );
+    });
+
     group('CommentTextChanged', () {
       blocTest<CommentsBloc, CommentsState>(
         'updates main input text when commentId is null',
