@@ -116,6 +116,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   bool _showFadingPauseButton = false;
   double _pauseButtonOpacity = 1.0;
 
+  // State for double-tap heart animation
+  bool _showDoubleTapHeart = false;
+  double _heartScale = 0.0;
+  double _heartOpacity = 1.0;
+
   /// Triggers the fading pause button animation.
   /// Shows pause icon that fades from 100% to 0% opacity over 500ms.
   void _triggerPauseButtonFade() {
@@ -140,6 +145,51 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         _pauseButtonOpacity = 1.0; // Reset for next use
       });
     });
+  }
+
+  /// Triggers the double-tap heart animation.
+  /// Shows heart that scales up and fades out over ~1 second.
+  void _triggerDoubleTapHeartAnimation() {
+    setState(() {
+      _showDoubleTapHeart = true;
+      _heartScale = 0.0;
+      _heartOpacity = 1.0;
+    });
+
+    // Scale up quickly
+    Future.delayed(const Duration(milliseconds: 50), () {
+      if (!mounted) return;
+      setState(() => _heartScale = 1.0);
+    });
+
+    // Hold, then fade out
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
+      setState(() => _heartOpacity = 0.0);
+    });
+
+    // Hide completely after animation
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (!mounted) return;
+      setState(() {
+        _showDoubleTapHeart = false;
+        _heartScale = 0.0;
+        _heartOpacity = 1.0;
+      });
+    });
+  }
+
+  /// Handles double-tap to like. Only likes (never unlikes) per Instagram behavior.
+  void _handleDoubleTapLike() {
+    final state = _interactionsBloc.state;
+
+    // Only trigger like if not already liked and not in progress
+    if (!state.isLiked && !state.isLikeInProgress) {
+      _interactionsBloc.add(const VideoInteractionsLikeToggled());
+    }
+
+    // Always show heart animation (even if already liked)
+    _triggerDoubleTapHeartAnimation();
   }
 
   /// Stable video identifier for active state tracking
@@ -587,6 +637,14 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
     final child = GestureDetector(
       behavior: HitTestBehavior.translucent,
+      onDoubleTap: () {
+        Log.debug(
+          '💕 Double-tap detected on VideoFeedItem for ${video.id}',
+          name: 'VideoFeedItem',
+          category: LogCategory.ui,
+        );
+        _handleDoubleTapLike();
+      },
       onTap: () {
         // Lighter debounce - ignore taps within 150ms of previous tap
         // 300ms was too aggressive and was swallowing legitimate pause taps
@@ -868,6 +926,42 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                         'assets/icon/content-controls/pause.svg',
                                         width: 32,
                                         height: 32,
+                                        colorFilter: const ColorFilter.mode(
+                                          Colors.white,
+                                          BlendMode.srcIn,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            // Double-tap heart animation
+                            if (_showDoubleTapHeart)
+                              Center(
+                                child: AnimatedOpacity(
+                                  opacity: _heartOpacity,
+                                  duration: const Duration(milliseconds: 400),
+                                  curve: Curves.easeOut,
+                                  child: AnimatedScale(
+                                    scale: _heartScale,
+                                    duration: const Duration(milliseconds: 200),
+                                    curve: Curves.elasticOut,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            blurRadius: 20,
+                                            spreadRadius: 5,
+                                          ),
+                                        ],
+                                      ),
+                                      child: SvgPicture.asset(
+                                        'assets/icon/content-controls/like.svg',
+                                        width: 120,
+                                        height: 120,
                                         colorFilter: const ColorFilter.mode(
                                           Colors.white,
                                           BlendMode.srcIn,
