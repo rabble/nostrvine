@@ -63,7 +63,6 @@ void main() {
       mockFollowRepository = createMockFollowRepository([testPubkey]);
 
       // Setup default mocks
-      when(mockSocialService.followingPubkeys).thenReturn([testPubkey]);
       when(mockSocialService.followSets).thenReturn([]);
       when(mockUserProfileService.hasProfile(any)).thenReturn(false);
       when(mockUserProfileService.getCachedProfile(any)).thenReturn(null);
