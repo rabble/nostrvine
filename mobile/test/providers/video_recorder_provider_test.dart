@@ -12,6 +12,34 @@ import 'package:openvine/providers/video_recorder_provider.dart';
 
 import '../mocks/mock_camera_service.dart';
 
+/// Shared test setup for VideoRecorderNotifier tests.
+class NotifierTestSetup {
+  late MockCameraService mockCamera;
+  late ProviderContainer container;
+
+  Future<void> setUp() async {
+    mockCamera = MockCameraService.create(
+      onUpdateState: ({forceCameraRebuild}) {},
+      onAutoStopped: (_) {},
+    );
+    await mockCamera.initialize();
+
+    container = ProviderContainer(
+      overrides: [
+        videoRecorderProvider.overrideWith(
+          () => VideoRecorderNotifier(mockCamera),
+        ),
+      ],
+    );
+
+    await container.read(videoRecorderProvider.notifier).initialize();
+  }
+
+  void tearDown() {
+    container.dispose();
+  }
+}
+
 void main() {
   group('VideoRecorderUIState AspectRatio', () {
     test('includes aspectRatio in state', () {
@@ -305,42 +333,22 @@ void main() {
   });
 
   group('VideoRecorderNotifier - Concurrent Stop Handling', () {
-    late MockCameraService mockCamera;
-    late ProviderContainer container;
+    final setup = NotifierTestSetup();
 
-    setUp(() async {
-      mockCamera = MockCameraService.create(
-        onUpdateState: ({forceCameraRebuild}) {},
-        onAutoStopped: (_) {},
-      );
-      await mockCamera.initialize();
-
-      container = ProviderContainer(
-        overrides: [
-          videoRecorderProvider.overrideWith(
-            () => VideoRecorderNotifier(mockCamera),
-          ),
-        ],
-      );
-
-      await container.read(videoRecorderProvider.notifier).initialize();
-    });
-
-    tearDown(() {
-      container.dispose();
-    });
+    setUp(() => setup.setUp());
+    tearDown(setup.tearDown);
 
     test(
       'multiple simultaneous stopRecording calls do not cause errors',
       () async {
-        final notifier = container.read(videoRecorderProvider.notifier);
+        final notifier = setup.container.read(videoRecorderProvider.notifier);
 
         // Start recording
         await notifier.startRecording();
 
         // Verify recording started
         expect(
-          container.read(videoRecorderProvider).recordingState,
+          setup.container.read(videoRecorderProvider).recordingState,
           VideoRecorderState.recording,
         );
 
@@ -352,14 +360,11 @@ void main() {
         ];
 
         // All should complete without throwing
-        await expectLater(
-          Future.wait(stopFutures),
-          completes,
-        );
+        await expectLater(Future.wait(stopFutures), completes);
 
         // State should be idle after stopping
         expect(
-          container.read(videoRecorderProvider).recordingState,
+          setup.container.read(videoRecorderProvider).recordingState,
           VideoRecorderState.idle,
         );
       },
@@ -368,12 +373,12 @@ void main() {
     test(
       'startRecording is blocked while stopRecording is in progress',
       () async {
-        final notifier = container.read(videoRecorderProvider.notifier);
+        final notifier = setup.container.read(videoRecorderProvider.notifier);
 
         // Start recording
         await notifier.startRecording();
         expect(
-          container.read(videoRecorderProvider).recordingState,
+          setup.container.read(videoRecorderProvider).recordingState,
           VideoRecorderState.recording,
         );
 
@@ -389,7 +394,7 @@ void main() {
 
         // State should be idle (start was blocked)
         expect(
-          container.read(videoRecorderProvider).recordingState,
+          setup.container.read(videoRecorderProvider).recordingState,
           VideoRecorderState.idle,
         );
       },
@@ -397,76 +402,56 @@ void main() {
   });
 
   group('VideoRecorderNotifier - Recording Lifecycle', () {
-    late MockCameraService mockCamera;
-    late ProviderContainer container;
+    final setup = NotifierTestSetup();
 
-    setUp(() async {
-      mockCamera = MockCameraService.create(
-        onUpdateState: ({forceCameraRebuild}) {},
-        onAutoStopped: (_) {},
-      );
-      await mockCamera.initialize();
-
-      container = ProviderContainer(
-        overrides: [
-          videoRecorderProvider.overrideWith(
-            () => VideoRecorderNotifier(mockCamera),
-          ),
-        ],
-      );
-
-      await container.read(videoRecorderProvider.notifier).initialize();
-    });
-
-    tearDown(() {
-      container.dispose();
-    });
+    setUp(() => setup.setUp());
+    tearDown(setup.tearDown);
 
     test('can start and stop recording normally', () async {
-      final notifier = container.read(videoRecorderProvider.notifier);
+      final notifier = setup.container.read(videoRecorderProvider.notifier);
 
       // Start recording
       await notifier.startRecording();
       expect(
-        container.read(videoRecorderProvider).recordingState,
+        setup.container.read(videoRecorderProvider).recordingState,
         VideoRecorderState.recording,
       );
 
       // Stop recording
       await notifier.stopRecording();
       expect(
-        container.read(videoRecorderProvider).recordingState,
+        setup.container.read(videoRecorderProvider).recordingState,
         VideoRecorderState.idle,
       );
     });
 
     test('stopRecording without starting does nothing', () async {
-      final notifier = container.read(videoRecorderProvider.notifier);
+      final notifier = setup.container.read(videoRecorderProvider.notifier);
 
       // Try to stop when not recording
       await notifier.stopRecording();
 
       // State should remain idle
       expect(
-        container.read(videoRecorderProvider).recordingState,
+        setup.container.read(videoRecorderProvider).recordingState,
         VideoRecorderState.idle,
       );
     });
 
     test('toggleRecording starts when idle and stops when recording', () async {
-      final notifier = container.read(videoRecorderProvider.notifier);
+      final notifier = setup.container.read(videoRecorderProvider.notifier);
 
       // Toggle to start
       await notifier.toggleRecording();
       expect(
-        container.read(videoRecorderProvider).recordingState,
+        setup.container.read(videoRecorderProvider).recordingState,
         VideoRecorderState.recording,
       );
 
       // Toggle to stop
       await notifier.toggleRecording();
       expect(
-        container.read(videoRecorderProvider).recordingState,
+        setup.container.read(videoRecorderProvider).recordingState,
         VideoRecorderState.idle,
       );
     });
