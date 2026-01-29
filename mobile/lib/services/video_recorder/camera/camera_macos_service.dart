@@ -288,7 +288,8 @@ class CameraMacOSService extends CameraService {
       }
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputPath = '${recordingsDir.path}/openvine_recording_$timestamp.mp4';
+      final outputPath =
+          '${recordingsDir.path}/openvine_recording_$timestamp.mp4';
 
       await CameraMacOS.instance.startVideoRecording(url: outputPath);
       _isRecording = true;
