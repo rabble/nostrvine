@@ -10,7 +10,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
-import 'package:openvine/services/video_event_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -705,15 +704,17 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
   Future<void> _retryConnection() async {
     try {
       final nostrService = ref.read(nostrServiceProvider);
+      final videoService = ref.read(videoEventServiceProvider);
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Retrying relay connections...'),
+          content: Text('Forcing relay reconnection...'),
           backgroundColor: Colors.orange,
         ),
       );
 
-      await nostrService.retryDisconnectedRelays();
+      // Force reconnect all WebSocket connections to fix stale/zombie connections
+      await nostrService.forceReconnectAll();
 
       // Check if any relays are now connected
       final connectedCount = nostrService.connectedRelayCount;
@@ -728,12 +729,8 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
           );
         }
 
-        // Trigger a refresh of video feeds
-        final videoService = ref.read(videoEventServiceProvider);
-        await videoService.subscribeToVideoFeed(
-          subscriptionType: SubscriptionType.discovery,
-          replace: true,
-        );
+        // Trigger a full reset and resubscribe of all feeds
+        await videoService.resetAndResubscribeAll();
       } else {
         _showError(
           'Failed to connect to relays. Please check your network connection.',

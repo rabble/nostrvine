@@ -7,11 +7,15 @@ import 'dart:async';
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer, SecureKeyStorage;
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/services/auth_service_signer.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/pending_verification_service.dart';
+import 'package:openvine/services/blossom_server_discovery_service.dart';
+import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/user_profile_service.dart' as ups;
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -148,6 +152,17 @@ class AuthService implements BackgroundAwareService {
   // NIP-46 bunker signer state
   NostrRemoteSigner? _bunkerSigner;
 
+  // Relay discovery state (NIP-65)
+  List<DiscoveredRelay> _userRelays = [];
+  bool _hasUserRelays = false;
+  bool _hasExistingProfile = false;
+  final RelayDiscoveryService _relayDiscoveryService = RelayDiscoveryService();
+
+  // Blossom server discovery state (kind 10063 / BUD-03)
+  List<DiscoveredBlossomServer> _userBlossomServers = [];
+  bool _hasUserBlossomServers = false;
+  final BlossomServerDiscoveryService _blossomDiscoveryService = BlossomServerDiscoveryService();
+
   /// Returns the active remote signer (bunker takes priority over OAuth RPC)
   NostrSigner? get rpcSigner => _bunkerSigner ?? _keycastSigner;
   final OAuthConfig _oauthConfig;
@@ -199,6 +214,21 @@ class AuthService implements BackgroundAwareService {
 
   /// Check if user is using an anonymous auto-generated identity
   bool get isAnonymous => _authSource == AuthenticationSource.automatic;
+
+  /// Get discovered user relays (NIP-65)
+  List<DiscoveredRelay> get userRelays => List.unmodifiable(_userRelays);
+
+  /// Check if user has discovered relays
+  bool get hasUserRelays => _hasUserRelays;
+
+  /// Check if user has an existing profile (kind 0)
+  bool get hasExistingProfile => _hasExistingProfile;
+
+  /// Get discovered user Blossom servers (kind 10063 / BUD-03)
+  List<DiscoveredBlossomServer> get userBlossomServers => List.unmodifiable(_userBlossomServers);
+
+  /// Check if user has discovered Blossom servers
+  bool get hasUserBlossomServers => _userBlossomServers.isNotEmpty;
 
   /// Last authentication error
   String? get lastError => _lastError;
@@ -1359,6 +1389,12 @@ class AuthService implements BackgroundAwareService {
 
     _profileController.add(_currentProfile);
 
+    // Discover user relays via NIP-65
+    await _discoverUserRelays();
+
+    // Discover user Blossom servers via kind 10063 (BUD-03)
+    await _discoverUserBlossomServers();
+
     Log.info(
       'Secure user session established',
       name: 'AuthService',
@@ -1371,6 +1407,204 @@ class AuthService implements BackgroundAwareService {
     );
     Log.debug(
       '📱 Security: Hardware-backed storage active',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+  }
+
+  /// Discover user relays via NIP-65 and check for existing profile
+  /// 
+  /// Note: This is called BEFORE NostrClient is rebuilt with user relays,
+  /// so we create a temporary NostrClient just for indexer querying.
+  Future<void> _discoverUserRelays() async {
+    if (_currentKeyContainer == null) return;
+
+    final npub = _currentKeyContainer!.npub;
+
+    Log.info(
+      '🔍 Discovering relays for user via NIP-65...',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    try {
+      // Create a temporary NostrClient for querying indexers
+      // We can't use the main NostrClient yet because it hasn't been
+      // rebuilt with the user's relays
+      final tempConfig = NostrClientConfig(
+        signer: AuthServiceSigner(_currentKeyContainer),
+      );
+      final tempRelayConfig = RelayManagerConfig(
+        defaultRelayUrl: 'wss://relay.divine.video', // Won't be used for indexer queries
+        storage: SharedPreferencesRelayStorage(),
+      );
+      final tempClient = NostrClient(
+        config: tempConfig,
+        relayManagerConfig: tempRelayConfig,
+      );
+      
+      await tempClient.initialize();
+
+      // Discover relays via NIP-65 using the temp client
+      final result = await _relayDiscoveryService.discoverRelays(
+        npub,
+        nostrClient: tempClient,
+      );
+
+      // Clean up temp client
+      tempClient.dispose();
+
+      if (result.success && result.hasRelays) {
+        _userRelays = result.relays;
+        _hasUserRelays = true;
+
+        Log.info(
+          '✅ Discovered ${_userRelays.length} user relays from ${result.foundOnIndexer ?? "cache"}',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+
+        // Log relay details
+        for (final relay in _userRelays) {
+          Log.debug(
+            '  - ${relay.url} (read: ${relay.read}, write: ${relay.write})',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+        }
+      } else {
+        _userRelays = [];
+        _hasUserRelays = false;
+
+        Log.warning(
+          '⚠️ No relay list found for user - will use diVine relay only',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+
+        if (result.errorMessage != null) {
+          Log.debug(
+            'Relay discovery error: ${result.errorMessage}',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+        }
+      }
+    } catch (e) {
+      _userRelays = [];
+      _hasUserRelays = false;
+
+      Log.error(
+        '❌ Relay discovery failed: $e - falling back to diVine relay only',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    }
+
+    // TODO: Check for existing profile (kind 0) on discovered relays
+    // This will be implemented as part of guardrails to prevent blank profile overwrite
+    // For now, set to false
+    _hasExistingProfile = false;
+
+    Log.info(
+      '📊 Relay discovery summary: hasRelays=$_hasUserRelays, '
+      'relayCount=${_userRelays.length}, hasProfile=$_hasExistingProfile',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+  }
+
+  /// Discover user Blossom servers via kind 10063 (BUD-03)
+  ///
+  /// Note: This queries the SAME indexers as relay discovery (purplepag.es, etc.)
+  /// because indexers maintain kind 10063 events for Nostr-native users.
+  Future<void> _discoverUserBlossomServers() async {
+    if (_currentKeyContainer == null) return;
+
+    final npub = _currentKeyContainer!.npub;
+
+    Log.info(
+      '🌸 Discovering Blossom servers for user via kind 10063...',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    try {
+      // Create a temporary NostrClient for querying indexers
+      // Same pattern as relay discovery - the service will handle adding/removing indexers
+      final tempConfig = NostrClientConfig(
+        signer: AuthServiceSigner(_currentKeyContainer),
+      );
+      final tempRelayConfig = RelayManagerConfig(
+        defaultRelayUrl: 'wss://relay.divine.video', // Won't be used for indexer queries
+        storage: SharedPreferencesRelayStorage(),
+      );
+      final tempClient = NostrClient(
+        config: tempConfig,
+        relayManagerConfig: tempRelayConfig,
+      );
+
+      await tempClient.initialize();
+
+      // Discover Blossom servers via indexers (same indexers as NIP-65)
+      final result = await _blossomDiscoveryService.discoverServers(
+        npub,
+        nostrClient: tempClient,
+      );
+
+      // Clean up temp client
+      tempClient.dispose();
+
+      if (result.success && result.hasServers) {
+        _userBlossomServers = result.servers;
+        _hasUserBlossomServers = true;
+
+        Log.info(
+          '✅ Discovered ${_userBlossomServers.length} Blossom servers from ${result.source ?? "cache"}',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+
+        // Log server details in priority order
+        for (final server in result.serversByPriority) {
+          Log.debug(
+            '  ${server.priority}: ${server.url}',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+        }
+      } else {
+        _userBlossomServers = [];
+        _hasUserBlossomServers = false;
+
+        Log.info(
+          '📝 No Blossom server list found - will use diVine media server',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+
+        if (result.errorMessage != null) {
+          Log.debug(
+            'Blossom discovery info: ${result.errorMessage}',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+        }
+      }
+    } catch (e) {
+      _userBlossomServers = [];
+      _hasUserBlossomServers = false;
+
+      Log.warning(
+        '⚠️ Blossom server discovery failed: $e - falling back to diVine media server',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    }
+
+    Log.info(
+      '📊 Blossom discovery summary: hasServers=$_hasUserBlossomServers, '
+      'serverCount=${_userBlossomServers.length}',
       name: 'AuthService',
       category: LogCategory.auth,
     );

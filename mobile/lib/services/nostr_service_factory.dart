@@ -22,20 +22,39 @@ class NostrServiceFactory {
   /// If not provided, falls back to [AppConstants.defaultRelayUrl].
   ///
   /// Takes [dbClient] for local event caching with optimistic updates.
+  ///
+  /// Takes [userRelayUrls] for user-discovered relays (NIP-65).
+  /// These will be added in addition to the diVine relay.
   static NostrClient create({
     SecureKeyContainer? keyContainer,
     RelayStatisticsService? statisticsService,
     EnvironmentConfig? environmentConfig,
     AppDbClient? dbClient,
+    List<String>? userRelayUrls,
 
     /// Optional remote RPC signer (e.g. `KeycastRpc`). If provided, this
     /// signer will be used instead of the local `AuthServiceSigner`.
     NostrSigner? rpcSigner,
   }) {
+    final divineRelayUrl =
+        environmentConfig?.relayUrl ?? AppConstants.defaultRelayUrl;
+
     UnifiedLogger.info(
-      'Creating NostrClient via factory',
+      'Creating NostrClient via factory with diVine relay: $divineRelayUrl',
       name: 'NostrServiceFactory',
     );
+
+    if (userRelayUrls != null && userRelayUrls.isNotEmpty) {
+      UnifiedLogger.info(
+        'Will add ${userRelayUrls.length} user relays (NIP-65)',
+        name: 'NostrServiceFactory',
+      );
+    } else {
+      UnifiedLogger.info(
+        'No user relays discovered - using diVine relay only',
+        name: 'NostrServiceFactory',
+      );
+    }
 
     // Prefer RPC signer when available (KeycastRpc implements NostrSigner),
     // otherwise fall back to local signer that uses the secure key container.
@@ -46,20 +65,63 @@ class NostrServiceFactory {
     final config = NostrClientConfig(signer: signer);
 
     // Create relay manager config with persistent storage
-    // Use relay URL from environment config if provided, otherwise fall back to default
-    final relayUrl =
-        environmentConfig?.relayUrl ?? AppConstants.defaultRelayUrl;
+    // The diVine relay is always the default relay (cannot be removed)
     final relayManagerConfig = RelayManagerConfig(
-      defaultRelayUrl: relayUrl,
+      defaultRelayUrl: divineRelayUrl,
       storage: SharedPreferencesRelayStorage(),
     );
 
     // Create the NostrClient
-    return NostrClient(
+    final client = NostrClient(
       config: config,
       relayManagerConfig: relayManagerConfig,
       dbClient: dbClient,
     );
+
+    // Add user relays if available
+    // These will be added asynchronously during initialization
+    if (userRelayUrls != null && userRelayUrls.isNotEmpty) {
+      // Schedule adding user relays after client is initialized
+      Future.microtask(() async {
+        for (final relayUrl in userRelayUrls) {
+          // Skip if it's the same as the divine relay
+          if (relayUrl == divineRelayUrl) {
+            UnifiedLogger.debug(
+              'Skipping duplicate relay: $relayUrl',
+              name: 'NostrServiceFactory',
+            );
+            continue;
+          }
+
+          try {
+            final added = await client.addRelay(relayUrl);
+            if (added) {
+              UnifiedLogger.info(
+                '✅ Added user relay: $relayUrl',
+                name: 'NostrServiceFactory',
+              );
+            } else {
+              UnifiedLogger.warning(
+                '⚠️ Failed to add user relay: $relayUrl',
+                name: 'NostrServiceFactory',
+              );
+            }
+          } catch (e) {
+            UnifiedLogger.error(
+              '❌ Error adding user relay $relayUrl: $e',
+              name: 'NostrServiceFactory',
+            );
+          }
+        }
+
+        UnifiedLogger.info(
+          '📡 Relay setup complete - connected to ${1 + userRelayUrls.length} relays total',
+          name: 'NostrServiceFactory',
+        );
+      });
+    }
+
+    return client;
   }
 
   /// Initialize the created client

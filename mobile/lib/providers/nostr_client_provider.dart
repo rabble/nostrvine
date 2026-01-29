@@ -31,12 +31,19 @@ class NostrService extends _$NostrService {
     _authSubscription?.cancel();
     _authSubscription = authService.authStateStream.listen(_onAuthStateChanged);
 
+    // Get user relay URLs from discovered relays (NIP-65)
+    final userRelayUrls = authService.userRelays
+        .where((relay) => relay.read) // Only include read-capable relays
+        .map((relay) => relay.url)
+        .toList();
+
     // Create initial NostrClient (prefer RPC signer when available)
     final client = NostrServiceFactory.create(
       keyContainer: authService.currentKeyContainer,
       statisticsService: statisticsService,
       environmentConfig: environmentConfig,
       dbClient: dbClient,
+      userRelayUrls: userRelayUrls.isNotEmpty ? userRelayUrls : null,
       rpcSigner: authService.rpcSigner,
     );
 
@@ -87,11 +94,18 @@ class NostrService extends _$NostrService {
       final environmentConfig = ref.read(currentEnvironmentProvider);
       final dbClient = ref.read(appDbClientProvider);
 
+      // Get user relay URLs from discovered relays (NIP-65)
+      final userRelayUrls = authService.userRelays
+          .where((relay) => relay.read) // Only include read-capable relays
+          .map((relay) => relay.url)
+          .toList();
+
       final newClient = NostrServiceFactory.create(
         keyContainer: authService.currentKeyContainer,
         statisticsService: statisticsService,
         environmentConfig: environmentConfig,
         dbClient: dbClient,
+        userRelayUrls: userRelayUrls.isNotEmpty ? userRelayUrls : null,
         rpcSigner: authService.rpcSigner,
       );
 

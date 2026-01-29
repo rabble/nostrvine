@@ -17,16 +17,82 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   ProfileEditorBloc({
     required ProfileRepository profileRepository,
     required UserProfileService userProfileService,
+    required bool hasExistingProfile,
   }) : _profileRepository = profileRepository,
        _userProfileService = userProfileService,
+       _hasExistingProfile = hasExistingProfile,
        super(const ProfileEditorState()) {
     on<ProfileSaved>(_onProfileSaved);
+    on<ProfileSaveConfirmed>(_onProfileSaveConfirmed);
   }
 
   final ProfileRepository _profileRepository;
   final UserProfileService _userProfileService;
+  final bool _hasExistingProfile;
 
   Future<void> _onProfileSaved(
+    ProfileSaved event,
+    Emitter<ProfileEditorState> emit,
+  ) async {
+    final displayName = event.displayName.trim();
+    final about = (event.about?.trim().isEmpty ?? true) ? null : event.about;
+    final picture = (event.picture?.trim().isEmpty ?? true)
+        ? null
+        : event.picture;
+
+    // Guard: Check if we're about to overwrite existing profile with minimal data
+    if (!_hasExistingProfile && _isProfileMinimal(displayName, about, picture)) {
+      Log.info(
+        '⚠️ Blank profile warning: no existing profile found, requesting confirmation',
+        name: 'ProfileEditorBloc',
+      );
+      emit(
+        state.copyWith(
+          status: ProfileEditorStatus.confirmationRequired,
+          pendingEvent: event,
+        ),
+      );
+      return;
+    }
+
+    await _saveProfile(event, emit);
+  }
+
+  Future<void> _onProfileSaveConfirmed(
+    ProfileSaveConfirmed event,
+    Emitter<ProfileEditorState> emit,
+  ) async {
+    if (state.pendingEvent == null) {
+      Log.error(
+        'ProfileSaveConfirmed called without pending event',
+        name: 'ProfileEditorBloc',
+      );
+      return;
+    }
+
+    Log.info(
+      '✅ User confirmed blank profile publish',
+      name: 'ProfileEditorBloc',
+    );
+
+    await _saveProfile(state.pendingEvent!, emit);
+  }
+
+  /// Check if profile data is minimal/blank
+  bool _isProfileMinimal(String displayName, String? about, String? picture) {
+    // Profile is minimal if:
+    // - Display name is very short (< 3 chars)
+    // - No bio
+    // - No picture
+    final hasMinimalDisplayName = displayName.length < 3;
+    final hasNoBio = about == null || about.isEmpty;
+    final hasNoPicture = picture == null || picture.isEmpty;
+
+    return hasMinimalDisplayName && hasNoBio && hasNoPicture;
+  }
+
+  /// Core profile save logic (extracted for reuse)
+  Future<void> _saveProfile(
     ProfileSaved event,
     Emitter<ProfileEditorState> emit,
   ) async {
