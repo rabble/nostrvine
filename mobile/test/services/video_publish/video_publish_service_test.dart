@@ -426,7 +426,8 @@ RecordingClip _createTestClip() {
     video: EditorVideo.file('/test/video.mp4'),
     duration: const Duration(seconds: 10),
     recordedAt: DateTime.now(),
-    aspectRatio: AspectRatio.square,
+    targetAspectRatio: AspectRatio.square,
+    originalAspectRatio: 9 / 16,
   );
 }
 

@@ -175,14 +175,14 @@ class VideoEditorSplitService {
         name: 'VideoEditorSplitService',
         category: .video,
       );
-      final thumbnailPath = await VideoThumbnailService.extractThumbnail(
+      final thumbnailResult = await VideoThumbnailService.extractThumbnail(
         videoPath: await sourceClip.video.safeFilePath(),
-        timestamp: timestamp,
+        targetTimestamp: timestamp,
       );
-      if (thumbnailPath != null) {
-        onThumbnailExtracted?.call(targetClip, thumbnailPath);
+      if (thumbnailResult != null) {
+        onThumbnailExtracted?.call(targetClip, thumbnailResult.path);
         Log.debug(
-          '✅ Thumbnail extracted: $thumbnailPath',
+          '✅ Thumbnail extracted: ${thumbnailResult.path}',
           name: 'VideoEditorSplitService',
           category: .video,
         );
