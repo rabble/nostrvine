@@ -253,7 +253,10 @@ void main() {
         expect(json['lud16'], equals('test@wallet.com'));
         expect(json['lud06'], equals('lnurl1234'));
         expect(json['raw_data'], equals({'custom': 'data'}));
-        expect(json['created_at'], equals(testCreatedAt.millisecondsSinceEpoch));
+        expect(
+          json['created_at'],
+          equals(testCreatedAt.millisecondsSinceEpoch),
+        );
         expect(json['event_id'], equals(testEventId));
       });
 
@@ -332,7 +335,9 @@ void main() {
 
         expect(
           profile.bestDisplayName,
-          equals('${testPubkey.substring(0, 8)}...${testPubkey.substring(testPubkey.length - 6)}'),
+          equals(
+            '${testPubkey.substring(0, 8)}...${testPubkey.substring(testPubkey.length - 6)}',
+          ),
         );
       });
 
