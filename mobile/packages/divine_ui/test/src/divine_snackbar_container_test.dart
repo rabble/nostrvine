@@ -73,16 +73,17 @@ void main() {
       expect(text.style?.color, isNot(VineTheme.likeRed));
     });
 
-    testWidgets('does not render action button when actionLabel is null',
-        (tester) async {
+    testWidgets('does not render action button when actionLabel is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildTestWidget(label: 'Test message'));
 
       expect(find.byType(TextButton), findsNothing);
     });
 
-    testWidgets(
-        'does not render action button when onActionPressed is null',
-        (tester) async {
+    testWidgets('does not render action button when onActionPressed is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(label: 'Test message', actionLabel: 'Retry'),
       );
@@ -104,8 +105,9 @@ void main() {
       expect(find.text('Retry'), findsOneWidget);
     });
 
-    testWidgets('calls onActionPressed when action button is tapped',
-        (tester) async {
+    testWidgets('calls onActionPressed when action button is tapped', (
+      tester,
+    ) async {
       var actionPressed = false;
       await tester.pumpWidget(
         buildTestWidget(
@@ -119,8 +121,9 @@ void main() {
       expect(actionPressed, isTrue);
     });
 
-    testWidgets('action button has green color in non-error state',
-        (tester) async {
+    testWidgets('action button has green color in non-error state', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         buildTestWidget(
           label: 'Test message',

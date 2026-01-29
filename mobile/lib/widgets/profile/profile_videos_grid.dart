@@ -85,10 +85,10 @@ class ProfileVideosGrid extends ConsumerWidget {
                   backgroundUpload: uploadEntry.backgroundUpload,
                 ),
                 _GridVideoEventEntry eventEntry => _VideoGridTile(
-                    videoEvent: eventEntry.videoEvent,
-                    userIdHex: userIdHex,
-                    index: index,
-                  ),
+                  videoEvent: eventEntry.videoEvent,
+                  userIdHex: userIdHex,
+                  index: index,
+                ),
               };
             }, childCount: allVideos.length),
           ),

@@ -501,8 +501,7 @@ class _ProfileDataView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Get video data from profile feed
-    final videosAsync = ref.watch(profileFeedProvider(userIdHex)); 
-
+    final videosAsync = ref.watch(profileFeedProvider(userIdHex));
 
     // Get profile stats
     final profileStatsAsync = ref.watch(fetchProfileStatsProvider(userIdHex));
