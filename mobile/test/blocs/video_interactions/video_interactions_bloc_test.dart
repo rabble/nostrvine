@@ -143,7 +143,8 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'fetches repost count by event ID for better relay compatibility',
+        'fetches repost count by addressable ID per NIP-18 for addressable '
+        'videos',
         setUp: () {
           when(
             () => mockLikesRepository.isLiked(testEventId),
@@ -158,7 +159,7 @@ void main() {
             () => mockCommentsRepository.getCommentsCount(testEventId),
           ).thenAnswer((_) async => 5);
           when(
-            () => mockRepostsRepository.getRepostCountByEventId(testEventId),
+            () => mockRepostsRepository.getRepostCount(testAddressableId),
           ).thenAnswer((_) async => 3);
         },
         build: () => createBloc(addressableId: testAddressableId),
@@ -175,7 +176,46 @@ void main() {
           ),
         ],
         verify: (_) {
-          // Always uses event ID for better relay compatibility
+          // Uses addressable ID for addressable videos per NIP-18
+          verify(
+            () => mockRepostsRepository.getRepostCount(testAddressableId),
+          ).called(1);
+          verifyNever(
+            () => mockRepostsRepository.getRepostCountByEventId(any()),
+          );
+        },
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'fetches repost count by event ID for non-addressable videos',
+        setUp: () {
+          when(
+            () => mockLikesRepository.isLiked(testEventId),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockLikesRepository.getLikeCount(testEventId),
+          ).thenAnswer((_) async => 10);
+          when(
+            () => mockCommentsRepository.getCommentsCount(testEventId),
+          ).thenAnswer((_) async => 5);
+          when(
+            () => mockRepostsRepository.getRepostCountByEventId(testEventId),
+          ).thenAnswer((_) async => 2);
+        },
+        build: createBloc, // No addressable ID
+        act: (bloc) => bloc.add(const VideoInteractionsFetchRequested()),
+        expect: () => [
+          const VideoInteractionsState(status: VideoInteractionsStatus.loading),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: false,
+            likeCount: 10,
+            repostCount: 2,
+            commentCount: 5,
+          ),
+        ],
+        verify: (_) {
+          // Uses event ID for non-addressable videos
           verify(
             () => mockRepostsRepository.getRepostCountByEventId(testEventId),
           ).called(1);
