@@ -42,6 +42,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
   // Flag to track if startRecording is in progress (waiting for first keyframe)
   bool _isStartingRecording = false;
+  bool _isStoppingRecording = false;
 
   @override
   VideoRecorderProviderState build() {
@@ -320,6 +321,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     if (!_cameraService.canRecord ||
         state.isRecording ||
         _isStartingRecording ||
+        _isStoppingRecording ||
         remainingDuration < const Duration(milliseconds: 30)) {
       return;
     }
@@ -393,6 +395,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   /// Stops camera recording, extracts video metadata for exact duration,
   /// generates thumbnail, and adds clip to clip manager.
   Future<void> stopRecording([EditorVideo? result]) async {
+    // Prevent multiple simultaneous stop calls.
+    if (_isStoppingRecording) {
+      return;
+    }
+
     // If we're still starting up (waiting for first keyframe), just call native stop
     // The native Finalize event will trigger startRecordingCallback with error,
     // which makes startRecording return false and set state to idle
@@ -415,6 +422,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       name: 'VideoRecorderNotifier',
       category: .video,
     );
+    _isStoppingRecording = true;
     final videoResult = result ?? await _cameraService.stopRecording();
 
     final clipProvider = ref.read(clipManagerProvider.notifier)
@@ -422,6 +430,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     final remainingMs = clipProvider.remainingDuration.inMilliseconds;
 
     state = state.copyWith(recordingState: .idle);
+    _isStoppingRecording = false;
     if (videoResult == null) {
       Log.warning(
         '⚠️ Recording stopped but no video file returned from camera service',
