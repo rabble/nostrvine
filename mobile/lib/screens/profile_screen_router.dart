@@ -620,17 +620,26 @@ class ProfileViewSwitcher extends StatelessWidget {
             bottom: 16,
             left: 16,
             right: 16,
-            child: DivineSnackbarContainer(
-              label: 'Video upload failed.',
-              error: true,
-              actionLabel: 'Retry',
-              onActionPressed: () {
+            child: Dismissible(
+              key: ValueKey(faultUpload.draft.id),
+              direction: DismissDirection.horizontal,
+              onDismissed: (_) {
                 backgroundPublishBloc.add(
-                  BackgroundPublishRetryRequested(
-                    draftId: faultUpload.draft.id,
-                  ),
+                  BackgroundPublishVanished(draftId: faultUpload.draft.id),
                 );
               },
+              child: DivineSnackbarContainer(
+                label: 'Video upload failed.',
+                error: true,
+                actionLabel: 'Retry',
+                onActionPressed: () {
+                  backgroundPublishBloc.add(
+                    BackgroundPublishRetryRequested(
+                      draftId: faultUpload.draft.id,
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],

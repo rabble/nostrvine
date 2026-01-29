@@ -17,7 +17,6 @@ import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
-import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/router/app_router.dart';
@@ -370,6 +369,37 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'swiping error snackbar dispatches BackgroundPublishVanished event',
+      (tester) async {
+        fakeBloc = _FakeBackgroundPublishBloc(
+          initialState: BackgroundPublishState(
+            uploads: [
+              BackgroundUpload(
+                draft: mockDraft,
+                result: const PublishError('Upload failed'),
+                progress: 1.0,
+              ),
+            ],
+          ),
+        );
+
+        await tester.pumpWidget(buildTestWidget(fakeBloc));
+        await tester.pumpAndSettle();
+
+        // Find the Dismissible widget and swipe it
+        await tester.drag(
+          find.byType(Dismissible),
+          const Offset(500, 0), // Swipe right
+        );
+        await tester.pumpAndSettle();
+
+        // Should have dispatched the vanished event
+        expect(fakeBloc.vanishedEvents, hasLength(1));
+        expect(fakeBloc.vanishedEvents.first.draftId, equals('test-draft-id'));
+      },
+    );
   });
 }
 
@@ -394,10 +424,13 @@ class _FakeBackgroundPublishBloc
     on<BackgroundPublishRetryRequested>((event, emit) {
       retryRequestedEvents.add(event);
     });
-    on<BackgroundPublishVanished>((event, emit) {});
+    on<BackgroundPublishVanished>((event, emit) {
+      vanishedEvents.add(event);
+    });
     on<BackgroundPublishProgressChanged>((event, emit) {});
     on<BackgroundPublishRequested>((event, emit) {});
   }
 
   final retryRequestedEvents = <BackgroundPublishRetryRequested>[];
+  final vanishedEvents = <BackgroundPublishVanished>[];
 }
