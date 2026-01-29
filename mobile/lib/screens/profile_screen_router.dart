@@ -501,28 +501,46 @@ class _ProfileDataView extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Get video data from profile feed
-    final videosAsync = ref.watch(profileFeedProvider(userIdHex));
+    final videosAsync = ref.watch(profileFeedProvider(userIdHex)); 
+
 
     // Get profile stats
     final profileStatsAsync = ref.watch(fetchProfileStatsProvider(userIdHex));
 
-    return switch (videosAsync) {
-      AsyncLoading() => const ProfileLoadingView(),
-      AsyncError(:final error) => Center(child: Text('Error: $error')),
-      AsyncData(:final value) => _ProfileViewSwitcher(
-        npub: npub,
-        userIdHex: userIdHex,
-        isOwnProfile: isOwnProfile,
-        displayName: displayName,
-        videos: value.videos,
-        videoIndex: videoIndex,
-        profileStatsAsync: profileStatsAsync,
-        scrollController: scrollController,
-        onSetupProfile: onSetupProfile,
-        onEditProfile: onEditProfile,
-        onOpenClips: onOpenClips,
-      ),
-    };
+    return BlocListener<BackgroundPublishBloc, BackgroundPublishState>(
+      listenWhen: (previous, current) {
+        // Listen only for upload completions
+        final prevCompleted = previous.uploads
+            .where((upload) => upload.result != null)
+            .length;
+        final currCompleted = current.uploads
+            .where((upload) => upload.result != null)
+            .length;
+        return currCompleted > prevCompleted;
+      },
+      listener: (context, state) {
+        // We don't need the value here, we just want to refresh the feed
+        // when background uploads complete
+        final _ = ref.refresh(profileFeedProvider(userIdHex));
+      },
+      child: switch (videosAsync) {
+        AsyncLoading() => const ProfileLoadingView(),
+        AsyncError(:final error) => Center(child: Text('Error: $error')),
+        AsyncData(:final value) => _ProfileViewSwitcher(
+          npub: npub,
+          userIdHex: userIdHex,
+          isOwnProfile: isOwnProfile,
+          displayName: displayName,
+          videos: value.videos,
+          videoIndex: videoIndex,
+          profileStatsAsync: profileStatsAsync,
+          scrollController: scrollController,
+          onSetupProfile: onSetupProfile,
+          onEditProfile: onEditProfile,
+          onOpenClips: onOpenClips,
+        ),
+      },
+    );
   }
 }
 
