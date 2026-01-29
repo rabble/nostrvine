@@ -179,7 +179,6 @@ class _VideoGridUploadingTile extends StatelessWidget {
 
   final BackgroundUpload backgroundUpload;
 
-  // TODO(erick): Follow the design specs
   @override
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
@@ -187,11 +186,7 @@ class _VideoGridUploadingTile extends StatelessWidget {
       borderRadius: BorderRadius.circular(4),
     ),
     child: Center(
-      child: CircularProgressIndicator(
-        color: VineTheme.vineGreen,
-        strokeWidth: 2,
-        value: backgroundUpload.progress,
-      ),
+      child: PartialCircleSpinner(progress: backgroundUpload.progress),
     ),
   );
 }
