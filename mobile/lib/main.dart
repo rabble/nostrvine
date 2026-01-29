@@ -1087,7 +1087,27 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           ),
         ),
       ],
-      child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+      // Global listener for email verification failures - shows snackbar
+      // when verification times out or fails while user is elsewhere in app
+      child: BlocListener<EmailVerificationCubit, EmailVerificationState>(
+        listenWhen: (previous, current) =>
+            current.status == EmailVerificationStatus.failure &&
+            previous.status != EmailVerificationStatus.failure,
+        listener: (context, state) {
+          final messenger = ScaffoldMessenger.maybeOf(context);
+          if (messenger != null && state.error != null) {
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(state.error!),
+                backgroundColor: Colors.red[700],
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 5),
+              ),
+            );
+          }
+        },
+        child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+      ),
     );
 
     if (crashProbe) {

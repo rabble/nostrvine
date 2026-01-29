@@ -53,21 +53,22 @@ class EmailVerificationScreen extends ConsumerStatefulWidget {
 
 class _EmailVerificationScreenState
     extends ConsumerState<EmailVerificationScreen> {
-  late final EmailVerificationCubit _cubit;
   bool _isTokenMode = false;
+
+  /// Get the app-level cubit provided in main.dart
+  EmailVerificationCubit get _cubit => context.read<EmailVerificationCubit>();
 
   @override
   void initState() {
     super.initState();
 
-    final oauth = ref.read(oauthClientProvider);
-    final authService = ref.read(authServiceProvider);
+    // Use post-frame callback to access context safely
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _initializeVerification();
+    });
+  }
 
-    _cubit = EmailVerificationCubit(
-      oauthClient: oauth,
-      authService: authService,
-    );
-
+  void _initializeVerification() {
     // Start the appropriate verification mode
     if (widget.isPollingMode) {
       Log.info(
@@ -194,11 +195,8 @@ class _EmailVerificationScreenState
     }
   }
 
-  @override
-  void dispose() {
-    _cubit.close();
-    super.dispose();
-  }
+  // Note: We don't close the cubit in dispose() because it's owned by
+  // the app-level BlocProvider in main.dart and needs to survive navigation
 
   void _handleSuccess() {
     // Clear persisted verification data on successful login
@@ -238,33 +236,30 @@ class _EmailVerificationScreenState
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider.value(
-      value: _cubit,
-      child: Scaffold(
-        body: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [VineTheme.vineGreen, Color(0xFF2D8B6F)],
-            ),
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [VineTheme.vineGreen, Color(0xFF2D8B6F)],
           ),
-          child: SafeArea(
-            child: BlocConsumer<EmailVerificationCubit, EmailVerificationState>(
-              listener: (context, state) {
-                if (state.status == EmailVerificationStatus.success) {
-                  _handleSuccess();
-                }
-              },
-              builder: (context, state) {
-                return Center(
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: _buildContent(state),
-                  ),
-                );
-              },
-            ),
+        ),
+        child: SafeArea(
+          child: BlocConsumer<EmailVerificationCubit, EmailVerificationState>(
+            listener: (context, state) {
+              if (state.status == EmailVerificationStatus.success) {
+                _handleSuccess();
+              }
+            },
+            builder: (context, state) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: _buildContent(state),
+                ),
+              );
+            },
           ),
         ),
       ),

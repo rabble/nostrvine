@@ -2,10 +2,13 @@
 // ABOUTME: Verifies profile header displays avatar, stats, name, bio, and npub correctly
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mockito/mockito.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
@@ -18,6 +21,9 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../helpers/test_provider_overrides.dart';
+
+// Mock for KeycastOAuth used by EmailVerificationCubit
+class MockKeycastOAuth extends Mock implements KeycastOAuth {}
 
 // Mock classes
 class MockFollowRepository extends Mock implements FollowRepository {
@@ -148,15 +154,21 @@ void main() {
             (ref) => AuthState.authenticated,
           ),
         ],
-        child: MaterialApp(
-          home: Scaffold(
-            body: SingleChildScrollView(
-              child: ProfileHeaderWidget(
-                userIdHex: userIdHex,
-                isOwnProfile: isOwnProfile,
-                videoCount: videoCount,
-                profileStatsAsync: profileStatsAsync,
-                onSetupProfile: onSetupProfile,
+        child: BlocProvider<EmailVerificationCubit>(
+          create: (_) => EmailVerificationCubit(
+            oauthClient: MockKeycastOAuth(),
+            authService: authService,
+          ),
+          child: MaterialApp(
+            home: Scaffold(
+              body: SingleChildScrollView(
+                child: ProfileHeaderWidget(
+                  userIdHex: userIdHex,
+                  isOwnProfile: isOwnProfile,
+                  videoCount: videoCount,
+                  profileStatsAsync: profileStatsAsync,
+                  onSetupProfile: onSetupProfile,
+                ),
               ),
             ),
           ),
