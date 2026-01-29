@@ -99,7 +99,7 @@ flutter doctor
 
 ```bash
 # Clone the repository
-git clone https://github.com/ArcadeLabsInc/divine-mobile.git
+git clone https://github.com/divinevideo/divine-mobile.git
 cd divine-mobile
 
 # Navigate to the mobile app

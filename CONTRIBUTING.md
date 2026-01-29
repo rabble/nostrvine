@@ -35,14 +35,14 @@ Thank you for your interest in contributing to diVine! This guide will help you 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/openvine.git
-cd openvine
+git clone https://github.com/divinevideo/divine-mobile.git
+cd divine-mobile
 ```
 
 ### 2. Install Flutter Dependencies
 
 ```bash
-cd openvine/mobile
+cd divine-mobile/mobile
 flutter pub get
 ```
 
@@ -326,7 +326,7 @@ ls -la ../flutter_embedded_nostr_relay
 # Recreate if needed
 cd ..
 ln -s /path/to/flutter_embedded_nostr_relay flutter_embedded_nostr_relay
-cd openvine/mobile
+cd divine-mobile/mobile
 flutter pub get
 ```
 
