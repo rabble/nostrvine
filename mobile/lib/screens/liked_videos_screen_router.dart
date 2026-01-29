@@ -4,14 +4,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/liked_videos_state_bridge.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
@@ -82,7 +83,15 @@ class _LikedVideosScreenRouterState
           ),
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: () => context.goMyProfile(),
+            onPressed: () {
+              // Navigate to own profile grid
+              final authService = ref.read(authServiceProvider);
+              final currentUserHex = authService.currentPublicKeyHex;
+              if (currentUserHex != null) {
+                final npub = NostrKeyUtils.encodePubKey(currentUserHex);
+                context.go(ProfileScreenRouter.pathForNpub(npub));
+              }
+            },
           ),
         ),
         body: BlocProvider<ProfileLikedVideosBloc>(
@@ -199,7 +208,8 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
           videoList: videos,
           contextTitle: 'Liked Videos',
           startingIndex: safeIndex,
-          onNavigate: (index) => context.goLikedVideos(index),
+          onNavigate: (index) =>
+              context.go(LikedVideosScreenRouter.pathForIndex(index)),
         );
       },
     );

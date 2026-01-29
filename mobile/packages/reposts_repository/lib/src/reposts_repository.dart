@@ -5,6 +5,7 @@
 
 import 'dart:async';
 
+import 'package:meta/meta.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:reposts_repository/src/exceptions.dart';
@@ -15,23 +16,6 @@ import 'package:rxdart/rxdart.dart';
 
 /// Default limit for fetching user reposts from relays.
 const _defaultRepostFetchLimit = 500;
-
-/// Kind 16 is the NIP-18 generic repost event kind.
-const _genericRepostKind = 16;
-
-/// Kind 34236 is the NIP-71 addressable short video kind.
-const _videoEventKind = 34236;
-
-/// Callback type for creating and signing Nostr events.
-///
-/// This allows the repository to create events without depending on
-/// a specific authentication implementation.
-typedef EventCreator =
-    Future<Event?> Function({
-      required int kind,
-      required String content,
-      required List<List<String>> tags,
-    });
 
 /// Repository for managing user reposts (Kind 16 generic reposts) on videos.
 ///
@@ -58,18 +42,15 @@ class RepostsRepository {
   ///
   /// Parameters:
   /// - [nostrClient]: Client for Nostr relay communication
-  /// - [eventCreator]: Callback to create and sign Nostr events
   /// - [localStorage]: Optional local storage for persistence
   /// - [authStateStream]: Optional stream of authentication state
   /// - [isAuthenticated]: Initial authentication state
   RepostsRepository({
     required NostrClient nostrClient,
-    required EventCreator eventCreator,
     RepostsLocalStorage? localStorage,
     Stream<bool>? authStateStream,
     bool isAuthenticated = false,
   }) : _nostrClient = nostrClient,
-       _eventCreator = eventCreator,
        _localStorage = localStorage,
        _isAuthenticated = isAuthenticated {
     // Listen to auth state changes if stream provided
@@ -79,7 +60,6 @@ class RepostsRepository {
   }
 
   final NostrClient _nostrClient;
-  final EventCreator _eventCreator;
   final RepostsLocalStorage? _localStorage;
   StreamSubscription<bool>? _authSubscription;
 
@@ -150,11 +130,55 @@ class RepostsRepository {
     return _repostRecords.containsKey(addressableId);
   }
 
+  /// Get the repost count for a video by its addressable ID.
+  ///
+  /// Queries relays for the count of Kind 16 generic reposts referencing the
+  /// video by its addressable ID (using the `a` tag).
+  ///
+  /// Note: This counts all reposts from all users, not just the current user's.
+  Future<int> getRepostCount(String addressableId) async {
+    // Query relays for count of Kind 16 reposts referencing this addressable ID
+    final filter = Filter(
+      kinds: const [EventKind.genericRepost],
+      a: [addressableId],
+    );
+
+    final result = await _nostrClient.countEvents([filter]);
+    return result.count;
+  }
+
+  /// Get the repost count for a video by its event ID.
+  ///
+  /// Queries relays for the count of Kind 6 (repost) and Kind 16 (generic
+  /// repost) events referencing the video by its event ID (using the `e` tag).
+  ///
+  /// Use this method for non-addressable videos (videos without a d-tag).
+  ///
+  /// Note: This counts all reposts from all users, not just the current user's.
+  Future<int> getRepostCountByEventId(String eventId) async {
+    // Query relays for count of Kind 6 and Kind 16 reposts referencing this
+    // event ID
+    final filter = Filter(
+      kinds: const [EventKind.repost, EventKind.genericRepost],
+      e: [eventId],
+    );
+
+    final result = await _nostrClient.countEvents([filter]);
+    return result.count;
+  }
+
   /// Repost a video.
   ///
   /// Creates and publishes a Kind 16 generic repost event.
   /// The repost event is broadcast to Nostr relays and the mapping
   /// is stored locally for later retrieval.
+  ///
+  /// Parameters:
+  /// - [addressableId]: The addressable ID of the video (kind:pubkey:d-tag)
+  /// - [originalAuthorPubkey]: The pubkey of the video's author
+  /// - [eventId]: Optional event ID for better relay compatibility. Including
+  ///   this allows relays to index the repost by `#e` tag, which is more
+  ///   universally supported than `#a` tag.
   ///
   /// Returns the repost event ID (needed for unreposts).
   ///
@@ -164,6 +188,7 @@ class RepostsRepository {
   Future<String> repostVideo({
     required String addressableId,
     required String originalAuthorPubkey,
+    String? eventId,
   }) async {
     await _ensureInitialized();
 
@@ -172,23 +197,14 @@ class RepostsRepository {
       throw AlreadyRepostedException(addressableId);
     }
 
-    // Create Kind 16 generic repost event
-    final event = await _eventCreator(
-      kind: _genericRepostKind,
-      content: '',
-      tags: [
-        ['k', '$_videoEventKind'], // Required k tag for generic repost
-        ['a', addressableId], // Addressable reference to video
-        ['p', originalAuthorPubkey], // Original author
-      ],
+    // Create and publish Kind 16 generic repost event
+    final sentEvent = await _nostrClient.sendGenericRepost(
+      addressableId: addressableId,
+      targetKind: EventKind.videoVertical,
+      authorPubkey: originalAuthorPubkey,
+      eventId: eventId,
     );
 
-    if (event == null) {
-      throw const RepostFailedException('Failed to create repost event');
-    }
-
-    // Publish to relays
-    final sentEvent = await _nostrClient.publishEvent(event);
     if (sentEvent == null) {
       throw const RepostFailedException('Failed to publish repost to relays');
     }
@@ -250,11 +266,17 @@ class RepostsRepository {
   /// If the video is not reposted, reposts it and returns `true`.
   /// If the video is reposted, unreposts it and returns `false`.
   ///
+  /// Parameters:
+  /// - [addressableId]: The addressable ID of the video (kind:pubkey:d-tag)
+  /// - [originalAuthorPubkey]: The pubkey of the video's author
+  /// - [eventId]: Optional event ID for better relay compatibility
+  ///
   /// This is a convenience method that combines [isReposted], [repostVideo],
   /// and [unrepostVideo].
   Future<bool> toggleRepost({
     required String addressableId,
     required String originalAuthorPubkey,
+    String? eventId,
   }) async {
     await _ensureInitialized();
 
@@ -271,6 +293,7 @@ class RepostsRepository {
       await repostVideo(
         addressableId: addressableId,
         originalAuthorPubkey: originalAuthorPubkey,
+        eventId: eventId,
       );
       return true;
     }
@@ -306,7 +329,7 @@ class RepostsRepository {
 
     // Then, fetch from relays (authoritative)
     final filter = Filter(
-      kinds: const [_genericRepostKind],
+      kinds: const [EventKind.genericRepost],
       authors: [_nostrClient.publicKey],
       limit: _defaultRepostFetchLimit,
     );
@@ -374,7 +397,7 @@ class RepostsRepository {
   /// Throws [FetchRepostsFailedException] if the fetch fails.
   Future<List<String>> fetchUserReposts(String pubkey) async {
     final filter = Filter(
-      kinds: const [_genericRepostKind],
+      kinds: const [EventKind.genericRepost],
       authors: [pubkey],
       limit: _defaultRepostFetchLimit,
     );
@@ -414,7 +437,7 @@ class RepostsRepository {
   /// Throws [FetchRepostsFailedException] if the fetch fails.
   Future<List<RepostRecord>> fetchUserRepostRecords(String pubkey) async {
     final filter = Filter(
-      kinds: const [_genericRepostKind],
+      kinds: const [EventKind.genericRepost],
       authors: [pubkey],
       limit: _defaultRepostFetchLimit,
     );
@@ -517,6 +540,7 @@ class RepostsRepository {
   /// Whether the repository is ready for operations.
   ///
   /// Returns false if not authenticated.
+  @visibleForTesting
   bool get isAuthenticated => _isAuthenticated;
 
   /// Ensures the repository is initialized with data from storage.
@@ -555,14 +579,4 @@ class RepostsRepository {
     }
     return null;
   }
-}
-
-/// Helper function to build an addressable ID for a video.
-///
-/// Format: `34236:<author_pubkey>:<d-tag>`
-String buildAddressableId({
-  required String authorPubkey,
-  required String dTag,
-}) {
-  return '$_videoEventKind:$authorPubkey:$dTag';
 }

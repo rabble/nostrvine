@@ -1,15 +1,13 @@
 // ABOUTME: Native email/password authentication screen for diVine
 // ABOUTME: Handles both login and registration with email verification flow
 
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/screens/home_screen_router.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/error_message.dart';
@@ -46,11 +44,11 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
   bool _obscureConfirmPassword = true;
   String? _errorMessage;
 
-  // For email verification polling
-  String? _pendingDeviceCode;
-  String? _pendingVerifier;
-  String? _pendingEmail;
-  Timer? _pollTimer;
+  void _setErrorMessage(String? message) {
+    if (mounted) {
+      setState(() => _errorMessage = message);
+    }
+  }
 
   @override
   void initState() {
@@ -68,7 +66,6 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    _pollTimer?.cancel();
     super.dispose();
   }
 
@@ -99,9 +96,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
         name: 'DivineAuthScreen',
         category: LogCategory.auth,
       );
-      setState(() {
-        _errorMessage = 'An unexpected error occurred. Please try again.';
-      });
+      _setErrorMessage('An unexpected error occurred. Please try again.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -121,10 +116,9 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     );
 
     if (!result.success || result.code == null) {
-      setState(() {
-        _errorMessage =
-            result.errorDescription ?? result.error ?? 'Login failed';
-      });
+      _setErrorMessage(
+        result.errorDescription ?? result.error ?? 'Login failed',
+      );
       return;
     }
 
@@ -144,146 +138,31 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     );
 
     if (!result.success) {
-      setState(() {
-        _errorMessage = result.error ?? 'Registration failed';
-      });
+      _setErrorMessage(result.error ?? 'Registration failed');
       return;
     }
 
     if (result.verificationRequired && result.deviceCode != null) {
-      // Store for polling and show verification UI
-      setState(() {
-        _pendingDeviceCode = result.deviceCode;
-        _pendingVerifier = verifier;
-        _pendingEmail = email;
-      });
+      // Persist verification data for cold-start deep link scenario
+      final pendingService = ref.read(pendingVerificationServiceProvider);
+      await pendingService.save(
+        deviceCode: result.deviceCode!,
+        verifier: verifier,
+        email: email,
+      );
 
-      // Start background polling
-      _startPolling(oauth);
-
-      // Show verification dialog but let user continue
+      // Navigate to email verification screen in polling mode
       if (mounted) {
-        _showVerificationDialog();
+        final encodedEmail = Uri.encodeComponent(email);
+        context.go(
+          '${EmailVerificationScreen.path}'
+          '?deviceCode=${result.deviceCode}'
+          '&verifier=$verifier'
+          '&email=$encodedEmail',
+        );
       }
     } else {
-      // No verification needed (unlikely but handle it)
-      // This shouldn't happen with the current backend
-      setState(() {
-        _errorMessage = 'Registration complete. Please check your email.';
-      });
-    }
-  }
-
-  void _startPolling(KeycastOAuth oauth) {
-    _pollTimer?.cancel();
-    _pollTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
-      if (_pendingDeviceCode == null || !mounted) {
-        timer.cancel();
-        return;
-      }
-
-      final result = await oauth.pollForCode(_pendingDeviceCode!);
-
-      switch (result.status) {
-        case PollStatus.complete:
-          timer.cancel();
-          if (result.code != null && _pendingVerifier != null) {
-            await _exchangeCodeAndLogin(oauth, result.code!, _pendingVerifier!);
-          }
-          break;
-        case PollStatus.pending:
-          // Keep polling
-          break;
-        case PollStatus.error:
-          timer.cancel();
-          if (mounted) {
-            setState(() {
-              _errorMessage = result.error ?? 'Verification failed';
-            });
-          }
-          break;
-      }
-    });
-  }
-
-  void _showVerificationDialog() {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (context) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: const Row(
-          children: [
-            Icon(Icons.email_outlined, color: VineTheme.vineGreen),
-            SizedBox(width: 12),
-            Text('Verify Your Email', style: TextStyle(color: Colors.white)),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'We sent a verification link to:',
-              style: TextStyle(color: Colors.grey[400]),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _pendingEmail ?? '',
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Click the link in your email to complete registration. '
-              'You can continue using the app in the meantime.',
-              style: TextStyle(color: Colors.grey[400], fontSize: 14),
-            ),
-            const SizedBox(height: 16),
-            const Row(
-              children: [
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: VineTheme.vineGreen,
-                  ),
-                ),
-                SizedBox(width: 12),
-                Text(
-                  'Waiting for verification...',
-                  style: TextStyle(color: VineTheme.vineGreen, fontSize: 12),
-                ),
-              ],
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).pop();
-              // Let user continue to the app
-              _continueToApp();
-            },
-            child: const Text(
-              'Continue to App',
-              style: TextStyle(color: VineTheme.vineGreen),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _continueToApp() {
-    // User can use the app while waiting for verification
-    // The polling continues in the background
-    // Navigate to home
-    if (mounted) {
-      context.go(HomeScreenRouter.pathForIndex(0));
+      _setErrorMessage('Registration complete. Please check your email.');
     }
   }
 
@@ -303,18 +182,16 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
       final authService = ref.read(authServiceProvider);
       await authService.signInWithDivineOAuth(session);
 
-      // Clear pending state
-      setState(() {
-        _pendingDeviceCode = null;
-        _pendingVerifier = null;
-        _pendingEmail = null;
-      });
-
       // Navigation will be handled by auth state listener
     } on OAuthException catch (e) {
-      setState(() {
-        _errorMessage = e.message;
-      });
+      _setErrorMessage(e.message);
+    } catch (e) {
+      Log.error(
+        'Error exchanging code: $e',
+        name: 'DivineAuthScreen',
+        category: LogCategory.auth,
+      );
+      _setErrorMessage('Failed to complete authentication');
     }
   }
 
@@ -324,6 +201,18 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
       return 'Passwords do not match';
     }
     return null;
+  }
+
+  InputDecoration _buildInputDecoration({
+    required String label,
+    required IconData icon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      prefixIcon: Icon(icon),
+      suffixIcon: suffixIcon,
+    );
   }
 
   @override
@@ -522,7 +411,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
 
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
         title: const Text(
           'Reset Password',
@@ -555,7 +444,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: dialogContext.pop,
             child: const Text(
               'Cancel',
               style: TextStyle(color: Colors.white60),
@@ -569,7 +458,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
             onPressed: () async {
               if (dialogFormKey.currentState!.validate()) {
                 final email = resetEmailController.text.trim();
-                Navigator.pop(context); // Close dialog
+                dialogContext.pop();
                 await _performPasswordReset(email);
               }
             },
@@ -603,29 +492,15 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
             ),
           );
         } else {
-          setState(() {
-            _errorMessage = result.error ?? 'Failed to send reset email.';
-          });
+          _setErrorMessage(result.error ?? 'Failed to send reset email.');
         }
       }
     } catch (e) {
-      setState(() => _errorMessage = 'An unexpected error occurred.');
+      _setErrorMessage('An unexpected error occurred.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
       }
     }
-  }
-
-  InputDecoration _buildInputDecoration({
-    required String label,
-    required IconData icon,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(icon),
-      suffixIcon: suffixIcon,
-    );
   }
 }

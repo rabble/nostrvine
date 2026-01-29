@@ -32,6 +32,7 @@ void main() {
         ProviderScope(
           overrides: [
             authServiceProvider.overrideWith((ref) => mockAuthService),
+            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -69,6 +70,7 @@ void main() {
         ProviderScope(
           overrides: [
             authServiceProvider.overrideWith((ref) => mockAuthService),
+            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
           child: MaterialApp(
             home: Scaffold(
@@ -99,6 +101,7 @@ void main() {
         ProviderScope(
           overrides: [
             authServiceProvider.overrideWith((ref) => mockAuthService),
+            currentAuthStateProvider.overrideWithValue(AuthState.authenticated),
           ],
           child: MaterialApp(
             home: Scaffold(

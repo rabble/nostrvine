@@ -3,9 +3,10 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/age_verification_dialog.dart';
 
@@ -31,7 +32,7 @@ class CameraFAB extends ConsumerWidget {
           if (result) {
             await ageVerificationService.setAgeVerified(true);
             if (scaffoldContext.mounted) {
-              await scaffoldContext.pushCamera();
+              await scaffoldContext.push(VideoRecorderScreen.path);
             }
           } else {
             if (scaffoldContext.mounted) {
@@ -45,7 +46,7 @@ class CameraFAB extends ConsumerWidget {
           }
         } else {
           if (scaffoldContext.mounted) {
-            await scaffoldContext.pushCamera();
+            await scaffoldContext.push(VideoRecorderScreen.path);
           }
         }
       },

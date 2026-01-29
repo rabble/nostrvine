@@ -124,6 +124,14 @@ class UsernameNotifier extends _$UsernameNotifier {
     state = const UsernameState();
   }
 
+  /// Mark username as reserved (called after claim returns 403)
+  void setReserved(String username) {
+    state = UsernameState(
+      username: username,
+      status: UsernameCheckStatus.reserved,
+    );
+  }
+
   /// Validate username format locally
   bool _isValidFormat(String username) {
     final regex = RegExp(r'^[a-z0-9\-_.]+$', caseSensitive: false);

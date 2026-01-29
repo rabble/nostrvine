@@ -19,9 +19,6 @@ const _defaultReactionFetchLimit = 500;
 /// NIP-25 reaction content for a like.
 const _likeContent = '+';
 
-/// Kind 7 is the NIP-25 reaction event kind.
-const _reactionKind = 7;
-
 /// Repository for managing user likes (Kind 7 reactions) on Nostr events.
 ///
 /// This repository provides a unified interface for:
@@ -244,7 +241,7 @@ class LikesRepository {
   Future<int> getLikeCount(String eventId) async {
     // Query relays for count of Kind 7 reactions on this event
     final filter = Filter(
-      kinds: const [_reactionKind],
+      kinds: const [EventKind.reaction],
       e: [eventId],
     );
 
@@ -268,7 +265,7 @@ class LikesRepository {
     // Query relays for count of Kind 7 reactions on all events at once
     // Using a single filter with multiple event IDs in the 'e' array
     final filter = Filter(
-      kinds: const [_reactionKind],
+      kinds: const [EventKind.reaction],
       e: eventIds,
     );
 
@@ -309,6 +306,7 @@ class LikesRepository {
   /// Sync all user's reactions from relays.
   ///
   /// Fetches the user's Kind 7 events from relays and updates local storage.
+  /// Also fetches Kind 5 deletion events to filter out unliked reactions.
   /// This should be called on startup to ensure local state matches relay
   /// state.
   ///
@@ -325,18 +323,56 @@ class LikesRepository {
       _emitLikedIds();
     }
 
-    // Then, fetch from relays (authoritative)
-    final filter = Filter(
-      kinds: const [_reactionKind],
+    // Fetch both reactions and deletions from relays (authoritative)
+    final reactionsFilter = Filter(
+      kinds: const [EventKind.reaction],
+      authors: [_nostrClient.publicKey],
+      limit: _defaultReactionFetchLimit,
+    );
+
+    final deletionsFilter = Filter(
+      kinds: const [EventKind.eventDeletion],
       authors: [_nostrClient.publicKey],
       limit: _defaultReactionFetchLimit,
     );
 
     try {
-      final events = await _nostrClient.queryEvents([filter]);
-      final newRecords = <LikeRecord>[];
+      // Fetch reactions and deletions in parallel
+      final results = await Future.wait([
+        _nostrClient.queryEvents([reactionsFilter]),
+        _nostrClient.queryEvents([deletionsFilter]),
+      ]);
 
-      for (final event in events) {
+      final reactionEvents = results[0];
+      final deletionEvents = results[1];
+
+      // Build set of deleted reaction event IDs from Kind 5 events
+      final deletedReactionIds = <String>{};
+      for (final deletion in deletionEvents) {
+        for (final tag in deletion.tags) {
+          if (tag is List &&
+              tag.isNotEmpty &&
+              tag[0] == 'e' &&
+              tag.length > 1) {
+            deletedReactionIds.add(tag[1] as String);
+          }
+        }
+      }
+
+      final newRecords = <LikeRecord>[];
+      final deletedTargetIds = <String>[];
+
+      for (final event in reactionEvents) {
+        // Skip reactions that have been deleted
+        if (deletedReactionIds.contains(event.id)) {
+          // If we have this in local storage, mark for deletion
+          final targetId = _extractTargetEventId(event);
+          if (targetId != null && _likeRecords.containsKey(targetId)) {
+            deletedTargetIds.add(targetId);
+          }
+          continue;
+        }
+
         final targetId = _extractTargetEventId(event);
         if (targetId != null && event.content == _likeContent) {
           final record = LikeRecord(
@@ -355,6 +391,12 @@ class LikesRepository {
             newRecords.add(record);
           }
         }
+      }
+
+      // Remove deleted likes from cache and storage
+      for (final targetId in deletedTargetIds) {
+        _likeRecords.remove(targetId);
+        await _localStorage?.deleteLikeRecord(targetId);
       }
 
       // Batch save new records to storage
@@ -392,7 +434,7 @@ class LikesRepository {
   /// Throws [FetchLikesFailedException] if the fetch fails.
   Future<List<String>> fetchUserLikes(String pubkey) async {
     final filter = Filter(
-      kinds: const [_reactionKind],
+      kinds: const [EventKind.reaction],
       authors: [pubkey],
       limit: _defaultReactionFetchLimit,
     );
@@ -479,11 +521,6 @@ class LikesRepository {
       _isInitialized = false;
     }
   }
-
-  /// Whether the repository is ready for operations.
-  ///
-  /// Returns false if not authenticated.
-  bool get isAuthenticated => _isAuthenticated;
 
   /// Ensures the repository is initialized with data from storage.
   Future<void> _ensureInitialized() async {

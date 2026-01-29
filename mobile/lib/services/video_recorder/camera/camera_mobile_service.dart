@@ -19,21 +19,27 @@ class CameraMobileService extends CameraService {
   });
 
   bool _isInitialized = false;
+  String? _initializationError;
   final _camera = DivineCamera.instance;
 
   @override
   Future<void> initialize() async {
+    // Clear any previous error
+    _initializationError = null;
+
     Log.info(
       '📷 Initializing mobile camera',
       name: 'CameraMobileService',
       category: .video,
     );
     try {
-      await _camera.initialize();
+      await _camera.initialize(lens: .front);
       _camera.onRecordingAutoStopped = (result) {
         onAutoStopped(EditorVideo.file(result.filePath));
       };
+      _isInitialized = true;
     } catch (e) {
+      _initializationError = 'Camera initialization failed: $e';
       Log.error(
         '📷 Failed to initialize camera: $e',
         name: 'CameraMobileService',
@@ -41,7 +47,6 @@ class CameraMobileService extends CameraService {
       );
     }
 
-    _isInitialized = true;
     onUpdateState(forceCameraRebuild: true);
   }
 
@@ -178,21 +183,36 @@ class CameraMobileService extends CameraService {
   }
 
   @override
-  Future<void> startRecording({Duration? maxDuration}) async {
-    if (!_isInitialized) return;
+  Future<bool> startRecording({Duration? maxDuration}) async {
+    if (!_isInitialized) return false;
     try {
       Log.info(
         '📷 Starting video recording',
         name: 'CameraMobileService',
         category: .video,
       );
-      await _camera.startRecording(maxDuration: maxDuration);
+      final success = await _camera.startRecording(maxDuration: maxDuration);
+      if (success) {
+        Log.info(
+          '📷 Video recording truly started',
+          name: 'CameraMobileService',
+          category: .video,
+        );
+      } else {
+        Log.warning(
+          '📷 Recording failed to start or was stopped before first keyframe',
+          name: 'CameraMobileService',
+          category: .video,
+        );
+      }
+      return success;
     } catch (e) {
       Log.error(
         '📷 Failed to start recording (unexpected error): $e',
         name: 'CameraMobileService',
         category: .video,
       );
+      return false;
     }
   }
 
@@ -263,4 +283,7 @@ class CameraMobileService extends CameraService {
 
   @override
   bool get canSwitchCamera => _camera.canSwitchCamera;
+
+  @override
+  String? get initializationError => _initializationError;
 }

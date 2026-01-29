@@ -18,11 +18,16 @@ class VideoStats {
   final String title;
   final String thumbnail;
   final String videoUrl;
+  final String? sha256; // Content hash for Blossom authentication
+  final String? authorName; // Display name of classic Vine author
+  final String? authorAvatar; // Profile picture URL for author
+  final String? blurhash; // Blurhash for placeholder thumbnail
   final int reactions;
   final int comments;
   final int reposts;
   final int engagementScore;
   final double? trendingScore;
+  final int? loops; // Original loop count for classic Vines
 
   VideoStats({
     required this.id,
@@ -33,56 +38,174 @@ class VideoStats {
     required this.title,
     required this.thumbnail,
     required this.videoUrl,
+    this.sha256,
+    this.authorName,
+    this.authorAvatar,
+    this.blurhash,
     required this.reactions,
     required this.comments,
     required this.reposts,
     required this.engagementScore,
     this.trendingScore,
+    this.loops,
   });
 
   factory VideoStats.fromJson(Map<String, dynamic> json) {
+    // Handle nested format: { "event": {...}, "stats": {...} }
+    final eventData = json['event'] as Map<String, dynamic>? ?? json;
+    final statsData = json['stats'] as Map<String, dynamic>? ?? json;
+
     // Parse id - funnelcake returns as byte array (ASCII codes), not string
     String id;
-    if (json['id'] is List) {
-      id = String.fromCharCodes((json['id'] as List).cast<int>());
+    final rawId = eventData['id'];
+    if (rawId is List) {
+      id = String.fromCharCodes(rawId.cast<int>());
     } else {
-      id = json['id']?.toString() ?? '';
+      id = rawId?.toString() ?? '';
     }
 
     // Parse pubkey - same format as id
     String pubkey;
-    if (json['pubkey'] is List) {
-      pubkey = String.fromCharCodes((json['pubkey'] as List).cast<int>());
+    final rawPubkey = eventData['pubkey'];
+    if (rawPubkey is List) {
+      pubkey = String.fromCharCodes(rawPubkey.cast<int>());
     } else {
-      pubkey = json['pubkey']?.toString() ?? '';
+      pubkey = rawPubkey?.toString() ?? '';
     }
 
     // Parse created_at - funnelcake returns Unix timestamp (int), not ISO string
     DateTime createdAt;
-    if (json['created_at'] is int) {
-      createdAt = DateTime.fromMillisecondsSinceEpoch(
-        (json['created_at'] as int) * 1000,
-      );
-    } else if (json['created_at'] is String) {
-      createdAt = DateTime.tryParse(json['created_at']) ?? DateTime.now();
+    final rawCreatedAt = eventData['created_at'];
+    if (rawCreatedAt is int) {
+      createdAt = DateTime.fromMillisecondsSinceEpoch(rawCreatedAt * 1000);
+    } else if (rawCreatedAt is String) {
+      createdAt = DateTime.tryParse(rawCreatedAt) ?? DateTime.now();
     } else {
       createdAt = DateTime.now();
     }
+
+    // Parse loops from multiple possible sources:
+    // 1. Direct field in stats or root
+    // 2. From event tags array (["loops", "12345"])
+    int? loops;
+    final directLoops =
+        statsData['loops'] ?? json['loops'] ?? json['original_loops'];
+    if (directLoops is int) {
+      loops = directLoops;
+    } else if (directLoops is String) {
+      loops = int.tryParse(directLoops);
+    }
+
+    // Also check event tags for loops if not found directly
+    if (loops == null && eventData['tags'] is List) {
+      final tags = eventData['tags'] as List;
+      for (final tag in tags) {
+        if (tag is List && tag.length >= 2 && tag[0] == 'loops') {
+          loops = int.tryParse(tag[1].toString());
+          break;
+        }
+      }
+    }
+
+    // Extract title, thumbnail, sha256 from tags if not in root
+    String title = eventData['title']?.toString() ?? '';
+    String thumbnail = eventData['thumbnail']?.toString() ?? '';
+    String videoUrl = eventData['video_url']?.toString() ?? '';
+    String dTag = eventData['d_tag']?.toString() ?? '';
+    String? sha256 =
+        eventData['sha256']?.toString() ?? json['sha256']?.toString();
+
+    // Also check for blurhash in tags (NIP-71 standard)
+    String? blurhashFromTag;
+
+    if (eventData['tags'] is List) {
+      final tags = eventData['tags'] as List;
+      for (final tag in tags) {
+        if (tag is List && tag.length >= 2) {
+          final tagName = tag[0].toString();
+          final tagValue = tag[1].toString();
+          if (tagName == 'title' && title.isEmpty) title = tagValue;
+          if ((tagName == 'thumb' || tagName == 'thumbnail') &&
+              thumbnail.isEmpty) {
+            thumbnail = tagValue;
+          }
+          if (tagName == 'url' && videoUrl.isEmpty) videoUrl = tagValue;
+          if (tagName == 'd' && dTag.isEmpty) dTag = tagValue;
+          if (tagName == 'x' && (sha256 == null || sha256.isEmpty)) {
+            sha256 = tagValue; // x tag often contains sha256 hash
+          }
+          if (tagName == 'blurhash' && blurhashFromTag == null) {
+            blurhashFromTag = tagValue;
+          }
+        }
+      }
+    }
+
+    // Normalize empty sha256 to null
+    if (sha256 != null && sha256.isEmpty) sha256 = null;
+
+    // Parse author_name for classic Vines
+    String? authorName =
+        eventData['author_name']?.toString() ?? json['author_name']?.toString();
+    if (authorName != null && authorName.isEmpty) authorName = null;
+
+    // Parse author_avatar for profile pictures
+    String? authorAvatar =
+        eventData['author_avatar']?.toString() ??
+        json['author_avatar']?.toString();
+    if (authorAvatar != null && authorAvatar.isEmpty) authorAvatar = null;
+
+    // Parse blurhash for thumbnail placeholders
+    // Check direct field first, then fall back to tag
+    String? blurhash =
+        eventData['blurhash']?.toString() ??
+        json['blurhash']?.toString() ??
+        blurhashFromTag;
+    if (blurhash != null && blurhash.isEmpty) blurhash = null;
+
+    // Parse reactions/likes - check multiple field names
+    final reactions =
+        statsData['reactions'] ??
+        json['reactions'] ??
+        json['embedded_likes'] ??
+        json['likes'] ??
+        0;
+
+    // Parse comments - check multiple field names
+    final comments =
+        statsData['comments'] ??
+        json['comments'] ??
+        json['embedded_comments'] ??
+        0;
+
+    // Parse reposts - check multiple field names
+    final reposts =
+        statsData['reposts'] ??
+        json['reposts'] ??
+        json['embedded_reposts'] ??
+        0;
 
     return VideoStats(
       id: id,
       pubkey: pubkey,
       createdAt: createdAt,
-      kind: json['kind'] ?? 34236,
-      dTag: json['d_tag']?.toString() ?? '',
-      title: json['title']?.toString() ?? '',
-      thumbnail: json['thumbnail']?.toString() ?? '',
-      videoUrl: json['video_url']?.toString() ?? '',
-      reactions: json['reactions'] ?? 0,
-      comments: json['comments'] ?? 0,
-      reposts: json['reposts'] ?? 0,
-      engagementScore: json['engagement_score'] ?? 0,
-      trendingScore: json['trending_score']?.toDouble(),
+      kind: eventData['kind'] ?? 34236,
+      dTag: dTag,
+      title: title,
+      thumbnail: thumbnail,
+      videoUrl: videoUrl,
+      sha256: sha256,
+      authorName: authorName,
+      authorAvatar: authorAvatar,
+      blurhash: blurhash,
+      reactions: reactions is int ? reactions : 0,
+      comments: comments is int ? comments : 0,
+      reposts: reposts is int ? reposts : 0,
+      engagementScore:
+          statsData['engagement_score'] ?? json['engagement_score'] ?? 0,
+      trendingScore: (statsData['trending_score'] ?? json['trending_score'])
+          ?.toDouble(),
+      loops: loops,
     );
   }
 
@@ -98,9 +221,14 @@ class VideoStats {
       videoUrl: videoUrl.isNotEmpty ? videoUrl : null,
       thumbnailUrl: thumbnail.isNotEmpty ? thumbnail : null,
       vineId: dTag.isNotEmpty ? dTag : null,
+      sha256: sha256,
+      authorName: authorName,
+      authorAvatar: authorAvatar,
+      blurhash: blurhash,
       originalLikes: reactions,
       originalComments: comments,
       originalReposts: reposts,
+      originalLoops: loops,
     );
   }
 }
@@ -152,6 +280,32 @@ enum VideoSortOption {
   final String value;
 }
 
+/// Pagination result with cursor support for Funnelcake API
+class PaginatedVideos {
+  final List<VideoEvent> videos;
+  final int? nextCursor; // Unix timestamp for next page
+  final bool hasMore;
+
+  const PaginatedVideos({
+    required this.videos,
+    this.nextCursor,
+    this.hasMore = false,
+  });
+}
+
+/// Home feed result with cursor pagination
+class HomeFeedResult {
+  final List<VideoEvent> videos;
+  final int? nextCursor;
+  final bool hasMore;
+
+  const HomeFeedResult({
+    required this.videos,
+    this.nextCursor,
+    this.hasMore = false,
+  });
+}
+
 /// Service for Funnelcake REST API interactions
 ///
 /// Funnelcake provides pre-computed trending scores and analytics
@@ -185,8 +339,11 @@ class AnalyticsApiService {
   ///
   /// Uses funnelcake's pre-computed trending scores for efficient discovery.
   /// Returns VideoEvent objects ready for display.
+  ///
+  /// [before] - Unix timestamp cursor for pagination (get videos created before this time)
   Future<List<VideoEvent>> getTrendingVideos({
     int limit = 50,
+    int? before,
     bool forceRefresh = false,
   }) async {
     if (!isAvailable) {
@@ -198,8 +355,9 @@ class AnalyticsApiService {
       return [];
     }
 
-    // Check cache
-    if (!forceRefresh &&
+    // Check cache only for initial load (no cursor)
+    if (before == null &&
+        !forceRefresh &&
         _lastTrendingVideosFetch != null &&
         DateTime.now().difference(_lastTrendingVideosFetch!) < cacheTimeout &&
         _trendingVideosCache.isNotEmpty) {
@@ -212,7 +370,10 @@ class AnalyticsApiService {
     }
 
     try {
-      final url = '$_baseUrl/api/videos?sort=trending&limit=$limit';
+      var url = '$_baseUrl/api/videos?sort=trending&limit=$limit';
+      if (before != null) {
+        url += '&before=$before';
+      }
       Log.info(
         'Fetching trending videos from Funnelcake: $url',
         name: 'AnalyticsApiService',
@@ -238,20 +399,24 @@ class AnalyticsApiService {
           category: LogCategory.video,
         );
 
-        _trendingVideosCache = data
+        final videos = data
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
 
-        _lastTrendingVideosFetch = DateTime.now();
+        // Only update cache for initial load (no cursor)
+        if (before == null) {
+          _trendingVideosCache = videos;
+          _lastTrendingVideosFetch = DateTime.now();
+        }
 
         Log.info(
-          'Returning ${_trendingVideosCache.length} trending videos',
+          'Returning ${videos.length} trending videos',
           name: 'AnalyticsApiService',
           category: LogCategory.video,
         );
 
-        return _trendingVideosCache.map((v) => v.toVideoEvent()).toList();
+        return videos.map((v) => v.toVideoEvent()).toList();
       } else {
         Log.error(
           'Funnelcake API error: ${response.statusCode}',
@@ -275,15 +440,106 @@ class AnalyticsApiService {
     }
   }
 
+  /// Fetch videos sorted by loop count (highest first)
+  ///
+  /// Uses funnelcake's sort=loops for classic Vines with high engagement.
+  /// Returns VideoEvent objects ready for display.
+  ///
+  /// [before] - Unix timestamp cursor for pagination
+  Future<List<VideoEvent>> getVideosByLoops({
+    int limit = 50,
+    int? before,
+    bool forceRefresh = false,
+  }) async {
+    if (!isAvailable) {
+      Log.warning(
+        'Funnelcake API not available (no base URL configured)',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+      return [];
+    }
+
+    try {
+      var url = '$_baseUrl/api/videos?sort=loops&limit=$limit';
+      if (before != null) {
+        url += '&before=$before';
+      }
+      Log.info(
+        'Fetching videos by loops from Funnelcake: $url',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+
+        Log.info(
+          'Received ${data.length} videos sorted by loops from Funnelcake',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+
+        final videos = data
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+            .toList();
+
+        // Log first few for debugging
+        if (videos.isNotEmpty) {
+          final topLoops = videos
+              .take(3)
+              .map((v) => '${v.loops ?? 0}')
+              .join(', ');
+          Log.info(
+            'Top 3 videos by loops: $topLoops',
+            name: 'AnalyticsApiService',
+            category: LogCategory.video,
+          );
+        }
+
+        return videos.map((v) => v.toVideoEvent()).toList();
+      } else {
+        Log.error(
+          'Funnelcake API error: ${response.statusCode}',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+        return [];
+      }
+    } catch (e) {
+      Log.error(
+        'Error fetching videos by loops: $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+      return [];
+    }
+  }
+
   /// Fetch recent videos (newest first)
+  ///
+  /// [before] - Unix timestamp cursor for pagination (get videos created before this time)
   Future<List<VideoEvent>> getRecentVideos({
     int limit = 50,
+    int? before,
     bool forceRefresh = false,
   }) async {
     if (!isAvailable) return [];
 
-    // Check cache
-    if (!forceRefresh &&
+    // Check cache only for initial load (no cursor)
+    if (before == null &&
+        !forceRefresh &&
         _lastRecentVideosFetch != null &&
         DateTime.now().difference(_lastRecentVideosFetch!) < cacheTimeout &&
         _recentVideosCache.isNotEmpty) {
@@ -296,7 +552,10 @@ class AnalyticsApiService {
     }
 
     try {
-      final url = '$_baseUrl/api/videos?sort=recent&limit=$limit';
+      var url = '$_baseUrl/api/videos?sort=recent&limit=$limit';
+      if (before != null) {
+        url += '&before=$before';
+      }
       Log.info(
         'Fetching recent videos from Funnelcake: $url',
         name: 'AnalyticsApiService',
@@ -316,20 +575,24 @@ class AnalyticsApiService {
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
 
-        _recentVideosCache = data
+        final videos = data
             .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
 
-        _lastRecentVideosFetch = DateTime.now();
+        // Only update cache for initial load (no cursor)
+        if (before == null) {
+          _recentVideosCache = videos;
+          _lastRecentVideosFetch = DateTime.now();
+        }
 
         Log.info(
-          'Returning ${_recentVideosCache.length} recent videos',
+          'Returning ${videos.length} recent videos',
           name: 'AnalyticsApiService',
           category: LogCategory.video,
         );
 
-        return _recentVideosCache.map((v) => v.toVideoEvent()).toList();
+        return videos.map((v) => v.toVideoEvent()).toList();
       } else {
         Log.error(
           'Funnelcake API error: ${response.statusCode}',
@@ -351,9 +614,12 @@ class AnalyticsApiService {
   /// Search videos by hashtag
   ///
   /// Uses funnelcake's /api/search?tag= endpoint for hashtag discovery.
+  ///
+  /// [before] - Unix timestamp cursor for pagination
   Future<List<VideoEvent>> getVideosByHashtag({
     required String hashtag,
     int limit = 50,
+    int? before,
     bool forceRefresh = false,
   }) async {
     if (!isAvailable) return [];
@@ -361,10 +627,11 @@ class AnalyticsApiService {
     // Normalize hashtag (remove # if present, lowercase)
     final normalizedTag = hashtag.replaceFirst('#', '').toLowerCase();
 
-    // Check cache
+    // Check cache only for initial load (no cursor)
     final cacheKey = normalizedTag;
     final cachedTime = _hashtagSearchCacheTime[cacheKey];
-    if (!forceRefresh &&
+    if (before == null &&
+        !forceRefresh &&
         cachedTime != null &&
         DateTime.now().difference(cachedTime) < cacheTimeout &&
         _hashtagSearchCache.containsKey(cacheKey)) {
@@ -379,7 +646,10 @@ class AnalyticsApiService {
     }
 
     try {
-      final url = '$_baseUrl/api/search?tag=$normalizedTag&limit=$limit';
+      var url = '$_baseUrl/api/search?tag=$normalizedTag&limit=$limit';
+      if (before != null) {
+        url += '&before=$before';
+      }
       Log.info(
         'Searching videos by hashtag from Funnelcake: $url',
         name: 'AnalyticsApiService',
@@ -404,9 +674,11 @@ class AnalyticsApiService {
             .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
             .toList();
 
-        // Cache results
-        _hashtagSearchCache[cacheKey] = videos;
-        _hashtagSearchCacheTime[cacheKey] = DateTime.now();
+        // Cache results only for initial load
+        if (before == null) {
+          _hashtagSearchCache[cacheKey] = videos;
+          _hashtagSearchCacheTime[cacheKey] = DateTime.now();
+        }
 
         Log.info(
           'Found ${videos.length} videos for #$normalizedTag',
@@ -538,14 +810,20 @@ class AnalyticsApiService {
   }
 
   /// Get videos by a specific author
+  ///
+  /// [before] - Unix timestamp cursor for pagination
   Future<List<VideoEvent>> getVideosByAuthor({
     required String pubkey,
     int limit = 50,
+    int? before,
   }) async {
     if (!isAvailable || pubkey.isEmpty) return [];
 
     try {
-      final url = '$_baseUrl/api/users/$pubkey/videos?limit=$limit';
+      var url = '$_baseUrl/api/users/$pubkey/videos?limit=$limit';
+      if (before != null) {
+        url += '&before=$before';
+      }
       Log.info(
         'Fetching author videos from Funnelcake: $url',
         name: 'AnalyticsApiService',
@@ -588,6 +866,264 @@ class AnalyticsApiService {
     } catch (e) {
       Log.error(
         'Error fetching author videos: $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+      return [];
+    }
+  }
+
+  /// Get personalized home feed for a user (videos from followed accounts)
+  ///
+  /// Uses the /api/users/{pubkey}/feed endpoint which returns videos
+  /// from accounts the user follows, with cursor-based pagination.
+  ///
+  /// [sort] - Sort order: 'recent' or 'trending'
+  /// [before] - Unix timestamp cursor for pagination
+  Future<HomeFeedResult> getHomeFeed({
+    required String pubkey,
+    int limit = 50,
+    String sort = 'recent',
+    int? before,
+  }) async {
+    if (!isAvailable || pubkey.isEmpty) {
+      return const HomeFeedResult(videos: [], hasMore: false);
+    }
+
+    try {
+      var url = '$_baseUrl/api/users/$pubkey/feed?limit=$limit&sort=$sort';
+      if (before != null) {
+        url += '&before=$before';
+      }
+      Log.info(
+        'Fetching home feed from Funnelcake: $url',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+        // Parse videos array
+        final videosData = data['videos'] as List<dynamic>? ?? [];
+        final videos = videosData
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+            .map((v) => v.toVideoEvent())
+            .toList();
+
+        // Parse pagination info
+        final nextCursorStr = data['next_cursor'] as String?;
+        final nextCursor = nextCursorStr != null
+            ? int.tryParse(nextCursorStr)
+            : null;
+        final hasMore = data['has_more'] as bool? ?? false;
+
+        Log.info(
+          'Home feed: ${videos.length} videos, hasMore: $hasMore, nextCursor: $nextCursor',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+
+        return HomeFeedResult(
+          videos: videos,
+          nextCursor: nextCursor,
+          hasMore: hasMore,
+        );
+      } else if (response.statusCode == 404) {
+        Log.warning(
+          'Home feed not found (user may not have contact list)',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+        return const HomeFeedResult(videos: [], hasMore: false);
+      } else {
+        Log.error(
+          'Home feed failed: ${response.statusCode}',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+        return const HomeFeedResult(videos: [], hasMore: false);
+      }
+    } catch (e) {
+      Log.error(
+        'Error fetching home feed: $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+      return const HomeFeedResult(videos: [], hasMore: false);
+    }
+  }
+
+  /// Get classic vines (imported Vine videos sorted by loop count)
+  ///
+  /// Uses the /api/videos endpoint with classic=true&platform=vine
+  /// to get older videos with high engagement.
+  ///
+  /// [before] - Unix timestamp cursor for pagination
+  ///
+  /// TODO(classic-vines): This method is currently unused. It was added for a
+  /// planned "Classic Vines" feature to show imported Vine videos. Consider:
+  /// 1. Implementing ClassicVinesFeedProvider to use this endpoint
+  /// 2. Adding a "Classic" tab to the Explore screen
+  /// 3. Removing this method if the feature is not planned
+  Future<List<VideoEvent>> getClassicVines({
+    int limit = 50,
+    int? before,
+  }) async {
+    if (!isAvailable) return [];
+
+    try {
+      var url = '$_baseUrl/api/videos?classic=true&platform=vine&limit=$limit';
+      if (before != null) {
+        url += '&before=$before';
+      }
+      Log.info(
+        'Fetching classic vines from Funnelcake: $url',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final decoded = jsonDecode(response.body);
+
+        // Handle both array response and wrapped object response
+        List<dynamic> data;
+        if (decoded is List) {
+          data = decoded;
+        } else if (decoded is Map<String, dynamic>) {
+          // Try common wrapper keys
+          data =
+              (decoded['videos'] ?? decoded['data'] ?? decoded['results'] ?? [])
+                  as List<dynamic>;
+          Log.debug(
+            'Classic vines response is wrapped object with keys: ${decoded.keys.toList()}',
+            name: 'AnalyticsApiService',
+            category: LogCategory.video,
+          );
+        } else {
+          Log.error(
+            'Classic vines unexpected response type: ${decoded.runtimeType}',
+            name: 'AnalyticsApiService',
+            category: LogCategory.video,
+          );
+          data = [];
+        }
+
+        Log.debug(
+          'Classic vines raw data count: ${data.length}',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+
+        // Log first item structure for debugging
+        if (data.isNotEmpty) {
+          final firstItem = data.first as Map<String, dynamic>;
+          Log.debug(
+            'Classic vines first item keys: ${firstItem.keys.toList()}',
+            name: 'AnalyticsApiService',
+            category: LogCategory.video,
+          );
+          Log.debug(
+            'Classic vines first item id type: ${firstItem['id']?.runtimeType}, video_url type: ${firstItem['video_url']?.runtimeType}',
+            name: 'AnalyticsApiService',
+            category: LogCategory.video,
+          );
+          // Log blurhash specifically
+          final blurhashValue = firstItem['blurhash'];
+          final eventBlurhash =
+              (firstItem['event'] as Map<String, dynamic>?)?['blurhash'];
+          Log.debug(
+            'Classic vines blurhash: direct=${blurhashValue?.runtimeType}/${blurhashValue != null ? (blurhashValue.toString().length) : 0} chars, '
+            'event.blurhash=${eventBlurhash?.runtimeType}/${eventBlurhash != null ? (eventBlurhash.toString().length) : 0} chars',
+            name: 'AnalyticsApiService',
+            category: LogCategory.video,
+          );
+          // Check tags for blurhash
+          final tags =
+              firstItem['tags'] ??
+              (firstItem['event'] as Map<String, dynamic>?)?['tags'];
+          if (tags is List) {
+            final blurhashTag = tags.firstWhere(
+              (t) => t is List && t.isNotEmpty && t[0] == 'blurhash',
+              orElse: () => null,
+            );
+            Log.debug(
+              'Classic vines blurhash tag: $blurhashTag',
+              name: 'AnalyticsApiService',
+              category: LogCategory.video,
+            );
+          }
+        }
+
+        final videos = data
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+            .where((v) {
+              final valid = v.id.isNotEmpty && v.videoUrl.isNotEmpty;
+              if (!valid) {
+                Log.debug(
+                  'Filtering out video: id="${v.id}", videoUrl="${v.videoUrl}"',
+                  name: 'AnalyticsApiService',
+                  category: LogCategory.video,
+                );
+              }
+              return valid;
+            })
+            .toList();
+
+        Log.info(
+          'Found ${videos.length} classic vines (after filtering from ${data.length} raw)',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+
+        // Log first video stats for debugging
+        if (videos.isNotEmpty) {
+          final first = videos.first;
+          Log.info(
+            'First classic vine: id=${first.id}, '
+            'loops=${first.loops}, likes=${first.reactions}, '
+            'comments=${first.comments}, reposts=${first.reposts}, '
+            'blurhash=${first.blurhash != null ? '${first.blurhash!.length} chars' : 'null'}, '
+            'authorName=${first.authorName}, '
+            'title="${first.title.length > 30 ? '${first.title.substring(0, 30)}...' : first.title}"',
+            name: 'AnalyticsApiService',
+            category: LogCategory.video,
+          );
+        }
+
+        return videos.map((v) => v.toVideoEvent()).toList();
+      } else {
+        Log.error(
+          'Classic vines failed: ${response.statusCode}',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+        return [];
+      }
+    } catch (e) {
+      Log.error(
+        'Error fetching classic vines: $e',
         name: 'AnalyticsApiService',
         category: LogCategory.video,
       );

@@ -43,6 +43,12 @@ class _FakeBlossomUploadResult_2 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
+class _FakeBlossomHealthCheckResult_3 extends _i1.SmartFake
+    implements _i4.BlossomHealthCheckResult {
+  _FakeBlossomHealthCheckResult_3(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
 /// A class which mocks [BlossomUploadService].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -208,6 +214,21 @@ class MockBlossomUploadService extends _i1.Mock
             ),
           )
           as _i5.Future<_i4.BlossomUploadResult>);
+
+  @override
+  _i5.Future<_i4.BlossomHealthCheckResult> testServerConnection([
+    String? serverUrl,
+  ]) =>
+      (super.noSuchMethod(
+            Invocation.method(#testServerConnection, [serverUrl]),
+            returnValue: _i5.Future<_i4.BlossomHealthCheckResult>.value(
+              _FakeBlossomHealthCheckResult_3(
+                this,
+                Invocation.method(#testServerConnection, [serverUrl]),
+              ),
+            ),
+          )
+          as _i5.Future<_i4.BlossomHealthCheckResult>);
 }
 
 /// A class which mocks [VideoCircuitBreaker].

@@ -50,6 +50,7 @@ void main() {
         value: mockMyFollowingBloc,
         child: FollowFromProfileButtonView(
           pubkey: pubkey,
+          displayName: 'Test User',
           currentUserPubkey: currentUserPubkey,
         ),
       );
@@ -134,8 +135,31 @@ void main() {
         );
       });
 
+      testWidgets('shows unfollow confirmation sheet when tapping Following', (
+        tester,
+      ) async {
+        final otherPubkey = validPubkey('other');
+        when(() => mockMyFollowingBloc.state).thenReturn(
+          MyFollowingState(
+            status: MyFollowingStatus.success,
+            followingPubkeys: [otherPubkey],
+          ),
+        );
+
+        await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
+        await tester.pump();
+
+        await tester.tap(find.text('Following'));
+        await tester.pumpAndSettle();
+
+        // Verify confirmation sheet is shown
+        expect(find.text('Unfollow Test User?'), findsOneWidget);
+        expect(find.text('Cancel'), findsOneWidget);
+        expect(find.text('Unfollow'), findsOneWidget);
+      });
+
       testWidgets(
-        'dispatches MyFollowingToggleRequested when tapping Following',
+        'dispatches MyFollowingToggleRequested when confirming unfollow',
         (tester) async {
           final otherPubkey = validPubkey('other');
           when(() => mockMyFollowingBloc.state).thenReturn(
@@ -148,8 +172,13 @@ void main() {
           await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
           await tester.pump();
 
+          // Open confirmation sheet
           await tester.tap(find.text('Following'));
-          await tester.pump();
+          await tester.pumpAndSettle();
+
+          // Tap Unfollow to confirm
+          await tester.tap(find.text('Unfollow'));
+          await tester.pumpAndSettle();
 
           final captured = verify(
             () => mockMyFollowingBloc.add(captureAny()),
@@ -158,6 +187,31 @@ void main() {
           expect(captured.first, isA<MyFollowingToggleRequested>());
         },
       );
+
+      testWidgets('does not dispatch when cancelling unfollow confirmation', (
+        tester,
+      ) async {
+        final otherPubkey = validPubkey('other');
+        when(() => mockMyFollowingBloc.state).thenReturn(
+          MyFollowingState(
+            status: MyFollowingStatus.success,
+            followingPubkeys: [otherPubkey],
+          ),
+        );
+
+        await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
+        await tester.pump();
+
+        // Open confirmation sheet
+        await tester.tap(find.text('Following'));
+        await tester.pumpAndSettle();
+
+        // Tap Cancel
+        await tester.tap(find.text('Cancel'));
+        await tester.pumpAndSettle();
+
+        verifyNever(() => mockMyFollowingBloc.add(any()));
+      });
     });
 
     group('optimistic follower count update', () {
@@ -233,8 +287,13 @@ void main() {
           );
           await tester.pump();
 
+          // Open confirmation sheet
           await tester.tap(find.text('Following'));
-          await tester.pump();
+          await tester.pumpAndSettle();
+
+          // Confirm unfollow
+          await tester.tap(find.text('Unfollow'));
+          await tester.pumpAndSettle();
 
           final captured = verify(
             () => mockOthersFollowersBloc.add(captureAny()),

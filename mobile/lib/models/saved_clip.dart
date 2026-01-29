@@ -21,6 +21,7 @@ class SavedClip {
   final String? sessionId;
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
+  double get aspectRatioValue => aspectRatio == 'vertical' ? 9 / 16 : 1.0;
 
   String get displayDuration {
     final elapsed = DateTime.now().difference(createdAt);

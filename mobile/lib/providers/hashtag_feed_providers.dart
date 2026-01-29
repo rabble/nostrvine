@@ -7,7 +7,6 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -28,6 +27,9 @@ class HashtagFeed extends _$HashtagFeed {
 
   /// Cached popular videos from REST API for ordering
   List<VideoEvent>? _popularVideos;
+
+  /// Flag to force API refresh on next build (set by refresh())
+  bool _forceNextApiRefresh = false;
 
   @override
   Future<VideoFeedState> build() async {
@@ -62,15 +64,25 @@ class HashtagFeed extends _$HashtagFeed {
 
     // Try to get popular video ordering from Funnelcake REST API
     // This provides engagement-based sorting when available
+    // Use centralized availability check
+    final funnelcakeAvailable =
+        ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
     final analyticsService = ref.read(analyticsApiServiceProvider);
-    if (analyticsService.isAvailable) {
+
+    // Check if we need to force refresh (set by refresh() method)
+    final forceRefresh = _forceNextApiRefresh;
+    _forceNextApiRefresh = false; // Reset flag after reading
+
+    if (funnelcakeAvailable) {
       try {
         _popularVideos = await analyticsService.getVideosByHashtag(
           hashtag: tag,
           limit: 100,
+          forceRefresh: forceRefresh,
         );
         Log.info(
-          'HashtagFeed: Got ${_popularVideos?.length ?? 0} popular videos from REST API',
+          'HashtagFeed: Got ${_popularVideos?.length ?? 0} popular videos from REST API'
+          '${forceRefresh ? ' (forced refresh)' : ''}',
           name: 'HashtagFeedProvider',
           category: LogCategory.video,
         );
@@ -309,6 +321,11 @@ class HashtagFeed extends _$HashtagFeed {
   }
 
   /// Refresh the hashtag feed
+  ///
+  /// Forces a fresh fetch from both REST API and WebSocket by:
+  /// 1. Clearing cached REST API data
+  /// 2. Forcing a new WebSocket subscription
+  /// 3. Invalidating the provider and waiting for rebuild
   Future<void> refresh() async {
     // Get hashtag from route context
     final ctx = ref.read(pageContextProvider).asData?.value;
@@ -316,6 +333,16 @@ class HashtagFeed extends _$HashtagFeed {
     final tag = raw.toLowerCase();
 
     if (tag.isNotEmpty) {
+      Log.info(
+        'HashtagFeed: Refreshing #$tag - fetching fresh data from API',
+        name: 'HashtagFeedProvider',
+        category: LogCategory.video,
+      );
+
+      // Clear cached REST API data and set flag to force fresh fetch
+      _popularVideos = null;
+      _forceNextApiRefresh = true;
+
       // Get video event service and force a fresh subscription
       final videoEventService = ref.read(videoEventServiceProvider);
 
@@ -328,5 +355,6 @@ class HashtagFeed extends _$HashtagFeed {
     }
 
     ref.invalidateSelf();
+    await future; // Wait for rebuild to complete so refresh indicator shows properly
   }
 }

@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:equatable/equatable.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:permissions_service/permissions_service.dart';
 
 part 'camera_permission_event.dart';
@@ -14,15 +18,19 @@ part 'camera_permission_state.dart';
 /// - Refreshing status when app resumes from background
 class CameraPermissionBloc
     extends Bloc<CameraPermissionEvent, CameraPermissionState> {
-  CameraPermissionBloc({required PermissionsService permissionsService})
-    : _permissionsService = permissionsService,
-      super(const CameraPermissionInitial()) {
+  CameraPermissionBloc({
+    required PermissionsService permissionsService,
+    @visibleForTesting bool? skipMacOSBypass,
+  }) : _permissionsService = permissionsService,
+       _skipMacOSBypass = skipMacOSBypass ?? false,
+       super(const CameraPermissionInitial()) {
     on<CameraPermissionRequest>(_onRequest);
     on<CameraPermissionRefresh>(_onRefresh);
     on<CameraPermissionOpenSettings>(_onOpenSettings);
   }
 
   final PermissionsService _permissionsService;
+  final bool _skipMacOSBypass;
 
   Future<void> _onRequest(
     CameraPermissionRequest event,
@@ -64,10 +72,40 @@ class CameraPermissionBloc
     CameraPermissionRefresh event,
     Emitter<CameraPermissionState> emit,
   ) async {
+    Log.info(
+      '🔐 Refreshing camera permissions',
+      name: 'CameraPermissionBloc',
+      category: LogCategory.video,
+    );
+
+    // On macOS desktop, permission_handler doesn't work reliably.
+    // macOS handles camera permissions at the system level when the app
+    // actually tries to access the camera, showing its own permission dialog.
+    // So we bypass the permission check and assume authorized.
+    if (!kIsWeb && Platform.isMacOS && !_skipMacOSBypass) {
+      Log.info(
+        '🔐 macOS detected - bypassing permission_handler, assuming authorized',
+        name: 'CameraPermissionBloc',
+        category: LogCategory.video,
+      );
+      emit(const CameraPermissionLoaded(CameraPermissionStatus.authorized));
+      return;
+    }
+
     try {
       final status = await checkPermissions();
+      Log.info(
+        '🔐 Permission check result: $status',
+        name: 'CameraPermissionBloc',
+        category: LogCategory.video,
+      );
       emit(CameraPermissionLoaded(status));
     } catch (e) {
+      Log.error(
+        '🔐 Permission check failed: $e',
+        name: 'CameraPermissionBloc',
+        category: LogCategory.video,
+      );
       emit(const CameraPermissionError());
     }
   }

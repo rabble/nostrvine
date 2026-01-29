@@ -42,14 +42,19 @@ MockSharedPreferences createMockSharedPreferences() {
   }
 
   // Add common SharedPreferences stubs that tests might need
+  when(mockPrefs.getBool(any)).thenReturn(null);
+  when(mockPrefs.setBool(any, any)).thenAnswer((_) async => true);
   when(mockPrefs.getString(any)).thenReturn(null);
   when(mockPrefs.setString(any, any)).thenAnswer((_) async => true);
   when(mockPrefs.getInt(any)).thenReturn(null);
   when(mockPrefs.setInt(any, any)).thenAnswer((_) async => true);
+  when(mockPrefs.getDouble(any)).thenReturn(null);
+  when(mockPrefs.setDouble(any, any)).thenAnswer((_) async => true);
   when(mockPrefs.getStringList(any)).thenReturn(null);
   when(mockPrefs.setStringList(any, any)).thenAnswer((_) async => true);
   when(mockPrefs.remove(any)).thenAnswer((_) async => true);
   when(mockPrefs.clear()).thenAnswer((_) async => true);
+  when(mockPrefs.containsKey(any)).thenReturn(false);
 
   return mockPrefs;
 }

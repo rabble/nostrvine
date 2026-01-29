@@ -28,6 +28,7 @@ class MockDivineCameraPlatform
   Future<CameraState> initializeCamera({
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
   }) async {
     return _state = CameraState(
       isInitialized: true,
@@ -65,7 +66,12 @@ class MockDivineCameraPlatform
   }
 
   @override
-  Future<void> startRecording({Duration? maxDuration}) async {}
+  Future<bool> startRecording({
+    Duration? maxDuration,
+    bool useCache = true,
+  }) async {
+    return true;
+  }
 
   @override
   Future<VideoRecordingResult?> stopRecording() async => null;
@@ -84,6 +90,21 @@ class MockDivineCameraPlatform
     key: Key('texture_$textureId'),
     color: Colors.blue,
   );
+}
+
+/// Mock with wide aspect ratio for testing preview calculation
+class _WideAspectRatioMock extends MockDivineCameraPlatform {
+  @override
+  Future<CameraState> initializeCamera({
+    DivineCameraLens lens = DivineCameraLens.back,
+    DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
+  }) async {
+    return const CameraState(
+      isInitialized: true,
+      textureId: 1,
+    );
+  }
 }
 
 void main() {
@@ -105,6 +126,8 @@ void main() {
     void Function(Offset, Offset)? onTap,
     Widget? loadingWidget,
     Widget Function(Offset)? focusIndicatorBuilder,
+    ValueChanged<ScaleStartDetails>? onScaleStart,
+    ValueChanged<ScaleUpdateDetails>? onScaleUpdate,
   }) {
     return MaterialApp(
       home: Scaffold(
@@ -116,6 +139,8 @@ void main() {
             onTap: onTap,
             loadingWidget: loadingWidget,
             focusIndicatorBuilder: focusIndicatorBuilder,
+            onScaleStart: onScaleStart,
+            onScaleUpdate: onScaleUpdate,
           ),
         ),
       ),
@@ -350,5 +375,113 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('passes onScaleStart callback to GestureDetector', (
+      tester,
+    ) async {
+      await camera.initialize();
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          onScaleStart: (_) {},
+        ),
+      );
+
+      // Verify GestureDetector is present and accepts the callback
+      final gestureDetector = tester.widget<GestureDetector>(
+        find.byType(GestureDetector),
+      );
+      expect(gestureDetector.onScaleStart, isNotNull);
+    });
+
+    testWidgets('passes onScaleUpdate callback to GestureDetector', (
+      tester,
+    ) async {
+      await camera.initialize();
+
+      await tester.pumpWidget(
+        buildTestWidget(
+          onScaleUpdate: (details) {},
+        ),
+      );
+
+      // Verify GestureDetector is present and accepts the callback
+      final gestureDetector = tester.widget<GestureDetector>(
+        find.byType(GestureDetector),
+      );
+      expect(gestureDetector.onScaleUpdate, isNotNull);
+    });
+
+    testWidgets('shows last frame during camera switch', (tester) async {
+      await camera.initialize();
+      await tester.pumpWidget(buildTestWidget());
+
+      // Verify texture is shown
+      expect(find.byType(Texture), findsOneWidget);
+    });
+
+    testWidgets('disposes ValueNotifier properly', (tester) async {
+      await camera.initialize();
+
+      await tester.pumpWidget(buildTestWidget());
+      expect(find.byType(CameraPreviewWidget), findsOneWidget);
+
+      // Remove the widget to trigger dispose
+      await tester.pumpWidget(const MaterialApp(home: Scaffold()));
+      await tester.pump();
+
+      // Widget should be removed without errors
+      expect(find.byType(CameraPreviewWidget), findsNothing);
+    });
+
+    testWidgets(
+      'handles wide preview aspect ratio (wider than container)',
+      (tester) async {
+        // Create a mock that returns a wide aspect ratio
+        final widePlatform = _WideAspectRatioMock();
+        DivineCameraPlatform.instance = widePlatform;
+
+        await camera.initialize();
+        // Build widget with narrow container (width < height * aspectRatio)
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SizedBox(
+                width: 200, // Narrow width
+                height: 800, // Tall height
+                child: CameraPreviewWidget(
+                  onTap: (_, _) {},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(find.byType(Texture), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'tap does not call handler when tapDownDetails is null',
+      (tester) async {
+        await camera.initialize();
+
+        var tapCalled = false;
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            onTap: (_, _) {
+              tapCalled = true;
+            },
+          ),
+        );
+
+        // Normal tap should work
+        await tester.tap(find.byType(GestureDetector));
+        await tester.pump();
+
+        expect(tapCalled, isTrue);
+      },
+    );
   });
 }

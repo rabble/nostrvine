@@ -5,6 +5,7 @@ import 'dart:io'
 
 import 'package:audio_session/audio_session.dart';
 import 'package:db_client/db_client.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -30,7 +31,6 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/last_tab_position_provider.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_normalization_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/router/tab_history_provider.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -50,8 +50,6 @@ import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_cache_manager.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/utils/ffmpeg_encoder.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
@@ -229,22 +227,6 @@ Future<void> _startOpenVineApp() async {
         category: LogCategory.system,
       );
       StartupPerformanceService.instance.completePhase('video_cache');
-    }
-  }
-
-  // Initialize FFmpegEncoder with memory-efficient session settings
-  if (!kIsWeb) {
-    StartupPerformanceService.instance.startPhase('ffmpeg_encoder');
-    try {
-      await FFmpegEncoder.initialize();
-      StartupPerformanceService.instance.completePhase('ffmpeg_encoder');
-    } catch (e) {
-      Log.error(
-        '[STARTUP] FFmpeg encoder initialization failed: $e',
-        name: 'Main',
-        category: LogCategory.system,
-      );
-      StartupPerformanceService.instance.completePhase('ffmpeg_encoder');
     }
   }
 
@@ -624,6 +606,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     // Initialize the deep link service for password reset
     ref.read(passwordResetListenerProvider).initialize();
 
+    // Initialize the deep link service for email verification
+    ref.read(emailVerificationListenerProvider).initialize();
+
     Log.info(
       '✅ Deep Link services initialized',
       name: 'DeepLinkHandler',
@@ -979,27 +964,21 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       // For notifications: go to index 0 (notifications always has an index)
       // For other routes: go to grid mode (null index)
       if (ctx.videoIndex != null && ctx.videoIndex != 0) {
-        RouteContext gridCtx;
-        if (ctx.type == RouteType.notifications) {
+        final newRoute = switch (ctx.type) {
           // Notifications always has an index, go to index 0
-          gridCtx = RouteContext(
-            type: ctx.type,
-            hashtag: ctx.hashtag,
-            searchTerm: ctx.searchTerm,
-            npub: ctx.npub,
-            videoIndex: 0,
-          );
-        } else {
-          // For explore and other routes, go to grid mode (null index)
-          gridCtx = RouteContext(
-            type: ctx.type,
-            hashtag: ctx.hashtag,
-            searchTerm: ctx.searchTerm,
-            npub: ctx.npub,
-            videoIndex: null,
-          );
-        }
-        final newRoute = buildRoute(gridCtx);
+          RouteType.notifications => NotificationsScreen.pathForIndex(0),
+          RouteType.explore => ExploreScreen.path,
+          RouteType.profile => ProfileScreenRouter.pathForNpub(
+            ctx.npub ?? 'me',
+          ),
+          RouteType.hashtag => HashtagScreenRouter.pathForTag(
+            ctx.hashtag ?? '',
+          ),
+          RouteType.search => SearchScreenPure.path,
+          RouteType.home => HomeScreenRouter.pathForIndex(0),
+          _ => ExploreScreen.path,
+        };
+
         router.go(newRoute);
         return true; // Handled
       }

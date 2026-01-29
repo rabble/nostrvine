@@ -12,6 +12,7 @@ import 'package:openvine/services/connection_status_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/profile_cache_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Service for managing user profiles from Nostr kind 0 events
@@ -782,10 +783,8 @@ class UserProfileService extends ChangeNotifier {
     if (profile?.name?.isNotEmpty == true) {
       return profile!.name!;
     }
-    // Immediate fallback to user-friendly shortened pubkey
-    return pubkey.length > 16
-        ? 'User ${pubkey.substring(0, 6)}...'
-        : 'User $pubkey';
+    // Immediate fallback to truncated npub
+    return NostrKeyUtils.truncateNpub(pubkey);
   }
 
   /// Remove specific profile from cache

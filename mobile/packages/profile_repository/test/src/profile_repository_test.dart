@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:db_client/db_client.dart';
+import 'package:http/http.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -11,11 +13,17 @@ class MockNostrClient extends Mock implements NostrClient {}
 
 class MockEvent extends Mock implements Event {}
 
+class MockUserProfilesDao extends Mock implements UserProfilesDao {}
+
+class MockHttpClient extends Mock implements Client {}
+
 void main() {
   group('ProfileRepository', () {
     late MockNostrClient mockNostrClient;
-    late ProfileRepository repository;
+    late ProfileRepository profileRepository;
     late MockEvent mockProfileEvent;
+    late MockUserProfilesDao mockUserProfilesDao;
+    late MockHttpClient mockHttpClient;
 
     const testPubkey =
         'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
@@ -24,12 +32,27 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(<String, dynamic>{});
+      registerFallbackValue(
+        UserProfile(
+          pubkey: 'pubkey',
+          rawData: const {},
+          createdAt: DateTime(2026),
+          eventId: 'eventId',
+        ),
+      );
+      registerFallbackValue(Uri.parse('https://example.com'));
     });
 
     setUp(() {
       mockNostrClient = MockNostrClient();
       mockProfileEvent = MockEvent();
-      repository = ProfileRepository(nostrClient: mockNostrClient);
+      mockUserProfilesDao = MockUserProfilesDao();
+      mockHttpClient = MockHttpClient();
+      profileRepository = ProfileRepository(
+        nostrClient: mockNostrClient,
+        userProfilesDao: mockUserProfilesDao,
+        httpClient: mockHttpClient,
+      );
 
       // Default mock event setup
       when(() => mockProfileEvent.kind).thenReturn(0);
@@ -54,6 +77,12 @@ void main() {
           profileContent: any(named: 'profileContent'),
         ),
       ).thenAnswer((_) async => mockProfileEvent);
+      when(
+        () => mockUserProfilesDao.getProfile(any()),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockUserProfilesDao.upsertProfile(any()),
+      ).thenAnswer((_) async {});
     });
 
     /// Helper to create a current profile with given content
@@ -61,69 +90,103 @@ void main() {
       Map<String, dynamic> content,
     ) async {
       when(() => mockProfileEvent.content).thenReturn(jsonEncode(content));
-      return (await repository.getProfile(pubkey: testPubkey))!;
+      return (await profileRepository.getProfile(pubkey: testPubkey))!;
     }
 
     group('getProfile', () {
-      test('returns UserProfile when fetchProfile returns an event', () async {
-        // Act
-        final result = await repository.getProfile(pubkey: testPubkey);
+      test('returns and caches UserProfile on cache miss and when fetchProfile '
+          'returns an event', () async {
+        final result = await profileRepository.getProfile(pubkey: testPubkey);
 
-        // Assert
         expect(result, isNotNull);
         expect(result!.pubkey, equals(testPubkey));
         expect(result.displayName, equals('Test User'));
         expect(result.about, equals('A test bio'));
 
-        // Verify
+        verify(() => mockUserProfilesDao.getProfile(any())).called(1);
         verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+        verify(() => mockUserProfilesDao.upsertProfile(result)).called(1);
       });
 
-      test('returns null when fetchProfile returns null', () async {
-        // Arrange
+      test('returns cached profile on cache hit', () async {
+        final profile = UserProfile.fromNostrEvent(mockProfileEvent);
         when(
-          () => mockNostrClient.fetchProfile(testPubkey),
-        ).thenAnswer((_) async => null);
+          () => mockUserProfilesDao.getProfile(any()),
+        ).thenAnswer((_) async => profile);
 
-        // Act
-        final result = await repository.getProfile(pubkey: testPubkey);
+        final result = await profileRepository.getProfile(pubkey: testPubkey);
 
-        // Assert
-        expect(result, isNull);
+        expect(result, isNotNull);
+        expect(result!.pubkey, equals(testPubkey));
+        expect(result.displayName, equals('Test User'));
+        expect(result.about, equals('A test bio'));
 
-        // Verify
-        verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+        verify(() => mockUserProfilesDao.getProfile(any())).called(1);
+        verifyNever(() => mockNostrClient.fetchProfile(any()));
+        verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
       });
+
+      test(
+        'returns null on cache miss and when fetchProfile returns null',
+        () async {
+          when(
+            () => mockNostrClient.fetchProfile(testPubkey),
+          ).thenAnswer((_) async => null);
+
+          final result = await profileRepository.getProfile(pubkey: testPubkey);
+
+          expect(result, isNull);
+
+          verify(() => mockUserProfilesDao.getProfile(any())).called(1);
+          verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+          verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
+        },
+      );
     });
 
     group('saveProfileEvent', () {
-      test('sends all provided fields to nostrClient', () async {
-        // Act
-        await repository.saveProfileEvent(
-          displayName: 'New Name',
-          about: 'New bio',
-          nip05: 'new@example.com',
-          picture: 'https://example.com/new.png',
-        );
-
-        // Verify
-        verify(
-          () => mockNostrClient.sendProfile(
-            profileContent: {
+      test(
+        'sends all provided fields to nostrClient and caches and returns '
+        'user profile',
+        () async {
+          when(() => mockProfileEvent.content).thenReturn(
+            jsonEncode({
               'display_name': 'New Name',
               'about': 'New bio',
               'nip05': 'new@example.com',
               'picture': 'https://example.com/new.png',
-            },
-          ),
-        ).called(1);
-      });
+            }),
+          );
+
+          final profile = await profileRepository.saveProfileEvent(
+            displayName: 'New Name',
+            about: 'New bio',
+            nip05: 'new@example.com',
+            picture: 'https://example.com/new.png',
+          );
+
+          expect(profile.displayName, equals('New Name'));
+          expect(profile.about, equals('New bio'));
+          expect(profile.nip05, equals('new@example.com'));
+          expect(profile.picture, equals('https://example.com/new.png'));
+
+          verify(
+            () => mockNostrClient.sendProfile(
+              profileContent: {
+                'display_name': 'New Name',
+                'about': 'New bio',
+                'nip05': 'new@example.com',
+                'picture': 'https://example.com/new.png',
+              },
+            ),
+          ).called(1);
+          verify(() => mockUserProfilesDao.upsertProfile(profile)).called(1);
+        },
+      );
 
       test('omits null optional fields', () async {
-        // Act
-        await repository.saveProfileEvent(displayName: 'Only Name');
+        await profileRepository.saveProfileEvent(displayName: 'Only Name');
 
-        // Verify
         verify(
           () => mockNostrClient.sendProfile(
             profileContent: {'display_name': 'Only Name'},
@@ -134,24 +197,22 @@ void main() {
       test(
         'throws ProfilePublishFailedException when sendProfile fails',
         () async {
-          // Arrange
           when(
             () => mockNostrClient.sendProfile(
               profileContent: any(named: 'profileContent'),
             ),
           ).thenAnswer((_) async => null);
 
-          // Act & Assert
           await expectLater(
-            repository.saveProfileEvent(displayName: 'Test'),
+            profileRepository.saveProfileEvent(displayName: 'Test'),
             throwsA(isA<ProfilePublishFailedException>()),
           );
+          verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
         },
       );
 
       group('with currentProfile', () {
         test('preserves unrelated fields from currentProfile', () async {
-          // Arrange
           final currentProfile = await createCurrentProfile({
             'display_name': 'Old Name',
             'website': 'https://old.com',
@@ -159,13 +220,11 @@ void main() {
             'custom_field': 'preserved',
           });
 
-          // Act
-          await repository.saveProfileEvent(
+          await profileRepository.saveProfileEvent(
             displayName: 'New Name',
             currentProfile: currentProfile,
           );
 
-          // Verify
           verify(
             () => mockNostrClient.sendProfile(
               profileContent: {
@@ -179,22 +238,19 @@ void main() {
         });
 
         test('new fields override existing fields', () async {
-          // Arrange
           final currentProfile = await createCurrentProfile({
             'display_name': 'Old Name',
             'nip05': 'old@example.com',
             'about': 'Old bio',
           });
 
-          // Act
-          await repository.saveProfileEvent(
+          await profileRepository.saveProfileEvent(
             displayName: 'New Name',
             nip05: 'new@example.com',
             about: 'New bio',
             currentProfile: currentProfile,
           );
 
-          // Verify
           verify(
             () => mockNostrClient.sendProfile(
               profileContent: {
@@ -209,19 +265,16 @@ void main() {
         test(
           'preserves rawData fields when optional params are null',
           () async {
-            // Arrange
             final currentProfile = await createCurrentProfile({
               'display_name': 'Old Name',
               'about': 'Preserved bio',
             });
 
-            // Act
-            await repository.saveProfileEvent(
+            await profileRepository.saveProfileEvent(
               displayName: 'New Name',
               currentProfile: currentProfile,
             );
 
-            // Verify
             verify(
               () => mockNostrClient.sendProfile(
                 profileContent: {
@@ -248,6 +301,188 @@ void main() {
 
         expect(e.message, isNull);
         expect(e.toString(), contains('ProfileRepositoryException'));
+      });
+    });
+
+    group('claimUsername', () {
+      test('returns UsernameClaimSuccess when response is 200', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) => Future.value(Response('body', 200)));
+
+        final usernameClaimResult = await profileRepository.claimUsername(
+          username: 'username',
+        );
+        expect(usernameClaimResult, equals(const UsernameClaimSuccess()));
+      });
+
+      test('returns UsernameClaimSuccess when response is 201', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) => Future.value(Response('body', 201)));
+
+        final usernameClaimResult = await profileRepository.claimUsername(
+          username: 'username',
+        );
+        expect(usernameClaimResult, equals(const UsernameClaimSuccess()));
+      });
+
+      test('returns UsernameClaimReserved when response is 403', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) => Future.value(Response('body', 403)));
+
+        final usernameClaimResult = await profileRepository.claimUsername(
+          username: 'username',
+        );
+        expect(usernameClaimResult, equals(const UsernameClaimReserved()));
+      });
+
+      test('returns UsernameClaimTaken when response is 409', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) => Future.value(Response('body', 409)));
+
+        final usernameClaimResult = await profileRepository.claimUsername(
+          username: 'username',
+        );
+        expect(usernameClaimResult, equals(const UsernameClaimTaken()));
+      });
+
+      test('returns UsernameClaimError when response is unexpected', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenAnswer((_) => Future.value(Response('body', 500)));
+
+        final usernameClaimResult = await profileRepository.claimUsername(
+          username: 'username',
+        );
+        expect(
+          usernameClaimResult,
+          isA<UsernameClaimError>().having(
+            (e) => e.message,
+            'message',
+            'Unexpected response: 500',
+          ),
+        );
+      });
+
+      test('returns UsernameClaimError on network exception ', () async {
+        when(
+          () => mockNostrClient.createNip98AuthHeader(
+            url: any(named: 'url'),
+            method: any(named: 'method'),
+            payload: any(named: 'payload'),
+          ),
+        ).thenAnswer((_) => Future.value('authHeader'));
+        when(
+          () => mockHttpClient.post(
+            any(),
+            headers: any(named: 'headers'),
+            body: any(named: 'body'),
+          ),
+        ).thenThrow(Exception('network exception'));
+
+        final usernameClaimResult = await profileRepository.claimUsername(
+          username: 'username',
+        );
+        expect(
+          usernameClaimResult,
+          isA<UsernameClaimError>().having(
+            (e) => e.message,
+            'message',
+            'Network error: Exception: network exception',
+          ),
+        );
+      });
+
+      test(
+        'returns UsernameClaimError when nip98 auth header is null',
+        () async {
+          when(
+            () => mockNostrClient.createNip98AuthHeader(
+              url: any(named: 'url'),
+              method: any(named: 'method'),
+              payload: any(named: 'payload'),
+            ),
+          ).thenAnswer((_) => Future.value());
+
+          final usernameClaimResult = await profileRepository.claimUsername(
+            username: 'username',
+          );
+          expect(
+            usernameClaimResult,
+            isA<UsernameClaimError>().having(
+              (e) => e.message,
+              'message',
+              'Nip98 authorization failed',
+            ),
+          );
+
+          verifyNever(() => mockHttpClient.post(any()));
+        },
+      );
+    });
+
+    group('UsernameClaimResult', () {
+      test('UsernameClaimError toString returns formatted message', () {
+        const error = UsernameClaimError('test error');
+        expect(error.toString(), equals('UsernameClaimError(test error)'));
       });
     });
   });

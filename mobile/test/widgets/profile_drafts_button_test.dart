@@ -2,6 +2,7 @@
 // ABOUTME: Tests that Clips button is prominently displayed and navigates correctly
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 
@@ -98,20 +99,22 @@ void main() {
       'should navigate to ClipLibraryScreen when Clips button tapped',
       (tester) async {
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => ElevatedButton(
-                  key: const Key('clips-button'),
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const ClipLibraryScreen(),
-                      ),
-                    );
-                  },
-                  child: const Text('Clips'),
+          ProviderScope(
+            child: MaterialApp(
+              home: Scaffold(
+                body: Builder(
+                  builder: (context) => ElevatedButton(
+                    key: const Key('clips-button'),
+                    onPressed: () async {
+                      await Navigator.push<void>(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ClipLibraryScreen(),
+                        ),
+                      );
+                    },
+                    child: const Text('Clips'),
+                  ),
                 ),
               ),
             ),

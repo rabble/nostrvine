@@ -169,6 +169,7 @@ void main() {
     late SecureKeyStorage storageService;
 
     setUp(() async {
+      setupTestEnvironment();
       storageService = SecureKeyStorage();
     });
 

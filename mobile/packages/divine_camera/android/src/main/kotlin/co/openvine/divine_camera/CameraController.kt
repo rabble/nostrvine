@@ -15,6 +15,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Surface
+import android.view.WindowManager
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
@@ -56,7 +57,15 @@ class CameraController(
     private var currentFlashMode: Int = ImageCapture.FLASH_MODE_OFF
     private var isTorchEnabled: Boolean = false
     private var isRecording: Boolean = false
+    private var recordingTrulyStarted: Boolean = false
+    
+    // Callback for startRecording - called when recording truly starts or is aborted
+    private var startRecordingCallback: ((String?) -> Unit)? = null
     private var isPaused: Boolean = false
+
+    // Screen brightness for front camera "torch" mode
+    private var isScreenFlashEnabled: Boolean = false
+    private var screenFlashFeatureEnabled: Boolean = true
 
     private var minZoom: Float = 1.0f
     private var maxZoom: Float = 1.0f
@@ -86,9 +95,12 @@ class CameraController(
     fun initialize(
         lens: String,
         quality: String,
+        enableScreenFlash: Boolean = true,
         callback: (Map<String, Any>?, String?) -> Unit
     ) {
-        Log.d(TAG, "Initializing camera with lens: $lens, quality: $quality")
+        Log.d(TAG, "Initializing camera with lens: $lens, quality: $quality, enableScreenFlash: $enableScreenFlash")
+
+        screenFlashFeatureEnabled = enableScreenFlash
 
         currentLens = if (lens == "front") {
             CameraSelector.LENS_FACING_FRONT
@@ -107,6 +119,15 @@ class CameraController(
         }
 
         checkCameraAvailability()
+
+        // Fallback to available camera if requested camera is not available
+        if (currentLens == CameraSelector.LENS_FACING_FRONT && !hasFrontCamera && hasBackCamera) {
+            Log.w(TAG, "Front camera requested but not available, falling back to back camera")
+            currentLens = CameraSelector.LENS_FACING_BACK
+        } else if (currentLens == CameraSelector.LENS_FACING_BACK && !hasBackCamera && hasFrontCamera) {
+            Log.w(TAG, "Back camera requested but not available, falling back to front camera")
+            currentLens = CameraSelector.LENS_FACING_FRONT
+        }
 
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         cameraProviderFuture.addListener({
@@ -353,7 +374,9 @@ class CameraController(
                 minZoom = zoomState?.minZoomRatio ?: 1.0f
                 maxZoom = zoomState?.maxZoomRatio ?: 1.0f
                 currentZoom = zoomState?.zoomRatio ?: 1.0f
-                hasFlash = cameraInfo.hasFlashUnit()
+                // Front camera has "flash" via screen brightness when feature is enabled
+                hasFlash = cameraInfo.hasFlashUnit() || 
+                    (screenFlashFeatureEnabled && currentLens == CameraSelector.LENS_FACING_FRONT)
                 isFocusPointSupported = true
                 isExposurePointSupported = true
                 Log.d(TAG, "Camera info: zoom=$minZoom-$maxZoom, flash=$hasFlash")
@@ -376,6 +399,10 @@ class CameraController(
         callback: (Map<String, Any>?, String?) -> Unit
     ) {
         Log.d(TAG, "Switching camera to: $lens")
+        
+        // Disable screen flash when switching cameras
+        disableScreenFlash()
+        
         currentLens = if (lens == "front") {
             CameraSelector.LENS_FACING_FRONT
         } else {
@@ -484,7 +511,9 @@ class CameraController(
                 minZoom = zoomState?.minZoomRatio ?: 1.0f
                 maxZoom = zoomState?.maxZoomRatio ?: 1.0f
                 currentZoom = 1.0f
-                hasFlash = cameraInfo.hasFlashUnit()
+                // Front camera has "flash" via screen brightness when feature is enabled
+                hasFlash = cameraInfo.hasFlashUnit() || 
+                    (screenFlashFeatureEnabled && currentLens == CameraSelector.LENS_FACING_FRONT)
                 isFocusPointSupported = true
                 isExposurePointSupported = true
             }
@@ -505,13 +534,25 @@ class CameraController(
 
     /**
      * Sets the flash mode.
+     * For front camera with torch mode, maximizes screen brightness instead.
      */
     fun setFlashMode(mode: String): Boolean {
         val cam = camera ?: return false
 
-        Log.d(TAG, "Setting flash mode: $mode")
+        Log.d(TAG, "Setting flash mode: $mode (currentLens: ${if (currentLens == CameraSelector.LENS_FACING_FRONT) "front" else "back"})")
 
         return try {
+            // Handle screen brightness for front camera "torch" mode
+            if (currentLens == CameraSelector.LENS_FACING_FRONT) {
+                if (mode == "torch") {
+                    enableScreenFlash()
+                    isTorchEnabled = true
+                    return true
+                } else {
+                    disableScreenFlash()
+                }
+            }
+
             when (mode) {
                 "off" -> {
                     cam.cameraControl.enableTorch(false)
@@ -540,6 +581,59 @@ class CameraController(
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set flash mode", e)
             false
+        }
+    }
+
+    /**
+     * Enables screen flash by setting brightness to maximum (for front camera).
+     */
+    private fun enableScreenFlash() {
+        if (!screenFlashFeatureEnabled) return
+        
+        mainHandler.post {
+            try {
+                val window = activity.window
+                val layoutParams = window.attributes
+                
+                // Set brightness to maximum (1.0 = 100%)
+                layoutParams.screenBrightness = 1.0f
+                window.attributes = layoutParams
+                isScreenFlashEnabled = true
+                
+                Log.d(TAG, "Screen flash enabled (brightness set to 100%)")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to enable screen flash", e)
+            }
+        }
+    }
+
+    /**
+     * Disables screen flash by restoring system brightness control.
+     */
+    private fun disableScreenFlash() {
+        if (!isScreenFlashEnabled) return
+        forceDisableScreenFlash()
+    }
+    
+    /**
+     * Forces screen brightness to be restored to system control.
+     * Used when pausing/releasing to ensure brightness is always restored.
+     */
+    private fun forceDisableScreenFlash() {
+        mainHandler.post {
+            try {
+                val window = activity.window
+                val layoutParams = window.attributes
+                
+                layoutParams.screenBrightness = WindowManager.LayoutParams.BRIGHTNESS_OVERRIDE_NONE
+                window.attributes = layoutParams
+                
+                isScreenFlashEnabled = false
+                
+                Log.d(TAG, "Screen flash disabled (brightness restored to system control)")
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to disable screen flash", e)
+            }
         }
     }
 
@@ -606,9 +700,10 @@ class CameraController(
     /**
      * Starts video recording.
      * @param maxDurationMs Optional maximum duration in milliseconds. Recording stops automatically when reached.
+     * @param useCache If true, saves video to cache directory (temporary). If false, saves to external files directory (permanent).
      */
     @SuppressLint("MissingPermission")
-    fun startRecording(maxDurationMs: Int?, callback: (String?) -> Unit) {
+    fun startRecording(maxDurationMs: Int?, useCache: Boolean = true, callback: (String?) -> Unit) {
         val videoCap = videoCapture ?: run {
             callback("Video capture not initialized")
             return
@@ -630,21 +725,26 @@ class CameraController(
         }
 
         try {
-            // Create output file
-            val outputDir = context.cacheDir
+            // Create output file - use cache or documents directory based on useCache parameter
+            val outputDir = if (useCache) {
+                context.cacheDir
+            } else {
+                context.filesDir  // Application Documents directory
+            }
             val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
             val outputFile = File(outputDir, "VID_$timestamp.mp4")
             currentRecordingFile = outputFile
 
             Log.d(
                 TAG, "Starting recording to: ${outputFile.absolutePath}" +
+                        " (useCache: $useCache)" +
                         if (maxDurationMs != null) " (max duration: ${maxDurationMs}ms)" else ""
             )
 
             val outputOptions = FileOutputOptions.Builder(outputFile).build()
 
-            // Flag to ensure callback is only called once (when recording truly starts)
-            var callbackCalled = false
+            // Store callback so it can be called from Finalize if recording is stopped early
+            startRecordingCallback = callback
 
             recording = videoCap.output
                 .prepareRecording(context, outputOptions)
@@ -663,8 +763,8 @@ class CameraController(
                             // Status events are sent continuously during recording
                             // When recordedDurationNanos > 0, the encoder is truly recording frames
                             val durationNanos = event.recordingStats.recordedDurationNanos
-                            if (!callbackCalled && durationNanos > 0) {
-                                callbackCalled = true
+                            if (startRecordingCallback != null && durationNanos > 0) {
+                                recordingTrulyStarted = true
                                 recordingStartTime = System.currentTimeMillis()
                                 Log.d(
                                     TAG,
@@ -686,12 +786,15 @@ class CameraController(
                                     )
                                 }
 
-                                callback(null)
+                                // Notify Flutter that recording truly started
+                                startRecordingCallback?.invoke(null)
+                                startRecordingCallback = null
                             }
                         }
 
                         is VideoRecordEvent.Finalize -> {
                             isRecording = false
+                            recordingTrulyStarted = false
                             // Cancel any pending auto-stop
                             maxDurationRunnable?.let { mainHandler.removeCallbacks(it) }
                             maxDurationRunnable = null
@@ -702,26 +805,51 @@ class CameraController(
                                 Log.d(TAG, "Recording finalized")
                             }
 
-                            // Handle auto-stop callback
+                            // If startRecordingCallback is still set, recording was stopped before first keyframe
+                            // We need to notify Flutter that recording failed to start properly
+                            startRecordingCallback?.let { startCallback ->
+                                Log.w(TAG, "Recording stopped before first keyframe - notifying Flutter")
+                                startCallback("Recording stopped before first keyframe")
+                                startRecordingCallback = null
+                            }
+
+                            // Build the result map once
+                            val file = currentRecordingFile
+                            val result = if (file != null && file.exists() && file.length() > 0) {
+                                val duration = System.currentTimeMillis() - recordingStartTime
+                                mapOf(
+                                    "filePath" to file.absolutePath,
+                                    "durationMs" to duration.toInt(),
+                                    "width" to videoWidth,
+                                    "height" to videoHeight
+                                )
+                            } else null
+
+                            // Handle manual stop callback (from stopRecording)
+                            manualStopCallback?.let { manualCallback ->
+                                if (result != null) {
+                                    Log.d(TAG, "Manual stop recording result: $result")
+                                    manualCallback(result, null)
+                                } else {
+                                    Log.w(TAG, "Manual stop: Recording file not found or empty")
+                                    manualCallback(null, "Recording file not found or empty")
+                                }
+                                manualStopCallback = null
+                            }
+
+                            // Handle auto-stop callback (from max duration)
                             autoStopCallback?.let { autoCallback ->
-                                val file = currentRecordingFile
-                                if (file != null && file.exists()) {
-                                    val duration = System.currentTimeMillis() - recordingStartTime
-                                    val result = mapOf(
-                                        "filePath" to file.absolutePath,
-                                        "durationMs" to duration.toInt(),
-                                        "width" to videoWidth,
-                                        "height" to videoHeight
-                                    )
+                                if (result != null) {
                                     Log.d(TAG, "Auto-stop recording result: $result")
                                     autoCallback(result, null)
                                 } else {
                                     autoCallback(null, "Recording file not found")
                                 }
                                 autoStopCallback = null
-                                currentRecordingFile = null
-                                recording = null
                             }
+
+                            currentRecordingFile = null
+                            recording = null
                         }
                     }
                 }
@@ -729,6 +857,7 @@ class CameraController(
 
         } catch (e: Exception) {
             Log.e(TAG, "Failed to start recording", e)
+            startRecordingCallback = null
             callback("Failed to start recording: ${e.message}")
         }
     }
@@ -758,8 +887,12 @@ class CameraController(
         // The Finalize event will handle the callback via autoStopCallback
     }
 
+    // Callback for manual stop recording - will be invoked when Finalize event fires
+    private var manualStopCallback: ((Map<String, Any>?, String?) -> Unit)? = null
+
     /**
      * Stops video recording and returns the result.
+     * Waits for the Finalize event to ensure the file is fully written.
      */
     fun stopRecording(callback: (Map<String, Any>?, String?) -> Unit) {
         val currentRecording = recording
@@ -769,32 +902,25 @@ class CameraController(
             return
         }
 
+        // If recording hasn't truly started yet (no keyframe), we need to handle this
+        if (!recordingTrulyStarted) {
+            Log.w(TAG, "Stopping recording before first keyframe - will return empty result")
+            // The startRecordingCallback will be notified via Finalize event
+            // We still need to call manualStopCallback, but it will get null result
+        }
+
         try {
             Log.d(TAG, "Stopping recording...")
+            
+            // Store callback to be invoked when Finalize event fires
+            manualStopCallback = callback
+            
             currentRecording.stop()
-
-            // Wait for file to be finalized
-            mainHandler.postDelayed({
-                val file = currentRecordingFile
-                if (file != null && file.exists()) {
-                    val duration = System.currentTimeMillis() - recordingStartTime
-                    val result = mapOf(
-                        "filePath" to file.absolutePath,
-                        "durationMs" to duration.toInt(),
-                        "width" to videoWidth,
-                        "height" to videoHeight
-                    )
-                    Log.d(TAG, "Recording stopped: $result")
-                    callback(result, null)
-                } else {
-                    callback(null, "Recording file not found")
-                }
-                currentRecordingFile = null
-                recording = null
-            }, 200)
+            // The Finalize event handler will call the callback when file is ready
 
         } catch (e: Exception) {
             Log.e(TAG, "Failed to stop recording", e)
+            manualStopCallback = null
             callback(null, "Failed to stop recording: ${e.message}")
         }
     }
@@ -804,6 +930,7 @@ class CameraController(
      */
     fun pausePreview() {
         Log.d(TAG, "Pausing preview")
+        forceDisableScreenFlash()
         isPaused = true
     }
 
@@ -813,6 +940,12 @@ class CameraController(
     fun resumePreview(callback: (Map<String, Any>?, String?) -> Unit) {
         Log.d(TAG, "Resuming preview")
         isPaused = false
+        
+        // Re-enable screen flash if front camera torch mode was active
+        if (currentLens == CameraSelector.LENS_FACING_FRONT && isTorchEnabled) {
+            enableScreenFlash()
+        }
+        
         if (cameraProvider != null && camera != null) {
             callback(getCameraState(), null)
         } else {
@@ -861,6 +994,10 @@ class CameraController(
      */
     fun release() {
         Log.d(TAG, "Releasing camera resources")
+        
+        // Always restore screen brightness
+        forceDisableScreenFlash()
+        
         try {
             recording?.stop()
             recording = null
