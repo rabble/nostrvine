@@ -74,8 +74,7 @@ void main() {
             'lud06': 'lnurl1234',
           }),
           createdAt: 1704067200,
-        );
-        event.id = testEventId;
+        )..id = testEventId;
 
         final profile = UserProfile.fromNostrEvent(event);
 
@@ -99,8 +98,7 @@ void main() {
           <List<dynamic>>[],
           jsonEncode({'displayName': 'Alt Display Name'}),
           createdAt: 1704067200,
-        );
-        event.id = testEventId;
+        )..id = testEventId;
 
         final profile = UserProfile.fromNostrEvent(event);
 
@@ -117,8 +115,7 @@ void main() {
             'displayName': 'Alt Name',
           }),
           createdAt: 1704067200,
-        );
-        event.id = testEventId;
+        )..id = testEventId;
 
         final profile = UserProfile.fromNostrEvent(event);
 
@@ -147,8 +144,7 @@ void main() {
           <List<dynamic>>[],
           'invalid json {',
           createdAt: 1704067200,
-        );
-        event.id = testEventId;
+        )..id = testEventId;
 
         final profile = UserProfile.fromNostrEvent(event);
 
@@ -169,8 +165,7 @@ void main() {
             'nested': {'key': 'value'},
           }),
           createdAt: 1704067200,
-        );
-        event.id = testEventId;
+        )..id = testEventId;
 
         final profile = UserProfile.fromNostrEvent(event);
 
