@@ -473,7 +473,23 @@ Future<void> _startOpenVineApp() async {
 
   Log.info('divine starting...', name: 'Main');
   Log.info('Log level: ${UnifiedLogger.currentLevel.name}', name: 'Main');
+  // Configure audio session for media playback
+  // This ensures audio plays even when iOS mute switch is on
+  final session = await AudioSession.instance;
+  await session.configure(
+    const AudioSessionConfiguration(
+      avAudioSessionCategory: AVAudioSessionCategory.playback,
+      avAudioSessionMode: AVAudioSessionMode.moviePlayback,
+      androidAudioAttributes: AndroidAudioAttributes(
+        contentType: AndroidAudioContentType.movie,
+        usage: AndroidAudioUsage.media,
+      ),
+    ),
+  );
 
+  // Initialize the player pool manager singleton
+  // Pool size is auto-detected based on device memory tier
+  await PlayerPoolManager.initialize();
   runApp(
     UncontrolledProviderScope(container: container, child: const DivineApp()),
   );
@@ -524,14 +540,6 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
   await container.read(uploadManagerProvider).initialize();
   Log.info(
     '[INIT] ✅ UploadManager initialized',
-    name: 'Main',
-    category: LogCategory.system,
-  );
-
-  final poolManager = await VideoControllerPoolManager.initialize();
-  Log.info(
-    '[INIT] ✅ VideoControllerPoolManager initialized '
-    '(poolSize: ${poolManager.poolSize})',
     name: 'Main',
     category: LogCategory.system,
   );

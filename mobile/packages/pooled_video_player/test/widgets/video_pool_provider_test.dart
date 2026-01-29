@@ -1,224 +1,363 @@
-import 'dart:io';
-
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:media_kit/media_kit.dart' show PlayerState, PlayerStream;
 import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
-import 'package:video_player/video_player.dart';
 
-class MockVideoPlayerController extends Mock implements VideoPlayerController {}
+class MockDeviceMemoryUtil extends Mock implements DeviceMemoryUtil {}
 
-class MockVideoPlayerValue extends Mock implements VideoPlayerValue {}
+class MockPlayerPool extends Mock implements PlayerPool {}
 
-Future<VideoPlayerController?> createMockController(
-  String videoUrl, {
-  File? cachedFile,
-}) async {
-  final controller = MockVideoPlayerController();
-  final value = MockVideoPlayerValue();
+class MockPlayer extends Mock implements Player {}
 
-  when(() => value.isInitialized).thenReturn(true);
-  when(() => value.isPlaying).thenReturn(false);
-  when(() => controller.value).thenReturn(value);
-  when(controller.dispose).thenAnswer((_) async {});
-  when(controller.pause).thenAnswer((_) async {});
-  when(controller.play).thenAnswer((_) async {});
-  when(() => controller.setLooping(any())).thenAnswer((_) async {});
+class MockVideoController extends Mock implements VideoController {}
 
-  return controller;
-}
+class MockPlayerStream extends Mock implements PlayerStream {}
+
+class MockPlayerState extends Mock implements PlayerState {}
+
+class FakePooledPlayer extends Fake implements PooledPlayer {}
 
 void main() {
-  tearDown(() async {
-    await VideoControllerPoolManager.reset();
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(() {
+    registerFallbackValue(FakePooledPlayer());
+    registerFallbackValue(Media('https://example.com/video.mp4'));
+    registerFallbackValue(PlaylistMode.single);
   });
 
   group('VideoPoolProvider', () {
-    testWidgets('provides pool to descendants via of()', (tester) async {
-      await VideoControllerPoolManager.initialize(
-        poolSize: 3,
-        controllerFactory: createMockController,
+    late MockDeviceMemoryUtil mockMemoryClassifier;
+    late List<VideoItem> testVideos;
+
+    // Factory that returns a mock PlayerPool to avoid MediaKit initialization
+    PlayerPool mockPlayerPoolFactory(VideoPoolConfig config) {
+      final mockPool = MockPlayerPool();
+      final mockPlayer = MockPlayer();
+      final mockVideoController = MockVideoController();
+      final mockPooledPlayer = PooledPlayer(
+        player: mockPlayer,
+        videoController: mockVideoController,
       );
 
-      VideoControllerPoolManager? capturedPool;
+      // Stub MockPlayer methods that are called during preloading
+      when(
+        () => mockPlayer.open(any(), play: any(named: 'play')),
+      ).thenAnswer((_) async {});
+      when(() => mockPlayer.setPlaylistMode(any())).thenAnswer((_) async {});
+      when(() => mockPlayer.setVolume(any())).thenAnswer((_) async {});
+      when(mockPlayer.play).thenAnswer((_) async {});
+      when(mockPlayer.pause).thenAnswer((_) async {});
+      when(mockPlayer.stop).thenAnswer((_) async {});
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: VideoPoolProvider(
-            pool: VideoControllerPoolManager.instance,
+      // Stub stream and state properties accessed during preloading
+      final mockStream = MockPlayerStream();
+      final mockState = MockPlayerState();
+      when(() => mockStream.buffering).thenAnswer((_) => Stream.value(false));
+      when(() => mockState.buffering).thenReturn(false);
+      when(() => mockPlayer.stream).thenReturn(mockStream);
+      when(() => mockPlayer.state).thenReturn(mockState);
+
+      when(() => mockPool.prewarm(any())).thenAnswer((_) async {});
+      when(mockPool.dispose).thenAnswer((_) async {});
+      when(() => mockPool.shrinkTo(any())).thenAnswer((_) async {});
+      when(mockPool.acquire).thenAnswer((_) async => mockPooledPlayer);
+      when(() => mockPool.release(any())).thenAnswer((_) async {});
+      when(() => mockPool.maxPoolSize).thenReturn(3);
+      when(() => mockPool.availableCount).thenReturn(0);
+      when(() => mockPool.inUseCount).thenReturn(0);
+      return mockPool;
+    }
+
+    setUp(() {
+      mockMemoryClassifier = MockDeviceMemoryUtil();
+      testVideos = [
+        const VideoItem(id: '1', url: 'https://example.com/video1.mp4'),
+        const VideoItem(id: '2', url: 'https://example.com/video2.mp4'),
+      ];
+    });
+
+    tearDown(() async {
+      // Always reset the singleton after each test
+      if (PlayerPoolManager.isInitialized) {
+        await PlayerPoolManager.reset();
+      }
+    });
+
+    group('feedOf', () {
+      testWidgets('returns feed controller from provider when available', (
+        tester,
+      ) async {
+        when(
+          () => mockMemoryClassifier.getMemoryTier(),
+        ).thenAnswer((_) async => MemoryTier.medium);
+
+        await PlayerPoolManager.initialize(
+          memoryClassifier: mockMemoryClassifier,
+          playerPoolFactory: mockPlayerPoolFactory,
+          skipMediaKitInit: true,
+        );
+
+        final feedController = VideoFeedController(
+          feedId: 'test-feed',
+          videos: testVideos,
+        );
+        addTearDown(feedController.dispose);
+
+        late VideoFeedController retrievedController;
+
+        await tester.pumpWidget(
+          VideoPoolProvider(
+            feedController: feedController,
             child: Builder(
               builder: (context) {
-                capturedPool = VideoPoolProvider.of(context);
+                retrievedController = VideoPoolProvider.feedOf(context);
                 return const SizedBox();
               },
             ),
           ),
-        ),
-      );
+        );
 
-      expect(capturedPool, isNotNull);
-      expect(capturedPool, equals(VideoControllerPoolManager.instance));
-    });
+        expect(retrievedController, same(feedController));
+      });
 
-    testWidgets('of() falls back to singleton when no provider', (
-      tester,
-    ) async {
-      await VideoControllerPoolManager.initialize(
-        poolSize: 3,
-        controllerFactory: createMockController,
-      );
+      testWidgets('throws StateError when no provider with feed controller', (
+        tester,
+      ) async {
+        when(
+          () => mockMemoryClassifier.getMemoryTier(),
+        ).thenAnswer((_) async => MemoryTier.medium);
 
-      VideoControllerPoolManager? capturedPool;
+        await PlayerPoolManager.initialize(
+          memoryClassifier: mockMemoryClassifier,
+          playerPoolFactory: mockPlayerPoolFactory,
+          skipMediaKitInit: true,
+        );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) {
-              capturedPool = VideoPoolProvider.of(context);
-              return const SizedBox();
-            },
+        await tester.pumpWidget(
+          VideoPoolProvider(
+            child: Builder(
+              builder: (context) {
+                expect(
+                  () => VideoPoolProvider.feedOf(context),
+                  throwsA(isA<StateError>()),
+                );
+                return const SizedBox();
+              },
+            ),
           ),
-        ),
-      );
+        );
+      });
 
-      expect(capturedPool, isNotNull);
-      expect(capturedPool, equals(VideoControllerPoolManager.instance));
-    });
-
-    testWidgets('of() throws when no provider and singleton not initialized', (
-      tester,
-    ) async {
-      // Don't initialize the singleton
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
+      testWidgets('throws StateError when no provider in tree', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          Builder(
             builder: (context) {
               expect(
-                () => VideoPoolProvider.of(context),
-                throwsStateError,
+                () => VideoPoolProvider.feedOf(context),
+                throwsA(isA<StateError>()),
               );
               return const SizedBox();
             },
           ),
-        ),
-      );
+        );
+      });
     });
 
-    testWidgets('maybeOf() returns pool from provider', (tester) async {
-      await VideoControllerPoolManager.initialize(
-        poolSize: 3,
-        controllerFactory: createMockController,
-      );
+    group('maybeFeedOf', () {
+      testWidgets('returns feed controller from provider when available', (
+        tester,
+      ) async {
+        when(
+          () => mockMemoryClassifier.getMemoryTier(),
+        ).thenAnswer((_) async => MemoryTier.medium);
 
-      VideoControllerPoolManager? capturedPool;
+        await PlayerPoolManager.initialize(
+          memoryClassifier: mockMemoryClassifier,
+          playerPoolFactory: mockPlayerPoolFactory,
+          skipMediaKitInit: true,
+        );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: VideoPoolProvider(
-            pool: VideoControllerPoolManager.instance,
+        final feedController = VideoFeedController(
+          feedId: 'test-feed',
+          videos: testVideos,
+        );
+        addTearDown(feedController.dispose);
+
+        VideoFeedController? retrievedController;
+
+        await tester.pumpWidget(
+          VideoPoolProvider(
+            feedController: feedController,
             child: Builder(
               builder: (context) {
-                capturedPool = VideoPoolProvider.maybeOf(context);
+                retrievedController = VideoPoolProvider.maybeFeedOf(context);
                 return const SizedBox();
               },
             ),
           ),
-        ),
-      );
+        );
 
-      expect(capturedPool, isNotNull);
-      expect(capturedPool, equals(VideoControllerPoolManager.instance));
-    });
+        expect(retrievedController, same(feedController));
+      });
 
-    testWidgets('maybeOf() falls back to singleton when no provider', (
-      tester,
-    ) async {
-      await VideoControllerPoolManager.initialize(
-        poolSize: 3,
-        controllerFactory: createMockController,
-      );
+      testWidgets('returns null when provider has no feed controller', (
+        tester,
+      ) async {
+        when(
+          () => mockMemoryClassifier.getMemoryTier(),
+        ).thenAnswer((_) async => MemoryTier.medium);
 
-      VideoControllerPoolManager? capturedPool;
+        await PlayerPoolManager.initialize(
+          memoryClassifier: mockMemoryClassifier,
+          playerPoolFactory: mockPlayerPoolFactory,
+          skipMediaKitInit: true,
+        );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
+        VideoFeedController? retrievedController;
+
+        await tester.pumpWidget(
+          VideoPoolProvider(
+            child: Builder(
+              builder: (context) {
+                retrievedController = VideoPoolProvider.maybeFeedOf(context);
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+
+        expect(retrievedController, isNull);
+      });
+
+      testWidgets('returns null when no provider in tree', (tester) async {
+        VideoFeedController? retrievedController;
+
+        await tester.pumpWidget(
+          Builder(
             builder: (context) {
-              capturedPool = VideoPoolProvider.maybeOf(context);
+              retrievedController = VideoPoolProvider.maybeFeedOf(context);
               return const SizedBox();
             },
           ),
-        ),
-      );
+        );
 
-      expect(capturedPool, isNotNull);
-      expect(capturedPool, equals(VideoControllerPoolManager.instance));
+        expect(retrievedController, isNull);
+      });
     });
 
-    testWidgets('maybeOf() returns null when no provider and not initialized', (
-      tester,
-    ) async {
-      // Don't initialize the singleton
+    group('poolManager', () {
+      testWidgets('returns PlayerPoolManager singleton', (tester) async {
+        when(
+          () => mockMemoryClassifier.getMemoryTier(),
+        ).thenAnswer((_) async => MemoryTier.medium);
 
-      VideoControllerPoolManager? capturedPool;
-      var builderCalled = false;
+        await PlayerPoolManager.initialize(
+          memoryClassifier: mockMemoryClassifier,
+          playerPoolFactory: mockPlayerPoolFactory,
+          skipMediaKitInit: true,
+        );
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) {
-              builderCalled = true;
-              capturedPool = VideoPoolProvider.maybeOf(context);
-              return const SizedBox();
-            },
-          ),
-        ),
-      );
+        expect(VideoPoolProvider.poolManager, same(PlayerPoolManager.instance));
+      });
 
-      expect(builderCalled, isTrue);
-      expect(capturedPool, isNull);
+      testWidgets('maybePoolManager returns null when not initialized', (
+        tester,
+      ) async {
+        expect(VideoPoolProvider.maybePoolManager(), isNull);
+      });
+
+      testWidgets('maybePoolManager returns manager when initialized', (
+        tester,
+      ) async {
+        when(
+          () => mockMemoryClassifier.getMemoryTier(),
+        ).thenAnswer((_) async => MemoryTier.medium);
+
+        await PlayerPoolManager.initialize(
+          memoryClassifier: mockMemoryClassifier,
+          playerPoolFactory: mockPlayerPoolFactory,
+          skipMediaKitInit: true,
+        );
+
+        expect(
+          VideoPoolProvider.maybePoolManager(),
+          same(PlayerPoolManager.instance),
+        );
+      });
     });
 
-    testWidgets('updateShouldNotify returns true when pool changes', (
-      tester,
-    ) async {
-      await VideoControllerPoolManager.initialize(
-        poolSize: 2,
-        controllerFactory: createMockController,
-      );
+    group('updateShouldNotify', () {
+      testWidgets('notifies when feed controller changes', (tester) async {
+        when(
+          () => mockMemoryClassifier.getMemoryTier(),
+        ).thenAnswer((_) async => MemoryTier.medium);
 
-      final pool1 = VideoControllerPoolManager.instance;
+        await PlayerPoolManager.initialize(
+          memoryClassifier: mockMemoryClassifier,
+          playerPoolFactory: mockPlayerPoolFactory,
+          skipMediaKitInit: true,
+        );
 
-      await VideoControllerPoolManager.initialize(
-        poolSize: 4,
-        controllerFactory: createMockController,
-      );
+        final controller1 = VideoFeedController(
+          feedId: 'test-feed-1',
+          videos: testVideos,
+        );
+        addTearDown(controller1.dispose);
 
-      final pool2 = VideoControllerPoolManager.instance;
+        final controller2 = VideoFeedController(
+          feedId: 'test-feed-2',
+          videos: testVideos,
+        );
+        addTearDown(controller2.dispose);
 
-      expect(pool1, isNot(equals(pool2)));
+        final oldWidget = VideoPoolProvider(
+          feedController: controller1,
+          child: const SizedBox(),
+        );
 
-      final provider1 = VideoPoolProvider(pool: pool1, child: const SizedBox());
-      final provider2 = VideoPoolProvider(pool: pool2, child: const SizedBox());
+        final newWidget = VideoPoolProvider(
+          feedController: controller2,
+          child: const SizedBox(),
+        );
 
-      expect(provider2.updateShouldNotify(provider1), isTrue);
-    });
+        expect(newWidget.updateShouldNotify(oldWidget), isTrue);
+      });
 
-    testWidgets('updateShouldNotify returns false when pool is same', (
-      tester,
-    ) async {
-      await VideoControllerPoolManager.initialize(
-        poolSize: 3,
-        controllerFactory: createMockController,
-      );
+      testWidgets('does not notify when feed controller is same', (
+        tester,
+      ) async {
+        when(
+          () => mockMemoryClassifier.getMemoryTier(),
+        ).thenAnswer((_) async => MemoryTier.medium);
 
-      final pool = VideoControllerPoolManager.instance;
+        await PlayerPoolManager.initialize(
+          memoryClassifier: mockMemoryClassifier,
+          playerPoolFactory: mockPlayerPoolFactory,
+          skipMediaKitInit: true,
+        );
 
-      final provider1 = VideoPoolProvider(pool: pool, child: const SizedBox());
-      final provider2 = VideoPoolProvider(pool: pool, child: const SizedBox());
+        final feedController = VideoFeedController(
+          feedId: 'test-feed',
+          videos: testVideos,
+        );
+        addTearDown(feedController.dispose);
 
-      expect(provider2.updateShouldNotify(provider1), isFalse);
+        final oldWidget = VideoPoolProvider(
+          feedController: feedController,
+          child: const SizedBox(),
+        );
+
+        final newWidget = VideoPoolProvider(
+          feedController: feedController,
+          child: const SizedBox(),
+        );
+
+        expect(newWidget.updateShouldNotify(oldWidget), isFalse);
+      });
     });
   });
 }

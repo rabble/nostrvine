@@ -1,143 +1,103 @@
-import 'dart:async';
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:pooled_video_player/src/models/pooled_video.dart';
-import 'package:pooled_video_player/src/services/video_controller_pool_manager.dart';
-import 'package:pooled_video_player/src/widgets/video_pool_provider.dart';
-import 'package:video_player/video_player.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 
-/// Callback invoked when the video controller is ready.
-typedef OnVideoReady = void Function(VideoPlayerController controller);
+import 'package:pooled_video_player/src/controllers/video_feed_controller.dart';
+import 'package:pooled_video_player/src/models/video_load_error.dart';
+import 'package:pooled_video_player/src/widgets/video_pool_provider.dart';
+
+/// Builder for the video layer.
+typedef VideoBuilder =
+    Widget Function(
+      BuildContext context,
+      VideoController videoController,
+      Player player,
+    );
+
+/// Builder for the overlay layer rendered on top of the video.
+typedef OverlayBuilder =
+    Widget Function(
+      BuildContext context,
+      VideoController videoController,
+      Player player,
+    );
+
+/// Builder for the error state.
+///
+/// [onRetry] can be called to retry loading the failed video.
+typedef ErrorBuilder =
+    Widget Function(
+      BuildContext context,
+      VideoLoadError error,
+      VoidCallback onRetry,
+    );
+
+/// Callback invoked when the video is ready to play.
+typedef OnVideoReady =
+    void Function(
+      VideoController videoController,
+      Player player,
+    );
 
 /// Callback invoked when the video starts loading.
 typedef OnVideoLoading = void Function();
 
 /// Callback invoked when a video error occurs.
-typedef OnVideoError = void Function(Object error);
+typedef OnVideoError = void Function(VideoLoadError error);
 
 /// Callback invoked when play/pause state changes.
 typedef OnPlayPauseChanged = void Function({required bool isPlaying});
 
-/// Builder for the video layer. Called once the controller is initialized.
-///
-/// The controller is guaranteed to be initialized (`isInitialized == true`).
-///
-/// Common usage pattern:
-/// ```dart
-/// videoBuilder: (context, controller) => AspectRatio(
-///   aspectRatio: 9 / 16,
-///   child: VideoPlayer(controller),
-/// )
-/// ```
-typedef VideoBuilder =
-    Widget Function(
-      BuildContext context,
-      VideoPlayerController controller,
-    );
-
-/// Builder for the overlay layer. Called when the controller is initialized.
-///
-/// Rendered on top of the video layer. Use this for UI elements like:
-/// - Play/pause controls
-/// - Progress indicators
-/// - Author information
-/// - Action buttons (like, share, comment)
-///
-/// Example:
-/// ```dart
-/// overlayBuilder: (context, controller) => Positioned(
-///   bottom: 20,
-///   right: 20,
-///   child: IconButton(
-///     icon: Icon(
-///       controller.value.isPlaying ? Icons.pause : Icons.play_arrow,
-///     ),
-///     onPressed: () => controller.value.isPlaying
-///         ? controller.pause()
-///         : controller.play(),
-///   ),
-/// )
-/// ```
-typedef OverlayBuilder =
-    Widget Function(
-      BuildContext context,
-      VideoPlayerController controller,
-    );
-
-/// Headless video player that acquires controllers from
-/// [VideoControllerPoolManager].
-///
-/// Uses specialized builders for clean UI composition:
-/// - [videoBuilder]: Required builder for the video layer
-///   (e.g., VideoPlayer widget)
-/// - [loadingBuilder]: Optional builder for loading state
-///   (defaults to black container)
-/// - [overlayBuilder]: Optional builder for UI overlay
-///   (e.g., controls, author info)
-///
-/// Example:
-/// ```dart
-/// PooledVideoPlayer(
-///   video: video,
-///   videoBuilder: (context, controller) => AspectRatio(
-///     aspectRatio: 9 / 16,
-///     child: VideoPlayer(controller),
-///   ),
-///   loadingBuilder: (context) => ThumbnailPlaceholder(),
-///   overlayBuilder: (context, controller) => VideoOverlayUI(),
-/// )
-/// ```
-class PooledVideoPlayer extends StatefulWidget {
+/// Video player widget that acquires controllers from [VideoFeedController].
+class PooledVideoPlayer extends StatelessWidget {
   /// Creates a pooled video player widget.
   const PooledVideoPlayer({
-    required this.video,
+    required this.index,
     required this.videoBuilder,
+    this.controller,
+    this.thumbnailUrl,
     this.loadingBuilder,
+    this.errorBuilder,
     this.overlayBuilder,
-    this.autoPlay = false,
-    this.looping = true,
     this.enableTapToPause = false,
+    this.onTap,
     this.onVideoReady,
     this.onVideoLoading,
     this.onVideoError,
     this.onPlayPauseChanged,
-    this.getCachedFile,
     super.key,
   });
 
-  /// The video to play.
-  final PooledVideo video;
+  /// Optional explicit controller. Falls back to [VideoPoolProvider].
+  final VideoFeedController? controller;
 
-  /// Builder for the video layer. Required.
-  ///
-  /// Called when the controller is initialized and ready to display video.
+  /// The index of this video in the feed.
+  final int index;
+
+  /// Optional thumbnail URL to display while video is loading.
+  final String? thumbnailUrl;
+
+  /// Builder for the video layer.
   final VideoBuilder videoBuilder;
 
-  /// Builder for the loading state. Optional.
-  ///
-  /// Called when the controller is not yet initialized. If not provided,
-  /// a default black container is shown.
+  /// Builder for the loading state.
   final WidgetBuilder? loadingBuilder;
 
-  /// Builder for the overlay layer. Optional.
+  /// Builder for the error state.
   ///
-  /// Called when the controller is initialized. Rendered on top of the video.
-  /// Use this for UI elements like controls, author info, action buttons, etc.
+  /// If not provided, a default error UI with retry button is shown.
+  final ErrorBuilder? errorBuilder;
+
+  /// Builder for the overlay layer.
   final OverlayBuilder? overlayBuilder;
 
-  /// Whether to automatically play when the controller is ready.
-  final bool autoPlay;
-
-  /// Whether the video should loop. Defaults to true.
-  final bool looping;
-
-  /// Enable tap-to-pause/play functionality.
-  ///
-  /// When enabled, tapping the video will toggle play/pause state.
+  /// Whether tapping toggles play/pause.
   final bool enableTapToPause;
 
-  /// Called when the video controller is ready.
+  /// Custom tap handler. If provided, overrides enableTapToPause behavior.
+  final VoidCallback? onTap;
+
+  /// Called when the video is ready to play.
   final OnVideoReady? onVideoReady;
 
   /// Called when the video starts loading.
@@ -149,263 +109,154 @@ class PooledVideoPlayer extends StatefulWidget {
   /// Called when play/pause state changes.
   final OnPlayPauseChanged? onPlayPauseChanged;
 
-  /// Optional cache lookup function for instant playback of cached videos.
-  /// When provided, the pool manager will use local file controllers for
-  /// cached videos instead of re-fetching from network.
-  final File? Function(String videoId)? getCachedFile;
-
-  @override
-  State<PooledVideoPlayer> createState() => _PooledVideoPlayerState();
-}
-
-class _PooledVideoPlayerState extends State<PooledVideoPlayer> {
-  VideoPlayerController? _controller;
-  VideoControllerPoolManager? _pool;
-  VoidCallback? _unsubscribe;
-
-  @override
-  void initState() {
-    super.initState();
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Initialize pool on first call (didChangeDependencies is called after
-    // initState, and context is available here for InheritedWidget access)
-    if (_pool == null) {
-      _initializePool();
-    }
-  }
-
-  void _initializePool() {
-    // Already initialized
-    if (_pool != null) return;
-
-    // Try to get pool from widget tree first (testable), fall back to singleton
-    _pool = VideoPoolProvider.maybeOf(context);
-
-    if (_pool == null) {
-      widget.onVideoError?.call(
-        StateError(
-          'VideoControllerPoolManager not initialized. '
-          'Call VideoControllerPoolManager.initialize() first or wrap '
-          'with VideoPoolProvider.',
-        ),
-      );
-      return;
-    }
-
-    _unsubscribe = _pool!.addPoolChangeListener(_onPoolStateChanged);
-
-    // Try to use prewarmed controller synchronously to avoid black frame
-    if (_tryUsePrewarmedController(scheduleCallbacks: true)) {
-      return;
-    }
-    // Not in pool or not initialized - request async
-    _requestController();
-  }
-
-  /// Attempts to use a prewarmed controller from the pool.
-  ///
-  /// Returns true if a ready controller was found and set, false otherwise.
-  /// When [scheduleCallbacks] is true, callbacks are scheduled via
-  /// `addPostFrameCallback` (used during initial build). Otherwise,
-  /// callbacks are invoked immediately.
-  bool _tryUsePrewarmedController({required bool scheduleCallbacks}) {
-    final pooled = _pool?.getPooledController(widget.video.id);
-    if (pooled == null ||
-        !pooled.controller.value.isInitialized ||
-        !pooled.hasFirstFrame) {
-      return false;
-    }
-
-    // Controller is ready - use it
-    _controller = pooled.controller;
-
-    if (scheduleCallbacks) {
-      // Schedule callbacks for after first build
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted && _controller != null) {
-          _onControllerReady(_controller!);
-        }
-      });
-    } else {
-      // Invoke callbacks immediately (setState already called or not needed)
-      _onControllerReady(pooled.controller);
-    }
-    return true;
-  }
-
-  /// Called when a controller becomes ready for use.
-  ///
-  /// Configures looping, notifies callbacks, and starts playback if autoPlay.
-  void _onControllerReady(VideoPlayerController controller) {
-    unawaited(controller.setLooping(widget.looping));
-    widget.onVideoReady?.call(controller);
-    if (widget.autoPlay) {
-      unawaited(controller.play());
-    }
-  }
-
-  void _requestController() {
-    widget.onVideoLoading?.call();
-
-    unawaited(
-      _pool!
-          .acquireController(
-            videoId: widget.video.id,
-            videoUrl: widget.video.videoUrl,
-            getCachedFile: widget.getCachedFile,
-          )
-          .then((PooledController? pooled) {
-            if (pooled == null) {
-              widget.onVideoError?.call(
-                Exception('Failed to acquire video controller from pool'),
-              );
-              return;
-            }
-            // Two-phase init: Controller is ready with first frame
-            _setController(pooled.controller);
-          })
-          .catchError((Object error) {
-            widget.onVideoError?.call(error);
-          }),
-    );
-  }
-
-  void _setController(VideoPlayerController controller) {
-    if (!mounted) return;
-    if (controller == _controller) return;
-
-    try {
-      controller.value;
-      // coverage:ignore-start
-    } on Exception {
-      widget.onVideoError?.call(
-        StateError('Controller was disposed, requesting new one'),
-      );
-      return;
-    }
-    // coverage:ignore-end
-
-    setState(() {
-      _controller = controller;
-    });
-
-    if (_controller!.value.isInitialized) {
-      _onControllerReady(_controller!);
-    }
-  }
-
-  void _onPoolStateChanged() {
-    final pooled = _pool?.getPooledController(widget.video.id);
-    if (pooled != null && pooled.hasFirstFrame) {
-      _setController(pooled.controller);
-    }
-  }
-
-  @override
-  void didUpdateWidget(PooledVideoPlayer oldWidget) {
-    super.didUpdateWidget(oldWidget);
-
-    if (widget.looping != oldWidget.looping && _controller != null) {
-      unawaited(_controller!.setLooping(widget.looping));
-    }
-
-    if (widget.autoPlay != oldWidget.autoPlay && _controller != null) {
-      if (widget.autoPlay && _controller!.value.isInitialized) {
-        unawaited(_controller!.play());
-      } else if (!widget.autoPlay && _controller!.value.isPlaying) {
-        unawaited(_controller!.pause());
-      }
-    }
-
-    if (widget.video.id != oldWidget.video.id) {
-      // Try to use prewarmed controller synchronously
-      if (_tryUsePrewarmedController(scheduleCallbacks: false)) {
-        setState(() {}); // Trigger rebuild with new controller
-        return;
-      }
-      // Not in pool - clear and request async
-      setState(() {
-        _controller = null;
-      });
-      _requestController();
-    }
-  }
-
-  void _togglePlayPause() {
-    final controller = _controller;
-    if (controller == null || !controller.value.isInitialized) return;
-
-    if (controller.value.isPlaying) {
-      unawaited(controller.pause());
-      widget.onPlayPauseChanged?.call(isPlaying: false);
-    } else {
-      unawaited(controller.play());
-      widget.onPlayPauseChanged?.call(isPlaying: true);
+  void _handleTap(VideoFeedController ctrl) {
+    if (onTap != null) {
+      onTap!();
+    } else if (enableTapToPause) {
+      ctrl.togglePlayPause();
+      onPlayPauseChanged?.call(isPlaying: !ctrl.isPaused);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller = _controller;
-    final isInitialized = controller?.value.isInitialized ?? false;
+    final feedController = controller ?? VideoPoolProvider.feedOf(context);
 
-    Widget content;
+    return ListenableBuilder(
+      listenable: feedController,
+      builder: (context, _) {
+        final videoController = feedController.getVideoController(index);
+        final player = feedController.getPlayer(index);
+        final isReady = feedController.isVideoReady(index);
+        final preloadState = feedController.getPreloadState(index);
+        final error = feedController.getError(index);
 
-    if (isInitialized) {
-      // Controller is ready - compose video layer + optional overlay
-      content = Stack(
-        fit: StackFit.expand,
-        children: [
-          // Layer 0: Video
-          widget.videoBuilder(context, controller!),
-          // Layer 1: Overlay (if provided)
-          if (widget.overlayBuilder != null)
-            widget.overlayBuilder!(context, controller),
-        ],
-      );
-    } else {
-      // Controller not ready - show loading state
-      content =
-          widget.loadingBuilder?.call(context) ?? const _DefaultLoadingState();
-    }
+        Widget content;
 
-    // Wrap with gesture detector if tap-to-pause is enabled
-    if (widget.enableTapToPause && isInitialized) {
-      content = GestureDetector(
-        behavior: HitTestBehavior.translucent,
-        onTap: _togglePlayPause,
-        child: content,
-      );
-    }
+        // Check for error state first
+        if (preloadState == PreloadState.error && error != null) {
+          onVideoError?.call(error);
+          content =
+              errorBuilder?.call(
+                context,
+                error,
+                () => feedController.retryPreload(index),
+              ) ??
+              _DefaultErrorState(
+                error: error,
+                onRetry: () => feedController.retryPreload(index),
+              );
+        } else if (videoController != null && player != null && isReady) {
+          content = Stack(
+            fit: StackFit.expand,
+            children: [
+              videoBuilder(context, videoController, player),
+              if (overlayBuilder != null)
+                overlayBuilder!(context, videoController, player),
+            ],
+          );
+        } else {
+          content =
+              loadingBuilder?.call(context) ??
+              _DefaultLoadingState(thumbnailUrl: thumbnailUrl);
+          onVideoLoading?.call();
+        }
 
-    return content;
-  }
+        if ((enableTapToPause || onTap != null) &&
+            videoController != null &&
+            player != null &&
+            isReady) {
+          content = GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onTap: () => _handleTap(feedController),
+            child: content,
+          );
+        }
 
-  @override
-  void dispose() {
-    _unsubscribe?.call();
-    _pool?.releaseController(widget.video.id);
-    super.dispose();
+        return content;
+      },
+    );
   }
 }
 
 /// Default loading state shown when video controller is not ready.
-///
-/// Displays a centered white circular progress indicator on a black background.
 class _DefaultLoadingState extends StatelessWidget {
-  const _DefaultLoadingState();
+  const _DefaultLoadingState({this.thumbnailUrl});
+
+  final String? thumbnailUrl;
 
   @override
   Widget build(BuildContext context) {
-    return const ColoredBox(
+    return ColoredBox(
+      color: Colors.black,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (thumbnailUrl != null)
+            Image.network(
+              thumbnailUrl!,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) =>
+                  const SizedBox.shrink(),
+            ),
+          const Center(
+            child: CircularProgressIndicator(
+              color: Colors.white,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Default error state shown when video loading fails.
+class _DefaultErrorState extends StatelessWidget {
+  const _DefaultErrorState({
+    required this.error,
+    required this.onRetry,
+  });
+
+  final VideoLoadError error;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final config = VideoPoolProvider.maybePoolManager()?.config;
+    final maxRetries = config?.maxRetryAttempts ?? 3;
+    final canRetry = error.retryCount < maxRetries;
+
+    return ColoredBox(
       color: Colors.black,
       child: Center(
-        child: CircularProgressIndicator(
-          color: Colors.white,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(
+              Icons.error_outline,
+              color: Colors.white70,
+              size: 48,
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Failed to load video',
+              style: TextStyle(
+                color: Colors.white70,
+                fontSize: 16,
+              ),
+            ),
+            if (canRetry) ...[
+              const SizedBox(height: 16),
+              TextButton.icon(
+                onPressed: onRetry,
+                icon: const Icon(Icons.refresh, color: Colors.white),
+                label: const Text(
+                  'Tap to retry',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

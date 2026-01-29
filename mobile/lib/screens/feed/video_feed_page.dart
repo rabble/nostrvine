@@ -11,7 +11,6 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
-import 'package:video_player/video_player.dart';
 
 class VideoFeedPage extends ConsumerWidget {
   static const String path = '/new-video-feed';
@@ -73,7 +72,13 @@ class _VideoFeedViewState extends State<VideoFeedView> {
 
           // Wrap videos for pool compatibility
           final pooledVideos = state.videos
-              .map(_PooledVideoEventAdapter.new)
+              .map(
+                (e) => VideoItem(
+                  id: e.id,
+                  url: e.videoUrl!,
+                  thumbnailUrl: e.thumbnailUrl,
+                ),
+              )
               .toList();
 
           // Note: RefreshIndicator removed - it conflicts with PageView
@@ -81,11 +86,12 @@ class _VideoFeedViewState extends State<VideoFeedView> {
           return Stack(
             children: [
               PooledVideoFeed(
+                feedId: 'main-feed',
                 videos: pooledVideos,
-                itemBuilder: (context, video, index, isActive) {
-                  final adapter = video as _PooledVideoEventAdapter;
+                itemBuilder: (context, video, index, {required isActive}) {
+                  final originalEvent = state.videos[index];
                   return _PooledVideoFeedItem(
-                    video: adapter.event,
+                    video: originalEvent,
                     index: index,
                     isActive: isActive,
                     contextTitle: 'BLoC Test (${state.mode.name})',
@@ -192,26 +198,6 @@ class FeedEmptyWidget extends StatelessWidget {
   }
 }
 
-/// Adapter that wraps [VideoEvent] to implement [PooledVideo] interface.
-///
-/// This allows VideoEvent to be used with the pooled_video_player package
-/// without modifying the models package or adding dependencies to it.
-class _PooledVideoEventAdapter implements PooledVideo {
-  const _PooledVideoEventAdapter(this.event);
-
-  /// The wrapped video event.
-  final VideoEvent event;
-
-  @override
-  String get id => event.id;
-
-  @override
-  String get videoUrl => event.videoUrl!; // Safe: filtered before wrapping
-
-  @override
-  String? get thumbnailUrl => event.thumbnailUrl;
-}
-
 /// A video feed item that uses [PooledVideoPlayer] for playback.
 ///
 /// This widget renders video content with automatic controller management
@@ -252,6 +238,7 @@ class _PooledVideoFeedItem extends ConsumerWidget {
             ..add(const VideoInteractionsFetchRequested()),
       child: _PooledVideoFeedItemContent(
         video: video,
+        index: index,
         isActive: isActive,
         contextTitle: contextTitle,
       ),
@@ -262,38 +249,44 @@ class _PooledVideoFeedItem extends ConsumerWidget {
 class _PooledVideoFeedItemContent extends StatelessWidget {
   const _PooledVideoFeedItemContent({
     required this.video,
+    required this.index,
     required this.isActive,
     this.contextTitle,
   });
 
   final VideoEvent video;
+  final int index;
   final bool isActive;
   final String? contextTitle;
 
   @override
   Widget build(BuildContext context) {
+    final isPortrait = video.dimensions != null ? video.isPortrait : true;
+
     return Container(
       color: Colors.black,
       child: PooledVideoPlayer(
-        video: _PooledVideoEventAdapter(video),
-        autoPlay: isActive,
+        index: index,
+        thumbnailUrl: video.thumbnailUrl,
         enableTapToPause: isActive,
-        videoBuilder: (context, controller) =>
-            _FittedVideoPlayer(controller: controller),
+        videoBuilder: (context, videoController, player) => _FittedVideoPlayer(
+          videoController: videoController,
+          isPortrait: isPortrait,
+        ),
         loadingBuilder: (context) => _VideoLoadingPlaceholder(
           thumbnailUrl: video.thumbnailUrl,
-          // Default to portrait (cover) when dimensions unknown
-          isPortrait: video.dimensions != null ? video.isPortrait : true,
+          isPortrait: isPortrait,
         ),
-        overlayBuilder: (context, controller) => VideoOverlayActions(
-          video: video,
-          isVisible: isActive,
-          isActive: isActive,
-          hasBottomNavigation: false,
-          contextTitle: contextTitle,
-        ),
+        overlayBuilder: (context, videoController, player) =>
+            VideoOverlayActions(
+              video: video,
+              isVisible: isActive,
+              isActive: isActive,
+              hasBottomNavigation: false,
+              contextTitle: contextTitle,
+            ),
         onVideoError: (error) {
-          debugPrint('Video error for ${video.id}: $error');
+          debugPrint('Video error for ${video.id}: ${error.message}');
         },
       ),
     );
@@ -301,32 +294,24 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
 }
 
 class _FittedVideoPlayer extends StatelessWidget {
-  const _FittedVideoPlayer({required this.controller});
+  const _FittedVideoPlayer({
+    required this.videoController,
+    this.isPortrait = true,
+  });
 
-  final VideoPlayerController controller;
+  final VideoController videoController;
+  final bool isPortrait;
 
   @override
   Widget build(BuildContext context) {
-    final videoWidth = controller.value.size.width;
-    final videoHeight = controller.value.size.height;
-
-    // Determine if video is portrait (height > width)
-    final isPortrait = videoHeight > videoWidth;
-
-    // Portrait: fill height, crop sides (cover)
-    // Landscape: fit entirely, centered (contain)
+    // Portrait: fill screen (cover), Landscape: fit entirely (contain)
     final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
 
-    return SizedBox.expand(
-      child: FittedBox(
-        fit: boxFit,
-        alignment: Alignment.center,
-        child: SizedBox(
-          width: videoWidth > 0 ? videoWidth : 1,
-          height: videoHeight > 0 ? videoHeight : 1,
-          child: VideoPlayer(controller),
-        ),
-      ),
+    return Video(
+      controller: videoController,
+      fit: boxFit,
+      filterQuality: FilterQuality.high,
+      controls: NoVideoControls,
     );
   }
 }

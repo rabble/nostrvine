@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
+
 import 'package:pooled_video_player/src/constants/pool_constants.dart';
 
 /// Device memory tier for determining pool size.
@@ -149,7 +150,8 @@ class DeviceMemoryUtil {
     return MemoryTier.low;
   }
 
-  /// Resets the cached memory tier. Used for testing.
+  /// Resets the cached memory tier.
+  @visibleForTesting
   void resetCache() {
     _cachedTier = null;
   }

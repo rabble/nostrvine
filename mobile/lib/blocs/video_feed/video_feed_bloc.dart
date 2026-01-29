@@ -99,9 +99,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
           .where((v) => v.videoUrl != null)
           .toList();
 
+      var updatedVideos = [...state.videos, ...validNewVideos];
+
       emit(
         state.copyWith(
-          videos: [...state.videos, ...validNewVideos],
+          videos: updatedVideos,
           hasMore: newVideos.length == _pageSize,
           isLoadingMore: false,
         ),

@@ -1,26 +1,3 @@
-/// Constants for video controller pool configuration.
-class PoolConstants {
-  /// Maximum number of controllers that can be initialized concurrently.
-  ///
-  /// Prevents overwhelming the system by limiting parallel video
-  /// initializations. Subsequent requests are queued.
-  ///
-  /// Value of 4 balances network bandwidth utilization with memory pressure
-  /// from simultaneous decode operations.
-  static const int maxConcurrentInitializations = 4;
-
-  /// Distance threshold for canceling in-flight controller requests.
-  ///
-  /// When a video is more than this many positions away from the current
-  /// video, any pending controller request for that video is canceled
-  /// to conserve resources.
-  ///
-  /// Value of 5 accommodates typical fast-scroll behavior (~5 positions
-  /// per swipe gesture) while avoiding wasted network requests for videos
-  /// the user has scrolled past.
-  static const int distanceCancellationThreshold = 5;
-}
-
 /// Memory tier thresholds for iOS and Android device classification.
 class MemoryTierConfig {
   // iOS Device Thresholds (based on iPhone generation number)
@@ -49,4 +26,35 @@ class MemoryTierConfig {
 
   /// Pool size for high memory devices.
   static const int highMemoryPoolSize = 4;
+
+  // Preload Configuration
+
+  /// Number of videos to preload ahead for low memory devices.
+  static const int lowMemoryPreloadAhead = 1;
+
+  /// Number of videos to preload ahead for medium memory devices.
+  static const int mediumMemoryPreloadAhead = 2;
+
+  /// Number of videos to preload ahead for high memory devices.
+  static const int highMemoryPreloadAhead = 3;
+
+  /// Number of videos to preload behind for low memory devices.
+  static const int lowMemoryPreloadBehind = 1;
+
+  /// Number of videos to preload behind for medium memory devices.
+  static const int mediumMemoryPreloadBehind = 1;
+
+  /// Number of videos to preload behind for high memory devices.
+  static const int highMemoryPreloadBehind = 2;
+
+  // Max Active Players Configuration
+
+  /// Maximum active players for low memory devices.
+  static const int lowMemoryMaxActivePlayers = 4;
+
+  /// Maximum active players for medium memory devices.
+  static const int mediumMemoryMaxActivePlayers = 5;
+
+  /// Maximum active players for high memory devices.
+  static const int highMemoryMaxActivePlayers = 7;
 }

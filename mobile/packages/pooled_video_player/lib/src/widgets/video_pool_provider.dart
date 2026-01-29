@@ -1,77 +1,74 @@
 import 'package:flutter/widgets.dart';
-import 'package:pooled_video_player/src/services/video_controller_pool_manager.dart';
 
-/// Provides [VideoControllerPoolManager] to the widget tree.
+import 'package:pooled_video_player/src/controllers/player_pool_manager.dart';
+import 'package:pooled_video_player/src/controllers/video_feed_controller.dart';
+
+/// Provides [VideoFeedController] and access to [PlayerPoolManager] to the
+/// widget tree.
 ///
-/// This widget enables dependency injection of the pool manager,
-/// improving testability and allowing scoped pool instances.
-///
-/// If not provided in the widget tree, widgets will fall back to the
-/// singleton [VideoControllerPoolManager.instance].
+/// This widget enables dependency injection of the feed controller,
+/// improving testability and allowing scoped controller instances.
 ///
 /// Example usage:
 /// ```dart
 /// VideoPoolProvider(
-///   pool: VideoControllerPoolManager.instance,
-///   child: PooledVideoFeed(videos: videos, itemBuilder: itemBuilder),
-/// )
-/// ```
-///
-/// For testing, you can provide a mock pool manager:
-/// ```dart
-/// VideoPoolProvider(
-///   pool: mockPoolManager,
-///   child: PooledVideoPlayer(video: video, videoBuilder: videoBuilder),
+///   feedController: myFeedController,
+///   child: PooledVideoPlayer(
+///     index: 0,
+///     videoBuilder: (context, videoController, player) => Video(...),
+///   ),
 /// )
 /// ```
 class VideoPoolProvider extends InheritedWidget {
-  /// Creates a [VideoPoolProvider] with the given pool manager.
+  /// Creates a [VideoPoolProvider].
+  ///
+  /// The [feedController] provides access to a specific feed's state.
   const VideoPoolProvider({
-    required this.pool,
     required super.child,
+    this.feedController,
     super.key,
   });
 
-  /// The pool manager to provide to descendants.
-  final VideoControllerPoolManager pool;
+  /// The feed controller to provide to descendants.
+  final VideoFeedController? feedController;
 
-  /// Returns the pool manager from the nearest [VideoPoolProvider] ancestor.
+  /// Returns the [PlayerPoolManager] singleton.
   ///
-  /// If no [VideoPoolProvider] is found in the widget tree, falls back to
-  /// the singleton [VideoControllerPoolManager.instance].
+  /// Throws [StateError] if not initialized.
+  static PlayerPoolManager get poolManager => PlayerPoolManager.instance;
+
+  /// Returns the [VideoFeedController] from the nearest [VideoPoolProvider]
+  /// ancestor.
   ///
-  /// Throws [StateError] if the singleton is also not initialized.
-  static VideoControllerPoolManager of(BuildContext context) {
+  /// Throws [StateError] if no provider with a feed controller is found.
+  static VideoFeedController feedOf(BuildContext context) {
     final provider = context
         .dependOnInheritedWidgetOfExactType<VideoPoolProvider>();
-    if (provider != null) {
-      return provider.pool;
+    if (provider?.feedController != null) {
+      return provider!.feedController!;
     }
-    // Fall back to singleton for backward compatibility
-    return VideoControllerPoolManager.instance;
+    throw StateError(
+      'No VideoPoolProvider with feedController found in the widget tree. '
+      'Wrap your widget with VideoPoolProvider and provide a feedController.',
+    );
   }
 
-  /// Returns the pool manager if available in the widget tree.
-  ///
-  /// Returns `null` if no [VideoPoolProvider] ancestor exists AND the
-  /// singleton [VideoControllerPoolManager] is not initialized.
-  ///
-  /// Use this method when you want to handle missing pool gracefully
-  /// without throwing an exception.
-  static VideoControllerPoolManager? maybeOf(BuildContext context) {
+  /// Returns the [VideoFeedController] if available, or null.
+  static VideoFeedController? maybeFeedOf(BuildContext context) {
     final provider = context
         .dependOnInheritedWidgetOfExactType<VideoPoolProvider>();
-    if (provider != null) {
-      return provider.pool;
-    }
-    // Try singleton, but don't throw if not initialized
-    if (VideoControllerPoolManager.isInitialized) {
-      return VideoControllerPoolManager.instance;
+    return provider?.feedController;
+  }
+
+  /// Returns the [PlayerPoolManager] if initialized, or null.
+  static PlayerPoolManager? maybePoolManager() {
+    if (PlayerPoolManager.isInitialized) {
+      return PlayerPoolManager.instance;
     }
     return null;
   }
 
   @override
   bool updateShouldNotify(VideoPoolProvider oldWidget) =>
-      pool != oldWidget.pool;
+      feedController != oldWidget.feedController;
 }
