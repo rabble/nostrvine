@@ -141,9 +141,12 @@ void main() {
       bool isAnonymous = false,
     }) {
       final authService = MockAuthService(isAnonymousValue: isAnonymous);
+      final mockUserProfileService = createMockUserProfileService();
       return ProviderScope(
         overrides: [
-          ...getStandardTestOverrides(),
+          ...getStandardTestOverrides(
+            mockUserProfileService: mockUserProfileService,
+          ),
           fetchUserProfileProvider(
             userIdHex,
           ).overrideWith((ref) async => profile),
