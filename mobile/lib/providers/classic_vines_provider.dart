@@ -2,9 +2,7 @@
 // ABOUTME: Uses REST API when available, falls back to Nostr videos with embedded stats
 
 import 'dart:async';
-import 'dart:math';
 
-import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
@@ -171,8 +169,9 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
 
   /// Load more videos (append next page to current list)
   Future<void> loadMore() async {
-    final currentState = state.valueOrNull;
-    if (currentState == null || currentState.isLoadingMore) return;
+    if (!state.hasValue || state.value == null) return;
+    final currentState = state.value!;
+    if (currentState.isLoadingMore) return;
 
     final analyticsService = ref.read(analyticsApiServiceProvider);
     final funnelcakeAvailable =
