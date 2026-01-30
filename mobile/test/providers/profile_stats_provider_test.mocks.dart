@@ -6,8 +6,6 @@
 import 'dart:async' as _i3;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:models/models.dart' as _i4;
-import 'package:nostr_sdk/event.dart' as _i5;
 import 'package:openvine/services/social_service.dart' as _i2;
 
 // ignore_for_file: type=lint
@@ -34,40 +32,12 @@ class MockSocialService extends _i1.Mock implements _i2.SocialService {
   }
 
   @override
-  List<String> get followingPubkeys =>
-      (super.noSuchMethod(
-            Invocation.getter(#followingPubkeys),
-            returnValue: <String>[],
-          )
-          as List<String>);
-
-  @override
   List<_i2.FollowSet> get followSets =>
       (super.noSuchMethod(
             Invocation.getter(#followSets),
             returnValue: <_i2.FollowSet>[],
           )
           as List<_i2.FollowSet>);
-
-  @override
-  bool hasReposted(String? eventId, {String? pubkey, String? dTag}) =>
-      (super.noSuchMethod(
-            Invocation.method(
-              #hasReposted,
-              [eventId],
-              {#pubkey: pubkey, #dTag: dTag},
-            ),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  bool isFollowing(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#isFollowing, [pubkey]),
-            returnValue: false,
-          )
-          as bool);
 
   @override
   Map<String, int>? getCachedFollowerStats(String? pubkey) =>
@@ -86,15 +56,6 @@ class MockSocialService extends _i1.Mock implements _i2.SocialService {
             returnValue: false,
           )
           as bool);
-
-  @override
-  _i3.Future<void> fetchCurrentUserFollowList() =>
-      (super.noSuchMethod(
-            Invocation.method(#fetchCurrentUserFollowList, []),
-            returnValue: _i3.Future<void>.value(),
-            returnValueForMissingStub: _i3.Future<void>.value(),
-          )
-          as _i3.Future<void>);
 
   @override
   _i3.Future<Map<String, int>> getFollowerStats(String? pubkey) =>
@@ -171,24 +132,6 @@ class MockSocialService extends _i1.Mock implements _i2.SocialService {
             returnValue: _i3.Future<int>.value(0),
           )
           as _i3.Future<int>);
-
-  @override
-  _i3.Future<void> toggleRepost(_i4.VideoEvent? videoToRepost) =>
-      (super.noSuchMethod(
-            Invocation.method(#toggleRepost, [videoToRepost]),
-            returnValue: _i3.Future<void>.value(),
-            returnValueForMissingStub: _i3.Future<void>.value(),
-          )
-          as _i3.Future<void>);
-
-  @override
-  _i3.Future<void> repostEvent(_i5.Event? eventToRepost) =>
-      (super.noSuchMethod(
-            Invocation.method(#repostEvent, [eventToRepost]),
-            returnValue: _i3.Future<void>.value(),
-            returnValueForMissingStub: _i3.Future<void>.value(),
-          )
-          as _i3.Future<void>);
 
   @override
   _i3.Future<void> publishRightToBeForgotten() =>

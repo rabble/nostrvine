@@ -3,35 +3,24 @@
 // ABOUTME: Tests REST API first with Nostr fallback pattern
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart' as mocktail;
 import 'package:models/models.dart';
-import 'package:openvine/providers/home_feed_provider.dart';
+import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/providers/social_providers.dart' as social;
+import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/analytics_api_service.dart';
-import 'package:openvine/services/video_event_service.dart';
-import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
-import 'package:openvine/state/social_state.dart';
+import 'package:openvine/services/video_event_service.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-import 'home_feed_provider_test.mocks.dart';
-
-/// Test notifier that returns a fixed social state
-class TestSocialNotifier extends social.SocialNotifier {
-  final SocialState _state;
-
-  TestSocialNotifier(this._state);
-
-  @override
-  SocialState build() => _state;
-}
 
 @GenerateMocks([
   VideoEventService,
@@ -39,6 +28,25 @@ class TestSocialNotifier extends social.SocialNotifier {
   SubscriptionManager,
   AnalyticsApiService,
 ])
+import 'home_feed_provider_test.mocks.dart';
+
+/// Mocktail mock for FollowRepository
+class MockFollowRepository extends mocktail.Mock implements FollowRepository {}
+
+/// Creates a mock FollowRepository with the given following pubkeys
+MockFollowRepository createMockFollowRepository(List<String> followingPubkeys) {
+  final mock = MockFollowRepository();
+  mocktail.when(() => mock.followingPubkeys).thenReturn(followingPubkeys);
+  mocktail
+      .when(() => mock.followingStream)
+      .thenAnswer(
+        (_) => BehaviorSubject<List<String>>.seeded(followingPubkeys).stream,
+      );
+  mocktail.when(() => mock.isInitialized).thenReturn(true);
+  mocktail.when(() => mock.followingCount).thenReturn(followingPubkeys.length);
+  return mock;
+}
+
 void main() {
   group('HomeFeedProvider', () {
     late ProviderContainer container;
@@ -132,11 +140,9 @@ void main() {
           ),
           // Override isNostrReady to avoid auth dependency in tests
           isNostrReadyProvider.overrideWithValue(true),
-          social.socialProvider.overrideWith(() {
-            return TestSocialNotifier(
-              const SocialState(followingPubkeys: [], isInitialized: true),
-            );
-          }),
+          followRepositoryProvider.overrideWithValue(
+            createMockFollowRepository([]),
+          ),
         ],
       );
 
@@ -193,14 +199,9 @@ void main() {
             subscriptionManagerProvider.overrideWithValue(
               mockSubscriptionManager,
             ),
-            social.socialProvider.overrideWith(() {
-              return TestSocialNotifier(
-                const SocialState(
-                  followingPubkeys: ['author1', 'author2'],
-                  isInitialized: true,
-                ),
-              );
-            }),
+            followRepositoryProvider.overrideWithValue(
+              createMockFollowRepository(['author1', 'author2']),
+            ),
           ],
         );
 
@@ -212,9 +213,8 @@ void main() {
         expect(initialFeed.videos[0].id, 'video1');
         expect(initialFeed.videos[1].id, 'video2');
 
-        // Act: Update social provider with different state but SAME following list
-        // This simulates what happens when socialProvider finishes initializing
-        // (e.g., likes/reposts loaded but following list unchanged)
+        // Act: Update follow repository with SAME following list
+        // This simulates cross-device sync or state refresh
         final updatedContainer = ProviderContainer(
           overrides: [
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
@@ -222,15 +222,9 @@ void main() {
             subscriptionManagerProvider.overrideWithValue(
               mockSubscriptionManager,
             ),
-            social.socialProvider.overrideWith(() {
-              return TestSocialNotifier(
-                SocialState(
-                  followingPubkeys: const ['author1', 'author2'], // Same list!
-                  isInitialized: true,
-                  repostedEventIds: const {'repost1'}, // Different reposts
-                ),
-              );
-            }),
+            followRepositoryProvider.overrideWithValue(
+              createMockFollowRepository(['author1', 'author2']), // Same list!
+            ),
           ],
         );
 
@@ -309,14 +303,9 @@ void main() {
             subscriptionManagerProvider.overrideWithValue(
               mockSubscriptionManager,
             ),
-            social.socialProvider.overrideWith(() {
-              return TestSocialNotifier(
-                SocialState(
-                  followingPubkeys: followingPubkeys,
-                  isInitialized: true,
-                ),
-              );
-            }),
+            followRepositoryProvider.overrideWithValue(
+              createMockFollowRepository(followingPubkeys),
+            ),
           ],
         );
 
@@ -371,7 +360,7 @@ void main() {
 
         when(mockVideoEventService.homeFeedVideos).thenReturn(mockVideos);
 
-        // Create a new container with social state override
+        // Create a new container with follow repository override
         final testContainer = ProviderContainer(
           overrides: [
             videoEventServiceProvider.overrideWithValue(mockVideoEventService),
@@ -379,14 +368,9 @@ void main() {
             subscriptionManagerProvider.overrideWithValue(
               mockSubscriptionManager,
             ),
-            social.socialProvider.overrideWith(() {
-              return TestSocialNotifier(
-                SocialState(
-                  followingPubkeys: followingPubkeys,
-                  isInitialized: true,
-                ),
-              );
-            }),
+            followRepositoryProvider.overrideWithValue(
+              createMockFollowRepository(followingPubkeys),
+            ),
           ],
         );
 
@@ -440,14 +424,9 @@ void main() {
             subscriptionManagerProvider.overrideWithValue(
               mockSubscriptionManager,
             ),
-            social.socialProvider.overrideWith(() {
-              return TestSocialNotifier(
-                SocialState(
-                  followingPubkeys: followingPubkeys,
-                  isInitialized: true,
-                ),
-              );
-            }),
+            followRepositoryProvider.overrideWithValue(
+              createMockFollowRepository(followingPubkeys),
+            ),
           ],
         );
 
@@ -489,14 +468,9 @@ void main() {
             subscriptionManagerProvider.overrideWithValue(
               mockSubscriptionManager,
             ),
-            social.socialProvider.overrideWith(() {
-              return TestSocialNotifier(
-                SocialState(
-                  followingPubkeys: followingPubkeys,
-                  isInitialized: true,
-                ),
-              );
-            }),
+            followRepositoryProvider.overrideWithValue(
+              createMockFollowRepository(followingPubkeys),
+            ),
           ],
         );
 
@@ -537,14 +511,9 @@ void main() {
             subscriptionManagerProvider.overrideWithValue(
               mockSubscriptionManager,
             ),
-            social.socialProvider.overrideWith(() {
-              return TestSocialNotifier(
-                SocialState(
-                  followingPubkeys: followingPubkeys,
-                  isInitialized: true,
-                ),
-              );
-            }),
+            followRepositoryProvider.overrideWithValue(
+              createMockFollowRepository(followingPubkeys),
+            ),
           ],
         );
 
@@ -608,11 +577,9 @@ void main() {
           subscriptionManagerProvider.overrideWithValue(
             mockSubscriptionManager,
           ),
-          social.socialProvider.overrideWith(() {
-            return TestSocialNotifier(
-              const SocialState(followingPubkeys: [], isInitialized: true),
-            );
-          }),
+          followRepositoryProvider.overrideWithValue(
+            createMockFollowRepository([]),
+          ),
         ],
       );
 
@@ -631,11 +598,9 @@ void main() {
           subscriptionManagerProvider.overrideWithValue(
             mockSubscriptionManager,
           ),
-          social.socialProvider.overrideWith(() {
-            return TestSocialNotifier(
-              const SocialState(followingPubkeys: [], isInitialized: true),
-            );
-          }),
+          followRepositoryProvider.overrideWithValue(
+            createMockFollowRepository([]),
+          ),
         ],
       );
 
@@ -655,11 +620,9 @@ void main() {
           subscriptionManagerProvider.overrideWithValue(
             mockSubscriptionManager,
           ),
-          social.socialProvider.overrideWith(() {
-            return TestSocialNotifier(
-              const SocialState(followingPubkeys: [], isInitialized: true),
-            );
-          }),
+          followRepositoryProvider.overrideWithValue(
+            createMockFollowRepository([]),
+          ),
         ],
       );
 
@@ -779,14 +742,9 @@ void main() {
             analyticsApiServiceProvider.overrideWithValue(
               mockAnalyticsApiService,
             ),
-            social.socialProvider.overrideWith(() {
-              return TestSocialNotifier(
-                const SocialState(
-                  followingPubkeys: ['author1', 'author2'],
-                  isInitialized: true,
-                ),
-              );
-            }),
+            followRepositoryProvider.overrideWithValue(
+              createMockFollowRepository(['author1', 'author2']),
+            ),
           ],
         );
 
@@ -855,14 +813,9 @@ void main() {
             analyticsApiServiceProvider.overrideWithValue(
               mockAnalyticsApiService,
             ),
-            social.socialProvider.overrideWith(() {
-              return TestSocialNotifier(
-                const SocialState(
-                  followingPubkeys: ['author1'],
-                  isInitialized: true,
-                ),
-              );
-            }),
+            followRepositoryProvider.overrideWithValue(
+              createMockFollowRepository(['author1']),
+            ),
           ],
         );
 
@@ -927,14 +880,9 @@ void main() {
             analyticsApiServiceProvider.overrideWithValue(
               mockAnalyticsApiService,
             ),
-            social.socialProvider.overrideWith(() {
-              return TestSocialNotifier(
-                const SocialState(
-                  followingPubkeys: ['author1'],
-                  isInitialized: true,
-                ),
-              );
-            }),
+            followRepositoryProvider.overrideWithValue(
+              createMockFollowRepository(['author1']),
+            ),
           ],
         );
 
@@ -1013,14 +961,9 @@ void main() {
             analyticsApiServiceProvider.overrideWithValue(
               mockAnalyticsApiService,
             ),
-            social.socialProvider.overrideWith(() {
-              return TestSocialNotifier(
-                const SocialState(
-                  followingPubkeys: ['author1'],
-                  isInitialized: true,
-                ),
-              );
-            }),
+            followRepositoryProvider.overrideWithValue(
+              createMockFollowRepository(['author1']),
+            ),
           ],
         );
 
@@ -1122,14 +1065,9 @@ void main() {
             analyticsApiServiceProvider.overrideWithValue(
               mockAnalyticsApiService,
             ),
-            social.socialProvider.overrideWith(() {
-              return TestSocialNotifier(
-                const SocialState(
-                  followingPubkeys: ['author1'],
-                  isInitialized: true,
-                ),
-              );
-            }),
+            followRepositoryProvider.overrideWithValue(
+              createMockFollowRepository(['author1']),
+            ),
           ],
         );
 

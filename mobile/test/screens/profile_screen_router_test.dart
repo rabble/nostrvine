@@ -20,6 +20,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:reposts_repository/reposts_repository.dart';
@@ -66,6 +67,8 @@ class _MockNostrClient extends Mock implements NostrClient {
   @override
   int get connectedRelayCount => 1;
 }
+
+class _MockUserProfileService extends Mock implements UserProfileService {}
 
 void main() {
   Widget _shell(ProviderContainer c) => UncontrolledProviderScope(
@@ -237,6 +240,7 @@ void main() {
     late _MockRepostsRepository mockRepostsRepository;
     late _MockVideosRepository mockVideosRepository;
     late _MockNostrClient mockNostrClient;
+    late _MockUserProfileService mockUserProfileService;
 
     setUp(() {
       mockDraft = _MockVineDraft();
@@ -254,6 +258,27 @@ void main() {
       mockRepostsRepository = _MockRepostsRepository();
       mockVideosRepository = _MockVideosRepository();
       mockNostrClient = _MockNostrClient();
+      mockUserProfileService = _MockUserProfileService();
+
+      // Stub UserProfileService methods to prevent real network calls
+      when(
+        () => mockUserProfileService.getCachedProfile(any()),
+      ).thenReturn(null);
+      when(() => mockUserProfileService.hasProfile(any())).thenReturn(false);
+      when(
+        () => mockUserProfileService.shouldSkipProfileFetch(any()),
+      ).thenReturn(true);
+      when(
+        () => mockUserProfileService.fetchProfile(
+          any(),
+          forceRefresh: any(named: 'forceRefresh'),
+        ),
+      ).thenAnswer((_) async => null);
+      when(
+        () => mockUserProfileService.prefetchProfilesImmediately(any()),
+      ).thenAnswer((_) async {});
+      when(() => mockUserProfileService.addListener(any())).thenReturn(null);
+      when(() => mockUserProfileService.removeListener(any())).thenReturn(null);
     });
 
     tearDown(() {
@@ -272,6 +297,7 @@ void main() {
           likesRepositoryProvider.overrideWithValue(mockLikesRepository),
           repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
           videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+          userProfileServiceProvider.overrideWithValue(mockUserProfileService),
         ],
         child: MaterialApp(
           theme: VineTheme.theme,

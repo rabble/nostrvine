@@ -11,26 +11,20 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/services/draft_storage_service.dart';
-import 'package:openvine/services/video_publish/video_publish_service.dart';
-import 'package:permissions_service/permissions_service.dart';
-import 'package:window_manager/window_manager.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/providers/social_providers.dart' as social_providers;
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/last_tab_position_provider.dart';
 import 'package:openvine/router/page_context_provider.dart';
@@ -47,18 +41,23 @@ import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/draft_migration_service.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_cache_manager.dart';
+import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:pooled_video_player/pooled_video_player.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
+import 'package:permissions_service/permissions_service.dart';
+import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:window_manager/window_manager.dart';
 
 Future<void> _startOpenVineApp() async {
   // Add timing logs for startup diagnostics
@@ -623,24 +622,6 @@ class _DivineAppState extends ConsumerState<DivineApp> {
   /// Initialize non-critical background services.
   /// Critical services are already initialized before runApp in _initializeCoreServices.
   void _initializeBackgroundServices() {
-    // Initialize social provider in background
-    Future.microtask(() async {
-      try {
-        await ref.read(social_providers.socialProvider.notifier).initialize();
-        Log.info(
-          '[INIT] ✅ SocialProvider initialized (background)',
-          name: 'Main',
-          category: LogCategory.system,
-        );
-      } catch (e) {
-        Log.warning(
-          '[INIT] SocialProvider failed (non-critical): $e',
-          name: 'Main',
-          category: LogCategory.system,
-        );
-      }
-    });
-
     // Initialize mutual mute list sync in background
     Future.microtask(() async {
       try {
