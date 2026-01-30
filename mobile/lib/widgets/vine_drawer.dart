@@ -192,26 +192,37 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       );
                       final userPubkey = authService.currentPublicKeyHex;
 
-                      // Get root context before closing drawer
-                      final navigatorContext = Navigator.of(context).context;
+                      // Capture ScaffoldMessenger before closing drawer
+                      // This is safer than holding onto a context reference
+                      final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+                      // Get the root navigator context (more stable than drawer context)
+                      final navigatorState = Navigator.of(
+                        context,
+                        rootNavigator: true,
+                      );
 
                       Navigator.of(context).pop(); // Close drawer
 
                       // Wait for drawer close animation
                       await Future.delayed(const Duration(milliseconds: 300));
-                      if (!navigatorContext.mounted) {
+
+                      // Use the navigator's overlay context which is stable
+                      final overlayContext = navigatorState.overlay?.context;
+                      if (overlayContext == null || !overlayContext.mounted) {
                         print('⚠️ Context not mounted after drawer close');
                         return;
                       }
 
-                      // Show support options dialog using root context
-                      // Pass captured services instead of ref
+                      // Show support options dialog using stable context
+                      // Pass captured services and scaffoldMessenger instead of ref
                       _showSupportOptionsDialog(
-                        navigatorContext,
+                        overlayContext,
                         bugReportService,
                         userProfileService,
                         userPubkey,
                         isZendeskAvailable,
+                        scaffoldMessenger,
                       );
                     },
                   ),
@@ -340,6 +351,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
     dynamic userProfileService,
     String? userPubkey,
     bool isZendeskAvailable,
+    ScaffoldMessengerState scaffoldMessenger,
   ) {
     showDialog(
       context: context,
@@ -361,11 +373,12 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
               onTap: () {
                 dialogContext.pop();
                 _handleBugReportWithServices(
-                  context,
+                  dialogContext,
                   bugReportService,
                   userProfileService,
                   userPubkey,
                   isZendeskAvailable,
+                  scaffoldMessenger,
                 );
               },
             ),
@@ -386,14 +399,12 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                   print('💬 Opening Zendesk ticket list');
                   await ZendeskSupportService.showTicketList();
                 } else {
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Support chat not available'),
-                        backgroundColor: Colors.red,
-                      ),
-                    );
-                  }
+                  scaffoldMessenger.showSnackBar(
+                    const SnackBar(
+                      content: Text('Support chat not available'),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
                 }
               },
             ),
@@ -405,7 +416,13 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
               subtitle: 'Common questions & answers',
               onTap: () {
                 dialogContext.pop();
-                _launchWebPage(context, 'https://divine.video/faq', 'FAQ');
+                // Use a post-frame callback to ensure dialog is fully closed
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  _launchUrlSafely(
+                    'https://divine.video/faq',
+                    scaffoldMessenger,
+                  );
+                });
               },
             ),
           ],
@@ -516,6 +533,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
     dynamic userProfileService,
     String? userPubkey,
     bool isZendeskAvailable,
+    ScaffoldMessengerState scaffoldMessenger,
   ) async {
     // Set Zendesk identity for all paths (native SDK and REST API)
     await _setZendeskIdentityWithService(userPubkey, userProfileService);
@@ -525,13 +543,16 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
       final packageInfo = await PackageInfo.fromPlatform();
       final appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
 
+      // Determine platform without relying on potentially stale context
+      final platformName = defaultTargetPlatform.name;
+
       final description =
           '''
 Please describe the bug you encountered:
 
 ---
 App Version: $appVersion
-Platform: ${Theme.of(context).platform.name}
+Platform: $platformName
 ''';
 
       print('🐛 Opening Zendesk for bug report');
@@ -541,28 +562,71 @@ Platform: ${Theme.of(context).platform.name}
         tags: ['mobile', 'bug', 'ios'],
       );
 
-      if (!success && context.mounted) {
-        _showSupportFallbackWithServices(context, bugReportService, userPubkey);
+      if (!success) {
+        _showSupportFallbackWithServices(
+          scaffoldMessenger,
+          bugReportService,
+          userPubkey,
+        );
       }
     } else {
-      _showSupportFallbackWithServices(context, bugReportService, userPubkey);
+      _showSupportFallbackWithServices(
+        scaffoldMessenger,
+        bugReportService,
+        userPubkey,
+      );
     }
   }
 
   /// Show fallback support options when Zendesk is not available
   /// Note: Zendesk identity is already set by the calling method
   void _showSupportFallbackWithServices(
-    BuildContext context,
+    ScaffoldMessengerState scaffoldMessenger,
     dynamic bugReportService,
     String? userPubkey,
   ) {
+    // Get the overlay context from the scaffold messenger's context
+    final context = scaffoldMessenger.context;
+    if (!context.mounted) {
+      print('⚠️ Cannot show bug report dialog - context not mounted');
+      return;
+    }
+
     showDialog(
       context: context,
-      builder: (context) => BugReportDialog(
+      builder: (dialogContext) => BugReportDialog(
         bugReportService: bugReportService,
         currentScreen: 'VineDrawer',
         userPubkey: userPubkey,
       ),
     );
+  }
+
+  /// Launch a URL safely without relying on widget context
+  Future<void> _launchUrlSafely(
+    String urlString,
+    ScaffoldMessengerState scaffoldMessenger,
+  ) async {
+    final url = Uri.parse(urlString);
+
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
+            content: Text('Could not open link'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (error) {
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Error opening link: $error'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
