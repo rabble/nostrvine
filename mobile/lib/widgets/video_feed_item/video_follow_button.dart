@@ -55,8 +55,9 @@ class VideoFollowButton extends ConsumerWidget {
     }
 
     return BlocProvider(
-      create: (_) => MyFollowingBloc(followRepository: followRepository)
-        ..add(const MyFollowingListLoadRequested()),
+      create: (_) =>
+          MyFollowingBloc(followRepository: followRepository)
+            ..add(const MyFollowingListLoadRequested()),
       child: VideoFollowButtonView(
         pubkey: pubkey,
         hideIfFollowing: hideIfFollowing,
@@ -78,8 +79,11 @@ class VideoFollowButtonView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocSelector<MyFollowingBloc, MyFollowingState,
-        ({bool isFollowing, bool isReady})>(
+    return BlocSelector<
+      MyFollowingBloc,
+      MyFollowingState,
+      ({bool isFollowing, bool isReady})
+    >(
       selector: (state) => (
         isFollowing: state.isFollowing(pubkey),
         isReady: state.status == MyFollowingStatus.success,
@@ -108,8 +112,8 @@ class VideoFollowButtonView extends StatelessWidget {
                 category: LogCategory.ui,
               );
               context.read<MyFollowingBloc>().add(
-                    MyFollowingToggleRequested(pubkey),
-                  );
+                MyFollowingToggleRequested(pubkey),
+              );
             },
             child: Container(
               width: 20,
