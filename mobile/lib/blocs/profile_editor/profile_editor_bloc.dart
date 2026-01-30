@@ -34,15 +34,8 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     ProfileSaved event,
     Emitter<ProfileEditorState> emit,
   ) async {
-    final displayName = event.displayName.trim();
-    final about = (event.about?.trim().isEmpty ?? true) ? null : event.about;
-    final picture = (event.picture?.trim().isEmpty ?? true)
-        ? null
-        : event.picture;
-
     // Guard: Check if we're about to overwrite existing profile with minimal data
-    if (!_hasExistingProfile &&
-        _isProfileMinimal(displayName, about, picture)) {
+    if (!_hasExistingProfile && event.isMinimal) {
       Log.info(
         '⚠️ Blank profile warning: no existing profile found, requesting confirmation',
         name: 'ProfileEditorBloc',
@@ -77,19 +70,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     );
 
     await _saveProfile(state.pendingEvent!, emit);
-  }
-
-  /// Check if profile data is minimal/blank
-  bool _isProfileMinimal(String displayName, String? about, String? picture) {
-    // Profile is minimal if:
-    // - Display name is very short (< 3 chars)
-    // - No bio
-    // - No picture
-    final hasMinimalDisplayName = displayName.length < 3;
-    final hasNoBio = about == null || about.isEmpty;
-    final hasNoPicture = picture == null || picture.isEmpty;
-
-    return hasMinimalDisplayName && hasNoBio && hasNoPicture;
   }
 
   /// Core profile save logic (extracted for reuse)
@@ -199,5 +179,26 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     }
 
     emit(state.copyWith(status: ProfileEditorStatus.failure, error: error));
+  }
+}
+
+/// Extension for checking if profile data is minimal/blank.
+extension _ProfileDataMinimal on ProfileSaved {
+  /// Whether this profile data is minimal.
+  ///
+  /// A profile is considered minimal if:
+  /// - Display name is very short (< 3 chars)
+  /// - No bio
+  /// - No picture
+  bool get isMinimal {
+    final trimmedDisplayName = displayName.trim();
+    final trimmedAbout = about?.trim();
+    final trimmedPicture = picture?.trim();
+
+    final hasMinimalDisplayName = trimmedDisplayName.length < 3;
+    final hasNoBio = trimmedAbout == null || trimmedAbout.isEmpty;
+    final hasNoPicture = trimmedPicture == null || trimmedPicture.isEmpty;
+
+    return hasMinimalDisplayName && hasNoBio && hasNoPicture;
   }
 }
