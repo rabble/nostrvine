@@ -53,6 +53,12 @@ class _FakeRecommendationsResult_2 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
+class _FakePaginatedPubkeys_3 extends _i1.SmartFake
+    implements _i3.PaginatedPubkeys {
+  _FakePaginatedPubkeys_3(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
 /// A class which mocks [VideoEventService].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -1628,12 +1634,34 @@ class MockAnalyticsApiService extends _i1.Mock
   @override
   _i12.Future<List<_i5.VideoEvent>> getClassicVines({
     int? limit = 50,
+    int? offset = 0,
     int? before,
+    String? sort = 'loops',
   }) =>
       (super.noSuchMethod(
             Invocation.method(#getClassicVines, [], {
               #limit: limit,
+              #offset: offset,
               #before: before,
+              #sort: sort,
+            }),
+            returnValue: _i12.Future<List<_i5.VideoEvent>>.value(
+              <_i5.VideoEvent>[],
+            ),
+          )
+          as _i12.Future<List<_i5.VideoEvent>>);
+
+  @override
+  _i12.Future<List<_i5.VideoEvent>> getClassicVinesPage({
+    required int? page,
+    int? pageSize = 100,
+    String? sort = 'loops',
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#getClassicVinesPage, [], {
+              #page: page,
+              #pageSize: pageSize,
+              #sort: sort,
             }),
             returnValue: _i12.Future<List<_i5.VideoEvent>>.value(
               <_i5.VideoEvent>[],
@@ -1692,6 +1720,89 @@ class MockAnalyticsApiService extends _i1.Mock
             ),
           )
           as _i12.Future<_i3.RecommendationsResult>);
+
+  @override
+  _i12.Future<Map<String, Map<String, dynamic>>> getBulkProfiles(
+    List<String>? pubkeys,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#getBulkProfiles, [pubkeys]),
+            returnValue: _i12.Future<Map<String, Map<String, dynamic>>>.value(
+              <String, Map<String, dynamic>>{},
+            ),
+          )
+          as _i12.Future<Map<String, Map<String, dynamic>>>);
+
+  @override
+  _i12.Future<Map<String, _i3.BulkVideoStatsEntry>> getBulkVideoStats(
+    List<String>? eventIds,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#getBulkVideoStats, [eventIds]),
+            returnValue:
+                _i12.Future<Map<String, _i3.BulkVideoStatsEntry>>.value(
+                  <String, _i3.BulkVideoStatsEntry>{},
+                ),
+          )
+          as _i12.Future<Map<String, _i3.BulkVideoStatsEntry>>);
+
+  @override
+  _i12.Future<_i3.SocialCounts?> getSocialCounts(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#getSocialCounts, [pubkey]),
+            returnValue: _i12.Future<_i3.SocialCounts?>.value(),
+          )
+          as _i12.Future<_i3.SocialCounts?>);
+
+  @override
+  _i12.Future<_i3.PaginatedPubkeys> getFollowers(
+    String? pubkey, {
+    int? limit = 100,
+    int? offset = 0,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #getFollowers,
+              [pubkey],
+              {#limit: limit, #offset: offset},
+            ),
+            returnValue: _i12.Future<_i3.PaginatedPubkeys>.value(
+              _FakePaginatedPubkeys_3(
+                this,
+                Invocation.method(
+                  #getFollowers,
+                  [pubkey],
+                  {#limit: limit, #offset: offset},
+                ),
+              ),
+            ),
+          )
+          as _i12.Future<_i3.PaginatedPubkeys>);
+
+  @override
+  _i12.Future<_i3.PaginatedPubkeys> getFollowing(
+    String? pubkey, {
+    int? limit = 100,
+    int? offset = 0,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #getFollowing,
+              [pubkey],
+              {#limit: limit, #offset: offset},
+            ),
+            returnValue: _i12.Future<_i3.PaginatedPubkeys>.value(
+              _FakePaginatedPubkeys_3(
+                this,
+                Invocation.method(
+                  #getFollowing,
+                  [pubkey],
+                  {#limit: limit, #offset: offset},
+                ),
+              ),
+            ),
+          )
+          as _i12.Future<_i3.PaginatedPubkeys>);
 
   @override
   void clearCache() => super.noSuchMethod(

@@ -10,34 +10,28 @@ part of 'classic_vines_provider.dart';
 // ignore_for_file: type=lint, type=warning
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
-/// Uses REST API (Funnelcake) when available for comprehensive classic Vine data.
-/// Falls back to Nostr discovery videos that have embedded loop stats (originalLoops > 0),
-/// which includes imported classic Vines that have the loop count in their event tags.
+/// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
+/// Each page is 100 videos. With ~10k classic vines, there are ~100 pages.
 ///
-/// Pull-to-refresh walks through classics by popularity - each refresh shows the next batch.
-/// Like a roulette wheel spinning to a new section of the classics archive.
+/// Pull-to-refresh spins to the next page of classics.
 
 @ProviderFor(ClassicVinesFeed)
 const classicVinesFeedProvider = ClassicVinesFeedProvider._();
 
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
-/// Uses REST API (Funnelcake) when available for comprehensive classic Vine data.
-/// Falls back to Nostr discovery videos that have embedded loop stats (originalLoops > 0),
-/// which includes imported classic Vines that have the loop count in their event tags.
+/// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
+/// Each page is 100 videos. With ~10k classic vines, there are ~100 pages.
 ///
-/// Pull-to-refresh walks through classics by popularity - each refresh shows the next batch.
-/// Like a roulette wheel spinning to a new section of the classics archive.
+/// Pull-to-refresh spins to the next page of classics.
 final class ClassicVinesFeedProvider
     extends $AsyncNotifierProvider<ClassicVinesFeed, VideoFeedState> {
   /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
   ///
-  /// Uses REST API (Funnelcake) when available for comprehensive classic Vine data.
-  /// Falls back to Nostr discovery videos that have embedded loop stats (originalLoops > 0),
-  /// which includes imported classic Vines that have the loop count in their event tags.
+  /// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
+  /// Each page is 100 videos. With ~10k classic vines, there are ~100 pages.
   ///
-  /// Pull-to-refresh walks through classics by popularity - each refresh shows the next batch.
-  /// Like a roulette wheel spinning to a new section of the classics archive.
+  /// Pull-to-refresh spins to the next page of classics.
   const ClassicVinesFeedProvider._()
     : super(
         from: null,
@@ -57,16 +51,14 @@ final class ClassicVinesFeedProvider
   ClassicVinesFeed create() => ClassicVinesFeed();
 }
 
-String _$classicVinesFeedHash() => r'0e66f665643fa0cc7ea499d107901f9b0e029a42';
+String _$classicVinesFeedHash() => r'ccaaf189ff4104e489cb640370ebfc54f77a3288';
 
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
-/// Uses REST API (Funnelcake) when available for comprehensive classic Vine data.
-/// Falls back to Nostr discovery videos that have embedded loop stats (originalLoops > 0),
-/// which includes imported classic Vines that have the loop count in their event tags.
+/// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
+/// Each page is 100 videos. With ~10k classic vines, there are ~100 pages.
 ///
-/// Pull-to-refresh walks through classics by popularity - each refresh shows the next batch.
-/// Like a roulette wheel spinning to a new section of the classics archive.
+/// Pull-to-refresh spins to the next page of classics.
 
 abstract class _$ClassicVinesFeed extends $AsyncNotifier<VideoFeedState> {
   FutureOr<VideoFeedState> build();
