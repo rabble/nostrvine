@@ -373,12 +373,11 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
               onTap: () {
                 dialogContext.pop();
                 _handleBugReportWithServices(
-                  dialogContext,
+                  context, // Use stable overlayContext, not dialogContext
                   bugReportService,
                   userProfileService,
                   userPubkey,
                   isZendeskAvailable,
-                  scaffoldMessenger,
                 );
               },
             ),
@@ -416,13 +415,9 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
               subtitle: 'Common questions & answers',
               onTap: () {
                 dialogContext.pop();
-                // Use a post-frame callback to ensure dialog is fully closed
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  _launchUrlSafely(
-                    'https://divine.video/faq',
-                    scaffoldMessenger,
-                  );
-                });
+                // URL launching doesn't need context - scaffoldMessenger
+                // handles error display
+                _launchUrlSafely('https://divine.video/faq', scaffoldMessenger);
               },
             ),
           ],
@@ -527,13 +522,14 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   }
 
   /// Handle bug report submission
+  /// [context] should be a stable context (e.g., navigator overlay) that
+  /// remains mounted after dialogs are closed
   Future<void> _handleBugReportWithServices(
     BuildContext context,
     dynamic bugReportService,
     dynamic userProfileService,
     String? userPubkey,
     bool isZendeskAvailable,
-    ScaffoldMessengerState scaffoldMessenger,
   ) async {
     // Set Zendesk identity for all paths (native SDK and REST API)
     await _setZendeskIdentityWithService(userPubkey, userProfileService);
@@ -563,37 +559,28 @@ Platform: $platformName
       );
 
       if (!success) {
-        _showSupportFallbackWithServices(
-          scaffoldMessenger,
-          bugReportService,
-          userPubkey,
-        );
+        _showSupportFallbackWithServices(context, bugReportService, userPubkey);
       }
     } else {
-      _showSupportFallbackWithServices(
-        scaffoldMessenger,
-        bugReportService,
-        userPubkey,
-      );
+      _showSupportFallbackWithServices(context, bugReportService, userPubkey);
     }
   }
 
   /// Show fallback support options when Zendesk is not available
   /// Note: Zendesk identity is already set by the calling method
+  /// [stableContext] is the overlay context that remains mounted after dialogs close
   void _showSupportFallbackWithServices(
-    ScaffoldMessengerState scaffoldMessenger,
+    BuildContext stableContext,
     dynamic bugReportService,
     String? userPubkey,
   ) {
-    // Get the overlay context from the scaffold messenger's context
-    final context = scaffoldMessenger.context;
-    if (!context.mounted) {
+    if (!stableContext.mounted) {
       print('⚠️ Cannot show bug report dialog - context not mounted');
       return;
     }
 
     showDialog(
-      context: context,
+      context: stableContext,
       builder: (dialogContext) => BugReportDialog(
         bugReportService: bugReportService,
         currentScreen: 'VineDrawer',
