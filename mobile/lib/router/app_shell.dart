@@ -239,11 +239,7 @@ class AppShell extends ConsumerWidget {
             width: 48,
             height: 48,
             padding: const EdgeInsets.all(8),
-            child: SvgPicture.asset(
-              iconPath,
-              width: 32,
-              height: 32,
-            ),
+            child: SvgPicture.asset(iconPath, width: 32, height: 32),
           ),
         ),
       ),
