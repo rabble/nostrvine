@@ -44,14 +44,18 @@ class NostrService extends _$NostrService {
       statisticsService: statisticsService,
       environmentConfig: environmentConfig,
       dbClient: dbClient,
-      userRelayUrls: userRelayUrls.isNotEmpty ? userRelayUrls : null,
       rpcSigner: authService.rpcSigner,
     );
 
     // Schedule initialization after build completes
-    // This ensures relays are connected when the client is first used
+    // Add user relays BEFORE initialize() to avoid race condition
     Future.microtask(() async {
       try {
+        // Add user relays first (must complete before initialize)
+        if (userRelayUrls.isNotEmpty) {
+          await client.addRelays(userRelayUrls);
+        }
+        // Then initialize the client
         await client.initialize();
         Log.info(
           '[NostrService] Client initialized via build()',
@@ -107,13 +111,16 @@ class NostrService extends _$NostrService {
         statisticsService: statisticsService,
         environmentConfig: environmentConfig,
         dbClient: dbClient,
-        userRelayUrls: userRelayUrls.isNotEmpty ? userRelayUrls : null,
         rpcSigner: authService.rpcSigner,
       );
 
       _lastPubkey = currentPubkey;
 
-      // Initialize the new client
+      // Add user relays first (must complete before initialize)
+      if (userRelayUrls.isNotEmpty) {
+        await newClient.addRelays(userRelayUrls);
+      }
+      // Then initialize the new client
       await newClient.initialize();
       state = newClient;
     }

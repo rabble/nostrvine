@@ -869,6 +869,18 @@ class AuthService implements BackgroundAwareService {
       if (_authState != AuthState.authenticated) {
         await _checkExistingAuth();
       }
+
+      // Run discovery for resumed sessions that haven't discovered relays yet
+      // This handles the case where user logs in, closes app, and reopens
+      if (isAuthenticated && currentNpub != null && _userRelays.isEmpty) {
+        Log.info(
+          '🔄 Running discovery for resumed session (no relays cached)',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        await _performDiscovery();
+      }
+
       await acceptTerms();
 
       Log.info(
@@ -1630,7 +1642,7 @@ class AuthService implements BackgroundAwareService {
       final events = await nostrClient
           .queryEvents([filter])
           .timeout(
-            const Duration(seconds: 10),
+            const Duration(seconds: 5),
             onTimeout: () {
               Log.warning(
                 'Timeout checking for existing profile',
