@@ -15,7 +15,6 @@ import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
