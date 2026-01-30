@@ -147,7 +147,7 @@ class _VinerAvatar extends ConsumerWidget {
     final avatarUrl = viner.authorAvatar ?? profile?.picture;
 
     return GestureDetector(
-      onTap: () => onTap(context, avatarUrl),
+      onTap: () => _onTap(context, avatarUrl),
       child: Padding(
         padding: const EdgeInsets.only(right: 16),
         child: Column(
@@ -246,7 +246,7 @@ class _VinerAvatar extends ConsumerWidget {
     return cleaned.trim();
   }
 
-  void onTap(BuildContext context, String? avatarUrl) async {
+  void _onTap(BuildContext context, String? avatarUrl) async {
     // Get current user's hex for normalization if needed
     final identifier = viner.pubkey;
     final container = ProviderScope.containerOf(context, listen: false);

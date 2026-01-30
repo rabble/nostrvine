@@ -47,6 +47,12 @@ class _FakeHomeFeedResult_1 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
+class _FakeRecommendationsResult_2 extends _i1.SmartFake
+    implements _i3.RecommendationsResult {
+  _FakeRecommendationsResult_2(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
 /// A class which mocks [VideoEventService].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -1576,6 +1582,14 @@ class MockAnalyticsApiService extends _i1.Mock
           as _i12.Future<List<_i5.VideoEvent>>);
 
   @override
+  _i12.Future<Map<String, dynamic>?> getUserProfile(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#getUserProfile, [pubkey]),
+            returnValue: _i12.Future<Map<String, dynamic>?>.value(),
+          )
+          as _i12.Future<Map<String, dynamic>?>);
+
+  @override
   _i12.Future<_i3.HomeFeedResult> getHomeFeed({
     required String? pubkey,
     int? limit = 50,
@@ -1642,6 +1656,34 @@ class MockAnalyticsApiService extends _i1.Mock
             returnValue: <_i3.TrendingHashtag>[],
           )
           as List<_i3.TrendingHashtag>);
+
+  @override
+  _i12.Future<_i3.RecommendationsResult> getRecommendations({
+    required String? pubkey,
+    int? limit = 20,
+    String? fallback = 'popular',
+    String? category,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#getRecommendations, [], {
+              #pubkey: pubkey,
+              #limit: limit,
+              #fallback: fallback,
+              #category: category,
+            }),
+            returnValue: _i12.Future<_i3.RecommendationsResult>.value(
+              _FakeRecommendationsResult_2(
+                this,
+                Invocation.method(#getRecommendations, [], {
+                  #pubkey: pubkey,
+                  #limit: limit,
+                  #fallback: fallback,
+                  #category: category,
+                }),
+              ),
+            ),
+          )
+          as _i12.Future<_i3.RecommendationsResult>);
 
   @override
   void clearCache() => super.noSuchMethod(
