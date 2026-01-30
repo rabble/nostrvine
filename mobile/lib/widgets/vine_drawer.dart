@@ -79,149 +79,194 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   @override
   Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
+    final statusBarHeight = MediaQuery.of(context).padding.top;
+
     return Drawer(
-      backgroundColor: VineTheme.surfaceBackground,
-      child: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            // Top spacing for status bar
-            SizedBox(height: MediaQuery.of(context).padding.top),
-
-            // Menu items
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+      backgroundColor: Colors.transparent,
+      child: Container(
+        margin: EdgeInsets.only(top: statusBarHeight),
+        decoration: const BoxDecoration(
+          color: VineTheme.surfaceBackground,
+          borderRadius: const BorderRadius.only(topRight: Radius.circular(32)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: SafeArea(
+          top: false,
+          child: Stack(
+            children: [
+              Column(
                 children: [
-                  _buildDrawerItem(
-                    title: 'Settings',
-                    onTap: () {
-                      final router = GoRouter.of(context);
-                      Navigator.of(context).pop();
-                      router.push(SettingsScreen.path);
-                    },
-                  ),
+                  const SizedBox(height: 24),
+                  // Menu items
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      children: [
+                        _buildDrawerItem(
+                          title: 'Settings',
+                          onTap: () {
+                            final router = GoRouter.of(context);
+                            Navigator.of(context).pop();
+                            router.push(SettingsScreen.path);
+                          },
+                        ),
 
-                  const Divider(color: VineTheme.outlineDisabled, height: 1),
+                        const Divider(
+                          color: VineTheme.outlineDisabled,
+                          height: 1,
+                        ),
 
-                  _buildDrawerItem(
-                    title: 'Support',
-                    onTap: () async {
-                      print('🎫 Contact Support tapped');
+                        _buildDrawerItem(
+                          title: 'Support',
+                          onTap: () async {
+                            print('🎫 Contact Support tapped');
 
-                      final isZendeskAvailable =
-                          ZendeskSupportService.isAvailable;
-                      print('🔍 Zendesk available: $isZendeskAvailable');
+                            final isZendeskAvailable =
+                                ZendeskSupportService.isAvailable;
+                            print('🔍 Zendesk available: $isZendeskAvailable');
 
-                      final bugReportService = ref.read(
-                        bugReportServiceProvider,
-                      );
-                      final userProfileService = ref.read(
-                        userProfileServiceProvider,
-                      );
-                      final userPubkey = authService.currentPublicKeyHex;
+                            final bugReportService = ref.read(
+                              bugReportServiceProvider,
+                            );
+                            final userProfileService = ref.read(
+                              userProfileServiceProvider,
+                            );
+                            final userPubkey = authService.currentPublicKeyHex;
 
-                      final navigatorContext = Navigator.of(context).context;
+                            final navigatorContext = Navigator.of(
+                              context,
+                            ).context;
 
-                      Navigator.of(context).pop();
+                            Navigator.of(context).pop();
 
-                      await Future.delayed(const Duration(milliseconds: 300));
-                      if (!navigatorContext.mounted) {
-                        print('⚠️ Context not mounted after drawer close');
-                        return;
-                      }
+                            await Future.delayed(
+                              const Duration(milliseconds: 300),
+                            );
+                            if (!navigatorContext.mounted) {
+                              print(
+                                '⚠️ Context not mounted after drawer close',
+                              );
+                              return;
+                            }
 
-                      _showSupportOptionsDialog(
-                        navigatorContext,
-                        bugReportService,
-                        userProfileService,
-                        userPubkey,
-                        isZendeskAvailable,
-                      );
-                    },
-                  ),
+                            _showSupportOptionsDialog(
+                              navigatorContext,
+                              bugReportService,
+                              userProfileService,
+                              userPubkey,
+                              isZendeskAvailable,
+                            );
+                          },
+                        ),
 
-                  const Divider(color: VineTheme.outlineDisabled, height: 1),
+                        const Divider(
+                          color: VineTheme.outlineDisabled,
+                          height: 1,
+                        ),
 
-                  _buildDrawerItem(
-                    title: 'Privacy policy',
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      _launchWebPage(
-                        context,
-                        'https://divine.video/privacy',
-                        'Privacy Policy',
-                      );
-                    },
-                  ),
+                        _buildDrawerItem(
+                          title: 'Privacy policy',
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            _launchWebPage(
+                              context,
+                              'https://divine.video/privacy',
+                              'Privacy Policy',
+                            );
+                          },
+                        ),
 
-                  const Divider(color: VineTheme.outlineDisabled, height: 1),
+                        const Divider(
+                          color: VineTheme.outlineDisabled,
+                          height: 1,
+                        ),
 
-                  _buildDrawerItem(
-                    title: 'Safety center',
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      _launchWebPage(
-                        context,
-                        'https://divine.video/safety',
-                        'Safety Center',
-                      );
-                    },
-                  ),
+                        _buildDrawerItem(
+                          title: 'Safety center',
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            _launchWebPage(
+                              context,
+                              'https://divine.video/safety',
+                              'Safety Center',
+                            );
+                          },
+                        ),
 
-                  const Divider(color: VineTheme.outlineDisabled, height: 1),
+                        const Divider(
+                          color: VineTheme.outlineDisabled,
+                          height: 1,
+                        ),
 
-                  _buildDrawerItem(
-                    title: 'FAQ',
-                    onTap: () {
-                      Navigator.of(context).pop();
-                      _launchWebPage(
-                        context,
-                        'https://divine.video/faq',
-                        'FAQ',
-                      );
-                    },
-                  ),
+                        _buildDrawerItem(
+                          title: 'FAQ',
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            _launchWebPage(
+                              context,
+                              'https://divine.video/faq',
+                              'FAQ',
+                            );
+                          },
+                        ),
 
-                  const Divider(color: VineTheme.outlineDisabled, height: 1),
+                        const Divider(
+                          color: VineTheme.outlineDisabled,
+                          height: 1,
+                        ),
 
-                  // Developer section (debug mode only)
-                  if (kDebugMode)
-                    _buildDrawerItem(
-                      title: 'BLoC Test Screen',
-                      onTap: () {
-                        final router = GoRouter.of(context);
-                        Navigator.of(context).pop();
-                        router.push(VideoFeedPage.path);
-                      },
+                        // Developer section (debug mode only)
+                        if (kDebugMode)
+                          _buildDrawerItem(
+                            title: 'BLoC Test Screen',
+                            onTap: () {
+                              final router = GoRouter.of(context);
+                              Navigator.of(context).pop();
+                              router.push(VideoFeedPage.path);
+                            },
+                          ),
+                      ],
                     ),
+                  ),
+
+                  // Logo and version at bottom
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(16, 128, 16, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/icon/logo.svg',
+                          width: 125,
+                          height: 32,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'App version v$_appVersion',
+                          style: VineTheme.bodySmallFont(
+                            color: VineTheme.onSurfaceDisabled,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
-            ),
-
-            // Logo and version at bottom
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 128, 16, 0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SvgPicture.asset(
-                    'assets/icon/logo.svg',
-                    width: 125,
-                    height: 32,
+              Positioned(
+                bottom: -18,
+                right: -44,
+                child: Transform.rotate(
+                  angle: 19.07 * 3.14159265 / 180,
+                  child: Image.asset(
+                    'assets/icon/MascotCropped=yes.png',
+                    width: 148,
+                    height: 148,
                   ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'App version v$_appVersion',
-                    style: VineTheme.bodySmallFont(
-                      color: VineTheme.onSurfaceDisabled,
-                    ),
-                  ),
-                ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -252,10 +297,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
       'assets/icon/caret_right.svg',
       width: 24,
       height: 24,
-      colorFilter: const ColorFilter.mode(
-        VineTheme.vineGreen,
-        BlendMode.srcIn,
-      ),
+      colorFilter: const ColorFilter.mode(VineTheme.vineGreen, BlendMode.srcIn),
     ),
     onTap: onTap,
   );
