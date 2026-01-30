@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/blossom_server_discovery_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:nostr_sdk/event.dart';
@@ -59,7 +60,7 @@ class MockAuthService implements AuthService {
   bool get hasUserBlossomServers => false;
 
   @override
-  List<dynamic> get userBlossomServers => [];
+  List<DiscoveredBlossomServer> get userBlossomServers => [];
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);

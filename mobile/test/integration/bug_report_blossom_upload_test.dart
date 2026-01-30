@@ -11,6 +11,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
+import 'package:openvine/services/blossom_server_discovery_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/config/bug_report_config.dart';
@@ -45,7 +46,7 @@ class MockAuthService implements AuthService {
   bool get hasUserBlossomServers => false;
 
   @override
-  List<dynamic> get userBlossomServers => [];
+  List<DiscoveredBlossomServer> get userBlossomServers => [];
 
   // Stub methods not used in this test
   @override
