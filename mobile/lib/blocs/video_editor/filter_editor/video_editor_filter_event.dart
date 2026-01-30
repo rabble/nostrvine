@@ -31,13 +31,11 @@ class VideoEditorFilterOpacityChanged extends VideoEditorFilterEvent {
 }
 
 /// Triggered when the user cancels filter editing.
-class VideoEditorFilterCancelRequested extends VideoEditorFilterEvent {
-  const VideoEditorFilterCancelRequested();
-}
-
-/// Triggered when the user confirms filter editing.
-class VideoEditorFilterDoneRequested extends VideoEditorFilterEvent {
-  const VideoEditorFilterDoneRequested();
+///
+/// This resets the state to the initial values. The UI is responsible for
+/// closing the sub-editor via [VideoEditorScope].
+class VideoEditorFilterCancelled extends VideoEditorFilterEvent {
+  const VideoEditorFilterCancelled();
 }
 
 /// Triggered when the filter editor is initialized.

@@ -7,6 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show StickerData;
+import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
 import 'package:openvine/widgets/video_editor/filter_editor/video_editor_filter_bottom_bar.dart';
@@ -116,6 +117,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
       providers: [
         BlocProvider(create: (_) => VideoEditorMainBloc()),
         BlocProvider.value(value: _stickerBloc),
+        BlocProvider(create: (_) => VideoEditorFilterBloc()),
       ],
       child: VideoEditorScope(
         editorKey: _editorKey,

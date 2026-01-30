@@ -9,16 +9,7 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 
 class MockVideoEditorFilterBloc
     extends MockBloc<VideoEditorFilterEvent, VideoEditorFilterState>
-    implements VideoEditorFilterBloc {
-  @override
-  List<List<double>> get activeFilters => [];
-
-  @override
-  List<TuneAdjustmentMatrix> get activeTuneAdjustments => [];
-
-  @override
-  double get activeBlur => 0.0;
-}
+    implements VideoEditorFilterBloc {}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

@@ -98,6 +98,18 @@ class VideoEditorCanvas extends ConsumerWidget {
                     );
                     // TODO(@hm21): Store state history
                   },
+                  onOpenSubEditor: (editorMode) {
+                    final SubEditorType? subEditorType = switch (editorMode) {
+                      .paint => .paint,
+                      .text => .text,
+                      .filter => .filter,
+                      .sticker => .stickers,
+                      _ => null,
+                    };
+                    if (subEditorType != null) {
+                      bloc.add(VideoEditorMainOpenSubEditor(subEditorType));
+                    }
+                  },
                   onStartCloseSubEditor: (_) =>
                       bloc.add(const VideoEditorMainSubEditorClosed()),
                   onScaleStart: (_) =>
@@ -107,9 +119,16 @@ class VideoEditorCanvas extends ConsumerWidget {
                 ),
                 filterEditorCallbacks: FilterEditorCallbacks(
                   onInit: () {
-                    context.read<VideoEditorFilterBloc>().add(
-                      const VideoEditorFilterEditorInitialized(),
-                    );
+                    final filterBloc = context.read<VideoEditorFilterBloc>();
+                    filterBloc.add(const VideoEditorFilterEditorInitialized());
+                    final filterState = filterBloc.state;
+
+                    // Sync editor with current BLoC state
+                    final filterEditor = scope.filterEditor;
+                    if (filterState.selectedFilter != null) {
+                      filterEditor?.setFilter(filterState.selectedFilter!);
+                    }
+                    filterEditor?.setFilterOpacity(filterState.opacity);
                   },
                 ),
               ),

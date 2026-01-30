@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/widgets/video_editor/filter_editor/video_editor_filter_overlay_controls.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_vertical_slider.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
@@ -22,15 +23,16 @@ void main() {
 
   setUpAll(() {
     registerFallbackValue(VideoEditorFilterSelected(presetFiltersList.first));
-    registerFallbackValue(const VideoEditorFilterCancelRequested());
-    registerFallbackValue(const VideoEditorFilterDoneRequested());
+    registerFallbackValue(const VideoEditorFilterCancelled());
   });
 
   group('VideoEditorFilterOverlayControls', () {
     late MockVideoEditorFilterBloc mockBloc;
+    late GlobalKey<ProImageEditorState> editorKey;
 
     setUp(() {
       mockBloc = MockVideoEditorFilterBloc();
+      editorKey = GlobalKey<ProImageEditorState>();
 
       // Default state - no filter selected
       when(() => mockBloc.state).thenReturn(
@@ -46,12 +48,16 @@ void main() {
     Widget buildWidget() {
       return MaterialApp(
         home: Scaffold(
-          body: BlocProvider<VideoEditorFilterBloc>.value(
-            value: mockBloc,
-            child: const SizedBox(
-              width: 400,
-              height: 600,
-              child: VideoEditorFilterOverlayControls(),
+          body: VideoEditorScope(
+            editorKey: editorKey,
+            onAddStickers: () {},
+            child: BlocProvider<VideoEditorFilterBloc>.value(
+              value: mockBloc,
+              child: const SizedBox(
+                width: 400,
+                height: 600,
+                child: VideoEditorFilterOverlayControls(),
+              ),
             ),
           ),
         ),
@@ -142,7 +148,7 @@ void main() {
         );
       });
 
-      testWidgets('tapping Close dispatches CancelRequested', (tester) async {
+      testWidgets('tapping Close dispatches Cancelled event', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pump();
 
@@ -155,24 +161,7 @@ void main() {
         await tester.pump();
 
         verify(
-          () => mockBloc.add(const VideoEditorFilterCancelRequested()),
-        ).called(1);
-      });
-
-      testWidgets('tapping Done dispatches DoneRequested', (tester) async {
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
-
-        await tester.tap(
-          find.byWidgetPredicate(
-            (widget) =>
-                widget is Semantics && widget.properties.label == 'Done',
-          ),
-        );
-        await tester.pump();
-
-        verify(
-          () => mockBloc.add(const VideoEditorFilterDoneRequested()),
+          () => mockBloc.add(const VideoEditorFilterCancelled()),
         ).called(1);
       });
     });

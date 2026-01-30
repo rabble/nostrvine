@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_vertical_slider.dart';
 
 /// Overlay controls for the filter editor.
@@ -81,6 +82,9 @@ class _OpacitySlider extends StatelessWidget {
                   context.read<VideoEditorFilterBloc>().add(
                     VideoEditorFilterOpacityChanged(value),
                   );
+                  final scope = VideoEditorScope.of(context);
+
+                  scope.filterEditor?.setFilterOpacity(value);
                 },
               );
             },
@@ -97,6 +101,7 @@ class _TopBarContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bloc = context.read<VideoEditorFilterBloc>();
+    final scope = VideoEditorScope.of(context);
 
     return Align(
       alignment: .topCenter,
@@ -107,11 +112,16 @@ class _TopBarContent extends StatelessWidget {
           children: [
             // Close button
             _CloseButton(
-              onTap: () => bloc.add(const VideoEditorFilterCancelRequested()),
+              onTap: () {
+                bloc.add(const VideoEditorFilterCancelled());
+                scope.editor?.closeSubEditor();
+              },
             ),
             // Done button
             _DoneButton(
-              onTap: () => bloc.add(const VideoEditorFilterDoneRequested()),
+              onTap: () {
+                scope.filterEditor?.done();
+              },
             ),
           ],
         ),

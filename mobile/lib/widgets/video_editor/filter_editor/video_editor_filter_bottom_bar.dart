@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 /// Bottom bar displaying filter options as thumbnail previews.
@@ -22,13 +23,16 @@ class VideoEditorFilterBottomBar extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final clip = ref.watch(clipManagerProvider.select((s) => s.clips.first));
-    final filterBloc = context.watch<VideoEditorFilterBloc>();
-    final filterState = filterBloc.state;
+    final (filters, selectedFilter) = context.select(
+      (VideoEditorFilterBloc b) => (b.state.filters, b.state.selectedFilter),
+    );
+    final scope = VideoEditorScope.of(context);
+    final stateManager = scope.editor?.stateManager;
 
     return ListView.separated(
       scrollDirection: .horizontal,
       padding: const .fromLTRB(16, 0, 16, 4),
-      itemCount: filterState.filters.length,
+      itemCount: filters.length,
       separatorBuilder: (_, index) {
         // Add vertical divider after "None"
         if (index == 0) {
@@ -45,18 +49,22 @@ class VideoEditorFilterBottomBar extends ConsumerWidget {
         return const SizedBox(width: 8);
       },
       itemBuilder: (context, index) {
-        final filter = filterState.filters[index];
+        final filter = filters[index];
+        final isSelected =
+            selectedFilter?.name == filter.name ||
+            (selectedFilter == null && filter == PresetFilters.none);
         return _FilterItem(
           filter: filter,
-          isSelected: filterState.isSelected(filter),
+          isSelected: isSelected,
           thumbnailPath: clip.thumbnailPath ?? '',
-          activeFilters: filterBloc.activeFilters,
-          activeTuneAdjustments: filterBloc.activeTuneAdjustments,
-          activeBlur: filterBloc.activeBlur,
+          activeFilters: stateManager?.activeFilters ?? [],
+          activeTuneAdjustments: stateManager?.activeTuneAdjustments ?? [],
+          activeBlur: stateManager?.activeBlur ?? 0,
           onTap: () {
             context.read<VideoEditorFilterBloc>().add(
               VideoEditorFilterSelected(filter),
             );
+            scope.filterEditor?.setFilter(filter);
           },
         );
       },

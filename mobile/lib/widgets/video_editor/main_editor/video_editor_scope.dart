@@ -2,7 +2,7 @@
 // ABOUTME: Allows child widgets to call editor methods directly without callbacks.
 
 import 'package:flutter/widgets.dart';
-import 'package:pro_image_editor/features/main_editor/main_editor.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 
 /// Provides access to the [ProImageEditorState] for descendant widgets.
 ///
@@ -30,6 +30,9 @@ class VideoEditorScope extends InheritedWidget {
 
   /// Returns the [ProImageEditorState] if available.
   ProImageEditorState? get editor => editorKey.currentState;
+
+  /// Returns the [FilterEditorState] if available.
+  FilterEditorState? get filterEditor => editor?.filterEditor.currentState;
 
   /// Gets the nearest [VideoEditorScope] from the widget tree.
   ///

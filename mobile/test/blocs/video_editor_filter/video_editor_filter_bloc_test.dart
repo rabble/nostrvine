@@ -1,8 +1,7 @@
-// ABOUTME: Tests for VideoEditorFilterBloc - filter selection, opacity, and done/cancel.
+// ABOUTME: Tests for VideoEditorFilterBloc - filter selection, opacity, and cancel.
 // ABOUTME: Covers initial state, filter events, and state transitions.
 
 import 'package:bloc_test/bloc_test.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -11,14 +10,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('VideoEditorFilterBloc', () {
-    late GlobalKey<ProImageEditorState> editorKey;
-
-    setUp(() {
-      editorKey = GlobalKey<ProImageEditorState>();
-    });
-
     VideoEditorFilterBloc buildBloc() {
-      return VideoEditorFilterBloc(editorKey: editorKey);
+      return VideoEditorFilterBloc();
     }
 
     test('initial state has filters from presetFiltersList', () {
@@ -34,36 +27,54 @@ void main() {
       final testFilter = presetFiltersList[1]; // First non-None filter
 
       blocTest<VideoEditorFilterBloc, VideoEditorFilterState>(
-        'emits state with selected filter when editor is null',
+        'emits state with selected filter',
         build: buildBloc,
         act: (bloc) => bloc.add(VideoEditorFilterSelected(testFilter)),
-        // Without editor attached, the event is ignored (early return)
-        expect: () => <VideoEditorFilterState>[],
+        expect: () => [
+          isA<VideoEditorFilterState>().having(
+            (s) => s.selectedFilter,
+            'selectedFilter',
+            testFilter,
+          ),
+        ],
       );
 
       blocTest<VideoEditorFilterBloc, VideoEditorFilterState>(
-        'does not change state when editor key has no state',
+        'updates selected filter when changed',
         build: buildBloc,
         seed: () => VideoEditorFilterState(
           filters: presetFiltersList,
-          selectedFilter: null,
+          selectedFilter: presetFiltersList[1],
           opacity: 1.0,
         ),
-        act: (bloc) => bloc.add(VideoEditorFilterSelected(testFilter)),
-        expect: () => <VideoEditorFilterState>[],
+        act: (bloc) =>
+            bloc.add(VideoEditorFilterSelected(presetFiltersList[2])),
+        expect: () => [
+          isA<VideoEditorFilterState>().having(
+            (s) => s.selectedFilter,
+            'selectedFilter',
+            presetFiltersList[2],
+          ),
+        ],
       );
     });
 
     group('VideoEditorFilterOpacityChanged', () {
       blocTest<VideoEditorFilterBloc, VideoEditorFilterState>(
-        'does not emit when no filter is selected',
+        'emits state with updated opacity',
         build: buildBloc,
         act: (bloc) => bloc.add(const VideoEditorFilterOpacityChanged(0.5)),
-        expect: () => <VideoEditorFilterState>[],
+        expect: () => [
+          isA<VideoEditorFilterState>().having(
+            (s) => s.opacity,
+            'opacity',
+            0.5,
+          ),
+        ],
       );
 
       blocTest<VideoEditorFilterBloc, VideoEditorFilterState>(
-        'does not emit when editor is null even with selected filter',
+        'updates opacity when filter is selected',
         build: buildBloc,
         seed: () => VideoEditorFilterState(
           filters: presetFiltersList,
@@ -71,12 +82,17 @@ void main() {
           opacity: 1.0,
         ),
         act: (bloc) => bloc.add(const VideoEditorFilterOpacityChanged(0.5)),
-        // Without editor attached, the event is ignored
-        expect: () => <VideoEditorFilterState>[],
+        expect: () => [
+          isA<VideoEditorFilterState>().having(
+            (s) => s.opacity,
+            'opacity',
+            0.5,
+          ),
+        ],
       );
     });
 
-    group('VideoEditorFilterCancelRequested', () {
+    group('VideoEditorFilterCancelled', () {
       blocTest<VideoEditorFilterBloc, VideoEditorFilterState>(
         'restores to initial values from when editor was opened',
         build: buildBloc,
@@ -87,7 +103,7 @@ void main() {
           initialSelectedFilter: presetFiltersList[1],
           initialOpacity: 0.8,
         ),
-        act: (bloc) => bloc.add(const VideoEditorFilterCancelRequested()),
+        act: (bloc) => bloc.add(const VideoEditorFilterCancelled()),
         expect: () => [
           isA<VideoEditorFilterState>()
               .having(
@@ -97,39 +113,6 @@ void main() {
               )
               .having((s) => s.opacity, 'opacity', 0.8),
         ],
-      );
-
-      blocTest<VideoEditorFilterBloc, VideoEditorFilterState>(
-        'restores to null filter when initial was null',
-        build: buildBloc,
-        seed: () => VideoEditorFilterState(
-          filters: presetFiltersList,
-          selectedFilter: presetFiltersList[1],
-          opacity: 0.7,
-          initialSelectedFilter: null,
-          initialOpacity: 1.0,
-        ),
-        act: (bloc) => bloc.add(const VideoEditorFilterCancelRequested()),
-        expect: () => [
-          isA<VideoEditorFilterState>()
-              .having((s) => s.selectedFilter, 'selectedFilter', isNull)
-              .having((s) => s.opacity, 'opacity', 1.0),
-        ],
-      );
-    });
-
-    group('VideoEditorFilterDoneRequested', () {
-      blocTest<VideoEditorFilterBloc, VideoEditorFilterState>(
-        'keeps current filter and opacity (commits changes)',
-        build: buildBloc,
-        seed: () => VideoEditorFilterState(
-          filters: presetFiltersList,
-          selectedFilter: presetFiltersList[2],
-          opacity: 0.8,
-        ),
-        act: (bloc) => bloc.add(const VideoEditorFilterDoneRequested()),
-        // No state change - current values are kept
-        expect: () => <VideoEditorFilterState>[],
       );
     });
 
@@ -158,29 +141,6 @@ void main() {
                 presetFiltersList[1],
               )
               .having((s) => s.opacity, 'opacity', 0.7),
-        ],
-      );
-
-      blocTest<VideoEditorFilterBloc, VideoEditorFilterState>(
-        'stores null filter as initial when no filter selected',
-        build: buildBloc,
-        seed: () => VideoEditorFilterState(
-          filters: presetFiltersList,
-          selectedFilter: null,
-          opacity: 1.0,
-          // Different initial values to ensure state change is detected
-          initialSelectedFilter: presetFiltersList[1],
-          initialOpacity: 0.5,
-        ),
-        act: (bloc) => bloc.add(const VideoEditorFilterEditorInitialized()),
-        expect: () => [
-          isA<VideoEditorFilterState>()
-              .having(
-                (s) => s.initialSelectedFilter,
-                'initialSelectedFilter',
-                isNull,
-              )
-              .having((s) => s.initialOpacity, 'initialOpacity', 1.0),
         ],
       );
     });
@@ -329,13 +289,8 @@ void main() {
       expect(event.props, [0.75]);
     });
 
-    test('VideoEditorFilterCancelRequested props is empty', () {
-      const event = VideoEditorFilterCancelRequested();
-      expect(event.props, isEmpty);
-    });
-
-    test('VideoEditorFilterDoneRequested props is empty', () {
-      const event = VideoEditorFilterDoneRequested();
+    test('VideoEditorFilterCancelled props is empty', () {
+      const event = VideoEditorFilterCancelled();
       expect(event.props, isEmpty);
     });
 
