@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart' as mocktail;
 import 'package:models/models.dart' hide UserProfile;
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/repositories/follow_repository.dart';
@@ -16,23 +17,23 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:rxdart/rxdart.dart';
 
-@GenerateMocks([
-  SocialService,
-  UserProfileService,
-  VideoSharingService,
-  FollowRepository,
-])
+@GenerateMocks([SocialService, UserProfileService, VideoSharingService])
 import 'share_video_contact_display_test.mocks.dart';
+
+/// Mocktail mock for FollowRepository
+class MockFollowRepository extends mocktail.Mock implements FollowRepository {}
 
 /// Creates a mock FollowRepository with the given following pubkeys
 MockFollowRepository createMockFollowRepository(List<String> followingPubkeys) {
   final mock = MockFollowRepository();
-  when(mock.followingPubkeys).thenReturn(followingPubkeys);
-  when(mock.followingStream).thenAnswer(
-    (_) => BehaviorSubject<List<String>>.seeded(followingPubkeys).stream,
-  );
-  when(mock.isInitialized).thenReturn(true);
-  when(mock.followingCount).thenReturn(followingPubkeys.length);
+  mocktail.when(() => mock.followingPubkeys).thenReturn(followingPubkeys);
+  mocktail
+      .when(() => mock.followingStream)
+      .thenAnswer(
+        (_) => BehaviorSubject<List<String>>.seeded(followingPubkeys).stream,
+      );
+  mocktail.when(() => mock.isInitialized).thenReturn(true);
+  mocktail.when(() => mock.followingCount).thenReturn(followingPubkeys.length);
   return mock;
 }
 

@@ -11,7 +11,6 @@ import 'package:mockito/src/dummies.dart' as _i10;
 import 'package:models/models.dart' as _i5;
 import 'package:nostr_sdk/event.dart' as _i6;
 import 'package:openvine/models/user_profile.dart' as _i8;
-import 'package:openvine/repositories/follow_repository.dart' as _i12;
 import 'package:openvine/services/profile_cache_service.dart' as _i9;
 import 'package:openvine/services/social_service.dart' as _i3;
 import 'package:openvine/services/user_profile_service.dart' as _i7;
@@ -513,108 +512,4 @@ class MockVideoSharingService extends _i1.Mock
     Invocation.method(#clearSharingHistory, []),
     returnValueForMissingStub: null,
   );
-}
-
-/// A class which mocks [FollowRepository].
-///
-/// See the documentation for Mockito's code generation for more information.
-class MockFollowRepository extends _i1.Mock implements _i12.FollowRepository {
-  MockFollowRepository() {
-    _i1.throwOnMissingStub(this);
-  }
-
-  @override
-  _i4.Stream<List<String>> get followingStream =>
-      (super.noSuchMethod(
-            Invocation.getter(#followingStream),
-            returnValue: _i4.Stream<List<String>>.empty(),
-          )
-          as _i4.Stream<List<String>>);
-
-  @override
-  List<String> get followingPubkeys =>
-      (super.noSuchMethod(
-            Invocation.getter(#followingPubkeys),
-            returnValue: <String>[],
-          )
-          as List<String>);
-
-  @override
-  bool get isInitialized =>
-      (super.noSuchMethod(Invocation.getter(#isInitialized), returnValue: false)
-          as bool);
-
-  @override
-  int get followingCount =>
-      (super.noSuchMethod(Invocation.getter(#followingCount), returnValue: 0)
-          as int);
-
-  @override
-  _i4.Future<void> dispose() =>
-      (super.noSuchMethod(
-            Invocation.method(#dispose, []),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
-
-  @override
-  bool isFollowing(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#isFollowing, [pubkey]),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  _i4.Future<List<String>> getMyFollowers() =>
-      (super.noSuchMethod(
-            Invocation.method(#getMyFollowers, []),
-            returnValue: _i4.Future<List<String>>.value(<String>[]),
-          )
-          as _i4.Future<List<String>>);
-
-  @override
-  _i4.Future<List<String>> getFollowers(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#getFollowers, [pubkey]),
-            returnValue: _i4.Future<List<String>>.value(<String>[]),
-          )
-          as _i4.Future<List<String>>);
-
-  @override
-  _i4.Future<void> toggleFollow(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#toggleFollow, [pubkey]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
-
-  @override
-  _i4.Future<void> initialize() =>
-      (super.noSuchMethod(
-            Invocation.method(#initialize, []),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
-
-  @override
-  _i4.Future<void> follow(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#follow, [pubkey]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
-
-  @override
-  _i4.Future<void> unfollow(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#unfollow, [pubkey]),
-            returnValue: _i4.Future<void>.value(),
-            returnValueForMissingStub: _i4.Future<void>.value(),
-          )
-          as _i4.Future<void>);
 }

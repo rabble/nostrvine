@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart' as mocktail;
 import 'package:models/models.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -28,17 +29,21 @@ import 'home_feed_provider_test.mocks.dart';
   NostrClient,
   SubscriptionManager,
   AnalyticsApiService,
-  FollowRepository,
 ])
+/// Mocktail mock for FollowRepository
+class MockFollowRepository extends mocktail.Mock implements FollowRepository {}
+
 /// Creates a mock FollowRepository with the given following pubkeys
 MockFollowRepository createMockFollowRepository(List<String> followingPubkeys) {
   final mock = MockFollowRepository();
-  when(mock.followingPubkeys).thenReturn(followingPubkeys);
-  when(mock.followingStream).thenAnswer(
-    (_) => BehaviorSubject<List<String>>.seeded(followingPubkeys).stream,
-  );
-  when(mock.isInitialized).thenReturn(true);
-  when(mock.followingCount).thenReturn(followingPubkeys.length);
+  mocktail.when(() => mock.followingPubkeys).thenReturn(followingPubkeys);
+  mocktail
+      .when(() => mock.followingStream)
+      .thenAnswer(
+        (_) => BehaviorSubject<List<String>>.seeded(followingPubkeys).stream,
+      );
+  mocktail.when(() => mock.isInitialized).thenReturn(true);
+  mocktail.when(() => mock.followingCount).thenReturn(followingPubkeys.length);
   return mock;
 }
 
