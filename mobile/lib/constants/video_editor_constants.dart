@@ -11,6 +11,9 @@ class VideoEditorConstants {
 
   /// Maximum recording duration for videos.
   static const maxDuration = Duration(seconds: 6, milliseconds: 300);
+
+  /// Default time offset for extracting video thumbnails.
+  static const defaultThumbnailExtractTime = Duration(milliseconds: 200);
 }
 
 /// Constants for the video editor clip gallery layout and animations.

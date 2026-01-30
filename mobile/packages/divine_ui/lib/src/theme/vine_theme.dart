@@ -193,14 +193,17 @@ class VineTheme {
       );
 
   /// Label medium: Inter 600 12/16/0.5
-  static TextStyle labelMediumFont({Color color = whiteText}) =>
-      GoogleFonts.inter(
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        height: 16 / 12,
-        letterSpacing: 0.5,
-        color: color,
-      );
+  static TextStyle labelMediumFont({
+    Color color = whiteText,
+    List<FontFeature>? fontFeatures,
+  }) => GoogleFonts.inter(
+    fontSize: 12,
+    fontWeight: FontWeight.w600,
+    height: 16 / 12,
+    letterSpacing: 0.5,
+    color: color,
+    fontFeatures: fontFeatures,
+  );
 
   /// Label small: Inter 600 11/16/0.5
   static TextStyle labelSmallFont({Color color = whiteText}) =>
