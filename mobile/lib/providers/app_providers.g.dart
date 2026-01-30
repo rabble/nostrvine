@@ -1177,11 +1177,13 @@ final class NostrKeyManagerProvider
 String _$nostrKeyManagerHash() => r'a0d67b6d79af5ecdc42bc6616542249200a24b64';
 
 /// Profile cache service for persistent profile storage
+/// keepAlive to avoid expensive Hive reinitialization on auth state changes
 
 @ProviderFor(profileCacheService)
 const profileCacheServiceProvider = ProfileCacheServiceProvider._();
 
 /// Profile cache service for persistent profile storage
+/// keepAlive to avoid expensive Hive reinitialization on auth state changes
 
 final class ProfileCacheServiceProvider
     extends
@@ -1192,13 +1194,14 @@ final class ProfileCacheServiceProvider
         >
     with $Provider<ProfileCacheService> {
   /// Profile cache service for persistent profile storage
+  /// keepAlive to avoid expensive Hive reinitialization on auth state changes
   const ProfileCacheServiceProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'profileCacheServiceProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -1227,7 +1230,7 @@ final class ProfileCacheServiceProvider
 }
 
 String _$profileCacheServiceHash() =>
-    r'2d81bd6aabd04896ce3f967da9c4c3cf99cb2824';
+    r'4de2ae89686e284dcadf4ad8d5611f7e4af8604b';
 
 /// Hashtag cache service for persistent hashtag storage
 
@@ -2168,19 +2171,19 @@ final class UserProfileServiceProvider
 }
 
 String _$userProfileServiceHash() =>
-    r'abc2ef09d33c40550c1bdaf52206aa650c5e97b5';
+    r'c794efc557e51b13c9cf3ff59fd3f56f1582cbd0';
 
-/// Social service depends on Nostr service, Auth service, and SubscriptionManager
+/// Social service depends on Nostr service and Auth service
 
 @ProviderFor(socialService)
 const socialServiceProvider = SocialServiceProvider._();
 
-/// Social service depends on Nostr service, Auth service, and SubscriptionManager
+/// Social service depends on Nostr service and Auth service
 
 final class SocialServiceProvider
     extends $FunctionalProvider<SocialService, SocialService, SocialService>
     with $Provider<SocialService> {
-  /// Social service depends on Nostr service, Auth service, and SubscriptionManager
+  /// Social service depends on Nostr service and Auth service
   const SocialServiceProvider._()
     : super(
         from: null,
@@ -2214,7 +2217,7 @@ final class SocialServiceProvider
   }
 }
 
-String _$socialServiceHash() => r'213dee56c5edc2193f20d68b36573570f28148a1';
+String _$socialServiceHash() => r'5b4d5751d3f2ef22c9ee2610cda1c4e70b2302a7';
 
 /// Provider for FollowRepository instance
 ///

@@ -43,6 +43,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   // Flag to track if startRecording is in progress (waiting for first keyframe)
   bool _isStartingRecording = false;
 
+  // Flag to prevent multiple simultaneous stopRecording calls
+  bool _isStoppingRecording = false;
+
   @override
   VideoRecorderProviderState build() {
     _cameraService =
@@ -122,7 +125,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     // If the user has recorded clips in the clip manager, we use this
     // aspect-ratio to prevent mixing different ratios.
     final clips = ref.read(clipManagerProvider).clips;
-    updateState(aspectRatio: clips.isNotEmpty ? clips.first.aspectRatio : null);
+    updateState(
+      aspectRatio: clips.isNotEmpty ? clips.first.targetAspectRatio : null,
+    );
 
     Log.info(
       '✅ Video recorder initialized successfully',
@@ -320,6 +325,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     if (!_cameraService.canRecord ||
         state.isRecording ||
         _isStartingRecording ||
+        _isStoppingRecording ||
         remainingDuration < const Duration(milliseconds: 30)) {
       return;
     }
@@ -393,6 +399,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   /// Stops camera recording, extracts video metadata for exact duration,
   /// generates thumbnail, and adds clip to clip manager.
   Future<void> stopRecording([EditorVideo? result]) async {
+    // Prevent multiple simultaneous stop calls.
+    if (_isStoppingRecording) {
+      return;
+    }
+
     // If we're still starting up (waiting for first keyframe), just call native stop
     // The native Finalize event will trigger startRecordingCallback with error,
     // which makes startRecording return false and set state to idle
@@ -415,6 +426,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       name: 'VideoRecorderNotifier',
       category: .video,
     );
+    _isStoppingRecording = true;
     final videoResult = result ?? await _cameraService.stopRecording();
 
     final clipProvider = ref.read(clipManagerProvider.notifier)
@@ -422,6 +434,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     final remainingMs = clipProvider.remainingDuration.inMilliseconds;
 
     state = state.copyWith(recordingState: .idle);
+    _isStoppingRecording = false;
     if (videoResult == null) {
       Log.warning(
         '⚠️ Recording stopped but no video file returned from camera service',
@@ -435,7 +448,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     /// Add the recorded clip to ClipManager
     final clip = clipProvider.addClip(
       video: videoResult,
-      aspectRatio: state.aspectRatio,
+      originalAspectRatio: _cameraService.cameraAspectRatio,
+      targetAspectRatio: state.aspectRatio,
     );
 
     Log.info(
@@ -457,21 +471,26 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     );
 
     // Generate and attach thumbnail
-    final thumbnailPath = await VideoThumbnailService.extractThumbnail(
-      videoPath: await videoResult.safeFilePath(),
-      timestamp: Duration(
-        // Use the middle of remaining duration if video is
-        // shorter than remaining time (clip was trimmed), otherwise use default
-        // 210ms which is typically the first keyframe in most MP4 videos
-        milliseconds: remainingMs <= metadata.duration.inMilliseconds
-            ? remainingMs ~/ 2
-            : 210,
-      ),
+    final targetTimestamp = Duration(
+      // Use the middle of remaining duration if video is
+      // shorter than remaining time (clip was trimmed), otherwise use default
+      // 210ms which is typically the first keyframe in most MP4 videos
+      milliseconds: remainingMs <= metadata.duration.inMilliseconds
+          ? remainingMs ~/ 2
+          : 210,
     );
-    if (thumbnailPath != null) {
-      clipProvider.updateThumbnail(clip.id, thumbnailPath);
+    final thumbnailResult = await VideoThumbnailService.extractThumbnail(
+      videoPath: await videoResult.safeFilePath(),
+      targetTimestamp: targetTimestamp,
+    );
+    if (thumbnailResult != null) {
+      clipProvider.updateThumbnail(
+        clipId: clip.id,
+        thumbnailPath: thumbnailResult.path,
+        thumbnailTimestamp: thumbnailResult.timestamp,
+      );
       Log.debug(
-        '🖼️  Thumbnail generated: $thumbnailPath',
+        '🖼️  Thumbnail generated: ${thumbnailResult.path}',
         name: 'VideoRecorderNotifier',
         category: .video,
       );

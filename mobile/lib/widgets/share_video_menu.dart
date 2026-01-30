@@ -1455,11 +1455,11 @@ class _SendToUserDialogState extends ConsumerState<_SendToUserDialog> {
   /// Load user's contacts from their follow list (NIP-02)
   Future<void> _loadUserContacts() async {
     try {
-      final socialService = ref.read(socialServiceProvider);
+      final followRepository = ref.read(followRepositoryProvider);
       final userProfileService = ref.read(userProfileServiceProvider);
 
       // Get the user's follow list
-      final followList = socialService.followingPubkeys;
+      final followList = followRepository?.followingPubkeys ?? [];
       final contacts = <ShareableUser>[];
 
       // Convert follows to ShareableUser objects with profile data

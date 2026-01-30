@@ -115,7 +115,7 @@ void main() {
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
         status: CommentsStatus.success,
-        comments: [],
+        commentsById: {},
       );
 
       await tester.pumpWidget(buildTestWidget(commentsState: state));
@@ -131,7 +131,7 @@ void main() {
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
         status: CommentsStatus.success,
-        comments: [],
+        commentsById: {},
       );
 
       await tester.pumpWidget(
@@ -157,7 +157,7 @@ void main() {
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
         status: CommentsStatus.success,
-        comments: [comment1, comment2],
+        commentsById: {comment1.id: comment1, comment2.id: comment2},
       );
 
       await tester.pumpWidget(buildTestWidget(commentsState: state));
@@ -170,12 +170,12 @@ void main() {
 
     testWidgets('uses provided scroll controller', (tester) async {
       final scrollController = ScrollController();
-      final comments = [CommentBuilder().build()];
+      final comment = CommentBuilder().build();
       final state = CommentsState(
         rootEventId: testVideoEventId,
         rootAuthorPubkey: testVideoAuthorPubkey,
         status: CommentsStatus.success,
-        comments: comments,
+        commentsById: {comment.id: comment},
       );
 
       await tester.pumpWidget(

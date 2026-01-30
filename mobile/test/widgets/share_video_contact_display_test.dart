@@ -2,26 +2,47 @@
 // ABOUTME: Verifies npub/nip05 is shown instead of raw hex pubkey
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:mocktail/mocktail.dart' as mocktail;
 import 'package:models/models.dart' hide UserProfile;
 import 'package:openvine/models/user_profile.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
+import 'package:rxdart/rxdart.dart';
 
 @GenerateMocks([SocialService, UserProfileService, VideoSharingService])
 import 'share_video_contact_display_test.mocks.dart';
+
+/// Mocktail mock for FollowRepository
+class MockFollowRepository extends mocktail.Mock implements FollowRepository {}
+
+/// Creates a mock FollowRepository with the given following pubkeys
+MockFollowRepository createMockFollowRepository(List<String> followingPubkeys) {
+  final mock = MockFollowRepository();
+  mocktail.when(() => mock.followingPubkeys).thenReturn(followingPubkeys);
+  mocktail
+      .when(() => mock.followingStream)
+      .thenAnswer(
+        (_) => BehaviorSubject<List<String>>.seeded(followingPubkeys).stream,
+      );
+  mocktail.when(() => mock.isInitialized).thenReturn(true);
+  mocktail.when(() => mock.followingCount).thenReturn(followingPubkeys.length);
+  return mock;
+}
 
 void main() {
   group('Share Video Contact Display Tests', () {
     late MockSocialService mockSocialService;
     late MockUserProfileService mockUserProfileService;
     late MockVideoSharingService mockVideoSharingService;
+    late MockFollowRepository mockFollowRepository;
 
     final testVideo = VideoEvent(
       id: 'test-video-id',
@@ -40,9 +61,9 @@ void main() {
       mockSocialService = MockSocialService();
       mockUserProfileService = MockUserProfileService();
       mockVideoSharingService = MockVideoSharingService();
+      mockFollowRepository = createMockFollowRepository([testPubkey]);
 
       // Setup default mocks
-      when(mockSocialService.followingPubkeys).thenReturn([testPubkey]);
       when(mockSocialService.followSets).thenReturn([]);
       when(mockUserProfileService.hasProfile(any)).thenReturn(false);
       when(mockUserProfileService.getCachedProfile(any)).thenReturn(null);
@@ -83,6 +104,7 @@ void main() {
             videoSharingServiceProvider.overrideWithValue(
               mockVideoSharingService,
             ),
+            followRepositoryProvider.overrideWithValue(mockFollowRepository),
           ],
           child: MaterialApp(
             home: Scaffold(body: ShareVideoMenu(video: testVideo)),
@@ -139,6 +161,7 @@ void main() {
             videoSharingServiceProvider.overrideWithValue(
               mockVideoSharingService,
             ),
+            followRepositoryProvider.overrideWithValue(mockFollowRepository),
           ],
           child: MaterialApp(
             home: Scaffold(body: ShareVideoMenu(video: testVideo)),
@@ -181,6 +204,7 @@ void main() {
             videoSharingServiceProvider.overrideWithValue(
               mockVideoSharingService,
             ),
+            followRepositoryProvider.overrideWithValue(mockFollowRepository),
           ],
           child: MaterialApp(
             home: Scaffold(body: ShareVideoMenu(video: testVideo)),

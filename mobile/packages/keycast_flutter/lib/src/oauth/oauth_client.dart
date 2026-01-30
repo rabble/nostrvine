@@ -2,6 +2,7 @@
 // ABOUTME: Handles authorization URL generation, callback parsing, token
 // exchange, and headless auth
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -58,10 +59,24 @@ class KeycastOAuth {
   }
 
   /// Clear local session and POST to server logout (keeps authorization_handle)
+  ///
+  /// Server-side logout has a 2-second timeout - if it fails or times out,
+  /// we still complete the local logout. The server will eventually expire
+  /// the token anyway.
   Future<void> logout() async {
     await _storage.delete(_storageKeySession);
     await _storage.delete(_storageKeyHandle);
-    await _client.post(Uri.parse('${config.serverUrl}/api/auth/logout'));
+    // Fire-and-forget server logout with short timeout
+    // Local logout is complete, server notification is best-effort
+    try {
+      unawaited(
+        _client
+            .post(Uri.parse('${config.serverUrl}/api/auth/logout'))
+            .timeout(const Duration(seconds: 2)),
+      );
+    } catch (_) {
+      // Ignore timeout or network errors - local logout is complete
+    }
   }
 
   Future<void> _saveSession(KeycastSession session) async {

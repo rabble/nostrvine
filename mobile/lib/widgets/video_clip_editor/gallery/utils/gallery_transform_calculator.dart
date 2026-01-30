@@ -91,7 +91,7 @@ class GalleryTransformCalculator {
   double calculateXOffset(int index) {
     if (isReordering) return 0;
 
-    final clipRatio = clips.first.aspectRatio.value;
+    final clipRatio = clips.first.targetAspectRatio.value;
     final containerWidth =
         constraints.maxWidth * VideoEditorGalleryConstants.viewportFraction;
     final actualWidth = (constraints.maxHeight * clipRatio).clamp(

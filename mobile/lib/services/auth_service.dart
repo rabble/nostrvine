@@ -1039,14 +1039,15 @@ class AuthService implements BackgroundAwareService {
 
       try {
         if (_oauthClient != null) {
-          await _oauthClient.logout();
+          _oauthClient.logout();
         } else {
           await KeycastSession.clear(_flutterSecureStorage);
         }
       } catch (_) {}
 
       // Clear any pending verification data
-      await _pendingVerificationService?.clear();
+      // (fire-and-forget since it's best-effort)
+      unawaited(_pendingVerificationService?.clear());
 
       _setAuthState(AuthState.unauthenticated);
 

@@ -144,14 +144,5 @@ void main() {
         expect(hasFollowing, isFalse);
       });
     });
-
-    group('resetNavigationState', () {
-      test('can be called without error', () {
-        // Just verify the function exists and can be called
-        resetNavigationState();
-        // If we get here, the test passed
-        expect(true, true);
-      });
-    });
   });
 }

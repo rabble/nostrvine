@@ -4,10 +4,11 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
-import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -19,7 +20,6 @@ import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -37,7 +37,9 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   }
 
   /// Creates the publish service with callbacks wired to this notifier.
-  Future<VideoPublishService> _createPublishService() async {
+  Future<VideoPublishService> _createPublishService({
+    required OnProgressChanged onProgressChanged,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
 
     return VideoPublishService(
@@ -46,9 +48,10 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       videoEventPublisher: ref.read(videoEventPublisherProvider),
       blossomService: ref.read(blossomUploadServiceProvider),
       draftService: DraftStorageService(prefs),
-      onStateChanged: setPublishState,
-      onProgressChanged: setUploadProgress,
-      isMounted: () => ref.mounted,
+      onProgressChanged: ({required String draftId, required double progress}) {
+        setUploadProgress(draftId: draftId, progress: progress);
+        onProgressChanged(draftId: draftId, progress: progress);
+      },
     );
   }
 
@@ -64,27 +67,16 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   }
 
   /// Updates upload progress (0.0 to 1.0).
-  void setUploadProgress(double value) {
-    state = state.copyWith(uploadProgress: value);
+  void setUploadProgress({required String draftId, required double progress}) {
+    state = state.copyWith(uploadProgress: progress);
 
-    if (value == 0.0 || value == 1.0 || (value * 100) % 10 == 0) {
+    if (progress == 0.0 || progress == 1.0 || (progress * 100) % 10 == 0) {
       Log.info(
-        '📊 Upload progress: ${(value * 100).toStringAsFixed(0)}%',
+        '📊 Upload progress: ${(progress * 100).toStringAsFixed(0)}%',
         name: 'VideoPublishNotifier',
         category: .video,
       );
     }
-  }
-
-  /// Updates the publish state.
-  void setPublishState(VideoPublishState value) {
-    state = state.copyWith(publishState: value);
-
-    Log.info(
-      'Publish state changed to: ${value.name}',
-      name: 'VideoPublishNotifier',
-      category: .video,
-    );
   }
 
   /// Sets error state with user message.
@@ -118,7 +110,6 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     VineDraft publishDraft = draft.copyWith();
 
     try {
-      setPublishState(.preparing);
       Log.info(
         '📝 Starting video publish process',
         name: 'VideoPublishNotifier',
@@ -164,8 +155,38 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         category: .video,
       );
 
-      final publishService = await _createPublishService();
-      final result = await publishService.publishVideo(draft: publishDraft);
+      final backgroundPublishBloc = context.read<BackgroundPublishBloc>();
+      final publishService = await _createPublishService(
+        onProgressChanged: ({required draftId, required progress}) {
+          backgroundPublishBloc.add(
+            BackgroundPublishProgressChanged(
+              draftId: draftId,
+              progress: progress,
+            ),
+          );
+        },
+      );
+
+      final publishmentProcess = publishService.publishVideo(
+        draft: publishDraft,
+      );
+      backgroundPublishBloc.add(
+        BackgroundPublishRequested(
+          draft: publishDraft,
+          publishmentProcess: publishmentProcess,
+        ),
+      );
+
+      // Navigate to current user's profile
+      final authService = ref.read(authServiceProvider);
+      final currentNpub = authService.currentNpub;
+      if (currentNpub != null) {
+        context.go(ProfileScreenRouter.pathForNpub(currentNpub));
+      }
+
+      // Wait the publishment process to complete
+      // so the data can be properly cleaned up.
+      final result = await publishmentProcess;
 
       // Handle result
       switch (result) {
@@ -176,14 +197,6 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
             name: 'VideoPublishNotifier',
             category: .video,
           );
-          if (!context.mounted) return;
-          // Navigate to current user's profile
-          final authService = ref.read(authServiceProvider);
-          final currentUserHex = authService.currentPublicKeyHex;
-          if (currentUserHex != null) {
-            final npub = NostrKeyUtils.encodePubKey(currentUserHex);
-            context.go(ProfileScreenRouter.pathForNpub(npub));
-          }
 
         case PublishError(:final userMessage):
           setError(userMessage);
@@ -201,8 +214,6 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         error: error,
         stackTrace: stackTrace,
       );
-
-      setPublishState(.error);
     } finally {
       Log.info(
         '🏁 Publish process completed',

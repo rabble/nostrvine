@@ -273,6 +273,9 @@ void main() {
         final oauth = KeycastOAuth(config: config, httpClient: mockClient);
         await oauth.logout();
 
+        // The POST request is fire-and-forget (unawaited), so wait for microtasks
+        await Future<void>.delayed(Duration.zero);
+
         expect(logoutCalled, isTrue);
       });
     });

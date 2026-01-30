@@ -27,24 +27,26 @@ class EmbeddedThumbnailGenerator {
 
     try {
       // Extract thumbnail bytes from video
-      final thumbnailBytes = await VideoThumbnailService.extractThumbnailBytes(
+      final thumbnailResult = await VideoThumbnailService.extractThumbnailBytes(
         videoPath: videoPath,
         timestamp: Duration(milliseconds: timeMs),
         quality: quality,
       );
 
-      if (thumbnailBytes != null) {
+      if (thumbnailResult != null) {
         // Create base64 data URI
-        final base64Thumbnail = base64.encode(thumbnailBytes);
+        final base64Thumbnail = base64.encode(thumbnailResult.bytes);
         final thumbnailDataUri = 'data:image/jpeg;base64,$base64Thumbnail';
-        final thumbnailSizeKB = (thumbnailBytes.length / 1024);
+        final thumbnailSizeKB = (thumbnailResult.bytes.length / 1024);
 
         result['success'] = true;
         result['dataUri'] = thumbnailDataUri;
         result['sizeKB'] = thumbnailSizeKB;
 
         // Generate blurhash
-        final blurhash = await BlurhashService.generateBlurhash(thumbnailBytes);
+        final blurhash = await BlurhashService.generateBlurhash(
+          thumbnailResult.bytes,
+        );
         if (blurhash != null) {
           result['blurhash'] = blurhash;
         }

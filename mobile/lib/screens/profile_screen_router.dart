@@ -3,10 +3,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -504,29 +506,48 @@ class _ProfileDataView extends ConsumerWidget {
     // Get profile stats
     final profileStatsAsync = ref.watch(fetchProfileStatsProvider(userIdHex));
 
-    return switch (videosAsync) {
-      AsyncLoading() => const ProfileLoadingView(),
-      AsyncError(:final error) => Center(child: Text('Error: $error')),
-      AsyncData(:final value) => _ProfileViewSwitcher(
-        npub: npub,
-        userIdHex: userIdHex,
-        isOwnProfile: isOwnProfile,
-        displayName: displayName,
-        videos: value.videos,
-        videoIndex: videoIndex,
-        profileStatsAsync: profileStatsAsync,
-        scrollController: scrollController,
-        onSetupProfile: onSetupProfile,
-        onEditProfile: onEditProfile,
-        onOpenClips: onOpenClips,
-      ),
-    };
+    return BlocListener<BackgroundPublishBloc, BackgroundPublishState>(
+      listenWhen: (previous, current) {
+        // Listen only for upload completions
+        final prevCompleted = previous.uploads
+            .where((upload) => upload.result != null)
+            .length;
+        final currCompleted = current.uploads
+            .where((upload) => upload.result != null)
+            .length;
+        return currCompleted > prevCompleted;
+      },
+      listener: (context, state) {
+        // We don't need the value here, we just want to refresh the feed
+        // when background uploads complete
+        final _ = ref.refresh(profileFeedProvider(userIdHex));
+      },
+      child: switch (videosAsync) {
+        AsyncLoading() => const ProfileLoadingView(),
+        AsyncError(:final error) => Center(child: Text('Error: $error')),
+        AsyncData(:final value) => ProfileViewSwitcher(
+          npub: npub,
+          userIdHex: userIdHex,
+          isOwnProfile: isOwnProfile,
+          displayName: displayName,
+          videos: value.videos,
+          videoIndex: videoIndex,
+          profileStatsAsync: profileStatsAsync,
+          scrollController: scrollController,
+          onSetupProfile: onSetupProfile,
+          onEditProfile: onEditProfile,
+          onOpenClips: onOpenClips,
+        ),
+      },
+    );
   }
 }
 
 /// Switches between grid view and video feed view based on videoIndex.
-class _ProfileViewSwitcher extends StatelessWidget {
-  const _ProfileViewSwitcher({
+class ProfileViewSwitcher extends StatelessWidget {
+  /// Creates a ProfileViewSwitcher widget.
+  @visibleForTesting
+  const ProfileViewSwitcher({
     required this.npub,
     required this.userIdHex,
     required this.isOwnProfile,
@@ -538,6 +559,7 @@ class _ProfileViewSwitcher extends StatelessWidget {
     required this.onEditProfile,
     required this.onOpenClips,
     this.displayName,
+    super.key,
   });
 
   final String npub;
@@ -554,33 +576,76 @@ class _ProfileViewSwitcher extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // If videoIndex is set, show fullscreen video mode
-    // Note: videoIndex maps directly to list index (0 = first video, 1 = second video, etc.)
-    // When videoIndex is null, show grid mode
-    if (videoIndex != null && videos.isNotEmpty) {
-      return ProfileVideoFeedView(
-        npub: npub,
-        userIdHex: userIdHex,
-        isOwnProfile: isOwnProfile,
-        videos: videos,
-        videoIndex: videoIndex!,
-        onPageChanged: (newIndex) {
-          context.go(ProfileScreenRouter.pathForIndex(npub, newIndex));
-        },
-      );
-    }
+    final backgroundPublishBloc = context.watch<BackgroundPublishBloc>();
 
-    // Otherwise show Instagram-style grid view
-    return ProfileGridView(
-      userIdHex: userIdHex,
-      isOwnProfile: isOwnProfile,
-      displayName: displayName,
-      videos: videos,
-      profileStatsAsync: profileStatsAsync,
-      scrollController: scrollController,
-      onSetupProfile: onSetupProfile,
-      onEditProfile: onEditProfile,
-      onOpenClips: onOpenClips,
-    );
+    // If videoIndex is set, show fullscreen video mode
+    // Note: videoIndex maps directly to list index (0 = first video, etc.)
+    // When videoIndex is null, show grid mode
+    final child = (videoIndex != null && videos.isNotEmpty)
+        ? ProfileVideoFeedView(
+            npub: npub,
+            userIdHex: userIdHex,
+            isOwnProfile: isOwnProfile,
+            videos: videos,
+            videoIndex: videoIndex!,
+            onPageChanged: (newIndex) {
+              context.go(ProfileScreenRouter.pathForIndex(npub, newIndex));
+            },
+          )
+        :
+          // Otherwise show Instagram-style grid view
+          ProfileGridView(
+            userIdHex: userIdHex,
+            isOwnProfile: isOwnProfile,
+            displayName: displayName,
+            videos: videos,
+            profileStatsAsync: profileStatsAsync,
+            scrollController: scrollController,
+            onSetupProfile: onSetupProfile,
+            onEditProfile: onEditProfile,
+            onOpenClips: onOpenClips,
+          );
+
+    final completedWithErrorUploads = backgroundPublishBloc.state.uploads
+        .where((upload) => upload.result != null)
+        .toList();
+
+    if (completedWithErrorUploads.isNotEmpty) {
+      final faultUpload = completedWithErrorUploads.first;
+
+      return Stack(
+        children: [
+          Positioned.fill(child: child),
+          Positioned(
+            bottom: 16,
+            left: 16,
+            right: 16,
+            child: Dismissible(
+              key: ValueKey(faultUpload.draft.id),
+              direction: DismissDirection.horizontal,
+              onDismissed: (_) {
+                backgroundPublishBloc.add(
+                  BackgroundPublishVanished(draftId: faultUpload.draft.id),
+                );
+              },
+              child: DivineSnackbarContainer(
+                label: 'Video upload failed.',
+                error: true,
+                actionLabel: 'Retry',
+                onActionPressed: () {
+                  backgroundPublishBloc.add(
+                    BackgroundPublishRetryRequested(
+                      draftId: faultUpload.draft.id,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
+      );
+    } else {
+      return child;
+    }
   }
 }

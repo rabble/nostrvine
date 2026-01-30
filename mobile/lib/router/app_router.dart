@@ -83,31 +83,26 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     redirect: (context, state) {
       final location = state.matchedLocation;
       Log.debug(
-        'Redirect for: $location',
+        'Redirect START for: $location',
         name: 'AppRouter',
         category: LogCategory.ui,
       );
 
       final authState = ref.read(authServiceProvider).authState;
-
-      // If authenticated and on an auth route, redirect to home or explore
-      if (authState == AuthState.authenticated && _isAuthRoute(location)) {
-        Log.debug(
-          'Authenticated on auth route, checking following',
-          name: 'AppRouter',
-          category: LogCategory.ui,
-        );
+      if (authState == AuthState.authenticated &&
+          (location == WelcomeScreen.path ||
+              location == KeyImportScreen.path ||
+              location == WelcomeScreen.loginOptionsPath ||
+              location == WelcomeScreen.resetPasswordPath ||
+              location == EmailVerificationScreen.path)) {
+        debugPrint('[Router] Authenticated. moving to /home/0');
         // On first navigation, redirect to explore if user has no following
         if (!_hasNavigated) {
           _hasNavigated = true;
-          if (!ref.read(hasFollowingInCacheSyncProvider)) {
-            Log.debug(
-              'No following, redirecting to /explore',
-              name: 'AppRouter',
-              category: LogCategory.ui,
-            );
-            return ExploreScreen.path;
-          }
+          final emptyFollowingRedirect = ref.read(
+            checkEmptyFollowingRedirectProvider(location),
+          );
+          if (emptyFollowingRedirect != null) return emptyFollowingRedirect;
         }
         return HomeScreenRouter.pathForIndex(0);
       }
@@ -139,32 +134,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             category: LogCategory.ui,
           );
           return WelcomeScreen.path;
-        }
-      }
-
-      // Redirect FROM /welcome TO /explore when TOS is accepted AND authenticated
-      if (location.startsWith(WelcomeScreen.path)) {
-        if (ref.read(hasTosAcceptedProvider) &&
-            authState == AuthState.authenticated) {
-          Log.debug(
-            'TOS accepted and authenticated, redirecting to /explore',
-            name: 'AppRouter',
-            category: LogCategory.ui,
-          );
-          return ExploreScreen.path;
-        }
-      }
-
-      // Check if we should redirect to explore because user has no following
-      if (!_hasNavigated && location.startsWith(HomeScreenRouter.path)) {
-        _hasNavigated = true;
-        if (!ref.read(hasFollowingInCacheSyncProvider)) {
-          Log.debug(
-            'No following, redirecting to /explore',
-            name: 'AppRouter',
-            category: LogCategory.ui,
-          );
-          return ExploreScreen.path;
         }
       }
 
