@@ -1,6 +1,8 @@
 // ABOUTME: Factory for creating NostrClient instances
 // ABOUTME: Handles platform-appropriate client creation with proper configuration
 
+import 'dart:async';
+
 import 'package:db_client/db_client.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
@@ -81,44 +83,7 @@ class NostrServiceFactory {
     // Add user relays if available
     // These will be added asynchronously during initialization
     if (userRelayUrls != null && userRelayUrls.isNotEmpty) {
-      // Schedule adding user relays after client is initialized
-      Future.microtask(() async {
-        for (final relayUrl in userRelayUrls) {
-          // Skip if it's the same as the divine relay
-          if (relayUrl == divineRelayUrl) {
-            UnifiedLogger.debug(
-              'Skipping duplicate relay: $relayUrl',
-              name: 'NostrServiceFactory',
-            );
-            continue;
-          }
-
-          try {
-            final added = await client.addRelay(relayUrl);
-            if (added) {
-              UnifiedLogger.info(
-                '✅ Added user relay: $relayUrl',
-                name: 'NostrServiceFactory',
-              );
-            } else {
-              UnifiedLogger.warning(
-                '⚠️ Failed to add user relay: $relayUrl',
-                name: 'NostrServiceFactory',
-              );
-            }
-          } catch (e) {
-            UnifiedLogger.error(
-              '❌ Error adding user relay $relayUrl: $e',
-              name: 'NostrServiceFactory',
-            );
-          }
-        }
-
-        UnifiedLogger.info(
-          '📡 Relay setup complete - connected to ${1 + userRelayUrls.length} relays total',
-          name: 'NostrServiceFactory',
-        );
-      });
+      unawaited(_addUserRelays(client, userRelayUrls));
     }
 
     return client;
@@ -127,5 +92,38 @@ class NostrServiceFactory {
   /// Initialize the created client
   static Future<void> initialize(NostrClient client) async {
     await client.initialize();
+  }
+
+  /// Add user relays asynchronously (fire-and-forget)
+  static Future<void> _addUserRelays(
+    NostrClient client,
+    List<String> userRelayUrls,
+  ) async {
+    for (final relayUrl in userRelayUrls) {
+      try {
+        final added = await client.addRelay(relayUrl);
+        if (added) {
+          UnifiedLogger.info(
+            '✅ Added user relay: $relayUrl',
+            name: 'NostrServiceFactory',
+          );
+        } else {
+          UnifiedLogger.warning(
+            '⚠️ Failed to add user relay: $relayUrl',
+            name: 'NostrServiceFactory',
+          );
+        }
+      } catch (e) {
+        UnifiedLogger.error(
+          '❌ Error adding user relay $relayUrl: $e',
+          name: 'NostrServiceFactory',
+        );
+      }
+    }
+
+    UnifiedLogger.info(
+      '📡 Relay setup complete - connected to ${1 + userRelayUrls.length} relays total',
+      name: 'NostrServiceFactory',
+    );
   }
 }

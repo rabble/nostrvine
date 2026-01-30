@@ -114,11 +114,6 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as List<_i5.DiscoveredRelay>);
 
   @override
-  bool get hasUserRelays =>
-      (super.noSuchMethod(Invocation.getter(#hasUserRelays), returnValue: false)
-          as bool);
-
-  @override
   bool get hasExistingProfile =>
       (super.noSuchMethod(
             Invocation.getter(#hasExistingProfile),

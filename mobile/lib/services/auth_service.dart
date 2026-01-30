@@ -13,8 +13,8 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/auth_service_signer.dart';
 import 'package:openvine/services/background_activity_manager.dart';
-import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/blossom_server_discovery_service.dart';
+import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
 import 'package:openvine/services/user_profile_service.dart' as ups;
@@ -1041,6 +1041,9 @@ class AuthService implements BackgroundAwareService {
         reason: 'explicit_logout',
       );
 
+      // Clear configured relays so next login re-discovers from NIP-65
+      await prefs.remove('configured_relays');
+
       // Clear the stored pubkey tracking so next login is treated as new
       await prefs.remove('current_user_pubkey_hex');
 
@@ -1462,6 +1465,9 @@ class AuthService implements BackgroundAwareService {
   }
 
   /// Discover user relays via NIP-65 using the provided NostrClient.
+  ///
+  /// Skips discovery if user has manually edited their relays to preserve
+  /// user's custom configuration.
   Future<void> _discoverUserRelaysWithClient(
     String npub,
     NostrClient nostrClient,
@@ -1473,7 +1479,8 @@ class AuthService implements BackgroundAwareService {
     );
 
     try {
-      final result = await _relayDiscoveryService.discoverRelays(
+      // Use discovery method that respects user's existing relay config
+      final result = await _relayDiscoveryService.discoverRelaysIfNotConfigured(
         npub,
         nostrClient: nostrClient,
       );
@@ -1498,18 +1505,27 @@ class AuthService implements BackgroundAwareService {
       } else {
         _userRelays = [];
 
-        Log.warning(
-          '⚠️ No relay list found for user - will use diVine relay only',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-
-        if (result.errorMessage != null) {
-          Log.debug(
-            'Relay discovery error: ${result.errorMessage}',
+        // Check if skip was due to existing config (not an error)
+        if (result.errorMessage == 'User has configured relays') {
+          Log.info(
+            '✅ Using user-configured relays (manual edits preserved)',
             name: 'AuthService',
             category: LogCategory.auth,
           );
+        } else {
+          Log.warning(
+            '⚠️ No relay list found for user - will use diVine relay only',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+
+          if (result.errorMessage != null) {
+            Log.debug(
+              'Relay discovery error: ${result.errorMessage}',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+          }
         }
       }
     } catch (e) {

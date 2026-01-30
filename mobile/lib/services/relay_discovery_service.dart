@@ -194,6 +194,44 @@ class RelayDiscoveryService {
     }
   }
 
+  /// Discover relay list for a given npub, skipping if user already has
+  /// configured relays.
+  ///
+  /// This is the preferred method for automatic discovery during login.
+  /// If configured_relays already exists in SharedPreferences, it means the
+  /// user has a relay configuration (either from previous discovery or manual
+  /// edits), so we skip NIP-65 discovery to preserve it.
+  ///
+  /// Returns a failure result with specific message if:
+  /// - User already has configured relays (preserves existing config)
+  ///
+  /// Otherwise proceeds with normal [discoverRelays] behavior.
+  Future<RelayDiscoveryResult> discoverRelaysIfNotConfigured(
+    String npub, {
+    NostrClient? nostrClient,
+  }) async {
+    // Check if user already has configured relays
+    final prefs = await SharedPreferences.getInstance();
+    final configuredRelays = prefs.getStringList('configured_relays');
+    final hasConfiguredRelays =
+        configuredRelays != null && configuredRelays.isNotEmpty;
+
+    if (hasConfiguredRelays) {
+      Log.info(
+        'User already has ${configuredRelays.length} configured relays - '
+        'skipping NIP-65 discovery for ${_maskNpub(npub)}',
+        name: 'RelayDiscoveryService',
+        category: LogCategory.relay,
+      );
+
+      // Return failure result - user's configured relays should be used instead
+      return RelayDiscoveryResult.failure('User has configured relays');
+    }
+
+    // Proceed with normal discovery
+    return discoverRelays(npub, nostrClient: nostrClient);
+  }
+
   /// Query a specific indexer relay for kind 10002 event using NostrClient
   Future<List<DiscoveredRelay>> _queryIndexer(
     String indexerUrl,
