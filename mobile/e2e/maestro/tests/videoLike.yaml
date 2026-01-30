@@ -35,5 +35,3 @@ tags:
 - tapOn:
     point: 20%,74%
 - assertVisible: ${VIDEO_DESCRIPTION}
-- tapOn:
-    point: 4%,8%

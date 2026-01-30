@@ -41,8 +41,6 @@ tags:
 - evalScript: |
     env.video_description = maestro.copiedText;  # Assign copied text to the variable
 # TO-DO: Extract the text from the username
-
-
 # 3. Browse to the home screen: VIDEO_USER videos are displayed validated thru username
 - tapOn:
     point: 4%,8%

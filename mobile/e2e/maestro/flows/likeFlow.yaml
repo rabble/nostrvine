@@ -7,11 +7,14 @@ env:
 - runFlow: ../tests/loginFreshInstall.yaml
 - runFlow: ../tests/videoLike.yaml
 
+#healthy app re-open
+- stopApp
+- launchApp
+
 - runFlow:
-    file:  ../tests/videoUnlike.yaml
+    file: ../tests/videoUnlike.yaml
     env:
       VIDEO_TITLE: ${VIDEO_TITLE}
-#- runFlow: ../tests/videoUnlike.yaml
 
 #Tear down
 - killApp

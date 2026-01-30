@@ -1,8 +1,13 @@
 appId: co.openvine.app
 ---
-- assertVisible: |-
-    Edit Profile
-    Update your display name, bio, and avatar
-- assertVisible: |-
-    Delete Account and Data
-    PERMANENTLY delete your account and all content
+- assertVisible: Display Name
+- assertVisible: How should people know you?
+- assertVisible: Bio (Optional)
+- assertVisible: Tell people about yourself...
+- assertVisible: \b(0|[1-9]\d*)\/360\b
+- assertVisible: Public key (npub)
+- assertVisible: ^npub[a-zA-Z0-9]+$
+- assertVisible: Username (Optional)
+- assertVisible: username
+- assertVisible: Cancel
+- assertVisible: Save
