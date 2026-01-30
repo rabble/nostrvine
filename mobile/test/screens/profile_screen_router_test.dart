@@ -15,6 +15,7 @@ import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
@@ -283,14 +284,13 @@ void main() {
     Widget buildTestWidget(_FakeBackgroundPublishBloc bloc) {
       return ProviderScope(
         overrides: [
-          ...getStandardTestOverrides(
-            mockUserProfileService: mockUserProfileService,
-            mockNostrService: mockNostrClient,
-          ),
+          ...getStandardTestOverrides(),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
           likesRepositoryProvider.overrideWithValue(mockLikesRepository),
           repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
           videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+          nostrServiceProvider.overrideWithValue(mockNostrClient),
+          userProfileServiceProvider.overrideWithValue(mockUserProfileService),
         ],
         child: MaterialApp(
           theme: VineTheme.theme,
