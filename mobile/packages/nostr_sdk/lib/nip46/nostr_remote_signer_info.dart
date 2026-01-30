@@ -53,7 +53,7 @@ class NostrRemoteSignerInfo {
     return false;
   }
 
-  static NostrRemoteSignerInfo? parseBunkerUrl(
+  static NostrRemoteSignerInfo parseBunkerUrl(
     String bunkerUrlText, {
     String? nsec,
   }) {
@@ -65,7 +65,14 @@ class NostrRemoteSignerInfo {
 
     var relays = pars["relay"];
     if (relays == null || relays.isEmpty) {
-      return null;
+      throw Exception("relay parameter missing in bunker url");
+    }
+
+    // Validate that all relay URLs are valid WebSocket URLs
+    for (final relay in relays) {
+      if (!relay.startsWith('wss://') && !relay.startsWith('ws://')) {
+        throw Exception("relay $relay should start with wss:// or ws://");
+      }
     }
 
     var optionalSecrets = pars["secret"];

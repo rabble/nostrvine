@@ -3,11 +3,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/mixins/pagination_mixin.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
@@ -124,7 +125,7 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
           if (widget.onNavigate != null) {
             widget.onNavigate!(index);
           } else if (!widget.useLocalActiveState) {
-            context.goExplore(index);
+            context.go(ExploreScreen.pathForIndex(index));
           }
 
           // Trigger pagination when near the end if callback provided

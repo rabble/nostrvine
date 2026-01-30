@@ -1,6 +1,9 @@
 // ABOUTME: Service for publishing videos to Nostr with upload management
 // ABOUTME: Handles video upload to Blossom servers, retry logic, and Nostr event creation
 
+import 'dart:async';
+
+import 'package:equatable/equatable.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/vine_draft.dart';
@@ -12,8 +15,11 @@ import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Result of a publish operation.
-sealed class PublishResult {
+sealed class PublishResult extends Equatable {
   const PublishResult();
+
+  @override
+  List<Object?> get props => [];
 }
 
 class PublishSuccess extends PublishResult {
@@ -23,12 +29,16 @@ class PublishSuccess extends PublishResult {
 class PublishError extends PublishResult {
   const PublishError(this.userMessage);
   final String userMessage;
+
+  @override
+  List<Object?> get props => [userMessage];
 }
 
 /// Callbacks for VideoPublishService to communicate state changes.
 /// This abstraction makes the service testable without Riverpod dependencies.
 typedef OnStateChanged = void Function(VideoPublishState state);
-typedef OnProgressChanged = void Function(double progress);
+typedef OnProgressChanged =
+    void Function({required String draftId, required double progress});
 
 class VideoPublishService {
   VideoPublishService({
@@ -37,9 +47,7 @@ class VideoPublishService {
     required this.videoEventPublisher,
     required this.blossomService,
     required this.draftService,
-    required this.onStateChanged,
     required this.onProgressChanged,
-    this.isMounted,
   });
 
   /// Manages background video uploads.
@@ -57,17 +65,8 @@ class VideoPublishService {
   /// Manages video draft storage.
   final DraftStorageService draftService;
 
-  /// Callback when publish state changes.
-  final OnStateChanged onStateChanged;
-
   /// Callback when upload progress changes.
   final OnProgressChanged onProgressChanged;
-
-  /// Optional function to check if the caller is still mounted.
-  /// Used to stop polling when the caller is disposed.
-  final bool Function()? isMounted;
-
-  bool get _shouldContinue => isMounted?.call() ?? true;
 
   /// Tracks the current background upload ID.
   String? _backgroundUploadId;
@@ -77,7 +76,7 @@ class VideoPublishService {
   Future<PublishResult> publishVideo({required VineDraft draft}) async {
     // Check if we have a background upload ID and its status
     if (_backgroundUploadId != null) {
-      final error = await _handleActiveUpload();
+      final error = await _handleActiveUpload(draft.id);
       if (error != null) return error;
     }
 
@@ -85,13 +84,11 @@ class VideoPublishService {
       final publishing = draft.copyWith(publishStatus: .publishing);
       await draftService.saveDraft(publishing);
 
-      // TODO(@hm21): Temporary "commented out" create PR with only new files
-      /* final videoPath = await draft.clips.first.video.safeFilePath();
-      Log.info('📝 Publishing video: $videoPath', category: .video); */
+      final videoPath = await draft.clips.first.video.safeFilePath();
+      Log.info('📝 Publishing video: $videoPath', category: .video);
 
       // Verify user is fully authenticated
       if (!authService.isAuthenticated) {
-        onStateChanged(.error);
         // TODO(l10n): Replace with context.l10n when localization is added.
         return const PublishError('Please sign in to publish videos.');
       }
@@ -100,7 +97,6 @@ class VideoPublishService {
       // Use existing upload if available, otherwise start new upload
       final pendingUpload = await _getOrCreateUpload(pubkey, draft);
       if (pendingUpload == null) {
-        onStateChanged(.error);
         // TODO(l10n): Replace with context.l10n when localization is added.
         return const PublishError('Failed to upload video. Please try again.');
       }
@@ -116,19 +112,17 @@ class VideoPublishService {
 
       // Publish Nostr event
       Log.info('📝 Publishing Nostr event...', category: .video);
-      onStateChanged(.publishToNostr);
 
       final published = await videoEventPublisher.publishVideoEvent(
         upload: pendingUpload,
         title: draft.title,
         description: draft.description,
-        hashtags: draft.hashtags,
-        // TODO(@hm21): Temporary "commented out" create PR with only new files
-        /*  expirationTimestamp: draft.expireTime != null
+        hashtags: draft.hashtags.toList(),
+        expirationTimestamp: draft.expireTime != null
             ? DateTime.now().millisecondsSinceEpoch ~/ 1000 +
                   draft.expireTime!.inSeconds
             : null,
-        allowAudioReuse: draft.allowAudioReuse, */
+        allowAudioReuse: draft.allowAudioReuse,
       );
 
       if (!published) {
@@ -141,7 +135,6 @@ class VideoPublishService {
 
       // Success: delete draft
       await draftService.deleteDraft(draft.id);
-      onStateChanged(.completed);
 
       Log.info('📝 Published successfully', category: .video);
       return const PublishSuccess();
@@ -172,7 +165,7 @@ class VideoPublishService {
 
   /// Handles an active background upload.
   /// Returns [PublishError] if there was an error, null to continue.
-  Future<PublishError?> _handleActiveUpload() async {
+  Future<PublishError?> _handleActiveUpload(String draftId) async {
     final upload = uploadManager.getUpload(_backgroundUploadId!);
     if (upload == null) return null;
 
@@ -189,7 +182,7 @@ class VideoPublishService {
 
     // Wait for upload to complete
     if (upload.status == .uploading || upload.status == .processing) {
-      final result = await _pollUploadProgress(_backgroundUploadId!);
+      final result = await _pollUploadProgress(draftId, _backgroundUploadId!);
       if (!result) {
         final failedUpload = uploadManager.getUpload(_backgroundUploadId!);
 
@@ -205,28 +198,26 @@ class VideoPublishService {
 
   /// Polls upload progress until complete or failed.
   /// Returns true if upload succeeded, false if failed.
-  Future<bool> _pollUploadProgress(String uploadId) async {
-    while (_shouldContinue) {
-      final upload = uploadManager.getUpload(uploadId);
-      if (upload == null) return false;
+  Future<bool> _pollUploadProgress(String draftId, String uploadId) async {
+    final upload = uploadManager.getUpload(uploadId);
+    if (upload == null) return false;
 
-      onProgressChanged(upload.uploadProgress ?? 0.0);
+    onProgressChanged(draftId: draftId, progress: upload.uploadProgress ?? 0.0);
 
-      switch (upload.status) {
-        case .readyToPublish:
-        case .published:
-          return true;
-        case .failed:
-          return false;
-        case .uploading:
-        case .processing:
-        case .pending:
-        case .retrying:
-        case .paused:
-          await Future<void>.delayed(const Duration(milliseconds: 100));
-      }
+    switch (upload.status) {
+      case .readyToPublish:
+      case .published:
+        return true;
+      case .failed:
+        return false;
+      case .uploading:
+      case .processing:
+      case .pending:
+      case .retrying:
+      case .paused:
+        await Future<void>.delayed(const Duration(milliseconds: 50));
     }
-    return false;
+    return _pollUploadProgress(draftId, uploadId);
   }
 
   /// Starts a new upload and polls for progress until completion.
@@ -235,23 +226,22 @@ class VideoPublishService {
     // Ensure upload manager is initialized
     if (!uploadManager.isInitialized) {
       Log.info('📝 Initializing upload manager...', category: .video);
-      onStateChanged(.initialize);
       await uploadManager.initialize();
     }
 
     Log.info('📝 Starting upload to Blossom...', category: .video);
     _logProofModeStatus(draft);
 
-    onStateChanged(VideoPublishState.uploading);
-
     final pendingUpload = await uploadManager.startUploadFromDraft(
       draft: draft,
       nostrPubkey: pubkey,
+      onProgress: (value) =>
+          onProgressChanged(draftId: draft.id, progress: value),
     );
     _backgroundUploadId = pendingUpload.id;
 
     // Poll for progress
-    final success = await _pollUploadProgress(pendingUpload.id);
+    final success = await _pollUploadProgress(draft.id, pendingUpload.id);
     if (!success) return null;
 
     return uploadManager.getUpload(pendingUpload.id);
@@ -280,11 +270,9 @@ class VideoPublishService {
       return const PublishError('No upload to retry.');
     }
 
-    onStateChanged(.retryUpload);
-
     try {
       await uploadManager.retryUpload(_backgroundUploadId!);
-      final success = await _pollUploadProgress(_backgroundUploadId!);
+      final success = await _pollUploadProgress(draft.id, _backgroundUploadId!);
 
       if (!success) {
         final upload = uploadManager.getUpload(_backgroundUploadId!);
@@ -311,8 +299,6 @@ class VideoPublishService {
     VineDraft draft,
   ) async {
     Log.error('📝 Publish failed: $e\n$stackTrace', category: .video);
-
-    onStateChanged(.error);
 
     // Save failed state to draft
     try {

@@ -422,7 +422,6 @@ class VideoEventPublisher {
           final thumbnailBytes =
               await VideoThumbnailService.extractThumbnailBytes(
                 videoPath: upload.localVideoPath,
-                timeMs: 500,
                 quality: 75,
               ).timeout(
                 const Duration(seconds: 10),
@@ -439,7 +438,9 @@ class VideoEventPublisher {
           if (thumbnailBytes != null) {
             // Generate blurhash with 3-second timeout
             final blurhash =
-                await BlurhashService.generateBlurhash(thumbnailBytes).timeout(
+                await BlurhashService.generateBlurhash(
+                  thumbnailBytes.bytes,
+                ).timeout(
                   const Duration(seconds: 3),
                   onTimeout: () {
                     Log.warning(

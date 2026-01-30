@@ -4,6 +4,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:models/models.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,10 +23,16 @@ void main() {
     setUp(() {
       final now = DateTime.now();
 
+      // Use valid 64-character hex pubkeys for realistic testing
+      const originalAuthorPubkey =
+          'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+      const reposterPubkey =
+          'f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5d4c3b2a1f6e5';
+
       // Create original video
       originalVideo = VideoEvent(
         id: 'original_event_123',
-        pubkey: 'original_author_pubkey_456',
+        pubkey: originalAuthorPubkey,
         content: 'Original video content',
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         timestamp: now,
@@ -40,7 +47,7 @@ void main() {
       // Create reposted version
       repostedVideo = VideoEvent(
         id: 'original_event_123',
-        pubkey: 'original_author_pubkey_456',
+        pubkey: originalAuthorPubkey,
         content: 'Original video content',
         createdAt: now.millisecondsSinceEpoch ~/ 1000,
         timestamp: now,
@@ -50,7 +57,7 @@ void main() {
         duration: 15,
         hashtags: ['test'],
         isRepost: true,
-        reposterPubkey: 'reposter_pubkey_789',
+        reposterPubkey: reposterPubkey,
         reposterId: 'repost_event_999',
         repostedAt: now,
       );
@@ -115,8 +122,8 @@ void main() {
       });
     });
 
-    // RED TEST 3: Repost header should show reposter's pubkey (abbreviated)
-    testWidgets('repost header shows reposter pubkey', (tester) async {
+    // RED TEST 3: Repost header should show reposter's truncated npub
+    testWidgets('repost header shows reposter truncated npub', (tester) async {
       await tester.runAsync(() async {
         await tester.pumpWidget(
           createTestApp(
@@ -133,15 +140,19 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
-        // RED: Expect to find abbreviated pubkey (first 8 chars)
-        final abbreviatedPubkey = repostedVideo.reposterPubkey!.substring(0, 8);
+        // Expect to find truncated npub (e.g., "npub1abc...xyz")
+        final truncatedNpub = NostrKeyUtils.truncateNpub(
+          repostedVideo.reposterPubkey!,
+        );
         expect(
-          find.textContaining(abbreviatedPubkey),
+          find.textContaining(truncatedNpub),
           findsOneWidget,
-          reason: 'Repost header should show abbreviated reposter pubkey',
+          reason: 'Repost header should show truncated npub for reposter',
         );
       });
     });
-    // TODO(Any): Fix and re-enable these tests
+    // TODO(any): Fix test infrastructure - VideoFeedItem needs many provider
+    // overrides (visibilityTracker, authService, userProfileService, etc.)
+    // Test code updated to expect truncated npub format per issue #804
   }, skip: true);
 }

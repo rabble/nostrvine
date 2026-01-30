@@ -2,16 +2,18 @@
 // ABOUTME: Replaces Provider MultiProvider setup with pure Riverpod dependency injection
 
 import 'dart:async';
+import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:http/http.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:likes_repository/likes_repository.dart';
-import 'package:videos_repository/videos_repository.dart';
 import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
+import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -25,6 +27,7 @@ import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
+import 'package:openvine/services/blocklist_content_filter.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/bookmark_service.dart';
@@ -48,7 +51,10 @@ import 'package:openvine/services/nip05_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
+import 'package:openvine/services/nsfw_content_filter.dart';
+import 'package:openvine/services/email_verification_listener.dart';
 import 'package:openvine/services/password_reset_listener.dart';
+import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';
 import 'package:openvine/services/relay_capability_service.dart';
@@ -63,6 +69,7 @@ import 'package:openvine/services/user_list_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/video_visibility_manager.dart';
@@ -70,7 +77,10 @@ import 'package:openvine/services/web_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:profile_repository/profile_repository.dart';
+import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:videos_repository/videos_repository.dart';
 
 part 'app_providers.g.dart';
 
@@ -190,6 +200,63 @@ void relayStatisticsBridge(Ref ref) {
   });
 }
 
+/// Bridge provider that detects when the configured relay set changes
+/// (relays added or removed) and triggers a full feed reset+resubscribe.
+/// Debounces for 2 seconds to collapse rapid add/remove operations.
+/// Only reacts to set membership changes, not connection state flapping.
+@Riverpod(keepAlive: true)
+void relaySetChangeBridge(Ref ref) {
+  final nostrService = ref.watch(nostrServiceProvider);
+  final videoEventService = ref.watch(videoEventServiceProvider);
+
+  Set<String> previousRelaySet = nostrService.relayStatuses.keys.toSet();
+  Timer? debounceTimer;
+
+  void processStatuses(Map<String, RelayConnectionStatus> statuses) {
+    final currentRelaySet = statuses.keys.toSet();
+
+    // Only trigger if the set of relay URLs has changed (not just status)
+    if (!_setsEqual(currentRelaySet, previousRelaySet)) {
+      Log.info(
+        'Relay set changed: '
+        '${previousRelaySet.length} -> ${currentRelaySet.length} relays',
+        name: 'RelaySetChangeBridge',
+        category: LogCategory.relay,
+      );
+
+      previousRelaySet = currentRelaySet;
+
+      // Debounce: collapse rapid changes into a single reset
+      debounceTimer?.cancel();
+      debounceTimer = Timer(const Duration(seconds: 2), () {
+        Log.info(
+          'Debounce elapsed - triggering feed reset for new relay set',
+          name: 'RelaySetChangeBridge',
+          category: LogCategory.relay,
+        );
+        videoEventService.resetAndResubscribeAll();
+      });
+    }
+  }
+
+  // Process current state immediately to establish baseline
+  processStatuses(nostrService.relayStatuses);
+
+  // Listen to relay status stream for future updates
+  final subscription = nostrService.relayStatusStream.listen(processStatuses);
+
+  ref.onDispose(() {
+    debounceTimer?.cancel();
+    subscription.cancel();
+  });
+}
+
+/// Helper to compare two sets for equality
+bool _setsEqual<T>(Set<T> a, Set<T> b) {
+  if (a.length != b.length) return false;
+  return a.containsAll(b);
+}
+
 /// Analytics service with opt-out support
 @Riverpod(keepAlive: true) // Keep alive to maintain singleton behavior
 AnalyticsService analyticsService(Ref ref) {
@@ -266,6 +333,10 @@ SecureKeycastStorage secureKeycastStorage(Ref ref) =>
     SecureKeycastStorage(ref.watch(flutterSecureStorageProvider));
 
 @Riverpod(keepAlive: true)
+PendingVerificationService pendingVerificationService(Ref ref) =>
+    PendingVerificationService(ref.watch(flutterSecureStorageProvider));
+
+@Riverpod(keepAlive: true)
 KeycastOAuth oauthClient(Ref ref) {
   final config = ref.watch(oauthConfigProvider);
   final storage = ref.watch(secureKeycastStorageProvider);
@@ -284,6 +355,13 @@ PasswordResetListener passwordResetListener(Ref ref) {
   return listener;
 }
 
+@Riverpod(keepAlive: true)
+EmailVerificationListener emailVerificationListener(Ref ref) {
+  final listener = EmailVerificationListener(ref);
+  ref.onDispose(() => listener.dispose());
+  return listener;
+}
+
 /// Web authentication service (for web platform only)
 @riverpod
 WebAuthService webAuthService(Ref ref) {
@@ -297,7 +375,8 @@ NostrKeyManager nostrKeyManager(Ref ref) {
 }
 
 /// Profile cache service for persistent profile storage
-@riverpod
+/// keepAlive to avoid expensive Hive reinitialization on auth state changes
+@Riverpod(keepAlive: true)
 ProfileCacheService profileCacheService(Ref ref) {
   final service = ProfileCacheService();
   // Initialize asynchronously to avoid blocking UI
@@ -308,6 +387,9 @@ ProfileCacheService profileCacheService(Ref ref) {
       error: e,
     );
   });
+
+  ref.onDispose(() => service.dispose());
+
   return service;
 }
 
@@ -358,14 +440,23 @@ ContentBlocklistService contentBlocklistService(Ref ref) {
   return ContentBlocklistService();
 }
 
-/// NIP-05 service for username registration and verification
+/// Version counter to trigger rebuilds when blocklist changes.
+/// Widgets watching this will rebuild when block/unblock actions occur.
 @riverpod
-Nip05Service nip05Service(Ref ref) {
-  final nostrClient = ref.read(nostrServiceProvider);
-  return Nip05Service(nostrClient: nostrClient);
+class BlocklistVersion extends _$BlocklistVersion {
+  @override
+  int build() => 0;
+
+  void increment() => state++;
 }
 
-/// Username repository for availability checking and registration
+/// NIP-05 service for username availability checking
+@riverpod
+Nip05Service nip05Service(Ref ref) {
+  return Nip05Service();
+}
+
+/// Username repository for availability checking
 @riverpod
 UsernameRepository usernameRepository(Ref ref) {
   final nip05Service = ref.watch(nip05ServiceProvider);
@@ -400,26 +491,56 @@ AuthService authService(Ref ref) {
   final oauthClient = ref.watch(oauthClientProvider);
   final flutterSecureStorage = ref.watch(flutterSecureStorageProvider);
   final oauthConfig = ref.watch(oauthConfigProvider);
+  final pendingVerificationService = ref.watch(
+    pendingVerificationServiceProvider,
+  );
   return AuthService(
     userDataCleanupService: userDataCleanupService,
     keyStorage: keyStorage,
     oauthClient: oauthClient,
     flutterSecureStorage: flutterSecureStorage,
     oauthConfig: oauthConfig,
+    pendingVerificationService: pendingVerificationService,
   );
 }
 
-/// Stream provider for reactive auth state changes
-/// Widgets should watch this instead of authService.authState to get rebuilds
-@riverpod
-Stream<AuthState> authStateStream(Ref ref) async* {
+/// Provider that returns current auth state and rebuilds when it changes.
+/// Widgets should watch this instead of authService.authState directly
+/// to get automatic rebuilds when authentication state changes.
+@Riverpod(keepAlive: true)
+AuthState currentAuthState(Ref ref) {
   final authService = ref.watch(authServiceProvider);
 
-  // Emit current state immediately
-  yield authService.authState;
+  // Listen to auth state changes and invalidate this provider when they occur
+  final subscription = authService.authStateStream.listen((_) {
+    // Invalidate to trigger rebuild with new state
+    ref.invalidateSelf();
+  });
 
-  // Then emit all future changes
-  yield* authService.authStateStream;
+  // Clean up subscription when provider is disposed
+  ref.onDispose(subscription.cancel);
+
+  // Return current state
+  return authService.authState;
+}
+
+/// Provider that returns true only when NostrClient is fully ready for operations.
+/// Combines auth state check AND nostrClient.hasKeys verification.
+/// Use this to guard providers that require authenticated NostrClient access.
+///
+/// This prevents race conditions where auth state is 'authenticated' but
+/// the NostrClient hasn't yet rebuilt with the new keys.
+@Riverpod(keepAlive: true)
+bool isNostrReady(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  // Watch auth state to rebuild when auth changes
+  ref.watch(currentAuthStateProvider);
+
+  if (!authService.isAuthenticated) return false;
+
+  final nostrClient = ref.watch(nostrServiceProvider);
+  return nostrClient.hasKeys;
 }
 
 /// Provider that sets Zendesk user identity when auth state changes
@@ -541,15 +662,27 @@ UserProfileService userProfileService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final subscriptionManager = ref.watch(subscriptionManagerProvider);
   final profileCache = ref.watch(profileCacheServiceProvider);
+  final analyticsService = ref.watch(analyticsApiServiceProvider);
+
+  // Use centralized funnelcake availability check (capability detection)
+  final funnelcakeAvailable =
+      ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
 
   final service = UserProfileService(
     nostrService,
     subscriptionManager: subscriptionManager,
+    analyticsApiService: analyticsService,
+    funnelcakeAvailable: funnelcakeAvailable,
   );
   service.setPersistentCache(profileCache);
 
   // Inject profile cache lookup into SubscriptionManager to avoid redundant relay requests
   subscriptionManager.setCacheLookup(hasProfileCached: service.hasProfile);
+
+  // Listen for funnelcake availability changes
+  ref.listen<AsyncValue<bool>>(funnelcakeAvailableProvider, (previous, next) {
+    service.setFunnelcakeAvailable(next.asData?.value ?? false);
+  });
 
   // Ensure cleanup on disposal
   ref.onDispose(() {
@@ -559,18 +692,16 @@ UserProfileService userProfileService(Ref ref) {
   return service;
 }
 
-/// Social service depends on Nostr service, Auth service, and SubscriptionManager
+/// Social service depends on Nostr service and Auth service
 @Riverpod(keepAlive: true)
 SocialService socialService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
-  final subscriptionManager = ref.watch(subscriptionManagerProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
 
   return SocialService(
     nostrService,
     authService,
-    subscriptionManager: subscriptionManager,
     personalEventCache: personalEventCache,
   );
 }
@@ -584,14 +715,16 @@ SocialService socialService(Ref ref) {
 /// - NostrClient from nostrServiceProvider (for relay communication)
 /// - PersonalEventCacheService (for caching contact list events)
 @Riverpod(keepAlive: true)
-FollowRepository followRepository(Ref ref) {
+FollowRepository? followRepository(Ref ref) {
+  // Return null if NostrClient is not ready yet
+  // This prevents race conditions during auth where auth state is 'authenticated'
+  // but NostrClient hasn't yet rebuilt with the new keys.
+  // The provider will rebuild when isNostrReady becomes true.
+  if (!ref.watch(isNostrReadyProvider)) {
+    return null;
+  }
+
   final nostrClient = ref.watch(nostrServiceProvider);
-
-  assert(
-    nostrClient.hasKeys,
-    'FollowRepository accessed without authentication',
-  );
-
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
 
   final repository = FollowRepository(
@@ -611,6 +744,33 @@ FollowRepository followRepository(Ref ref) {
   ref.onDispose(repository.dispose);
 
   return repository;
+}
+
+/// Provider for ProfileRepository instance
+///
+/// Creates a ProfileRepository for managing user profiles (Kind 0 metadata).
+/// Requires authentication.
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+@Riverpod(keepAlive: true)
+ProfileRepository? profileRepository(Ref ref) {
+  // Return null if NostrClient is not ready yet
+  // This prevents race conditions during auth where auth state is 'authenticated'
+  // but NostrClient hasn't yet rebuilt with the new keys.
+  // The provider will rebuild when isNostrReady becomes true.
+  if (!ref.watch(isNostrReadyProvider)) {
+    return null;
+  }
+
+  final nostrClient = ref.watch(nostrServiceProvider);
+  final userProfilesDao = ref.watch(databaseProvider).userProfilesDao;
+
+  return ProfileRepository(
+    nostrClient: nostrClient,
+    userProfilesDao: userProfilesDao,
+    httpClient: Client(),
+  );
 }
 
 // ProfileStatsProvider is now handled by profile_stats_provider.dart with pure Riverpod
@@ -753,6 +913,21 @@ VideoEventPublisher videoEventPublisher(Ref ref) {
     videoEventService: videoEventService,
     blossomUploadService: blossomUploadService,
     userProfileService: userProfileService,
+  );
+}
+
+/// View event publisher for kind 22236 ephemeral analytics events
+///
+/// Publishes video view events to track watch time, traffic sources,
+/// and enable creator analytics and recommendation systems.
+@riverpod
+ViewEventPublisher viewEventPublisher(Ref ref) {
+  final nostrService = ref.watch(nostrServiceProvider);
+  final authService = ref.watch(authServiceProvider);
+
+  return ViewEventPublisher(
+    nostrService: nostrService,
+    authService: authService,
   );
 }
 
@@ -1046,10 +1221,19 @@ CommentsRepository commentsRepository(Ref ref) {
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - ContentBlocklistService for filtering blocked/muted users
+/// - AgeVerificationService for filtering NSFW content based on user preference
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
-  return VideosRepository(nostrClient: nostrClient);
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final ageVerificationService = ref.watch(ageVerificationServiceProvider);
+
+  return VideosRepository(
+    nostrClient: nostrClient,
+    blockFilter: createBlocklistFilter(blocklistService),
+    contentFilter: createNsfwFilter(ageVerificationService),
+  );
 }
 
 // =============================================================================
@@ -1068,25 +1252,84 @@ VideosRepository videosRepository(Ref ref) {
 LikesRepository likesRepository(Ref ref) {
   final authService = ref.watch(authServiceProvider);
 
-  // Watch auth state stream to react to auth changes (login/logout)
+  // Watch auth state to react to auth changes (login/logout)
   // This ensures the provider rebuilds when authentication completes
-  ref.watch(authStateStreamProvider);
+  ref.watch(currentAuthStateProvider);
 
-  // Repository requires authentication
-  final authenticated =
-      !authService.isAuthenticated || authService.currentPublicKeyHex == null;
+  final isAuthenticated = authService.isAuthenticated;
+  final userPubkey = authService.currentPublicKeyHex;
 
   final nostrClient = ref.watch(nostrServiceProvider);
-  final db = ref.watch(databaseProvider);
-  final localStorage = DbLikesLocalStorage(
-    dao: db.personalReactionsDao,
-    userPubkey: authService.currentPublicKeyHex!,
+
+  // Only create localStorage if we have a valid user pubkey
+  // The provider will rebuild when auth state changes
+  DbLikesLocalStorage? localStorage;
+  if (userPubkey != null) {
+    final db = ref.watch(databaseProvider);
+    localStorage = DbLikesLocalStorage(
+      dao: db.personalReactionsDao,
+      userPubkey: userPubkey,
+    );
+  }
+
+  // Map AuthState stream to bool stream for repository
+  final authBoolStream = authService.authStateStream.map(
+    (state) => state == AuthState.authenticated,
   );
 
   final repository = LikesRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
-    isAuthenticated: authenticated,
+    authStateStream: authBoolStream,
+    isAuthenticated: isAuthenticated,
+  );
+
+  ref.onDispose(repository.dispose);
+
+  return repository;
+}
+
+/// Provider for RepostsRepository instance
+///
+/// Creates a RepostsRepository for managing user reposts (Kind 16 generic
+/// reposts).
+///
+/// Uses:
+/// - NostrClient from nostrServiceProvider (for relay communication)
+/// - PersonalRepostsDao from databaseProvider (for local storage)
+@Riverpod(keepAlive: true)
+RepostsRepository repostsRepository(Ref ref) {
+  final authService = ref.watch(authServiceProvider);
+
+  // Watch auth state to react to auth changes (login/logout)
+  ref.watch(currentAuthStateProvider);
+
+  final isAuthenticated = authService.isAuthenticated;
+  final userPubkey = authService.currentPublicKeyHex;
+
+  final nostrClient = ref.watch(nostrServiceProvider);
+
+  // Only create localStorage if we have a valid user pubkey
+  // The provider will rebuild when auth state changes
+  DbRepostsLocalStorage? localStorage;
+  if (userPubkey != null) {
+    final db = ref.watch(databaseProvider);
+    localStorage = DbRepostsLocalStorage(
+      dao: db.personalRepostsDao,
+      userPubkey: userPubkey,
+    );
+  }
+
+  // Map AuthState stream to bool stream for repository
+  final authBoolStream = authService.authStateStream.map(
+    (state) => state == AuthState.authenticated,
+  );
+
+  final repository = RepostsRepository(
+    nostrClient: nostrClient,
+    localStorage: localStorage,
+    authStateStream: authBoolStream,
+    isAuthenticated: isAuthenticated,
   );
 
   ref.onDispose(repository.dispose);

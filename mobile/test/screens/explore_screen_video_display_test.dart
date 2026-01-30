@@ -13,7 +13,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/seen_videos_notifier.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/video_event_service.dart';

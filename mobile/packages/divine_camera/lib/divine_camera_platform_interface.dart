@@ -39,6 +39,7 @@ abstract class DivineCameraPlatform extends PlatformInterface {
   Future<CameraState> initializeCamera({
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    bool enableScreenFlash = true,
   }) {
     throw UnimplementedError('initializeCamera() has not been implemented.');
   }
@@ -81,7 +82,9 @@ abstract class DivineCameraPlatform extends PlatformInterface {
   /// Starts video recording.
   ///
   /// [maxDuration] optionally limits the recording duration.
-  Future<void> startRecording({Duration? maxDuration}) {
+  /// [useCache] if true, saves video to cache directory (temporary), otherwise
+  /// saves to documents directory (permanent). Defaults to true.
+  Future<bool> startRecording({Duration? maxDuration, bool useCache = true}) {
     throw UnimplementedError('startRecording() has not been implemented.');
   }
 

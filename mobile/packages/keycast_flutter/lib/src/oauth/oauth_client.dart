@@ -1,23 +1,26 @@
 // ABOUTME: Keycast OAuth client for authentication flow
-// ABOUTME: Handles authorization URL generation, callback parsing, token exchange, and headless auth
+// ABOUTME: Handles authorization URL generation, callback parsing, token
+// exchange, and headless auth
 
+import 'dart:async';
 import 'dart:convert';
-import 'package:http/http.dart' as http;
 
-import 'oauth_config.dart';
-import 'callback_result.dart';
-import 'headless_models.dart';
-import 'token_response.dart';
-import 'pkce.dart';
-import '../crypto/key_utils.dart';
-import '../models/exceptions.dart';
-import '../models/keycast_session.dart';
-import '../storage/keycast_storage.dart';
+import 'package:http/http.dart' as http;
+import 'package:keycast_flutter/src/crypto/key_utils.dart';
+import 'package:keycast_flutter/src/models/exceptions.dart';
+import 'package:keycast_flutter/src/models/keycast_session.dart';
+import 'package:keycast_flutter/src/oauth/callback_result.dart';
+import 'package:keycast_flutter/src/oauth/headless_models.dart';
+import 'package:keycast_flutter/src/oauth/oauth_config.dart';
+import 'package:keycast_flutter/src/oauth/pkce.dart';
+import 'package:keycast_flutter/src/oauth/token_response.dart';
+import 'package:keycast_flutter/src/storage/keycast_storage.dart';
 
 /// Storage key for session credentials
 const _storageKeySession = 'keycast_session';
 
-/// Storage key for authorization handle (for silent re-auth when session expires)
+/// Storage key for authorization handle (for silent re-auth when session
+/// expires)
 const _storageKeyHandle = 'keycast_auth_handle';
 
 class KeycastOAuth {
@@ -56,10 +59,24 @@ class KeycastOAuth {
   }
 
   /// Clear local session and POST to server logout (keeps authorization_handle)
+  ///
+  /// Server-side logout has a 2-second timeout - if it fails or times out,
+  /// we still complete the local logout. The server will eventually expire
+  /// the token anyway.
   Future<void> logout() async {
     await _storage.delete(_storageKeySession);
     await _storage.delete(_storageKeyHandle);
-    await _client.post(Uri.parse('${config.serverUrl}/api/auth/logout'));
+    // Fire-and-forget server logout with short timeout
+    // Local logout is complete, server notification is best-effort
+    try {
+      unawaited(
+        _client
+            .post(Uri.parse('${config.serverUrl}/api/auth/logout'))
+            .timeout(const Duration(seconds: 2)),
+      );
+    } catch (_) {
+      // Ignore timeout or network errors - local logout is complete
+    }
   }
 
   Future<void> _saveSession(KeycastSession session) async {
@@ -181,15 +198,17 @@ class KeycastOAuth {
     return tokenResponse;
   }
 
-  // ============================================================================
+  // ===========================================================================
   // HEADLESS AUTHENTICATION METHODS
   // Native login/register flows without browser redirects
-  // ============================================================================
+  // ===========================================================================
 
   /// Register a new user with email and password (headless flow)
   ///
-  /// Returns [HeadlessRegisterResult] with device_code for email verification polling.
-  /// After registration, poll [pollForCode] until email is verified, then [exchangeCode].
+  /// Returns [HeadlessRegisterResult] with device_code for email verification
+  /// polling.
+  /// After registration, poll [pollForCode] until email is verified, then
+  /// [exchangeCode].
   ///
   /// [nsec] - Optional: import existing Nostr key instead of generating new one
   Future<(HeadlessRegisterResult, String verifier)> headlessRegister({
@@ -438,7 +457,7 @@ class KeycastOAuth {
         body: jsonEncode({'email': email}),
       );
 
-      final Map<String, dynamic> json = jsonDecode(response.body);
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return ForgotPasswordResult.fromJson(json);
@@ -468,17 +487,100 @@ class KeycastOAuth {
         body: jsonEncode({'token': token, 'new_password': newPassword}),
       );
 
-      final Map<String, dynamic> json = jsonDecode(response.body);
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         return ResetPasswordResult.fromJson(json);
       }
 
       // Handle server-side errors
-      final message = json['message'] ?? 'Failed to reset password';
+      final message = json['message']?.toString() ?? 'Failed to reset password';
       return ResetPasswordResult.error(message);
     } catch (e) {
       return ResetPasswordResult.error('Network error: $e');
+    }
+  }
+
+  /// Verify email using token from email link
+  Future<VerifyEmailResult> verifyEmail({required String token}) async {
+    try {
+      final response = await _client.post(
+        Uri.parse('${config.serverUrl}/api/auth/verify-email'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'token': token}),
+      );
+
+      final json = jsonDecode(response.body) as Map<String, dynamic>;
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return VerifyEmailResult.fromJson(json);
+      }
+
+      // Handle server-side errors
+      final message = json['message']?.toString() ?? 'Failed to verify email';
+      return VerifyEmailResult.error(message);
+    } catch (e) {
+      return VerifyEmailResult.error('Network error: $e');
+    }
+  }
+
+  /// Delete the user's account permanently from Keycast
+  ///
+  /// Requires an active bearer token from headless login/register flow.
+  /// This is a destructive action that cannot be undone.
+  ///
+  /// Returns [DeleteAccountResult] with success status.
+  Future<DeleteAccountResult> deleteAccount(String token) async {
+    try {
+      final response = await _client.delete(
+        Uri.parse('${config.serverUrl}/api/user/account'),
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        // Clear local session after successful deletion
+        await _storage.delete(_storageKeySession);
+        await _storage.delete(_storageKeyHandle);
+        return DeleteAccountResult.fromJson(json);
+      }
+
+      if (response.statusCode == 401) {
+        return DeleteAccountResult.error(
+          'Unauthorized: invalid or expired token',
+        );
+      }
+
+      if (response.statusCode == 404) {
+        return DeleteAccountResult.error('Account not found');
+      }
+
+      if (response.statusCode >= 500) {
+        return DeleteAccountResult.error(
+          'Server error (${response.statusCode}). Please try again later.',
+        );
+      }
+
+      // Try to parse error response
+      try {
+        final json = jsonDecode(response.body) as Map<String, dynamic>;
+        final error = json['error'] as String? ?? 'deletion_failed';
+        final message = json['message'] as String? ?? 'Account deletion failed';
+        return DeleteAccountResult.error('$error: $message');
+      } catch (_) {
+        return DeleteAccountResult.error('HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('Connection refused')) {
+        return DeleteAccountResult.error(
+          'Cannot connect to server. Check your internet connection.',
+        );
+      }
+      return DeleteAccountResult.error('Network error: $e');
     }
   }
 

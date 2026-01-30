@@ -3,70 +3,118 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/providers/profile_reposts_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Grid widget displaying user's reposted videos
-class ProfileRepostsGrid extends ConsumerWidget {
-  const ProfileRepostsGrid({required this.userIdHex, super.key});
+///
+/// Requires [ProfileRepostedVideosBloc] to be provided in the widget tree.
+class ProfileRepostsGrid extends StatelessWidget {
+  const ProfileRepostsGrid({required this.isOwnProfile, super.key});
 
-  final String userIdHex;
+  /// Whether this is the current user's own profile.
+  final bool isOwnProfile;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final repostsAsync = ref.watch(profileRepostsProvider(userIdHex));
-
-    return repostsAsync.when(
-      data: (reposts) {
-        if (reposts.isEmpty) {
-          return const _RepostsEmptyState();
+  Widget build(BuildContext context) {
+    return BlocBuilder<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+      builder: (context, state) {
+        if (state.status == ProfileRepostedVideosStatus.initial ||
+            state.status == ProfileRepostedVideosStatus.syncing ||
+            state.status == ProfileRepostedVideosStatus.loading) {
+          return const Center(
+            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          );
         }
 
-        return CustomScrollView(
-          slivers: [
-            SliverPadding(
-              padding: const EdgeInsets.all(2),
-              sliver: SliverGrid(
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 2,
-                  mainAxisSpacing: 2,
-                  childAspectRatio: 1,
-                ),
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  if (index >= reposts.length) {
-                    return const SizedBox.shrink();
-                  }
-
-                  final videoEvent = reposts[index];
-                  return _RepostGridTile(
-                    videoEvent: videoEvent,
-                    userIdHex: userIdHex,
-                    index: index,
-                  );
-                }, childCount: reposts.length),
-              ),
+        if (state.status == ProfileRepostedVideosStatus.failure) {
+          return const Center(
+            child: Text(
+              'Error loading reposted videos',
+              style: TextStyle(color: Colors.white),
             ),
-          ],
+          );
+        }
+
+        final repostedVideos = state.videos;
+
+        if (repostedVideos.isEmpty) {
+          return _RepostsEmptyState(isOwnProfile: isOwnProfile);
+        }
+
+        return NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            // Trigger load more when near the bottom
+            if (notification is ScrollUpdateNotification) {
+              final pixels = notification.metrics.pixels;
+              final maxExtent = notification.metrics.maxScrollExtent;
+              // Load more when within 200 pixels of the bottom
+              if (pixels >= maxExtent - 200 &&
+                  state.hasMoreContent &&
+                  !state.isLoadingMore) {
+                context.read<ProfileRepostedVideosBloc>().add(
+                  const ProfileRepostedVideosLoadMoreRequested(),
+                );
+              }
+            }
+            return false;
+          },
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.all(2),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 2,
+                    mainAxisSpacing: 2,
+                    childAspectRatio: 1,
+                  ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    if (index >= repostedVideos.length) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final videoEvent = repostedVideos[index];
+                    return _RepostGridTile(
+                      videoEvent: videoEvent,
+                      index: index,
+                      allVideos: repostedVideos,
+                    );
+                  }, childCount: repostedVideos.length),
+                ),
+              ),
+              // Loading indicator at the bottom
+              if (state.isLoadingMore)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: VineTheme.vineGreen,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         );
       },
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
-      ),
-      error: (error, stack) =>
-          Center(child: Text('Error loading reposts: $error')),
     );
   }
 }
 
 /// Empty state shown when user has no reposts
 class _RepostsEmptyState extends StatelessWidget {
-  const _RepostsEmptyState();
+  const _RepostsEmptyState({required this.isOwnProfile});
+
+  /// Whether this is the current user's own profile.
+  final bool isOwnProfile;
 
   @override
   Widget build(BuildContext context) => CustomScrollView(
@@ -77,10 +125,10 @@ class _RepostsEmptyState extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
-            children: const [
-              Icon(Icons.repeat, color: Colors.grey, size: 64),
-              SizedBox(height: 16),
-              Text(
+            children: [
+              const Icon(Icons.repeat, color: Colors.grey, size: 64),
+              const SizedBox(height: 16),
+              const Text(
                 'No Reposts Yet',
                 style: TextStyle(
                   color: Colors.white,
@@ -88,10 +136,12 @@ class _RepostsEmptyState extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Videos you repost will appear here',
-                style: TextStyle(color: Colors.grey, fontSize: 14),
+                isOwnProfile
+                    ? 'Videos you repost will appear here'
+                    : 'Videos they repost will appear here',
+                style: const TextStyle(color: Colors.grey, fontSize: 14),
               ),
             ],
           ),
@@ -105,13 +155,13 @@ class _RepostsEmptyState extends StatelessWidget {
 class _RepostGridTile extends StatelessWidget {
   const _RepostGridTile({
     required this.videoEvent,
-    required this.userIdHex,
     required this.index,
+    required this.allVideos,
   });
 
   final VideoEvent videoEvent;
-  final String userIdHex;
   final int index;
+  final List<VideoEvent> allVideos;
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -121,56 +171,25 @@ class _RepostGridTile extends StatelessWidget {
         'videoId=${videoEvent.id}',
         category: LogCategory.video,
       );
-      // Use ProfileRepostsFeedSource for reactive updates when loadMore fetches
-      // new reposts
-      context.pushVideoFeed(
-        source: ProfileRepostsFeedSource(userIdHex),
-        initialIndex: index,
+      // Use StaticFeedSource for fullscreen playback with the current list
+      context.push(
+        FullscreenVideoFeedScreen.path,
+        extra: FullscreenVideoFeedArgs(
+          source: StaticFeedSource(allVideos),
+          initialIndex: index,
+        ),
       );
       Log.info(
         '✅ ProfileRepostsGrid: Called pushVideoFeed with '
-        'ProfileRepostsFeedSource($userIdHex) at index $index',
+        'StaticFeedSource at index $index',
         category: LogCategory.video,
       );
     },
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: _RepostThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
-            ),
-          ),
-          const Center(
-            child: Icon(
-              Icons.play_circle_filled,
-              color: Colors.white70,
-              size: 32,
-            ),
-          ),
-          // Repost indicator badge
-          Positioned(
-            top: 4,
-            right: 4,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Icon(
-                Icons.repeat,
-                color: VineTheme.vineGreen,
-                size: 16,
-              ),
-            ),
-          ),
-        ],
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: VineTheme.cardBackground),
+        child: _RepostThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
       ),
     ),
   );
@@ -197,7 +216,7 @@ class _RepostThumbnail extends StatelessWidget {
   }
 }
 
-/// Gradient placeholder for repost thumbnails
+/// Flat color placeholder for repost thumbnails
 class _RepostThumbnailPlaceholder extends StatelessWidget {
   const _RepostThumbnailPlaceholder();
 
@@ -205,19 +224,7 @@ class _RepostThumbnailPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(4),
-      gradient: LinearGradient(
-        colors: [
-          VineTheme.vineGreen.withValues(alpha: 0.3),
-          Colors.blue.withValues(alpha: 0.3),
-        ],
-      ),
-    ),
-    child: const Center(
-      child: Icon(
-        Icons.play_circle_outline,
-        color: VineTheme.whiteText,
-        size: 24,
-      ),
+      color: VineTheme.surfaceContainer,
     ),
   );
 }

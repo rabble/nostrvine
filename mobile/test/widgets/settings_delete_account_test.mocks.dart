@@ -5,12 +5,13 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i4;
 
-import 'package:keycast_flutter/keycast_flutter.dart' as _i7;
+import 'package:keycast_flutter/keycast_flutter.dart' as _i8;
 import 'package:mockito/mockito.dart' as _i1;
+import 'package:mockito/src/dummies.dart' as _i6;
 import 'package:nostr_sdk/event.dart' as _i5;
 import 'package:openvine/services/account_deletion_service.dart' as _i2;
 import 'package:openvine/services/auth_service.dart' as _i3;
-import 'package:openvine/services/user_profile_service.dart' as _i6;
+import 'package:openvine/services/user_profile_service.dart' as _i7;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -48,16 +49,21 @@ class MockAccountDeletionService extends _i1.Mock
   }
 
   @override
-  _i4.Future<_i2.DeleteAccountResult> deleteAccount({String? customReason}) =>
+  _i4.Future<_i2.DeleteAccountResult> deleteAccount({
+    String? customReason,
+    void Function(int, int)? onProgress,
+  }) =>
       (super.noSuchMethod(
             Invocation.method(#deleteAccount, [], {
               #customReason: customReason,
+              #onProgress: onProgress,
             }),
             returnValue: _i4.Future<_i2.DeleteAccountResult>.value(
               _FakeDeleteAccountResult_0(
                 this,
                 Invocation.method(#deleteAccount, [], {
                   #customReason: customReason,
+                  #onProgress: onProgress,
                 }),
               ),
             ),
@@ -138,6 +144,23 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
             returnValue: <String, dynamic>{},
           )
           as Map<String, dynamic>);
+
+  @override
+  String get serviceName =>
+      (super.noSuchMethod(
+            Invocation.getter(#serviceName),
+            returnValue: _i6.dummyValue<String>(
+              this,
+              Invocation.getter(#serviceName),
+            ),
+          )
+          as String);
+
+  @override
+  void clearError() => super.noSuchMethod(
+    Invocation.method(#clearError, []),
+    returnValueForMissingStub: null,
+  );
 
   @override
   _i4.Future<void> initialize() =>
@@ -228,7 +251,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
 
   @override
   _i4.Future<void> refreshCurrentProfile(
-    _i6.UserProfileService? userProfileService,
+    _i7.UserProfileService? userProfileService,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#refreshCurrentProfile, [userProfileService]),
@@ -247,13 +270,21 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> signInWithDivineOAuth(_i7.KeycastSession? session) =>
+  _i4.Future<void> signInWithDivineOAuth(_i8.KeycastSession? session) =>
       (super.noSuchMethod(
             Invocation.method(#signInWithDivineOAuth, [session]),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),
           )
           as _i4.Future<void>);
+
+  @override
+  _i4.Future<(bool, String?)> deleteKeycastAccount() =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteKeycastAccount, []),
+            returnValue: _i4.Future<(bool, String?)>.value((false, null)),
+          )
+          as _i4.Future<(bool, String?)>);
 
   @override
   _i4.Future<void> signOut({bool? deleteKeys = false}) =>
@@ -301,6 +332,39 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
             returnValue: _i4.Future<_i5.Event?>.value(),
           )
           as _i4.Future<_i5.Event?>);
+
+  @override
+  _i4.Future<void> acceptTerms() =>
+      (super.noSuchMethod(
+            Invocation.method(#acceptTerms, []),
+            returnValue: _i4.Future<void>.value(),
+            returnValueForMissingStub: _i4.Future<void>.value(),
+          )
+          as _i4.Future<void>);
+
+  @override
+  void onAppBackgrounded() => super.noSuchMethod(
+    Invocation.method(#onAppBackgrounded, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void onAppResumed() => super.noSuchMethod(
+    Invocation.method(#onAppResumed, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void onExtendedBackground() => super.noSuchMethod(
+    Invocation.method(#onExtendedBackground, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void onPeriodicCleanup() => super.noSuchMethod(
+    Invocation.method(#onPeriodicCleanup, []),
+    returnValueForMissingStub: null,
+  );
 
   @override
   _i4.Future<void> dispose() =>

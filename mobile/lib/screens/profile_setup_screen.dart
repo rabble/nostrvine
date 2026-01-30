@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -13,18 +14,17 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
+import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/username_notifier.dart';
 import 'package:openvine/state/username_state.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:profile_repository/profile_repository.dart';
+import 'package:openvine/widgets/branded_loading_scaffold.dart';
+import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-class ProfileSetupScreen extends ConsumerStatefulWidget {
+class ProfileSetupScreen extends ConsumerWidget {
   /// Route name for editing existing profile.
   static const editRouteName = 'edit-profile';
 
@@ -38,13 +38,40 @@ class ProfileSetupScreen extends ConsumerStatefulWidget {
   static const setupPath = '/setup-profile';
 
   const ProfileSetupScreen({required this.isNewUser, super.key});
+
   final bool isNewUser;
 
   @override
-  ConsumerState<ProfileSetupScreen> createState() => _ProfileSetupScreenState();
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profileRepository = ref.watch(profileRepositoryProvider);
+    final userProfileService = ref.watch(userProfileServiceProvider);
+
+    // Show loading until NostrClient has keys
+    if (profileRepository == null) {
+      return const BrandedLoadingScaffold();
+    }
+
+    return BlocProvider<ProfileEditorBloc>(
+      create: (context) => ProfileEditorBloc(
+        profileRepository: profileRepository,
+        userProfileService: userProfileService,
+      ),
+      child: ProfileSetupScreenView(isNewUser: isNewUser),
+    );
+  }
 }
 
-class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
+class ProfileSetupScreenView extends ConsumerStatefulWidget {
+  const ProfileSetupScreenView({required this.isNewUser, super.key});
+  final bool isNewUser;
+
+  @override
+  ConsumerState<ProfileSetupScreenView> createState() =>
+      _ProfileSetupScreenViewState();
+}
+
+class _ProfileSetupScreenViewState
+    extends ConsumerState<ProfileSetupScreenView> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _bioController = TextEditingController();
@@ -52,36 +79,29 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
   final _nip05Controller = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
+  // Focus nodes for tracking field focus state
+  final _nameFocusNode = FocusNode();
+  final _bioFocusNode = FocusNode();
+  final _usernameFocusNode = FocusNode();
+
   bool _isUploadingImage = false;
   bool _isFormValid = false;
   File? _selectedImage;
   String? _uploadedImageUrl;
-  // Store notifier reference to safely call in deactivate
-  OverlayVisibility? _overlayNotifier;
+  String? _initialUsername;
 
   @override
   void initState() {
     super.initState();
     _loadExistingProfile();
-    // Mark settings as open to pause video playback
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _overlayNotifier = ref.read(overlayVisibilityProvider.notifier);
-      _overlayNotifier?.setSettingsOpen(true);
-    });
+    // Add focus listeners to update label colors
+    _nameFocusNode.addListener(_onFocusChange);
+    _bioFocusNode.addListener(_onFocusChange);
+    _usernameFocusNode.addListener(_onFocusChange);
   }
 
-  @override
-  void deactivate() {
-    // Mark settings as closed when leaving
-    // Use cached notifier reference since ref is invalid during deactivate
-    // Must use Future to avoid modifying provider during widget tree build
-    final notifier = _overlayNotifier;
-    if (notifier != null) {
-      Future(() {
-        notifier.setSettingsOpen(false);
-      });
-    }
-    super.deactivate();
+  void _onFocusChange() {
+    setState(() {});
   }
 
   @override
@@ -90,6 +110,12 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     _bioController.dispose();
     _pictureController.dispose();
     _nip05Controller.dispose();
+    _nameFocusNode.removeListener(_onFocusChange);
+    _bioFocusNode.removeListener(_onFocusChange);
+    _usernameFocusNode.removeListener(_onFocusChange);
+    _nameFocusNode.dispose();
+    _bioFocusNode.dispose();
+    _usernameFocusNode.dispose();
 
     super.dispose();
   }
@@ -98,13 +124,18 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
     if (!widget.isNewUser) {
       // For imported users, try to load their existing profile
       try {
-        final userProfileService = ref.read(userProfileServiceProvider);
         final authService = ref.read(authServiceProvider);
 
         if (authService.currentPublicKeyHex != null) {
-          final profile = await userProfileService.fetchProfile(
-            authService.currentPublicKeyHex!,
+          final profileRepo = ref.read(profileRepositoryProvider);
+          // Return early if NostrClient doesn't have keys yet
+          if (profileRepo == null) return;
+          final repoProfile = await profileRepo.getProfile(
+            pubkey: authService.currentPublicKeyHex!,
           );
+          final profile = repoProfile != null
+              ? UserProfile.fromJson(repoProfile.toJson())
+              : null;
           if (profile != null && mounted) {
             setState(() {
               // Use bestDisplayName which handles name/displayName fallback properly
@@ -118,6 +149,7 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                       profile.nip05!.endsWith('@openvine.co'))) {
                 final username = profile.nip05!.split('@')[0];
                 _nip05Controller.text = username;
+                _initialUsername = username;
               }
             });
 
@@ -180,125 +212,159 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // TODO(refactor): Migrate usernameProvider to ProfileEditorBloc with
+    // debounced username validation
     final usernameState = ref.watch(usernameProvider);
-    final nostrClient = ref.watch(nostrServiceProvider);
-    final usernameRepository = ref.watch(usernameRepositoryProvider);
-    final userProfileService = ref.watch(userProfileServiceProvider);
     final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
 
-    return RepositoryProvider<ProfileRepository>(
-      create: (_) => ProfileRepository(nostrClient: nostrClient),
-      child: BlocProvider<ProfileEditorBloc>(
-        create: (context) => ProfileEditorBloc(
-          profileRepository: context.read<ProfileRepository>(),
-          usernameRepository: usernameRepository,
-          userProfileService: userProfileService,
-        ),
-        child: BlocConsumer<ProfileEditorBloc, ProfileEditorState>(
-          listenWhen: (prev, curr) => prev.status != curr.status,
-          listener: (context, state) {
-            if (state.status == ProfileEditorStatus.success) {
-              // Invalidate profile providers so profile screen refetches
-              final currentPubkey = ref
-                  .read(authServiceProvider)
-                  .currentPublicKeyHex;
-              if (currentPubkey != null) {
-                ref.invalidate(fetchUserProfileProvider(currentPubkey));
-                ref.invalidate(userProfileReactiveProvider(currentPubkey));
-              }
+    return BlocConsumer<ProfileEditorBloc, ProfileEditorState>(
+      listenWhen: (prev, curr) => prev.status != curr.status,
+      listener: (context, state) {
+        if (state.status == ProfileEditorStatus.success) {
+          // Invalidate profile providers so profile screen refetches
+          final currentPubkey = ref
+              .read(authServiceProvider)
+              .currentPublicKeyHex;
+          if (currentPubkey != null) {
+            ref.invalidate(fetchUserProfileProvider(currentPubkey));
+            ref.invalidate(userProfileReactiveProvider(currentPubkey));
+          }
 
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: const BoxDecoration(
+                      color: VineTheme.vineGreen,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.check,
+                      color: Colors.white,
+                      size: 17,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Profile published successfully!',
+                    style: TextStyle(color: VineTheme.vineGreen),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.white,
+            ),
+          );
+          if (widget.isNewUser) {
+            Navigator.of(context).popUntil((route) => route.isFirst);
+          } else {
+            if (context.canPop()) {
+              context.pop(true);
+            } else {
+              context.go('/');
+            }
+          }
+        } else if (state.status == ProfileEditorStatus.failure) {
+          // Invalidate profile providers after rollback so UI shows correct data
+          final currentPubkey = ref
+              .read(authServiceProvider)
+              .currentPublicKeyHex;
+          if (currentPubkey != null) {
+            ref.invalidate(fetchUserProfileProvider(currentPubkey));
+            ref.invalidate(userProfileReactiveProvider(currentPubkey));
+          }
+          // Re-check username so indicator shows current state (e.g., "taken")
+          final username = _nip05Controller.text.trim();
+          if (username.isNotEmpty) {
+            ref.read(usernameProvider.notifier).checkAvailability(username);
+          }
+          switch (state.error) {
+            case ProfileEditorError.usernameTaken:
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: const BoxDecoration(
-                          color: VineTheme.vineGreen,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.check,
-                          color: Colors.white,
-                          size: 17,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      const Text(
-                        'Profile published successfully!',
-                        style: TextStyle(color: VineTheme.vineGreen),
-                      ),
-                    ],
+                  content: const Text(
+                    'Username was just taken. Please choose another.',
                   ),
-                  backgroundColor: Colors.white,
+                  backgroundColor: Colors.red[700],
+                  duration: const Duration(seconds: 3),
                 ),
               );
-              if (widget.isNewUser) {
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              } else {
-                if (context.canPop()) {
-                  context.pop(true);
-                } else {
-                  context.go('/');
+            case ProfileEditorError.usernameReserved:
+              final username = usernameState.username;
+              showDialog<void>(
+                context: context,
+                builder: (context) => UsernameReservedDialog(username),
+              ).then((_) {
+                ref.read(usernameProvider.notifier).setReserved(username);
+              });
+            case ProfileEditorError.publishFailed:
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Failed to publish profile. Please try again.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            case null:
+              break;
+          }
+        }
+      },
+      builder: (context, profileEditorState) {
+        return Scaffold(
+          backgroundColor: VineTheme.surfaceContainerHigh,
+          appBar: AppBar(
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            toolbarHeight: 72,
+            leadingWidth: 80,
+            centerTitle: true,
+            backgroundColor: Colors.transparent,
+            leading: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Container(
+                width: 48,
+                height: 48,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: VineTheme.scrim15,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: SvgPicture.asset(
+                  'assets/icon/CaretLeft.svg',
+                  width: 32,
+                  height: 32,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
+                ),
+              ),
+              onPressed: () {
+                // Try to pop using context.pop() which GoRouter intercepts
+                // This should work even if canPop() returns false
+                try {
+                  context.pop();
+                } catch (e) {
+                  // If pop fails, navigate to profile or home as fallback
+                  final authService = ref.read(authServiceProvider);
+                  final currentPubkey = authService.currentPublicKeyHex;
+                  if (currentPubkey != null) {
+                    final npub = authService.currentNpub;
+                    context.go('/profile/$npub');
+                  } else {
+                    context.go('/home/0');
+                  }
                 }
-              }
-            } else if (state.status == ProfileEditorStatus.failure) {
-              // Invalidate profile providers after rollback so UI shows correct data
-              final currentPubkey = ref
-                  .read(authServiceProvider)
-                  .currentPublicKeyHex;
-              if (currentPubkey != null) {
-                ref.invalidate(fetchUserProfileProvider(currentPubkey));
-                ref.invalidate(userProfileReactiveProvider(currentPubkey));
-              }
-              // Re-check username so indicator shows current state (e.g., "taken")
-              final username = _nip05Controller.text.trim();
-              if (username.isNotEmpty) {
-                ref.read(usernameProvider.notifier).checkAvailability(username);
-              }
-              switch (state.error) {
-                case ProfileEditorError.usernameTaken:
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: const Text(
-                        'Username was just taken. Please choose another.',
-                      ),
-                      backgroundColor: Colors.red[700],
-                      duration: const Duration(seconds: 3),
-                    ),
-                  );
-                case ProfileEditorError.usernameReserved:
-                  final username = usernameState.username;
-                  showDialog<void>(
-                    context: context,
-                    builder: (context) => UsernameReservedDialog(username),
-                  );
-                case ProfileEditorError.publishFailed:
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text(
-                        'Failed to publish profile. Please try again.',
-                      ),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                case null:
-                  break;
-              }
-            }
-          },
-          builder: (context, profileEditorState) {
-            return Scaffold(
-              backgroundColor: Colors.black,
-              appBar: AppBar(
-                elevation: 0,
-                scrolledUnderElevation: 0,
-                toolbarHeight: 72,
-                leadingWidth: 80,
-                centerTitle: false,
-                titleSpacing: 0,
-                backgroundColor: VineTheme.navGreen,
-                leading: IconButton(
+              },
+              tooltip: 'Back',
+            ),
+            title: Text('Edit Profile', style: VineTheme.titleMediumFont()),
+            actions: [
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: IconButton(
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
                   icon: Container(
@@ -306,11 +372,11 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                     height: 48,
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: VineTheme.iconButtonBackground,
+                      color: VineTheme.scrim15,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: SvgPicture.asset(
-                      'assets/icon/CaretLeft.svg',
+                      'assets/icon/info.svg',
                       width: 32,
                       height: 32,
                       colorFilter: const ColorFilter.mode(
@@ -319,557 +385,514 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                       ),
                     ),
                   ),
-                  onPressed: () {
-                    // Try to pop using context.pop() which GoRouter intercepts
-                    // This should work even if canPop() returns false
-                    try {
-                      context.pop();
-                    } catch (e) {
-                      // If pop fails, navigate to profile or home as fallback
-                      final authService = ref.read(authServiceProvider);
-                      final currentPubkey = authService.currentPublicKeyHex;
-                      if (currentPubkey != null) {
-                        final npub = authService.currentNpub;
-                        context.go('/profile/$npub');
-                      } else {
-                        context.go('/home/0');
-                      }
-                    }
-                  },
-                  tooltip: 'Back',
+                  onPressed: () => _showNostrInfoSheet(context),
+                  tooltip: 'About Nostr',
                 ),
-                title: Text('Edit Profile', style: VineTheme.titleFont()),
               ),
-              body: GestureDetector(
-                onTap: () {
-                  // Dismiss keyboard when tapping outside text fields
-                  FocusScope.of(context).unfocus();
-                },
-                child: SafeArea(
-                  bottom:
-                      false, // Don't add bottom padding - let content extend to bottom
-                  child: SingleChildScrollView(
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
-                      child: Align(
-                        alignment: Alignment.topCenter,
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 600),
-                          child: Form(
-                            key: _formKey,
-                            onChanged: () {
-                              final isValid =
-                                  _formKey.currentState?.validate() ?? false;
-                              if (isValid != _isFormValid) {
-                                setState(() {
-                                  _isFormValid = isValid;
-                                });
-                              }
-                            },
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  widget.isNewUser
-                                      ? 'Welcome to divine!'
-                                      : 'Update Your Profile',
-                                  style: const TextStyle(
-                                    fontSize: 24,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
+            ],
+          ),
+          body: GestureDetector(
+            onTap: () {
+              // Dismiss keyboard when tapping outside text fields
+              FocusScope.of(context).unfocus();
+            },
+            child: SafeArea(
+              bottom:
+                  false, // Don't add bottom padding - let content extend to bottom
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.only(bottom: 24),
+                  child: Align(
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 600),
+                      child: Theme(
+                        data: Theme.of(context).copyWith(
+                          textSelectionTheme: const TextSelectionThemeData(
+                            cursorColor: VineTheme.primary,
+                            selectionColor: Color(0xFF1C4430),
+                          ),
+                        ),
+                        child: Form(
+                          key: _formKey,
+                          onChanged: () {
+                            final isValid =
+                                _formKey.currentState?.validate() ?? false;
+                            if (isValid != _isFormValid) {
+                              setState(() {
+                                _isFormValid = isValid;
+                              });
+                            }
+                          },
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Profile Picture Section with overlapping buttons
+                              Center(
+                                child: SizedBox(
+                                  // 144 avatar + 20 (half of 40px buttons extending below)
+                                  height: 164,
+                                  width: 144,
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      // Profile picture preview
+                                      Container(
+                                        width: 144,
+                                        height: 144,
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            33,
+                                          ),
+                                          color: Colors.grey[800],
+                                          border: Border.all(
+                                            color: VineTheme.onSurfaceDisabled,
+                                            width: 1.64,
+                                          ),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            31.36,
+                                          ),
+                                          child: _buildProfilePicturePreview(),
+                                        ),
+                                      ),
+                                      // Upload progress indicator
+                                      if (_isUploadingImage)
+                                        Positioned(
+                                          top: 0,
+                                          left: 0,
+                                          width: 144,
+                                          height: 144,
+                                          child: DecoratedBox(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(33),
+                                              color: Colors.black.withValues(
+                                                alpha: 0.7,
+                                              ),
+                                            ),
+                                            child: const Center(
+                                              child: CircularProgressIndicator(
+                                                color: VineTheme.vineGreen,
+                                                strokeWidth: 3,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      // Image source buttons - overlapping bottom of avatar
+                                      Positioned(
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            // Show camera button on mobile only
+                                            if (!_isDesktopPlatform()) ...[
+                                              GestureDetector(
+                                                onTap: _isUploadingImage
+                                                    ? null
+                                                    : () => _pickImage(
+                                                        ImageSource.camera,
+                                                      ),
+                                                child: Container(
+                                                  width: 40,
+                                                  height: 40,
+                                                  decoration: BoxDecoration(
+                                                    color: VineTheme
+                                                        .surfaceContainer,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          16,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: VineTheme
+                                                          .outlineMuted,
+                                                      width: 2,
+                                                    ),
+                                                  ),
+                                                  child: Center(
+                                                    child: SvgPicture.asset(
+                                                      'assets/icon/cameraPlus.svg',
+                                                      width: 24,
+                                                      height: 24,
+                                                      colorFilter:
+                                                          const ColorFilter.mode(
+                                                            VineTheme.primary,
+                                                            BlendMode.srcIn,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                            ],
+                                            GestureDetector(
+                                              onTap: _isUploadingImage
+                                                  ? null
+                                                  : () => _pickImage(
+                                                      ImageSource.gallery,
+                                                    ),
+                                              child: Container(
+                                                width: 40,
+                                                height: 40,
+                                                decoration: BoxDecoration(
+                                                  color: VineTheme
+                                                      .surfaceContainer,
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  border: Border.all(
+                                                    color:
+                                                        VineTheme.outlineMuted,
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                                child: Center(
+                                                  child: SvgPicture.asset(
+                                                    'assets/icon/imagesSquare.svg',
+                                                    width: 24,
+                                                    height: 24,
+                                                    colorFilter:
+                                                        const ColorFilter.mode(
+                                                          VineTheme.primary,
+                                                          BlendMode.srcIn,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 12),
+                                            // URL input button
+                                            GestureDetector(
+                                              onTap: () =>
+                                                  _showImageUrlSheet(context),
+                                              child: Container(
+                                                width: 40,
+                                                height: 40,
+                                                decoration: BoxDecoration(
+                                                  color: VineTheme
+                                                      .surfaceContainer,
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  border: Border.all(
+                                                    color:
+                                                        VineTheme.outlineMuted,
+                                                    width: 2,
+                                                  ),
+                                                ),
+                                                child: Center(
+                                                  child: SvgPicture.asset(
+                                                    'assets/icon/linkSimple.svg',
+                                                    width: 24,
+                                                    height: 24,
+                                                    colorFilter:
+                                                        const ColorFilter.mode(
+                                                          VineTheme.primary,
+                                                          BlendMode.srcIn,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  widget.isNewUser
-                                      ? "Let's set up your profile to get started"
-                                      : 'Your profile information will be published to Nostr',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: Colors.grey[300],
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Display Name
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16),
+                                child: Text(
+                                  'Display Name',
+                                  style: VineTheme.labelMediumFont(
+                                    color: _nameFocusNode.hasFocus
+                                        ? VineTheme.primary
+                                        : VineTheme.onSurfaceMuted,
                                   ),
                                 ),
-                                const SizedBox(height: 32),
-
-                                // Display Name
-                                TextFormField(
-                                  controller: _nameController,
-                                  autofocus:
-                                      true, // Automatically focus on first field
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
-                                    labelText: 'Display Name',
-                                    labelStyle: const TextStyle(
-                                      color: Colors.grey,
-                                    ),
-                                    hintText: 'How should people know you?',
-                                    hintStyle: TextStyle(
-                                      color: Colors.grey[600],
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.grey[900],
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: Colors.grey[700]!,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                        color: VineTheme.vineGreen,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    prefixIcon: const Icon(
-                                      Icons.person,
-                                      color: Colors.grey,
+                              ),
+                              TextFormField(
+                                controller: _nameController,
+                                focusNode: _nameFocusNode,
+                                autofocus: false,
+                                style: VineTheme.bodyLargeFont(
+                                  color: VineTheme.onSurface,
+                                ),
+                                decoration: InputDecoration(
+                                  isCollapsed: true,
+                                  hintText: 'How should people know you?',
+                                  hintStyle: TextStyle(color: Colors.grey[600]),
+                                  border: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  textInputAction: TextInputAction.next,
-                                  onFieldSubmitted: (_) =>
-                                      FocusScope.of(context).nextFocus(),
-                                  validator: (value) {
-                                    if (value == null || value.trim().isEmpty) {
-                                      return 'Please enter a display name';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                                const SizedBox(height: 16),
-
-                                // Bio
-                                TextFormField(
-                                  controller: _bioController,
-                                  style: const TextStyle(color: Colors.white),
-                                  decoration: InputDecoration(
-                                    labelText: 'Bio (Optional)',
-                                    labelStyle: const TextStyle(
-                                      color: Colors.grey,
-                                    ),
-                                    hintText: 'Tell people about yourself...',
-                                    hintStyle: TextStyle(
-                                      color: Colors.grey[600],
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.grey[900],
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: Colors.grey[700]!,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                        color: VineTheme.vineGreen,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    prefixIcon: const Icon(
-                                      Icons.info_outline,
-                                      color: Colors.grey,
+                                  enabledBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  maxLines: 3,
-                                  minLines: 1,
-                                  maxLength: 160,
-                                  textInputAction: TextInputAction.next,
-                                  onFieldSubmitted: (_) =>
-                                      FocusScope.of(context).nextFocus(),
-                                ),
-                                const SizedBox(height: 16),
-
-                                // NIP-05 Username (optional)
-                                TextFormField(
-                                  controller: _nip05Controller,
-                                  style: const TextStyle(color: Colors.white),
-                                  autovalidateMode:
-                                      AutovalidateMode.onUserInteraction,
-                                  decoration: InputDecoration(
-                                    labelText: 'Username (Optional)',
-                                    labelStyle: const TextStyle(
-                                      color: Colors.grey,
+                                  focusedBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
                                     ),
-                                    hintText: 'username',
-                                    hintStyle: TextStyle(
-                                      color: Colors.grey[600],
-                                    ),
-                                    filled: true,
-                                    fillColor: Colors.grey[900],
-                                    border: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide.none,
-                                    ),
-                                    enabledBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: BorderSide(
-                                        color: Colors.grey[700]!,
-                                        width: 1,
-                                      ),
-                                    ),
-                                    focusedBorder: OutlineInputBorder(
-                                      borderRadius: BorderRadius.circular(12),
-                                      borderSide: const BorderSide(
-                                        color: VineTheme.vineGreen,
-                                        width: 2,
-                                      ),
-                                    ),
-                                    prefixIcon: const Icon(
-                                      Icons.verified_user,
-                                      color: Colors.grey,
-                                    ),
-                                    suffixText: '@divine.video',
-                                    suffixStyle: TextStyle(
-                                      color: Colors.grey[500],
-                                    ),
-                                    errorMaxLines: 2,
                                   ),
-                                  textInputAction: TextInputAction.next,
-                                  onFieldSubmitted: (_) =>
-                                      FocusScope.of(context).nextFocus(),
-                                  onChanged: (value) => ref
-                                      .read(usernameProvider.notifier)
-                                      .onUsernameChanged(value),
-                                  validator: (value) {
-                                    if (value == null || value.isEmpty) {
-                                      return null; // Optional field
-                                    }
-
-                                    final regex = RegExp(
-                                      r'^[a-z0-9\-_.]+$',
-                                      caseSensitive: false,
-                                    );
-                                    if (!regex.hasMatch(value)) {
-                                      return 'Username can only contain letters, numbers, dash, underscore, and dot';
-                                    }
-                                    if (value.length < kMinUsernameLength) {
-                                      return 'Username must be at least $kMinUsernameLength characters';
-                                    }
-                                    if (value.length > kMaxUsernameLength) {
-                                      return 'Username must be $kMaxUsernameLength characters or less';
-                                    }
-                                    return null;
-                                  },
+                                  errorBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedErrorBorder:
+                                      const UnderlineInputBorder(
+                                        borderRadius: BorderRadius.zero,
+                                        borderSide: BorderSide(
+                                          color: VineTheme.neutral10,
+                                        ),
+                                      ),
+                                  contentPadding: const EdgeInsets.all(16),
                                 ),
-                                // Username status indicators
-                                UsernameStatusIndicator(state: usernameState),
-                                const SizedBox(height: 16),
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) =>
+                                    FocusScope.of(context).nextFocus(),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Please enter a display name';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
 
-                                // Profile Picture Section
-                                Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
+                              // Bio
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
                                   children: [
                                     Text(
-                                      'Profile Picture (Optional)',
-                                      style: TextStyle(
-                                        color: Colors.grey[300],
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w500,
+                                      'Bio (Optional)',
+                                      style: VineTheme.labelMediumFont(
+                                        color: _bioFocusNode.hasFocus
+                                            ? VineTheme.primary
+                                            : VineTheme.onSurfaceMuted,
                                       ),
                                     ),
-                                    const SizedBox(height: 12),
-                                    Center(
-                                      child: Stack(
-                                        children: [
-                                          // Profile picture preview
-                                          Container(
-                                            width: 120,
-                                            height: 120,
-                                            decoration: BoxDecoration(
-                                              shape: BoxShape.circle,
-                                              color: Colors.grey[800],
-                                              border: Border.all(
-                                                color: VineTheme.vineGreen,
-                                                width: 2,
-                                              ),
-                                            ),
-                                            child: ClipOval(
-                                              child:
-                                                  _buildProfilePicturePreview(),
-                                            ),
-                                          ),
-                                          // Upload progress indicator
-                                          if (_isUploadingImage)
-                                            Positioned.fill(
-                                              child: DecoratedBox(
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: Colors.black
-                                                      .withValues(alpha: 0.7),
-                                                ),
-                                                child: const Center(
-                                                  child:
-                                                      CircularProgressIndicator(
-                                                        color:
-                                                            VineTheme.vineGreen,
-                                                        strokeWidth: 3,
-                                                      ),
-                                                ),
-                                              ),
-                                            ),
-                                        ],
+                                    Text(
+                                      '${_bioController.text.length}/360',
+                                      style: VineTheme.labelMediumFont(
+                                        color: VineTheme.onSurfaceMuted,
                                       ),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    // Image source buttons
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        // Show camera button on mobile only (macOS camera support is unreliable)
-                                        if (!_isDesktopPlatform()) ...[
-                                          OutlinedButton.icon(
-                                            onPressed: _isUploadingImage
-                                                ? null
-                                                : () => _pickImage(
-                                                    ImageSource.camera,
-                                                  ),
-                                            icon: const Icon(
-                                              Icons.camera_alt,
-                                              size: 20,
-                                            ),
-                                            label: const Text('Camera'),
-                                            style: OutlinedButton.styleFrom(
-                                              foregroundColor: Colors.white,
-                                              side: BorderSide(
-                                                color: Colors.grey[700]!,
-                                              ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                    vertical: 8,
-                                                  ),
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(8),
-                                              ),
-                                            ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                        ],
-                                        OutlinedButton.icon(
-                                          onPressed: _isUploadingImage
-                                              ? null
-                                              : () => _pickImage(
-                                                  ImageSource.gallery,
-                                                ),
-                                          icon: const Icon(
-                                            Icons.photo_library,
-                                            size: 20,
-                                          ),
-                                          label: Text(
-                                            _isDesktopPlatform()
-                                                ? 'Browse Files'
-                                                : 'Gallery',
-                                          ),
-                                          style: OutlinedButton.styleFrom(
-                                            foregroundColor: Colors.white,
-                                            side: BorderSide(
-                                              color: Colors.grey[700]!,
-                                            ),
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 8,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 12),
-                                    // URL input option
-                                    ExpansionTile(
-                                      title: Text(
-                                        defaultTargetPlatform ==
-                                                TargetPlatform.macOS
-                                            ? 'Paste image URL (recommended)'
-                                            : 'Or paste image URL',
-                                        style: TextStyle(
-                                          color:
-                                              defaultTargetPlatform ==
-                                                  TargetPlatform.macOS
-                                              ? Colors.white
-                                              : Colors.grey[400],
-                                          fontSize:
-                                              defaultTargetPlatform ==
-                                                  TargetPlatform.macOS
-                                              ? 16
-                                              : 14,
-                                          fontWeight:
-                                              defaultTargetPlatform ==
-                                                  TargetPlatform.macOS
-                                              ? FontWeight.w500
-                                              : FontWeight.normal,
-                                        ),
-                                      ),
-                                      tilePadding: EdgeInsets.zero,
-                                      initiallyExpanded:
-                                          defaultTargetPlatform ==
-                                          TargetPlatform.macOS,
-                                      children: [
-                                        TextFormField(
-                                          controller: _pictureController,
-                                          style: const TextStyle(
-                                            color: Colors.white,
-                                          ),
-                                          decoration: InputDecoration(
-                                            hintText:
-                                                'https://example.com/your-avatar.jpg',
-                                            hintStyle: TextStyle(
-                                              color: Colors.grey[600],
-                                            ),
-                                            filled: true,
-                                            fillColor: Colors.grey[900],
-                                            border: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              borderSide: BorderSide.none,
-                                            ),
-                                            enabledBorder: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              borderSide: BorderSide(
-                                                color: Colors.grey[700]!,
-                                                width: 1,
-                                              ),
-                                            ),
-                                            focusedBorder: OutlineInputBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                              borderSide: const BorderSide(
-                                                color: VineTheme.vineGreen,
-                                                width: 2,
-                                              ),
-                                            ),
-                                            prefixIcon: const Icon(
-                                              Icons.link,
-                                              color: Colors.grey,
-                                            ),
-                                          ),
-                                          textInputAction: TextInputAction.done,
-                                          onChanged: (_) =>
-                                              setState(() {}), // Update preview
-                                          keyboardType: TextInputType.url,
-                                          validator: (value) {
-                                            if (value != null &&
-                                                value.trim().isNotEmpty) {
-                                              // Basic URL validation
-                                              final uri = Uri.tryParse(
-                                                value.trim(),
-                                              );
-                                              if (uri == null ||
-                                                  !uri.hasAbsolutePath) {
-                                                return 'Please enter a valid URL';
-                                              }
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                        if (defaultTargetPlatform ==
-                                            TargetPlatform.macOS) ...[
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            'Tip: Upload your image to imgur.com, cloudinary.com, or any image hosting service to get a URL.',
-                                            style: TextStyle(
-                                              color: Colors.grey[500],
-                                              fontSize: 12,
-                                            ),
-                                          ),
-                                        ],
-                                      ],
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 32),
+                              ),
+                              TextFormField(
+                                controller: _bioController,
+                                focusNode: _bioFocusNode,
+                                style: VineTheme.bodyLargeFont(
+                                  color: VineTheme.onSurface,
+                                ),
+                                decoration: InputDecoration(
+                                  isCollapsed: true,
+                                  hintText: 'Tell people about yourself...',
+                                  hintStyle: TextStyle(color: Colors.grey[600]),
+                                  border: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  enabledBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  errorBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedErrorBorder:
+                                      const UnderlineInputBorder(
+                                        borderRadius: BorderRadius.zero,
+                                        borderSide: BorderSide(
+                                          color: VineTheme.neutral10,
+                                        ),
+                                      ),
+                                  contentPadding: const EdgeInsets.all(16),
+                                  counterText: '',
+                                ),
+                                maxLines: null,
+                                minLines: 1,
+                                maxLength: 360,
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) =>
+                                    FocusScope.of(context).nextFocus(),
+                                onChanged: (_) => setState(() {}),
+                              ),
+                              const SizedBox(height: 16),
 
-                                // Action buttons
-                                Row(
-                                  children: [
-                                    Expanded(
-                                      child: OutlinedButton(
-                                        onPressed:
-                                            profileEditorState.status ==
-                                                ProfileEditorStatus.loading
-                                            ? null
-                                            : () {
-                                                // Wait for any ongoing transitions before popping
-                                                // This prevents navigation timing race condition
-                                                WidgetsBinding.instance
-                                                    .addPostFrameCallback((_) {
-                                                      if (mounted) {
-                                                        Navigator.of(
-                                                          context,
-                                                        ).pop();
-                                                      }
-                                                    });
-                                              },
-                                        style: OutlinedButton.styleFrom(
-                                          foregroundColor: Colors.white,
-                                          side: const BorderSide(
-                                            color: Colors.white,
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 16,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
-                                          ),
-                                        ),
-                                        child: const Text('Cancel'),
-                                      ),
-                                    ),
-                                    const SizedBox(width: 16),
-                                    if (pubkey != null)
-                                      Expanded(
-                                        child: _SaveButton(
-                                          canSave:
-                                              _isFormValid &&
-                                              (_nip05Controller.text
-                                                      .trim()
-                                                      .isEmpty ||
-                                                  usernameState.isAvailable) &&
-                                              !usernameState.isChecking,
-                                          pubkey: pubkey,
-                                          displayName: _nameController.text
-                                              .trim(),
-                                          about:
-                                              _bioController.text.trim().isEmpty
-                                              ? null
-                                              : _bioController.text.trim(),
-                                          username:
-                                              _nip05Controller.text
-                                                  .trim()
-                                                  .isEmpty
-                                              ? null
-                                              : _nip05Controller.text.trim(),
-                                          picture:
-                                              _pictureController.text
-                                                  .trim()
-                                                  .isEmpty
-                                              ? null
-                                              : _pictureController.text.trim(),
-                                        ),
-                                      ),
-                                  ],
+                              // Public key (npub) - read-only
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16),
+                                child: Text(
+                                  'Public key (npub)',
+                                  style: VineTheme.labelMediumFont(
+                                    color: VineTheme.onSurfaceMuted,
+                                  ),
                                 ),
-                              ],
-                            ),
+                              ),
+                              TextFormField(
+                                initialValue: ref
+                                    .watch(authServiceProvider)
+                                    .currentNpub,
+                                readOnly: true,
+                                maxLines: null,
+                                style: VineTheme.bodyLargeFont(
+                                  color: VineTheme.onSurfaceMuted,
+                                ),
+                                decoration: const InputDecoration(
+                                  isCollapsed: true,
+                                  border: UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  enabledBorder: UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedBorder: UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  contentPadding: EdgeInsets.all(16),
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+
+                              // NIP-05 Username (optional)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16),
+                                child: Text(
+                                  'Username (Optional)',
+                                  style: VineTheme.labelMediumFont(
+                                    color: _usernameFocusNode.hasFocus
+                                        ? VineTheme.primary
+                                        : VineTheme.onSurfaceMuted,
+                                  ),
+                                ),
+                              ),
+                              TextFormField(
+                                controller: _nip05Controller,
+                                focusNode: _usernameFocusNode,
+                                style: VineTheme.bodyLargeFont(
+                                  color: VineTheme.onSurface,
+                                ),
+                                autovalidateMode:
+                                    AutovalidateMode.onUserInteraction,
+                                decoration: InputDecoration(
+                                  isCollapsed: true,
+                                  hintText: 'username',
+                                  hintStyle: TextStyle(color: Colors.grey[600]),
+                                  border: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  enabledBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  errorBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedErrorBorder:
+                                      const UnderlineInputBorder(
+                                        borderRadius: BorderRadius.zero,
+                                        borderSide: BorderSide(
+                                          color: VineTheme.neutral10,
+                                        ),
+                                      ),
+                                  contentPadding: const EdgeInsets.all(16),
+                                  prefixText: '@',
+                                  prefixStyle: VineTheme.bodyLargeFont(
+                                    color: VineTheme.onSurfaceMuted,
+                                  ),
+                                  suffixText: '@divine.video',
+                                  suffixStyle: VineTheme.bodyLargeFont(
+                                    color: VineTheme.onSurfaceMuted,
+                                  ),
+                                  errorMaxLines: 2,
+                                ),
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) =>
+                                    FocusScope.of(context).nextFocus(),
+                                onChanged: (value) => ref
+                                    .read(usernameProvider.notifier)
+                                    .onUsernameChanged(value),
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return null; // Optional field
+                                  }
+
+                                  final regex = RegExp(
+                                    r'^[a-z0-9\-_.]+$',
+                                    caseSensitive: false,
+                                  );
+                                  if (!regex.hasMatch(value)) {
+                                    return 'Username can only contain letters, numbers, dash, underscore, and dot';
+                                  }
+                                  if (value.length < kMinUsernameLength) {
+                                    return 'Username must be at least $kMinUsernameLength characters';
+                                  }
+                                  if (value.length > kMaxUsernameLength) {
+                                    return 'Username must be $kMaxUsernameLength characters or less';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              // Username status indicators
+                              UsernameStatusIndicator(state: usernameState),
+                            ],
                           ),
                         ),
                       ),
@@ -877,10 +900,81 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
                   ),
                 ),
               ),
-            );
-          },
-        ),
-      ),
+            ),
+          ),
+          bottomNavigationBar: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed:
+                          profileEditorState.status ==
+                              ProfileEditorStatus.loading
+                          ? null
+                          : () {
+                              // Wait for any ongoing transitions before popping
+                              // This prevents navigation timing race condition
+                              WidgetsBinding.instance.addPostFrameCallback((_) {
+                                if (mounted) {
+                                  Navigator.of(context).pop();
+                                }
+                              });
+                            },
+                      style: OutlinedButton.styleFrom(
+                        backgroundColor: VineTheme.surfaceContainer,
+                        foregroundColor: VineTheme.vineGreen,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 16,
+                        ),
+                        side: const BorderSide(
+                          color: VineTheme.outlineMuted,
+                          width: 2,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                      ),
+                      child: Text(
+                        'Cancel',
+                        style: VineTheme.titleMediumFont(
+                          color: VineTheme.vineGreen,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  if (pubkey != null)
+                    Expanded(
+                      child: _SaveButton(
+                        canSave:
+                            _isFormValid &&
+                            (_nip05Controller.text.trim().isEmpty ||
+                                usernameState.isAvailable ||
+                                _nip05Controller.text.trim() ==
+                                    _initialUsername) &&
+                            !usernameState.isChecking,
+                        onSave: () => context.read<ProfileEditorBloc>().add(
+                          ProfileSaved(
+                            pubkey: pubkey,
+                            displayName: _nameController.text,
+                            about: _bioController.text,
+                            username: _nip05Controller.text,
+                            picture: _pictureController.text,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 
@@ -902,19 +996,19 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       return Image.file(
         _selectedImage!,
         fit: BoxFit.cover,
-        width: 120,
-        height: 120,
+        width: 144,
+        height: 144,
       );
     } else if (_uploadedImageUrl != null) {
       return Image.network(
         _uploadedImageUrl!,
         fit: BoxFit.cover,
-        width: 120,
-        height: 120,
+        width: 144,
+        height: 144,
         errorBuilder: (context, error, stackTrace) => Image.asset(
-          'assets/icon/user-avatar.png',
-          width: 120,
-          height: 120,
+          'assets/icon/acid_avatar.png',
+          width: 144,
+          height: 144,
           fit: BoxFit.cover,
         ),
       );
@@ -922,20 +1016,20 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       return Image.network(
         _pictureController.text,
         fit: BoxFit.cover,
-        width: 120,
-        height: 120,
+        width: 144,
+        height: 144,
         errorBuilder: (context, error, stackTrace) => Image.asset(
-          'assets/icon/user-avatar.png',
-          width: 120,
-          height: 120,
+          'assets/icon/acid_avatar.png',
+          width: 144,
+          height: 144,
           fit: BoxFit.cover,
         ),
       );
     } else {
       return Image.asset(
-        'assets/icon/user-avatar.png',
-        width: 120,
-        height: 120,
+        'assets/icon/acid_avatar.png',
+        width: 144,
+        height: 144,
         fit: BoxFit.cover,
       );
     }
@@ -1215,6 +1309,73 @@ class _ProfileSetupScreenState extends ConsumerState<ProfileSetupScreen> {
       }
     }
   }
+
+  void _showNostrInfoSheet(BuildContext context) {
+    // Unfocus any field before opening sheet
+    FocusScope.of(context).unfocus();
+    VineBottomSheet.show<void>(
+      context: context,
+      scrollable: false,
+      children: const [NostrInfoSheetContent()],
+    ).then((_) {
+      // Unfocus after sheet is dismissed to prevent auto-focus on form fields
+      if (mounted) {
+        FocusScope.of(context).unfocus();
+      }
+    });
+  }
+
+  void _showImageUrlSheet(BuildContext context) {
+    // Unfocus any field before opening sheet
+    FocusScope.of(context).unfocus();
+    VineBottomSheet.show<void>(
+      context: context,
+      scrollable: false,
+      expanded: false,
+      isScrollControlled: true,
+      title: Text(
+        'Add image URL',
+        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+      ),
+      children: [
+        Builder(
+          builder: (sheetContext) => Padding(
+            padding: EdgeInsets.only(
+              left: 16,
+              right: 16,
+              top: 16,
+              bottom: MediaQuery.of(sheetContext).viewInsets.bottom + 16,
+            ),
+            child: TextFormField(
+              controller: _pictureController,
+              style: const TextStyle(color: Colors.white),
+              cursorColor: VineTheme.primary,
+              decoration: InputDecoration(
+                hintText: 'https://example.com/image.jpg',
+                hintStyle: TextStyle(color: Colors.grey[600]),
+                filled: true,
+                fillColor: VineTheme.surfaceContainer,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(22),
+                  borderSide: BorderSide.none,
+                ),
+              ),
+              textInputAction: TextInputAction.done,
+              onChanged: (_) => setState(() {}),
+              onFieldSubmitted: (_) => Navigator.of(sheetContext).pop(),
+              keyboardType: TextInputType.url,
+              autofocus: true,
+            ),
+          ),
+        ),
+      ],
+    ).then((_) {
+      // Unfocus after sheet is dismissed to prevent auto-focus on form fields
+      if (mounted) {
+        FocusScope.of(context).unfocus();
+      }
+    });
+  }
 }
 
 /// Displays username availability status (checking, available, taken, reserved, error)
@@ -1367,21 +1528,10 @@ class _UsernameErrorIndicator extends StatelessWidget {
 }
 
 class _SaveButton extends StatelessWidget {
-  const _SaveButton({
-    required this.canSave,
-    required this.pubkey,
-    required this.displayName,
-    this.about,
-    this.username,
-    this.picture,
-  });
+  const _SaveButton({required this.canSave, required this.onSave});
 
   final bool canSave;
-  final String pubkey;
-  final String displayName;
-  final String? about;
-  final String? username;
-  final String? picture;
+  final VoidCallback onSave;
 
   @override
   Widget build(BuildContext context) {
@@ -1390,46 +1540,39 @@ class _SaveButton extends StatelessWidget {
     );
 
     return ElevatedButton(
-      onPressed: (isLoading || !canSave)
-          ? null
-          : () {
-              context.read<ProfileEditorBloc>().add(
-                ProfileSaved(
-                  pubkey: pubkey,
-                  displayName: displayName,
-                  about: about,
-                  username: username,
-                  picture: picture,
-                ),
-              );
-            },
+      onPressed: (isLoading || !canSave) ? null : onSave,
       style: ElevatedButton.styleFrom(
         backgroundColor: VineTheme.vineGreen,
-        foregroundColor: Colors.white,
+        foregroundColor: VineTheme.onPrimary,
         disabledBackgroundColor: VineTheme.vineGreen.withValues(alpha: 0.4),
-        disabledForegroundColor: Colors.white.withValues(alpha: 0.6),
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        disabledForegroundColor: VineTheme.onPrimary.withValues(alpha: 0.6),
+        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       ),
       child: isLoading
-          ? const Row(
+          ? Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                SizedBox(
+                const SizedBox(
                   width: 20,
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: VineTheme.onPrimary,
                   ),
                 ),
-                SizedBox(width: 12),
-                Text('Saving...'),
+                const SizedBox(width: 12),
+                Text(
+                  'Saving...',
+                  style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
+                ),
               ],
             )
-          : const Text(
+          : Text(
               'Save',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              style: VineTheme.titleMediumFont(color: VineTheme.onPrimary),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
     );
   }

@@ -10,9 +10,10 @@ import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/screens/user_list_people_screen.dart';
@@ -24,7 +25,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/classic_vines_tab.dart';
+import 'package:openvine/widgets/for_you_tab.dart';
 import 'package:openvine/widgets/list_card.dart';
+import 'package:openvine/providers/classic_vines_provider.dart';
+import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/widgets/new_videos_tab.dart';
 import 'package:openvine/widgets/popular_videos_tab.dart';
 
@@ -50,29 +55,49 @@ class ExploreScreen extends ConsumerStatefulWidget {
 }
 
 class _ExploreScreenState extends ConsumerState<ExploreScreen>
-    with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+    with TickerProviderStateMixin {
+  TabController? _tabController;
   // Feed mode and videos are now derived from URL + providers - no internal state needed
   String? _hashtagMode; // When non-null, showing hashtag feed
   String? _customTitle; // Custom title to override default "Explore"
+
+  // Track classics availability to rebuild tabs when it changes
+  bool _classicsAvailable = false;
+  // Track For You availability (staging only)
+  bool _forYouAvailable = false;
 
   // Analytics services
   final _screenAnalytics = ScreenAnalyticsService();
   final _feedTracker = FeedPerformanceTracker();
   final _errorTracker = ErrorAnalyticsTracker();
 
+  /// Calculate tab count based on feature availability
+  /// Base: New Videos, Trending, Lists = 3
+  /// +1 if Classics available, +1 if For You available
+  int get _tabCount {
+    int count = 3; // Base tabs: New Videos, Trending, Lists
+    if (_classicsAvailable) count++;
+    if (_forYouAvailable) count++;
+    return count;
+  }
+
+  void _initTabController() {
+    final savedTabIndex = ref.read(exploreTabIndexProvider);
+    // Clamp saved index to valid range for current tab count
+    final validIndex = savedTabIndex.clamp(0, _tabCount - 1);
+    _tabController = TabController(
+      length: _tabCount,
+      vsync: this,
+      initialIndex: validIndex,
+    );
+    _tabController!.addListener(_onTabChanged);
+  }
+
   @override
   void initState() {
     super.initState();
 
-    // Restore tab index from provider to survive widget recreation
-    final savedTabIndex = ref.read(exploreTabIndexProvider);
-    _tabController = TabController(
-      length: 3,
-      vsync: this,
-      initialIndex: savedTabIndex,
-    );
-    _tabController.addListener(_onTabChanged);
+    _initTabController();
 
     // Track screen load
     _screenAnalytics.startScreenLoad('explore_screen');
@@ -123,8 +148,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
   @override
   void dispose() {
-    _tabController.removeListener(_onTabChanged);
-    _tabController.dispose();
+    _tabController?.removeListener(_onTabChanged);
+    _tabController?.dispose();
     super.dispose();
 
     Log.info(
@@ -134,18 +159,26 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   }
 
   void _onTabChanged() {
-    if (!mounted) return;
+    if (!mounted || _tabController == null) return;
 
-    final tabNames = ['new_videos', 'popular_videos', 'lists'];
-    final tabName = tabNames[_tabController.index];
+    final index = _tabController!.index;
+
+    // Tab names depend on which optional tabs are visible
+    // Order: [Classics], New Videos, Trending, [For You], Lists
+    final tabNames = <String>[];
+    if (_classicsAvailable) tabNames.add('classics');
+    tabNames.addAll(['new_videos', 'trending']);
+    if (_forYouAvailable) tabNames.add('for_you');
+    tabNames.add('lists');
+    final tabName = tabNames[index];
 
     Log.debug(
-      '🎯 ExploreScreenPure: Switched to tab ${_tabController.index}',
+      '🎯 ExploreScreenPure: Switched to tab $index',
       category: LogCategory.video,
     );
 
     // Persist tab index to survive widget recreation
-    ref.read(exploreTabIndexProvider.notifier).state = _tabController.index;
+    ref.read(exploreTabIndexProvider.notifier).state = index;
 
     // Track tab change
     _screenAnalytics.trackTabChange(
@@ -153,9 +186,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       tabName: tabName,
     );
 
-    // Lists tab - refresh lists when activated
-    if (_tabController.index == 2) {
-      // Lists tab
+    // Lists tab - refresh lists when activated (last tab)
+    final listsTabIndex = _tabCount - 1; // Lists is always the last tab
+    if (index == listsTabIndex) {
       Log.debug('🔄 Lists tab activated', category: LogCategory.video);
       // Invalidate providers to refresh list data
       ref.invalidate(userListsProvider);
@@ -171,6 +204,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
     // Check current page context to see if we need to reset
     final pageContext = ref.read(pageContextProvider);
+    final wasInFeedMode =
+        pageContext.whenOrNull(data: (ctx) => ctx.videoIndex != null) ?? false;
     final shouldReset =
         pageContext.whenOrNull(
           data: (ctx) => ctx.videoIndex != null || _hashtagMode != null,
@@ -178,6 +213,19 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
         false;
 
     if (shouldReset) {
+      // CRITICAL: Stop all video playback BEFORE navigating back to grid mode
+      // This prevents videos from playing in the background when switching tabs
+      // videoControllerAutoCleanupProvider only triggers on route TYPE changes,
+      // not when staying on the same route type (explore), so we must cleanup here
+      if (wasInFeedMode) {
+        Log.info(
+          '🛑 ExploreScreen: Stopping video playback before exiting feed mode',
+          name: 'ExploreScreen',
+          category: LogCategory.video,
+        );
+        disposeAllVideoControllers(ref);
+      }
+
       // Clear hashtag mode
       _hashtagMode = null;
       setCustomTitle(null); // Clear custom title
@@ -207,7 +255,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
     // Navigate to update URL - URL will drive the UI state (no internal state needed!)
     // videoIndex maps directly to list index (0=first video, 1=second video)
-    context.goExplore(startIndex);
+    context.go(ExploreScreen.pathForIndex(startIndex));
 
     Log.info(
       '🎯 ExploreScreenPure: Entered feed mode at index $startIndex with ${videos.length} videos',
@@ -234,6 +282,34 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   Widget build(BuildContext context) {
     ref.watch(exploreTabVideoUpdateListenerProvider);
 
+    // Watch classics availability and rebuild tabs if it changes
+    final classicsAvailableAsync = ref.watch(classicVinesAvailableProvider);
+    final newClassicsAvailable = classicsAvailableAsync.asData?.value ?? false;
+
+    // Watch For You availability (staging only)
+    final newForYouAvailable = ref.watch(forYouAvailableProvider);
+
+    // When availability changes, rebuild TabController synchronously
+    final needsRebuild =
+        _classicsAvailable != newClassicsAvailable ||
+        _forYouAvailable != newForYouAvailable;
+
+    if (needsRebuild) {
+      Log.info(
+        '🎯 ExploreScreen: Tab availability changed - '
+        'classics: $_classicsAvailable -> $newClassicsAvailable, '
+        'forYou: $_forYouAvailable -> $newForYouAvailable',
+        name: 'ExploreScreen',
+        category: LogCategory.ui,
+      );
+      _classicsAvailable = newClassicsAvailable;
+      _forYouAvailable = newForYouAvailable;
+      // Rebuild tab controller to match the new tab count
+      _tabController?.removeListener(_onTabChanged);
+      _tabController?.dispose();
+      _initTabController();
+    }
+
     // Derive feed mode from URL
     final pageContext = ref.watch(pageContextProvider);
     final isInFeedMode =
@@ -252,7 +328,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     return Column(
       children: [
         // Tabs only visible in grid mode
-        Container(
+        // Material widget is required for TabBar to render ink splashes
+        Material(
           color: VineTheme.navGreen,
           child: TabBar(
             controller: _tabController,
@@ -273,7 +350,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             onTap: (index) {
               // If tapping the currently active tab, reset to default state (exit feed/hashtag mode)
               // But only if we're actually in feed or hashtag mode - otherwise do nothing
-              if (index == _tabController.index) {
+              if (index == _tabController?.index) {
                 final pageContext = ref.read(pageContextProvider);
                 final isInFeedMode =
                     pageContext.whenOrNull(
@@ -295,10 +372,12 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 _resetToDefaultState();
               }
             },
-            tabs: const [
-              Tab(text: 'New Videos'),
-              Tab(text: 'Popular Videos'),
-              Tab(text: 'Lists'),
+            tabs: [
+              if (_classicsAvailable) const Tab(text: 'Classics'),
+              const Tab(text: 'New Videos'),
+              const Tab(text: 'Trending'),
+              if (_forYouAvailable) const Tab(text: 'For You'),
+              const Tab(text: 'Lists'),
             ],
           ),
         ),
@@ -357,6 +436,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             TabBarView(
               controller: _tabController,
               children: [
+                if (_classicsAvailable)
+                  ClassicVinesTab(
+                    onVideoTap: (videos, index) =>
+                        _enterFeedMode(videos, index),
+                  ),
                 NewVideosTab(
                   screenAnalytics: _screenAnalytics,
                   feedTracker: _feedTracker,
@@ -367,11 +451,30 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   feedTracker: _feedTracker,
                   errorTracker: _errorTracker,
                 ),
+                if (_forYouAvailable)
+                  ForYouTab(
+                    onVideoTap: (videos, index) =>
+                        _enterFeedMode(videos, index),
+                  ),
                 _buildListsTab(),
               ],
             ),
-            // New videos banner (only show on New Videos and Popular Videos tabs)
-            if (_tabController.index < 2) _buildNewVideosBanner(),
+            // New videos banner (only show on New Videos and Trending tabs)
+            // New Videos is at index 0 (or 1 if Classics available)
+            // Trending is at index 1 (or 2 if Classics available)
+            if (_tabController != null)
+              Builder(
+                builder: (context) {
+                  final newVideosIndex = _classicsAvailable ? 1 : 0;
+                  final trendingIndex = _classicsAvailable ? 2 : 1;
+                  final currentIndex = _tabController!.index;
+                  if (currentIndex == newVideosIndex ||
+                      currentIndex == trendingIndex) {
+                    return _buildNewVideosBanner();
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
           ],
         );
       },
@@ -425,7 +528,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
     // Always show the static UI elements immediately
     return RefreshIndicator(
-      color: VineTheme.vineGreen,
+      color: VineTheme.onPrimary,
+      backgroundColor: VineTheme.vineGreen,
       onRefresh: () async {
         // Invalidate both providers to refresh
         ref.invalidate(userListsProvider);
@@ -445,7 +549,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                 );
                 // Stop any playing videos before navigating
                 disposeAllVideoControllers(ref);
-                context.pushDiscoverLists();
+                context.push(DiscoverListsScreen.path);
               },
               icon: Icon(Icons.search, color: VineTheme.backgroundColor),
               label: Text(
@@ -630,9 +734,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                           );
                           // Stop any playing videos before navigating
                           disposeAllVideoControllers(ref);
-                          context.pushCuratedList(
-                            listId: curatedList.id,
-                            listName: curatedList.name,
+                          context.push(
+                            CuratedListFeedScreen.pathForId(curatedList.id),
+                            extra: CuratedListRouteExtra(
+                              listName: curatedList.name,
+                            ),
                           );
                         },
                       ),
@@ -792,9 +898,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               );
               // Stop any playing videos before navigating
               disposeAllVideoControllers(ref);
-              context.pushCuratedList(
-                listId: curatedList.id,
-                listName: curatedList.name,
+              context.push(
+                CuratedListFeedScreen.pathForId(curatedList.id),
+                extra: CuratedListRouteExtra(listName: curatedList.name),
               );
             },
           ),

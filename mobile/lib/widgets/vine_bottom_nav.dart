@@ -1,48 +1,180 @@
-// ABOUTME: Reusable bottom navigation bar for consistent navigation across all screens
-// ABOUTME: Provides standard 4-tab navigation with Vine green styling
+// ABOUTME: Shared bottom navigation bar widget for app shell and profile screens
+// ABOUTME: Provides consistent bottom nav across screens with/without shell
 
 import 'package:flutter/material.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/router/last_tab_position_provider.dart';
+import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
-class VineBottomNav extends StatelessWidget {
+/// Shared bottom navigation bar used by AppShell and standalone profile screens.
+class VineBottomNav extends ConsumerWidget {
+  const VineBottomNav({required this.currentIndex, super.key});
+
+  /// Currently selected tab index (0-3), or -1 if no tab is selected.
   final int currentIndex;
-  final ValueChanged<int>? onTap;
 
-  const VineBottomNav({super.key, this.currentIndex = 3, this.onTap});
+  /// Maps tab index to RouteType
+  RouteType _routeTypeForTab(int index) {
+    return switch (index) {
+      0 => RouteType.home,
+      1 => RouteType.explore,
+      2 => RouteType.notifications,
+      3 => RouteType.profile,
+      _ => RouteType.home,
+    };
+  }
+
+  /// Handles tab tap - navigates to last known position in that tab
+  void _handleTabTap(BuildContext context, WidgetRef ref, int tabIndex) {
+    final routeType = _routeTypeForTab(tabIndex);
+    final lastIndex = ref
+        .read(lastTabPositionProvider.notifier)
+        .getPosition(routeType);
+
+    // Log user interaction
+    Log.info(
+      '👆 User tapped bottom nav: tab=$tabIndex (${_tabName(tabIndex)})',
+      name: 'Navigation',
+      category: LogCategory.ui,
+    );
+
+    // Pop any pushed routes first
+    final navigator = Navigator.of(context);
+    if (navigator.canPop()) {
+      navigator.popUntil((route) => route.isFirst);
+    }
+
+    // Navigate to last position in that tab
+    return switch (tabIndex) {
+      1 => context.go(ExploreScreen.path),
+      2 => context.go(NotificationsScreen.pathForIndex(lastIndex ?? 0)),
+      3 => context.go(ProfileScreenRouter.pathForIndex('me', lastIndex ?? 0)),
+      _ => context.go(HomeScreenRouter.pathForIndex(lastIndex ?? 0)),
+    };
+  }
+
+  String _tabName(int index) {
+    return switch (index) {
+      0 => 'Home',
+      1 => 'Explore',
+      2 => 'Notifications',
+      3 => 'Profile',
+      _ => 'Unknown',
+    };
+  }
+
+  Widget _buildTabButton(
+    BuildContext context,
+    WidgetRef ref,
+    String iconPath,
+    int tabIndex,
+    String semanticIdentifier,
+  ) {
+    final isSelected = currentIndex == tabIndex;
+    final iconColor = isSelected ? Colors.white : VineTheme.tabIconInactive;
+
+    return Semantics(
+      identifier: semanticIdentifier,
+      child: GestureDetector(
+        onTap: () => _handleTabTap(context, ref, tabIndex),
+        child: Container(
+          width: 48,
+          height: 48,
+          padding: const EdgeInsets.all(8),
+          child: SvgPicture.asset(
+            iconPath,
+            width: 32,
+            height: 32,
+            colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
-  Widget build(BuildContext context) {
-    return BottomNavigationBar(
-      currentIndex: currentIndex,
-      onTap: onTap ?? (index) => context.goHome(0),
-      backgroundColor: VineTheme.vineGreen,
-      selectedItemColor: VineTheme.whiteText,
-      unselectedItemColor: VineTheme.whiteText.withValues(alpha: 0.7),
-      type: BottomNavigationBarType.fixed,
-      elevation: 8,
-      items: const [
-        BottomNavigationBarItem(
-          icon: Icon(Icons.home),
-          label: 'HOME',
-          tooltip: 'Home',
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Container(
+      color: VineTheme.navGreen,
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            _buildTabButton(
+              context,
+              ref,
+              'assets/icon/house.svg',
+              0,
+              'home_tab',
+            ),
+            _buildTabButton(
+              context,
+              ref,
+              'assets/icon/compass.svg',
+              1,
+              'explore_tab',
+            ),
+            // Camera button in center of bottom nav
+            Semantics(
+              identifier: 'camera_button',
+              button: true,
+              label: 'Open camera',
+              child: GestureDetector(
+                onTap: () {
+                  Log.info(
+                    '👆 User tapped camera button',
+                    name: 'Navigation',
+                    category: LogCategory.ui,
+                  );
+                  context.push(VideoRecorderScreen.path);
+                },
+                child: Container(
+                  width: 72,
+                  height: 48,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: VineTheme.cameraButtonGreen,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: SvgPicture.asset(
+                    'assets/icon/retro-camera.svg',
+                    width: 32,
+                    height: 32,
+                  ),
+                ),
+              ),
+            ),
+            _buildTabButton(
+              context,
+              ref,
+              'assets/icon/bell.svg',
+              2,
+              'notifications_tab',
+            ),
+            _buildTabButton(
+              context,
+              ref,
+              'assets/icon/userCircle.svg',
+              3,
+              'profile_tab',
+            ),
+          ],
         ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.notifications),
-          label: 'Notifications',
-          tooltip: 'Notifications',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.explore),
-          label: 'EXPLORE',
-          tooltip: 'Explore',
-        ),
-        BottomNavigationBarItem(
-          icon: Icon(Icons.person),
-          label: 'PROFILE',
-          tooltip: 'Profile',
-        ),
-      ],
+      ),
     );
   }
 }

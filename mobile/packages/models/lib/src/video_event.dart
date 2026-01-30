@@ -54,6 +54,8 @@ class VideoEvent {
     this.audioEventId,
     this.audioEventRelay,
     this.nostrLikeCount,
+    this.authorName,
+    this.authorAvatar,
   });
 
   /// Create VideoEvent from Nostr event
@@ -616,6 +618,13 @@ class VideoEvent {
   /// Live like/reaction count from Nostr (updated in real-time)
   final int? nostrLikeCount;
 
+  // Author metadata from API (classic Vines)
+  /// Author display name (from Funnelcake API for classic Viners)
+  final String? authorName;
+
+  /// Author avatar URL (from Funnelcake API for classic Viners)
+  final String? authorAvatar;
+
   /// NIP-40: Check if this event has expired
   /// Returns true if expiration timestamp is set and current time >= expiration
   bool get isExpired {
@@ -654,6 +663,14 @@ class VideoEvent {
   String? get proofModePgpFingerprint {
     return rawTags['pgp_fingerprint'];
   }
+
+  String? get addressableId => vineId != null
+      ? AId(
+          kind: EventKind.videoVertical,
+          pubkey: pubkey,
+          dTag: vineId!,
+        ).toAString()
+      : null;
 
   /// ProofMode: Check if video has any proof
   bool get hasProofMode {
@@ -845,8 +862,17 @@ class VideoEvent {
       return '${difference.inHours}h ago';
     } else if (difference.inDays < 7) {
       return '${difference.inDays}d ago';
-    } else {
+    } else if (difference.inDays < 60) {
+      // Less than ~2 months: show weeks
       return '${difference.inDays ~/ 7}w ago';
+    } else if (difference.inDays < 365) {
+      // Less than 1 year: show months
+      final months = difference.inDays ~/ 30;
+      return '${months}mo ago';
+    } else {
+      // 1 year or more: show years
+      final years = difference.inDays ~/ 365;
+      return '${years}y ago';
     }
   }
 
@@ -939,6 +965,8 @@ class VideoEvent {
     String? audioEventId,
     String? audioEventRelay,
     int? nostrLikeCount,
+    String? authorName,
+    String? authorAvatar,
   }) => VideoEvent(
     id: id ?? this.id,
     pubkey: pubkey ?? this.pubkey,
@@ -975,6 +1003,8 @@ class VideoEvent {
     audioEventId: audioEventId ?? this.audioEventId,
     audioEventRelay: audioEventRelay ?? this.audioEventRelay,
     nostrLikeCount: nostrLikeCount ?? this.nostrLikeCount,
+    authorName: authorName ?? this.authorName,
+    authorAvatar: authorAvatar ?? this.authorAvatar,
   );
 
   @override

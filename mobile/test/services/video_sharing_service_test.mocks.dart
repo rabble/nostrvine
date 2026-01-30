@@ -9,14 +9,12 @@ import 'dart:ui' as _i12;
 import 'package:keycast_flutter/keycast_flutter.dart' as _i9;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i5;
-import 'package:models/models.dart' as _i14;
 import 'package:nostr_client/nostr_client.dart' as _i4;
 import 'package:nostr_client/src/models/models.dart' as _i2;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i7;
 import 'package:openvine/models/user_profile.dart' as _i10;
 import 'package:openvine/services/auth_service.dart' as _i3;
 import 'package:openvine/services/profile_cache_service.dart' as _i11;
-import 'package:openvine/services/social_service.dart' as _i13;
 import 'package:openvine/services/user_profile_service.dart' as _i8;
 
 // ignore_for_file: type=lint
@@ -169,7 +167,6 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
     List<String>? tempRelays,
     List<int>? relayTypes = const [1, 2, 3, 4],
     bool? sendAfterAuth = false,
-    bool? useGateway = true,
     bool? useCache = true,
   }) =>
       (super.noSuchMethod(
@@ -181,7 +178,6 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
                 #tempRelays: tempRelays,
                 #relayTypes: relayTypes,
                 #sendAfterAuth: sendAfterAuth,
-                #useGateway: useGateway,
                 #useCache: useCache,
               },
             ),
@@ -230,18 +226,13 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
   _i6.Future<_i7.Event?> fetchEventById(
     String? eventId, {
     String? relayUrl,
-    bool? useGateway = true,
     bool? useCache = true,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
               #fetchEventById,
               [eventId],
-              {
-                #relayUrl: relayUrl,
-                #useGateway: useGateway,
-                #useCache: useCache,
-              },
+              {#relayUrl: relayUrl, #useCache: useCache},
             ),
             returnValue: _i6.Future<_i7.Event?>.value(),
           )
@@ -250,15 +241,10 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
   @override
   _i6.Future<_i7.Event?> fetchProfile(
     String? pubkey, {
-    bool? useGateway = true,
     bool? useCache = true,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(
-              #fetchProfile,
-              [pubkey],
-              {#useGateway: useGateway, #useCache: useCache},
-            ),
+            Invocation.method(#fetchProfile, [pubkey], {#useCache: useCache}),
             returnValue: _i6.Future<_i7.Event?>.value(),
           )
           as _i6.Future<_i7.Event?>);
@@ -415,6 +401,30 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
           as _i6.Future<_i7.Event?>);
 
   @override
+  _i6.Future<_i7.Event?> sendGenericRepost({
+    required String? addressableId,
+    required int? targetKind,
+    required String? authorPubkey,
+    String? eventId,
+    String? content = '',
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendGenericRepost, [], {
+              #addressableId: addressableId,
+              #targetKind: targetKind,
+              #authorPubkey: authorPubkey,
+              #eventId: eventId,
+              #content: content,
+              #tempRelays: tempRelays,
+              #targetRelays: targetRelays,
+            }),
+            returnValue: _i6.Future<_i7.Event?>.value(),
+          )
+          as _i6.Future<_i7.Event?>);
+
+  @override
   _i6.Future<_i7.Event?> deleteEvent(
     String? eventId, {
     List<String>? tempRelays,
@@ -488,6 +498,22 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
             returnValue: _i6.Stream<_i7.Event>.empty(),
           )
           as _i6.Stream<_i7.Event>);
+
+  @override
+  _i6.Future<String?> createNip98AuthHeader({
+    required String? url,
+    required String? method,
+    String? payload,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#createNip98AuthHeader, [], {
+              #url: url,
+              #method: method,
+              #payload: payload,
+            }),
+            returnValue: _i6.Future<String?>.value(),
+          )
+          as _i6.Future<String?>);
 
   @override
   _i6.Future<void> dispose() =>
@@ -564,6 +590,23 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
             returnValue: <String, dynamic>{},
           )
           as Map<String, dynamic>);
+
+  @override
+  String get serviceName =>
+      (super.noSuchMethod(
+            Invocation.getter(#serviceName),
+            returnValue: _i5.dummyValue<String>(
+              this,
+              Invocation.getter(#serviceName),
+            ),
+          )
+          as String);
+
+  @override
+  void clearError() => super.noSuchMethod(
+    Invocation.method(#clearError, []),
+    returnValueForMissingStub: null,
+  );
 
   @override
   _i6.Future<void> initialize() =>
@@ -682,6 +725,14 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i6.Future<void>);
 
   @override
+  _i6.Future<(bool, String?)> deleteKeycastAccount() =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteKeycastAccount, []),
+            returnValue: _i6.Future<(bool, String?)>.value((false, null)),
+          )
+          as _i6.Future<(bool, String?)>);
+
+  @override
   _i6.Future<void> signOut({bool? deleteKeys = false}) =>
       (super.noSuchMethod(
             Invocation.method(#signOut, [], {#deleteKeys: deleteKeys}),
@@ -729,6 +780,39 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i6.Future<_i7.Event?>);
 
   @override
+  _i6.Future<void> acceptTerms() =>
+      (super.noSuchMethod(
+            Invocation.method(#acceptTerms, []),
+            returnValue: _i6.Future<void>.value(),
+            returnValueForMissingStub: _i6.Future<void>.value(),
+          )
+          as _i6.Future<void>);
+
+  @override
+  void onAppBackgrounded() => super.noSuchMethod(
+    Invocation.method(#onAppBackgrounded, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void onAppResumed() => super.noSuchMethod(
+    Invocation.method(#onAppResumed, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void onExtendedBackground() => super.noSuchMethod(
+    Invocation.method(#onExtendedBackground, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
+  void onPeriodicCleanup() => super.noSuchMethod(
+    Invocation.method(#onPeriodicCleanup, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   _i6.Future<void> dispose() =>
       (super.noSuchMethod(
             Invocation.method(#dispose, []),
@@ -759,6 +843,12 @@ class MockUserProfileService extends _i1.Mock
   bool get hasListeners =>
       (super.noSuchMethod(Invocation.getter(#hasListeners), returnValue: false)
           as bool);
+
+  @override
+  void setFunnelcakeAvailable(bool? available) => super.noSuchMethod(
+    Invocation.method(#setFunnelcakeAvailable, [available]),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void setPersistentCache(_i11.ProfileCacheService? cacheService) =>
@@ -906,187 +996,6 @@ class MockUserProfileService extends _i1.Mock
   @override
   void notifyListeners() => super.noSuchMethod(
     Invocation.method(#notifyListeners, []),
-    returnValueForMissingStub: null,
-  );
-}
-
-/// A class which mocks [SocialService].
-///
-/// See the documentation for Mockito's code generation for more information.
-class MockSocialService extends _i1.Mock implements _i13.SocialService {
-  MockSocialService() {
-    _i1.throwOnMissingStub(this);
-  }
-
-  @override
-  List<String> get followingPubkeys =>
-      (super.noSuchMethod(
-            Invocation.getter(#followingPubkeys),
-            returnValue: <String>[],
-          )
-          as List<String>);
-
-  @override
-  List<_i13.FollowSet> get followSets =>
-      (super.noSuchMethod(
-            Invocation.getter(#followSets),
-            returnValue: <_i13.FollowSet>[],
-          )
-          as List<_i13.FollowSet>);
-
-  @override
-  bool hasReposted(String? eventId, {String? pubkey, String? dTag}) =>
-      (super.noSuchMethod(
-            Invocation.method(
-              #hasReposted,
-              [eventId],
-              {#pubkey: pubkey, #dTag: dTag},
-            ),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  bool isFollowing(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#isFollowing, [pubkey]),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  Map<String, int>? getCachedFollowerStats(String? pubkey) =>
-      (super.noSuchMethod(Invocation.method(#getCachedFollowerStats, [pubkey]))
-          as Map<String, int>?);
-
-  @override
-  _i13.FollowSet? getFollowSetById(String? setId) =>
-      (super.noSuchMethod(Invocation.method(#getFollowSetById, [setId]))
-          as _i13.FollowSet?);
-
-  @override
-  bool isInFollowSet(String? setId, String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#isInFollowSet, [setId, pubkey]),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  _i6.Future<void> fetchCurrentUserFollowList() =>
-      (super.noSuchMethod(
-            Invocation.method(#fetchCurrentUserFollowList, []),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
-
-  @override
-  _i6.Future<Map<String, int>> getFollowerStats(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#getFollowerStats, [pubkey]),
-            returnValue: _i6.Future<Map<String, int>>.value(<String, int>{}),
-          )
-          as _i6.Future<Map<String, int>>);
-
-  @override
-  _i6.Future<_i13.FollowSet?> createFollowSet({
-    required String? name,
-    String? description,
-    String? imageUrl,
-    List<String>? initialPubkeys = const [],
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(#createFollowSet, [], {
-              #name: name,
-              #description: description,
-              #imageUrl: imageUrl,
-              #initialPubkeys: initialPubkeys,
-            }),
-            returnValue: _i6.Future<_i13.FollowSet?>.value(),
-          )
-          as _i6.Future<_i13.FollowSet?>);
-
-  @override
-  _i6.Future<bool> addToFollowSet(String? setId, String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#addToFollowSet, [setId, pubkey]),
-            returnValue: _i6.Future<bool>.value(false),
-          )
-          as _i6.Future<bool>);
-
-  @override
-  _i6.Future<bool> removeFromFollowSet(String? setId, String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#removeFromFollowSet, [setId, pubkey]),
-            returnValue: _i6.Future<bool>.value(false),
-          )
-          as _i6.Future<bool>);
-
-  @override
-  _i6.Future<bool> updateFollowSet({
-    required String? setId,
-    String? name,
-    String? description,
-    String? imageUrl,
-  }) =>
-      (super.noSuchMethod(
-            Invocation.method(#updateFollowSet, [], {
-              #setId: setId,
-              #name: name,
-              #description: description,
-              #imageUrl: imageUrl,
-            }),
-            returnValue: _i6.Future<bool>.value(false),
-          )
-          as _i6.Future<bool>);
-
-  @override
-  _i6.Future<bool> deleteFollowSet(String? setId) =>
-      (super.noSuchMethod(
-            Invocation.method(#deleteFollowSet, [setId]),
-            returnValue: _i6.Future<bool>.value(false),
-          )
-          as _i6.Future<bool>);
-
-  @override
-  _i6.Future<int> getUserVideoCount(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#getUserVideoCount, [pubkey]),
-            returnValue: _i6.Future<int>.value(0),
-          )
-          as _i6.Future<int>);
-
-  @override
-  _i6.Future<void> toggleRepost(_i14.VideoEvent? videoToRepost) =>
-      (super.noSuchMethod(
-            Invocation.method(#toggleRepost, [videoToRepost]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
-
-  @override
-  _i6.Future<void> repostEvent(_i7.Event? eventToRepost) =>
-      (super.noSuchMethod(
-            Invocation.method(#repostEvent, [eventToRepost]),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
-
-  @override
-  _i6.Future<void> publishRightToBeForgotten() =>
-      (super.noSuchMethod(
-            Invocation.method(#publishRightToBeForgotten, []),
-            returnValue: _i6.Future<void>.value(),
-            returnValueForMissingStub: _i6.Future<void>.value(),
-          )
-          as _i6.Future<void>);
-
-  @override
-  void dispose() => super.noSuchMethod(
-    Invocation.method(#dispose, []),
     returnValueForMissingStub: null,
   );
 }

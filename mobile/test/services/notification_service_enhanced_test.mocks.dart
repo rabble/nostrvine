@@ -166,7 +166,6 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
     List<String>? tempRelays,
     List<int>? relayTypes = const [1, 2, 3, 4],
     bool? sendAfterAuth = false,
-    bool? useGateway = true,
     bool? useCache = true,
   }) =>
       (super.noSuchMethod(
@@ -178,7 +177,6 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
                 #tempRelays: tempRelays,
                 #relayTypes: relayTypes,
                 #sendAfterAuth: sendAfterAuth,
-                #useGateway: useGateway,
                 #useCache: useCache,
               },
             ),
@@ -227,18 +225,13 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
   _i5.Future<_i6.Event?> fetchEventById(
     String? eventId, {
     String? relayUrl,
-    bool? useGateway = true,
     bool? useCache = true,
   }) =>
       (super.noSuchMethod(
             Invocation.method(
               #fetchEventById,
               [eventId],
-              {
-                #relayUrl: relayUrl,
-                #useGateway: useGateway,
-                #useCache: useCache,
-              },
+              {#relayUrl: relayUrl, #useCache: useCache},
             ),
             returnValue: _i5.Future<_i6.Event?>.value(),
           )
@@ -247,15 +240,10 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
   @override
   _i5.Future<_i6.Event?> fetchProfile(
     String? pubkey, {
-    bool? useGateway = true,
     bool? useCache = true,
   }) =>
       (super.noSuchMethod(
-            Invocation.method(
-              #fetchProfile,
-              [pubkey],
-              {#useGateway: useGateway, #useCache: useCache},
-            ),
+            Invocation.method(#fetchProfile, [pubkey], {#useCache: useCache}),
             returnValue: _i5.Future<_i6.Event?>.value(),
           )
           as _i5.Future<_i6.Event?>);
@@ -412,6 +400,30 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
           as _i5.Future<_i6.Event?>);
 
   @override
+  _i5.Future<_i6.Event?> sendGenericRepost({
+    required String? addressableId,
+    required int? targetKind,
+    required String? authorPubkey,
+    String? eventId,
+    String? content = '',
+    List<String>? tempRelays,
+    List<String>? targetRelays,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#sendGenericRepost, [], {
+              #addressableId: addressableId,
+              #targetKind: targetKind,
+              #authorPubkey: authorPubkey,
+              #eventId: eventId,
+              #content: content,
+              #tempRelays: tempRelays,
+              #targetRelays: targetRelays,
+            }),
+            returnValue: _i5.Future<_i6.Event?>.value(),
+          )
+          as _i5.Future<_i6.Event?>);
+
+  @override
   _i5.Future<_i6.Event?> deleteEvent(
     String? eventId, {
     List<String>? tempRelays,
@@ -487,6 +499,22 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
           as _i5.Stream<_i6.Event>);
 
   @override
+  _i5.Future<String?> createNip98AuthHeader({
+    required String? url,
+    required String? method,
+    String? payload,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#createNip98AuthHeader, [], {
+              #url: url,
+              #method: method,
+              #payload: payload,
+            }),
+            returnValue: _i5.Future<String?>.value(),
+          )
+          as _i5.Future<String?>);
+
+  @override
   _i5.Future<void> dispose() =>
       (super.noSuchMethod(
             Invocation.method(#dispose, []),
@@ -517,6 +545,12 @@ class MockUserProfileService extends _i1.Mock
   bool get hasListeners =>
       (super.noSuchMethod(Invocation.getter(#hasListeners), returnValue: false)
           as bool);
+
+  @override
+  void setFunnelcakeAvailable(bool? available) => super.noSuchMethod(
+    Invocation.method(#setFunnelcakeAvailable, [available]),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void setPersistentCache(_i9.ProfileCacheService? cacheService) =>
@@ -1113,6 +1147,15 @@ class MockVideoEventService extends _i1.Mock implements _i11.VideoEventService {
   _i5.Future<void> refreshVideoFeed() =>
       (super.noSuchMethod(
             Invocation.method(#refreshVideoFeed, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> resetAndResubscribeAll() =>
+      (super.noSuchMethod(
+            Invocation.method(#resetAndResubscribeAll, []),
             returnValue: _i5.Future<void>.value(),
             returnValueForMissingStub: _i5.Future<void>.value(),
           )

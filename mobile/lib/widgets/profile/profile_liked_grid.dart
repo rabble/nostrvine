@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -14,14 +14,12 @@ import 'package:openvine/utils/unified_logger.dart';
 /// Grid widget displaying user's liked videos
 ///
 /// Requires [ProfileLikedVideosBloc] to be provided in the widget tree.
-class ProfileLikedGrid extends StatefulWidget {
-  const ProfileLikedGrid({super.key});
+class ProfileLikedGrid extends StatelessWidget {
+  const ProfileLikedGrid({required this.isOwnProfile, super.key});
 
-  @override
-  State<ProfileLikedGrid> createState() => _ProfileLikedGridState();
-}
+  /// Whether this is the current user's own profile.
+  final bool isOwnProfile;
 
-class _ProfileLikedGridState extends State<ProfileLikedGrid> {
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ProfileLikedVideosBloc, ProfileLikedVideosState>(
@@ -46,7 +44,7 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid> {
         final likedVideos = state.videos;
 
         if (likedVideos.isEmpty) {
-          return const _LikedEmptyState();
+          return _LikedEmptyState(isOwnProfile: isOwnProfile);
         }
 
         return NotificationListener<ScrollNotification>(
@@ -69,12 +67,12 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid> {
           child: CustomScrollView(
             slivers: [
               SliverPadding(
-                padding: const EdgeInsets.all(2),
+                padding: const EdgeInsets.all(4),
                 sliver: SliverGrid(
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                     crossAxisCount: 3,
-                    crossAxisSpacing: 2,
-                    mainAxisSpacing: 2,
+                    crossAxisSpacing: 4,
+                    mainAxisSpacing: 4,
                     childAspectRatio: 1,
                   ),
                   delegate: SliverChildBuilderDelegate((context, index) {
@@ -113,7 +111,10 @@ class _ProfileLikedGridState extends State<ProfileLikedGrid> {
 
 /// Empty state shown when user has no liked videos
 class _LikedEmptyState extends StatelessWidget {
-  const _LikedEmptyState();
+  const _LikedEmptyState({required this.isOwnProfile});
+
+  /// Whether this is the current user's own profile.
+  final bool isOwnProfile;
 
   @override
   Widget build(BuildContext context) => CustomScrollView(
@@ -124,10 +125,10 @@ class _LikedEmptyState extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
-            children: const [
-              Icon(Icons.favorite_border, color: Colors.grey, size: 64),
-              SizedBox(height: 16),
-              Text(
+            children: [
+              const Icon(Icons.favorite_border, color: Colors.grey, size: 64),
+              const SizedBox(height: 16),
+              const Text(
                 'No Liked Videos Yet',
                 style: TextStyle(
                   color: Colors.white,
@@ -135,10 +136,12 @@ class _LikedEmptyState extends StatelessWidget {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              SizedBox(height: 8),
+              const SizedBox(height: 8),
               Text(
-                'Videos you like will appear here',
-                style: TextStyle(color: Colors.grey, fontSize: 14),
+                isOwnProfile
+                    ? 'Videos you like will appear here'
+                    : 'Videos they like will appear here',
+                style: const TextStyle(color: Colors.grey, fontSize: 14),
               ),
             ],
           ),
@@ -169,9 +172,12 @@ class _LikedGridTile extends StatelessWidget {
         category: LogCategory.video,
       );
       // Use LikedVideosFeedSource for fullscreen playback
-      context.pushVideoFeed(
-        source: LikedVideosFeedSource(allVideos),
-        initialIndex: index,
+      context.push(
+        FullscreenVideoFeedScreen.path,
+        extra: FullscreenVideoFeedArgs(
+          source: LikedVideosFeedSource(allVideos),
+          initialIndex: index,
+        ),
       );
       Log.info(
         '✅ ProfileLikedGrid: Called pushVideoFeed with '
@@ -179,40 +185,11 @@ class _LikedGridTile extends StatelessWidget {
         category: LogCategory.video,
       );
     },
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: _LikedThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
-            ),
-          ),
-          const Center(
-            child: Icon(
-              Icons.play_circle_filled,
-              color: Colors.white70,
-              size: 32,
-            ),
-          ),
-          // Heart indicator badge
-          Positioned(
-            top: 4,
-            right: 4,
-            child: Container(
-              padding: const EdgeInsets.all(4),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: const Icon(Icons.favorite, color: Colors.red, size: 16),
-            ),
-          ),
-        ],
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: VineTheme.cardBackground),
+        child: _LikedThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
       ),
     ),
   );
@@ -239,7 +216,7 @@ class _LikedThumbnail extends StatelessWidget {
   }
 }
 
-/// Gradient placeholder for liked video thumbnails
+/// Flat color placeholder for liked video thumbnails
 class _LikedThumbnailPlaceholder extends StatelessWidget {
   const _LikedThumbnailPlaceholder();
 
@@ -247,19 +224,7 @@ class _LikedThumbnailPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(4),
-      gradient: LinearGradient(
-        colors: [
-          Colors.red.withValues(alpha: 0.3),
-          Colors.pink.withValues(alpha: 0.3),
-        ],
-      ),
-    ),
-    child: const Center(
-      child: Icon(
-        Icons.play_circle_outline,
-        color: VineTheme.whiteText,
-        size: 24,
-      ),
+      color: VineTheme.surfaceContainer,
     ),
   );
 }

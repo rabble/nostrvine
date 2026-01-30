@@ -1,6 +1,9 @@
 // ABOUTME: Tests for VideoRecorderScreen - main video recording UI
 // ABOUTME: Tests screen initialization, camera setup, UI elements, and lifecycle
 
+import 'dart:core';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,8 +12,8 @@ import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
-import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_countdown_overlay.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_top_bar.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -114,11 +117,9 @@ void main() {
 
         final stackChildren = tester.widget<Stack>(stackFinder.first).children;
 
-        // Check order: Preview, TopBar, BottomBar, Countdown
-        expect(stackChildren[0], isA<VideoRecorderCameraPreview>());
-        expect(stackChildren[1], isA<VideoRecorderTopBar>());
-        expect(stackChildren[2], isA<VideoRecorderBottomBar>());
-        expect(stackChildren[3], isA<VideoRecorderCountdownOverlay>());
+        // Check order: Column (with camera + controls), Countdown overlay
+        expect(stackChildren[0], isA<Column>());
+        expect(stackChildren[1], isA<VideoRecorderCountdownOverlay>());
       });
     });
 
@@ -141,60 +142,48 @@ void main() {
         // Observer should be registered (verified by no exception)
         expect(find.byType(VideoRecorderScreen), findsOneWidget);
       });
-
-      testWidgets('camera preview receives correct radius', (tester) async {
-        await tester.pumpWidget(buildTestWidget());
-
-        await tester.pump();
-
-        final cameraPreview = tester.widget<VideoRecorderCameraPreview>(
-          find.byType(VideoRecorderCameraPreview),
-        );
-        expect(cameraPreview.previewWidgetRadius, equals(16.0));
-      });
-
-      testWidgets('bottom bar receives correct radius', (tester) async {
-        await tester.pumpWidget(buildTestWidget());
-
-        await tester.pump();
-
-        final bottomBar = tester.widget<VideoRecorderBottomBar>(
-          find.byType(VideoRecorderBottomBar),
-        );
-        expect(bottomBar.previewWidgetRadius, equals(16.0));
-      });
     });
 
     group('Lifecycle Management', () {
       testWidgets('handles app lifecycle state changes', (tester) async {
-        final mockCamera = MockCameraService.create(
-          onUpdateState: ({forceCameraRebuild}) {},
-          onAutoStopped: (_) {},
-        );
-        await mockCamera.initialize();
+        // Override platform to avoid macOS-specific camera preview
+        // which requires a native texture not available in tests
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
 
-        await tester.pumpWidget(
-          buildTestWidgetWithOverrides([
-            videoRecorderProvider.overrideWith(
-              () => VideoRecorderNotifier(mockCamera),
-            ),
-          ]),
-        );
+        try {
+          final mockCamera = MockCameraService.create(
+            onUpdateState: ({forceCameraRebuild}) {},
+            onAutoStopped: (_) {},
+          );
+          await mockCamera.initialize();
 
-        await tester.pump();
+          await tester.pumpWidget(
+            buildTestWidgetWithOverrides([
+              videoRecorderProvider.overrideWith(
+                () => VideoRecorderNotifier(mockCamera),
+              ),
+            ]),
+          );
 
-        // Simulate app going to background
-        tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
-        await tester.pump();
+          await tester.pump();
 
-        // Simulate app coming back to foreground
-        tester.binding.handleAppLifecycleStateChanged(
-          AppLifecycleState.resumed,
-        );
-        await tester.pump();
+          // Simulate app going to background
+          tester.binding.handleAppLifecycleStateChanged(
+            AppLifecycleState.paused,
+          );
+          await tester.pump();
 
-        // Should not crash
-        expect(find.byType(VideoRecorderScreen), findsOneWidget);
+          // Simulate app coming back to foreground
+          tester.binding.handleAppLifecycleStateChanged(
+            AppLifecycleState.resumed,
+          );
+          await tester.pump();
+
+          // Should not crash
+          expect(find.byType(VideoRecorderScreen), findsOneWidget);
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
+        }
       });
 
       testWidgets('unregister observer on dispose', (tester) async {
@@ -305,7 +294,11 @@ void main() {
         );
         final stack = tester.widget<Stack>(stackFinder.first);
 
-        expect(stack.children.first, isA<VideoRecorderCameraPreview>());
+        // The first child is now a Column containing the camera preview
+        expect(stack.children.first, isA<Column>());
+
+        // Verify camera preview exists within the Column
+        expect(find.byType(VideoRecorderCameraPreview), findsOneWidget);
       });
 
       testWidgets('countdown overlay is the top-most layer', (tester) async {
@@ -388,58 +381,44 @@ void main() {
       });
 
       testWidgets('handles multiple rapid lifecycle changes', (tester) async {
-        final mockCamera = MockCameraService.create(
-          onAutoStopped: (_) {},
-          onUpdateState: ({forceCameraRebuild}) {},
-        );
-        await mockCamera.initialize();
+        // Override platform to avoid macOS-specific camera preview
+        // which requires a native texture not available in tests
+        debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
 
-        await tester.pumpWidget(
-          buildTestWidgetWithOverrides([
-            videoRecorderProvider.overrideWith(
-              () => VideoRecorderNotifier(mockCamera),
-            ),
-          ]),
-        );
-
-        await tester.pump();
-
-        // Rapid lifecycle changes
-        for (var i = 0; i < 5; i++) {
-          tester.binding.handleAppLifecycleStateChanged(
-            AppLifecycleState.paused,
+        try {
+          final mockCamera = MockCameraService.create(
+            onAutoStopped: (_) {},
+            onUpdateState: ({forceCameraRebuild}) {},
           );
-          await tester.pump();
-          tester.binding.handleAppLifecycleStateChanged(
-            AppLifecycleState.resumed,
+          await mockCamera.initialize();
+
+          await tester.pumpWidget(
+            buildTestWidgetWithOverrides([
+              videoRecorderProvider.overrideWith(
+                () => VideoRecorderNotifier(mockCamera),
+              ),
+            ]),
           );
+
           await tester.pump();
+
+          // Rapid lifecycle changes
+          for (var i = 0; i < 5; i++) {
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.paused,
+            );
+            await tester.pump();
+            tester.binding.handleAppLifecycleStateChanged(
+              AppLifecycleState.resumed,
+            );
+            await tester.pump();
+          }
+
+          // Should handle without crashing
+          expect(find.byType(VideoRecorderScreen), findsOneWidget);
+        } finally {
+          debugDefaultTargetPlatformOverride = null;
         }
-
-        // Should handle without crashing
-        expect(find.byType(VideoRecorderScreen), findsOneWidget);
-      });
-    });
-
-    group('Constants and Configuration', () {
-      testWidgets('uses correct preview radius value', (tester) async {
-        await tester.pumpWidget(buildTestWidget());
-
-        await tester.pump();
-
-        final cameraPreview = tester.widget<VideoRecorderCameraPreview>(
-          find.byType(VideoRecorderCameraPreview),
-        );
-        final bottomBar = tester.widget<VideoRecorderBottomBar>(
-          find.byType(VideoRecorderBottomBar),
-        );
-
-        // Both should use the same radius for consistency
-        expect(
-          cameraPreview.previewWidgetRadius,
-          equals(bottomBar.previewWidgetRadius),
-        );
-        expect(cameraPreview.previewWidgetRadius, equals(16.0));
       });
     });
   });

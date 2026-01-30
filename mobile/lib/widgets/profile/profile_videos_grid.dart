@@ -3,14 +3,32 @@
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
+
+/// Internal class that represents a video entry in the grid
+/// It can be a video event or an uploading video
+sealed class _GridVideoEntry {}
+
+class _GridVideoEventEntry extends _GridVideoEntry {
+  _GridVideoEventEntry(this.videoEvent);
+
+  final VideoEvent videoEvent;
+}
+
+class _GridUploadingVideoEntry extends _GridVideoEntry {
+  _GridUploadingVideoEntry(this.backgroundUpload);
+
+  final BackgroundUpload backgroundUpload;
+}
 
 /// Grid widget displaying user's videos on their profile
 class ProfileVideosGrid extends ConsumerWidget {
@@ -25,7 +43,17 @@ class ProfileVideosGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (videos.isEmpty) {
+    final backgroundPublish = context.watch<BackgroundPublishBloc>();
+
+    final allVideos = [
+      ...backgroundPublish.state.uploads
+          .where((upload) => upload.result == null)
+          .map(_GridUploadingVideoEntry.new),
+
+      ...videos.map(_GridVideoEventEntry.new),
+    ];
+
+    if (allVideos.isEmpty) {
       return _ProfileVideosEmptyState(
         userIdHex: userIdHex,
         isOwnProfile:
@@ -38,12 +66,12 @@ class ProfileVideosGrid extends ConsumerWidget {
     return CustomScrollView(
       slivers: [
         SliverPadding(
-          padding: const EdgeInsets.all(2),
+          padding: const EdgeInsets.all(4),
           sliver: SliverGrid(
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 3,
-              crossAxisSpacing: 2,
-              mainAxisSpacing: 2,
+              crossAxisSpacing: 4,
+              mainAxisSpacing: 4,
               childAspectRatio: 1,
             ),
             delegate: SliverChildBuilderDelegate((context, index) {
@@ -51,13 +79,18 @@ class ProfileVideosGrid extends ConsumerWidget {
                 return const _VideoGridLoadingTile();
               }
 
-              final videoEvent = videos[index];
-              return _VideoGridTile(
-                videoEvent: videoEvent,
-                userIdHex: userIdHex,
-                index: index,
-              );
-            }, childCount: videos.length),
+              final videoEntry = allVideos[index];
+              return switch (videoEntry) {
+                _GridUploadingVideoEntry uploadEntry => _VideoGridUploadingTile(
+                  backgroundUpload: uploadEntry.backgroundUpload,
+                ),
+                _GridVideoEventEntry eventEntry => _VideoGridTile(
+                  videoEvent: eventEntry.videoEvent,
+                  userIdHex: userIdHex,
+                  index: index,
+                ),
+              };
+            }, childCount: allVideos.length),
           ),
         ),
       ],
@@ -141,6 +174,23 @@ class _VideoGridLoadingTile extends StatelessWidget {
   );
 }
 
+class _VideoGridUploadingTile extends StatelessWidget {
+  const _VideoGridUploadingTile({required this.backgroundUpload});
+
+  final BackgroundUpload backgroundUpload;
+
+  @override
+  Widget build(BuildContext context) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: VineTheme.cardBackground,
+      borderRadius: BorderRadius.circular(4),
+    ),
+    child: Center(
+      child: PartialCircleSpinner(progress: backgroundUpload.progress),
+    ),
+  );
+}
+
 /// Individual video tile in the grid
 class _VideoGridTile extends StatelessWidget {
   const _VideoGridTile({
@@ -162,36 +212,23 @@ class _VideoGridTile extends StatelessWidget {
         category: LogCategory.video,
       );
       // Use ProfileFeedSource for reactive updates when loadMore fetches new videos
-      context.pushVideoFeed(
-        source: ProfileFeedSource(userIdHex),
-        initialIndex: index,
+      context.push(
+        FullscreenVideoFeedScreen.path,
+        extra: FullscreenVideoFeedArgs(
+          source: ProfileFeedSource(userIdHex),
+          initialIndex: index,
+        ),
       );
       Log.info(
         '✅ ProfileVideosGrid: Called pushVideoFeed with ProfileFeedSource($userIdHex) at index $index',
         category: LogCategory.video,
       );
     },
-    child: DecoratedBox(
-      decoration: BoxDecoration(
-        color: VineTheme.cardBackground,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: _VideoThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
-            ),
-          ),
-          const Center(
-            child: Icon(
-              Icons.play_circle_filled,
-              color: Colors.white70,
-              size: 32,
-            ),
-          ),
-        ],
+    child: ClipRRect(
+      borderRadius: BorderRadius.circular(4),
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: VineTheme.cardBackground),
+        child: _VideoThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
       ),
     ),
   );
@@ -217,7 +254,7 @@ class _VideoThumbnail extends StatelessWidget {
   }
 }
 
-/// Gradient placeholder for thumbnails
+/// Flat color placeholder for thumbnails
 class _ThumbnailPlaceholder extends StatelessWidget {
   const _ThumbnailPlaceholder();
 
@@ -225,19 +262,7 @@ class _ThumbnailPlaceholder extends StatelessWidget {
   Widget build(BuildContext context) => DecoratedBox(
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(4),
-      gradient: LinearGradient(
-        colors: [
-          VineTheme.vineGreen.withValues(alpha: 0.3),
-          Colors.blue.withValues(alpha: 0.3),
-        ],
-      ),
-    ),
-    child: const Center(
-      child: Icon(
-        Icons.play_circle_outline,
-        color: VineTheme.whiteText,
-        size: 24,
-      ),
+      color: VineTheme.surfaceContainer,
     ),
   );
 }

@@ -1,20 +1,17 @@
-// ABOUTME: Social interaction service managing likes, follows, comments and reposts
-// ABOUTME: Handles NIP-25 reactions, NIP-02 contact lists, and other social Nostr events
+// ABOUTME: Social interaction service managing follow sets and follower stats
+// ABOUTME: Handles NIP-51 follow sets and follower/following counts
+// ABOUTME: Note: NIP-02 contact list (follow/unfollow) is handled by FollowRepository
+// ABOUTME: Note: NIP-18 reposts are handled by RepostsRepository
 
 import 'dart:async';
-import 'dart:convert';
 
-import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
-import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/constants/nip71_migration.dart';
-import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 
 /// Represents a follow set (NIP-51 Kind 30000)
 class FollowSet {
@@ -87,25 +84,13 @@ class SocialService {
   SocialService(
     this._nostrService,
     this._authService, {
-    required SubscriptionManager subscriptionManager,
     PersonalEventCacheService? personalEventCache,
-  }) : _subscriptionManager = subscriptionManager,
-       _personalEventCache = personalEventCache {
+  }) : _personalEventCache = personalEventCache {
     _initialize();
   }
   final NostrClient _nostrService;
   final AuthService _authService;
-  final SubscriptionManager _subscriptionManager;
   final PersonalEventCacheService? _personalEventCache;
-
-  // Cache for UI state - reposted events by current user
-  final Set<String> _repostedEventIds = <String>{};
-
-  // Cache mapping reposted event IDs to their repost event IDs (needed for deletion)
-  final Map<String, String> _repostEventIdToRepostId = <String, String>{};
-
-  // Cache for following list (NIP-02 contact list)
-  List<String> _followingPubkeys = <String>[];
 
   // Cache for follower/following counts
   final Map<String, Map<String, int>> _followerStats =
@@ -113,14 +98,6 @@ class SocialService {
 
   // Cache for follow sets (NIP-51 Kind 30000)
   final List<FollowSet> _followSets = <FollowSet>[];
-
-  // Current user's latest Kind 3 event for follow list management
-  Event? _currentUserContactListEvent;
-
-  // Managed subscription IDs
-  String? _followSubscriptionId;
-  String? _repostSubscriptionId;
-  String? _userRepostsSubscriptionId;
 
   /// Initialize the service
   Future<void> _initialize() async {
@@ -130,131 +107,14 @@ class SocialService {
       category: LogCategory.system,
     );
 
-    try {
-      // Initialize current user's social data if authenticated
-      if (_authService.isAuthenticated) {
-        // Load cached following list first for immediate UI display
-        await _loadFollowingListFromCache();
-
-        // Load cached personal events for instant access
-        await _loadCachedPersonalEvents();
-
-        await _loadUserRepostedEvents();
-        await fetchCurrentUserFollowList();
-      }
-
-      Log.info(
-        'SocialService initialized',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        'SocialService initialization error: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-    }
+    Log.info(
+      'SocialService initialized',
+      name: 'SocialService',
+      category: LogCategory.system,
+    );
   }
 
-  /// Load cached personal events for instant access on startup
-  Future<void> _loadCachedPersonalEvents() async {
-    if (_personalEventCache?.isInitialized != true) {
-      Log.debug(
-        'PersonalEventCache not initialized, skipping cached event loading',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      return;
-    }
-
-    try {
-      // Load cached reposts (Kind 6 events) to populate _repostedEventIds
-      final cachedReposts = _personalEventCache!.getEventsByKind(6);
-      for (final repostEvent in cachedReposts) {
-        _processRepostEvent(repostEvent);
-      }
-
-      // Load cached contact lists (Kind 3 events) to populate following data
-      final cachedContactLists = _personalEventCache.getEventsByKind(3);
-      if (cachedContactLists.isNotEmpty) {
-        // Use the most recent contact list event
-        final latestContactList =
-            cachedContactLists.first; // Already sorted by creation time
-        final pTags = latestContactList.tags.where(
-          (tag) => tag.isNotEmpty && tag[0] == 'p',
-        );
-        final pubkeys = pTags
-            .map((tag) => tag.length > 1 ? tag[1] : '')
-            .where((pubkey) => pubkey.isNotEmpty)
-            .cast<String>()
-            .toList();
-
-        if (pubkeys.isNotEmpty) {
-          _followingPubkeys = pubkeys;
-          _currentUserContactListEvent = latestContactList;
-
-          // Save to SharedPreferences cache as well
-          await _saveFollowingListToCache();
-        }
-      }
-
-      final stats = _personalEventCache.getCacheStats();
-      Log.info(
-        '📋 Loaded cached personal events on startup:',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      Log.info(
-        '  - Total events: ${stats['total_events']}',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      Log.info(
-        '  - Reposts loaded: ${cachedReposts.length}',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      Log.info(
-        '  - Contact lists loaded: ${cachedContactLists.length}',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      Log.info(
-        '  - Following count: ${_followingPubkeys.length}',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to load cached personal events: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  /// Check if current user has reposted an event
-  /// Checks using the addressable ID format for Kind 34236 events
-  bool hasReposted(String eventId, {String? pubkey, String? dTag}) {
-    // For addressable events, check using addressable ID format
-    if (pubkey != null && dTag != null) {
-      final addressableId =
-          '${NIP71VideoKinds.addressableShortVideo}:$pubkey:$dTag';
-      return _repostedEventIds.contains(addressableId);
-    }
-
-    // Fallback to event ID for backward compatibility
-    return _repostedEventIds.contains(eventId);
-  }
-
-  // === FOLLOW SYSTEM GETTERS ===
-
-  /// Get current user's following list
-  List<String> get followingPubkeys => List.from(_followingPubkeys);
-
-  /// Check if current user is following a specific pubkey
-  bool isFollowing(String pubkey) => _followingPubkeys.contains(pubkey);
+  // === FOLLOWER STATS ===
 
   /// Get cached follower stats for a pubkey
   Map<String, int>? getCachedFollowerStats(String pubkey) =>
@@ -280,130 +140,7 @@ class SocialService {
     return set?.pubkeys.contains(pubkey) ?? false;
   }
 
-  /// Loads current user's reposted events from their repost history
-  Future<void> _loadUserRepostedEvents() async {
-    if (!_authService.isAuthenticated) return;
-
-    try {
-      final currentUserPubkey = _authService.currentPublicKeyHex;
-      if (currentUserPubkey == null) return;
-
-      Log.debug(
-        'Loading user reposted events for: $currentUserPubkey',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-
-      // Subscribe to current user's reposts (Kind 6) using SubscriptionManager
-      _userRepostsSubscriptionId = await _subscriptionManager
-          .createSubscription(
-            name: 'user_reposts_$currentUserPubkey',
-            filters: [
-              Filter(
-                authors: [currentUserPubkey],
-                kinds: [16], // Generic repost (NIP-18) for video events
-              ),
-            ],
-            onEvent: (event) {
-              _processRepostEvent(event);
-            },
-            onError: (error) => Log.error(
-              'Error loading user reposts: $error',
-              name: 'SocialService',
-              category: LogCategory.system,
-            ),
-            priority: 3, // Lower priority for historical data
-          );
-    } catch (e) {
-      Log.error(
-        'Error loading user reposted events: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  // === NIP-02 FOLLOW SYSTEM ===
-
-  /// Fetches current user's follow list from their latest Kind 3 event
-  Future<void> fetchCurrentUserFollowList() async {
-    if (!_authService.isAuthenticated) return;
-
-    try {
-      final currentUserPubkey = _authService.currentPublicKeyHex;
-      if (currentUserPubkey == null) return;
-
-      Log.debug(
-        '📱 Loading follow list for: $currentUserPubkey',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-
-      // ✅ Use immediate completion for contact list query
-      final eventStream = _nostrService.subscribe([
-        Filter(
-          authors: [currentUserPubkey],
-          kinds: [3], // NIP-02 contact list
-          limit: 1, // Get most recent only
-        ),
-      ]);
-
-      final contactListEvent =
-          await ContactListCompletionHelper.queryContactList(
-            eventStream: eventStream,
-            pubkey: currentUserPubkey,
-            fallbackTimeoutSeconds: 10,
-          );
-
-      if (contactListEvent != null) {
-        Log.debug(
-          '✅ Contact list received immediately for $currentUserPubkey',
-          name: 'SocialService',
-          category: LogCategory.system,
-        );
-        _processContactListEvent(contactListEvent);
-      } else {
-        Log.debug(
-          '⏰ No contact list found for $currentUserPubkey',
-          name: 'SocialService',
-          category: LogCategory.system,
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Error fetching follow list: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  /// Process a NIP-02 contact list event (Kind 3)
-  void _processContactListEvent(Event event) {
-    // Only update if this is newer than our current contact list event
-    if (_currentUserContactListEvent == null ||
-        event.createdAt > _currentUserContactListEvent!.createdAt) {
-      _currentUserContactListEvent = event;
-
-      // Extract followed pubkeys from 'p' tags
-      final followedPubkeys = <String>[];
-      for (final tag in event.tags) {
-        if (tag.isNotEmpty && tag[0] == 'p' && tag.length > 1) {
-          followedPubkeys.add(tag[1]);
-        }
-      }
-
-      _followingPubkeys = followedPubkeys;
-      Log.info(
-        'Updated follow list: ${_followingPubkeys.length} following',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-
-      // Persist following list to local storage for aggressive caching
-      _saveFollowingListToCache();
-    }
-  }
+  // === FOLLOWER STATS ===
 
   /// Get follower and following counts for a specific pubkey
   Future<Map<String, int>> getFollowerStats(String pubkey) async {
@@ -893,246 +630,7 @@ class SocialService {
     }
   }
 
-  // === REPOST SYSTEM (NIP-18) ===
-
-  /// Toggles repost state for a video event (repost/unrepost)
-  /// Uses NIP-18 for repost (Kind 6) and NIP-09 for unrepost (Kind 5)
-  Future<void> toggleRepost(VideoEvent videoToRepost) async {
-    if (!_authService.isAuthenticated) {
-      Log.error(
-        'Cannot repost - user not authenticated',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      throw Exception('User not authenticated');
-    }
-
-    Log.debug(
-      '🔄 Toggling repost for video: ${videoToRepost.id}',
-      name: 'SocialService',
-      category: LogCategory.system,
-    );
-
-    // Extract d-tag from video's rawTags
-    final dTagValue = videoToRepost.rawTags['d'];
-    if (dTagValue == null || dTagValue.isEmpty) {
-      throw Exception('Cannot repost: Video event missing required d tag');
-    }
-
-    // Check repost state using addressable ID format
-    final addressableId =
-        '${NIP71VideoKinds.addressableShortVideo}:${videoToRepost.pubkey}:$dTagValue';
-    final wasReposted = _repostedEventIds.contains(addressableId);
-
-    try {
-      if (!wasReposted) {
-        // Repost the video
-        Log.debug(
-          '➕ Adding repost for video: ${videoToRepost.id}',
-          name: 'SocialService',
-          category: LogCategory.system,
-        );
-
-        // Create NIP-18 generic repost event (Kind 16) for non-kind-1 events
-        final event = await _authService.createAndSignEvent(
-          kind: 16,
-          content: '',
-          tags: [
-            ['k', '34236'], // Required k tag for generic repost
-            ['a', addressableId],
-            ['p', videoToRepost.pubkey],
-          ],
-        );
-
-        if (event == null) {
-          throw Exception('Failed to create repost event');
-        }
-
-        // Cache immediately
-        _personalEventCache?.cacheUserEvent(event);
-
-        // Publish
-        final sentEvent = await _nostrService.publishEvent(event);
-        if (sentEvent == null) {
-          throw Exception('Failed to publish repost to relays');
-        }
-
-        // Update local state
-        _repostedEventIds.add(addressableId);
-        _repostEventIdToRepostId[addressableId] = event.id;
-
-        Log.info(
-          'Repost published for video: ${videoToRepost.id}',
-          name: 'SocialService',
-          category: LogCategory.system,
-        );
-      } else {
-        // Unrepost by publishing NIP-09 deletion event
-        Log.debug(
-          '➖ Removing repost for video: ${videoToRepost.id}',
-          name: 'SocialService',
-          category: LogCategory.system,
-        );
-
-        final repostEventId = _repostEventIdToRepostId[addressableId];
-        if (repostEventId != null) {
-          await _unrepostEvent(repostEventId);
-
-          // Update local state
-          _repostedEventIds.remove(addressableId);
-          _repostEventIdToRepostId.remove(addressableId);
-
-          Log.info(
-            'Unrepost (deletion) published for video: ${videoToRepost.id}',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-        } else {
-          Log.warning(
-            'Cannot unrepost - repost event ID not found',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-
-          // Fallback: remove from local state only
-          _repostedEventIds.remove(addressableId);
-        }
-      }
-    } catch (e) {
-      Log.error(
-        'Error toggling repost: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      rethrow;
-    }
-  }
-
-  /// Publishes a NIP-09 deletion event for unrepost functionality
-  Future<void> _unrepostEvent(String repostEventId) async {
-    try {
-      // Create NIP-09 deletion event (Kind 5)
-      final event = await _authService.createAndSignEvent(
-        kind: 5,
-        content: 'Unreposted',
-        tags: [
-          ['e', repostEventId], // Reference to the repost event to delete
-        ],
-      );
-
-      if (event == null) {
-        throw Exception('Failed to create unrepost deletion event');
-      }
-
-      // Cache immediately
-      _personalEventCache?.cacheUserEvent(event);
-
-      // Publish
-      final sentEvent = await _nostrService.publishEvent(event);
-      if (sentEvent == null) {
-        throw Exception('Failed to publish unrepost to relays');
-      }
-
-      Log.debug(
-        'Unrepost deletion event published: ${event.id}',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        'Error publishing unrepost deletion: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      rethrow;
-    }
-  }
-
-  /// Reposts a Nostr event (Kind 6)
-  Future<void> repostEvent(Event eventToRepost) async {
-    if (!_authService.isAuthenticated) {
-      Log.error(
-        'Cannot repost - user not authenticated',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      throw Exception('User not authenticated');
-    }
-
-    Log.debug(
-      'Reposting event: ${eventToRepost.id}',
-      name: 'SocialService',
-      category: LogCategory.system,
-    );
-
-    try {
-      // Create NIP-18 repost event (Kind 6)
-      // For addressable events, we need to extract the 'd' tag value
-      String? dTagValue;
-      for (final tag in eventToRepost.tags) {
-        if (tag.isNotEmpty && tag[0] == 'd' && tag.length > 1) {
-          dTagValue = tag[1];
-          break;
-        }
-      }
-
-      if (dTagValue == null) {
-        throw Exception('Cannot repost: Video event missing required d tag');
-      }
-
-      // Use 'a' tag for addressable event reference
-      final repostTags = <List<String>>[
-        [
-          'k',
-          '${NIP71VideoKinds.addressableShortVideo}',
-        ], // Required k tag for generic repost (kind 16)
-        [
-          'a',
-          '${NIP71VideoKinds.addressableShortVideo}:${eventToRepost.pubkey}:$dTagValue',
-        ],
-        ['p', eventToRepost.pubkey], // Reference to original author
-      ];
-
-      final event = await _authService.createAndSignEvent(
-        kind: 16, // Generic repost event for non-kind-1 events (NIP-18)
-        content: '', // Content is typically empty for reposts
-        tags: repostTags,
-      );
-
-      if (event == null) {
-        throw Exception('Failed to create repost event');
-      }
-
-      // Cache the repost event immediately after creation
-      _personalEventCache?.cacheUserEvent(event);
-
-      // Publish the repost event
-      final sentEvent = await _nostrService.publishEvent(event);
-
-      if (sentEvent == null) {
-        throw Exception('Failed to publish repost to relays');
-      }
-
-      // Track the repost locally using the addressable ID format
-      final addressableId =
-          '${NIP71VideoKinds.addressableShortVideo}:${eventToRepost.pubkey}:$dTagValue';
-      _repostedEventIds.add(addressableId);
-      _repostEventIdToRepostId[addressableId] = event.id;
-
-      Log.info(
-        'Event reposted successfully: ${event.id}',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-    } catch (e) {
-      Log.error(
-        'Error reposting event: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-      rethrow;
-    }
-  }
+  // === ACCOUNT MANAGEMENT ===
 
   /// Publishes a NIP-62 "right to be forgotten" deletion request event
   Future<void> publishRightToBeForgotten() async {
@@ -1197,99 +695,11 @@ class SocialService {
     }
   }
 
-  /// Save following list to local storage for aggressive caching
-  Future<void> _saveFollowingListToCache() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final currentUserPubkey = _authService.currentPublicKeyHex;
-      if (currentUserPubkey != null) {
-        final key = 'following_list_$currentUserPubkey';
-        await prefs.setString(key, jsonEncode(_followingPubkeys));
-        Log.debug(
-          '💾 Saved following list to cache: ${_followingPubkeys.length} users',
-          name: 'SocialService',
-          category: LogCategory.system,
-        );
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to save following list to cache: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  /// Load following list from local storage
-  Future<void> _loadFollowingListFromCache() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final currentUserPubkey = _authService.currentPublicKeyHex;
-      if (currentUserPubkey != null) {
-        final key = 'following_list_$currentUserPubkey';
-        final cached = prefs.getString(key);
-        if (cached != null) {
-          final List<dynamic> decoded = jsonDecode(cached);
-          _followingPubkeys = decoded.cast<String>();
-          Log.info(
-            '📋 Loaded cached following list: ${_followingPubkeys.length} users',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-        }
-      }
-    } catch (e) {
-      Log.error(
-        'Failed to load following list from cache: $e',
-        name: 'SocialService',
-        category: LogCategory.system,
-      );
-    }
-  }
-
   void dispose() {
     Log.debug(
       '📱️ Disposing SocialService',
       name: 'SocialService',
       category: LogCategory.system,
     );
-
-    // Cancel all managed subscriptions
-    if (_followSubscriptionId != null) {
-      _subscriptionManager.cancelSubscription(_followSubscriptionId!);
-      _followSubscriptionId = null;
-    }
-    if (_repostSubscriptionId != null) {
-      _subscriptionManager.cancelSubscription(_repostSubscriptionId!);
-      _repostSubscriptionId = null;
-    }
-    if (_userRepostsSubscriptionId != null) {
-      _subscriptionManager.cancelSubscription(_userRepostsSubscriptionId!);
-      _userRepostsSubscriptionId = null;
-    }
-  }
-
-  /// Process a repost event and extract the reposted event ID
-  /// Handles 'a' tags for addressable events
-  void _processRepostEvent(Event repostEvent) {
-    // Check for 'a' tags (addressable event references)
-    for (final tag in repostEvent.tags) {
-      if (tag.isNotEmpty && tag[0] == 'a' && tag.length > 1) {
-        // Parse the 'a' tag format: "kind:pubkey:d-tag-value"
-        final parts = tag[1].split(':');
-        if (parts.length >= 3 &&
-            parts[0] == '${NIP71VideoKinds.addressableShortVideo}') {
-          final addressableId = tag[1];
-          _repostedEventIds.add(addressableId);
-          _repostEventIdToRepostId[addressableId] = repostEvent.id;
-          Log.debug(
-            '📱 Cached user repost of addressable event: $addressableId (repost: ${repostEvent.id})',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-          return;
-        }
-      }
-    }
   }
 }

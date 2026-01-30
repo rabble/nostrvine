@@ -42,14 +42,19 @@ MockSharedPreferences createMockSharedPreferences() {
   }
 
   // Add common SharedPreferences stubs that tests might need
+  when(mockPrefs.getBool(any)).thenReturn(null);
+  when(mockPrefs.setBool(any, any)).thenAnswer((_) async => true);
   when(mockPrefs.getString(any)).thenReturn(null);
   when(mockPrefs.setString(any, any)).thenAnswer((_) async => true);
   when(mockPrefs.getInt(any)).thenReturn(null);
   when(mockPrefs.setInt(any, any)).thenAnswer((_) async => true);
+  when(mockPrefs.getDouble(any)).thenReturn(null);
+  when(mockPrefs.setDouble(any, any)).thenAnswer((_) async => true);
   when(mockPrefs.getStringList(any)).thenReturn(null);
   when(mockPrefs.setStringList(any, any)).thenAnswer((_) async => true);
   when(mockPrefs.remove(any)).thenAnswer((_) async => true);
   when(mockPrefs.clear()).thenAnswer((_) async => true);
+  when(mockPrefs.containsKey(any)).thenReturn(false);
 
   return mockPrefs;
 }
@@ -104,7 +109,31 @@ MockNostrClient createMockNostrService() {
 MockSubscriptionManager createMockSubscriptionManager() {
   final mockSub = MockSubscriptionManager();
 
-  // Stub common methods - subscriptions return empty streams by default
+  // Stub createSubscription to return a valid subscription ID
+  // and immediately call onComplete to simulate empty results
+  when(
+    mockSub.createSubscription(
+      name: anyNamed('name'),
+      filters: anyNamed('filters'),
+      onEvent: anyNamed('onEvent'),
+      onError: anyNamed('onError'),
+      onComplete: anyNamed('onComplete'),
+      timeout: anyNamed('timeout'),
+      priority: anyNamed('priority'),
+    ),
+  ).thenAnswer((invocation) async {
+    // Call onComplete callback if provided to signal subscription finished
+    final onComplete =
+        invocation.namedArguments[const Symbol('onComplete')] as Function()?;
+    if (onComplete != null) {
+      // Use Future.microtask to call after the subscription is "created"
+      Future.microtask(onComplete);
+    }
+    return 'mock_subscription_${DateTime.now().millisecondsSinceEpoch}';
+  });
+
+  // Stub cancelSubscription to do nothing
+  when(mockSub.cancelSubscription(any)).thenAnswer((_) async {});
 
   return mockSub;
 }

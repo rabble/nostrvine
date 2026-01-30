@@ -12,6 +12,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/models/notification_model.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/user_profile_service.dart';
+import 'package:openvine/services/notification_helpers.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:synchronized/synchronized.dart';
@@ -233,13 +234,9 @@ class NotificationServiceEnhanced {
       return;
     }
 
-    // Get actor info - try multiple profile fields
+    // Get actor info using helper function
     final actorProfile = await _profileService?.fetchProfile(event.pubkey);
-    final actorName =
-        actorProfile?.name ??
-        actorProfile?.displayName ??
-        actorProfile?.nip05?.split('@').first ??
-        'Unknown user';
+    final actorName = resolveActorName(actorProfile);
 
     final notification = NotificationModel(
       id: event.id,
@@ -277,13 +274,9 @@ class NotificationServiceEnhanced {
       return;
     }
 
-    // Get actor info - try multiple profile fields
+    // Get actor info using helper function
     final actorProfile = await _profileService?.fetchProfile(event.pubkey);
-    final actorName =
-        actorProfile?.name ??
-        actorProfile?.displayName ??
-        actorProfile?.nip05?.split('@').first ??
-        'Unknown user';
+    final actorName = resolveActorName(actorProfile);
 
     final notification = NotificationModel(
       id: event.id,
@@ -322,13 +315,9 @@ class NotificationServiceEnhanced {
     // Only create notification if this contact list includes the current user
     if (!isFollowingCurrentUser) return;
 
-    // Get actor info - try multiple profile fields
+    // Get actor info using helper function
     final actorProfile = await _profileService?.fetchProfile(event.pubkey);
-    final actorName =
-        actorProfile?.name ??
-        actorProfile?.displayName ??
-        actorProfile?.nip05?.split('@').first ??
-        'Unknown user';
+    final actorName = resolveActorName(actorProfile);
 
     final notification = NotificationModel(
       id: event.id,
@@ -363,13 +352,9 @@ class NotificationServiceEnhanced {
     // Only create notification if this event mentions the current user
     if (!mentionsCurrentUser) return;
 
-    // Get actor info - try multiple profile fields
+    // Get actor info using helper function
     final actorProfile = await _profileService?.fetchProfile(event.pubkey);
-    final actorName =
-        actorProfile?.name ??
-        actorProfile?.displayName ??
-        actorProfile?.nip05?.split('@').first ??
-        'Unknown user';
+    final actorName = resolveActorName(actorProfile);
 
     final notification = NotificationModel(
       id: event.id,
@@ -405,13 +390,9 @@ class NotificationServiceEnhanced {
       return;
     }
 
-    // Get actor info - try multiple profile fields
+    // Get actor info using helper function
     final actorProfile = await _profileService?.fetchProfile(event.pubkey);
-    final actorName =
-        actorProfile?.name ??
-        actorProfile?.displayName ??
-        actorProfile?.nip05?.split('@').first ??
-        'Unknown user';
+    final actorName = resolveActorName(actorProfile);
 
     final notification = NotificationModel(
       id: event.id,

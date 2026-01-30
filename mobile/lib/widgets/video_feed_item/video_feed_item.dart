@@ -2,28 +2,36 @@
 // ABOUTME: Each video gets its own controller with automatic lifecycle management via Riverpod autoDispose
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
-import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
-import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
-import 'package:openvine/providers/social_providers.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart'; // For hasVisibleOverlayProvider (modal pause/resume)
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/comments/comments.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_utils.dart';
+import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/liked_videos_screen_router.dart';
+import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/visibility_tracker.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/ui/overlay_policy.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
@@ -33,6 +41,7 @@ import 'package:openvine/widgets/proofmode_badge.dart';
 import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
+import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
@@ -108,6 +117,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   bool _showFadingPauseButton = false;
   double _pauseButtonOpacity = 1.0;
 
+  // State for double-tap heart animation
+  bool _showDoubleTapHeart = false;
+  double _heartScale = 0.0;
+  double _heartOpacity = 1.0;
+
   /// Triggers the fading pause button animation.
   /// Shows pause icon that fades from 100% to 0% opacity over 500ms.
   void _triggerPauseButtonFade() {
@@ -132,6 +146,51 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         _pauseButtonOpacity = 1.0; // Reset for next use
       });
     });
+  }
+
+  /// Triggers the double-tap heart animation.
+  /// Shows heart that scales up and fades out over ~1 second.
+  void _triggerDoubleTapHeartAnimation() {
+    setState(() {
+      _showDoubleTapHeart = true;
+      _heartScale = 0.0;
+      _heartOpacity = 1.0;
+    });
+
+    // Scale up quickly
+    Future.delayed(const Duration(milliseconds: 50), () {
+      if (!mounted) return;
+      setState(() => _heartScale = 1.0);
+    });
+
+    // Hold, then fade out
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
+      setState(() => _heartOpacity = 0.0);
+    });
+
+    // Hide completely after animation
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (!mounted) return;
+      setState(() {
+        _showDoubleTapHeart = false;
+        _heartScale = 0.0;
+        _heartOpacity = 1.0;
+      });
+    });
+  }
+
+  /// Handles double-tap to like. Only likes (never unlikes) per Instagram behavior.
+  void _handleDoubleTapLike() {
+    final state = _interactionsBloc.state;
+
+    // Only trigger like if not already liked and not in progress
+    if (!state.isLiked && !state.isLikeInProgress) {
+      _interactionsBloc.add(const VideoInteractionsLikeToggled());
+    }
+
+    // Always show heart animation (even if already liked)
+    _triggerDoubleTapHeartAnimation();
   }
 
   /// Stable video identifier for active state tracking
@@ -168,13 +227,35 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       }
 
       // If using override, handle playback directly without provider listener
-      if (widget.isActiveOverride != null) {
+      // BUT still listen to overlay visibility for modal pause/resume
+      final initialOverride = widget.isActiveOverride;
+      if (initialOverride != null) {
         Log.info(
-          '🎬 VideoFeedItem.initState: using isActiveOverride=${widget.isActiveOverride} for ${widget.video.id}',
+          '🎬 VideoFeedItem.initState: using isActiveOverride=$initialOverride for ${widget.video.id}',
           name: 'VideoFeedItem',
           category: LogCategory.video,
         );
-        if (widget.isActiveOverride!) {
+
+        // Listen to overlay visibility to pause/resume when modals open/close
+        ref.listenManual(hasVisibleOverlayProvider, (prev, next) {
+          if (!mounted) return;
+          // Re-read current override value (may have changed since listener setup)
+          final currentOverride = widget.isActiveOverride;
+          if (currentOverride == null)
+            return; // Widget rebuilt without override
+          // Compute effective active state: override must be true AND no overlay visible
+          final effectivelyActive = currentOverride && !next;
+          Log.info(
+            '🔄 VideoFeedItem overlay changed: videoId=${widget.video.id}, hasOverlay=$next, effectivelyActive=$effectivelyActive',
+            name: 'VideoFeedItem',
+            category: LogCategory.video,
+          );
+          _handlePlaybackChange(effectivelyActive);
+        });
+
+        // Initial play if override is true and no overlay
+        final hasOverlay = ref.read(hasVisibleOverlayProvider);
+        if (initialOverride && !hasOverlay) {
           _handlePlaybackChange(true);
         }
         return;
@@ -255,14 +336,20 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   void _createInteractionsBloc() {
     final likesRepository = ref.read(likesRepositoryProvider);
     final commentsRepository = ref.read(commentsRepositoryProvider);
+    final repostsRepository = ref.read(repostsRepositoryProvider);
+
+    // Build addressable ID for reposts if video has a d-tag (vineId)
+    final addressableId = widget.video.addressableId;
 
     _interactionsBloc = VideoInteractionsBloc(
       eventId: widget.video.id,
       authorPubkey: widget.video.pubkey,
       likesRepository: likesRepository,
       commentsRepository: commentsRepository,
+      repostsRepository: repostsRepository,
+      addressableId: addressableId,
     );
-    // Start listening for liked IDs changes
+    // Start listening for liked/reposted IDs changes
     _interactionsBloc.add(const VideoInteractionsSubscriptionRequested());
     // Trigger initial fetch
     _interactionsBloc.add(const VideoInteractionsFetchRequested());
@@ -573,6 +660,14 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
     final child = GestureDetector(
       behavior: HitTestBehavior.translucent,
+      onDoubleTap: () {
+        Log.debug(
+          '💕 Double-tap detected on VideoFeedItem for ${video.id}',
+          name: 'VideoFeedItem',
+          category: LogCategory.ui,
+        );
+        _handleDoubleTapLike();
+      },
       onTap: () {
         // Lighter debounce - ignore taps within 150ms of previous tap
         // 300ms was too aggressive and was swallowing legitimate pause taps
@@ -656,20 +751,37 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
               final pageContext = ref.read(pageContextProvider);
               pageContext.whenData((ctx) {
                 // Build new route with same type but different index
-                final newRoute = RouteContext(
-                  type: ctx.type,
-                  videoIndex: widget.index,
-                  npub: ctx.npub,
-                  hashtag: ctx.hashtag,
-                );
+                final routePath = switch (ctx.type) {
+                  RouteType.home => HomeScreenRouter.pathForIndex(widget.index),
+                  RouteType.explore => ExploreScreen.pathForIndex(widget.index),
+                  RouteType.notifications => NotificationsScreen.pathForIndex(
+                    widget.index,
+                  ),
+                  RouteType.profile => ProfileScreenRouter.pathForIndex(
+                    ctx.npub ?? 'me',
+                    widget.index,
+                  ),
+                  RouteType.hashtag => HashtagScreenRouter.pathForTag(
+                    ctx.hashtag ?? '',
+                    index: widget.index,
+                  ),
+                  RouteType.likedVideos => LikedVideosScreenRouter.pathForIndex(
+                    widget.index,
+                  ),
+                  RouteType.search => SearchScreenPure.pathForTerm(
+                    term: ctx.searchTerm,
+                    index: widget.index,
+                  ),
+                  _ => ExploreScreen.pathForIndex(widget.index),
+                };
 
                 Log.info(
-                  '🎯 Navigating to route: ${buildRoute(newRoute)}',
+                  '🎯 Navigating to route: $routePath',
                   name: 'VideoFeedItem',
                   category: LogCategory.ui,
                 );
 
-                context.go(buildRoute(newRoute));
+                context.go(routePath);
               });
             }
           }
@@ -846,6 +958,42 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                   ),
                                 ),
                               ),
+                            // Double-tap heart animation
+                            if (_showDoubleTapHeart)
+                              Center(
+                                child: AnimatedOpacity(
+                                  opacity: _heartOpacity,
+                                  duration: const Duration(milliseconds: 400),
+                                  curve: Curves.easeOut,
+                                  child: AnimatedScale(
+                                    scale: _heartScale,
+                                    duration: const Duration(milliseconds: 200),
+                                    curve: Curves.elasticOut,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            blurRadius: 20,
+                                            spreadRadius: 5,
+                                          ),
+                                        ],
+                                      ),
+                                      child: SvgPicture.asset(
+                                        'assets/icon/content-controls/like.svg',
+                                        width: 120,
+                                        height: 120,
+                                        colorFilter: const ColorFilter.mode(
+                                          Colors.white,
+                                          BlendMode.srcIn,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
                           ],
                         ),
                       ),
@@ -922,6 +1070,7 @@ class VideoOverlayActions extends ConsumerWidget {
     this.isFullscreen = false,
     this.listSources,
     this.showListAttribution = false,
+    this.isPreviewMode = false,
     this.hideFollowButtonIfFollowing = false,
   });
 
@@ -931,6 +1080,11 @@ class VideoOverlayActions extends ConsumerWidget {
   final bool hasBottomNavigation;
   final String? contextTitle;
   final bool isFullscreen;
+
+  /// Displays the overlay in preview mode during video creation.
+  /// When true, users can preview how their video will appear to other users
+  /// before publishing.
+  final bool isPreviewMode;
 
   /// Set of curated list IDs this video is from (for list attribution display).
   final Set<String>? listSources;
@@ -993,16 +1147,17 @@ class VideoOverlayActions extends ConsumerWidget {
           ),
         ),
         // ProofMode and Vine badges in upper right corner (tappable)
-        Positioned(
-          top: MediaQuery.of(context).viewPadding.top + topOffset,
-          right: 16,
-          child: GestureDetector(
-            onTap: () {
-              _showBadgeExplanationModal(context, ref, video, isActive);
-            },
-            child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
+        if (!isPreviewMode)
+          Positioned(
+            top: MediaQuery.viewPaddingOf(context).top + topOffset,
+            right: 16,
+            child: GestureDetector(
+              onTap: () {
+                _showBadgeExplanationModal(context, ref, video, isActive);
+              },
+              child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
+            ),
           ),
-        ),
         // Author info and video description overlay at bottom left
         Positioned(
           bottom: bottomOffset,
@@ -1031,7 +1186,8 @@ class VideoOverlayActions extends ConsumerWidget {
                     );
                     final avatarUrl = profile?.picture;
                     final displayName =
-                        profile?.bestDisplayName ?? 'Loading...';
+                        profile?.bestDisplayName ??
+                        NostrKeyUtils.truncateNpub(video.pubkey);
                     final loopCount = video.originalLoops ?? 0;
 
                     void navigateToProfile() {
@@ -1040,7 +1196,10 @@ class VideoOverlayActions extends ConsumerWidget {
                         name: 'VideoFeedItem',
                         category: LogCategory.ui,
                       );
-                      context.pushOtherProfile(video.pubkey);
+                      final npub = normalizeToNpub(video.pubkey);
+                      if (npub != null) {
+                        context.push(OtherProfileScreen.pathForNpub(npub));
+                      }
                     }
 
                     return Row(
@@ -1279,7 +1438,8 @@ class VideoOverlayActions extends ConsumerWidget {
                 children: [
                   // Edit button (only show for owned videos when feature is enabled)
                   // Hide in fullscreen mode since it's shown in AppBar instead
-                  if (!isFullscreen) _VideoEditButton(video: video),
+                  if (!isFullscreen && !isPreviewMode)
+                    _VideoEditButton(video: video),
 
                   // Flag/Report button for content moderation
                   Semantics(
@@ -1385,122 +1545,8 @@ class VideoOverlayActions extends ConsumerWidget {
 
                   const SizedBox(height: 4),
 
-                  // Repost/Revine button - wrapped in Consumer to isolate rebuilds
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final socialState = ref.watch(socialProvider);
-                      // Construct addressable ID for repost state check
-                      final dTag = video.rawTags['d'];
-                      final addressableId = dTag != null
-                          ? '${NIP71VideoKinds.addressableShortVideo}:${video.pubkey}:$dTag'
-                          : video.id;
-                      final isReposted = socialState.hasReposted(addressableId);
-                      final isRepostInProgress = socialState.isRepostInProgress(
-                        video.id,
-                      );
-
-                      return Column(
-                        children: [
-                          Semantics(
-                            identifier: 'repost_button',
-                            container: true,
-                            explicitChildNodes: true,
-                            button: true,
-                            label: isReposted
-                                ? 'Remove repost'
-                                : 'Repost video',
-                            child: IconButton(
-                              padding: const EdgeInsets.all(8),
-                              constraints: const BoxConstraints.tightFor(
-                                width: 48,
-                                height: 48,
-                              ),
-                              style: IconButton.styleFrom(
-                                highlightColor: Colors.transparent,
-                                splashFactory: NoSplash.splashFactory,
-                              ),
-                              onPressed: isRepostInProgress
-                                  ? null
-                                  : () async {
-                                      Log.info(
-                                        '🔁 Repost button tapped for ${video.id}',
-                                        name: 'VideoFeedItem',
-                                        category: LogCategory.ui,
-                                      );
-                                      await ref
-                                          .read(socialProvider.notifier)
-                                          .toggleRepost(video);
-                                    },
-                              icon: isRepostInProgress
-                                  ? const SizedBox(
-                                      width: 32,
-                                      height: 32,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : DecoratedBox(
-                                      decoration: BoxDecoration(
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withValues(
-                                              alpha: 0.15,
-                                            ),
-                                            blurRadius: 15,
-                                            spreadRadius: 1,
-                                          ),
-                                        ],
-                                      ),
-                                      child: SvgPicture.asset(
-                                        'assets/icon/content-controls/repost.svg',
-                                        width: 32,
-                                        height: 32,
-                                        colorFilter: ColorFilter.mode(
-                                          isReposted
-                                              ? VineTheme.vineGreen
-                                              : Colors.white,
-                                          BlendMode.srcIn,
-                                        ),
-                                      ),
-                                    ),
-                            ),
-                          ),
-                          // Show repost count: Nostr reposts + original reposts (if any)
-                          Builder(
-                            builder: (context) {
-                              final nostrReposts =
-                                  video.reposterPubkeys?.length ?? 0;
-                              final originalReposts =
-                                  video.originalReposts ?? 0;
-                              final totalReposts =
-                                  nostrReposts + originalReposts;
-
-                              if (totalReposts > 0) {
-                                return Padding(
-                                  padding: const EdgeInsets.only(bottom: 8),
-                                  child: Text(
-                                    StringUtils.formatCompactNumber(
-                                      totalReposts,
-                                    ),
-                                    style: const TextStyle(
-                                      fontFamily: 'Bricolage Grotesque',
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.w600,
-                                      height: 1,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                );
-                              }
-                              return const SizedBox.shrink();
-                            },
-                          ),
-                        ],
-                      );
-                    },
-                  ),
+                  // Repost button
+                  RepostActionButton(video: video),
 
                   const SizedBox(height: 4),
 
@@ -1510,7 +1556,7 @@ class VideoOverlayActions extends ConsumerWidget {
                   const SizedBox(height: 4),
 
                   // Like button
-                  _LikeActionButtonThemed(video: video),
+                  LikeActionButton(video: video),
                 ],
               ),
             ),
@@ -1755,7 +1801,10 @@ class VideoAuthorRow extends ConsumerWidget {
               category: LogCategory.ui,
             );
             // Push other user's profile (fullscreen, no bottom nav)
-            context.pushOtherProfile(video.pubkey);
+            final npub = normalizeToNpub(video.pubkey);
+            if (npub != null) {
+              context.push(OtherProfileScreen.pathForNpub(npub));
+            }
           },
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -1809,7 +1858,8 @@ class VideoRepostHeader extends ConsumerWidget {
     }
 
     final displayName =
-        reposterProfile?.bestDisplayName ?? reposterPubkey.substring(0, 8);
+        reposterProfile?.bestDisplayName ??
+        NostrKeyUtils.truncateNpub(reposterPubkey);
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -1919,7 +1969,7 @@ class _CommentActionButton extends StatelessWidget {
                   }
                 }
               }
-              context.pushComments(video);
+              CommentsScreen.show(context, video);
             },
             icon: DecoratedBox(
               decoration: BoxDecoration(
@@ -1948,135 +1998,6 @@ class _CommentActionButton extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               StringUtils.formatCompactNumber(totalComments),
-              style: const TextStyle(
-                fontFamily: 'Bricolage Grotesque',
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                height: 1,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-        ],
-      ],
-    );
-  }
-}
-
-/// Like button with theming-d0.1 SVG icon style.
-///
-/// Displays a heart icon that changes color when liked.
-/// Shows like count below if > 0.
-///
-/// Uses [VideoInteractionsBloc] for like state when available.
-class _LikeActionButtonThemed extends StatelessWidget {
-  const _LikeActionButtonThemed({required this.video});
-
-  final VideoEvent video;
-
-  @override
-  Widget build(BuildContext context) {
-    final interactionsBloc = context.read<VideoInteractionsBloc?>();
-
-    if (interactionsBloc == null) {
-      // No bloc available - show disabled state with original likes only
-      return _buildButton(
-        context: context,
-        isLiked: false,
-        isLikeInProgress: false,
-        totalLikes: video.originalLikes ?? 0,
-        onPressed: null,
-      );
-    }
-
-    return BlocBuilder<VideoInteractionsBloc, VideoInteractionsState>(
-      builder: (context, state) {
-        final isLiked = state.isLiked;
-        final isLikeInProgress = state.isLikeInProgress;
-        final likeCount = state.likeCount ?? 0;
-        final totalLikes = likeCount + (video.originalLikes ?? 0);
-
-        return _buildButton(
-          context: context,
-          isLiked: isLiked,
-          isLikeInProgress: isLikeInProgress,
-          totalLikes: totalLikes,
-          onPressed: () {
-            Log.info(
-              '❤️ Like button tapped for ${video.id}',
-              name: 'VideoFeedItem',
-              category: LogCategory.ui,
-            );
-            context.read<VideoInteractionsBloc>().add(
-              const VideoInteractionsLikeToggled(),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  Widget _buildButton({
-    required BuildContext context,
-    required bool isLiked,
-    required bool isLikeInProgress,
-    required int totalLikes,
-    required VoidCallback? onPressed,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Semantics(
-          identifier: 'like_button',
-          container: true,
-          explicitChildNodes: true,
-          button: true,
-          label: isLiked ? 'Unlike video' : 'Like video',
-          child: IconButton(
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-            style: IconButton.styleFrom(
-              highlightColor: Colors.transparent,
-              splashFactory: NoSplash.splashFactory,
-            ),
-            onPressed: isLikeInProgress || onPressed == null ? null : onPressed,
-            icon: isLikeInProgress
-                ? const SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : DecoratedBox(
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 15,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                    child: SvgPicture.asset(
-                      'assets/icon/content-controls/like.svg',
-                      width: 32,
-                      height: 32,
-                      colorFilter: ColorFilter.mode(
-                        isLiked ? Colors.red : Colors.white,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-          ),
-        ),
-        if (totalLikes > 0) ...[
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              StringUtils.formatCompactNumber(totalLikes),
               style: const TextStyle(
                 fontFamily: 'Bricolage Grotesque',
                 color: Colors.white,

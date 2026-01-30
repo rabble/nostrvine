@@ -5,32 +5,30 @@ import 'dart:io'
 
 import 'package:audio_session/audio_session.dart';
 import 'package:db_client/db_client.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:permissions_service/permissions_service.dart';
-import 'package:window_manager/window_manager.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:hive_ce_flutter/hive_flutter.dart';
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/blocs/camera_permission/camera_permission_bloc.dart';
+import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/config/zendesk_config.dart';
 import 'package:openvine/network/vine_cdn_http_overrides.dart'
     if (dart.library.html) 'package:openvine/utils/platform_io_web.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/providers/social_providers.dart' as social_providers;
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/last_tab_position_provider.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/router/route_normalization_provider.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/router/tab_history_provider.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -43,19 +41,23 @@ import 'package:openvine/services/back_button_handler.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/deep_link_service.dart';
 import 'package:openvine/services/draft_migration_service.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/logging_config_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/video_cache_manager.dart';
+import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
-import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/utils/ffmpeg_encoder.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/app_lifecycle_handler.dart';
 import 'package:openvine/widgets/geo_blocking_gate.dart';
+import 'package:permissions_service/permissions_service.dart';
+import 'package:pooled_video_player/pooled_video_player.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:window_manager/window_manager.dart';
 
 Future<void> _startOpenVineApp() async {
   // Add timing logs for startup diagnostics
@@ -228,22 +230,6 @@ Future<void> _startOpenVineApp() async {
         category: LogCategory.system,
       );
       StartupPerformanceService.instance.completePhase('video_cache');
-    }
-  }
-
-  // Initialize FFmpegEncoder with memory-efficient session settings
-  if (!kIsWeb) {
-    StartupPerformanceService.instance.startPhase('ffmpeg_encoder');
-    try {
-      await FFmpegEncoder.initialize();
-      StartupPerformanceService.instance.completePhase('ffmpeg_encoder');
-    } catch (e) {
-      Log.error(
-        '[STARTUP] FFmpeg encoder initialization failed: $e',
-        name: 'Main',
-        category: LogCategory.system,
-      );
-      StartupPerformanceService.instance.completePhase('ffmpeg_encoder');
     }
   }
 
@@ -545,6 +531,14 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
     category: LogCategory.system,
   );
 
+  final poolManager = await VideoControllerPoolManager.initialize();
+  Log.info(
+    '[INIT] ✅ VideoControllerPoolManager initialized '
+    '(poolSize: ${poolManager.poolSize})',
+    name: 'Main',
+    category: LogCategory.system,
+  );
+
   Log.info(
     '[INIT] ✅ All critical services initialized',
     name: 'Main',
@@ -615,6 +609,9 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     // Initialize the deep link service for password reset
     ref.read(passwordResetListenerProvider).initialize();
 
+    // Initialize the deep link service for email verification
+    ref.read(emailVerificationListenerProvider).initialize();
+
     Log.info(
       '✅ Deep Link services initialized',
       name: 'DeepLinkHandler',
@@ -625,24 +622,6 @@ class _DivineAppState extends ConsumerState<DivineApp> {
   /// Initialize non-critical background services.
   /// Critical services are already initialized before runApp in _initializeCoreServices.
   void _initializeBackgroundServices() {
-    // Initialize social provider in background
-    Future.microtask(() async {
-      try {
-        await ref.read(social_providers.socialProvider.notifier).initialize();
-        Log.info(
-          '[INIT] ✅ SocialProvider initialized (background)',
-          name: 'Main',
-          category: LogCategory.system,
-        );
-      } catch (e) {
-        Log.warning(
-          '[INIT] SocialProvider failed (non-critical): $e',
-          name: 'Main',
-          category: LogCategory.system,
-        );
-      }
-    });
-
     // Initialize mutual mute list sync in background
     Future.microtask(() async {
       try {
@@ -970,27 +949,21 @@ class _DivineAppState extends ConsumerState<DivineApp> {
       // For notifications: go to index 0 (notifications always has an index)
       // For other routes: go to grid mode (null index)
       if (ctx.videoIndex != null && ctx.videoIndex != 0) {
-        RouteContext gridCtx;
-        if (ctx.type == RouteType.notifications) {
+        final newRoute = switch (ctx.type) {
           // Notifications always has an index, go to index 0
-          gridCtx = RouteContext(
-            type: ctx.type,
-            hashtag: ctx.hashtag,
-            searchTerm: ctx.searchTerm,
-            npub: ctx.npub,
-            videoIndex: 0,
-          );
-        } else {
-          // For explore and other routes, go to grid mode (null index)
-          gridCtx = RouteContext(
-            type: ctx.type,
-            hashtag: ctx.hashtag,
-            searchTerm: ctx.searchTerm,
-            npub: ctx.npub,
-            videoIndex: null,
-          );
-        }
-        final newRoute = buildRoute(gridCtx);
+          RouteType.notifications => NotificationsScreen.pathForIndex(0),
+          RouteType.explore => ExploreScreen.path,
+          RouteType.profile => ProfileScreenRouter.pathForNpub(
+            ctx.npub ?? 'me',
+          ),
+          RouteType.hashtag => HashtagScreenRouter.pathForTag(
+            ctx.hashtag ?? '',
+          ),
+          RouteType.search => SearchScreenPure.path,
+          RouteType.home => HomeScreenRouter.pathForIndex(0),
+          _ => ExploreScreen.path,
+        };
+
         router.go(newRoute);
         return true; // Handled
       }
@@ -1076,12 +1049,66 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             ),
           );
 
+    /// Creates the publish service with callbacks wired to this notifier.
+    Future<VideoPublishService> createPublishService({
+      required OnProgressChanged onProgress,
+    }) async {
+      final prefs = await SharedPreferences.getInstance();
+
+      return VideoPublishService(
+        uploadManager: ref.read(uploadManagerProvider),
+        authService: ref.read(authServiceProvider),
+        videoEventPublisher: ref.read(videoEventPublisherProvider),
+        blossomService: ref.read(blossomUploadServiceProvider),
+        draftService: DraftStorageService(prefs),
+        onProgressChanged:
+            ({required String draftId, required double progress}) {
+              onProgress(draftId: draftId, progress: progress);
+            },
+      );
+    }
+
     // Wrap with geo-blocking check first, then lifecycle handler
-    Widget wrapped = BlocProvider(
-      create: (_) => CameraPermissionBloc(
-        permissionsService: const PermissionHandlerPermissionsService(),
-      )..add(const CameraPermissionRefresh()),
-      child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+    Widget wrapped = MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => BackgroundPublishBloc(
+            videoPublishServiceFactory: createPublishService,
+          ),
+        ),
+        BlocProvider(
+          create: (_) => CameraPermissionBloc(
+            permissionsService: const PermissionHandlerPermissionsService(),
+          )..add(const CameraPermissionRefresh()),
+        ),
+        BlocProvider(
+          create: (_) => EmailVerificationCubit(
+            oauthClient: ref.read(oauthClientProvider),
+            authService: ref.read(authServiceProvider),
+          ),
+        ),
+      ],
+      // Global listener for email verification failures - shows snackbar
+      // when verification times out or fails while user is elsewhere in app
+      child: BlocListener<EmailVerificationCubit, EmailVerificationState>(
+        listenWhen: (previous, current) =>
+            current.status == EmailVerificationStatus.failure &&
+            previous.status != EmailVerificationStatus.failure,
+        listener: (context, state) {
+          final messenger = ScaffoldMessenger.maybeOf(context);
+          if (messenger != null && state.error != null) {
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(state.error!),
+                backgroundColor: Colors.red[700],
+                behavior: SnackBarBehavior.floating,
+                duration: const Duration(seconds: 5),
+              ),
+            );
+          }
+        },
+        child: GeoBlockingGate(child: AppLifecycleHandler(child: app)),
+      ),
     );
 
     if (crashProbe) {

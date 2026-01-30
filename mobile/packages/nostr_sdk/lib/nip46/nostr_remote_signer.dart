@@ -59,6 +59,24 @@ class NostrRemoteSigner extends NostrSigner {
   /// we don't miss events that were created while we were disconnected.
   int? _subscriptionSinceTimestamp;
 
+  /// Tracks retry count per relay address for exponential backoff
+  final Map<String, int> _relayRetryCount = {};
+
+  /// Maximum number of reconnection attempts before giving up
+  static const int _maxRetries = 5;
+
+  /// Flag to track if this signer has been closed
+  /// When true, all reconnection attempts should be stopped
+  bool _isClosed = false;
+
+  /// Flag to track if reconnection is paused (e.g., when app is backgrounded)
+  /// When true, reconnection attempts are skipped but not permanently stopped
+  bool _isPaused = false;
+
+  /// Tracks which relays have received EOSE (stable connection confirmed)
+  /// Only reset retry count for relays that have proven stable
+  final Set<String> _stableRelays = {};
+
   Future<String?> connect({bool sendConnectRequest = true}) async {
     log(
       '[NIP46] connect: STARTING - _subscriptionSinceTimestamp=$_subscriptionSinceTimestamp, relays.length=${relays.length}, callbacks=${callbacks.keys.toList()}',
@@ -150,17 +168,37 @@ class NostrRemoteSigner extends NostrSigner {
             // Also remove from pending requests since we got a response
             _pendingRequestEvents.remove(response.id);
             if (completer != null) {
-              completer.complete(response.result);
+              // Check if bunker returned an error response
+              if (response.error != null && response.error!.isNotEmpty) {
+                log(
+                  '[NIP46] onMessage: bunker returned error for id=${response.id}: ${response.error}',
+                );
+                completer.completeError(
+                  Exception('Bunker error: ${response.error}'),
+                );
+              } else {
+                completer.complete(response.result);
+              }
             }
           } else {
             log('[NIP46] onMessage: failed to decrypt response');
           }
         }
-      } catch (err) {
-        log('[NIP46] onMessage error: $err');
+      } catch (err, stackTrace) {
+        log('[NIP46] onMessage error: $err\n$stackTrace');
+        // Re-throw to ensure the error is not silently swallowed
+        // This allows the caller to handle the error appropriately
+        rethrow;
       }
     } else if (messageType == 'EOSE') {
-      log('[NIP46] onMessage: EOSE received');
+      final addr = relay.relayStatus.addr;
+      log(
+        '[NIP46] onMessage: EOSE received from $addr - connection confirmed stable',
+      );
+      // Mark this relay as stable (has successfully received data)
+      _stableRelays.add(addr);
+      // Now it's safe to reset retry count since connection is proven stable
+      _relayRetryCount[addr] = 0;
     } else if (messageType == "NOTICE") {
       log('[NIP46] onMessage: NOTICE: ${json.length > 1 ? json[1] : ""}');
     } else if (messageType == "AUTH") {
@@ -183,7 +221,21 @@ class NostrRemoteSigner extends NostrSigner {
     relay.onMessage = onMessage;
     await addPenddingQueryMsg(relay);
     relay.relayStatusCallback = () {
+      if (_isClosed) {
+        log(
+          '[NIP46] relayStatusCallback: signer is closed, ignoring disconnect',
+        );
+        return;
+      }
+      if (_isPaused) {
+        log(
+          '[NIP46] relayStatusCallback: signer is paused, ignoring disconnect',
+        );
+        return;
+      }
       if (relayStatus.connected == ClientConnected.disconnect) {
+        // Mark relay as no longer stable when it disconnects
+        _stableRelays.remove(relayStatus.addr);
         log(
           '[NIP46] relayStatusCallback: relay ${relayStatus.addr} disconnected, attempting reconnect...',
         );
@@ -201,51 +253,87 @@ class NostrRemoteSigner extends NostrSigner {
   /// Attempts to reconnect a relay after disconnection
   /// Uses exponential backoff to avoid hammering the relay
   Future<void> _reconnectRelay(Relay relay) async {
-    // Avoid multiple simultaneous reconnection attempts
-    if (relay.relayStatus.connected == ClientConnected.connecting) {
+    // Don't attempt reconnection if the signer has been closed
+    if (_isClosed) {
+      log('[NIP46] _reconnectRelay: signer is closed, skipping reconnect');
+      return;
+    }
+
+    // Don't attempt reconnection if paused (e.g., app backgrounded)
+    if (_isPaused) {
+      log('[NIP46] _reconnectRelay: signer is paused, skipping reconnect');
+      return;
+    }
+
+    final addr = relay.relayStatus.addr;
+
+    // Check retry count and enforce limit
+    final retryCount = _relayRetryCount[addr] ?? 0;
+    if (retryCount >= _maxRetries) {
       log(
-        '[NIP46] _reconnectRelay: already reconnecting to ${relay.relayStatus.addr}',
+        '[NIP46] _reconnectRelay: max retries ($_maxRetries) reached for $addr, giving up',
       );
       return;
     }
 
+    // Avoid multiple simultaneous reconnection attempts
+    if (relay.relayStatus.connected == ClientConnected.connecting) {
+      log('[NIP46] _reconnectRelay: already reconnecting to $addr');
+      return;
+    }
+
+    // Check if still disconnected (might have reconnected via another path)
+    // Only skip if this relay is confirmed stable (has received EOSE)
+    if (relay.relayStatus.connected == ClientConnected.connected &&
+        _stableRelays.contains(addr)) {
+      log('[NIP46] _reconnectRelay: $addr already reconnected and stable');
+      return;
+    }
+
+    // Increment retry count
+    _relayRetryCount[addr] = retryCount + 1;
+
+    // Apply exponential backoff: 100ms, 200ms, 400ms, 800ms, 1600ms
+    final backoffMs = 100 * (1 << retryCount);
+    log(
+      '[NIP46] _reconnectRelay: attempt ${retryCount + 1}/$_maxRetries for $addr, waiting ${backoffMs}ms...',
+    );
+    await Future<void>.delayed(Duration(milliseconds: backoffMs));
+
     try {
-      // Check if still disconnected (might have reconnected via another path)
-      if (relay.relayStatus.connected == ClientConnected.connected) {
-        log(
-          '[NIP46] _reconnectRelay: ${relay.relayStatus.addr} already reconnected',
-        );
-        return;
-      }
-
-      log(
-        '[NIP46] _reconnectRelay: reconnecting to ${relay.relayStatus.addr}...',
-      );
-
       // Add subscription query to pending messages before reconnecting
       if (relay.pendingMessages.isEmpty) {
         await addPenddingQueryMsg(relay);
       }
 
       await relay.connect();
-      log(
-        '[NIP46] _reconnectRelay: ${relay.relayStatus.addr} reconnected successfully',
-      );
 
-      // Resend any pending request events that were waiting for responses
-      if (_pendingRequestEvents.isNotEmpty) {
+      // Check if actually connected after connect() returns
+      if (relay.relayStatus.connected == ClientConnected.connected) {
         log(
-          '[NIP46] _reconnectRelay: resending ${_pendingRequestEvents.length} pending requests',
+          '[NIP46] _reconnectRelay: $addr reconnected, waiting for EOSE to confirm stability',
         );
-        for (var entry in _pendingRequestEvents.entries) {
-          log('[NIP46] _reconnectRelay: resending request id=${entry.key}');
-          relay.send(entry.value, forceSend: true);
+        // Don't reset retry count here - wait for EOSE to confirm stable connection
+        // This prevents infinite reconnect loops when connection appears successful
+        // but fails asynchronously
+
+        // Resend any pending request events that were waiting for responses
+        if (_pendingRequestEvents.isNotEmpty) {
+          log(
+            '[NIP46] _reconnectRelay: resending ${_pendingRequestEvents.length} pending requests',
+          );
+          for (var entry in _pendingRequestEvents.entries) {
+            log('[NIP46] _reconnectRelay: resending request id=${entry.key}');
+            relay.send(entry.value, forceSend: true);
+          }
         }
+      } else {
+        log(
+          '[NIP46] _reconnectRelay: $addr connect() completed but not connected',
+        );
       }
     } catch (e) {
-      log(
-        '[NIP46] _reconnectRelay: failed to reconnect ${relay.relayStatus.addr}: $e',
-      );
+      log('[NIP46] _reconnectRelay: failed to reconnect $addr: $e');
     }
   }
 
@@ -375,13 +463,23 @@ class NostrRemoteSigner extends NostrSigner {
         log(
           '[NIP46] sendAndWaitForResult: waiting for response with timeout=${timeout}s',
         );
-        return await completer.future.timeout(
-          Duration(seconds: timeout),
-          onTimeout: () {
-            log('[NIP46] sendAndWaitForResult: TIMEOUT waiting for response');
-            return null;
-          },
-        );
+        try {
+          return await completer.future.timeout(
+            Duration(seconds: timeout),
+            onTimeout: () {
+              log('[NIP46] sendAndWaitForResult: TIMEOUT waiting for response');
+              // Clean up callback and pending request on timeout
+              callbacks.remove(request.id);
+              _pendingRequestEvents.remove(request.id);
+              throw TimeoutException(
+                'Bunker request timed out after ${timeout}s',
+                Duration(seconds: timeout),
+              );
+            },
+          );
+        } on TimeoutException {
+          rethrow;
+        }
       } else {
         log('[NIP46] sendAndWaitForResult: failed to sign event');
       }
@@ -458,6 +556,61 @@ class NostrRemoteSigner extends NostrSigner {
     return _remotePubkeyTags!;
   }
 
+  /// Pause reconnection attempts (e.g., when app goes to background)
+  /// This prevents wasted reconnection attempts when network is unavailable
+  void pause() {
+    if (_isPaused) return;
+    log('[NIP46] pause: pausing reconnection attempts');
+    _isPaused = true;
+  }
+
+  /// Resume reconnection attempts (e.g., when app returns to foreground)
+  /// Also resets retry counts to give fresh attempts after resume
+  void resume() {
+    if (!_isPaused) return;
+    log('[NIP46] resume: resuming reconnection attempts');
+    _isPaused = false;
+    // Reset retry counts to give fresh attempts after resume
+    _relayRetryCount.clear();
+
+    // Attempt to reconnect any disconnected relays
+    for (final relay in relays) {
+      if (relay.relayStatus.connected == ClientConnected.disconnect) {
+        log('[NIP46] resume: reconnecting ${relay.relayStatus.addr}');
+        _reconnectRelay(relay);
+      }
+    }
+  }
+
+  /// Whether the signer is currently paused
+  bool get isPaused => _isPaused;
+
   @override
-  void close() {}
+  void close() {
+    log('[NIP46] close: closing signer and disconnecting all relays');
+    _isClosed = true;
+
+    // Disconnect all relays to stop reconnection attempts
+    for (final relay in relays) {
+      try {
+        relay.disconnect();
+      } catch (e) {
+        log(
+          '[NIP46] close: error disconnecting relay ${relay.relayStatus.addr}: $e',
+        );
+      }
+    }
+    relays.clear();
+
+    // Clear all pending callbacks
+    for (final completer in callbacks.values) {
+      if (!completer.isCompleted) {
+        completer.completeError(Exception('Signer closed'));
+      }
+    }
+    callbacks.clear();
+    _pendingRequestEvents.clear();
+    _relayRetryCount.clear();
+    _stableRelays.clear();
+  }
 }

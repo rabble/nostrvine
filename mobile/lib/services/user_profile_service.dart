@@ -10,8 +10,10 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Service for managing user profiles from Nostr kind 0 events
@@ -20,8 +22,20 @@ class UserProfileService extends ChangeNotifier {
   UserProfileService(
     this._nostrService, {
     required SubscriptionManager subscriptionManager,
-  }) : _subscriptionManager = subscriptionManager;
+    AnalyticsApiService? analyticsApiService,
+    bool funnelcakeAvailable = false,
+  }) : _subscriptionManager = subscriptionManager,
+       _analyticsApiService = analyticsApiService,
+       _funnelcakeAvailable = funnelcakeAvailable;
   final NostrClient _nostrService;
+  final AnalyticsApiService? _analyticsApiService;
+  bool _funnelcakeAvailable;
+
+  /// Update funnelcake availability status (called from provider when it changes)
+  void setFunnelcakeAvailable(bool available) {
+    _funnelcakeAvailable = available;
+  }
+
   final ConnectionStatusService _connectionService = ConnectionStatusService();
 
   final Map<String, UserProfile> _profileCache =
@@ -293,6 +307,46 @@ class UserProfileService extends ChangeNotifier {
     try {
       _pendingRequests.add(pubkey);
 
+      // Try REST API first (faster, no WebSocket overhead)
+      // Use centralized funnelcake availability check (probes API for capability)
+      if (_analyticsApiService != null && _funnelcakeAvailable) {
+        final restProfile = await _analyticsApiService.getUserProfile(pubkey);
+        if (restProfile != null) {
+          // Create UserProfile from REST response
+          final profile = UserProfile(
+            pubkey: pubkey,
+            name: restProfile['name'] as String?,
+            displayName: restProfile['display_name'] as String?,
+            about: restProfile['about'] as String?,
+            picture: restProfile['picture'] as String?,
+            banner: restProfile['banner'] as String?,
+            nip05: restProfile['nip05'] as String?,
+            lud16: restProfile['lud16'] as String?,
+            rawData: restProfile,
+            createdAt: DateTime.now(), // REST API doesn't return timestamp
+            eventId: 'rest-api-$pubkey', // Synthetic event ID
+          );
+
+          // Cache the profile
+          _profileCache[pubkey] = profile;
+          if (_persistentCache?.isInitialized == true) {
+            _persistentCache!.cacheProfile(profile);
+          }
+
+          _pendingRequests.remove(pubkey);
+          notifyListeners();
+
+          Log.info(
+            '✅ Got profile via REST API: ${profile.bestDisplayName}',
+            name: 'UserProfileService',
+            category: LogCategory.system,
+          );
+          return profile;
+        }
+        // REST API didn't have the profile, fall through to WebSocket
+      }
+
+      // Fall back to WebSocket relay batch fetch
       // Create a completer to track this fetch request
       final completer = Completer<UserProfile?>();
       _profileFetchCompleters[pubkey] = completer;
@@ -782,10 +836,8 @@ class UserProfileService extends ChangeNotifier {
     if (profile?.name?.isNotEmpty == true) {
       return profile!.name!;
     }
-    // Immediate fallback to user-friendly shortened pubkey
-    return pubkey.length > 16
-        ? 'User ${pubkey.substring(0, 6)}...'
-        : 'User $pubkey';
+    // Immediate fallback to truncated npub
+    return NostrKeyUtils.truncateNpub(pubkey);
   }
 
   /// Remove specific profile from cache

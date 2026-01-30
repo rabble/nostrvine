@@ -296,13 +296,6 @@ class NsecBunkerClient {
       // Use nostr_sdk's NostrRemoteSignerInfo to parse bunker URI
       final signerInfo = NostrRemoteSignerInfo.parseBunkerUrl(bunkerUri);
 
-      if (signerInfo == null) {
-        return const BunkerAuthResult(
-          success: false,
-          error: 'Failed to parse bunker URI',
-        );
-      }
-
       // Convert to BunkerConfig format
       if (signerInfo.relays.isEmpty) {
         return const BunkerAuthResult(

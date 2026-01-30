@@ -179,6 +179,39 @@ void main() {
       expect(stats['expiredProfiles'], isA<int>());
     });
 
+    test('should update with same timestamp but different eventId', () async {
+      final timestamp = DateTime.now();
+
+      final profile1 = UserProfile(
+        pubkey: 'test_pubkey',
+        name: 'Original Name',
+        displayName: 'Original Display',
+        rawData: {'name': 'Original Name'},
+        createdAt: timestamp,
+        eventId: 'original_event_id',
+      );
+
+      final profile2 = UserProfile(
+        pubkey: 'test_pubkey',
+        name: 'Updated Name',
+        displayName: 'Updated Display',
+        rawData: {'name': 'Updated Name'},
+        createdAt: timestamp, // Same timestamp
+        eventId: 'different_event_id', // Different eventId
+      );
+
+      // Cache original profile
+      await cacheService.cacheProfile(profile1);
+
+      // Update with same-timestamp but different eventId
+      await cacheService.updateCachedProfile(profile2);
+
+      // Should have the updated profile
+      final retrieved = cacheService.getCachedProfile('test_pubkey');
+      expect(retrieved!.name, equals('Updated Name'));
+      expect(retrieved.eventId, equals('different_event_id'));
+    });
+
     test('should handle expired profiles', () async {
       // Create an old profile (simulated as expired)
       final oldProfile = UserProfile(

@@ -10,16 +10,16 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/router/app_shell.dart';
-import 'package:openvine/router/route_utils.dart';
 import 'package:openvine/screens/auth/divine_auth_screen.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
+import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:openvine/screens/clip_manager_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
@@ -41,19 +41,21 @@ import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
-import 'package:openvine/screens/pure/universal_camera_screen_pure.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/screens/video_editor_screen.dart';
+import 'package:openvine/screens/video_editor/video_editor_screen.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
+import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -89,6 +91,36 @@ class FollowingRoutes {
 
   /// Build path for a specific user's following list.
   static String pathForPubkey(String pubkey) => '$basePath/$pubkey';
+}
+
+/// Extra data for curated list route (passed via GoRouter extra)
+class CuratedListRouteExtra {
+  const CuratedListRouteExtra({
+    required this.listName,
+    this.videoIds,
+    this.authorPubkey,
+  });
+
+  final String listName;
+  final List<String>? videoIds;
+  final String? authorPubkey;
+}
+
+/// Extra data for video editor route (passed via GoRouter extra)
+class VideoEditorRouteExtra {
+  const VideoEditorRouteExtra({
+    required this.videoPath,
+    this.externalAudioEventId,
+    this.externalAudioUrl,
+    this.externalAudioIsBundled = false,
+    this.externalAudioAssetPath,
+  });
+
+  final String videoPath;
+  final String? externalAudioEventId;
+  final String? externalAudioUrl;
+  final bool externalAudioIsBundled;
+  final String? externalAudioAssetPath;
 }
 
 // Navigator keys for per-tab state preservation
@@ -143,9 +175,10 @@ int tabIndexFromLocation(String loc) {
     case 'setup-profile':
     case 'import-key':
     case 'welcome':
-    case 'camera':
+    case 'video-recorder':
+    case 'video-editor':
+    case 'video-metadata':
     case 'clip-manager':
-    case 'edit-video':
     case 'drafts':
     case 'followers':
     case 'following':
@@ -159,14 +192,6 @@ int tabIndexFromLocation(String loc) {
     default:
       return 0; // fallback to home
   }
-}
-
-// Track if we've done initial navigation to avoid redirect loops
-bool _hasNavigated = false;
-
-/// Reset navigation state for testing purposes
-void resetNavigationState() {
-  _hasNavigated = false;
 }
 
 /// Check if the CURRENT user has any cached following list in SharedPreferences
@@ -221,6 +246,34 @@ Future<bool> hasAnyFollowingInCache(SharedPreferences prefs) async {
   }
 }
 
+/// Check if we should redirect to explore because user has no following list
+/// Returns the redirect path (/explore) or null if no redirect needed
+Future<String?> _checkEmptyFollowingRedirect({
+  required String location,
+  required SharedPreferences prefs,
+}) async {
+  // Only redirect to explore when coming from WelcomeScreen if user follows
+  // nobody. After that, let users navigate to home freely (they'll see a
+  // message to follow people)
+  if (location.startsWith(WelcomeScreen.path)) {
+    final hasFollowing = await hasAnyFollowingInCache(prefs);
+    Log.debug(
+      'Empty contacts check: hasFollowing=$hasFollowing, redirecting=${!hasFollowing}',
+      name: 'AppRouter',
+      category: LogCategory.ui,
+    );
+    if (!hasFollowing) {
+      Log.debug(
+        'Redirecting to /explore because no following list found',
+        name: 'AppRouter',
+        category: LogCategory.ui,
+      );
+      return ExploreScreen.path;
+    }
+  }
+  return null;
+}
+
 /// Listenable that notifies when auth state changes to/from authenticated
 /// Only notifies on meaningful state changes to avoid unnecessary router refreshes
 class _AuthStateListenable extends ChangeNotifier {
@@ -250,7 +303,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   // The refreshListenable handles reacting to auth state changes
   final authService = ref.read(authServiceProvider);
   final authListenable = _AuthStateListenable(authService);
-
+  // Cache SharedPreferences to avoid slow getInstance() calls in redirect
+  final prefs = ref.read(sharedPreferencesProvider);
   return GoRouter(
     navigatorKey: _rootKey,
     // Start at /welcome - redirect logic will navigate to appropriate route
@@ -268,25 +322,22 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'AppRouter',
         category: LogCategory.ui,
       );
-      Log.debug(
-        'Getting SharedPreferences...',
-        name: 'AppRouter',
-        category: LogCategory.ui,
-      );
-      final prefs = await SharedPreferences.getInstance();
-      Log.debug(
-        'SharedPreferences obtained',
-        name: 'AppRouter',
-        category: LogCategory.ui,
-      );
 
       final authState = ref.read(authServiceProvider).authState;
       if (authState == AuthState.authenticated &&
           (location == WelcomeScreen.path ||
               location == KeyImportScreen.path ||
               location == WelcomeScreen.loginOptionsPath ||
-              location == WelcomeScreen.resetPasswordPath)) {
+              location == WelcomeScreen.resetPasswordPath ||
+              location == EmailVerificationScreen.path)) {
         debugPrint('[Router] Authenticated. moving to /home/0');
+        final emptyFollowingRedirect = await _checkEmptyFollowingRedirect(
+          location: location,
+          prefs: prefs,
+        );
+        if (emptyFollowingRedirect != null) {
+          return emptyFollowingRedirect;
+        }
         return HomeScreenRouter.pathForIndex(0);
       }
 
@@ -294,7 +345,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final isAuthRoute =
           location.startsWith(WelcomeScreen.path) ||
           location.startsWith(KeyImportScreen.path) ||
-          location.startsWith(WelcomeScreen.resetPasswordPath);
+          location.startsWith(WelcomeScreen.resetPasswordPath) ||
+          location.startsWith(EmailVerificationScreen.path);
 
       // Check TOS acceptance for non-auth routes
       if (!isAuthRoute) {
@@ -331,49 +383,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           );
           return WelcomeScreen.path;
         }
-      }
-
-      // Redirect FROM /welcome TO /explore when TOS is accepted AND user is authenticated
-      if (location.startsWith(WelcomeScreen.path)) {
-        final hasAcceptedTerms = prefs.getBool('age_verified_16_plus') ?? false;
-        if (hasAcceptedTerms && authState == AuthState.authenticated) {
-          Log.debug(
-            'TOS accepted and authenticated, redirecting from /welcome to /explore',
-            name: 'AppRouter',
-            category: LogCategory.ui,
-          );
-          return ExploreScreen.path;
-        }
-      }
-
-      // Only redirect to explore on very first navigation if user follows nobody
-      // After that, let users navigate to home freely (they'll see a message to follow people)
-      if (!_hasNavigated && location.startsWith(HomeScreenRouter.path)) {
-        _hasNavigated = true;
-
-        // Check SharedPreferences cache directly for following list
-        // This is more reliable than checking socialProvider state which may not be initialized
-        final prefs = await SharedPreferences.getInstance();
-        final hasFollowing = await hasAnyFollowingInCache(prefs);
-        Log.debug(
-          'Empty contacts check: hasFollowing=$hasFollowing, redirecting=${!hasFollowing}',
-          name: 'AppRouter',
-          category: LogCategory.ui,
-        );
-        if (!hasFollowing) {
-          Log.debug(
-            'Redirecting to /explore because no following list found',
-            name: 'AppRouter',
-            category: LogCategory.ui,
-          );
-          return ExploreScreen.path;
-        }
-      } else if (location.startsWith(HomeScreenRouter.path)) {
-        Log.debug(
-          'Skipping empty contacts check: _hasNavigated=$_hasNavigated',
-          name: 'AppRouter',
-          category: LogCategory.ui,
-        );
       }
 
       Log.debug(
@@ -704,17 +713,21 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return '${WelcomeScreen.resetPasswordPath}?token=$token';
         },
       ),
-
+      // Email verification route - supports both modes:
+      // - Token mode (deep link): /verify-email?token=xyz
+      // - Polling mode (after registration): /verify-email?deviceCode=abc&verifier=def&email=user@example.com
       GoRoute(
-        path: UniversalCameraScreenPure.path,
-        name: UniversalCameraScreenPure.routeName,
-        builder: (_, __) =>
-            const CameraPermissionGate(child: UniversalCameraScreenPure()),
-      ),
-      GoRoute(
-        path: ClipManagerScreen.path,
-        name: ClipManagerScreen.routeName,
-        builder: (_, __) => const ClipManagerScreen(),
+        path: EmailVerificationScreen.path,
+        name: EmailVerificationScreen.routeName,
+        builder: (context, state) {
+          final params = state.uri.queryParameters;
+          return EmailVerificationScreen(
+            token: params['token'],
+            deviceCode: params['deviceCode'],
+            verifier: params['verifier'],
+            email: params['email'],
+          );
+        },
       ),
       GoRoute(
         path: SettingsScreen.path,
@@ -916,31 +929,43 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Video editor route (requires video passed via extra)
       GoRoute(
+        path: VideoRecorderScreen.path,
+        name: VideoRecorderScreen.routeName,
+        builder: (_, _) =>
+            const CameraPermissionGate(child: VideoRecorderScreen()),
+      ),
+      // Video editor route
+      GoRoute(
         path: VideoEditorScreen.path,
         name: VideoEditorScreen.routeName,
-        builder: (ctx, st) {
-          // Support both simple String (videoPath only) and VideoEditorRouteExtra
-          final extra = st.extra;
-          if (extra is VideoEditorRouteExtra) {
-            return VideoEditorScreen(
-              videoPath: extra.videoPath,
-              externalAudioEventId: extra.externalAudioEventId,
-              externalAudioUrl: extra.externalAudioUrl,
-              externalAudioIsBundled: extra.externalAudioIsBundled,
-              externalAudioAssetPath: extra.externalAudioAssetPath,
-            );
-          }
-          // Legacy support: simple String path
-          final videoPath = extra as String?;
-          if (videoPath == null) {
-            // If no video provided, show error screen
-            return Scaffold(
-              appBar: AppBar(title: const Text('Error')),
-              body: const Center(child: Text('No video selected for editing')),
-            );
-          }
-          return VideoEditorScreen(videoPath: videoPath);
+        builder: (_, st) => const VideoEditorScreen(),
+      ),
+      GoRoute(
+        path: VideoClipEditorScreen.path,
+        name: VideoClipEditorScreen.routeName,
+        builder: (_, st) {
+          final extra = st.extra as Map<String, dynamic>?;
+          final fromLibrary = extra?['fromLibrary'] as bool? ?? false;
+          return VideoClipEditorScreen(fromLibrary: fromLibrary);
         },
+      ),
+      GoRoute(
+        path: '${VideoClipEditorScreen.path}/:draftId',
+        name: '${VideoClipEditorScreen.routeName}-draft',
+        builder: (_, st) {
+          // The draft ID is optional if the user wants to continue editing
+          // the draft.
+          final draftId = st.pathParameters['draftId'];
+
+          return VideoClipEditorScreen(
+            draftId: draftId == null || draftId.isEmpty ? null : draftId,
+          );
+        },
+      ),
+      GoRoute(
+        path: VideoMetadataScreen.path,
+        name: VideoMetadataScreen.routeName,
+        builder: (_, st) => const VideoMetadataScreen(),
       ),
       // Fullscreen video feed route (no bottom nav, used from profile/hashtag grids)
       GoRoute(
@@ -973,7 +998,15 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               body: const Center(child: Text('Invalid profile ID')),
             );
           }
-          return OtherProfileScreen(npub: npub);
+          // Extract profile hints from extra (for users without Kind 0 profiles)
+          final extra = st.extra as Map<String, String?>?;
+          final displayNameHint = extra?['displayName'];
+          final avatarUrlHint = extra?['avatarUrl'];
+          return OtherProfileScreen(
+            npub: npub,
+            displayNameHint: displayNameHint,
+            avatarUrlHint: avatarUrlHint,
+          );
         },
       ),
     ],
@@ -1058,10 +1091,7 @@ class _SoundDetailLoader extends ConsumerWidget {
         }
         return SoundDetailScreen(sound: sound);
       },
-      loading: () => const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(child: BrandedLoadingIndicator(size: 60)),
-      ),
+      loading: () => const BrandedLoadingScaffold(),
       error: (error, stack) => Scaffold(
         backgroundColor: Colors.black,
         appBar: AppBar(

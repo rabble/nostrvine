@@ -1,17 +1,24 @@
 // ABOUTME: Riverpod provider for managing video publish screen state
 // ABOUTME: Controls playback, mute state, and position tracking
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
-import 'package:openvine/models/video_publish/video_publish_state.dart';
 import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
+import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -24,15 +31,15 @@ final videoPublishProvider =
 
 /// Manages video publish screen state including playback and position.
 class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
-  VineDraft? draft;
-
   @override
   VideoPublishProviderState build() {
     return const VideoPublishProviderState();
   }
 
   /// Creates the publish service with callbacks wired to this notifier.
-  Future<VideoPublishService> _createPublishService() async {
+  Future<VideoPublishService> _createPublishService({
+    required OnProgressChanged onProgressChanged,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
 
     return VideoPublishService(
@@ -41,120 +48,35 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       videoEventPublisher: ref.read(videoEventPublisherProvider),
       blossomService: ref.read(blossomUploadServiceProvider),
       draftService: DraftStorageService(prefs),
-      onStateChanged: setPublishState,
-      onProgressChanged: setUploadProgress,
-      isMounted: () => ref.mounted,
+      onProgressChanged: ({required String draftId, required double progress}) {
+        setUploadProgress(draftId: draftId, progress: progress);
+        onProgressChanged(draftId: draftId, progress: progress);
+      },
     );
   }
 
-  void _cleanupAfterPublish() {
+  /// Resets all video-related providers after a successful publish.
+  ///
+  /// Clears recorder, editor, clip manager, sound selection, and publish state.
+  void cleanupAfterPublish() {
     ref.read(videoRecorderProvider.notifier).reset();
-    // TODO(@hm21): Temporary "commented out" create PR with only new files
-    // ref.read(videoEditorProvider.notifier).reset();
+    ref.read(videoEditorProvider.notifier).reset();
     ref.read(clipManagerProvider.notifier).clearAll();
     ref.read(selectedSoundProvider.notifier).clear();
     reset();
   }
 
-  /// Sets video data and metadata for publishing.
-  void initialize({required VineDraft draft}) {
-    this.draft = draft;
-    // TODO(@hm21): Temporary "commented out" create PR with only new files
-    /* state = state.copyWith(clip: draft.clips.first);
-
-    Log.info(
-      '🎬 Video publish initialized with ${draft.clips.length} clip(s)',
-      name: 'VideoPublishNotifier',
-      category: .video,
-    ); */
-  }
-
-  /// Toggles between play and pause states.
-  void togglePlayPause() {
-    final newState = !state.isPlaying;
-    state = state.copyWith(isPlaying: newState);
-
-    Log.info(
-      '${newState ? '▶️' : '⏸️'} Video ${newState ? 'playing' : 'paused'}',
-      name: 'VideoPublishNotifier',
-      category: .video,
-    );
-  }
-
-  /// Sets the playing state.
-  void setPlaying(bool isPlaying) {
-    state = state.copyWith(isPlaying: isPlaying);
-
-    Log.info(
-      '${isPlaying ? '▶️' : '⏸️'} Video playback set to '
-      '${isPlaying ? 'playing' : 'paused'}',
-      name: 'VideoPublishNotifier',
-      category: .video,
-    );
-  }
-
-  /// Toggles mute state.
-  void toggleMute() {
-    final newState = !state.isMuted;
-    state = state.copyWith(isMuted: newState);
-
-    Log.info(
-      '${newState ? '🔇' : '🔊'} Video ${newState ? 'muted' : 'unmuted'}',
-      name: 'VideoPublishNotifier',
-      category: .video,
-    );
-  }
-
-  /// Sets the muted state.
-  void setMuted(bool isMuted) {
-    state = state.copyWith(isMuted: isMuted);
-
-    Log.info(
-      '${isMuted ? '🔇' : '🔊'} Video audio set to '
-      '${isMuted ? 'muted' : 'unmuted'}',
-      name: 'VideoPublishNotifier',
-      category: .video,
-    );
-  }
-
-  /// Updates current playback position.
-  void updatePosition(Duration position) {
-    state = state.copyWith(currentPosition: position);
-  }
-
-  /// Sets total video duration.
-  void setDuration(Duration duration) {
-    state = state.copyWith(totalDuration: duration);
-
-    Log.info(
-      '⏱️ Video duration set: ${duration.inSeconds}s',
-      name: 'VideoPublishNotifier',
-      category: .video,
-    );
-  }
-
   /// Updates upload progress (0.0 to 1.0).
-  void setUploadProgress(double value) {
-    state = state.copyWith(uploadProgress: value);
+  void setUploadProgress({required String draftId, required double progress}) {
+    state = state.copyWith(uploadProgress: progress);
 
-    if (value == 0.0 || value == 1.0 || (value * 100) % 25 == 0) {
+    if (progress == 0.0 || progress == 1.0 || (progress * 100) % 10 == 0) {
       Log.info(
-        '📊 Upload progress: ${(value * 100).toStringAsFixed(0)}%',
+        '📊 Upload progress: ${(progress * 100).toStringAsFixed(0)}%',
         name: 'VideoPublishNotifier',
         category: .video,
       );
     }
-  }
-
-  /// Updates the publish state.
-  void setPublishState(VideoPublishState value) {
-    state = state.copyWith(publishState: value);
-
-    Log.info(
-      'Publish state changed to: ${value.name}',
-      name: 'VideoPublishNotifier',
-      category: .video,
-    );
   }
 
   /// Sets error state with user message.
@@ -170,12 +92,12 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
 
   /// Clears any error state.
   void clearError() {
-    state = state.copyWith(publishState: .idle, errorMessage: null);
+    state = state.copyWith(publishState: .idle, errorMessage: '');
   }
 
   /// Publishes the video with ProofMode attestation and navigates to
   /// profile on success.
-  Future<void> publishVideo(BuildContext context) async {
+  Future<void> publishVideo(BuildContext context, VineDraft draft) async {
     if (state.publishState != .idle) {
       Log.warning(
         '⚠️ Publish already in progress, ignoring duplicate request',
@@ -185,19 +107,9 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       return;
     }
 
-    if (draft == null) {
-      Log.error(
-        '❌ Cannot publish: Draft is required',
-        name: 'VideoPublishNotifier',
-        category: .video,
-      );
-      throw ArgumentError('Draft is required!');
-    }
+    VineDraft publishDraft = draft.copyWith();
 
     try {
-      // Stop video playback when publishing starts
-      setPlaying(false);
-      setPublishState(.preparing);
       Log.info(
         '📝 Starting video publish process',
         name: 'VideoPublishNotifier',
@@ -205,7 +117,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       );
 
       // If the draft hasn't been proofread yet, we'll try again here.
-      if (draft!.proofManifestJson == null) {
+      if (draft.proofManifestJson == null) {
         Log.info(
           '🔐 Generating proof manifest for video',
           name: 'VideoPublishNotifier',
@@ -215,12 +127,12 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         // When we publish a clip, we expect all the clips to be merged, so we
         // can read the first clip directly. Multiple clips are only required to
         // restore the editor state from drafts.
-
-        // TODO(@hm21): Temporary "commented out" create PR with only new files
-        /* final filePath = await draft!.clips.first.video.safeFilePath();
+        final filePath = await publishDraft.clips.first.video.safeFilePath();
         final result = await NativeProofModeService.proofFile(File(filePath));
         String? proofManifestJson = result == null ? null : jsonEncode(result);
-        draft = draft!.copyWith(proofManifestJson: proofManifestJson);
+        publishDraft = publishDraft.copyWith(
+          proofManifestJson: proofManifestJson,
+        );
 
         if (proofManifestJson != null) {
           Log.info(
@@ -233,8 +145,8 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
             '⚠️ Proof manifest generation returned null',
             name: 'VideoPublishNotifier',
             category: .video,
-          ); 
-        }*/
+          );
+        }
       }
 
       Log.info(
@@ -243,20 +155,48 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         category: .video,
       );
 
-      final publishService = await _createPublishService();
-      final result = await publishService.publishVideo(draft: draft!);
+      final backgroundPublishBloc = context.read<BackgroundPublishBloc>();
+      final publishService = await _createPublishService(
+        onProgressChanged: ({required draftId, required progress}) {
+          backgroundPublishBloc.add(
+            BackgroundPublishProgressChanged(
+              draftId: draftId,
+              progress: progress,
+            ),
+          );
+        },
+      );
+
+      final publishmentProcess = publishService.publishVideo(
+        draft: publishDraft,
+      );
+      backgroundPublishBloc.add(
+        BackgroundPublishRequested(
+          draft: publishDraft,
+          publishmentProcess: publishmentProcess,
+        ),
+      );
+
+      // Navigate to current user's profile
+      final authService = ref.read(authServiceProvider);
+      final currentNpub = authService.currentNpub;
+      if (currentNpub != null) {
+        context.go(ProfileScreenRouter.pathForNpub(currentNpub));
+      }
+
+      // Wait the publishment process to complete
+      // so the data can be properly cleaned up.
+      final result = await publishmentProcess;
 
       // Handle result
       switch (result) {
         case PublishSuccess():
-          _cleanupAfterPublish();
+          cleanupAfterPublish();
           Log.info(
             '🎉 Video published successfully',
             name: 'VideoPublishNotifier',
             category: .video,
           );
-          if (!context.mounted) return;
-          context.goMyProfile();
 
         case PublishError(:final userMessage):
           setError(userMessage);
@@ -274,8 +214,6 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         error: error,
         stackTrace: stackTrace,
       );
-
-      setPublishState(.error);
     } finally {
       Log.info(
         '🏁 Publish process completed',

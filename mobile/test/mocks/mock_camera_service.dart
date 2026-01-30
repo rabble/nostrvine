@@ -58,8 +58,9 @@ class MockCameraService extends CameraService {
   }
 
   @override
-  Future<void> startRecording({Duration? maxDuration}) async {
+  Future<bool> startRecording({Duration? maxDuration}) async {
     _isRecording = true;
+    return true;
   }
 
   @override
@@ -97,4 +98,7 @@ class MockCameraService extends CameraService {
 
   @override
   bool get hasFlash => true;
+
+  @override
+  String? get initializationError => null;
 }

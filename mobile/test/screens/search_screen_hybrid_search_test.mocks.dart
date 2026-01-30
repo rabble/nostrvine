@@ -523,6 +523,15 @@ class MockVideoEventService extends _i1.Mock implements _i2.VideoEventService {
           as _i10.Future<void>);
 
   @override
+  _i10.Future<void> resetAndResubscribeAll() =>
+      (super.noSuchMethod(
+            Invocation.method(#resetAndResubscribeAll, []),
+            returnValue: _i10.Future<void>.value(),
+            returnValueForMissingStub: _i10.Future<void>.value(),
+          )
+          as _i10.Future<void>);
+
+  @override
   _i10.Future<void> loadMoreVideos({int? limit = 100}) =>
       (super.noSuchMethod(
             Invocation.method(#loadMoreVideos, [], {#limit: limit}),
@@ -900,6 +909,12 @@ class MockUserProfileService extends _i1.Mock
             returnValueForMissingStub: false,
           )
           as bool);
+
+  @override
+  void setFunnelcakeAvailable(bool? available) => super.noSuchMethod(
+    Invocation.method(#setFunnelcakeAvailable, [available]),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void setPersistentCache(_i14.ProfileCacheService? cacheService) =>

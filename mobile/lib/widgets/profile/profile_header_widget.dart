@@ -1,15 +1,19 @@
-// ABOUTME: Profile header widget showing avatar, stats, name, bio, and npub
+// ABOUTME: Profile header widget showing avatar, stats, name, and bio
 // ABOUTME: Reusable between own profile and others' profile screens
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
+import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/profile/profile_followers_stat.dart';
 import 'package:openvine/widgets/profile/profile_following_stat.dart';
@@ -17,13 +21,16 @@ import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 
-/// Profile header widget displaying avatar, stats, name, bio, and public key.
+/// Profile header widget displaying avatar, stats, name, and bio.
 class ProfileHeaderWidget extends ConsumerWidget {
   const ProfileHeaderWidget({
     required this.userIdHex,
     required this.isOwnProfile,
+    required this.videoCount,
     required this.profileStatsAsync,
     this.onSetupProfile,
+    this.displayNameHint,
+    this.avatarUrlHint,
     super.key,
   });
 
@@ -33,6 +40,9 @@ class ProfileHeaderWidget extends ConsumerWidget {
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
 
+  /// The number of videos loaded in the profile grid.
+  final int videoCount;
+
   /// Async value containing profile stats (video count, etc.).
   final AsyncValue<ProfileStats> profileStatsAsync;
 
@@ -40,27 +50,36 @@ class ProfileHeaderWidget extends ConsumerWidget {
   /// Only shown for own profile with default name.
   final VoidCallback? onSetupProfile;
 
+  /// Optional display name hint for users without Kind 0 profiles (e.g., classic Viners).
+  final String? displayNameHint;
+
+  /// Optional avatar URL hint for users without Kind 0 profiles.
+  final String? avatarUrlHint;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Watch profile from relay (reactive)
     final profileAsync = ref.watch(fetchUserProfileProvider(userIdHex));
     final profile = profileAsync.value;
 
-    if (!isOwnProfile && profile == null) {
-      return const SizedBox.shrink();
-    }
-
-    final profilePictureUrl = profile?.picture;
-    final displayName = profile?.bestDisplayName;
+    // Use hints as fallbacks for users without Kind 0 profiles (e.g., classic Viners)
+    final profilePictureUrl = profile?.picture ?? avatarUrlHint;
+    final displayName = profile?.bestDisplayName ?? displayNameHint;
     final hasCustomName =
         profile?.name?.isNotEmpty == true ||
-        profile?.displayName?.isNotEmpty == true;
-    final nip05 = profile?.nip05;
+        profile?.displayName?.isNotEmpty == true ||
+        displayNameHint?.isNotEmpty == true;
+    final nip05 = profile?.displayNip05;
     final about = profile?.about;
     final authService = ref.watch(authServiceProvider);
 
+    // Watch auth state to rebuild when auth state changes
+    // (e.g., after email verification completes)
+    ref.watch(currentAuthStateProvider);
+    final isAnonymous = authService.isAnonymous;
+
     return Padding(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
       child: Column(
         children: [
           // Setup profile banner for new users with default names
@@ -70,14 +89,13 @@ class ProfileHeaderWidget extends ConsumerWidget {
 
           // Secure account banner for anonymous users (only on own profile)
           // Only shown when headless auth feature is enabled
-          if (isOwnProfile && authService.isAnonymous)
-            _IdentityNotRecoverableBanner(),
+          if (isOwnProfile && isAnonymous) _IdentityNotRecoverableBanner(),
 
           // Profile picture and stats row
           Row(
             children: [
               // Profile picture
-              UserAvatar(imageUrl: profilePictureUrl, name: null, size: 86),
+              UserAvatar(imageUrl: profilePictureUrl, name: null, size: 88),
 
               const SizedBox(width: 20),
 
@@ -87,11 +105,9 @@ class ProfileHeaderWidget extends ConsumerWidget {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     ProfileStatColumn(
-                      count: profileStatsAsync.hasValue
-                          ? profileStatsAsync.value!.videoCount
-                          : null,
+                      count: videoCount,
                       label: 'Videos',
-                      isLoading: profileStatsAsync.isLoading,
+                      isLoading: false,
                       onTap: null, // Videos aren't tappable
                     ),
                     ProfileFollowersStat(
@@ -108,10 +124,16 @@ class ProfileHeaderWidget extends ConsumerWidget {
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 24),
 
           // Name and bio
-          _ProfileNameAndBio(userIdHex: userIdHex, nip05: nip05, about: about),
+          _ProfileNameAndBio(
+            profile: profile,
+            userIdHex: userIdHex,
+            nip05: nip05,
+            about: about,
+            displayNameHint: displayNameHint,
+          ),
         ],
       ),
     );
@@ -139,24 +161,22 @@ class _SetupProfileBanner extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.person_add, color: Colors.white, size: 24),
+          Icon(Icons.person_add, color: VineTheme.whiteText, size: 24),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'Complete Your Profile',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: VineTheme.titleSmallFont(),
                 ),
-                SizedBox(height: 4),
+                const SizedBox(height: 4),
                 Text(
                   'Add your name, bio, and picture to get started',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
+                  style: VineTheme.bodySmallFont(
+                    color: VineTheme.onSurfaceMuted,
+                  ),
                 ),
               ],
             ),
@@ -164,16 +184,16 @@ class _SetupProfileBanner extends StatelessWidget {
           ElevatedButton(
             onPressed: onSetup,
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
+              backgroundColor: VineTheme.whiteText,
               foregroundColor: Colors.purple,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),
             ),
-            child: const Text(
+            child: Text(
               'Set Up',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              style: VineTheme.labelMediumFont(color: Colors.purple),
             ),
           ),
         ],
@@ -187,73 +207,156 @@ class _IdentityNotRecoverableBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [VineTheme.vineGreen, Color(0xFF2D8B6F)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          const Icon(Icons.security, color: Colors.white, size: 24),
-          const SizedBox(width: 12),
-          const Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Secure Your Account',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                SizedBox(height: 4),
-                Text(
-                  'Add email & password to recover your account on any device',
-                  style: TextStyle(color: Colors.white70, fontSize: 12),
-                ),
-              ],
+    return BlocBuilder<EmailVerificationCubit, EmailVerificationState>(
+      builder: (context, state) {
+        return Container(
+          margin: const EdgeInsets.only(bottom: 16),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: state.status == EmailVerificationStatus.failure
+                  ? const [Color(0xFFD32F2F), Color(0xFFB71C1C)]
+                  : const [VineTheme.vineGreen, Color(0xFF2D8B6F)],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
+            borderRadius: BorderRadius.circular(12),
           ),
-          ElevatedButton(
-            onPressed: () => context.push(SecureAccountScreen.path),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: VineTheme.vineGreen,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text(
-              'Register',
-              style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
-            ),
+          child: Row(
+            children: [
+              _buildIcon(state),
+              const SizedBox(width: 12),
+              Expanded(child: _buildContent(state)),
+              _buildAction(context, state),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
+  }
+
+  Widget _buildIcon(EmailVerificationState state) {
+    switch (state.status) {
+      case EmailVerificationStatus.polling:
+        return const SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: VineTheme.whiteText,
+          ),
+        );
+      case EmailVerificationStatus.failure:
+        return Icon(Icons.error_outline, color: VineTheme.whiteText, size: 24);
+      case EmailVerificationStatus.initial:
+      case EmailVerificationStatus.success:
+        return Icon(Icons.security, color: VineTheme.whiteText, size: 24);
+    }
+  }
+
+  Widget _buildContent(EmailVerificationState state) {
+    switch (state.status) {
+      case EmailVerificationStatus.polling:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Verifying Email...', style: VineTheme.titleSmallFont()),
+            const SizedBox(height: 4),
+            Text(
+              state.pendingEmail?.isNotEmpty == true
+                  ? 'Check ${state.pendingEmail} for verification link'
+                  : 'Waiting for email verification',
+              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+            ),
+          ],
+        );
+      case EmailVerificationStatus.failure:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Verification Failed', style: VineTheme.titleSmallFont()),
+            const SizedBox(height: 4),
+            Text(
+              state.error ?? 'Please try again',
+              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
+        );
+      case EmailVerificationStatus.initial:
+      case EmailVerificationStatus.success:
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Secure Your Account', style: VineTheme.titleSmallFont()),
+            const SizedBox(height: 4),
+            Text(
+              'Add email & password to recover your account on any device',
+              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
+            ),
+          ],
+        );
+    }
+  }
+
+  Widget _buildAction(BuildContext context, EmailVerificationState state) {
+    switch (state.status) {
+      case EmailVerificationStatus.polling:
+        // No action button while polling - user should check email
+        return const SizedBox.shrink();
+      case EmailVerificationStatus.failure:
+        return ElevatedButton(
+          onPressed: () => context.push(SecureAccountScreen.path),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: VineTheme.whiteText,
+            foregroundColor: Colors.red,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            'Retry',
+            style: VineTheme.labelMediumFont(color: Colors.red),
+          ),
+        );
+      case EmailVerificationStatus.initial:
+      case EmailVerificationStatus.success:
+        return ElevatedButton(
+          onPressed: () => context.push(SecureAccountScreen.path),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: VineTheme.whiteText,
+            foregroundColor: VineTheme.vineGreen,
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+          child: Text(
+            'Register',
+            style: VineTheme.labelMediumFont(color: VineTheme.vineGreen),
+          ),
+        );
+    }
   }
 }
 
 /// Profile name, NIP-05, bio, and public key display.
 class _ProfileNameAndBio extends StatelessWidget {
   const _ProfileNameAndBio({
+    required this.profile,
     required this.userIdHex,
     required this.nip05,
     required this.about,
+    this.displayNameHint,
   });
 
+  final UserProfile? profile;
   final String userIdHex;
   final String? nip05;
   final String? about;
+  final String? displayNameHint;
 
   @override
   Widget build(BuildContext context) {
@@ -262,39 +365,74 @@ class _ProfileNameAndBio extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          UserName.fromPubKey(
-            userIdHex,
-            style: const TextStyle(
-              color: Colors.white,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
+          if (profile != null)
+            UserName.fromUserProfile(
+              profile!,
+              style: VineTheme.titleLargeFont(),
+            )
+          else
+            UserName.fromPubKey(
+              userIdHex,
+              style: VineTheme.titleLargeFont(),
+              anonymousName: displayNameHint,
             ),
-          ),
-          if (nip05 != null && nip05!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            _Nip05Identifier(nip05: nip05!),
-          ],
+          _UniqueIdentifier(userIdHex: userIdHex, nip05: nip05),
           if (about != null && about!.isNotEmpty) ...[
-            const SizedBox(height: 4),
+            const SizedBox(height: 24),
             _AboutText(about: about!),
           ],
-          const SizedBox(height: 8),
-          _PublicKeyDisplay(userIdHex: userIdHex),
         ],
       ),
     );
   }
 }
 
-/// NIP-05 identifier display.
-class _Nip05Identifier extends StatelessWidget {
-  const _Nip05Identifier({required this.nip05});
+/// Unique identifier display (NIP-05 or full npub with ellipsis).
+class _UniqueIdentifier extends StatelessWidget {
+  const _UniqueIdentifier({required this.userIdHex, required this.nip05});
 
-  final String nip05;
+  final String userIdHex;
+  final String? nip05;
 
   @override
   Widget build(BuildContext context) {
-    return Text(nip05, style: TextStyle(color: Colors.grey[400], fontSize: 13));
+    final displayText = (nip05 != null && nip05!.isNotEmpty)
+        ? nip05!
+        : NostrKeyUtils.encodePubKey(userIdHex);
+    final npub = NostrKeyUtils.encodePubKey(userIdHex);
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Flexible(
+          child: Text(
+            displayText,
+            style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.only(left: 8),
+          child: GestureDetector(
+            onTap: () => ClipboardUtils.copy(
+              context,
+              npub,
+              message: 'Unique ID copied to clipboard',
+            ),
+            child: SvgPicture.asset(
+              'assets/icon/copy.svg',
+              width: 24,
+              height: 24,
+              colorFilter: const ColorFilter.mode(
+                VineTheme.vineGreen,
+                BlendMode.srcIn,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -308,79 +446,7 @@ class _AboutText extends StatelessWidget {
   Widget build(BuildContext context) {
     return SelectableText(
       about,
-      style: const TextStyle(color: Colors.white, fontSize: 14, height: 1.3),
-    );
-  }
-}
-
-/// Public key (npub) display with copy functionality.
-class _PublicKeyDisplay extends StatelessWidget {
-  const _PublicKeyDisplay({required this.userIdHex});
-
-  final String userIdHex;
-
-  Future<void> _copyToClipboard(BuildContext context) async {
-    try {
-      final npub = NostrKeyUtils.encodePubKey(userIdHex);
-      await Clipboard.setData(ClipboardData(text: npub));
-
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Row(
-              children: [
-                Icon(Icons.check, color: Colors.white),
-                SizedBox(width: 8),
-                Text('Public key copied to clipboard'),
-              ],
-            ),
-            backgroundColor: VineTheme.vineGreen,
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (e) {
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to copy: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => _copyToClipboard(context),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.grey[800],
-          borderRadius: BorderRadius.circular(6),
-          border: Border.all(color: Colors.grey[600]!, width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Flexible(
-              child: SelectableText(
-                NostrKeyUtils.encodePubKey(userIdHex),
-                style: const TextStyle(
-                  color: Colors.grey,
-                  fontSize: 12,
-                  fontFamily: 'monospace',
-                ),
-                maxLines: 1,
-              ),
-            ),
-            const SizedBox(width: 8),
-            const Icon(Icons.copy, color: Colors.grey, size: 14),
-          ],
-        ),
-      ),
+      style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
     );
   }
 }

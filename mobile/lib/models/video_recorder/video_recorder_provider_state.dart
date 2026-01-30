@@ -1,3 +1,6 @@
+// ABOUTME: UI state model for video recorder capturing camera and recording state
+// ABOUTME: Manages zoom, focus, flash, timer, aspect ratio, and recording status
+
 import 'dart:ui';
 
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
@@ -15,13 +18,14 @@ class VideoRecorderProviderState {
     this.focusPoint = .zero,
     this.canRecord = false,
     this.isCameraInitialized = false,
-    this.canSwitchCamera = false,
-    this.hasFlash = false,
+    this.canSwitchCamera = true,
+    this.hasFlash = true,
     this.countdownValue = 0,
     this.cameraRebuildCount = 0,
     this.aspectRatio = .vertical,
     this.flashMode = .auto,
     this.timerDuration = .off,
+    this.initializationErrorMessage,
   });
 
   /// Camera focus point in normalized coordinates (0.0-1.0).
@@ -67,6 +71,9 @@ class VideoRecorderProviderState {
   /// Current recording state.
   final VideoRecorderState recordingState;
 
+  /// Custom error message when camera initialization fails.
+  final String? initializationErrorMessage;
+
   // Convenience getters used by UI
   /// Whether currently recording.
   bool get isRecording => recordingState == .recording;
@@ -77,8 +84,10 @@ class VideoRecorderProviderState {
   /// Whether in error state.
   bool get isError => recordingState == .error;
 
-  /// Error message if in error state.
-  String? get errorMessage => isError ? 'Recording error occurred' : null;
+  /// Error message if in error state or initialization failed.
+  String? get errorMessage =>
+      initializationErrorMessage ??
+      (isError ? 'Recording error occurred' : null);
 
   /// Creates a copy of this state with updated values.
   VideoRecorderProviderState copyWith({
@@ -96,6 +105,7 @@ class VideoRecorderProviderState {
     model.AspectRatio? aspectRatio,
     DivineFlashMode? flashMode,
     TimerDuration? timerDuration,
+    String? initializationErrorMessage,
   }) {
     return VideoRecorderProviderState(
       recordingState: recordingState ?? this.recordingState,
@@ -112,6 +122,8 @@ class VideoRecorderProviderState {
       aspectRatio: aspectRatio ?? this.aspectRatio,
       flashMode: flashMode ?? this.flashMode,
       timerDuration: timerDuration ?? this.timerDuration,
+      initializationErrorMessage:
+          initializationErrorMessage ?? this.initializationErrorMessage,
     );
   }
 }

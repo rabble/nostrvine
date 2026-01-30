@@ -1,41 +1,46 @@
 // ABOUTME: Fallback placeholder widget displayed when camera is unavailable
-// ABOUTME: Shows different icons and text for idle and recording states
+// ABOUTME: Shows idle icon or error message when camera initialization fails
 
 import 'package:flutter/material.dart';
 
 /// Fallback preview widget for when camera is not available
 class VideoRecorderCameraPlaceholder extends StatelessWidget {
   /// Creates a camera placeholder widget.
-  const VideoRecorderCameraPlaceholder({super.key, this.isRecording = false});
+  const VideoRecorderCameraPlaceholder({super.key, this.errorMessage});
 
-  /// Whether the camera is currently recording.
-  final bool isRecording;
+  /// Optional error message to display when camera initialization fails.
+  final String? errorMessage;
 
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
-      color: Colors.black,
+      color: const Color(0xFF141414),
       child: Center(
-        child: FittedBox(
-          fit: BoxFit.scaleDown,
-          child: Column(
-            mainAxisSize: .min,
-            children: [
-              Icon(
-                isRecording ? Icons.fiber_manual_record : Icons.videocam,
-                size: 64,
-                color: isRecording ? Colors.red : Colors.white54,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                isRecording ? 'Recording...' : 'Camera Preview',
-                style: TextStyle(
-                  color: isRecording ? Colors.red : Colors.white54,
-                  fontSize: 16,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              errorMessage != null
+                  ? Icons.videocam_off_rounded
+                  : Icons.videocam_rounded,
+              size: 56,
+              color: const Color(0xB3FFFFFF),
+            ),
+            if (errorMessage != null) ...[
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xB3FFFFFF),
+                    fontSize: 14,
+                  ),
                 ),
               ),
             ],
-          ),
+          ],
         ),
       ),
     );

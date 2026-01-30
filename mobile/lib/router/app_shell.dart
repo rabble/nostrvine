@@ -6,22 +6,26 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/vine_drawer.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/classic_vines_provider.dart';
+import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
-import 'page_context_provider.dart';
-import 'route_utils.dart';
-import 'nav_extensions.dart';
+import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/pure/search_screen_pure.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'last_tab_position_provider.dart';
 import 'tab_history_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -41,16 +45,20 @@ class AppShell extends ConsumerWidget {
         // When in feed mode (watching a video), show the tab name
         if (ctx?.videoIndex != null) {
           final tabIndex = ref.watch(exploreTabIndexProvider);
-          switch (tabIndex) {
-            case 0:
-              return 'New Videos';
-            case 1:
-              return 'Popular Videos';
-            case 2:
-              return 'Lists';
-            default:
-              return 'Explore';
+          // Build dynamic tab names based on which optional tabs are available
+          // Order: [Classics], New Videos, Trending, [For You], Lists
+          final forYouAvailable = ref.watch(forYouAvailableProvider);
+          final classicsAvailable =
+              ref.watch(classicVinesAvailableProvider).asData?.value ?? false;
+          final tabNames = <String>[];
+          if (classicsAvailable) tabNames.add('Classics');
+          tabNames.addAll(['New Videos', 'Trending']);
+          if (forYouAvailable) tabNames.add('For You');
+          tabNames.add('Lists');
+          if (tabIndex >= 0 && tabIndex < tabNames.length) {
+            return tabNames[tabIndex];
           }
+          return 'Explore';
         }
         return 'Explore';
       case RouteType.notifications:
@@ -82,36 +90,27 @@ class AppShell extends ConsumerWidget {
 
   /// Maps tab index to RouteType
   RouteType _routeTypeForTab(int index) {
-    switch (index) {
-      case 0:
-        return RouteType.home;
-      case 1:
-        return RouteType.explore;
-      case 2:
-        return RouteType.notifications;
-      case 3:
-        return RouteType.profile;
-      default:
-        return RouteType.home;
-    }
+    return switch (index) {
+      0 => RouteType.home,
+      1 => RouteType.explore,
+      2 => RouteType.notifications,
+      3 => RouteType.profile,
+      _ => RouteType.home,
+    };
   }
 
   /// Maps RouteType to tab index
   /// Returns null if not a main tab route
   int? _tabIndexFromRouteType(RouteType type) {
-    switch (type) {
-      case RouteType.home:
-        return 0;
-      case RouteType.explore:
-      case RouteType.hashtag: // Hashtag is part of explore tab
-        return 1;
-      case RouteType.notifications:
-        return 2;
-      case RouteType.profile:
-        return 3;
-      default:
-        return null; // Not a main tab route
-    }
+    return switch (type) {
+      RouteType.home => 0,
+      // Hashtag is part of explore tab
+      RouteType.explore || RouteType.hashtag => 1,
+      RouteType.notifications => 2,
+      RouteType.profile => 3,
+      // Not a main tab route
+      _ => null,
+    };
   }
 
   /// Handles tab tap - navigates to last known position in that tab
@@ -142,39 +141,32 @@ class AppShell extends ConsumerWidget {
     // GoRouter handles navigation state, but we need to clear pushed routes first
     switch (tabIndex) {
       case 0:
-        context.goHome(lastIndex ?? 0); // Home always has an index
-        break;
+        return context.go(HomeScreenRouter.pathForIndex(lastIndex ?? 0));
       case 1:
         // Always reset to grid mode (null) when tapping Explore tab
         // This prevents the "No videos available" bug when returning from another tab
-        context.goExplore(null);
-        break;
+        return context.go(ExploreScreen.path);
       case 2:
-        context.goNotifications(
-          lastIndex ?? 0,
-        ); // Notifications always has an index
-        break;
+        return context.go(NotificationsScreen.pathForIndex(lastIndex ?? 0));
       case 3:
         // Always navigate to current user's profile when tapping Profile tab
-        // Navigation system will resolve 'me' to actual npub
-        context.goProfileGrid('me');
-        break;
+        final authService = ref.read(authServiceProvider);
+        final currentUserHex = authService.currentPublicKeyHex;
+        if (currentUserHex != null) {
+          final npub = NostrKeyUtils.encodePubKey(currentUserHex);
+          return context.go(ProfileScreenRouter.pathForNpub(npub));
+        }
     }
   }
 
   String _tabName(int index) {
-    switch (index) {
-      case 0:
-        return 'Home';
-      case 1:
-        return 'Explore';
-      case 2:
-        return 'Notifications';
-      case 3:
-        return 'Profile';
-      default:
-        return 'Unknown';
-    }
+    return switch (index) {
+      0 => 'Home',
+      1 => 'Explore',
+      2 => 'Notifications',
+      3 => 'Profile',
+      _ => 'Unknown',
+    };
   }
 
   /// Builds the header title - tappable for Explore and Hashtag routes to navigate back
@@ -220,7 +212,7 @@ class AppShell extends ConsumerWidget {
           navigator.popUntil((route) => route.isFirst);
         }
         // Navigate to main explore view
-        context.goExplore(null);
+        context.go(ExploreScreen.path);
       },
       child: titleWidget,
     );
@@ -267,11 +259,31 @@ class AppShell extends ConsumerWidget {
     // Initialize relay statistics bridge to record connection events
     ref.watch(relayStatisticsBridgeProvider);
 
+    // Initialize relay set change bridge to refresh feeds when relays are added/removed
+    ref.watch(relaySetChangeBridgeProvider);
+
     // Initialize Zendesk identity sync to keep user identity in sync with auth
     ref.watch(zendeskIdentitySyncProvider);
 
     // Watch page context to determine if back button should show and if on search route
     final pageCtxAsync = ref.watch(pageContextProvider);
+
+    // Check if on own profile grid view - if so, let ProfileScreenRouter render its own scaffold
+    final isOwnProfileGrid = pageCtxAsync.maybeWhen(
+      data: (ctx) {
+        if (ctx.type != RouteType.profile) return false;
+        if (ctx.videoIndex != null) return false; // Video mode uses shell
+        final currentNpub = ref.read(authServiceProvider).currentNpub;
+        return ctx.npub == 'me' || ctx.npub == currentNpub;
+      },
+      orElse: () => false,
+    );
+
+    // Own profile grid uses its own scaffold - just return the child
+    if (isOwnProfileGrid) {
+      return child;
+    }
+
     final isSearchRoute = pageCtxAsync.maybeWhen(
       data: (ctx) => ctx.type == RouteType.search,
       orElse: () => false,
@@ -369,9 +381,7 @@ class AppShell extends ConsumerWidget {
                     case RouteType.hashtag:
                     case RouteType.search:
                       // Go back to explore
-                      context.go(ExploreScreen.path);
-                      return;
-
+                      return context.go(ExploreScreen.path);
                     default:
                       break;
                   }
@@ -380,34 +390,22 @@ class AppShell extends ConsumerWidget {
                   // This handles page-internal navigation before tab switching
                   // For explore/profile: any videoIndex (including 0) should go to grid (null)
                   // For notifications: videoIndex > 0 should go to index 0
+
                   if (ctx.videoIndex != null) {
-                    // For Explore and Profile, grid mode is null
-                    if (ctx.type == RouteType.explore ||
-                        ctx.type == RouteType.profile) {
-                      final gridCtx = RouteContext(
-                        type: ctx.type,
-                        hashtag: ctx.hashtag,
-                        searchTerm: ctx.searchTerm,
-                        npub: ctx.npub,
-                        videoIndex: null,
-                      );
-                      final newRoute = buildRoute(gridCtx);
-                      context.go(newRoute);
-                      return;
-                    }
-                    // For Notifications, index 0 is the base state
-                    if (ctx.type == RouteType.notifications &&
-                        ctx.videoIndex != 0) {
-                      final gridCtx = RouteContext(
-                        type: ctx.type,
-                        hashtag: ctx.hashtag,
-                        searchTerm: ctx.searchTerm,
-                        npub: ctx.npub,
-                        videoIndex: 0,
-                      );
-                      final newRoute = buildRoute(gridCtx);
-                      context.go(newRoute);
-                      return;
+                    switch (ctx.type) {
+                      case RouteType.explore:
+                        // For Explore, grid mode is null
+                        return context.go(ExploreScreen.path);
+                      // For Profile, grid mode is null
+                      case RouteType.profile:
+                        return context.go(
+                          ProfileScreenRouter.pathForNpub(ctx.npub ?? 'me'),
+                        );
+                      // For Notifications, index 0 is the base state
+                      case RouteType.notifications when ctx.videoIndex != 0:
+                        return context.go(NotificationsScreen.pathForIndex(0));
+                      default:
+                        break;
                     }
                   }
 
@@ -429,17 +427,33 @@ class AppShell extends ConsumerWidget {
                     // Navigate to previous tab
                     switch (previousTab) {
                       case 0:
-                        context.goHome(lastIndex ?? 0);
+                        context.go(
+                          HomeScreenRouter.pathForIndex(lastIndex ?? 0),
+                        );
                         break;
                       case 1:
-                        context.goExplore(lastIndex);
-                        break;
+                        if (lastIndex != null) {
+                          return context.go(
+                            ExploreScreen.pathForIndex(lastIndex),
+                          );
+                        } else {
+                          return context.go(ExploreScreen.path);
+                        }
                       case 2:
-                        context.goNotifications(lastIndex ?? 0);
-                        break;
+                        return context.go(
+                          NotificationsScreen.pathForIndex(lastIndex ?? 0),
+                        );
                       case 3:
-                        context.goProfileGrid('me');
-                        break;
+                        final authService = ref.read(authServiceProvider);
+                        final currentUserHex = authService.currentPublicKeyHex;
+                        if (currentUserHex != null) {
+                          final npub = NostrKeyUtils.encodePubKey(
+                            currentUserHex,
+                          );
+                          return context.go(
+                            ProfileScreenRouter.pathForNpub(npub),
+                          );
+                        }
                     }
                     return;
                   }
@@ -449,8 +463,7 @@ class AppShell extends ConsumerWidget {
                   final currentTab = _tabIndexFromRouteType(ctx.type);
                   if (currentTab != null && currentTab != 0) {
                     // Go to home first
-                    context.go(HomeScreenRouter.pathForIndex(0));
-                    return;
+                    return context.go(HomeScreenRouter.pathForIndex(0));
                   }
 
                   // Already at home with no history - let system handle exit
@@ -531,7 +544,7 @@ class AppShell extends ConsumerWidget {
                       name: 'Navigation',
                       category: LogCategory.ui,
                     );
-                    context.goSearch();
+                    context.go(SearchScreenPure.path);
                   },
                 ),
                 const SizedBox(width: 16),
@@ -577,7 +590,7 @@ class AppShell extends ConsumerWidget {
                       name: 'Navigation',
                       category: LogCategory.ui,
                     );
-                    context.pushCamera();
+                    context.push(VideoRecorderScreen.path);
                   },
                   child: Container(
                     width: 72,
