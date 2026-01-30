@@ -13,6 +13,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 
@@ -101,6 +102,14 @@ MockNostrClient createMockNostrService() {
   // Stub common properties
   when(mockNostr.isInitialized).thenReturn(true);
   when(mockNostr.connectedRelayCount).thenReturn(1);
+
+  // Stub subscribe() to return empty stream (never null) so SubscriptionManager
+  // and UserProfileService batch fetch do not get type 'Null' is not a subtype of type 'Stream<Event>'
+  when(mockNostr.subscribe(any)).thenAnswer((_) => Stream<Event>.empty());
+
+  // Stub queryEvents() to return empty list (never null) so FollowRepository
+  // getFollowers/getMyFollowers do not get type 'Null' is not a subtype of type 'Future<List<String>>'
+  when(mockNostr.queryEvents(any)).thenAnswer((_) async => <Event>[]);
 
   return mockNostr;
 }

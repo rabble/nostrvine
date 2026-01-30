@@ -104,12 +104,14 @@ class FollowRepository {
       return [];
     }
 
-    final events = await _nostrClient.queryEvents([
-      Filter(
-        kinds: const [3], // Contact lists
-        p: [pubkey], // Events that mention this pubkey
-      ),
-    ]);
+    final events =
+        await _nostrClient.queryEvents([
+          Filter(
+            kinds: const [3], // Contact lists
+            p: [pubkey], // Events that mention this pubkey
+          ),
+        ]) ??
+        [];
 
     // Extract unique follower pubkeys (authors of events that follow target)
     final followers = <String>[];
