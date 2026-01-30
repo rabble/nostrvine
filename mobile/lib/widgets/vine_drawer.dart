@@ -1,6 +1,8 @@
 // ABOUTME: Navigation drawer providing access to settings, relays, bug reports and other app options
 // ABOUTME: Reusable sidebar menu that appears from the top right on all main screens
 
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -102,7 +104,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     child: ListView(
                       padding: const EdgeInsets.symmetric(vertical: 8),
                       children: [
-                        _buildDrawerItem(
+                        _DrawerItem(
                           title: 'Settings',
                           onTap: () {
                             final router = GoRouter.of(context);
@@ -116,7 +118,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                           height: 1,
                         ),
 
-                        _buildDrawerItem(
+                        _DrawerItem(
                           title: 'Support',
                           onTap: () async {
                             print('🎫 Contact Support tapped');
@@ -164,7 +166,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                           height: 1,
                         ),
 
-                        _buildDrawerItem(
+                        _DrawerItem(
                           title: 'Privacy policy',
                           onTap: () {
                             Navigator.of(context).pop();
@@ -181,7 +183,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                           height: 1,
                         ),
 
-                        _buildDrawerItem(
+                        _DrawerItem(
                           title: 'Safety center',
                           onTap: () {
                             Navigator.of(context).pop();
@@ -198,7 +200,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                           height: 1,
                         ),
 
-                        _buildDrawerItem(
+                        _DrawerItem(
                           title: 'FAQ',
                           onTap: () {
                             Navigator.of(context).pop();
@@ -217,7 +219,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
 
                         // Developer section (debug mode only)
                         if (kDebugMode)
-                          _buildDrawerItem(
+                          _DrawerItem(
                             title: 'BLoC Test Screen',
                             onTap: () {
                               final router = GoRouter.of(context);
@@ -257,7 +259,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                 bottom: -18,
                 right: -44,
                 child: Transform.rotate(
-                  angle: 19.07 * 3.14159265 / 180,
+                  angle: 19.07 * pi / 180,
                   child: Image.asset(
                     'assets/icon/MascotCropped=yes.png',
                     width: 148,
@@ -271,36 +273,6 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
       ),
     );
   }
-
-  Widget _buildSectionHeader(String title) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-    child: Text(
-      title.toUpperCase(),
-      style: const TextStyle(
-        color: VineTheme.vineGreen,
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 1.2,
-      ),
-    ),
-  );
-
-  Widget _buildDrawerItem({
-    required String title,
-    required VoidCallback onTap,
-  }) => ListTile(
-    title: Text(
-      title,
-      style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
-    ),
-    trailing: SvgPicture.asset(
-      'assets/icon/caret_right.svg',
-      width: 24,
-      height: 24,
-      colorFilter: const ColorFilter.mode(VineTheme.vineGreen, BlendMode.srcIn),
-    ),
-    onTap: onTap,
-  );
 
   /// Show support options dialog
   /// NOTE: All services and values must be captured BEFORE the drawer
@@ -324,8 +296,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildSupportOption(
-              context: dialogContext,
+            _SupportOption(
               icon: Icons.bug_report,
               title: 'Report a Bug',
               subtitle: 'Technical issues with the app',
@@ -341,8 +312,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
               },
             ),
             const SizedBox(height: 12),
-            _buildSupportOption(
-              context: dialogContext,
+            _SupportOption(
               icon: Icons.chat,
               title: 'View Past Messages',
               subtitle: 'Check responses from support',
@@ -369,8 +339,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
               },
             ),
             const SizedBox(height: 12),
-            _buildSupportOption(
-              context: dialogContext,
+            _SupportOption(
               icon: Icons.help,
               title: 'View FAQ',
               subtitle: 'Common questions & answers',
@@ -390,55 +359,6 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  /// Build a support option button
-  Widget _buildSupportOption({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: VineTheme.backgroundColor,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade800),
-        ),
-        child: Row(
-          children: [
-            Icon(icon, color: VineTheme.vineGreen, size: 32),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-                  ),
-                ],
-              ),
-            ),
-            Icon(Icons.chevron_right, color: Colors.grey.shade600),
-          ],
-        ),
       ),
     );
   }
@@ -533,6 +453,90 @@ Platform: ${Theme.of(context).platform.name}
         bugReportService: bugReportService,
         currentScreen: 'VineDrawer',
         userPubkey: userPubkey,
+      ),
+    );
+  }
+}
+
+class _DrawerItem extends StatelessWidget {
+  const _DrawerItem({required this.title, required this.onTap});
+
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(
+        title,
+        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+      ),
+      trailing: SvgPicture.asset(
+        'assets/icon/caret_right.svg',
+        width: 24,
+        height: 24,
+        colorFilter: const ColorFilter.mode(
+          VineTheme.vineGreen,
+          BlendMode.srcIn,
+        ),
+      ),
+      onTap: onTap,
+    );
+  }
+}
+
+class _SupportOption extends StatelessWidget {
+  const _SupportOption({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: VineTheme.backgroundColor,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.grey.shade800),
+        ),
+        child: Row(
+          children: [
+            Icon(icon, color: VineTheme.vineGreen, size: 32),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: Colors.grey.shade600),
+          ],
+        ),
       ),
     );
   }
