@@ -61,7 +61,8 @@ void main() {
         // in AuthService.importFromNsec() to call SocialService.fetchCurrentUserFollowList()
         // after successful import. This test documents the expected behavior.
       },
-      skip: 'AuthService._setupUserSession calls _discoverUserBlossomServers '
+      skip:
+          'AuthService._setupUserSession calls _discoverUserBlossomServers '
           'which uses real WebSocket; fails in test environment (HTTP 400). '
           'Inject BlossomServerDiscoveryService into AuthService to unit test.',
     );

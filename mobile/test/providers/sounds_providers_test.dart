@@ -49,10 +49,15 @@ void main() {
 
       // Default stubs for NostrClient (SoundsRepository.initialize uses these)
       when(() => mockNostrClient.hasKeys).thenReturn(false);
-      when(() => mockNostrClient.queryEvents(any()))
-          .thenAnswer((_) async => <Event>[]);
-      when(() => mockNostrClient.subscribe(any(), subscriptionId: any(named: 'subscriptionId')))
-          .thenAnswer((_) => Stream<Event>.empty());
+      when(
+        () => mockNostrClient.queryEvents(any()),
+      ).thenAnswer((_) async => <Event>[]);
+      when(
+        () => mockNostrClient.subscribe(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+        ),
+      ).thenAnswer((_) => Stream<Event>.empty());
       when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
     });
 

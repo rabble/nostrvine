@@ -152,7 +152,8 @@ void main() {
           ),
         );
       },
-      skip: 'Flaky: result.success is false in CI; _createBlossomAuthEvent or '
+      skip:
+          'Flaky: result.success is false in CI; _createBlossomAuthEvent or '
           'dio.put mock may need adjustment. See BUD-01 409 handling.',
     );
   });
