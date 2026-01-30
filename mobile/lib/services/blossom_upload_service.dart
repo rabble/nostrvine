@@ -408,7 +408,7 @@ class BlossomUploadService {
       final xReason =
           response.headers.value('X-Reason') ??
           response.headers.value('x-reason');
-      
+
       return BlossomUploadResult(
         success: false,
         errorMessage:
@@ -524,7 +524,7 @@ class BlossomUploadService {
 
       // Get ordered list of servers to try
       final serverUrls = await _getServerUrlsForUpload();
-      
+
       Log.info(
         'Trying ${serverUrls.length} Blossom servers in priority order',
         name: 'BlossomUploadService',
@@ -532,7 +532,7 @@ class BlossomUploadService {
       );
 
       BlossomUploadResult? lastError;
-      
+
       // Try each server in order until one succeeds
       for (final serverUrl in serverUrls) {
         try {
@@ -585,7 +585,7 @@ class BlossomUploadService {
             );
             return result;
           }
-          
+
           lastError = result;
           Log.warning(
             'Upload to $serverUrl failed: ${result.errorMessage}, trying next server...',
@@ -608,7 +608,7 @@ class BlossomUploadService {
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
-      
+
       return lastError ??
           const BlossomUploadResult(
             success: false,
@@ -671,7 +671,7 @@ class BlossomUploadService {
 
       // Get ordered list of servers to try
       final serverUrls = await _getServerUrlsForUpload();
-      
+
       Log.info(
         'Trying ${serverUrls.length} Blossom servers for image upload',
         name: 'BlossomUploadService',
@@ -679,7 +679,7 @@ class BlossomUploadService {
       );
 
       BlossomUploadResult? lastError;
-      
+
       // Try each server in order until one succeeds
       for (final serverUrl in serverUrls) {
         try {
@@ -724,14 +724,14 @@ class BlossomUploadService {
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
-            
+
             return BlossomUploadResult(
               success: true,
               fallbackUrl: correctedUrl,
               videoId: result.videoId,
             );
           }
-          
+
           lastError = result;
           Log.warning(
             'Upload to $serverUrl failed: ${result.errorMessage}, trying next server...',
@@ -754,7 +754,7 @@ class BlossomUploadService {
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
-      
+
       return lastError ??
           const BlossomUploadResult(
             success: false,
@@ -772,8 +772,6 @@ class BlossomUploadService {
       );
     }
   }
-
-
 
   /// Upload a bug report file (text/plain) to the configured Blossom server
   ///
@@ -812,7 +810,7 @@ class BlossomUploadService {
 
       // Get ordered list of servers to try
       final serverUrls = await _getServerUrlsForUpload();
-      
+
       Log.info(
         'Trying ${serverUrls.length} Blossom servers for bug report upload',
         name: 'BlossomUploadService',
@@ -840,7 +838,7 @@ class BlossomUploadService {
           if (result.success) {
             // Extract URL from result (fallbackUrl or url)
             final uploadedUrl = result.fallbackUrl ?? result.url;
-            
+
             if (uploadedUrl != null) {
               Log.info(
                 '✅ Bug report uploaded to: $serverUrl',
@@ -855,7 +853,7 @@ class BlossomUploadService {
               return uploadedUrl;
             }
           }
-          
+
           Log.warning(
             'Upload to $serverUrl failed: ${result.errorMessage}, trying next server...',
             name: 'BlossomUploadService',
@@ -877,7 +875,7 @@ class BlossomUploadService {
         name: 'BlossomUploadService',
         category: LogCategory.system,
       );
-      
+
       return null;
     } catch (e) {
       Log.error(
@@ -981,7 +979,7 @@ class BlossomUploadService {
 
       // Get ordered list of servers to try
       final serverUrls = await _getServerUrlsForUpload();
-      
+
       Log.info(
         'Trying ${serverUrls.length} Blossom servers for audio upload',
         name: 'BlossomUploadService',
@@ -989,7 +987,7 @@ class BlossomUploadService {
       );
 
       BlossomUploadResult? lastError;
-      
+
       // Try each server in order until one succeeds
       for (final serverUrl in serverUrls) {
         try {
@@ -1013,7 +1011,10 @@ class BlossomUploadService {
             String? correctedUrl = result.fallbackUrl;
             if (correctedUrl != null && correctedUrl.endsWith('.mp4')) {
               final extension = _getAudioExtensionFromMimeType(mimeType);
-              correctedUrl = correctedUrl.replaceAll(RegExp(r'\.mp4$'), extension);
+              correctedUrl = correctedUrl.replaceAll(
+                RegExp(r'\.mp4$'),
+                extension,
+              );
               Log.debug(
                 'Fixed server extension: .mp4 -> $extension for audio',
                 name: 'BlossomUploadService',
@@ -1031,14 +1032,14 @@ class BlossomUploadService {
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
-            
+
             return BlossomUploadResult(
               success: true,
               fallbackUrl: correctedUrl,
               videoId: result.videoId,
             );
           }
-          
+
           lastError = result;
           Log.warning(
             'Upload to $serverUrl failed: ${result.errorMessage}, trying next server...',
@@ -1061,7 +1062,7 @@ class BlossomUploadService {
         name: 'BlossomUploadService',
         category: LogCategory.video,
       );
-      
+
       return lastError ??
           const BlossomUploadResult(
             success: false,

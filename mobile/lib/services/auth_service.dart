@@ -161,7 +161,8 @@ class AuthService implements BackgroundAwareService {
   // Blossom server discovery state (kind 10063 / BUD-03)
   List<DiscoveredBlossomServer> _userBlossomServers = [];
   bool _hasUserBlossomServers = false;
-  final BlossomServerDiscoveryService _blossomDiscoveryService = BlossomServerDiscoveryService();
+  final BlossomServerDiscoveryService _blossomDiscoveryService =
+      BlossomServerDiscoveryService();
 
   /// Returns the active remote signer (bunker takes priority over OAuth RPC)
   NostrSigner? get rpcSigner => _bunkerSigner ?? _keycastSigner;
@@ -225,7 +226,8 @@ class AuthService implements BackgroundAwareService {
   bool get hasExistingProfile => _hasExistingProfile;
 
   /// Get discovered user Blossom servers (kind 10063 / BUD-03)
-  List<DiscoveredBlossomServer> get userBlossomServers => List.unmodifiable(_userBlossomServers);
+  List<DiscoveredBlossomServer> get userBlossomServers =>
+      List.unmodifiable(_userBlossomServers);
 
   /// Check if user has discovered Blossom servers
   bool get hasUserBlossomServers => _userBlossomServers.isNotEmpty;
@@ -1413,7 +1415,7 @@ class AuthService implements BackgroundAwareService {
   }
 
   /// Discover user relays via NIP-65 and check for existing profile
-  /// 
+  ///
   /// Note: This is called BEFORE NostrClient is rebuilt with user relays,
   /// so we create a temporary NostrClient just for indexer querying.
   Future<void> _discoverUserRelays() async {
@@ -1435,14 +1437,15 @@ class AuthService implements BackgroundAwareService {
         signer: AuthServiceSigner(_currentKeyContainer),
       );
       final tempRelayConfig = RelayManagerConfig(
-        defaultRelayUrl: 'wss://relay.divine.video', // Won't be used for indexer queries
+        defaultRelayUrl:
+            'wss://relay.divine.video', // Won't be used for indexer queries
         storage: SharedPreferencesRelayStorage(),
       );
       final tempClient = NostrClient(
         config: tempConfig,
         relayManagerConfig: tempRelayConfig,
       );
-      
+
       await tempClient.initialize();
 
       // Discover relays via NIP-65 using the temp client
@@ -1536,7 +1539,8 @@ class AuthService implements BackgroundAwareService {
         signer: AuthServiceSigner(_currentKeyContainer),
       );
       final tempRelayConfig = RelayManagerConfig(
-        defaultRelayUrl: 'wss://relay.divine.video', // Won't be used for indexer queries
+        defaultRelayUrl:
+            'wss://relay.divine.video', // Won't be used for indexer queries
         storage: SharedPreferencesRelayStorage(),
       );
       final tempClient = NostrClient(

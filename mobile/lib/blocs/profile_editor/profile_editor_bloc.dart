@@ -41,7 +41,8 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         : event.picture;
 
     // Guard: Check if we're about to overwrite existing profile with minimal data
-    if (!_hasExistingProfile && _isProfileMinimal(displayName, about, picture)) {
+    if (!_hasExistingProfile &&
+        _isProfileMinimal(displayName, about, picture)) {
       Log.info(
         '⚠️ Blank profile warning: no existing profile found, requesting confirmation',
         name: 'ProfileEditorBloc',

@@ -15,9 +15,9 @@ class IndexerRelayConfig {
   /// Well-known indexer relays that maintain broad coverage of kind 10002 events
   /// These are specialized indexers that index and serve NIP-65 relay lists
   static const List<String> defaultIndexers = [
-    'wss://purplepag.es',  // Purple Pages - primary NIP-65 indexer
-    'wss://user.kindpag.es',  // Kind Pages - specialized user metadata indexer
-    'wss://index.coracle.social',  // Coracle Social - comprehensive indexer
+    'wss://purplepag.es', // Purple Pages - primary NIP-65 indexer
+    'wss://user.kindpag.es', // Kind Pages - specialized user metadata indexer
+    'wss://index.coracle.social', // Coracle Social - comprehensive indexer
   ];
 }
 
@@ -41,11 +41,7 @@ class DiscoveredRelay {
   final bool read;
   final bool write;
 
-  Map<String, dynamic> toJson() => {
-        'url': url,
-        'read': read,
-        'write': write,
-      };
+  Map<String, dynamic> toJson() => {'url': url, 'read': read, 'write': write};
 
   @override
   String toString() => 'DiscoveredRelay(url: $url, read: $read, write: $write)';
@@ -89,9 +85,8 @@ class RelayDiscoveryResult {
 
 /// Service for discovering and caching user relay lists via NIP-65
 class RelayDiscoveryService {
-  RelayDiscoveryService({
-    List<String>? indexerRelays,
-  }) : _indexerRelays = indexerRelays ?? IndexerRelayConfig.defaultIndexers;
+  RelayDiscoveryService({List<String>? indexerRelays})
+    : _indexerRelays = indexerRelays ?? IndexerRelayConfig.defaultIndexers;
 
   final List<String> _indexerRelays;
   static const String _cachePrefix = 'relay_discovery_';
@@ -155,7 +150,11 @@ class RelayDiscoveryService {
       // Try each indexer until we find the relay list
       for (final indexerUrl in _indexerRelays) {
         try {
-          final relays = await _queryIndexer(indexerUrl, pubkeyHex, nostrClient);
+          final relays = await _queryIndexer(
+            indexerUrl,
+            pubkeyHex,
+            nostrClient,
+          );
           if (relays.isNotEmpty) {
             Log.info(
               'Found ${relays.length} relays on indexer: $indexerUrl',
@@ -270,14 +269,14 @@ class RelayDiscoveryService {
         name: 'RelayDiscoveryService',
         category: LogCategory.relay,
       );
-      
+
       // Try to remove the relay on error
       try {
         await client.removeRelay(indexerUrl);
       } catch (_) {
         // Ignore cleanup errors
       }
-      
+
       return [];
     }
   }

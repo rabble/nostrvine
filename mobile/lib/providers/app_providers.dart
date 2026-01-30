@@ -233,7 +233,7 @@ void relaySetChangeBridge(Ref ref) {
           name: 'RelaySetChangeBridge',
           category: LogCategory.relay,
         );
-        
+
         // CRITICAL FIX: Force reconnect all WebSocket connections
         // When relays are added/removed, the existing WebSocket connections
         // can become stale/zombie - showing as "connected" but not responding
@@ -253,7 +253,7 @@ void relaySetChangeBridge(Ref ref) {
             category: LogCategory.relay,
           );
         }
-        
+
         // Now reset and resubscribe all feeds with fresh connections
         videoEventService.resetAndResubscribeAll();
       });

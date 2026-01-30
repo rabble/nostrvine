@@ -284,12 +284,17 @@ class _ProfileSetupScreenViewState
               actions: [
                 TextButton(
                   onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: Text('Cancel', style: TextStyle(color: VineTheme.lightText)),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: VineTheme.lightText),
+                  ),
                 ),
                 TextButton(
                   onPressed: () {
                     Navigator.of(dialogContext).pop();
-                    context.read<ProfileEditorBloc>().add(const ProfileSaveConfirmed());
+                    context.read<ProfileEditorBloc>().add(
+                      const ProfileSaveConfirmed(),
+                    );
                   },
                   child: const Text(
                     'Publish',

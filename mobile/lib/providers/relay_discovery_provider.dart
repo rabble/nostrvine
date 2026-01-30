@@ -10,7 +10,8 @@ final relayDiscoveryServiceProvider = Provider<RelayDiscoveryService>((ref) {
 });
 
 /// Provider for relay discovery result for a specific npub
-final userRelayDiscoveryProvider = FutureProvider.family<RelayDiscoveryResult, String>((ref, npub) async {
-  final service = ref.watch(relayDiscoveryServiceProvider);
-  return service.discoverRelays(npub);
-});
+final userRelayDiscoveryProvider =
+    FutureProvider.family<RelayDiscoveryResult, String>((ref, npub) async {
+      final service = ref.watch(relayDiscoveryServiceProvider);
+      return service.discoverRelays(npub);
+    });

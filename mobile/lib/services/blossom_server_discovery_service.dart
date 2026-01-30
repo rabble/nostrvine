@@ -15,18 +15,15 @@ class BlossomIndexerConfig {
   /// Well-known indexer relays that maintain broad coverage of kind 10063 events
   /// These are the same indexers used for NIP-65 relay discovery
   static const List<String> defaultIndexers = [
-    'wss://purplepag.es',  // Purple Pages - primary metadata indexer
-    'wss://user.kindpag.es',  // Kind Pages - specialized user metadata indexer
-    'wss://index.coracle.social',  // Coracle Social - comprehensive indexer
+    'wss://purplepag.es', // Purple Pages - primary metadata indexer
+    'wss://user.kindpag.es', // Kind Pages - specialized user metadata indexer
+    'wss://index.coracle.social', // Coracle Social - comprehensive indexer
   ];
 }
 
 /// Represents a discovered Blossom server from kind 10063
 class DiscoveredBlossomServer {
-  const DiscoveredBlossomServer({
-    required this.url,
-    this.priority,
-  });
+  const DiscoveredBlossomServer({required this.url, this.priority});
 
   factory DiscoveredBlossomServer.fromJson(Map<String, dynamic> json) {
     return DiscoveredBlossomServer(
@@ -42,10 +39,7 @@ class DiscoveredBlossomServer {
   /// First server in list has priority 0, second has 1, etc.
   final int? priority;
 
-  Map<String, dynamic> toJson() => {
-        'url': url,
-        'priority': priority,
-      };
+  Map<String, dynamic> toJson() => {'url': url, 'priority': priority};
 
   @override
   String toString() => 'BlossomServer(url: $url, priority: $priority)';
@@ -103,9 +97,8 @@ class BlossomDiscoveryResult {
 /// BUD-03 spec: Users publish a replaceable event (kind 10063) listing their
 /// preferred Blossom servers. The order matters - first server is most trusted.
 class BlossomServerDiscoveryService {
-  BlossomServerDiscoveryService({
-    List<String>? indexerRelays,
-  }) : _indexerRelays = indexerRelays ?? BlossomIndexerConfig.defaultIndexers;
+  BlossomServerDiscoveryService({List<String>? indexerRelays})
+    : _indexerRelays = indexerRelays ?? BlossomIndexerConfig.defaultIndexers;
 
   final List<String> _indexerRelays;
   static const String _cachePrefix = 'blossom_server_discovery_';
@@ -153,7 +146,9 @@ class BlossomServerDiscoveryService {
         name: 'BlossomServerDiscoveryService',
         category: LogCategory.system,
       );
-      return BlossomDiscoveryResult.failure('NostrClient required for discovery');
+      return BlossomDiscoveryResult.failure(
+        'NostrClient required for discovery',
+      );
     }
 
     // Query indexers for kind 10063 (BUD-03 User Server List)
@@ -172,7 +167,11 @@ class BlossomServerDiscoveryService {
       // Try each indexer until we find the server list
       for (final indexerUrl in _indexerRelays) {
         try {
-          final servers = await _queryIndexer(indexerUrl, pubkeyHex, nostrClient);
+          final servers = await _queryIndexer(
+            indexerUrl,
+            pubkeyHex,
+            nostrClient,
+          );
           if (servers.isNotEmpty) {
             Log.info(
               'Found ${servers.length} Blossom servers on indexer: $indexerUrl',
@@ -287,14 +286,14 @@ class BlossomServerDiscoveryService {
         name: 'BlossomServerDiscoveryService',
         category: LogCategory.system,
       );
-      
+
       // Try to remove the relay on error
       try {
         await client.removeRelay(indexerUrl);
       } catch (_) {
         // Ignore cleanup errors
       }
-      
+
       return [];
     }
   }
@@ -326,10 +325,7 @@ class BlossomServerDiscoveryService {
         continue;
       }
 
-      final server = DiscoveredBlossomServer(
-        url: url,
-        priority: priority,
-      );
+      final server = DiscoveredBlossomServer(url: url, priority: priority);
 
       servers.add(server);
       priority++;
@@ -399,7 +395,9 @@ class BlossomServerDiscoveryService {
 
       final serversList = cacheData['servers'] as List<dynamic>;
       return serversList
-          .map((s) => DiscoveredBlossomServer.fromJson(s as Map<String, dynamic>))
+          .map(
+            (s) => DiscoveredBlossomServer.fromJson(s as Map<String, dynamic>),
+          )
           .toList();
     } catch (e) {
       Log.warning(
