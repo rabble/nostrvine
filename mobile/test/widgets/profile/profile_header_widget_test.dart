@@ -142,10 +142,14 @@ void main() {
       String? avatarUrlHint,
     }) {
       final authService = MockAuthService(isAnonymousValue: isAnonymous);
+      final mockUserProfileService = createMockUserProfileService();
       return ProviderScope(
         overrides: [
           // Pass test's mock so we don't duplicate nostrServiceProvider override
-          ...getStandardTestOverrides(mockNostrService: mockNostrClient),
+          ...getStandardTestOverrides(
+            mockNostrService: mockNostrClient,
+            mockUserProfileService: mockUserProfileService,
+          ),
           fetchUserProfileProvider(
             userIdHex,
           ).overrideWith((ref) async => profile),

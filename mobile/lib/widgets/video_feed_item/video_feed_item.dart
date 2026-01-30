@@ -15,6 +15,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
+import 'package:openvine/providers/overlay_visibility_provider.dart'; // For hasVisibleOverlayProvider (modal pause/resume)
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
@@ -226,13 +227,35 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       }
 
       // If using override, handle playback directly without provider listener
-      if (widget.isActiveOverride != null) {
+      // BUT still listen to overlay visibility for modal pause/resume
+      final initialOverride = widget.isActiveOverride;
+      if (initialOverride != null) {
         Log.info(
-          '🎬 VideoFeedItem.initState: using isActiveOverride=${widget.isActiveOverride} for ${widget.video.id}',
+          '🎬 VideoFeedItem.initState: using isActiveOverride=$initialOverride for ${widget.video.id}',
           name: 'VideoFeedItem',
           category: LogCategory.video,
         );
-        if (widget.isActiveOverride!) {
+
+        // Listen to overlay visibility to pause/resume when modals open/close
+        ref.listenManual(hasVisibleOverlayProvider, (prev, next) {
+          if (!mounted) return;
+          // Re-read current override value (may have changed since listener setup)
+          final currentOverride = widget.isActiveOverride;
+          if (currentOverride == null)
+            return; // Widget rebuilt without override
+          // Compute effective active state: override must be true AND no overlay visible
+          final effectivelyActive = currentOverride && !next;
+          Log.info(
+            '🔄 VideoFeedItem overlay changed: videoId=${widget.video.id}, hasOverlay=$next, effectivelyActive=$effectivelyActive',
+            name: 'VideoFeedItem',
+            category: LogCategory.video,
+          );
+          _handlePlaybackChange(effectivelyActive);
+        });
+
+        // Initial play if override is true and no overlay
+        final hasOverlay = ref.read(hasVisibleOverlayProvider);
+        if (initialOverride && !hasOverlay) {
           _handlePlaybackChange(true);
         }
         return;

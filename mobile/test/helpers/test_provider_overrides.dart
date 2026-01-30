@@ -136,6 +136,7 @@ MockSubscriptionManager createMockSubscriptionManager() {
     final onComplete =
         invocation.namedArguments[const Symbol('onComplete')] as Function()?;
     if (onComplete != null) {
+      // Use Future.microtask to call after the subscription is "created"
       Future.microtask(onComplete);
     }
     return 'mock_subscription_${DateTime.now().millisecondsSinceEpoch}';
