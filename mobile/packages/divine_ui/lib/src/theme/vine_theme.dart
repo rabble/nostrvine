@@ -300,6 +300,9 @@ class VineTheme {
   /// Disabled outline color.
   static const Color outlinedDisabled = Color(0xFF032017);
 
+  /// Disabled outline color for separators.
+  static const Color outlineDisabled = Color(0xFF001A12);
+
   /// Low-emphasis container background.
   static const Color containerLow = Color(0xFF0E2B21);
 

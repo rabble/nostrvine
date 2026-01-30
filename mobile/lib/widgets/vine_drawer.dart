@@ -3,11 +3,11 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 // import 'package:openvine/screens/p2p_sync_screen.dart'; // Hidden for release
 import 'package:openvine/services/auth_service.dart';
@@ -79,111 +79,40 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   @override
   Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
-    final authState = ref.watch(currentAuthStateProvider);
-    final isAuthenticated = authState == AuthState.authenticated;
-
     return Drawer(
-      backgroundColor: VineTheme.backgroundColor,
+      backgroundColor: VineTheme.surfaceBackground,
       child: SafeArea(
         top: false,
         child: Column(
           children: [
-            // Header
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.fromLTRB(
-                20,
-                20 + MediaQuery.of(context).padding.top,
-                20,
-                20,
-              ),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [VineTheme.vineGreen, Colors.green],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Divine logo
-                      Image.asset(
-                        'assets/icon/White cropped.png',
-                        width: constraints.maxWidth * 0.5,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Version $_appVersion',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
+            // Top spacing for status bar
+            SizedBox(height: MediaQuery.of(context).padding.top),
 
             // Menu items
             Expanded(
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 children: [
-                  // Profile section
-                  if (isAuthenticated) ...[
-                    _buildDrawerItem(
-                      icon: Icons.person,
-                      title: 'Edit Profile',
-                      onTap: () {
-                        // Capture router before closing drawer to avoid context issues
-                        final router = GoRouter.of(context);
-                        Navigator.of(
-                          context,
-                        ).pop(); // Close drawer (not context.pop!)
-                        router.push(ProfileSetupScreen.editPath);
-                      },
-                    ),
-                    const Divider(color: Colors.grey, height: 1),
-                  ],
-
-                  // Settings section
-                  _buildSectionHeader('Configuration'),
                   _buildDrawerItem(
-                    icon: Icons.settings,
                     title: 'Settings',
                     onTap: () {
-                      // Capture router before closing drawer to avoid context issues
                       final router = GoRouter.of(context);
-                      Navigator.of(
-                        context,
-                      ).pop(); // Close drawer (not context.pop!)
+                      Navigator.of(context).pop();
                       router.push(SettingsScreen.path);
                     },
                   ),
 
-                  const Divider(color: Colors.grey, height: 1),
+                  const Divider(color: VineTheme.outlineDisabled, height: 1),
 
-                  // Support section
-                  _buildSectionHeader('Support'),
                   _buildDrawerItem(
-                    icon: Icons.support_agent,
-                    title: 'Contact Support',
-                    subtitle: 'Get help or report an issue',
+                    title: 'Support',
                     onTap: () async {
                       print('🎫 Contact Support tapped');
 
-                      // Check Zendesk availability BEFORE closing drawer
                       final isZendeskAvailable =
                           ZendeskSupportService.isAvailable;
                       print('🔍 Zendesk available: $isZendeskAvailable');
 
-                      // CRITICAL: Capture provider values BEFORE closing drawer
-                      // to avoid "ref unmounted" error when dialog buttons are tapped
                       final bugReportService = ref.read(
                         bugReportServiceProvider,
                       );
@@ -192,20 +121,16 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       );
                       final userPubkey = authService.currentPublicKeyHex;
 
-                      // Get root context before closing drawer
                       final navigatorContext = Navigator.of(context).context;
 
-                      Navigator.of(context).pop(); // Close drawer
+                      Navigator.of(context).pop();
 
-                      // Wait for drawer close animation
                       await Future.delayed(const Duration(milliseconds: 300));
                       if (!navigatorContext.mounted) {
                         print('⚠️ Context not mounted after drawer close');
                         return;
                       }
 
-                      // Show support options dialog using root context
-                      // Pass captured services instead of ref
                       _showSupportOptionsDialog(
                         navigatorContext,
                         bugReportService,
@@ -216,16 +141,12 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     },
                   ),
 
-                  const Divider(color: Colors.grey, height: 1),
+                  const Divider(color: VineTheme.outlineDisabled, height: 1),
 
-                  // Legal & Safety section
-                  _buildSectionHeader('Legal & Safety'),
                   _buildDrawerItem(
-                    icon: Icons.privacy_tip,
-                    title: 'Privacy Policy',
-                    subtitle: 'How we handle your data',
+                    title: 'Privacy policy',
                     onTap: () {
-                      Navigator.of(context).pop(); // Close drawer
+                      Navigator.of(context).pop();
                       _launchWebPage(
                         context,
                         'https://divine.video/privacy',
@@ -233,12 +154,13 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       );
                     },
                   ),
+
+                  const Divider(color: VineTheme.outlineDisabled, height: 1),
+
                   _buildDrawerItem(
-                    icon: Icons.shield,
-                    title: 'Safety Center',
-                    subtitle: 'Community safety guidelines',
+                    title: 'Safety center',
                     onTap: () {
-                      Navigator.of(context).pop(); // Close drawer
+                      Navigator.of(context).pop();
                       _launchWebPage(
                         context,
                         'https://divine.video/safety',
@@ -246,12 +168,13 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       );
                     },
                   ),
+
+                  const Divider(color: VineTheme.outlineDisabled, height: 1),
+
                   _buildDrawerItem(
-                    icon: Icons.help,
                     title: 'FAQ',
-                    subtitle: 'Frequently asked questions',
                     onTap: () {
-                      Navigator.of(context).pop(); // Close drawer
+                      Navigator.of(context).pop();
                       _launchWebPage(
                         context,
                         'https://divine.video/faq',
@@ -259,33 +182,43 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       );
                     },
                   ),
+
+                  const Divider(color: VineTheme.outlineDisabled, height: 1),
+
+                  // Developer section (debug mode only)
+                  if (kDebugMode)
+                    _buildDrawerItem(
+                      title: 'BLoC Test Screen',
+                      onTap: () {
+                        final router = GoRouter.of(context);
+                        Navigator.of(context).pop();
+                        router.push(VideoFeedPage.path);
+                      },
+                    ),
                 ],
               ),
             ),
-            // Developer section (debug mode only)
-            if (kDebugMode) ...[
-              const Divider(color: Colors.grey, height: 1),
-              _buildSectionHeader('Developer'),
-              _buildDrawerItem(
-                icon: Icons.science,
-                title: 'BLoC Test Screen',
-                subtitle: 'Test VideoFeedBloc architecture',
-                onTap: () {
-                  // Capture router before closing drawer
-                  final router = GoRouter.of(context);
-                  Navigator.of(context).pop(); // Close drawer
-                  router.push(VideoFeedPage.path);
-                },
-              ),
-            ],
 
-            // Footer
+            // Logo and version at bottom
             Container(
-              padding: const EdgeInsets.all(16),
-              child: const Text(
-                'Decentralized video sharing\npowered by Nostr',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 12, height: 1.4),
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 128, 16, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SvgPicture.asset(
+                    'assets/icon/logo.svg',
+                    width: 125,
+                    height: 32,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'App version v$_appVersion',
+                    style: VineTheme.bodySmallFont(
+                      color: VineTheme.onSurfaceDisabled,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -308,26 +241,22 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   );
 
   Widget _buildDrawerItem({
-    required IconData icon,
     required String title,
-    String? subtitle,
     required VoidCallback onTap,
   }) => ListTile(
-    leading: Icon(icon, color: VineTheme.vineGreen, size: 24),
     title: Text(
       title,
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
+      style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+    ),
+    trailing: SvgPicture.asset(
+      'assets/icon/caret_right.svg',
+      width: 24,
+      height: 24,
+      colorFilter: const ColorFilter.mode(
+        VineTheme.vineGreen,
+        BlendMode.srcIn,
       ),
     ),
-    subtitle: subtitle != null
-        ? Text(
-            subtitle,
-            style: const TextStyle(color: Colors.grey, fontSize: 12),
-          )
-        : null,
     onTap: onTap,
   );
 
