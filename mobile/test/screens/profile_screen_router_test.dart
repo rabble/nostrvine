@@ -265,12 +265,14 @@ void main() {
     Widget buildTestWidget(_FakeBackgroundPublishBloc bloc) {
       return ProviderScope(
         overrides: [
-          ...getStandardTestOverrides(),
+          ...getStandardTestOverrides(
+            mockNostrService: mockNostrClient,
+            mockUserProfileService: createMockUserProfileService(),
+          ),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
           likesRepositoryProvider.overrideWithValue(mockLikesRepository),
           repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
           videosRepositoryProvider.overrideWithValue(mockVideosRepository),
-          nostrServiceProvider.overrideWithValue(mockNostrClient),
         ],
         child: MaterialApp(
           theme: VineTheme.theme,

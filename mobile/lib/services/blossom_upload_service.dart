@@ -92,7 +92,7 @@ class BlossomUploadService {
     final servers = <String>[];
 
     // 1. Check for discovered Blossom servers (kind 10063 / BUD-03)
-    if (authService.hasUserBlossomServers) {
+    if (authService.hasUserBlossomServers == true) {
       final userServers = authService.userBlossomServers;
       // Sort by priority (lowest first)
       final sortedServers = List<DiscoveredBlossomServer>.from(userServers);
