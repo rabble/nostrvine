@@ -32,7 +32,7 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        final hasFollowing = container.read(hasFollowingInCacheSyncProvider);
+        final hasFollowing = container.read(hasFollowingInCacheProvider);
 
         expect(hasFollowing, isFalse);
       });
@@ -52,7 +52,7 @@ void main() {
           );
           addTearDown(container.dispose);
 
-          final hasFollowing = container.read(hasFollowingInCacheSyncProvider);
+          final hasFollowing = container.read(hasFollowingInCacheProvider);
 
           expect(hasFollowing, false);
         },
@@ -73,7 +73,7 @@ void main() {
           );
           addTearDown(container.dispose);
 
-          final hasFollowing = container.read(hasFollowingInCacheSyncProvider);
+          final hasFollowing = container.read(hasFollowingInCacheProvider);
 
           expect(hasFollowing, isFalse);
         },
@@ -94,7 +94,7 @@ void main() {
           );
           addTearDown(container.dispose);
 
-          final hasFollowing = container.read(hasFollowingInCacheSyncProvider);
+          final hasFollowing = container.read(hasFollowingInCacheProvider);
 
           expect(hasFollowing, isTrue);
         },
@@ -118,7 +118,7 @@ void main() {
           );
           addTearDown(container.dispose);
 
-          final hasFollowing = container.read(hasFollowingInCacheSyncProvider);
+          final hasFollowing = container.read(hasFollowingInCacheProvider);
 
           // Should return false because CURRENT user has empty list
           expect(hasFollowing, isFalse);
@@ -138,7 +138,7 @@ void main() {
         );
         addTearDown(container.dispose);
 
-        final hasFollowing = container.read(hasFollowingInCacheSyncProvider);
+        final hasFollowing = container.read(hasFollowingInCacheProvider);
 
         // Should not crash, and should return false since JSON is invalid
         expect(hasFollowing, isFalse);

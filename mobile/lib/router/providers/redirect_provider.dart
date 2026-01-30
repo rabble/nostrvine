@@ -9,13 +9,14 @@ import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
-/// Checks if the current user has any following in cache (synchronous).
+/// Checks if the current user has any following in cache.
 ///
 /// This provider can be used in redirect logic without
 /// needing async operations.
-final hasFollowingInCacheSyncProvider = Provider<bool>((ref) {
+final hasFollowingInCacheProvider = Provider<bool>((ref) {
   final prefs = ref.watch(sharedPreferencesProvider);
   final currentUserPubkey = prefs.getString('current_user_pubkey_hex');
+
   Log.debug(
     'Current user pubkey from prefs: $currentUserPubkey',
     name: 'RedirectGuards',
@@ -78,22 +79,25 @@ final checkEmptyFollowingRedirectProvider = Provider.family<String?, String>((
   // Only redirect to explore when coming from WelcomeScreen if user follows
   // nobody. After that, let users navigate to home freely (they'll see a
   // message to follow people)
-  if (location.startsWith(WelcomeScreen.path)) {
-    final hasFollowing = ref.watch(hasFollowingInCacheSyncProvider);
+  if (!location.startsWith(WelcomeScreen.path)) return null;
+
+  final hasFollowing = ref.watch(hasFollowingInCacheProvider);
+
+  Log.debug(
+    'Empty contacts check: hasFollowing=$hasFollowing, '
+    'redirecting=${!hasFollowing}',
+    name: 'AppRouter',
+    category: LogCategory.ui,
+  );
+
+  if (!hasFollowing) {
     Log.debug(
-      'Empty contacts check: hasFollowing=$hasFollowing, '
-      'redirecting=${!hasFollowing}',
+      'Redirecting to /explore because no following list found',
       name: 'AppRouter',
       category: LogCategory.ui,
     );
-    if (!hasFollowing) {
-      Log.debug(
-        'Redirecting to /explore because no following list found',
-        name: 'AppRouter',
-        category: LogCategory.ui,
-      );
-      return ExploreScreen.path;
-    }
+    return ExploreScreen.path;
   }
+
   return null;
 });
