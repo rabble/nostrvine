@@ -2,6 +2,7 @@
 // ABOUTME: Tests branding (wordmark logo) and navigation menu functionality
 
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/widgets/vine_drawer.dart';
@@ -48,18 +49,11 @@ void main() {
       scaffoldKey.currentState!.openDrawer();
       await tester.pumpAndSettle();
 
-      // Verify logo image is present (app_icon.png)
+      // Verify SVG logo is present (logo.svg rendered via SvgPicture)
       expect(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is Image &&
-              widget.image is AssetImage &&
-              (widget.image as AssetImage).assetName.contains(
-                'White cropped.png',
-              ),
-        ),
-        findsOneWidget,
-        reason: 'Divine logo image should be displayed in drawer header',
+        find.byType(SvgPicture),
+        findsWidgets,
+        reason: 'Divine logo SVG should be displayed in drawer',
       );
     });
 
