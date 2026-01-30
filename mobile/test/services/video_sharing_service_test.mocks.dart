@@ -305,6 +305,14 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
           as _i6.Future<bool>);
 
   @override
+  _i6.Future<int> addRelays(List<String>? relayUrls) =>
+      (super.noSuchMethod(
+            Invocation.method(#addRelays, [relayUrls]),
+            returnValue: _i6.Future<int>.value(0),
+          )
+          as _i6.Future<int>);
+
+  @override
   _i6.Future<bool> removeRelay(String? relayUrl) =>
       (super.noSuchMethod(
             Invocation.method(#removeRelay, [relayUrl]),
