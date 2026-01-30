@@ -13,6 +13,8 @@ import 'package:openvine/widgets/vine_drawer.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/classic_vines_provider.dart';
+import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -43,16 +45,20 @@ class AppShell extends ConsumerWidget {
         // When in feed mode (watching a video), show the tab name
         if (ctx?.videoIndex != null) {
           final tabIndex = ref.watch(exploreTabIndexProvider);
-          switch (tabIndex) {
-            case 0:
-              return 'New Videos';
-            case 1:
-              return 'Popular Videos';
-            case 2:
-              return 'Lists';
-            default:
-              return 'Explore';
+          // Build dynamic tab names based on which optional tabs are available
+          // Order: [Classics], New Videos, Trending, [For You], Lists
+          final forYouAvailable = ref.watch(forYouAvailableProvider);
+          final classicsAvailable =
+              ref.watch(classicVinesAvailableProvider).asData?.value ?? false;
+          final tabNames = <String>[];
+          if (classicsAvailable) tabNames.add('Classics');
+          tabNames.addAll(['New Videos', 'Trending']);
+          if (forYouAvailable) tabNames.add('For You');
+          tabNames.add('Lists');
+          if (tabIndex >= 0 && tabIndex < tabNames.length) {
+            return tabNames[tabIndex];
           }
+          return 'Explore';
         }
         return 'Explore';
       case RouteType.notifications:

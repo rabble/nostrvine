@@ -60,6 +60,12 @@ class _FakeHomeFeedResult_3 extends _i1.SmartFake
     : super(parent, parentInvocation);
 }
 
+class _FakeRecommendationsResult_4 extends _i1.SmartFake
+    implements _i5.RecommendationsResult {
+  _FakeRecommendationsResult_4(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
 /// A class which mocks [NostrClient].
 ///
 /// See the documentation for Mockito's code generation for more information.
@@ -2168,6 +2174,34 @@ class MockAnalyticsApiService extends _i1.Mock
             returnValue: <_i5.TrendingHashtag>[],
           )
           as List<_i5.TrendingHashtag>);
+
+  @override
+  _i8.Future<_i5.RecommendationsResult> getRecommendations({
+    required String? pubkey,
+    int? limit = 20,
+    String? fallback = 'popular',
+    String? category,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#getRecommendations, [], {
+              #pubkey: pubkey,
+              #limit: limit,
+              #fallback: fallback,
+              #category: category,
+            }),
+            returnValue: _i8.Future<_i5.RecommendationsResult>.value(
+              _FakeRecommendationsResult_4(
+                this,
+                Invocation.method(#getRecommendations, [], {
+                  #pubkey: pubkey,
+                  #limit: limit,
+                  #fallback: fallback,
+                  #category: category,
+                }),
+              ),
+            ),
+          )
+          as _i8.Future<_i5.RecommendationsResult>);
 
   @override
   void clearCache() => super.noSuchMethod(
