@@ -64,23 +64,16 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
       category: LogCategory.video,
     );
 
-    final funnelcakeAvailable =
-        ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
     final hashtagService = ref.read(hashtagServiceProvider);
 
     // Run both fetches in parallel for speed
-    final futures = <Future<void>>[];
+    // Always try Funnelcake - it will fail fast if unavailable
+    final futures = <Future<void>>[
+      _fetchFromFunnelcake(forceRefresh: forceRefresh),
+      _subscribeViaWebSocket(hashtagService),
+    ];
 
-    // Funnelcake REST API - fast, returns complete videos
-    if (funnelcakeAvailable) {
-      futures.add(_fetchFromFunnelcake(forceRefresh: forceRefresh));
-    }
-
-    // WebSocket subscription - may take longer, provides real-time updates
-    futures.add(_subscribeViaWebSocket(hashtagService));
-
-    // If no Funnelcake, we need to wait for WebSocket
-    // If Funnelcake available, it will show results immediately via setState
+    // Both run in parallel - Funnelcake shows results immediately via setState
     await Future.wait(futures);
 
     if (!mounted) return;
@@ -88,14 +81,29 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
   }
 
   /// Fetch videos from Funnelcake REST API and update state immediately.
+  /// Uses a short timeout to fail fast and fall back to WebSocket.
   Future<void> _fetchFromFunnelcake({bool forceRefresh = false}) async {
     try {
       final analyticsService = ref.read(analyticsApiServiceProvider);
-      final videos = await analyticsService.getVideosByHashtag(
-        hashtag: widget.hashtag,
-        limit: 100,
-        forceRefresh: forceRefresh,
-      );
+
+      // Quick check - skip if API not configured
+      if (!analyticsService.isAvailable) {
+        Log.debug(
+          '🏷️ HashtagFeedScreen: Funnelcake not configured, skipping',
+          category: LogCategory.video,
+        );
+        return;
+      }
+
+      // Use a 5-second timeout to fail fast
+      final videos = await analyticsService
+          .getVideosByHashtag(
+            hashtag: widget.hashtag,
+            limit: 100,
+            forceRefresh: forceRefresh,
+          )
+          .timeout(const Duration(seconds: 5));
+
       if (!mounted) return;
 
       Log.info(
@@ -112,8 +120,8 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
         }
       });
     } catch (e) {
-      Log.warning(
-        '🏷️ HashtagFeedScreen: Funnelcake failed: $e',
+      Log.debug(
+        '🏷️ HashtagFeedScreen: Funnelcake skipped (${e.runtimeType})',
         category: LogCategory.video,
       );
     }

@@ -319,6 +319,78 @@ class RecommendationsResult {
   bool get isPersonalized => source == 'personalized';
 }
 
+/// Social counts result (follower/following counts)
+class SocialCounts {
+  final String pubkey;
+  final int followerCount;
+  final int followingCount;
+
+  const SocialCounts({
+    required this.pubkey,
+    required this.followerCount,
+    required this.followingCount,
+  });
+
+  factory SocialCounts.fromJson(Map<String, dynamic> json) {
+    return SocialCounts(
+      pubkey: json['pubkey']?.toString() ?? '',
+      followerCount: json['follower_count'] as int? ?? 0,
+      followingCount: json['following_count'] as int? ?? 0,
+    );
+  }
+}
+
+/// Paginated pubkey list result (for followers/following)
+class PaginatedPubkeys {
+  final List<String> pubkeys;
+  final int total;
+  final bool hasMore;
+
+  const PaginatedPubkeys({
+    required this.pubkeys,
+    this.total = 0,
+    this.hasMore = false,
+  });
+
+  factory PaginatedPubkeys.fromJson(Map<String, dynamic> json) {
+    final pubkeysData = json['pubkeys'] as List<dynamic>? ?? [];
+    return PaginatedPubkeys(
+      pubkeys: pubkeysData.map((e) => e.toString()).toList(),
+      total: json['total'] as int? ?? pubkeysData.length,
+      hasMore: json['has_more'] as bool? ?? false,
+    );
+  }
+
+  static const empty = PaginatedPubkeys(pubkeys: []);
+}
+
+/// Bulk video stats entry for a single video
+class BulkVideoStatsEntry {
+  final String eventId;
+  final int reactions;
+  final int comments;
+  final int reposts;
+  final int? loops;
+
+  const BulkVideoStatsEntry({
+    required this.eventId,
+    required this.reactions,
+    required this.comments,
+    required this.reposts,
+    this.loops,
+  });
+
+  factory BulkVideoStatsEntry.fromJson(Map<String, dynamic> json) {
+    return BulkVideoStatsEntry(
+      eventId: json['event_id']?.toString() ?? '',
+      reactions: json['reactions'] as int? ?? 0,
+      comments: json['comments'] as int? ?? 0,
+      reposts: json['reposts'] as int? ?? 0,
+      loops: json['loops'] as int?,
+    );
+  }
+}
+
 /// Service for Funnelcake REST API interactions
 ///
 /// Funnelcake provides pre-computed trending scores and analytics
@@ -701,8 +773,11 @@ class AnalyticsApiService {
 
         return videos.map((v) => v.toVideoEvent()).toList();
       } else {
+        // Log error response body for debugging
         Log.error(
-          'Hashtag search failed: ${response.statusCode}',
+          'Hashtag search failed: ${response.statusCode}\n'
+          'URL: $url\n'
+          'Response: ${response.body.length > 500 ? response.body.substring(0, 500) : response.body}',
           name: 'AnalyticsApiService',
           category: LogCategory.video,
         );
@@ -1059,28 +1134,31 @@ class AnalyticsApiService {
     }
   }
 
-  /// Get classic vines (imported Vine videos sorted by loop count)
+  /// Get classic vines (imported Vine videos)
   ///
   /// Uses the /api/videos endpoint with classic=true&platform=vine
   /// to get older videos with high engagement.
   ///
-  /// [before] - Unix timestamp cursor for pagination
-  ///
-  /// TODO(classic-vines): This method is currently unused. It was added for a
-  /// planned "Classic Vines" feature to show imported Vine videos. Consider:
-  /// 1. Implementing ClassicVinesFeedProvider to use this endpoint
-  /// 2. Adding a "Classic" tab to the Explore screen
-  /// 3. Removing this method if the feature is not planned
+  /// [sort] - Sort order: 'loops' (default, most viral first), 'trending', or 'recent'
+  /// [offset] - Pagination offset for rank-based sorting (loops, trending)
+  /// [before] - Unix timestamp cursor for time-based pagination (recent)
   Future<List<VideoEvent>> getClassicVines({
     int limit = 50,
+    int offset = 0,
     int? before,
+    String sort = 'loops', // Most viral first by default
   }) async {
     if (!isAvailable) return [];
 
     try {
-      var url = '$_baseUrl/api/videos?classic=true&platform=vine&limit=$limit';
-      if (before != null) {
+      var url =
+          '$_baseUrl/api/videos?classic=true&platform=vine&sort=$sort&limit=$limit';
+      // Use offset for rank-based sorting (loops, trending)
+      // Use before for time-based sorting (recent)
+      if (sort == 'recent' && before != null) {
         url += '&before=$before';
+      } else if (offset > 0) {
+        url += '&offset=$offset';
       }
       Log.info(
         'Fetching classic vines from Funnelcake: $url',
@@ -1223,6 +1301,29 @@ class AnalyticsApiService {
       );
       return [];
     }
+  }
+
+  /// Fetch a page of classic vines using offset pagination
+  ///
+  /// Use this for on-demand page loading instead of fetching all 10k at once.
+  ///
+  /// [page] - Page number (0-indexed)
+  /// [pageSize] - Videos per page (default 100)
+  /// [sort] - Sort order: 'loops' (default), 'trending', or 'recent'
+  Future<List<VideoEvent>> getClassicVinesPage({
+    required int page,
+    int pageSize = 100,
+    String sort = 'loops',
+  }) async {
+    final offset = page * pageSize;
+
+    Log.info(
+      '🎬 Fetching classic vines page $page (offset: $offset, sort: $sort)',
+      name: 'AnalyticsApiService',
+      category: LogCategory.video,
+    );
+
+    return getClassicVines(limit: pageSize, offset: offset, sort: sort);
   }
 
   /// Fetch trending hashtags from funnelcake /api/hashtags endpoint
@@ -1421,6 +1522,360 @@ class AnalyticsApiService {
         category: LogCategory.video,
       );
       return const RecommendationsResult(videos: [], source: 'error');
+    }
+  }
+
+  /// Fetch multiple user profiles in bulk via POST /api/users/bulk
+  ///
+  /// Returns a map of pubkey -> profile data for efficient batch loading.
+  /// This is faster than individual profile fetches for video grids.
+  ///
+  /// Returns empty map if API unavailable or request fails.
+  Future<Map<String, Map<String, dynamic>>> getBulkProfiles(
+    List<String> pubkeys,
+  ) async {
+    if (!isAvailable || pubkeys.isEmpty) {
+      return {};
+    }
+
+    try {
+      final url = '$_baseUrl/api/users/bulk';
+      Log.info(
+        'Fetching ${pubkeys.length} profiles in bulk from Funnelcake',
+        name: 'AnalyticsApiService',
+        category: LogCategory.system,
+      );
+
+      final response = await _httpClient
+          .post(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+            body: jsonEncode({'pubkeys': pubkeys}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final usersData = data['users'] as List<dynamic>? ?? [];
+
+        final result = <String, Map<String, dynamic>>{};
+        for (final user in usersData) {
+          if (user is Map<String, dynamic>) {
+            final pubkey = user['pubkey']?.toString();
+            final profile = user['profile'] as Map<String, dynamic>?;
+            if (pubkey != null && pubkey.isNotEmpty && profile != null) {
+              result[pubkey] = profile;
+            }
+          }
+        }
+
+        Log.info(
+          'Bulk profile fetch: ${result.length}/${pubkeys.length} profiles found',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+
+        return result;
+      } else {
+        Log.warning(
+          'Bulk profile fetch failed: ${response.statusCode}',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+        return {};
+      }
+    } catch (e) {
+      Log.debug(
+        'Bulk profile fetch error (will fall back to relay): $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.system,
+      );
+      return {};
+    }
+  }
+
+  /// Fetch video stats for multiple videos in bulk via POST /api/videos/stats/bulk
+  ///
+  /// Returns a map of eventId -> stats for efficient batch loading.
+  /// Useful for enriching video grids with engagement counts.
+  ///
+  /// Returns empty map if API unavailable or request fails.
+  Future<Map<String, BulkVideoStatsEntry>> getBulkVideoStats(
+    List<String> eventIds,
+  ) async {
+    if (!isAvailable || eventIds.isEmpty) {
+      return {};
+    }
+
+    try {
+      final url = '$_baseUrl/api/videos/stats/bulk';
+      Log.info(
+        'Fetching stats for ${eventIds.length} videos in bulk from Funnelcake',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+
+      final response = await _httpClient
+          .post(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+            body: jsonEncode({'event_ids': eventIds}),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final statsData = data['stats'] as List<dynamic>? ?? [];
+
+        final result = <String, BulkVideoStatsEntry>{};
+        for (final stat in statsData) {
+          if (stat is Map<String, dynamic>) {
+            final entry = BulkVideoStatsEntry.fromJson(stat);
+            if (entry.eventId.isNotEmpty) {
+              result[entry.eventId] = entry;
+            }
+          }
+        }
+
+        Log.info(
+          'Bulk video stats fetch: ${result.length}/${eventIds.length} stats found',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+
+        return result;
+      } else {
+        Log.warning(
+          'Bulk video stats fetch failed: ${response.statusCode}',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+        return {};
+      }
+    } catch (e) {
+      Log.debug(
+        'Bulk video stats fetch error (will fall back to relay): $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+      return {};
+    }
+  }
+
+  /// Get social counts (follower/following) for a user via GET /api/users/{pk}/social
+  ///
+  /// Returns quick follower/following counts without fetching full lists.
+  /// Useful for profile headers.
+  ///
+  /// Returns null if API unavailable, user not found, or request fails.
+  Future<SocialCounts?> getSocialCounts(String pubkey) async {
+    if (!isAvailable || pubkey.isEmpty) {
+      return null;
+    }
+
+    try {
+      final url = '$_baseUrl/api/users/$pubkey/social';
+      Log.debug(
+        'Fetching social counts for $pubkey from Funnelcake',
+        name: 'AnalyticsApiService',
+        category: LogCategory.system,
+      );
+
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final counts = SocialCounts.fromJson(data);
+
+        Log.debug(
+          'Social counts for $pubkey: ${counts.followerCount} followers, ${counts.followingCount} following',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+
+        return counts;
+      } else if (response.statusCode == 404) {
+        Log.debug(
+          'Social counts not found for $pubkey',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+        return null;
+      } else {
+        Log.warning(
+          'Social counts fetch failed: ${response.statusCode}',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+        return null;
+      }
+    } catch (e) {
+      Log.debug(
+        'Social counts fetch error (will fall back to relay): $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+  }
+
+  /// Get paginated list of followers for a user via GET /api/users/{pk}/followers
+  ///
+  /// Returns pubkeys of users who follow the target user.
+  ///
+  /// [limit] - Maximum number of results (default 100)
+  /// [offset] - Pagination offset (default 0)
+  ///
+  /// Returns empty result if API unavailable or request fails.
+  Future<PaginatedPubkeys> getFollowers(
+    String pubkey, {
+    int limit = 100,
+    int offset = 0,
+  }) async {
+    if (!isAvailable || pubkey.isEmpty) {
+      return PaginatedPubkeys.empty;
+    }
+
+    try {
+      final url =
+          '$_baseUrl/api/users/$pubkey/followers?limit=$limit&offset=$offset';
+      Log.debug(
+        'Fetching followers for $pubkey from Funnelcake',
+        name: 'AnalyticsApiService',
+        category: LogCategory.system,
+      );
+
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final result = PaginatedPubkeys.fromJson(data);
+
+        Log.info(
+          'Followers for $pubkey: ${result.pubkeys.length} (total: ${result.total}, hasMore: ${result.hasMore})',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+
+        return result;
+      } else if (response.statusCode == 404) {
+        Log.debug(
+          'Followers not found for $pubkey',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+        return PaginatedPubkeys.empty;
+      } else {
+        Log.warning(
+          'Followers fetch failed: ${response.statusCode}',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+        return PaginatedPubkeys.empty;
+      }
+    } catch (e) {
+      Log.debug(
+        'Followers fetch error (will fall back to relay): $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.system,
+      );
+      return PaginatedPubkeys.empty;
+    }
+  }
+
+  /// Get paginated list of users that a user follows via GET /api/users/{pk}/following
+  ///
+  /// Returns pubkeys of users that the target user follows.
+  ///
+  /// [limit] - Maximum number of results (default 100)
+  /// [offset] - Pagination offset (default 0)
+  ///
+  /// Returns empty result if API unavailable or request fails.
+  Future<PaginatedPubkeys> getFollowing(
+    String pubkey, {
+    int limit = 100,
+    int offset = 0,
+  }) async {
+    if (!isAvailable || pubkey.isEmpty) {
+      return PaginatedPubkeys.empty;
+    }
+
+    try {
+      final url =
+          '$_baseUrl/api/users/$pubkey/following?limit=$limit&offset=$offset';
+      Log.debug(
+        'Fetching following for $pubkey from Funnelcake',
+        name: 'AnalyticsApiService',
+        category: LogCategory.system,
+      );
+
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final result = PaginatedPubkeys.fromJson(data);
+
+        Log.info(
+          'Following for $pubkey: ${result.pubkeys.length} (total: ${result.total}, hasMore: ${result.hasMore})',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+
+        return result;
+      } else if (response.statusCode == 404) {
+        Log.debug(
+          'Following not found for $pubkey',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+        return PaginatedPubkeys.empty;
+      } else {
+        Log.warning(
+          'Following fetch failed: ${response.statusCode}',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+        return PaginatedPubkeys.empty;
+      }
+    } catch (e) {
+      Log.debug(
+        'Following fetch error (will fall back to relay): $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.system,
+      );
+      return PaginatedPubkeys.empty;
     }
   }
 

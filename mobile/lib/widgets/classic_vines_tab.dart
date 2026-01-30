@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/classic_vines_provider.dart';
-import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -118,14 +117,13 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
               onVideoTap: widget.onVideoTap,
               onRefresh: () async {
                 Log.info(
-                  '🔄 ClassicVinesTab: Refreshing from REST API',
+                  '🔄 ClassicVinesTab: Spinning to next batch of classics',
                   name: 'ClassicVinesTab',
                   category: LogCategory.video,
                 );
-                await Future.wait([
-                  ref.read(classicVinesFeedProvider.notifier).refresh(),
-                  ref.read(trendingHashtagsProvider.notifier).refresh(),
-                ]);
+                // Only refresh classics feed (roulette to next page)
+                // Don't refresh trending hashtags - it can cause disposal errors
+                await ref.read(classicVinesFeedProvider.notifier).refresh();
               },
               emptyBuilder: () => const _ClassicVinesEmptyState(),
             ),
