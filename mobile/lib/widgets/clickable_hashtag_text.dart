@@ -47,9 +47,6 @@ class ClickableHashtagText extends ConsumerWidget {
   /// Matches @username where username is alphanumeric with underscores
   static final _plainMentionRegex = RegExp(r'@([a-zA-Z][a-zA-Z0-9_]{0,30})');
 
-  /// Regex to detect hashtags
-  static final _hashtagRegex = RegExp(r'#(\w+)', caseSensitive: false);
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (text.isEmpty) {
