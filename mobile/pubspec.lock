@@ -65,14 +65,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.2+1"
-  app_device_integrity:
-    dependency: "direct main"
-    description:
-      name: app_device_integrity
-      sha256: "626e4f94ce393866e9aeb2d2c989817e13722ce5e5c93f81aae967f187f96dda"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.0"
   app_links:
     dependency: "direct main"
     description:
