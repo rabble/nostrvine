@@ -154,7 +154,6 @@ class AuthService implements BackgroundAwareService {
 
   // Relay discovery state (NIP-65)
   List<DiscoveredRelay> _userRelays = [];
-  bool _hasUserRelays = false;
   bool _hasExistingProfile = false;
   final RelayDiscoveryService _relayDiscoveryService = RelayDiscoveryService();
 
@@ -218,9 +217,6 @@ class AuthService implements BackgroundAwareService {
 
   /// Get discovered user relays (NIP-65)
   List<DiscoveredRelay> get userRelays => List.unmodifiable(_userRelays);
-
-  /// Check if user has discovered relays
-  bool get hasUserRelays => _hasUserRelays;
 
   /// Check if user has an existing profile (kind 0)
   bool get hasExistingProfile => _hasExistingProfile;
@@ -1392,11 +1388,8 @@ class AuthService implements BackgroundAwareService {
 
     _profileController.add(_currentProfile);
 
-    // Discover user relays via NIP-65
-    await _discoverUserRelays();
-
-    // Discover user Blossom servers via kind 10063 (BUD-03)
-    await _discoverUserBlossomServers();
+    // Perform all discovery with a single temporary client
+    await _performDiscovery();
 
     Log.info(
       'Secure user session established',
@@ -1415,15 +1408,61 @@ class AuthService implements BackgroundAwareService {
     );
   }
 
-  /// Discover user relays via NIP-65 and check for existing profile
+  /// Perform all discovery operations using a single temporary NostrClient.
   ///
-  /// Note: This is called BEFORE NostrClient is rebuilt with user relays,
-  /// so we create a temporary NostrClient just for indexer querying.
-  Future<void> _discoverUserRelays() async {
+  /// This consolidates relay discovery (NIP-65) and Blossom server discovery
+  /// (kind 10063) into a single temporary client to avoid wasteful reconnections.
+  Future<void> _performDiscovery() async {
     if (_currentKeyContainer == null) return;
 
     final npub = _currentKeyContainer!.npub;
 
+    Log.info(
+      '🔍 Starting user discovery (relays + Blossom servers)...',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    NostrClient? tempClient;
+    try {
+      // Create ONE temporary NostrClient for all indexer queries
+      final tempConfig = NostrClientConfig(
+        signer: AuthServiceSigner(_currentKeyContainer),
+      );
+      final tempRelayConfig = RelayManagerConfig(
+        defaultRelayUrl: 'wss://relay.divine.video',
+        storage: SharedPreferencesRelayStorage(),
+      );
+      tempClient = NostrClient(
+        config: tempConfig,
+        relayManagerConfig: tempRelayConfig,
+      );
+
+      await tempClient.initialize();
+
+      // Run all discoveries on the same client
+      await _discoverUserRelaysWithClient(npub, tempClient);
+      await _discoverUserBlossomServersWithClient(npub, tempClient);
+      await _checkExistingProfileWithClient(tempClient);
+    } finally {
+      // Always clean up the temporary client
+      tempClient?.dispose();
+    }
+
+    Log.info(
+      '📊 Discovery complete: relays= (${_userRelays.length}), '
+      'blossomServers=$_hasUserBlossomServers (${_userBlossomServers.length}), '
+      'hasExistingProfile=$_hasExistingProfile',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+  }
+
+  /// Discover user relays via NIP-65 using the provided NostrClient.
+  Future<void> _discoverUserRelaysWithClient(
+    String npub,
+    NostrClient nostrClient,
+  ) async {
     Log.info(
       '🔍 Discovering relays for user via NIP-65...',
       name: 'AuthService',
@@ -1431,36 +1470,13 @@ class AuthService implements BackgroundAwareService {
     );
 
     try {
-      // Create a temporary NostrClient for querying indexers
-      // We can't use the main NostrClient yet because it hasn't been
-      // rebuilt with the user's relays
-      final tempConfig = NostrClientConfig(
-        signer: AuthServiceSigner(_currentKeyContainer),
-      );
-      final tempRelayConfig = RelayManagerConfig(
-        defaultRelayUrl:
-            'wss://relay.divine.video', // Won't be used for indexer queries
-        storage: SharedPreferencesRelayStorage(),
-      );
-      final tempClient = NostrClient(
-        config: tempConfig,
-        relayManagerConfig: tempRelayConfig,
-      );
-
-      await tempClient.initialize();
-
-      // Discover relays via NIP-65 using the temp client
       final result = await _relayDiscoveryService.discoverRelays(
         npub,
-        nostrClient: tempClient,
+        nostrClient: nostrClient,
       );
-
-      // Clean up temp client
-      tempClient.dispose();
 
       if (result.success && result.hasRelays) {
         _userRelays = result.relays;
-        _hasUserRelays = true;
 
         Log.info(
           '✅ Discovered ${_userRelays.length} user relays from ${result.foundOnIndexer ?? "cache"}',
@@ -1478,7 +1494,6 @@ class AuthService implements BackgroundAwareService {
         }
       } else {
         _userRelays = [];
-        _hasUserRelays = false;
 
         Log.warning(
           '⚠️ No relay list found for user - will use diVine relay only',
@@ -1496,7 +1511,6 @@ class AuthService implements BackgroundAwareService {
       }
     } catch (e) {
       _userRelays = [];
-      _hasUserRelays = false;
 
       Log.error(
         '❌ Relay discovery failed: $e - falling back to diVine relay only',
@@ -1504,29 +1518,13 @@ class AuthService implements BackgroundAwareService {
         category: LogCategory.auth,
       );
     }
-
-    // TODO: Check for existing profile (kind 0) on discovered relays
-    // This will be implemented as part of guardrails to prevent blank profile overwrite
-    // For now, set to false
-    _hasExistingProfile = false;
-
-    Log.info(
-      '📊 Relay discovery summary: hasRelays=$_hasUserRelays, '
-      'relayCount=${_userRelays.length}, hasProfile=$_hasExistingProfile',
-      name: 'AuthService',
-      category: LogCategory.auth,
-    );
   }
 
-  /// Discover user Blossom servers via kind 10063 (BUD-03)
-  ///
-  /// Note: This queries the SAME indexers as relay discovery (purplepag.es, etc.)
-  /// because indexers maintain kind 10063 events for Nostr-native users.
-  Future<void> _discoverUserBlossomServers() async {
-    if (_currentKeyContainer == null) return;
-
-    final npub = _currentKeyContainer!.npub;
-
+  /// Discover user Blossom servers via kind 10063 using the provided NostrClient.
+  Future<void> _discoverUserBlossomServersWithClient(
+    String npub,
+    NostrClient nostrClient,
+  ) async {
     Log.info(
       '🌸 Discovering Blossom servers for user via kind 10063...',
       name: 'AuthService',
@@ -1534,31 +1532,10 @@ class AuthService implements BackgroundAwareService {
     );
 
     try {
-      // Create a temporary NostrClient for querying indexers
-      // Same pattern as relay discovery - the service will handle adding/removing indexers
-      final tempConfig = NostrClientConfig(
-        signer: AuthServiceSigner(_currentKeyContainer),
-      );
-      final tempRelayConfig = RelayManagerConfig(
-        defaultRelayUrl:
-            'wss://relay.divine.video', // Won't be used for indexer queries
-        storage: SharedPreferencesRelayStorage(),
-      );
-      final tempClient = NostrClient(
-        config: tempConfig,
-        relayManagerConfig: tempRelayConfig,
-      );
-
-      await tempClient.initialize();
-
-      // Discover Blossom servers via indexers (same indexers as NIP-65)
       final result = await _blossomDiscoveryService.discoverServers(
         npub,
-        nostrClient: tempClient,
+        nostrClient: nostrClient,
       );
-
-      // Clean up temp client
-      tempClient.dispose();
 
       if (result.success && result.hasServers) {
         _userBlossomServers = result.servers;
@@ -1606,13 +1583,62 @@ class AuthService implements BackgroundAwareService {
         category: LogCategory.auth,
       );
     }
+  }
+
+  /// Check if user has an existing profile (kind 0) on indexers.
+  ///
+  /// This is used as a guardrail to prevent accidentally overwriting
+  /// existing profiles with blank data.
+  Future<void> _checkExistingProfileWithClient(NostrClient nostrClient) async {
+    if (_currentKeyContainer == null) {
+      _hasExistingProfile = false;
+      return;
+    }
 
     Log.info(
-      '📊 Blossom discovery summary: hasServers=$_hasUserBlossomServers, '
-      'serverCount=${_userBlossomServers.length}',
+      '👤 Checking for existing profile (kind 0)...',
       name: 'AuthService',
       category: LogCategory.auth,
     );
+
+    try {
+      final filter = Filter(
+        kinds: [0],
+        authors: [_currentKeyContainer!.publicKeyHex],
+        limit: 1,
+      );
+
+      final events = await nostrClient
+          .queryEvents([filter])
+          .timeout(
+            const Duration(seconds: 10),
+            onTimeout: () {
+              Log.warning(
+                'Timeout checking for existing profile',
+                name: 'AuthService',
+                category: LogCategory.auth,
+              );
+              return <Event>[];
+            },
+          );
+
+      _hasExistingProfile = events.isNotEmpty;
+
+      Log.info(
+        '${_hasExistingProfile ? "✅" : "📝"} Profile check: '
+        'hasExistingProfile=$_hasExistingProfile',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    } catch (e) {
+      _hasExistingProfile = false;
+
+      Log.warning(
+        '⚠️ Profile check failed: $e - assuming no existing profile',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    }
   }
 
   /// Update authentication state and notify listeners
