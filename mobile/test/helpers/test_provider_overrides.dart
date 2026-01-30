@@ -118,7 +118,22 @@ MockNostrClient createMockNostrService() {
 MockSubscriptionManager createMockSubscriptionManager() {
   final mockSub = MockSubscriptionManager();
 
-  // Stub common methods - subscriptions return empty streams by default
+  // Stub createSubscription to return a valid subscription id (never null).
+  // Prevents type 'Null' is not a subtype of type 'Future<String>' when
+  // UserProfileService batch fetch runs.
+  when(
+    mockSub.createSubscription(
+      name: anyNamed('name'),
+      filters: anyNamed('filters'),
+      onEvent: anyNamed('onEvent'),
+      onError: anyNamed('onError'),
+      onComplete: anyNamed('onComplete'),
+      timeout: anyNamed('timeout'),
+      priority: anyNamed('priority'),
+    ),
+  ).thenAnswer(
+    (_) async => 'test-sub-${DateTime.now().millisecondsSinceEpoch}',
+  );
 
   return mockSub;
 }
@@ -143,18 +158,19 @@ List<dynamic> getStandardTestOverrides({
     // Override sharedPreferencesProvider which throws in production
     sharedPreferencesProvider.overrideWithValue(mockPrefs),
 
-    // ONLY override service providers if explicitly requested
-    // Many tests provide their own service mocks, so don't override by default
+    // Always override NostrClient and SubscriptionManager with stubbed mocks
+    // so UserProfileService/FollowRepository never get null Stream<Event> or
+    // Future<List<String>> (fixes type errors during ProfileCacheService use).
+    nostrServiceProvider.overrideWithValue(mockNostr),
+    subscriptionManagerProvider.overrideWithValue(mockSub),
+
+    // ONLY override other service providers if explicitly requested
     if (mockAuthService != null)
       authServiceProvider.overrideWithValue(mockAuth),
     if (mockSocialService != null)
       socialServiceProvider.overrideWithValue(mockSocial),
     if (mockUserProfileService != null)
       userProfileServiceProvider.overrideWithValue(mockProfile),
-    if (mockNostrService != null)
-      nostrServiceProvider.overrideWithValue(mockNostr),
-    if (mockSubscriptionManager != null)
-      subscriptionManagerProvider.overrideWithValue(mockSub),
   ];
 }
 
