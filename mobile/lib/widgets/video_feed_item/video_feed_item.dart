@@ -1908,8 +1908,12 @@ class _CommentActionButton extends StatelessWidget {
     if (interactionsBloc != null) {
       return BlocBuilder<VideoInteractionsBloc, VideoInteractionsState>(
         builder: (context, state) {
-          final commentCount = state.commentCount ?? 0;
-          final totalComments = commentCount + (video.originalComments ?? 0);
+          // Use bloc's commentCount if available (fetched from relays),
+          // otherwise fall back to video metadata's originalComments.
+          // Don't add them together - they represent the same data from
+          // different sources.
+          final totalComments =
+              state.commentCount ?? video.originalComments ?? 0;
           return _buildButton(context, totalComments);
         },
       );

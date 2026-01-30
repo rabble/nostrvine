@@ -19,9 +19,8 @@ class CommentOptionsModal {
   static Future<bool?> show(BuildContext modalContext) {
     return VineBottomSheet.show<bool>(
       context: modalContext,
+      scrollable: false,
       expanded: false,
-      maxChildSize: 0.4,
-      initialChildSize: 0.4,
       title: Text(
         'Options',
         style: VineTheme.titleFont(fontSize: 16, color: VineTheme.onSurface),
