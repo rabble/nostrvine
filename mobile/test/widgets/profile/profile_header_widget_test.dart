@@ -139,16 +139,18 @@ void main() {
       UserProfile? profile,
       VoidCallback? onSetupProfile,
       bool isAnonymous = false,
+      String? displayNameHint,
+      String? avatarUrlHint,
     }) {
       final authService = MockAuthService(isAnonymousValue: isAnonymous);
       return ProviderScope(
         overrides: [
-          ...getStandardTestOverrides(),
+          // Pass test's mock so we don't duplicate nostrServiceProvider override
+          ...getStandardTestOverrides(mockNostrService: mockNostrClient),
           fetchUserProfileProvider(
             userIdHex,
           ).overrideWith((ref) async => profile),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
-          nostrServiceProvider.overrideWithValue(mockNostrClient),
           authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWith(
             (ref) => AuthState.authenticated,
@@ -168,6 +170,8 @@ void main() {
                   videoCount: videoCount,
                   profileStatsAsync: profileStatsAsync,
                   onSetupProfile: onSetupProfile,
+                  displayNameHint: displayNameHint,
+                  avatarUrlHint: avatarUrlHint,
                 ),
               ),
             ),
@@ -327,6 +331,8 @@ void main() {
             isOwnProfile: false,
             profileStatsAsync: AsyncValue.data(createTestStats()),
             profile: null,
+            displayNameHint: 'Unknown',
+            avatarUrlHint: 'https://example.com/fallback.png',
           ),
         );
         await tester.pumpAndSettle();
