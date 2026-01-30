@@ -32,8 +32,9 @@ class NostrService extends _$NostrService {
     _authSubscription = authService.authStateStream.listen(_onAuthStateChanged);
 
     // Get user relay URLs from discovered relays (NIP-65)
+    // Include all relays - NostrClient needs both read and write capable relays
+    // for subscribing to events and publishing events respectively
     final userRelayUrls = authService.userRelays
-        .where((relay) => relay.read) // Only include read-capable relays
         .map((relay) => relay.url)
         .toList();
 
@@ -95,8 +96,9 @@ class NostrService extends _$NostrService {
       final dbClient = ref.read(appDbClientProvider);
 
       // Get user relay URLs from discovered relays (NIP-65)
+      // Include all relays - NostrClient needs both read and write capable relays
+      // for subscribing to events and publishing events respectively
       final userRelayUrls = authService.userRelays
-          .where((relay) => relay.read) // Only include read-capable relays
           .map((relay) => relay.url)
           .toList();
 
