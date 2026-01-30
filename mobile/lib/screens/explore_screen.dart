@@ -26,8 +26,10 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/classic_vines_tab.dart';
+import 'package:openvine/widgets/for_you_tab.dart';
 import 'package:openvine/widgets/list_card.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
+import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/widgets/new_videos_tab.dart';
 import 'package:openvine/widgets/popular_videos_tab.dart';
 
@@ -61,13 +63,23 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
   // Track classics availability to rebuild tabs when it changes
   bool _classicsAvailable = false;
+  // Track For You availability (staging only)
+  bool _forYouAvailable = false;
 
   // Analytics services
   final _screenAnalytics = ScreenAnalyticsService();
   final _feedTracker = FeedPerformanceTracker();
   final _errorTracker = ErrorAnalyticsTracker();
 
-  int get _tabCount => _classicsAvailable ? 4 : 3;
+  /// Calculate tab count based on feature availability
+  /// Base: New Videos, Trending, Lists = 3
+  /// +1 if Classics available, +1 if For You available
+  int get _tabCount {
+    int count = 3; // Base tabs: New Videos, Trending, Lists
+    if (_classicsAvailable) count++;
+    if (_forYouAvailable) count++;
+    return count;
+  }
 
   void _initTabController() {
     final savedTabIndex = ref.read(exploreTabIndexProvider);
@@ -151,10 +163,13 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
     final index = _tabController!.index;
 
-    // Tab names depend on whether classics tab is visible
-    final tabNames = _classicsAvailable
-        ? ['new_videos', 'popular_videos', 'classics', 'lists']
-        : ['new_videos', 'popular_videos', 'lists'];
+    // Tab names depend on which optional tabs are visible
+    // Order: [Classics], New Videos, Trending, [For You], Lists
+    final tabNames = <String>[];
+    if (_classicsAvailable) tabNames.add('classics');
+    tabNames.addAll(['new_videos', 'trending']);
+    if (_forYouAvailable) tabNames.add('for_you');
+    tabNames.add('lists');
     final tabName = tabNames[index];
 
     Log.debug(
@@ -172,7 +187,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     );
 
     // Lists tab - refresh lists when activated (last tab)
-    final listsTabIndex = _classicsAvailable ? 3 : 2;
+    final listsTabIndex = _tabCount - 1; // Lists is always the last tab
     if (index == listsTabIndex) {
       Log.debug('🔄 Lists tab activated', category: LogCategory.video);
       // Invalidate providers to refresh list data
@@ -271,14 +286,24 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     final classicsAvailableAsync = ref.watch(classicVinesAvailableProvider);
     final newClassicsAvailable = classicsAvailableAsync.asData?.value ?? false;
 
+    // Watch For You availability (staging only)
+    final newForYouAvailable = ref.watch(forYouAvailableProvider);
+
     // When availability changes, rebuild TabController synchronously
-    if (_classicsAvailable != newClassicsAvailable) {
+    final needsRebuild =
+        _classicsAvailable != newClassicsAvailable ||
+        _forYouAvailable != newForYouAvailable;
+
+    if (needsRebuild) {
       Log.info(
-        '🎯 ExploreScreen: Classics availability changed: $_classicsAvailable -> $newClassicsAvailable',
+        '🎯 ExploreScreen: Tab availability changed - '
+        'classics: $_classicsAvailable -> $newClassicsAvailable, '
+        'forYou: $_forYouAvailable -> $newForYouAvailable',
         name: 'ExploreScreen',
         category: LogCategory.ui,
       );
       _classicsAvailable = newClassicsAvailable;
+      _forYouAvailable = newForYouAvailable;
       // Rebuild tab controller to match the new tab count
       _tabController?.removeListener(_onTabChanged);
       _tabController?.dispose();
@@ -348,9 +373,10 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
               }
             },
             tabs: [
-              const Tab(text: 'New Videos'),
-              const Tab(text: 'Popular Videos'),
               if (_classicsAvailable) const Tab(text: 'Classics'),
+              const Tab(text: 'New Videos'),
+              const Tab(text: 'Trending'),
+              if (_forYouAvailable) const Tab(text: 'For You'),
               const Tab(text: 'Lists'),
             ],
           ),
@@ -410,6 +436,11 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             TabBarView(
               controller: _tabController,
               children: [
+                if (_classicsAvailable)
+                  ClassicVinesTab(
+                    onVideoTap: (videos, index) =>
+                        _enterFeedMode(videos, index),
+                  ),
                 NewVideosTab(
                   screenAnalytics: _screenAnalytics,
                   feedTracker: _feedTracker,
@@ -420,17 +451,30 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   feedTracker: _feedTracker,
                   errorTracker: _errorTracker,
                 ),
-                if (_classicsAvailable)
-                  ClassicVinesTab(
+                if (_forYouAvailable)
+                  ForYouTab(
                     onVideoTap: (videos, index) =>
                         _enterFeedMode(videos, index),
                   ),
                 _buildListsTab(),
               ],
             ),
-            // New videos banner (only show on New Videos and Popular Videos tabs)
-            if (_tabController != null && _tabController!.index < 2)
-              _buildNewVideosBanner(),
+            // New videos banner (only show on New Videos and Trending tabs)
+            // New Videos is at index 0 (or 1 if Classics available)
+            // Trending is at index 1 (or 2 if Classics available)
+            if (_tabController != null)
+              Builder(
+                builder: (context) {
+                  final newVideosIndex = _classicsAvailable ? 1 : 0;
+                  final trendingIndex = _classicsAvailable ? 2 : 1;
+                  final currentIndex = _tabController!.index;
+                  if (currentIndex == newVideosIndex ||
+                      currentIndex == trendingIndex) {
+                    return _buildNewVideosBanner();
+                  }
+                  return const SizedBox.shrink();
+                },
+              ),
           ],
         );
       },

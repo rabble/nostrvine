@@ -78,6 +78,34 @@ void main() {
       container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
       expect(container.read(hasVisibleOverlayProvider), isTrue);
     });
+
+    test('returns true when modal is opened', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.read(overlayVisibilityProvider.notifier).setModalOpen(true);
+      expect(container.read(hasVisibleOverlayProvider), isTrue);
+    });
+
+    test('modal open/close cycle returns to false', () {
+      // This test verifies the behavior that override mode videos depend on:
+      // When a modal (like comments) opens, hasVisibleOverlay becomes true.
+      // When the modal closes, hasVisibleOverlay returns to false.
+      // VideoFeedItem with isActiveOverride listens to this provider directly.
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // Initially no overlay
+      expect(container.read(hasVisibleOverlayProvider), isFalse);
+
+      // Open modal (e.g., comments modal)
+      container.read(overlayVisibilityProvider.notifier).setModalOpen(true);
+      expect(container.read(hasVisibleOverlayProvider), isTrue);
+
+      // Close modal
+      container.read(overlayVisibilityProvider.notifier).setModalOpen(false);
+      expect(container.read(hasVisibleOverlayProvider), isFalse);
+    });
   });
 
   group('activeVideoIdProvider integration', () {

@@ -24,7 +24,8 @@ void main() {
           video: EditorVideo.file('/test/clip$i.mp4'),
           duration: const Duration(seconds: 2),
           recordedAt: DateTime.now(),
-          aspectRatio: .vertical,
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
         ),
       );
 
@@ -63,14 +64,16 @@ void main() {
           video: EditorVideo.file('/test/clip1.mp4'),
           duration: const Duration(seconds: 2),
           recordedAt: DateTime.now(),
-          aspectRatio: .vertical,
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
         ),
         RecordingClip(
           id: 'clip2',
           video: EditorVideo.file('/test/clip2.mp4'),
           duration: const Duration(seconds: 4),
           recordedAt: DateTime.now(),
-          aspectRatio: .vertical,
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
         ),
       ];
 
@@ -108,7 +111,8 @@ void main() {
           video: EditorVideo.file('/test/clip$i.mp4'),
           duration: const Duration(seconds: 2),
           recordedAt: DateTime.now(),
-          aspectRatio: .vertical,
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
         ),
       );
 
@@ -155,7 +159,8 @@ void main() {
           video: EditorVideo.file('/test/clip1.mp4'),
           duration: const Duration(seconds: 2),
           recordedAt: DateTime.now(),
-          aspectRatio: .vertical,
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
         ),
       ];
 
@@ -202,7 +207,8 @@ void main() {
           video: EditorVideo.file('/test/clip1.mp4'),
           duration: const Duration(seconds: 10),
           recordedAt: DateTime.now(),
-          aspectRatio: .vertical,
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
         ),
       ];
 
@@ -214,7 +220,10 @@ void main() {
             ),
             videoEditorProvider.overrideWith(
               () => TestVideoEditorNotifier(
-                VideoEditorProviderState(currentPosition: Duration(seconds: 5)),
+                VideoEditorProviderState(
+                  currentPosition: Duration(seconds: 5),
+                  hasPlayedOnce: true, // Required for progress to show
+                ),
               ),
             ),
           ],
@@ -243,14 +252,16 @@ void main() {
           video: EditorVideo.file('/test/clip1.mp4'),
           duration: const Duration(seconds: 2),
           recordedAt: DateTime.now(),
-          aspectRatio: .vertical,
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
         ),
         RecordingClip(
           id: 'clip2',
           video: EditorVideo.file('/test/clip2.mp4'),
           duration: const Duration(seconds: 2),
           recordedAt: DateTime.now(),
-          aspectRatio: .vertical,
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
         ),
       ];
 

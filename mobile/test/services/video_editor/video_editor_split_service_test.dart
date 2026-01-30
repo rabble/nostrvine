@@ -58,7 +58,8 @@ void main() {
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),
           recordedAt: DateTime.now(),
-          aspectRatio: model.AspectRatio.square,
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
         );
 
         // Split at 2.5s - both clips will be 2.5s
@@ -77,7 +78,8 @@ void main() {
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 1),
           recordedAt: DateTime.now(),
-          aspectRatio: model.AspectRatio.square,
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
         );
 
         // Split at 20ms - start clip too short (min 30ms)
@@ -96,7 +98,8 @@ void main() {
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 1),
           recordedAt: DateTime.now(),
-          aspectRatio: model.AspectRatio.square,
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
         );
 
         // Split at 980ms - end clip only 20ms (min 30ms)
@@ -115,7 +118,8 @@ void main() {
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(milliseconds: 60),
           recordedAt: DateTime.now(),
-          aspectRatio: model.AspectRatio.square,
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
         );
 
         // Split exactly at 30ms - both clips exactly minimum
@@ -136,7 +140,8 @@ void main() {
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 1),
           recordedAt: DateTime.now(),
-          aspectRatio: model.AspectRatio.square,
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
         );
 
         expect(
@@ -157,7 +162,8 @@ void main() {
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),
           recordedAt: DateTime.now(),
-          aspectRatio: model.AspectRatio.square,
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
         );
 
         RecordingClip? capturedStartClip;
@@ -188,7 +194,8 @@ void main() {
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),
           recordedAt: DateTime.now(),
-          aspectRatio: model.AspectRatio.square,
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
         );
 
         var onClipsCreatedCalled = false;
@@ -220,7 +227,8 @@ void main() {
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),
           recordedAt: DateTime.now(),
-          aspectRatio: model.AspectRatio.square,
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
         );
 
         await VideoEditorSplitService.splitClip(
@@ -249,7 +257,8 @@ void main() {
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),
           recordedAt: DateTime.now(),
-          aspectRatio: model.AspectRatio.square,
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
         );
 
         final renderedClips = <RecordingClip>[];
@@ -273,7 +282,8 @@ void main() {
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),
           recordedAt: DateTime.now(),
-          aspectRatio: model.AspectRatio.square,
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
         );
 
         final result = await VideoEditorSplitService.splitClip(
@@ -302,7 +312,8 @@ void main() {
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),
           recordedAt: DateTime.now(),
-          aspectRatio: model.AspectRatio.square,
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
         );
 
         try {
@@ -325,7 +336,8 @@ void main() {
           video: EditorVideo.file('/test/video.mp4'),
           duration: const Duration(seconds: 5),
           recordedAt: DateTime.now(),
-          aspectRatio: model.AspectRatio.square,
+          targetAspectRatio: model.AspectRatio.square,
+          originalAspectRatio: 9 / 16,
         );
 
         final result1 = await VideoEditorSplitService.splitClip(

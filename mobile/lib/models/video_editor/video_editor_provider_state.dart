@@ -22,6 +22,8 @@ class VideoEditorProviderState {
     this.isReordering = false,
     this.isOverDeleteZone = false,
     this.isPlaying = false,
+    this.isPlayerReady = false,
+    this.hasPlayedOnce = false,
     this.isMuted = false,
     this.isProcessing = false,
     this.isSavingDraft = false,
@@ -55,6 +57,13 @@ class VideoEditorProviderState {
 
   /// Whether video playback is currently active.
   final bool isPlaying;
+
+  /// Whether the video player is initialized and ready for playback.
+  final bool isPlayerReady;
+
+  /// Whether the video has started playing at least once.
+  /// Used to determine if thumbnail should be hidden.
+  final bool hasPlayedOnce;
 
   /// Whether audio is muted during playback.
   final bool isMuted;
@@ -112,6 +121,8 @@ class VideoEditorProviderState {
     bool? isReordering,
     bool? isOverDeleteZone,
     bool? isPlaying,
+    bool? isPlayerReady,
+    bool? hasPlayedOnce,
     bool? isMuted,
     bool? isProcessing,
     bool? isSavingDraft,
@@ -132,6 +143,8 @@ class VideoEditorProviderState {
       isReordering: isReordering ?? this.isReordering,
       isOverDeleteZone: isOverDeleteZone ?? this.isOverDeleteZone,
       isPlaying: isPlaying ?? this.isPlaying,
+      isPlayerReady: isPlayerReady ?? this.isPlayerReady,
+      hasPlayedOnce: hasPlayedOnce ?? this.hasPlayedOnce,
       isMuted: isMuted ?? this.isMuted,
       isProcessing: isProcessing ?? this.isProcessing,
       isSavingDraft: isSavingDraft ?? this.isSavingDraft,

@@ -20,14 +20,14 @@ class VideoThumbnailService {
   /// Extract a thumbnail from a video file at a specific timestamp
   ///
   /// [videoPath] - Path to the video file
-  /// [timestamp] - Timestamp to extract thumbnail from (default: 210ms)
+  /// [targetTimestamp] - Timestamp to extract thumbnail from (default: 210ms)
   /// [quality] - JPEG quality (1-100, default: 75)
   ///
-  /// Returns the path to the generated thumbnail file
-  static Future<String?> extractThumbnail({
+  /// Returns a [ThumbnailFileResult] with the path and actual timestamp used
+  static Future<ThumbnailFileResult?> extractThumbnail({
     required String videoPath,
     // Extract frame at 210ms by default
-    Duration timestamp = const Duration(milliseconds: 210),
+    Duration targetTimestamp = const Duration(milliseconds: 210),
     int quality = _thumbnailQuality,
   }) async {
     try {
@@ -37,7 +37,7 @@ class VideoThumbnailService {
         category: LogCategory.video,
       );
       Log.debug(
-        '⏱️ Timestamp: ${timestamp.inMilliseconds}ms',
+        '⏱️ Timestamp: ${targetTimestamp.inMilliseconds}ms',
         name: 'VideoThumbnailService',
         category: LogCategory.video,
       );
@@ -67,17 +67,17 @@ class VideoThumbnailService {
         // The pro_video_editor returns thumbnails only as in-memory Uint8List
         // and does not write files to disk.
         // Therefore, we persist the thumbnails to disk here.
-        final thumbnail = await extractThumbnailBytes(
+        final thumbnailResult = await extractThumbnailBytes(
           videoPath: videoPath,
-          timestamp: timestamp,
+          timestamp: targetTimestamp,
           quality: quality,
         );
 
-        if (thumbnail == null) {
+        if (thumbnailResult == null) {
           throw Exception('Failed to extract thumbnail bytes from video');
         }
         final thumbnailFile = File(destPath);
-        await thumbnailFile.writeAsBytes(thumbnail);
+        await thumbnailFile.writeAsBytes(thumbnailResult.bytes);
 
         final thumbnailSize = await thumbnailFile.length();
         Log.info(
@@ -95,7 +95,10 @@ class VideoThumbnailService {
           name: 'VideoThumbnailService',
           category: LogCategory.video,
         );
-        return destPath;
+        return ThumbnailFileResult(
+          path: destPath,
+          timestamp: thumbnailResult.timestamp,
+        );
       } catch (e) {
         Log.error(
           'Failed to generate thumbnail: $e',
@@ -127,7 +130,9 @@ class VideoThumbnailService {
   /// 2. If failed: Wait 100ms, then retry at the same timestamp
   /// 3. If failed again: Wait 200ms, then attempt at 50ms (fallback position)
   /// 4. If failed again: Wait 300ms, then attempt at video duration / 2
-  static Future<Uint8List?> extractThumbnailBytes({
+  ///
+  /// Returns a [ThumbnailResult] containing the bytes and actual timestamp used.
+  static Future<ThumbnailResult?> extractThumbnailBytes({
     required String videoPath,
     Duration timestamp = const Duration(milliseconds: 210),
     int quality = _thumbnailQuality,
@@ -158,7 +163,7 @@ class VideoThumbnailService {
   }
 
   /// Recursively attempts thumbnail extraction with the given list of attempts.
-  static Future<Uint8List?> _extractWithRetry({
+  static Future<ThumbnailResult?> _extractWithRetry({
     required String videoPath,
     required int quality,
     required List<_ThumbnailAttempt> attempts,
@@ -210,14 +215,16 @@ class VideoThumbnailService {
       );
     }
 
-    final result = await _extractThumbnailBytesInternal(
+    final bytes = await _extractThumbnailBytesInternal(
       videoPath: videoPath,
       timestamp: timestamp,
       quality: quality,
       logToCrashlytics: attempt.logToCrashlytics && isLastAttempt,
     );
 
-    if (result != null) return result;
+    if (bytes != null) {
+      return ThumbnailResult(bytes: bytes, timestamp: timestamp);
+    }
 
     // Recurse to next attempt
     return _extractWithRetry(
@@ -389,4 +396,28 @@ class _ThumbnailAttempt {
 
   /// Whether to log failures to Crashlytics (typically only for the last attempt).
   final bool logToCrashlytics;
+}
+
+/// Result of a thumbnail extraction containing the bytes and actual timestamp used.
+class ThumbnailResult {
+  const ThumbnailResult({required this.bytes, required this.timestamp});
+
+  /// The thumbnail image bytes.
+  final Uint8List bytes;
+
+  /// The actual video timestamp where the thumbnail was extracted from.
+  /// May differ from the requested timestamp due to retry logic.
+  final Duration timestamp;
+}
+
+/// Result of a thumbnail file extraction containing the path and actual timestamp used.
+class ThumbnailFileResult {
+  const ThumbnailFileResult({required this.path, required this.timestamp});
+
+  /// The path to the generated thumbnail file.
+  final String path;
+
+  /// The actual video timestamp where the thumbnail was extracted from.
+  /// May differ from the requested timestamp due to retry logic.
+  final Duration timestamp;
 }

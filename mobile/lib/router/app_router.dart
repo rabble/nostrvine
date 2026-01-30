@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/router/app_shell.dart';
 import 'package:openvine/screens/auth/divine_auth_screen.dart';
@@ -193,14 +194,6 @@ int tabIndexFromLocation(String loc) {
   }
 }
 
-// Track if we've done initial navigation to avoid redirect loops
-bool _hasNavigated = false;
-
-/// Reset navigation state for testing purposes
-void resetNavigationState() {
-  _hasNavigated = false;
-}
-
 /// Check if the CURRENT user has any cached following list in SharedPreferences
 /// Exposed for testing
 Future<bool> hasAnyFollowingInCache(SharedPreferences prefs) async {
@@ -258,13 +251,11 @@ Future<bool> hasAnyFollowingInCache(SharedPreferences prefs) async {
 Future<String?> _checkEmptyFollowingRedirect({
   required String location,
   required SharedPreferences prefs,
-  required String routePath,
 }) async {
-  // Only redirect to explore on very first navigation if user follows nobody
-  // After that, let users navigate to home freely (they'll see a message to follow people)
-  if (!_hasNavigated && location.startsWith(routePath)) {
-    _hasNavigated = true;
-
+  // Only redirect to explore when coming from WelcomeScreen if user follows
+  // nobody. After that, let users navigate to home freely (they'll see a
+  // message to follow people)
+  if (location.startsWith(WelcomeScreen.path)) {
     final hasFollowing = await hasAnyFollowingInCache(prefs);
     Log.debug(
       'Empty contacts check: hasFollowing=$hasFollowing, redirecting=${!hasFollowing}',
@@ -279,12 +270,6 @@ Future<String?> _checkEmptyFollowingRedirect({
       );
       return ExploreScreen.path;
     }
-  } else if (location.startsWith(routePath)) {
-    Log.debug(
-      'Skipping empty contacts check: _hasNavigated=$_hasNavigated',
-      name: 'AppRouter',
-      category: LogCategory.ui,
-    );
   }
   return null;
 }
@@ -318,7 +303,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   // The refreshListenable handles reacting to auth state changes
   final authService = ref.read(authServiceProvider);
   final authListenable = _AuthStateListenable(authService);
-
+  // Cache SharedPreferences to avoid slow getInstance() calls in redirect
+  final prefs = ref.read(sharedPreferencesProvider);
   return GoRouter(
     navigatorKey: _rootKey,
     // Start at /welcome - redirect logic will navigate to appropriate route
@@ -336,17 +322,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         name: 'AppRouter',
         category: LogCategory.ui,
       );
-      Log.debug(
-        'Getting SharedPreferences...',
-        name: 'AppRouter',
-        category: LogCategory.ui,
-      );
-      final prefs = await SharedPreferences.getInstance();
-      Log.debug(
-        'SharedPreferences obtained',
-        name: 'AppRouter',
-        category: LogCategory.ui,
-      );
 
       final authState = ref.read(authServiceProvider).authState;
       if (authState == AuthState.authenticated &&
@@ -359,7 +334,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         final emptyFollowingRedirect = await _checkEmptyFollowingRedirect(
           location: location,
           prefs: prefs,
-          routePath: WelcomeScreen.path,
         );
         if (emptyFollowingRedirect != null) {
           return emptyFollowingRedirect;
@@ -409,29 +383,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           );
           return WelcomeScreen.path;
         }
-      }
-
-      // Redirect FROM /welcome TO /explore when TOS is accepted AND user is authenticated
-      if (location.startsWith(WelcomeScreen.path)) {
-        final hasAcceptedTerms = prefs.getBool('age_verified_16_plus') ?? false;
-        if (hasAcceptedTerms && authState == AuthState.authenticated) {
-          Log.debug(
-            'TOS accepted and authenticated, redirecting from /welcome to /explore',
-            name: 'AppRouter',
-            category: LogCategory.ui,
-          );
-          return ExploreScreen.path;
-        }
-      }
-
-      // Check if we should redirect to explore because user has no following list
-      final emptyFollowingRedirect = await _checkEmptyFollowingRedirect(
-        location: location,
-        prefs: prefs,
-        routePath: HomeScreenRouter.path,
-      );
-      if (emptyFollowingRedirect != null) {
-        return emptyFollowingRedirect;
       }
 
       Log.debug(

@@ -137,7 +137,8 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// Returns the created clip with unique ID.
   RecordingClip addClip({
     required EditorVideo video,
-    required model.AspectRatio aspectRatio,
+    required double originalAspectRatio,
+    required model.AspectRatio targetAspectRatio,
     Duration? duration,
     String? thumbnailPath,
   }) {
@@ -158,7 +159,8 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       duration: isClipToLong ? remainingDuration : clipDuration,
       recordedAt: .now(),
       thumbnailPath: thumbnailPath,
-      aspectRatio: aspectRatio,
+      targetAspectRatio: targetAspectRatio,
+      originalAspectRatio: originalAspectRatio,
       processingCompleter: processingCompleter,
     );
 
@@ -303,10 +305,17 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   }
 
   /// Update thumbnail path for a clip.
-  void updateThumbnail(String clipId, String thumbnailPath) {
+  void updateThumbnail({
+    required String clipId,
+    required String thumbnailPath,
+    required Duration thumbnailTimestamp,
+  }) {
     final index = _clips.indexWhere((c) => c.id == clipId);
     if (index != -1) {
-      _clips[index] = _clips[index].copyWith(thumbnailPath: thumbnailPath);
+      _clips[index] = _clips[index].copyWith(
+        thumbnailPath: thumbnailPath,
+        thumbnailTimestamp: thumbnailTimestamp,
+      );
       state = state.copyWith(clips: List.unmodifiable(_clips));
       Log.debug(
         '🖼️  Updated thumbnail for clip: $clipId',
@@ -520,7 +529,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
 
       final savedClip = SavedClip(
         id: clip.id,
-        aspectRatio: clip.aspectRatio.name,
+        aspectRatio: clip.targetAspectRatio.name,
         createdAt: DateTime.now(),
         duration: clip.duration,
         filePath: await clip.video.safeFilePath(),

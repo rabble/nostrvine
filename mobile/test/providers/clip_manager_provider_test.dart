@@ -32,7 +32,8 @@ void main() {
       notifier.addClip(
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
 
       final state = container.read(clipManagerProvider);
@@ -46,12 +47,14 @@ void main() {
       notifier.addClip(
         video: EditorVideo.file('/path/to/video1.mp4'),
         duration: const Duration(seconds: 2),
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
       notifier.addClip(
         video: EditorVideo.file('/path/to/video2.mp4'),
         duration: const Duration(seconds: 1),
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
 
       final clipId = container.read(clipManagerProvider).clips[0].id;
@@ -67,7 +70,8 @@ void main() {
       notifier.addClip(
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
       final clipId = container.read(clipManagerProvider).clips[0].id;
       notifier.selectClip(clipId);
@@ -82,13 +86,22 @@ void main() {
       notifier.addClip(
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
       final clipId = container.read(clipManagerProvider).clips[0].id;
-      notifier.updateThumbnail(clipId, '/path/to/thumb.jpg');
+      notifier.updateThumbnail(
+        clipId: clipId,
+        thumbnailPath: '/path/to/thumb.jpg',
+        thumbnailTimestamp: const Duration(milliseconds: 210),
+      );
 
       final state = container.read(clipManagerProvider);
       expect(state.clips[0].thumbnailPath, equals('/path/to/thumb.jpg'));
+      expect(
+        state.clips[0].thumbnailTimestamp,
+        equals(const Duration(milliseconds: 210)),
+      );
     });
 
     test('updateClipDuration updates clip duration', () {
@@ -97,7 +110,8 @@ void main() {
       notifier.addClip(
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
       final clipId = container.read(clipManagerProvider).clips[0].id;
       notifier.updateClipDuration(clipId, const Duration(seconds: 3));
@@ -113,12 +127,14 @@ void main() {
       notifier.addClip(
         video: EditorVideo.file('/path/to/video1.mp4'),
         duration: const Duration(seconds: 1),
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
       notifier.addClip(
         video: EditorVideo.file('/path/to/video2.mp4'),
         duration: const Duration(seconds: 2),
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
 
       expect(container.read(clipManagerProvider).clips.length, equals(2));
@@ -135,12 +151,14 @@ void main() {
       notifier.addClip(
         video: EditorVideo.file('/path/to/video1.mp4'),
         duration: const Duration(seconds: 1),
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
       notifier.addClip(
         video: EditorVideo.file('/path/to/video2.mp4'),
         duration: const Duration(seconds: 2),
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
 
       notifier.clearAll();
@@ -159,7 +177,8 @@ void main() {
       notifier.addClip(
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: const Duration(seconds: 2),
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
 
       final state = container.read(clipManagerProvider);
@@ -172,7 +191,8 @@ void main() {
       notifier.addClip(
         video: EditorVideo.file('/path/to/video.mp4'),
         duration: VideoEditorConstants.maxDuration,
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
       );
 
       final state = container.read(clipManagerProvider);
@@ -189,21 +209,24 @@ void main() {
       final clip1 = notifier.addClip(
         video: EditorVideo.file(sharedFilePath),
         duration: clipDuration,
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
         thumbnailPath: '/path/to/thumb.jpg',
       );
 
       final clip2 = notifier.addClip(
         video: EditorVideo.file(sharedFilePath),
         duration: clipDuration,
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
         thumbnailPath: '/path/to/thumb.jpg',
       );
 
       final clip3 = notifier.addClip(
         video: EditorVideo.file(sharedFilePath),
         duration: clipDuration,
-        aspectRatio: .vertical,
+        targetAspectRatio: .vertical,
+        originalAspectRatio: 9 / 16,
         thumbnailPath: '/path/to/thumb.jpg',
       );
 

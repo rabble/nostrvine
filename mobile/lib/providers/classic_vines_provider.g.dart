@@ -219,14 +219,16 @@ String _$classicVinesAvailableHash() =>
 
 /// Provider for top classic Viners derived from classic videos
 ///
-/// Aggregates videos by pubkey and sorts by total loop count
+/// Aggregates videos by pubkey and sorts by total loop count.
+/// Also triggers profile prefetching for Viners without avatars.
 
 @ProviderFor(topClassicViners)
 const topClassicVinersProvider = TopClassicVinersProvider._();
 
 /// Provider for top classic Viners derived from classic videos
 ///
-/// Aggregates videos by pubkey and sorts by total loop count
+/// Aggregates videos by pubkey and sorts by total loop count.
+/// Also triggers profile prefetching for Viners without avatars.
 
 final class TopClassicVinersProvider
     extends
@@ -240,7 +242,8 @@ final class TopClassicVinersProvider
         $FutureProvider<List<ClassicViner>> {
   /// Provider for top classic Viners derived from classic videos
   ///
-  /// Aggregates videos by pubkey and sorts by total loop count
+  /// Aggregates videos by pubkey and sorts by total loop count.
+  /// Also triggers profile prefetching for Viners without avatars.
   const TopClassicVinersProvider._()
     : super(
         from: null,
@@ -267,4 +270,4 @@ final class TopClassicVinersProvider
   }
 }
 
-String _$topClassicVinersHash() => r'580ba7973d049a9db3ff40c2d3cd6dcc3d451adf';
+String _$topClassicVinersHash() => r'90b684e574cff9f8f46ac85a9c8b78fe5640cfb9';

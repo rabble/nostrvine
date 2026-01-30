@@ -454,8 +454,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
-    final authService = ref.read(authServiceProvider);
-
     // Check for existing drafts before showing logout confirmation
     final prefs = await SharedPreferences.getInstance();
     final draftService = DraftStorageService(prefs);
@@ -503,7 +501,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     if (!context.mounted) return;
 
     // Show standard confirmation dialog
-    final confirmed = await showDialog<bool>(
+    await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
@@ -534,12 +532,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         ],
       ),
     );
-
-    if (confirmed != true || !context.mounted) return;
-
-    // Sign out (keeps keys for re-login)
-    // Router will automatically redirect to /welcome when auth state becomes unauthenticated
-    await authService.signOut(deleteKeys: false);
   }
 
   /// Handle removing keys from device only (no relay broadcast)

@@ -92,7 +92,7 @@ void main() {
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
-          comments: [],
+          commentsById: {},
         ),
       );
     });
@@ -192,18 +192,16 @@ void main() {
 
     group('reply toggling', () {
       testWidgets('tapping Reply adds CommentReplyToggled', (tester) async {
-        final comments = [
-          CommentBuilder()
-              .withId(TestCommentIds.comment1Id)
-              .withContent('Test comment')
-              .build(),
-        ];
+        final comment = CommentBuilder()
+            .withId(TestCommentIds.comment1Id)
+            .withContent('Test comment')
+            .build();
 
         final state = CommentsState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
-          comments: comments,
+          commentsById: {comment.id: comment},
         );
 
         await tester.pumpWidget(buildTestWidget(commentsState: state));
@@ -233,19 +231,17 @@ void main() {
           ),
         ).thenReturn(testProfile);
 
-        final comments = [
-          CommentBuilder()
-              .withId(TestCommentIds.comment1Id)
-              .withAuthorPubkey(TestCommentIds.author1Pubkey)
-              .withContent('Test comment')
-              .build(),
-        ];
+        final comment = CommentBuilder()
+            .withId(TestCommentIds.comment1Id)
+            .withAuthorPubkey(TestCommentIds.author1Pubkey)
+            .withContent('Test comment')
+            .build();
 
         final commentsState = CommentsState(
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
-          comments: comments,
+          commentsById: {comment.id: comment},
           activeReplyCommentId: TestCommentIds.comment1Id,
           replyInputText: '',
         );
@@ -280,7 +276,7 @@ void main() {
           rootEventId: testVideoEventId,
           rootAuthorPubkey: testVideoAuthorPubkey,
           status: CommentsStatus.success,
-          comments: [],
+          commentsById: {},
         );
 
         await tester.pumpWidget(buildTestWidget(commentsState: state));

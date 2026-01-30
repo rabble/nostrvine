@@ -15,6 +15,7 @@ import 'package:openvine/features/feature_flags/providers/feature_flag_providers
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
+import 'package:openvine/providers/overlay_visibility_provider.dart'; // For hasVisibleOverlayProvider (modal pause/resume)
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
@@ -116,6 +117,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   bool _showFadingPauseButton = false;
   double _pauseButtonOpacity = 1.0;
 
+  // State for double-tap heart animation
+  bool _showDoubleTapHeart = false;
+  double _heartScale = 0.0;
+  double _heartOpacity = 1.0;
+
   /// Triggers the fading pause button animation.
   /// Shows pause icon that fades from 100% to 0% opacity over 500ms.
   void _triggerPauseButtonFade() {
@@ -140,6 +146,51 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         _pauseButtonOpacity = 1.0; // Reset for next use
       });
     });
+  }
+
+  /// Triggers the double-tap heart animation.
+  /// Shows heart that scales up and fades out over ~1 second.
+  void _triggerDoubleTapHeartAnimation() {
+    setState(() {
+      _showDoubleTapHeart = true;
+      _heartScale = 0.0;
+      _heartOpacity = 1.0;
+    });
+
+    // Scale up quickly
+    Future.delayed(const Duration(milliseconds: 50), () {
+      if (!mounted) return;
+      setState(() => _heartScale = 1.0);
+    });
+
+    // Hold, then fade out
+    Future.delayed(const Duration(milliseconds: 600), () {
+      if (!mounted) return;
+      setState(() => _heartOpacity = 0.0);
+    });
+
+    // Hide completely after animation
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      if (!mounted) return;
+      setState(() {
+        _showDoubleTapHeart = false;
+        _heartScale = 0.0;
+        _heartOpacity = 1.0;
+      });
+    });
+  }
+
+  /// Handles double-tap to like. Only likes (never unlikes) per Instagram behavior.
+  void _handleDoubleTapLike() {
+    final state = _interactionsBloc.state;
+
+    // Only trigger like if not already liked and not in progress
+    if (!state.isLiked && !state.isLikeInProgress) {
+      _interactionsBloc.add(const VideoInteractionsLikeToggled());
+    }
+
+    // Always show heart animation (even if already liked)
+    _triggerDoubleTapHeartAnimation();
   }
 
   /// Stable video identifier for active state tracking
@@ -176,13 +227,35 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       }
 
       // If using override, handle playback directly without provider listener
-      if (widget.isActiveOverride != null) {
+      // BUT still listen to overlay visibility for modal pause/resume
+      final initialOverride = widget.isActiveOverride;
+      if (initialOverride != null) {
         Log.info(
-          '🎬 VideoFeedItem.initState: using isActiveOverride=${widget.isActiveOverride} for ${widget.video.id}',
+          '🎬 VideoFeedItem.initState: using isActiveOverride=$initialOverride for ${widget.video.id}',
           name: 'VideoFeedItem',
           category: LogCategory.video,
         );
-        if (widget.isActiveOverride!) {
+
+        // Listen to overlay visibility to pause/resume when modals open/close
+        ref.listenManual(hasVisibleOverlayProvider, (prev, next) {
+          if (!mounted) return;
+          // Re-read current override value (may have changed since listener setup)
+          final currentOverride = widget.isActiveOverride;
+          if (currentOverride == null)
+            return; // Widget rebuilt without override
+          // Compute effective active state: override must be true AND no overlay visible
+          final effectivelyActive = currentOverride && !next;
+          Log.info(
+            '🔄 VideoFeedItem overlay changed: videoId=${widget.video.id}, hasOverlay=$next, effectivelyActive=$effectivelyActive',
+            name: 'VideoFeedItem',
+            category: LogCategory.video,
+          );
+          _handlePlaybackChange(effectivelyActive);
+        });
+
+        // Initial play if override is true and no overlay
+        final hasOverlay = ref.read(hasVisibleOverlayProvider);
+        if (initialOverride && !hasOverlay) {
           _handlePlaybackChange(true);
         }
         return;
@@ -587,6 +660,14 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
     final child = GestureDetector(
       behavior: HitTestBehavior.translucent,
+      onDoubleTap: () {
+        Log.debug(
+          '💕 Double-tap detected on VideoFeedItem for ${video.id}',
+          name: 'VideoFeedItem',
+          category: LogCategory.ui,
+        );
+        _handleDoubleTapLike();
+      },
       onTap: () {
         // Lighter debounce - ignore taps within 150ms of previous tap
         // 300ms was too aggressive and was swallowing legitimate pause taps
@@ -868,6 +949,42 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                         'assets/icon/content-controls/pause.svg',
                                         width: 32,
                                         height: 32,
+                                        colorFilter: const ColorFilter.mode(
+                                          Colors.white,
+                                          BlendMode.srcIn,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            // Double-tap heart animation
+                            if (_showDoubleTapHeart)
+                              Center(
+                                child: AnimatedOpacity(
+                                  opacity: _heartOpacity,
+                                  duration: const Duration(milliseconds: 400),
+                                  curve: Curves.easeOut,
+                                  child: AnimatedScale(
+                                    scale: _heartScale,
+                                    duration: const Duration(milliseconds: 200),
+                                    curve: Curves.elasticOut,
+                                    child: Container(
+                                      decoration: BoxDecoration(
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            blurRadius: 20,
+                                            spreadRadius: 5,
+                                          ),
+                                        ],
+                                      ),
+                                      child: SvgPicture.asset(
+                                        'assets/icon/content-controls/like.svg',
+                                        width: 120,
+                                        height: 120,
                                         colorFilter: const ColorFilter.mode(
                                           Colors.white,
                                           BlendMode.srcIn,

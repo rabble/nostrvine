@@ -56,7 +56,7 @@ class VideoMetadataClipPreview extends ConsumerWidget {
             // Use linear flight path instead of curved arc
             createRectTween: (begin, end) => RectTween(begin: begin, end: end),
             child: AspectRatio(
-              aspectRatio: clip.aspectRatio.value,
+              aspectRatio: clip.targetAspectRatio.value,
               child: ClipRRect(
                 borderRadius: .circular(16),
                 child: Stack(
