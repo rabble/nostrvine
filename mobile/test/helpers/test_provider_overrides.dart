@@ -118,9 +118,9 @@ MockNostrClient createMockNostrService() {
 MockSubscriptionManager createMockSubscriptionManager() {
   final mockSub = MockSubscriptionManager();
 
-  // Stub createSubscription to return a valid subscription id (never null).
-  // Prevents type 'Null' is not a subtype of type 'Future<String>' when
-  // UserProfileService batch fetch runs.
+  // Stub createSubscription to return a valid subscription id (never null)
+  // and immediately call onComplete to simulate empty results, so
+  // UserProfileService batch fetch does not get type 'Null' is not a subtype of type 'Future<String>'.
   when(
     mockSub.createSubscription(
       name: anyNamed('name'),
@@ -131,9 +131,18 @@ MockSubscriptionManager createMockSubscriptionManager() {
       timeout: anyNamed('timeout'),
       priority: anyNamed('priority'),
     ),
-  ).thenAnswer(
-    (_) async => 'test-sub-${DateTime.now().millisecondsSinceEpoch}',
-  );
+  ).thenAnswer((invocation) async {
+    // Call onComplete callback if provided to signal subscription finished
+    final onComplete =
+        invocation.namedArguments[const Symbol('onComplete')] as Function()?;
+    if (onComplete != null) {
+      Future.microtask(onComplete);
+    }
+    return 'mock_subscription_${DateTime.now().millisecondsSinceEpoch}';
+  });
+
+  // Stub cancelSubscription to do nothing
+  when(mockSub.cancelSubscription(any)).thenAnswer((_) async {});
 
   return mockSub;
 }
