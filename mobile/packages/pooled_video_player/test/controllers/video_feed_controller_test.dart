@@ -1,432 +1,644 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
+import '../helpers/mocks.dart';
 import '../helpers/test_helpers.dart';
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
-  setUpAll(registerTestFallbackValues);
+  setUpAll(setUpMocktail);
 
   group('VideoFeedController', () {
-    setUp(() async {
-      await initializeTestPoolManager();
+    late TestablePlayerPool pool;
+    late List<MockPooledPlayer> createdPlayers;
+    late Map<String, MockPlayerSetup> playerSetups;
+
+    setUp(() {
+      createdPlayers = [];
+      playerSetups = {};
+
+      pool = TestablePlayerPool(
+        maxPlayers: 10,
+        mockPlayerFactory: (url) {
+          final setup = createMockPlayerSetup();
+          playerSetups[url] = setup;
+
+          final mockPooledPlayer = MockPooledPlayer();
+          when(() => mockPooledPlayer.player).thenReturn(setup.player);
+          when(
+            () => mockPooledPlayer.videoController,
+          ).thenReturn(createMockVideoController());
+          when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+          when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+
+          createdPlayers.add(mockPooledPlayer);
+          return mockPooledPlayer;
+        },
+      );
     });
 
     tearDown(() async {
-      await cleanupPoolManager();
+      for (final setup in playerSetups.values) {
+        await setup.dispose();
+      }
+      await pool.dispose();
     });
 
-    group('Constructor', () {
-      test('creates with feedId and empty videos', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
+    group('constructor', () {
+      test('creates with required videos and pool', () {
+        final videos = createTestVideos(count: 3);
+        final controller = VideoFeedController(videos: videos, pool: pool);
 
-        expect(controller.feedId, 'test-feed');
-        expect(controller.videoCount, 0);
+        expect(controller.videos, equals(videos));
+        expect(controller.videoCount, equals(3));
+
+        controller.dispose();
       });
 
-      test('registers with PlayerPoolManager', () {
+      test('uses default preloadAhead of 2', () {
         final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
+          videos: createTestVideos(),
+          pool: pool,
         );
-        addTearDown(controller.dispose);
 
-        expect(
-          PlayerPoolManager.instance.registeredFeeds,
-          contains(controller),
+        expect(controller.preloadAhead, equals(2));
+
+        controller.dispose();
+      });
+
+      test('uses default preloadBehind of 1', () {
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
         );
+
+        expect(controller.preloadBehind, equals(1));
+
+        controller.dispose();
       });
 
       test('accepts custom preloadAhead', () {
         final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
+          videos: createTestVideos(),
+          pool: pool,
           preloadAhead: 5,
         );
-        addTearDown(controller.dispose);
 
-        expect(controller, isNotNull);
+        expect(controller.preloadAhead, equals(5));
+
+        controller.dispose();
       });
 
       test('accepts custom preloadBehind', () {
         final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
+          videos: createTestVideos(),
+          pool: pool,
           preloadBehind: 3,
         );
-        addTearDown(controller.dispose);
 
-        expect(controller, isNotNull);
+        expect(controller.preloadBehind, equals(3));
+
+        controller.dispose();
+      });
+
+      test('initializes with empty video list', () {
+        final controller = VideoFeedController(
+          videos: [],
+          pool: pool,
+        );
+
+        expect(controller.videoCount, equals(0));
+        expect(controller.videos, isEmpty);
+
+        controller.dispose();
+      });
+
+      test('initializes with videos', () {
+        final videos = createTestVideos();
+        final controller = VideoFeedController(videos: videos, pool: pool);
+
+        expect(controller.videoCount, equals(5));
+        expect(controller.videos.length, equals(5));
+
+        controller.dispose();
       });
     });
 
-    group('State Getters', () {
-      test('currentIndex starts at 0', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.currentIndex, 0);
-      });
-
-      test('isPaused starts as false', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.isPaused, false);
-      });
-
-      test('scrollDirection starts as none', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.scrollDirection, ScrollDirection.none);
-      });
-
-      test('videos returns unmodifiable list', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(
-          () => controller.videos.add(createTestVideo()),
-          throwsA(isA<UnsupportedError>()),
-        );
-      });
-
-      test('videoCount returns correct count', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.videoCount, 0);
-      });
-    });
-
-    group('Video Controller Access', () {
-      test('getVideoController returns null for invalid index', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.getVideoController(0), isNull);
-      });
-
-      test('getPlayer returns null for invalid index', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.getPlayer(0), isNull);
-      });
-
-      test('getPreloadState returns none for invalid index', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.getPreloadState(0), PreloadState.none);
-      });
-
-      test('isVideoReady returns false for invalid index', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.isVideoReady(0), false);
-      });
-    });
-
-    group('Error Handling', () {
-      test('getError returns null when no error', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.getError(0), isNull);
-      });
-
-      test('errors returns empty map initially', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.errors, isEmpty);
-      });
-
-      test('hasError returns false when no error', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.hasError(0), false);
-      });
-
-      test('clearError does not throw for index without error', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        // Should not throw
-        controller.clearError(0);
-      });
-
-      test('clearAllErrors does not throw when no errors', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        // Should not throw
-        controller.clearAllErrors();
-      });
-    });
-
-    group('Playback Control', () {
-      test('play does not throw without lease', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        // Should not throw
-        controller.play();
-        expect(controller.isPaused, false);
-      });
-
-      test('pause does not throw without lease', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        // Should not throw - but pause() only sets isPaused when there's a lease
-        controller.pause();
-      });
-
-      test('togglePlayPause works without lease', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.isPaused, false);
-        controller.togglePlayPause();
-        // Without lease, isPaused won't be set
-      });
-
-      test('setVolume does not throw without lease', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        controller.setVolume(0.5);
-      });
-
-      test('setMute does not throw without lease', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        controller.setMute(muted: true);
-      });
-
-      test('setPlaybackSpeed does not throw without lease', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        controller.setPlaybackSpeed(1.5);
-      });
-    });
-
-    group('Stream Access', () {
-      test('currentPosition returns null without lease', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.currentPosition, isNull);
-      });
-
-      test('duration returns null without lease', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.duration, isNull);
-      });
-
-      test('buffered returns null without lease', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.buffered, isNull);
-      });
-
-      test('positionStream returns null without lease', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.positionStream, isNull);
-      });
-
-      test('playingStream returns null without lease', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.playingStream, isNull);
-      });
-
-      test('bufferingStream returns null without lease', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(controller.bufferingStream, isNull);
-      });
-    });
-
-    group('Navigation', () {
-      group('onPageChanged', () {
-        test('updates currentIndex', () async {
-          final videos = createTestVideos(5);
+    group('State Properties', () {
+      group('currentIndex', () {
+        test('returns 0 initially', () {
           final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
-          )..addVideos(videos);
+            videos: createTestVideos(),
+            pool: pool,
+          );
 
-          expect(controller.currentIndex, 0);
+          expect(controller.currentIndex, equals(0));
+
+          controller.dispose();
+        });
+
+        test('updates after onPageChanged', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
           controller.onPageChanged(2);
-          expect(controller.currentIndex, 2);
 
-          await controller.disposeAsync();
+          expect(controller.currentIndex, equals(2));
+
+          controller.dispose();
+        });
+      });
+
+      group('isPaused', () {
+        test('returns false initially', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          expect(controller.isPaused, isFalse);
+
+          controller.dispose();
         });
 
-        test('detects forward scroll direction', () async {
+        test('returns true after pause()', () {
           final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
-          )
-            ..addVideos(createTestVideos(3))
-            ..onPageChanged(1);
+            videos: createTestVideos(),
+            pool: pool,
+          );
 
-          expect(controller.scrollDirection, ScrollDirection.forward);
+          controller.pause();
 
-          await controller.disposeAsync();
+          expect(controller.isPaused, isTrue);
+
+          controller.dispose();
         });
 
-        test('detects backward scroll direction', () async {
+        test('returns false after play() when conditions allow', () {
           final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
-          )
-            ..addVideos(createTestVideos(5))
-            ..onPageChanged(3)
-            ..onPageChanged(1);
+            videos: createTestVideos(),
+            pool: pool,
+          );
 
-          expect(controller.scrollDirection, ScrollDirection.backward);
+          controller.pause();
+          // play() only sets isPaused to false if video is ready and active
+          // Since video isn't ready, isPaused stays true
+          controller.play();
 
-          await controller.disposeAsync();
+          // Since no video is ready, isPaused remains true
+          // This tests the guard clause in play()
+          expect(controller.isPaused, isTrue);
+
+          controller.dispose();
+        });
+      });
+
+      group('isActive', () {
+        test('returns true initially', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          expect(controller.isActive, isTrue);
+
+          controller.dispose();
         });
 
-        test('notifies listeners', () async {
+        test('returns false after setActive(false)', () {
           final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
-          )..addVideos(createTestVideos(3));
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          controller.setActive(active: false);
+
+          expect(controller.isActive, isFalse);
+
+          controller.dispose();
+        });
+
+        test('returns true after setActive(true)', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          controller
+            ..setActive(active: false)
+            ..setActive(active: true);
+
+          expect(controller.isActive, isTrue);
+
+          controller.dispose();
+        });
+      });
+
+      group('videos', () {
+        test('returns unmodifiable list', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          expect(
+            () => controller.videos.add(createTestVideo()),
+            throwsA(isA<UnsupportedError>()),
+          );
+
+          controller.dispose();
+        });
+
+        test('reflects added videos', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+          );
+
+          final newVideos = createTestVideos(count: 2);
+          controller.addVideos(newVideos);
+
+          expect(controller.videoCount, equals(5));
+
+          controller.dispose();
+        });
+      });
+
+      group('videoCount', () {
+        test('returns 0 for empty list', () {
+          final controller = VideoFeedController(
+            videos: [],
+            pool: pool,
+          );
+
+          expect(controller.videoCount, equals(0));
+
+          controller.dispose();
+        });
+
+        test('returns correct count', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 7),
+            pool: pool,
+          );
+
+          expect(controller.videoCount, equals(7));
+
+          controller.dispose();
+        });
+
+        test('updates after addVideos', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+          );
+
+          controller.addVideos(createTestVideos(count: 2));
+
+          expect(controller.videoCount, equals(5));
+
+          controller.dispose();
+        });
+      });
+    });
+
+    group('Video Access', () {
+      group('getVideoController', () {
+        test('returns null for unloaded index', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          // Index 4 is outside default preload window (0, 1, 2)
+          expect(controller.getVideoController(4), isNull);
+
+          controller.dispose();
+        });
+
+        test('returns null for out of bounds index', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+          );
+
+          expect(controller.getVideoController(10), isNull);
+          expect(controller.getVideoController(-1), isNull);
+
+          controller.dispose();
+        });
+      });
+
+      group('getPlayer', () {
+        test('returns null for unloaded index', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          expect(controller.getPlayer(4), isNull);
+
+          controller.dispose();
+        });
+
+        test('returns null for out of bounds index', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+          );
+
+          expect(controller.getPlayer(10), isNull);
+
+          controller.dispose();
+        });
+      });
+
+      group('getLoadState', () {
+        test('returns LoadState.none for unloaded index', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          expect(controller.getLoadState(4), equals(LoadState.none));
+
+          controller.dispose();
+        });
+      });
+
+      group('isVideoReady', () {
+        test('returns false for unloaded index', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          expect(controller.isVideoReady(4), isFalse);
+
+          controller.dispose();
+        });
+      });
+    });
+
+    group('Page Navigation', () {
+      group('onPageChanged', () {
+        test('updates currentIndex', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          controller.onPageChanged(2);
+
+          expect(controller.currentIndex, equals(2));
+
+          controller.dispose();
+        });
+
+        test('notifies listeners', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
 
           var notified = false;
           controller.addListener(() => notified = true);
 
           controller.onPageChanged(1);
 
-          expect(notified, true);
+          expect(notified, isTrue);
 
-          await controller.disposeAsync();
+          controller.dispose();
+        });
+
+        test('does nothing when index unchanged', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          var notifyCount = 0;
+          controller.addListener(() => notifyCount++);
+
+          controller.onPageChanged(0);
+
+          expect(notifyCount, equals(0));
+
+          controller.dispose();
+        });
+      });
+    });
+
+    group('Playback Control', () {
+      group('play', () {
+        test('does not change isPaused when video not ready', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          controller
+            ..pause()
+            ..play();
+
+          // play() has a guard: if (!_isActive || !isVideoReady(_currentIndex)) return;
+          // Since video isn't ready, isPaused stays true
+          expect(controller.isPaused, isTrue);
+
+          controller.dispose();
+        });
+
+        test('does not notify listeners when video not ready', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          controller.pause();
+
+          var notified = false;
+          controller.addListener(() => notified = true);
+
+          controller.play();
+
+          // play() returns early when video not ready, so no notification
+          expect(notified, isFalse);
+
+          controller.dispose();
+        });
+      });
+
+      group('pause', () {
+        test('sets isPaused to true', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          controller.pause();
+
+          expect(controller.isPaused, isTrue);
+
+          controller.dispose();
+        });
+
+        test('notifies listeners', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          var notified = false;
+          controller.addListener(() => notified = true);
+
+          controller.pause();
+
+          expect(notified, isTrue);
+
+          controller.dispose();
+        });
+      });
+
+      group('togglePlayPause', () {
+        test('calls play when paused (but play guards apply)', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          controller
+            ..pause()
+            ..togglePlayPause();
+
+          // togglePlayPause calls play(), but play() has guards
+          // Since video isn't ready, isPaused stays true
+          expect(controller.isPaused, isTrue);
+
+          controller.dispose();
+        });
+
+        test('pauses when playing', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          controller.togglePlayPause();
+
+          expect(controller.isPaused, isTrue);
+
+          controller.dispose();
+        });
+      });
+
+      group('seek', () {
+        test('completes without error when no player loaded', () async {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          await expectLater(
+            controller.seek(const Duration(seconds: 10)),
+            completes,
+          );
+
+          controller.dispose();
+        });
+      });
+
+      group('setVolume', () {
+        test('does nothing when no player loaded', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          // Should not throw
+          controller.setVolume(0.5);
+
+          controller.dispose();
+        });
+      });
+
+      group('setPlaybackSpeed', () {
+        test('does nothing when no player loaded', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          // Should not throw
+          controller.setPlaybackSpeed(1.5);
+
+          controller.dispose();
+        });
+      });
+    });
+
+    group('Active State', () {
+      group('setActive', () {
+        test('notifies listeners', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          var notified = false;
+          controller.addListener(() => notified = true);
+
+          controller.setActive(active: false);
+
+          expect(notified, isTrue);
+
+          controller.dispose();
+        });
+
+        test('does nothing when value unchanged', () {
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          );
+
+          var notifyCount = 0;
+          controller.addListener(() => notifyCount++);
+
+          controller.setActive(active: true);
+
+          expect(notifyCount, equals(0));
+
+          controller.dispose();
         });
       });
     });
 
     group('Video Management', () {
       group('addVideos', () {
-        test('appends videos to list', () async {
+        test('adds videos to list', () {
           final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
+            videos: createTestVideos(count: 3),
+            pool: pool,
           );
 
-          expect(controller.videoCount, 0);
+          final newVideos = [
+            createTestVideo(id: 'new1', url: 'https://example.com/new1.mp4'),
+            createTestVideo(id: 'new2', url: 'https://example.com/new2.mp4'),
+          ];
+          controller.addVideos(newVideos);
 
-          controller.addVideos(createTestVideos(3));
+          expect(controller.videoCount, equals(5));
+          expect(controller.videos.last.id, equals('new2'));
 
-          expect(controller.videoCount, 3);
-
-          await controller.disposeAsync();
+          controller.dispose();
         });
 
-        test('notifies listeners', () async {
+        test('notifies listeners', () {
           final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
+            videos: createTestVideos(),
+            pool: pool,
           );
 
           var notified = false;
@@ -434,249 +646,117 @@ void main() {
 
           controller.addVideos([createTestVideo()]);
 
-          expect(notified, true);
-
-          await controller.disposeAsync();
-        });
-
-        test('no-op for empty list', () {
-          final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
-          );
-          addTearDown(controller.dispose);
-
-          var notified = false;
-          controller
-            ..addListener(() => notified = true)
-            ..addVideos([]);
-
-          expect(notified, false);
-        });
-      });
-
-      group('addVideo', () {
-        test('adds single video', () async {
-          final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
-          );
-
-          expect(controller.videoCount, 0);
-
-          controller.addVideo(createTestVideo(id: 'new-video'));
-
-          expect(controller.videoCount, 1);
-
-          await controller.disposeAsync();
-        });
-      });
-
-      group('removeVideo', () {
-        test('removes video at index', () async {
-          final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
-          )..addVideos(createTestVideos(5));
-          expect(controller.videoCount, 5);
-
-          controller.removeVideo(2);
-
-          expect(controller.videoCount, 4);
-
-          await controller.disposeAsync();
-        });
-
-        test('notifies listeners', () async {
-          final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
-          )..addVideos(createTestVideos(3));
-
-          var notified = false;
-          controller.addListener(() => notified = true);
-
-          controller.removeVideo(0);
-
-          expect(notified, true);
-
-          await controller.disposeAsync();
-        });
-
-        test('no-op for invalid index (negative)', () async {
-          final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
-          )
-            ..addVideos(createTestVideos(3))
-            ..removeVideo(-1);
-
-          expect(controller.videoCount, 3);
-
-          await controller.disposeAsync();
-        });
-
-        test('no-op for invalid index (out of bounds)', () async {
-          final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
-          )
-            ..addVideos(createTestVideos(3))
-            ..removeVideo(100);
-
-          expect(controller.videoCount, 3);
-
-          await controller.disposeAsync();
-        });
-
-        test('adjusts currentIndex when removing before current', () async {
-          final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
-          )
-            ..addVideos(createTestVideos(5))
-            ..onPageChanged(3);
-          expect(controller.currentIndex, 3);
-
-          controller.removeVideo(1);
-
-          expect(controller.currentIndex, 2);
-
-          await controller.disposeAsync();
-        });
-      });
-    });
-
-    group('Handoff API', () {
-      group('extractPlayerForHandoff', () {
-        test('returns null if not loaded', () {
-          final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
-          );
-          addTearDown(controller.dispose);
-
-          final lease = controller.extractPlayerForHandoff(0);
-
-          expect(lease, isNull);
-        });
-      });
-    });
-
-    group('Memory Pressure', () {
-      test('onMemoryPressure does not throw', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        // Should not throw
-        controller.onMemoryPressure();
-      });
-
-      test('isMemoryConstrained reflects pool manager state', () {
-        final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-        );
-        addTearDown(controller.dispose);
-
-        expect(
-          controller.isMemoryConstrained,
-          PlayerPoolManager.instance.isMemoryConstrained,
-        );
-      });
-    });
-
-    group('Lifecycle', () {
-      group('dispose', () {
-        test('unregisters from PlayerPoolManager', () {
-          final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
-          );
-
-          expect(
-            PlayerPoolManager.instance.registeredFeeds,
-            contains(controller),
-          );
+          expect(notified, isTrue);
 
           controller.dispose();
-
-          expect(
-            PlayerPoolManager.instance.registeredFeeds,
-            isNot(contains(controller)),
-          );
         });
-      });
 
-      group('disposeAsync', () {
-        test('unregisters from PlayerPoolManager', () async {
+        test('does nothing with empty list', () {
           final controller = VideoFeedController(
-            feedId: 'test-feed',
-            videos: const [],
+            videos: createTestVideos(count: 3),
+            pool: pool,
           );
 
-          expect(
-            PlayerPoolManager.instance.registeredFeeds,
-            contains(controller),
-          );
+          var notifyCount = 0;
+          controller.addListener(() => notifyCount++);
 
-          await controller.disposeAsync();
+          controller.addVideos([]);
 
-          expect(
-            PlayerPoolManager.instance.registeredFeeds,
-            isNot(contains(controller)),
-          );
+          expect(notifyCount, equals(0));
+          expect(controller.videoCount, equals(3));
+
+          controller.dispose();
         });
       });
     });
 
-    group('onPreloadError callback', () {
-      test('callback is optional', () {
+    group('dispose', () {
+      test('calls super.dispose', () {
         final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
+          videos: createTestVideos(),
+          pool: pool,
         );
-        addTearDown(controller.dispose);
 
-        expect(controller.onPreloadError, isNull);
+        controller.dispose();
+
+        // Adding listener after dispose should throw
+        expect(
+          () => controller.addListener(() {}),
+          throwsA(isA<FlutterError>()),
+        );
       });
 
-      test('callback can be provided', () {
-        void errorCallback(int index, VideoLoadError error) {}
-
+      test('can be called multiple times', () {
         final controller = VideoFeedController(
-          feedId: 'test-feed',
-          videos: const [],
-          onPreloadError: errorCallback,
+          videos: createTestVideos(),
+          pool: pool,
         );
-        addTearDown(controller.dispose);
 
-        expect(controller.onPreloadError, errorCallback);
+        controller
+          ..dispose()
+          ..dispose()
+          ..dispose();
+
+        // Should not throw
       });
     });
-  });
 
-  group('PreloadState enum', () {
-    test('has all expected values', () {
-      expect(PreloadState.values, hasLength(6));
-      expect(PreloadState.values, contains(PreloadState.none));
-      expect(PreloadState.values, contains(PreloadState.opening));
-      expect(PreloadState.values, contains(PreloadState.buffering));
-      expect(PreloadState.values, contains(PreloadState.ready));
-      expect(PreloadState.values, contains(PreloadState.playing));
-      expect(PreloadState.values, contains(PreloadState.error));
-    });
-  });
+    group('ChangeNotifier', () {
+      test('extends ChangeNotifier', () {
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+        );
 
-  group('ScrollDirection enum', () {
-    test('has all expected values', () {
-      expect(ScrollDirection.values, hasLength(3));
-      expect(ScrollDirection.values, contains(ScrollDirection.none));
-      expect(ScrollDirection.values, contains(ScrollDirection.forward));
-      expect(ScrollDirection.values, contains(ScrollDirection.backward));
+        expect(controller, isA<ChangeNotifier>());
+
+        controller.dispose();
+      });
+
+      test('listeners receive updates on page change', () {
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+        );
+
+        var pageChangeNotifications = 0;
+        controller.addListener(() {
+          // Count only, since preloading also notifies
+          pageChangeNotifications++;
+        });
+
+        controller.onPageChanged(1);
+
+        // At least one notification for page change
+        expect(pageChangeNotifications, greaterThanOrEqualTo(1));
+
+        controller.dispose();
+      });
+
+      test('removed listeners do not receive page change updates', () {
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+        );
+
+        var notifyCount = 0;
+        void listener() => notifyCount++;
+
+        controller.addListener(listener);
+        final initialCount = notifyCount;
+
+        controller.onPageChanged(1);
+        final afterFirstChange = notifyCount;
+
+        controller.removeListener(listener);
+        controller.onPageChanged(2);
+
+        // After removing listener, count should not increase
+        expect(notifyCount, equals(afterFirstChange));
+        expect(afterFirstChange, greaterThan(initialCount));
+
+        controller.dispose();
+      });
     });
   });
 }

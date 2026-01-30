@@ -2,310 +2,492 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
+import '../helpers/mocks.dart';
 import '../helpers/test_helpers.dart';
 
 void main() {
-  setUpAll(registerTestFallbackValues);
-
-  group('PooledPlayer', () {
-    late MockPlayer mockPlayer;
-    late MockVideoController mockVideoController;
-    late PooledPlayer pooledPlayer;
-
-    setUp(() {
-      mockPlayer = MockPlayer();
-      mockVideoController = MockVideoController();
-
-      // Stub required methods
-      when(mockPlayer.stop).thenAnswer((_) async {});
-      when(mockPlayer.play).thenAnswer((_) async {});
-      when(mockPlayer.pause).thenAnswer((_) async {});
-      when(mockPlayer.dispose).thenAnswer((_) async {});
-      when(() => mockPlayer.setVolume(any())).thenAnswer((_) async {});
-
-      pooledPlayer = PooledPlayer(
-        player: mockPlayer,
-        videoController: mockVideoController,
-      );
-    });
-
-    group('Constructor', () {
-      test('creates with player and videoController', () {
-        expect(pooledPlayer.player, mockPlayer);
-        expect(pooledPlayer.videoController, mockVideoController);
-      });
-
-      test('sets lastUsed to approximately now', () {
-        final before = DateTime.now().subtract(const Duration(seconds: 1));
-        final after = DateTime.now().add(const Duration(seconds: 1));
-
-        expect(pooledPlayer.lastUsed.isAfter(before), true);
-        expect(pooledPlayer.lastUsed.isBefore(after), true);
-      });
-
-      test('isDisposed starts as false', () {
-        expect(pooledPlayer.isDisposed, false);
-      });
-    });
-
-    group('reset', () {
-      test('calls player.stop()', () async {
-        await pooledPlayer.reset();
-
-        verify(mockPlayer.stop).called(1);
-      });
-
-      test('calls player.setVolume(100)', () async {
-        await pooledPlayer.reset();
-
-        verify(() => mockPlayer.setVolume(100)).called(1);
-      });
-
-      test('updates lastUsed', () async {
-        final beforeReset = pooledPlayer.lastUsed;
-
-        // Small delay to ensure time difference
-        await Future<void>.delayed(const Duration(milliseconds: 10));
-        await pooledPlayer.reset();
-
-        expect(
-          pooledPlayer.lastUsed.isAfter(beforeReset) ||
-              pooledPlayer.lastUsed.isAtSameMomentAs(beforeReset),
-          true,
-        );
-      });
-
-      test('no-op if isDisposed', () async {
-        pooledPlayer.isDisposed = true;
-
-        await pooledPlayer.reset();
-
-        verifyNever(mockPlayer.stop);
-        verifyNever(() => mockPlayer.setVolume(any()));
-      });
-    });
-
-    group('safeDispose', () {
-      test('sets isDisposed to true', () async {
-        expect(pooledPlayer.isDisposed, false);
-
-        await pooledPlayer.safeDispose();
-
-        expect(pooledPlayer.isDisposed, true);
-      });
-
-      test('calls player.stop() before dispose', () async {
-        await pooledPlayer.safeDispose();
-
-        verifyInOrder([mockPlayer.stop, mockPlayer.dispose]);
-      });
-
-      test('calls player.dispose()', () async {
-        await pooledPlayer.safeDispose();
-
-        verify(mockPlayer.dispose).called(1);
-      });
-
-      test('handles already disposed gracefully', () async {
-        pooledPlayer.isDisposed = true;
-
-        // Should not throw
-        await pooledPlayer.safeDispose();
-
-        verifyNever(mockPlayer.stop);
-        verifyNever(mockPlayer.dispose);
-      });
-    });
-
-    group('lastUsed', () {
-      test('can be updated', () {
-        final newTime = DateTime(2025);
-        pooledPlayer.lastUsed = newTime;
-
-        expect(pooledPlayer.lastUsed, newTime);
-      });
-    });
-  });
+  setUpAll(setUpMocktail);
 
   group('PlayerPool', () {
-    group('Constructor', () {
-      test('has default maxPoolSize of 3', () {
-        final pool = PlayerPool();
-        expect(pool.maxPoolSize, 3);
-      });
-
-      test('has default maxTotalPlayers of 7', () {
-        final pool = PlayerPool();
-        expect(pool.maxTotalPlayers, 7);
-      });
-
-      test('accepts custom maxPoolSize', () {
-        final pool = PlayerPool(maxPoolSize: 5);
-        expect(pool.maxPoolSize, 5);
-      });
-
-      test('accepts custom maxTotalPlayers', () {
-        final pool = PlayerPool(maxTotalPlayers: 10);
-        expect(pool.maxTotalPlayers, 10);
-      });
-
-      test('accepts custom bufferSize', () {
-        // BufferSize is internal, but we can verify construction doesn't fail
-        final pool = PlayerPool(bufferSize: 64 * 1024 * 1024);
-        expect(pool, isNotNull);
-      });
+    // Reset singleton after each test
+    tearDown(() async {
+      await PlayerPool.reset();
     });
 
-    group('State tracking', () {
-      test('totalPlayers starts at 0', () {
-        final pool = PlayerPool();
-        expect(pool.totalPlayers, 0);
+    group('Singleton Pattern', () {
+      group('init', () {
+        test('creates singleton instance', () async {
+          await PlayerPool.init();
+
+          expect(PlayerPool.isInitialized, isTrue);
+          expect(PlayerPool.instance, isNotNull);
+        });
+
+        test('uses default config when not provided', () async {
+          await PlayerPool.init();
+
+          expect(PlayerPool.instance.maxPlayers, equals(5));
+        });
+
+        test('uses provided config', () async {
+          await PlayerPool.init(
+            config: const VideoPoolConfig(maxPlayers: 10),
+          );
+
+          expect(PlayerPool.instance.maxPlayers, equals(10));
+        });
+
+        test('disposes existing instance when re-initializing', () async {
+          await PlayerPool.init(
+            config: const VideoPoolConfig(maxPlayers: 3),
+          );
+          final oldInstance = PlayerPool.instance;
+
+          await PlayerPool.init(
+            
+          );
+
+          expect(PlayerPool.instance, isNot(same(oldInstance)));
+          expect(PlayerPool.instance.maxPlayers, equals(5));
+        });
       });
 
-      test('availableCount starts at 0', () {
-        final pool = PlayerPool();
-        expect(pool.availableCount, 0);
-      });
+      group('instance', () {
+        test('returns singleton after init', () async {
+          await PlayerPool.init();
 
-      test('inUseCount starts at 0', () {
-        final pool = PlayerPool();
-        expect(pool.inUseCount, 0);
-      });
+          final instance1 = PlayerPool.instance;
+          final instance2 = PlayerPool.instance;
 
-      test('totalPlayers equals availableCount plus inUseCount', () {
-        final pool = PlayerPool();
-        expect(pool.totalPlayers, pool.availableCount + pool.inUseCount);
-      });
-    });
+          expect(identical(instance1, instance2), isTrue);
+        });
 
-    group('updatePoolSize', () {
-      test('updates maxPoolSize', () async {
-        final pool = PlayerPool();
-        expect(pool.maxPoolSize, 3);
-
-        await pool.updatePoolSize(5);
-        expect(pool.maxPoolSize, 5);
-      });
-
-      test('can decrease maxPoolSize', () async {
-        final pool = PlayerPool(maxPoolSize: 5);
-        await pool.updatePoolSize(2);
-        expect(pool.maxPoolSize, 2);
-      });
-
-      test('can increase maxPoolSize', () async {
-        final pool = PlayerPool(maxPoolSize: 2);
-        await pool.updatePoolSize(5);
-        expect(pool.maxPoolSize, 5);
-      });
-    });
-
-    group('shrinkTo', () {
-      test('does nothing when pool is empty', () async {
-        final pool = PlayerPool();
-        await pool.shrinkTo(0);
-        expect(pool.availableCount, 0);
-      });
-
-      test('does nothing when already at or below target', () async {
-        final pool = PlayerPool();
-        // Pool starts empty (0 available)
-        await pool.shrinkTo(5);
-        expect(pool.availableCount, 0);
-      });
-    });
-
-    group('dispose', () {
-      test('clears all players', () async {
-        final pool = PlayerPool();
-        await pool.dispose();
-        expect(pool.totalPlayers, 0);
-        expect(pool.availableCount, 0);
-        expect(pool.inUseCount, 0);
-      });
-
-      test('is idempotent (can be called multiple times)', () async {
-        final pool = PlayerPool();
-        await pool.dispose();
-        // Should not throw
-        await pool.dispose();
-        expect(pool.totalPlayers, 0);
-      });
-    });
-
-    group('acquire', () {
-      test('throws StateError when disposed', () async {
-        final pool = PlayerPool();
-        await pool.dispose();
-
-        expect(
-          pool.acquire,
-          throwsA(
-            isA<StateError>().having(
-              (e) => e.message,
-              'message',
-              contains('disposed'),
+        test('throws StateError when not initialized', () {
+          expect(
+            () => PlayerPool.instance,
+            throwsA(
+              isA<StateError>().having(
+                (e) => e.message,
+                'message',
+                contains('PlayerPool not initialized'),
+              ),
             ),
-          ),
-        );
+          );
+        });
+
+        test('returns same instance on multiple calls', () async {
+          await PlayerPool.init();
+
+          final instances = <PlayerPool>[];
+          for (var i = 0; i < 10; i++) {
+            instances.add(PlayerPool.instance);
+          }
+
+          expect(
+            instances.every((i) => identical(i, instances.first)),
+            isTrue,
+          );
+        });
+      });
+
+      group('isInitialized', () {
+        test('returns false before init', () {
+          expect(PlayerPool.isInitialized, isFalse);
+        });
+
+        test('returns true after init', () async {
+          await PlayerPool.init();
+
+          expect(PlayerPool.isInitialized, isTrue);
+        });
+
+        test('returns false after reset', () async {
+          await PlayerPool.init();
+          await PlayerPool.reset();
+
+          expect(PlayerPool.isInitialized, isFalse);
+        });
+      });
+
+      group('reset', () {
+        test('disposes singleton', () async {
+          await PlayerPool.init();
+          expect(PlayerPool.isInitialized, isTrue);
+
+          await PlayerPool.reset();
+
+          expect(PlayerPool.isInitialized, isFalse);
+        });
+
+        test('allows re-initialization after reset', () async {
+          await PlayerPool.init(
+            config: const VideoPoolConfig(maxPlayers: 3),
+          );
+          await PlayerPool.reset();
+          await PlayerPool.init(
+            config: const VideoPoolConfig(maxPlayers: 7),
+          );
+
+          expect(PlayerPool.instance.maxPlayers, equals(7));
+        });
+
+        test('can be called when not initialized', () async {
+          // Should not throw
+          await expectLater(PlayerPool.reset(), completes);
+        });
+      });
+
+      group('instanceForTesting', () {
+        test('getter returns current instance', () async {
+          await PlayerPool.init();
+
+          expect(PlayerPool.instanceForTesting, equals(PlayerPool.instance));
+        });
+
+        test('getter returns null when not initialized', () {
+          expect(PlayerPool.instanceForTesting, isNull);
+        });
+
+        test('setter replaces instance', () async {
+          await PlayerPool.init();
+          final customPool = PlayerPool(maxPlayers: 3);
+
+          PlayerPool.instanceForTesting = customPool;
+
+          expect(PlayerPool.instance, equals(customPool));
+        });
+
+        test('setter accepts null', () async {
+          await PlayerPool.init();
+
+          PlayerPool.instanceForTesting = null;
+
+          expect(PlayerPool.isInitialized, isFalse);
+        });
       });
     });
 
-    group('release', () {
-      test('does nothing when pool is disposed', () async {
-        final pool = PlayerPool();
-        await pool.dispose();
+    group('Manual Instantiation', () {
+      test('creates isolated instance', () {
+        final pool1 = PlayerPool(maxPlayers: 3);
+        final pool2 = PlayerPool();
 
-        final mockPlayer = MockPlayer();
-        final mockVideoController = MockVideoController();
-        when(mockPlayer.stop).thenAnswer((_) async {});
-        when(mockPlayer.dispose).thenAnswer((_) async {});
-        when(() => mockPlayer.setVolume(any())).thenAnswer((_) async {});
-
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
-        );
-
-        // Should not throw
-        await pool.release(pooledPlayer);
+        expect(identical(pool1, pool2), isFalse);
+        expect(pool1.maxPlayers, equals(3));
+        expect(pool2.maxPlayers, equals(5));
       });
 
-      test('does nothing for player never acquired from pool', () async {
+      test('uses default maxPlayers when not provided', () {
         final pool = PlayerPool();
 
-        final mockPlayer = MockPlayer();
-        final mockVideoController = MockVideoController();
-        when(mockPlayer.stop).thenAnswer((_) async {});
-        when(() => mockPlayer.setVolume(any())).thenAnswer((_) async {});
+        expect(pool.maxPlayers, equals(5));
+      });
 
-        final pooledPlayer = PooledPlayer(
-          player: mockPlayer,
-          videoController: mockVideoController,
+      test('uses provided maxPlayers', () {
+        final pool = PlayerPool(maxPlayers: 10);
+
+        expect(pool.maxPlayers, equals(10));
+      });
+
+      test('does not affect singleton', () async {
+        await PlayerPool.init(
+          
         );
+        final manualPool = PlayerPool(maxPlayers: 10);
 
-        // Should not throw - player wasn't from this pool
-        await pool.release(pooledPlayer);
-
-        // Player should not be added to pool
-        expect(pool.availableCount, 0);
+        expect(PlayerPool.instance.maxPlayers, equals(5));
+        expect(manualPool.maxPlayers, equals(10));
+        expect(identical(PlayerPool.instance, manualPool), isFalse);
       });
     });
 
-    group('prewarm', () {
-      test('does nothing when disposed', () async {
-        final pool = PlayerPool();
-        await pool.dispose();
+    group('Pool Operations', () {
+      group('using TestablePlayerPool', () {
+        late TestablePlayerPool pool;
+        late List<MockPooledPlayer> createdPlayers;
 
-        await pool.prewarm(3);
+        setUp(() {
+          createdPlayers = [];
+          pool = TestablePlayerPool(
+            maxPlayers: 3,
+            mockPlayerFactory: (url) {
+              final player = createMockPooledPlayer();
+              createdPlayers.add(player);
+              return player;
+            },
+          );
+        });
 
-        expect(pool.availableCount, 0);
-      });
+        tearDown(() async {
+          await pool.dispose();
+        });
 
-      test('does nothing when count is 0', () async {
-        final pool = PlayerPool();
-        await pool.prewarm(0);
-        expect(pool.availableCount, 0);
+        group('getPlayer', () {
+          test('creates new player for new URL', () async {
+            final player = await pool.getPlayer('https://example.com/v1.mp4');
+
+            expect(player, isNotNull);
+            expect(createdPlayers.length, equals(1));
+          });
+
+          test('returns existing player for same URL', () async {
+            final player1 = await pool.getPlayer('https://example.com/v1.mp4');
+            final player2 = await pool.getPlayer('https://example.com/v1.mp4');
+
+            expect(identical(player1, player2), isTrue);
+            expect(createdPlayers.length, equals(1));
+          });
+
+          test('creates players up to maxPlayers', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+            await pool.getPlayer('https://example.com/v3.mp4');
+
+            expect(pool.playerCount, equals(3));
+            expect(createdPlayers.length, equals(3));
+          });
+
+          test('evicts LRU player when at capacity', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+            await pool.getPlayer('https://example.com/v3.mp4');
+
+            // This should evict v1
+            await pool.getPlayer('https://example.com/v4.mp4');
+
+            expect(pool.playerCount, equals(3));
+            expect(pool.hasPlayer('https://example.com/v1.mp4'), isFalse);
+            expect(pool.hasPlayer('https://example.com/v4.mp4'), isTrue);
+          });
+
+          test('disposes evicted player', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+            await pool.getPlayer('https://example.com/v3.mp4');
+
+            final evictedPlayer = createdPlayers[0];
+
+            await pool.getPlayer('https://example.com/v4.mp4');
+
+            verify(evictedPlayer.dispose).called(1);
+          });
+        });
+
+        group('hasPlayer', () {
+          test('returns false for unknown URL', () {
+            expect(pool.hasPlayer('https://example.com/unknown.mp4'), isFalse);
+          });
+
+          test('returns true for known URL', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+
+            expect(pool.hasPlayer('https://example.com/v1.mp4'), isTrue);
+          });
+
+          test('returns false after player is evicted', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+            await pool.getPlayer('https://example.com/v3.mp4');
+            await pool.getPlayer('https://example.com/v4.mp4');
+
+            expect(pool.hasPlayer('https://example.com/v1.mp4'), isFalse);
+          });
+
+          test('returns false after player is released', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.release('https://example.com/v1.mp4');
+
+            expect(pool.hasPlayer('https://example.com/v1.mp4'), isFalse);
+          });
+        });
+
+        group('getExistingPlayer', () {
+          test('returns null for unknown URL', () {
+            expect(
+              pool.getExistingPlayer('https://example.com/unknown.mp4'),
+              isNull,
+            );
+          });
+
+          test('returns player for known URL', () async {
+            final created = await pool.getPlayer('https://example.com/v1.mp4');
+
+            final existing = pool.getExistingPlayer(
+              'https://example.com/v1.mp4',
+            );
+
+            expect(identical(created, existing), isTrue);
+          });
+
+          test('marks player as recently used', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+            await pool.getPlayer('https://example.com/v3.mp4');
+
+            // Touch v1 to make it recently used
+            pool.getExistingPlayer('https://example.com/v1.mp4');
+
+            // This should evict v2 (oldest after touch), not v1
+            await pool.getPlayer('https://example.com/v4.mp4');
+
+            expect(pool.hasPlayer('https://example.com/v1.mp4'), isTrue);
+            expect(pool.hasPlayer('https://example.com/v2.mp4'), isFalse);
+          });
+        });
+
+        group('release', () {
+          test('removes player from pool', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+
+            await pool.release('https://example.com/v1.mp4');
+
+            expect(pool.hasPlayer('https://example.com/v1.mp4'), isFalse);
+            expect(pool.playerCount, equals(0));
+          });
+
+          test('disposes released player', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            final player = createdPlayers[0];
+
+            await pool.release('https://example.com/v1.mp4');
+
+            verify(player.dispose).called(1);
+          });
+
+          test('does nothing for unknown URL', () async {
+            // Should not throw
+            await expectLater(
+              pool.release('https://example.com/unknown.mp4'),
+              completes,
+            );
+          });
+        });
+
+        group('playerCount', () {
+          test('returns 0 initially', () {
+            expect(pool.playerCount, equals(0));
+          });
+
+          test('increments when player added', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+
+            expect(pool.playerCount, equals(1));
+          });
+
+          test('decrements when player evicted', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+            await pool.getPlayer('https://example.com/v3.mp4');
+
+            expect(pool.playerCount, equals(3));
+
+            await pool.getPlayer('https://example.com/v4.mp4');
+
+            expect(pool.playerCount, equals(3));
+          });
+
+          test('decrements when player released', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+
+            expect(pool.playerCount, equals(2));
+
+            await pool.release('https://example.com/v1.mp4');
+
+            expect(pool.playerCount, equals(1));
+          });
+
+          test('returns 0 after dispose', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+
+            await pool.dispose();
+
+            expect(pool.playerCount, equals(0));
+          });
+        });
+
+        group('LRU Eviction', () {
+          test('evicts oldest player first', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+            await pool.getPlayer('https://example.com/v3.mp4');
+
+            await pool.getPlayer('https://example.com/v4.mp4');
+
+            expect(pool.hasPlayer('https://example.com/v1.mp4'), isFalse);
+            expect(pool.hasPlayer('https://example.com/v2.mp4'), isTrue);
+            expect(pool.hasPlayer('https://example.com/v3.mp4'), isTrue);
+            expect(pool.hasPlayer('https://example.com/v4.mp4'), isTrue);
+          });
+
+          test('touch moves player to end of LRU', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+            await pool.getPlayer('https://example.com/v3.mp4');
+
+            // Touch v1 to move it to end
+            await pool.getPlayer('https://example.com/v1.mp4');
+
+            // v2 should be evicted now, not v1
+            await pool.getPlayer('https://example.com/v4.mp4');
+
+            expect(pool.hasPlayer('https://example.com/v1.mp4'), isTrue);
+            expect(pool.hasPlayer('https://example.com/v2.mp4'), isFalse);
+          });
+
+          test('correct eviction order with multiple players', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+            await pool.getPlayer('https://example.com/v3.mp4');
+
+            // Touch in order: v2, v3, v1
+            await pool.getPlayer('https://example.com/v2.mp4');
+            await pool.getPlayer('https://example.com/v3.mp4');
+            await pool.getPlayer('https://example.com/v1.mp4');
+
+            // Now order should be: v2, v3, v1 (v2 is oldest)
+            await pool.getPlayer('https://example.com/v4.mp4');
+
+            expect(pool.hasPlayer('https://example.com/v2.mp4'), isFalse);
+            expect(pool.hasPlayer('https://example.com/v3.mp4'), isTrue);
+            expect(pool.hasPlayer('https://example.com/v1.mp4'), isTrue);
+            expect(pool.hasPlayer('https://example.com/v4.mp4'), isTrue);
+          });
+        });
+
+        group('dispose', () {
+          test('disposes all players', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+
+            await pool.dispose();
+
+            for (final player in createdPlayers) {
+              verify(player.dispose).called(1);
+            }
+          });
+
+          test('clears player count', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+
+            await pool.dispose();
+
+            expect(pool.playerCount, equals(0));
+          });
+
+          test('can be called multiple times', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+
+            await pool.dispose();
+            await pool.dispose();
+            await pool.dispose();
+
+            // Should only dispose each player once
+            verify(() => createdPlayers[0].dispose()).called(1);
+          });
+        });
       });
     });
   });

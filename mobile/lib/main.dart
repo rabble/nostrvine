@@ -487,9 +487,11 @@ Future<void> _startOpenVineApp() async {
     ),
   );
 
-  // Initialize the player pool manager singleton
-  // Pool size is auto-detected based on device memory tier
-  await PlayerPoolManager.initialize();
+  // Initialize MediaKit for pooled_video_player (uses media_kit internally)
+  MediaKit.ensureInitialized();
+
+  // Initialize the player pool singleton
+  await PlayerPool.init();
   runApp(
     UncontrolledProviderScope(container: container, child: const DivineApp()),
   );

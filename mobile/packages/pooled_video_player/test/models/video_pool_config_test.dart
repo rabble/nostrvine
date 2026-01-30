@@ -3,246 +3,186 @@ import 'package:pooled_video_player/pooled_video_player.dart';
 
 void main() {
   group('VideoPoolConfig', () {
-    group('Constructor', () {
+    group('constructor', () {
       test('creates with default values', () {
         const config = VideoPoolConfig();
 
-        expect(config.preloadAhead, 2);
-        expect(config.preloadBehind, 1);
-        expect(config.maxActivePlayers, 5);
-        expect(config.poolSize, 3);
-        expect(config.preloadDebounceDelay, const Duration(milliseconds: 150));
-        expect(config.maxRetryAttempts, 3);
-        expect(config.initialRetryDelay, const Duration(milliseconds: 500));
-        expect(config.maxRetryDelay, const Duration(seconds: 8));
-        expect(config.retryBackoffMultiplier, 2.0);
-        expect(config.enableAutoRetry, true);
+        expect(config.maxPlayers, equals(5));
+        expect(config.preloadAhead, equals(2));
+        expect(config.preloadBehind, equals(1));
       });
 
-      test('creates with custom values', () {
+      test('creates with custom maxPlayers', () {
+        const config = VideoPoolConfig(maxPlayers: 10);
+
+        expect(config.maxPlayers, equals(10));
+        expect(config.preloadAhead, equals(2));
+        expect(config.preloadBehind, equals(1));
+      });
+
+      test('creates with custom preloadAhead', () {
+        const config = VideoPoolConfig(preloadAhead: 5);
+
+        expect(config.maxPlayers, equals(5));
+        expect(config.preloadAhead, equals(5));
+        expect(config.preloadBehind, equals(1));
+      });
+
+      test('creates with custom preloadBehind', () {
+        const config = VideoPoolConfig(preloadBehind: 3);
+
+        expect(config.maxPlayers, equals(5));
+        expect(config.preloadAhead, equals(2));
+        expect(config.preloadBehind, equals(3));
+      });
+
+      test('creates with all custom values', () {
         const config = VideoPoolConfig(
-          preloadAhead: 3,
-          preloadBehind: 2,
-          maxActivePlayers: 10,
-          poolSize: 5,
-          preloadDebounceDelay: Duration(milliseconds: 200),
-          maxRetryAttempts: 5,
-          initialRetryDelay: Duration(seconds: 1),
-          maxRetryDelay: Duration(seconds: 30),
-          retryBackoffMultiplier: 3.0,
-          enableAutoRetry: false,
-        );
-
-        expect(config.preloadAhead, 3);
-        expect(config.preloadBehind, 2);
-        expect(config.maxActivePlayers, 10);
-        expect(config.poolSize, 5);
-        expect(config.preloadDebounceDelay, const Duration(milliseconds: 200));
-        expect(config.maxRetryAttempts, 5);
-        expect(config.initialRetryDelay, const Duration(seconds: 1));
-        expect(config.maxRetryDelay, const Duration(seconds: 30));
-        expect(config.retryBackoffMultiplier, 3.0);
-        expect(config.enableAutoRetry, false);
-      });
-    });
-
-    group('forTier factory', () {
-      test('creates low tier config with correct values', () {
-        final config = VideoPoolConfig.forTier(MemoryTier.low);
-
-        expect(config.poolSize, MemoryTierConfig.lowMemoryPoolSize);
-        expect(config.preloadAhead, MemoryTierConfig.lowMemoryPreloadAhead);
-        expect(
-          config.maxActivePlayers,
-          MemoryTierConfig.lowMemoryMaxActivePlayers,
-        );
-      });
-
-      test('creates medium tier config with default values', () {
-        final config = VideoPoolConfig.forTier(MemoryTier.medium);
-
-        // Medium tier uses default VideoPoolConfig values
-        expect(config.poolSize, 3);
-        expect(config.preloadAhead, 2);
-        expect(config.preloadBehind, 1);
-        expect(config.maxActivePlayers, 5);
-      });
-
-      test('creates high tier config with correct values', () {
-        final config = VideoPoolConfig.forTier(MemoryTier.high);
-
-        expect(config.poolSize, MemoryTierConfig.highMemoryPoolSize);
-        expect(config.preloadAhead, MemoryTierConfig.highMemoryPreloadAhead);
-        expect(config.preloadBehind, MemoryTierConfig.highMemoryPreloadBehind);
-        expect(
-          config.maxActivePlayers,
-          MemoryTierConfig.highMemoryMaxActivePlayers,
-        );
-      });
-    });
-
-    group('copyWith', () {
-      test('copies with no changes', () {
-        const original = VideoPoolConfig(
-          preloadAhead: 3,
-          preloadBehind: 2,
-          maxActivePlayers: 7,
-          poolSize: 4,
-        );
-
-        final copy = original.copyWith();
-
-        expect(copy.preloadAhead, original.preloadAhead);
-        expect(copy.preloadBehind, original.preloadBehind);
-        expect(copy.maxActivePlayers, original.maxActivePlayers);
-        expect(copy.poolSize, original.poolSize);
-        expect(copy, equals(original));
-      });
-
-      test('copies with single field changed', () {
-        const original = VideoPoolConfig();
-
-        final copy = original.copyWith(preloadAhead: 5);
-
-        expect(copy.preloadAhead, 5);
-        expect(copy.preloadBehind, original.preloadBehind);
-        expect(copy.maxActivePlayers, original.maxActivePlayers);
-        expect(copy.poolSize, original.poolSize);
-      });
-
-      test('copies with multiple fields changed', () {
-        const original = VideoPoolConfig();
-
-        final copy = original.copyWith(
+          maxPlayers: 8,
           preloadAhead: 4,
-          preloadBehind: 3,
-          maxActivePlayers: 10,
-          poolSize: 6,
-        );
-
-        expect(copy.preloadAhead, 4);
-        expect(copy.preloadBehind, 3);
-        expect(copy.maxActivePlayers, 10);
-        expect(copy.poolSize, 6);
-      });
-
-      test('preserves unchanged fields', () {
-        const original = VideoPoolConfig(
-          preloadAhead: 3,
           preloadBehind: 2,
-          maxActivePlayers: 8,
-          poolSize: 4,
-          maxRetryAttempts: 5,
-          enableAutoRetry: false,
         );
 
-        final copy = original.copyWith(preloadAhead: 1);
-
-        expect(copy.preloadBehind, original.preloadBehind);
-        expect(copy.maxActivePlayers, original.maxActivePlayers);
-        expect(copy.poolSize, original.poolSize);
-        expect(copy.maxRetryAttempts, original.maxRetryAttempts);
-        expect(copy.enableAutoRetry, original.enableAutoRetry);
+        expect(config.maxPlayers, equals(8));
+        expect(config.preloadAhead, equals(4));
+        expect(config.preloadBehind, equals(2));
       });
 
-      test('copies retry configuration fields', () {
-        const original = VideoPoolConfig();
+      test('allows maxPlayers of 1', () {
+        const config = VideoPoolConfig(maxPlayers: 1);
 
-        final copy = original.copyWith(
-          maxRetryAttempts: 10,
-          initialRetryDelay: const Duration(seconds: 2),
-          maxRetryDelay: const Duration(minutes: 1),
-          retryBackoffMultiplier: 1.5,
-          enableAutoRetry: false,
+        expect(config.maxPlayers, equals(1));
+      });
+
+      test('allows preloadAhead of 0', () {
+        const config = VideoPoolConfig(preloadAhead: 0);
+
+        expect(config.preloadAhead, equals(0));
+      });
+
+      test('allows preloadBehind of 0', () {
+        const config = VideoPoolConfig(preloadBehind: 0);
+
+        expect(config.preloadBehind, equals(0));
+      });
+
+      test('can be created as const', () {
+        const config1 = VideoPoolConfig();
+        const config2 = VideoPoolConfig();
+
+        expect(identical(config1, config2), isTrue);
+      });
+    });
+
+    group('assertions', () {
+      test('throws assertion error when maxPlayers is 0', () {
+        expect(
+          () => VideoPoolConfig(maxPlayers: 0),
+          throwsA(isA<AssertionError>()),
         );
+      });
 
-        expect(copy.maxRetryAttempts, 10);
-        expect(copy.initialRetryDelay, const Duration(seconds: 2));
-        expect(copy.maxRetryDelay, const Duration(minutes: 1));
-        expect(copy.retryBackoffMultiplier, 1.5);
-        expect(copy.enableAutoRetry, false);
+      test('throws assertion error when maxPlayers is negative', () {
+        expect(
+          () => VideoPoolConfig(maxPlayers: -1),
+          throwsA(isA<AssertionError>()),
+        );
+      });
+
+      test('throws assertion error when preloadAhead is negative', () {
+        expect(
+          () => VideoPoolConfig(preloadAhead: -1),
+          throwsA(isA<AssertionError>()),
+        );
+      });
+
+      test('throws assertion error when preloadBehind is negative', () {
+        expect(
+          () => VideoPoolConfig(preloadBehind: -1),
+          throwsA(isA<AssertionError>()),
+        );
       });
     });
 
     group('equality', () {
-      test('equals identical instance', () {
+      test('two configs with same values are equal', () {
+        const config1 = VideoPoolConfig();
+        const config2 = VideoPoolConfig();
+
+        expect(config1, equals(config2));
+      });
+
+      test('two configs with different maxPlayers are not equal', () {
+        const config1 = VideoPoolConfig();
+        const config2 = VideoPoolConfig(maxPlayers: 10);
+
+        expect(config1, isNot(equals(config2)));
+      });
+
+      test('two configs with different preloadAhead are not equal', () {
+        const config1 = VideoPoolConfig();
+        const config2 = VideoPoolConfig(preloadAhead: 4);
+
+        expect(config1, isNot(equals(config2)));
+      });
+
+      test('two configs with different preloadBehind are not equal', () {
+        const config1 = VideoPoolConfig();
+        const config2 = VideoPoolConfig(preloadBehind: 3);
+
+        expect(config1, isNot(equals(config2)));
+      });
+
+      test('identical configs are equal', () {
         const config = VideoPoolConfig();
 
         expect(config, equals(config));
       });
 
-      test('equals equivalent instance', () {
-        const config1 = VideoPoolConfig(preloadAhead: 3, poolSize: 3);
-        const config2 = VideoPoolConfig(preloadAhead: 3, poolSize: 3);
+      test('config equality handles Object comparison', () {
+        const config = VideoPoolConfig();
+        const Object otherObject = 'not a config';
 
-        expect(config1, equals(config2));
+        expect(config == otherObject, isFalse);
       });
+    });
 
-      test('not equals when preloadAhead differs', () {
-        const config1 = VideoPoolConfig(preloadAhead: 2);
-        const config2 = VideoPoolConfig(preloadAhead: 3);
-
-        expect(config1, isNot(equals(config2)));
-      });
-
-      test('not equals when enableAutoRetry differs', () {
-        const config1 = VideoPoolConfig(enableAutoRetry: true);
-        const config2 = VideoPoolConfig(enableAutoRetry: false);
-
-        expect(config1, isNot(equals(config2)));
-      });
-
-      test('hashCode consistent with equality', () {
-        const config1 = VideoPoolConfig(preloadAhead: 3, poolSize: 3);
-        const config2 = VideoPoolConfig(preloadAhead: 3, poolSize: 3);
+    group('hashCode', () {
+      test('same values produce same hashCode', () {
+        const config1 = VideoPoolConfig();
+        const config2 = VideoPoolConfig();
 
         expect(config1.hashCode, equals(config2.hashCode));
       });
-    });
-  });
 
-  group('MemoryTierConfig constants', () {
-    test('iOS thresholds are defined', () {
-      expect(MemoryTierConfig.iPhoneHighMemoryGeneration, 14);
-      expect(MemoryTierConfig.iPhoneMediumMemoryGeneration, 11);
-    });
+      test('different values produce different hashCode', () {
+        const config1 = VideoPoolConfig();
+        const config2 = VideoPoolConfig(maxPlayers: 10);
 
-    test('Android thresholds are defined', () {
-      expect(MemoryTierConfig.androidHighMemorySdk, 29);
-      expect(MemoryTierConfig.androidMediumMemorySdk, 26);
-    });
+        expect(config1.hashCode, isNot(equals(config2.hashCode)));
+      });
 
-    test('pool sizes increase by tier', () {
-      expect(
-        MemoryTierConfig.lowMemoryPoolSize,
-        lessThan(MemoryTierConfig.mediumMemoryPoolSize),
-      );
-      expect(
-        MemoryTierConfig.mediumMemoryPoolSize,
-        lessThan(MemoryTierConfig.highMemoryPoolSize),
-      );
+      test('hashCode is consistent across multiple calls', () {
+        const config = VideoPoolConfig();
+
+        final hashCode1 = config.hashCode;
+        final hashCode2 = config.hashCode;
+        final hashCode3 = config.hashCode;
+
+        expect(hashCode1, equals(hashCode2));
+        expect(hashCode2, equals(hashCode3));
+      });
     });
 
-    test('preload ahead increases by tier', () {
-      expect(
-        MemoryTierConfig.lowMemoryPreloadAhead,
-        lessThan(MemoryTierConfig.mediumMemoryPreloadAhead),
-      );
-      expect(
-        MemoryTierConfig.mediumMemoryPreloadAhead,
-        lessThan(MemoryTierConfig.highMemoryPreloadAhead),
-      );
-    });
+    group('immutability', () {
+      test('is immutable', () {
+        const config = VideoPoolConfig();
 
-    test('max active players increases by tier', () {
-      expect(
-        MemoryTierConfig.lowMemoryMaxActivePlayers,
-        lessThan(MemoryTierConfig.mediumMemoryMaxActivePlayers),
-      );
-      expect(
-        MemoryTierConfig.mediumMemoryMaxActivePlayers,
-        lessThan(MemoryTierConfig.highMemoryMaxActivePlayers),
-      );
+        // Properties are final, so this verifies immutability
+        expect(config.maxPlayers, equals(5));
+        expect(config.preloadAhead, equals(2));
+        expect(config.preloadBehind, equals(1));
+      });
     });
   });
 }

@@ -86,7 +86,6 @@ class _VideoFeedViewState extends State<VideoFeedView> {
           return Stack(
             children: [
               PooledVideoFeed(
-                feedId: 'main-feed',
                 videos: pooledVideos,
                 itemBuilder: (context, video, index, {required isActive}) {
                   final originalEvent = state.videos[index];
@@ -115,7 +114,7 @@ class _VideoFeedViewState extends State<VideoFeedView> {
                   right: 0,
                   child: Center(
                     child: CircularProgressIndicator(
-                      color: VineTheme.vineGreen,
+                      color: Color.fromARGB(255, 69, 83, 79),
                       strokeWidth: 2,
                     ),
                   ),
@@ -285,9 +284,6 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
               hasBottomNavigation: false,
               contextTitle: contextTitle,
             ),
-        onVideoError: (error) {
-          debugPrint('Video error for ${video.id}: ${error.message}');
-        },
       ),
     );
   }
