@@ -313,10 +313,7 @@ class RecommendationsResult {
   /// Source of recommendations: "personalized", "popular", "recent", or "error"
   final String source;
 
-  const RecommendationsResult({
-    required this.videos,
-    required this.source,
-  });
+  const RecommendationsResult({required this.videos, required this.source});
 
   /// Whether recommendations are personalized (vs fallback)
   bool get isPersonalized => source == 'personalized';
@@ -1355,10 +1352,7 @@ class AnalyticsApiService {
     String? category,
   }) async {
     if (!isAvailable || pubkey.isEmpty) {
-      return const RecommendationsResult(
-        videos: [],
-        source: 'unavailable',
-      );
+      return const RecommendationsResult(videos: [], source: 'unavailable');
     }
 
     try {
@@ -1404,30 +1398,21 @@ class AnalyticsApiService {
           category: LogCategory.video,
         );
 
-        return RecommendationsResult(
-          videos: videos,
-          source: source,
-        );
+        return RecommendationsResult(videos: videos, source: source);
       } else if (response.statusCode == 404) {
         Log.warning(
           'Recommendations endpoint not found (may not be deployed yet)',
           name: 'AnalyticsApiService',
           category: LogCategory.video,
         );
-        return const RecommendationsResult(
-          videos: [],
-          source: 'unavailable',
-        );
+        return const RecommendationsResult(videos: [], source: 'unavailable');
       } else {
         Log.error(
           'Recommendations failed: ${response.statusCode}',
           name: 'AnalyticsApiService',
           category: LogCategory.video,
         );
-        return const RecommendationsResult(
-          videos: [],
-          source: 'error',
-        );
+        return const RecommendationsResult(videos: [], source: 'error');
       }
     } catch (e) {
       Log.error(
@@ -1435,10 +1420,7 @@ class AnalyticsApiService {
         name: 'AnalyticsApiService',
         category: LogCategory.video,
       );
-      return const RecommendationsResult(
-        videos: [],
-        source: 'error',
-      );
+      return const RecommendationsResult(videos: [], source: 'error');
     }
   }
 
