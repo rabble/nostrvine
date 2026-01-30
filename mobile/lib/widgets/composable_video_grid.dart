@@ -16,8 +16,10 @@ import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
 /// Composable video grid that automatically filters broken videos
-/// and provides consistent styling across Explore, Hashtag, and Search screens
-class ComposableVideoGrid extends ConsumerWidget {
+/// and provides consistent styling across Explore, Hashtag, and Search screens.
+///
+/// Supports infinite scroll pagination via [onLoadMore] callback.
+class ComposableVideoGrid extends ConsumerStatefulWidget {
   const ComposableVideoGrid({
     super.key,
     required this.videos,
@@ -28,6 +30,10 @@ class ComposableVideoGrid extends ConsumerWidget {
     this.padding,
     this.emptyBuilder,
     this.onRefresh,
+    this.onLoadMore,
+    this.isLoadingMore = false,
+    this.hasMoreContent = false,
+    this.loadMoreThreshold = 5,
   });
 
   final List<VideoEvent> videos;
@@ -42,8 +48,71 @@ class ComposableVideoGrid extends ConsumerWidget {
   final Widget Function()? emptyBuilder;
   final Future<void> Function()? onRefresh;
 
+  /// Called when user scrolls near the bottom to load more content.
+  final Future<void> Function()? onLoadMore;
+
+  /// Whether more content is currently being loaded.
+  final bool isLoadingMore;
+
+  /// Whether there is more content available to load.
+  final bool hasMoreContent;
+
+  /// Number of items from the bottom to trigger load more.
+  final int loadMoreThreshold;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ComposableVideoGrid> createState() =>
+      _ComposableVideoGridState();
+}
+
+class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
+  final ScrollController _scrollController = ScrollController();
+  bool _isLoadingTriggered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (widget.onLoadMore == null) return;
+    if (!widget.hasMoreContent) return;
+    if (widget.isLoadingMore) return;
+    if (_isLoadingTriggered) return;
+
+    final position = _scrollController.position;
+    final maxScroll = position.maxScrollExtent;
+    final currentScroll = position.pixels;
+
+    // Trigger load more when within 200 pixels of the bottom
+    if (currentScroll >= maxScroll - 200) {
+      _triggerLoadMore();
+    }
+  }
+
+  Future<void> _triggerLoadMore() async {
+    if (_isLoadingTriggered) return;
+    _isLoadingTriggered = true;
+
+    try {
+      await widget.onLoadMore?.call();
+    } finally {
+      if (mounted) {
+        _isLoadingTriggered = false;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     // Watch broken video tracker asynchronously
     final brokenTrackerAsync = ref.watch(brokenVideoTrackerProvider);
 
@@ -52,30 +121,26 @@ class ComposableVideoGrid extends ConsumerWidget {
           Center(child: CircularProgressIndicator(color: VineTheme.vineGreen)),
       error: (error, stack) {
         // Fallback: show all videos if tracker fails
-        return _buildGrid(context, ref, videos);
+        return _buildGrid(context, widget.videos);
       },
       data: (tracker) {
         // Filter out broken videos
-        final filteredVideos = videos
+        final filteredVideos = widget.videos
             .where((video) => !tracker.isVideoBroken(video.id))
             .toList();
 
-        if (filteredVideos.isEmpty && emptyBuilder != null) {
-          return emptyBuilder!();
+        if (filteredVideos.isEmpty && widget.emptyBuilder != null) {
+          return widget.emptyBuilder!();
         }
 
-        return _buildGrid(context, ref, filteredVideos);
+        return _buildGrid(context, filteredVideos);
       },
     );
   }
 
-  Widget _buildGrid(
-    BuildContext context,
-    WidgetRef ref,
-    List<VideoEvent> videosToShow,
-  ) {
-    if (videosToShow.isEmpty && emptyBuilder != null) {
-      return emptyBuilder!();
+  Widget _buildGrid(BuildContext context, List<VideoEvent> videosToShow) {
+    if (videosToShow.isEmpty && widget.emptyBuilder != null) {
+      return widget.emptyBuilder!();
     }
 
     // Get subscribed list cache to check if videos are in lists
@@ -83,50 +148,65 @@ class ComposableVideoGrid extends ConsumerWidget {
 
     // Responsive column count: 3 for tablets/desktop (width >= 600), 2 for phones
     final screenWidth = MediaQuery.of(context).size.width;
-    final responsiveCrossAxisCount = screenWidth >= 600 ? 3 : crossAxisCount;
+    final responsiveCrossAxisCount = screenWidth >= 600
+        ? 3
+        : widget.crossAxisCount;
+
+    // Calculate total item count (videos + optional loading indicator)
+    final showLoadingIndicator =
+        widget.isLoadingMore ||
+        (widget.hasMoreContent && widget.onLoadMore != null);
+    final totalItemCount = videosToShow.length + (showLoadingIndicator ? 1 : 0);
 
     Widget buildItem(BuildContext context, int index) {
+      // If this is the last item and we're loading more, show loading indicator
+      if (index == videosToShow.length) {
+        return _LoadingMoreIndicator(isLoading: widget.isLoadingMore);
+      }
+
       final video = videosToShow[index];
       final listIds = subscribedListCache?.getListsForVideo(video.id);
       final isInSubscribedList = listIds != null && listIds.isNotEmpty;
 
       return _VideoItem(
         video: video,
-        aspectRatio: thumbnailAspectRatio,
-        onVideoTap: onVideoTap,
+        aspectRatio: widget.thumbnailAspectRatio,
+        onVideoTap: widget.onVideoTap,
         index: index,
         displayedVideos: videosToShow,
-        onLongPress: () => _showVideoContextMenu(context, ref, video),
+        onLongPress: () => _showVideoContextMenu(context, video),
         isInSubscribedList: isInSubscribedList,
       );
     }
 
-    final gridView = useMasonryLayout
+    final gridView = widget.useMasonryLayout
         ? MasonryGridView.count(
-            padding: padding ?? const EdgeInsets.all(4),
+            controller: _scrollController,
+            padding: widget.padding ?? const EdgeInsets.all(4),
             crossAxisCount: responsiveCrossAxisCount,
             mainAxisSpacing: 4,
             crossAxisSpacing: 4,
-            itemCount: videosToShow.length,
+            itemCount: totalItemCount,
             itemBuilder: buildItem,
           )
         : GridView.builder(
-            padding: padding ?? const EdgeInsets.all(12),
+            controller: _scrollController,
+            padding: widget.padding ?? const EdgeInsets.all(12),
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: responsiveCrossAxisCount,
-              childAspectRatio: thumbnailAspectRatio,
+              childAspectRatio: widget.thumbnailAspectRatio,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
             ),
-            itemCount: videosToShow.length,
+            itemCount: totalItemCount,
             itemBuilder: buildItem,
           );
 
     // Wrap with RefreshIndicator if onRefresh is provided
-    if (onRefresh != null) {
+    if (widget.onRefresh != null) {
       return RefreshIndicator(
         semanticsLabel: 'searching for more videos',
-        onRefresh: onRefresh!,
+        onRefresh: widget.onRefresh!,
         displacement: 70,
         child: gridView,
         color: VineTheme.onPrimary,
@@ -138,11 +218,7 @@ class ComposableVideoGrid extends ConsumerWidget {
   }
 
   /// Show context menu for long press on video tiles
-  void _showVideoContextMenu(
-    BuildContext context,
-    WidgetRef ref,
-    VideoEvent video,
-  ) {
+  void _showVideoContextMenu(BuildContext context, VideoEvent video) {
     // Check if user owns this video
     final nostrService = ref.read(nostrServiceProvider);
     final userPubkey = nostrService.publicKey;
@@ -237,7 +313,7 @@ class ComposableVideoGrid extends ConsumerWidget {
               ),
               onTap: () {
                 context.pop();
-                _showDeleteConfirmation(context, ref, video);
+                _showDeleteConfirmation(context, video);
               },
             ),
 
@@ -251,7 +327,6 @@ class ComposableVideoGrid extends ConsumerWidget {
   /// Show delete confirmation dialog
   Future<void> _showDeleteConfirmation(
     BuildContext context,
-    WidgetRef ref,
     VideoEvent video,
   ) async {
     final confirmed = await showDialog<bool>(
@@ -292,16 +367,12 @@ class ComposableVideoGrid extends ConsumerWidget {
     );
 
     if (confirmed == true && context.mounted) {
-      await _deleteVideo(context, ref, video);
+      await _deleteVideo(context, video);
     }
   }
 
   /// Delete video using ContentDeletionService
-  Future<void> _deleteVideo(
-    BuildContext context,
-    WidgetRef ref,
-    VideoEvent video,
-  ) async {
+  Future<void> _deleteVideo(BuildContext context, VideoEvent video) async {
     try {
       final deletionService = await ref.read(
         contentDeletionServiceProvider.future,
@@ -529,6 +600,31 @@ class _VideoThumbnail extends StatelessWidget {
                 ),
               ),
             ),
+    );
+  }
+}
+
+/// Loading indicator shown at the bottom of the grid during pagination
+class _LoadingMoreIndicator extends StatelessWidget {
+  const _LoadingMoreIndicator({required this.isLoading});
+
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 60,
+      alignment: Alignment.center,
+      child: isLoading
+          ? SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: VineTheme.vineGreen,
+              ),
+            )
+          : const SizedBox.shrink(),
     );
   }
 }
