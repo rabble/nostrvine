@@ -42,6 +42,11 @@ void main() {
       SharedPreferences.setMockInitialValues({});
 
       mockAuthService = MockAuthService();
+
+      // Stub the new Blossom server discovery properties (NIP-65 / kind 10063)
+      when(() => mockAuthService.hasUserBlossomServers).thenReturn(false);
+      when(() => mockAuthService.userBlossomServers).thenReturn([]);
+
       service = BlossomUploadService(authService: mockAuthService);
     });
 
@@ -460,6 +465,11 @@ void main() {
 
         final mockDio = MockDio();
         final mockAuthService = MockAuthService();
+
+        // Stub the new Blossom server discovery properties (NIP-65 / kind 10063)
+        when(() => mockAuthService.hasUserBlossomServers).thenReturn(false);
+        when(() => mockAuthService.userBlossomServers).thenReturn([]);
+
         final testService = BlossomUploadService(
           authService: mockAuthService,
           dio: mockDio,

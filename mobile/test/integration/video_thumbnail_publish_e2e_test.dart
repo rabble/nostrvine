@@ -54,6 +54,13 @@ class MockAuthService implements AuthService {
     });
   }
 
+  // Blossom server discovery properties (kind 10063 / BUD-03)
+  @override
+  bool get hasUserBlossomServers => false;
+
+  @override
+  List<dynamic> get userBlossomServers => [];
+
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
