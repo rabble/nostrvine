@@ -71,9 +71,8 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
 
   /// Force immediate autosave without debounce.
   /// Use this before file cleanup to ensure references are updated.
-  Future<void> _forceAutosave() async {
-    await ref.read(videoEditorProvider.notifier).autosaveChanges();
-  }
+  Future<void> _forceAutosave() =>
+      ref.read(videoEditorProvider.notifier).autosaveChanges();
 
   /// Manually trigger a state refresh with current clips.
   ///

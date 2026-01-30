@@ -283,7 +283,7 @@ class CameraMacOSService extends CameraService {
       // Use documents directory for user-accessible persistent storage
       final documentsDir = await getApplicationDocumentsDirectory();
       final recordingsDir = Directory('${documentsDir.path}/recordings');
-      if (!await recordingsDir.exists()) {
+      if (!recordingsDir.existsSync()) {
         await recordingsDir.create(recursive: true);
       }
 
@@ -361,7 +361,7 @@ class CameraMacOSService extends CameraService {
         // Try to read from file path if bytes are null but URL exists
         if (result?.url != null && result!.url!.isNotEmpty) {
           final file = File(result.url!);
-          if (await file.exists()) {
+          if (file.existsSync()) {
             Log.info(
               '📷 Reading video from file path: ${result.url}',
               name: 'CameraMacOSService',
