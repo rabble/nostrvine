@@ -4,15 +4,14 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/blocs/my_following/my_following_bloc.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
 import 'package:openvine/mixins/pagination_mixin.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
@@ -20,7 +19,6 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/state/video_feed_state.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -361,21 +359,7 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
       category: LogCategory.ui,
     );
 
-    // Get follow repository for MyFollowingBloc
-    final followRepository = ref.watch(followRepositoryProvider);
-
-    // VideoFeedScreen is now a body widget - parent handles Scaffold
-    // Wrap with MyFollowingBloc for empty state check
-    if (followRepository == null) {
-      return _buildBody();
-    }
-
-    return BlocProvider(
-      create: (_) =>
-          MyFollowingBloc(followRepository: followRepository)
-            ..add(const MyFollowingListLoadRequested()),
-      child: _buildBody(),
-    );
+    return _buildBody();
   }
 
   Widget _buildBody() {
@@ -442,15 +426,13 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
 
   Widget _buildEmptyState() {
     // Check if user is following anyone to show appropriate message
-    // Use MyFollowingBloc provided in build() method
-    final myFollowingBloc = context.read<MyFollowingBloc?>();
-    final followingPubkeys = myFollowingBloc?.state.followingPubkeys ?? [];
-    final isFollowingAnyone = followingPubkeys.isNotEmpty;
+    final followRepository = ref.watch(followRepositoryProvider);
+    final isFollowingAnyone = (followRepository?.followingCount ?? 0) > 0;
 
     Log.info(
       '🔍 VideoFeedScreen: Empty state - '
       'isFollowingAnyone=$isFollowingAnyone, '
-      'followingCount=${followingPubkeys.length}',
+      'followingCount=${followRepository?.followingCount ?? 0}',
       name: 'VideoFeedScreen',
       category: LogCategory.ui,
     );

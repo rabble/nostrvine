@@ -182,7 +182,7 @@ class _VideoPlayerWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: AspectRatio(
-        aspectRatio: clip.aspectRatio.value,
+        aspectRatio: clip.targetAspectRatio.value,
         child: ClipRRect(
           borderRadius: .circular(16),
           child: Stack(

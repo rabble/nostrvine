@@ -82,6 +82,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       isProcessing: false,
       isSavingDraft: false,
       isPlaying: false,
+      hasPlayedOnce: false,
       isOverDeleteZone: false,
       currentPosition: .zero,
     );
@@ -136,6 +137,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     state = state.copyWith(
       currentClipIndex: index,
       isPlaying: false,
+      isPlayerReady: false,
+      hasPlayedOnce: false,
       currentPosition: offset,
       splitPosition: .zero,
     );
@@ -302,9 +305,32 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     state = state.copyWith(isPlaying: false);
   }
 
+  /// Set whether the video player is ready for playback.
+  ///
+  /// Called by the video player widget when initialization completes or
+  /// when the player is disposed.
+  void setPlayerReady(bool isReady) {
+    if (state.isPlayerReady == isReady) return;
+    Log.debug(
+      isReady ? '✅ Player ready' : '⏳ Player not ready',
+      name: 'VideoEditorNotifier',
+      category: .video,
+    );
+    state = state.copyWith(isPlayerReady: isReady);
+  }
+
+  /// Mark that video has started playing (hides thumbnail).
+  ///
+  /// Called when video playback begins for the first time on current clip.
+  void setHasPlayedOnce() {
+    if (state.hasPlayedOnce) return;
+    state = state.copyWith(hasPlayedOnce: true);
+  }
+
   /// Toggle between playing and paused states.
   ///
   /// Convenience method to start/stop playback based on current state.
+  /// Ignores play requests if the player is not yet ready.
   void togglePlayPause() {
     final newState = !state.isPlaying;
     Log.debug(
@@ -312,6 +338,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       name: 'VideoEditorNotifier',
       category: .video,
     );
+    // Prevent playing before player is initialized
+    if (!state.isPlayerReady && newState) return;
+
     state = state.copyWith(isPlaying: newState);
   }
 
@@ -332,7 +361,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   ///
   /// In editing mode, uses absolute position within the clip.
   /// In viewing mode, adds offset from previous clips.
-  void updatePosition(Duration position) {
+  void updatePosition(String clipId, Duration position) {
+    // Ignore stale position updates from previous clip's controller
+    if (clipId != _clips[state.currentClipIndex].id) {
+      return; // Stale position from wrong controller
+    }
+
     // Calculate offset from all previous clips
     final offset = state.isEditing
         ? Duration.zero
@@ -629,7 +663,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       // so the user can't mix them up.
       ref
           .read(videoRecorderProvider.notifier)
-          .setAspectRatio(draft.clips.first.aspectRatio);
+          .setAspectRatio(draft.clips.first.targetAspectRatio);
       Log.info(
         '✅ Draft loaded with ${draft.clips.length} clip(s)',
         name: 'VideoEditorNotifier',
@@ -717,7 +751,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       video: EditorVideo.file(outputPath),
       duration: metaData.duration,
       recordedAt: .now(),
-      aspectRatio: _clips.first.aspectRatio,
+      originalAspectRatio: _clips.first.originalAspectRatio,
+      targetAspectRatio: _clips.first.targetAspectRatio,
       thumbnailPath: _clips.first.thumbnailPath,
     );
 
@@ -808,7 +843,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       // Render clips into single video file
       final outputPath = await VideoEditorRenderService.renderVideo(
         clips: _clips,
-        aspectRatio: _clips.first.aspectRatio,
+        aspectRatio: _clips.first.targetAspectRatio,
         enableAudio: !state.isMuted,
       );
       String? proofManifestJson;

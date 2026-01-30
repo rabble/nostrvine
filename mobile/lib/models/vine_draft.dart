@@ -65,16 +65,19 @@ class VineDraft {
     // instead of the newer clips array format
     if (json['videoFilePath'] != null) {
       final now = DateTime.now();
+      final targetAspectRatio = AspectRatio.values.firstWhere(
+        (e) => e.name == json['aspectRatio'],
+        orElse: () => .square,
+      );
+
       clips.add(
         RecordingClip(
           id: 'draft_${now.millisecondsSinceEpoch}',
           video: EditorVideo.file(json['videoFilePath']),
           duration: .zero,
           recordedAt: DateTime.parse(json['createdAt'] as String),
-          aspectRatio: AspectRatio.values.firstWhere(
-            (e) => e.name == json['aspectRatio'],
-            orElse: () => .square,
-          ),
+          originalAspectRatio: targetAspectRatio.value,
+          targetAspectRatio: targetAspectRatio,
         ),
       );
     } else {

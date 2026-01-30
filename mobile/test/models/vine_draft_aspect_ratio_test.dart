@@ -16,7 +16,8 @@ void main() {
             video: EditorVideo.file(testFile.path),
             duration: Duration(seconds: 6),
             recordedAt: DateTime.now(),
-            aspectRatio: AspectRatio.vertical,
+            targetAspectRatio: AspectRatio.vertical,
+            originalAspectRatio: 9 / 16,
           ),
         ],
         title: '',
@@ -25,7 +26,7 @@ void main() {
         selectedApproach: 'test',
       );
 
-      expect(draft.clips.first.aspectRatio, equals(AspectRatio.vertical));
+      expect(draft.clips.first.targetAspectRatio, equals(AspectRatio.vertical));
     });
 
     test('toJson includes aspectRatio', () {
@@ -37,7 +38,8 @@ void main() {
             video: EditorVideo.file(testFile.path),
             duration: Duration(seconds: 6),
             recordedAt: DateTime.now(),
-            aspectRatio: AspectRatio.vertical,
+            targetAspectRatio: AspectRatio.vertical,
+            originalAspectRatio: 9 / 16,
           ),
         ],
         title: '',
@@ -46,7 +48,7 @@ void main() {
         selectedApproach: 'test',
       );
 
-      expect(draft.clips.first.aspectRatio, equals(AspectRatio.vertical));
+      expect(draft.clips.first.targetAspectRatio, equals(AspectRatio.vertical));
     });
 
     test('fromJson restores aspectRatio', () {
@@ -58,7 +60,8 @@ void main() {
             video: EditorVideo.file('video.mp4'),
             duration: Duration(seconds: 5),
             recordedAt: .now(),
-            aspectRatio: .vertical,
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
           ).toJson(),
         ],
         'title': '',
@@ -72,7 +75,7 @@ void main() {
       };
 
       final draft = VineDraft.fromJson(json);
-      expect(draft.clips.first.aspectRatio, equals(AspectRatio.vertical));
+      expect(draft.clips.first.targetAspectRatio, equals(AspectRatio.vertical));
     });
 
     test('fromJson defaults to square for legacy drafts', () {
@@ -91,7 +94,7 @@ void main() {
       };
 
       final draft = VineDraft.fromJson(json);
-      expect(draft.clips.first.aspectRatio, equals(AspectRatio.square));
+      expect(draft.clips.first.targetAspectRatio, equals(AspectRatio.square));
     });
   });
 }

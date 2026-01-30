@@ -11,11 +11,6 @@ void main() {
   const testUserPubkey = 'test_user_pubkey_hex_12345';
 
   group('Empty contacts redirect logic', () {
-    setUp(() async {
-      // Reset the static navigation flag before each test
-      resetNavigationState();
-    });
-
     group('hasAnyFollowingInCache', () {
       test('returns false when no current_user_pubkey_hex stored', () async {
         SharedPreferences.setMockInitialValues({
@@ -110,15 +105,6 @@ void main() {
 
         // Should not crash, and should return false since JSON is invalid
         expect(hasFollowing, false);
-      });
-    });
-
-    group('resetNavigationState', () {
-      test('can be called without error', () {
-        // Just verify the function exists and can be called
-        resetNavigationState();
-        // If we get here, the test passed
-        expect(true, true);
       });
     });
   });

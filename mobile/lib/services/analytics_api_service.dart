@@ -306,6 +306,19 @@ class HomeFeedResult {
   });
 }
 
+/// Recommendations result with source attribution
+class RecommendationsResult {
+  final List<VideoEvent> videos;
+
+  /// Source of recommendations: "personalized", "popular", "recent", or "error"
+  final String source;
+
+  const RecommendationsResult({required this.videos, required this.source});
+
+  /// Whether recommendations are personalized (vs fallback)
+  bool get isPersonalized => source == 'personalized';
+}
+
 /// Service for Funnelcake REST API interactions
 ///
 /// Funnelcake provides pre-computed trending scores and analytics
@@ -873,6 +886,87 @@ class AnalyticsApiService {
     }
   }
 
+  /// Get user profile data from FunnelCake REST API
+  ///
+  /// Uses the /api/users/{pubkey} endpoint which returns profile data
+  /// along with social stats. This is faster than WebSocket relay queries
+  /// for profiles that exist in the ClickHouse database.
+  ///
+  /// Returns null if user not found or API unavailable.
+  Future<Map<String, dynamic>?> getUserProfile(String pubkey) async {
+    if (!isAvailable || pubkey.isEmpty) return null;
+
+    try {
+      final url = '$_baseUrl/api/users/$pubkey';
+      Log.info(
+        '🔍 Fetching profile from FunnelCake REST API: $pubkey',
+        name: 'AnalyticsApiService',
+        category: LogCategory.system,
+      );
+
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final profile = data['profile'] as Map<String, dynamic>?;
+
+        if (profile != null &&
+            (profile['name'] != null || profile['display_name'] != null)) {
+          Log.info(
+            '✅ Got profile from FunnelCake: ${profile['display_name'] ?? profile['name']}',
+            name: 'AnalyticsApiService',
+            category: LogCategory.system,
+          );
+          return {
+            'pubkey': pubkey,
+            'name': profile['name'],
+            'display_name': profile['display_name'],
+            'about': profile['about'],
+            'picture': profile['picture'],
+            'banner': profile['banner'],
+            'nip05': profile['nip05'],
+            'lud16': profile['lud16'],
+          };
+        }
+        Log.debug(
+          'FunnelCake returned user but no profile data',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+        return null;
+      } else if (response.statusCode == 404) {
+        Log.debug(
+          'Profile not found in FunnelCake: $pubkey',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+        return null;
+      } else {
+        Log.warning(
+          'FunnelCake profile fetch failed: ${response.statusCode}',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+        return null;
+      }
+    } catch (e) {
+      Log.debug(
+        'FunnelCake profile fetch error (will fall back to relay): $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+  }
+
   /// Get personalized home feed for a user (videos from followed accounts)
   ///
   /// Uses the /api/users/{pubkey}/feed endpoint which returns videos
@@ -1241,6 +1335,93 @@ class AnalyticsApiService {
       return _trendingHashtagsCache.take(limit).toList();
     }
     return _getDefaultHashtags(limit);
+  }
+
+  /// Get personalized video recommendations for a user
+  ///
+  /// Uses the /api/users/{pubkey}/recommendations endpoint which returns
+  /// ML-powered personalized recommendations from Gorse, with fallback
+  /// to popular/recent videos for cold-start users.
+  ///
+  /// [fallback] - Strategy when personalization unavailable: "popular" or "recent"
+  /// [category] - Optional hashtag/category filter
+  Future<RecommendationsResult> getRecommendations({
+    required String pubkey,
+    int limit = 20,
+    String fallback = 'popular',
+    String? category,
+  }) async {
+    if (!isAvailable || pubkey.isEmpty) {
+      return const RecommendationsResult(videos: [], source: 'unavailable');
+    }
+
+    try {
+      var url =
+          '$_baseUrl/api/users/$pubkey/recommendations?limit=$limit&fallback=$fallback';
+      if (category != null && category.isNotEmpty) {
+        url += '&category=${Uri.encodeQueryComponent(category)}';
+      }
+
+      Log.info(
+        'Fetching recommendations from Funnelcake: $url',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+        // Parse videos array
+        final videosData = data['videos'] as List<dynamic>? ?? [];
+        final videos = videosData
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+            .map((v) => v.toVideoEvent())
+            .toList();
+
+        // Get source (personalized, popular, or recent)
+        final source = data['source'] as String? ?? 'unknown';
+
+        Log.info(
+          'Recommendations: ${videos.length} videos, source: $source',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+
+        return RecommendationsResult(videos: videos, source: source);
+      } else if (response.statusCode == 404) {
+        Log.warning(
+          'Recommendations endpoint not found (may not be deployed yet)',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+        return const RecommendationsResult(videos: [], source: 'unavailable');
+      } else {
+        Log.error(
+          'Recommendations failed: ${response.statusCode}',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+        return const RecommendationsResult(videos: [], source: 'error');
+      }
+    } catch (e) {
+      Log.error(
+        'Error fetching recommendations: $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+      return const RecommendationsResult(videos: [], source: 'error');
+    }
   }
 
   /// Clear all caches

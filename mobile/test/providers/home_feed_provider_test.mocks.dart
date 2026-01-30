@@ -14,7 +14,6 @@ import 'package:nostr_client/nostr_client.dart' as _i2;
 import 'package:nostr_sdk/event.dart' as _i11;
 import 'package:nostr_sdk/filter.dart' as _i14;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i15;
-import 'package:openvine/repositories/follow_repository.dart' as _i17;
 import 'package:openvine/services/age_verification_service.dart' as _i9;
 import 'package:openvine/services/analytics_api_service.dart' as _i3;
 import 'package:openvine/services/content_blocklist_service.dart' as _i8;
@@ -45,6 +44,12 @@ class _FakeCountResult_0 extends _i1.SmartFake implements _i2.CountResult {
 class _FakeHomeFeedResult_1 extends _i1.SmartFake
     implements _i3.HomeFeedResult {
   _FakeHomeFeedResult_1(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeRecommendationsResult_2 extends _i1.SmartFake
+    implements _i3.RecommendationsResult {
+  _FakeRecommendationsResult_2(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -1577,6 +1582,14 @@ class MockAnalyticsApiService extends _i1.Mock
           as _i12.Future<List<_i5.VideoEvent>>);
 
   @override
+  _i12.Future<Map<String, dynamic>?> getUserProfile(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#getUserProfile, [pubkey]),
+            returnValue: _i12.Future<Map<String, dynamic>?>.value(),
+          )
+          as _i12.Future<Map<String, dynamic>?>);
+
+  @override
   _i12.Future<_i3.HomeFeedResult> getHomeFeed({
     required String? pubkey,
     int? limit = 50,
@@ -1645,6 +1658,34 @@ class MockAnalyticsApiService extends _i1.Mock
           as List<_i3.TrendingHashtag>);
 
   @override
+  _i12.Future<_i3.RecommendationsResult> getRecommendations({
+    required String? pubkey,
+    int? limit = 20,
+    String? fallback = 'popular',
+    String? category,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#getRecommendations, [], {
+              #pubkey: pubkey,
+              #limit: limit,
+              #fallback: fallback,
+              #category: category,
+            }),
+            returnValue: _i12.Future<_i3.RecommendationsResult>.value(
+              _FakeRecommendationsResult_2(
+                this,
+                Invocation.method(#getRecommendations, [], {
+                  #pubkey: pubkey,
+                  #limit: limit,
+                  #fallback: fallback,
+                  #category: category,
+                }),
+              ),
+            ),
+          )
+          as _i12.Future<_i3.RecommendationsResult>);
+
+  @override
   void clearCache() => super.noSuchMethod(
     Invocation.method(#clearCache, []),
     returnValueForMissingStub: null,
@@ -1655,108 +1696,4 @@ class MockAnalyticsApiService extends _i1.Mock
     Invocation.method(#dispose, []),
     returnValueForMissingStub: null,
   );
-}
-
-/// A class which mocks [FollowRepository].
-///
-/// See the documentation for Mockito's code generation for more information.
-class MockFollowRepository extends _i1.Mock implements _i17.FollowRepository {
-  MockFollowRepository() {
-    _i1.throwOnMissingStub(this);
-  }
-
-  @override
-  _i12.Stream<List<String>> get followingStream =>
-      (super.noSuchMethod(
-            Invocation.getter(#followingStream),
-            returnValue: _i12.Stream<List<String>>.empty(),
-          )
-          as _i12.Stream<List<String>>);
-
-  @override
-  List<String> get followingPubkeys =>
-      (super.noSuchMethod(
-            Invocation.getter(#followingPubkeys),
-            returnValue: <String>[],
-          )
-          as List<String>);
-
-  @override
-  bool get isInitialized =>
-      (super.noSuchMethod(Invocation.getter(#isInitialized), returnValue: false)
-          as bool);
-
-  @override
-  int get followingCount =>
-      (super.noSuchMethod(Invocation.getter(#followingCount), returnValue: 0)
-          as int);
-
-  @override
-  _i12.Future<void> dispose() =>
-      (super.noSuchMethod(
-            Invocation.method(#dispose, []),
-            returnValue: _i12.Future<void>.value(),
-            returnValueForMissingStub: _i12.Future<void>.value(),
-          )
-          as _i12.Future<void>);
-
-  @override
-  bool isFollowing(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#isFollowing, [pubkey]),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  _i12.Future<List<String>> getMyFollowers() =>
-      (super.noSuchMethod(
-            Invocation.method(#getMyFollowers, []),
-            returnValue: _i12.Future<List<String>>.value(<String>[]),
-          )
-          as _i12.Future<List<String>>);
-
-  @override
-  _i12.Future<List<String>> getFollowers(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#getFollowers, [pubkey]),
-            returnValue: _i12.Future<List<String>>.value(<String>[]),
-          )
-          as _i12.Future<List<String>>);
-
-  @override
-  _i12.Future<void> toggleFollow(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#toggleFollow, [pubkey]),
-            returnValue: _i12.Future<void>.value(),
-            returnValueForMissingStub: _i12.Future<void>.value(),
-          )
-          as _i12.Future<void>);
-
-  @override
-  _i12.Future<void> initialize() =>
-      (super.noSuchMethod(
-            Invocation.method(#initialize, []),
-            returnValue: _i12.Future<void>.value(),
-            returnValueForMissingStub: _i12.Future<void>.value(),
-          )
-          as _i12.Future<void>);
-
-  @override
-  _i12.Future<void> follow(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#follow, [pubkey]),
-            returnValue: _i12.Future<void>.value(),
-            returnValueForMissingStub: _i12.Future<void>.value(),
-          )
-          as _i12.Future<void>);
-
-  @override
-  _i12.Future<void> unfollow(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#unfollow, [pubkey]),
-            returnValue: _i12.Future<void>.value(),
-            returnValueForMissingStub: _i12.Future<void>.value(),
-          )
-          as _i12.Future<void>);
 }

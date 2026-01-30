@@ -13,6 +13,13 @@ class VideoStopNavigatorObserver extends NavigatorObserver {
     Route<dynamic>? previousRoute,
   ) {
     super.didStartUserGesture(route, previousRoute);
+
+    // Skip disposal for popup routes (modals, bottom sheets, dialogs)
+    // The overlayVisibilityProvider already handles pausing via activeVideoIdProvider
+    if (route is PopupRoute) {
+      return;
+    }
+
     // Stop videos as soon as user starts navigation gesture
     // This fires BEFORE the new route is pushed
     _stopAllVideos('didStartUserGesture', route.settings.name);
@@ -24,6 +31,18 @@ class VideoStopNavigatorObserver extends NavigatorObserver {
     print(
       '🟪 NAV OBSERVER: didPush - route=${route.settings.name}, previousRoute=${previousRoute?.settings.name}',
     );
+
+    // Skip disposal for popup routes (modals, bottom sheets, dialogs)
+    // The overlayVisibilityProvider already handles pausing via activeVideoIdProvider
+    if (route is PopupRoute) {
+      Log.debug(
+        '📱 Skipping video disposal for popup route: ${route.settings.name}',
+        name: 'VideoStopNavigatorObserver',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
     // Also stop on push for programmatic navigation (non-gesture)
     _stopAllVideos('didPush', route.settings.name);
   }
