@@ -8,8 +8,6 @@ import 'package:flutter/widgets.dart';
 /// Each key maintains a separate navigation stack, allowing tabs to preserve
 /// their state when switching between them.
 class NavigatorKeys {
-  NavigatorKeys._();
-
   /// Root navigator key for the entire app.
   static final root = GlobalKey<NavigatorState>(debugLabel: 'root');
 

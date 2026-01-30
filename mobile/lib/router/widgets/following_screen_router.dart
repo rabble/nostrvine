@@ -11,10 +11,22 @@ import 'package:openvine/screens/following/others_following_screen.dart';
 /// based on whether the pubkey matches the current user.
 class FollowingScreenRouter extends ConsumerWidget {
   const FollowingScreenRouter({
-    super.key,
     required this.pubkey,
     this.displayName,
+    super.key,
   });
+
+  /// Route name for following screen.
+  static const routeName = 'following';
+
+  /// Base path for following routes.
+  static const basePath = '/following';
+
+  /// Path pattern for following route.
+  static const path = '/following/:pubkey';
+
+  /// Build path for a specific user's following list.
+  static String pathForPubkey(String pubkey) => '$basePath/$pubkey';
 
   final String pubkey;
   final String? displayName;

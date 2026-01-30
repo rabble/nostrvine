@@ -7,15 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/router/app_shell.dart';
-import 'package:openvine/router/providers/auth_state_listenable.dart';
-import 'package:openvine/router/providers/redirect_provider.dart';
-import 'package:openvine/router/navigator_keys.dart';
-import 'package:openvine/router/routes/route_constants.dart';
-import 'package:openvine/router/routes/route_extras.dart';
-import 'package:openvine/router/widgets/followers_screen_router.dart';
-import 'package:openvine/router/widgets/following_screen_router.dart';
-import 'package:openvine/router/widgets/sound_detail_loader.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/divine_auth_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
@@ -55,16 +47,6 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
-
-// Re-export for backward compatibility
-export 'package:openvine/router/providers/auth_state_listenable.dart';
-export 'package:openvine/router/providers/redirect_provider.dart';
-export 'package:openvine/router/navigator_keys.dart';
-export 'package:openvine/router/routes/route_constants.dart';
-export 'package:openvine/router/routes/route_extras.dart';
-export 'package:openvine/router/widgets/followers_screen_router.dart';
-export 'package:openvine/router/widgets/following_screen_router.dart';
-export 'package:openvine/router/widgets/sound_detail_loader.dart';
 
 // Track if we've done initial navigation to avoid redirect loops
 bool _hasNavigated = false;
@@ -674,8 +656,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Followers screen - routes to My or Others based on pubkey
       GoRoute(
-        path: FollowersRoutes.path,
-        name: FollowersRoutes.routeName,
+        path: FollowersScreenRouter.path,
+        name: FollowersScreenRouter.routeName,
         builder: (ctx, st) {
           final pubkey = st.pathParameters['pubkey'];
           final displayName = st.extra as String?;
@@ -693,8 +675,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Following screen - routes to My or Others based on pubkey
       GoRoute(
-        path: FollowingRoutes.path,
-        name: FollowingRoutes.routeName,
+        path: FollowingScreenRouter.path,
+        name: FollowingScreenRouter.routeName,
         builder: (ctx, st) {
           final pubkey = st.pathParameters['pubkey'];
           final displayName = st.extra as String?;
