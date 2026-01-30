@@ -37,6 +37,12 @@ class MockFollowRepository extends Mock implements FollowRepository {
 
   @override
   int get followingCount => 0;
+
+  @override
+  Future<List<String>> getMyFollowers() async => [];
+
+  @override
+  Future<List<String>> getFollowers(String pubkey) async => [];
 }
 
 class MockNostrClient extends Mock implements NostrClient {
