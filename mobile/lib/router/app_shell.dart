@@ -19,13 +19,13 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
-import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/router/providers/page_context_provider.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'last_tab_position_provider.dart';
-import 'tab_history_provider.dart';
+import 'providers/last_tab_position_provider.dart';
+import 'providers/tab_history_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 
 class AppShell extends ConsumerWidget {

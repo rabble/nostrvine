@@ -1,9 +1,11 @@
 // ABOUTME: Tests for redirecting users with no contacts to explore feed
 // ABOUTME: Verifies the cache checking logic for following list detection
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:openvine/router/app_router.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -16,7 +18,7 @@ void main() {
       resetNavigationState();
     });
 
-    group('hasAnyFollowingInCache', () {
+    group('hasFollowingInCacheSync', () {
       test('returns false when no current_user_pubkey_hex stored', () async {
         SharedPreferences.setMockInitialValues({
           'age_verified_16_plus': true,
@@ -25,9 +27,14 @@ void main() {
         });
 
         final prefs = await SharedPreferences.getInstance();
-        final hasFollowing = await hasAnyFollowingInCache(prefs);
+        final container = ProviderContainer(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        );
+        addTearDown(container.dispose);
 
-        expect(hasFollowing, false);
+        final hasFollowing = container.read(hasFollowingInCacheSyncProvider);
+
+        expect(hasFollowing, isFalse);
       });
 
       test(
@@ -40,7 +47,12 @@ void main() {
           });
 
           final prefs = await SharedPreferences.getInstance();
-          final hasFollowing = await hasAnyFollowingInCache(prefs);
+          final container = ProviderContainer(
+            overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          );
+          addTearDown(container.dispose);
+
+          final hasFollowing = container.read(hasFollowingInCacheSyncProvider);
 
           expect(hasFollowing, false);
         },
@@ -56,9 +68,14 @@ void main() {
           });
 
           final prefs = await SharedPreferences.getInstance();
-          final hasFollowing = await hasAnyFollowingInCache(prefs);
+          final container = ProviderContainer(
+            overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          );
+          addTearDown(container.dispose);
 
-          expect(hasFollowing, false);
+          final hasFollowing = container.read(hasFollowingInCacheSyncProvider);
+
+          expect(hasFollowing, isFalse);
         },
       );
 
@@ -72,9 +89,14 @@ void main() {
           });
 
           final prefs = await SharedPreferences.getInstance();
-          final hasFollowing = await hasAnyFollowingInCache(prefs);
+          final container = ProviderContainer(
+            overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          );
+          addTearDown(container.dispose);
 
-          expect(hasFollowing, true);
+          final hasFollowing = container.read(hasFollowingInCacheSyncProvider);
+
+          expect(hasFollowing, isTrue);
         },
       );
 
@@ -91,10 +113,15 @@ void main() {
           });
 
           final prefs = await SharedPreferences.getInstance();
-          final hasFollowing = await hasAnyFollowingInCache(prefs);
+          final container = ProviderContainer(
+            overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+          );
+          addTearDown(container.dispose);
+
+          final hasFollowing = container.read(hasFollowingInCacheSyncProvider);
 
           // Should return false because CURRENT user has empty list
-          expect(hasFollowing, false);
+          expect(hasFollowing, isFalse);
         },
       );
 
@@ -106,10 +133,15 @@ void main() {
         });
 
         final prefs = await SharedPreferences.getInstance();
-        final hasFollowing = await hasAnyFollowingInCache(prefs);
+        final container = ProviderContainer(
+          overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+        );
+        addTearDown(container.dispose);
+
+        final hasFollowing = container.read(hasFollowingInCacheSyncProvider);
 
         // Should not crash, and should return false since JSON is invalid
-        expect(hasFollowing, false);
+        expect(hasFollowing, isFalse);
       });
     });
 

@@ -34,7 +34,7 @@ import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:riverpod/riverpod.dart';
-import 'package:openvine/router/router_location_provider.dart';
+import 'package:openvine/router/providers/router_location_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 
