@@ -291,13 +291,12 @@ void main() {
         overrides: [
           ...getStandardTestOverrides(
             mockNostrService: mockNostrClient,
-            mockUserProfileService: createMockUserProfileService(),
+            mockUserProfileService: mockUserProfileService,
           ),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
           likesRepositoryProvider.overrideWithValue(mockLikesRepository),
           repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
           videosRepositoryProvider.overrideWithValue(mockVideosRepository),
-          userProfileServiceProvider.overrideWithValue(mockUserProfileService),
         ],
         child: MaterialApp(
           theme: VineTheme.theme,
