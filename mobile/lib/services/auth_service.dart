@@ -530,6 +530,9 @@ class AuthService implements BackgroundAwareService {
       );
 
       _authSource = AuthenticationSource.bunker;
+
+      await _performDiscovery();
+
       _setAuthState(AuthState.authenticated);
       _profileController.add(_currentProfile);
 
@@ -1375,6 +1378,9 @@ class AuthService implements BackgroundAwareService {
       );
 
       await prefs.setString(_kAuthSourceKey, source.code);
+
+      await _performDiscovery();
+
       _setAuthState(AuthState.authenticated);
     } catch (e) {
       Log.warning(
@@ -1387,9 +1393,6 @@ class AuthService implements BackgroundAwareService {
     }
 
     _profileController.add(_currentProfile);
-
-    // Perform all discovery with a single temporary client
-    await _performDiscovery();
 
     Log.info(
       'Secure user session established',
