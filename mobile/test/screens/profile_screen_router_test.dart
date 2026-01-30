@@ -245,10 +245,12 @@ void main() {
       scrollController = ScrollController();
 
       mockFollowRepository = _MockFollowRepository();
-      when(() => mockFollowRepository.getMyFollowers())
-          .thenAnswer((_) async => <String>[]);
-      when(() => mockFollowRepository.getFollowers(any()))
-          .thenAnswer((_) async => <String>[]);
+      when(
+        () => mockFollowRepository.getMyFollowers(),
+      ).thenAnswer((_) async => <String>[]);
+      when(
+        () => mockFollowRepository.getFollowers(any()),
+      ).thenAnswer((_) async => <String>[]);
       mockLikesRepository = _MockLikesRepository();
       mockRepostsRepository = _MockRepostsRepository();
       mockVideosRepository = _MockVideosRepository();
