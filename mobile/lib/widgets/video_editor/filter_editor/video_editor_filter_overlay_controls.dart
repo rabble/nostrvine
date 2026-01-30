@@ -1,0 +1,203 @@
+// ABOUTME: Overlay controls for the video editor filter selection.
+// ABOUTME: Contains top action buttons and vertical opacity slider.
+
+import 'dart:math';
+
+import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/video_editor_vertical_slider.dart';
+
+/// Overlay controls for the filter editor.
+///
+/// Shows a vertical opacity slider on the right side of the video preview
+/// when a filter is selected (not "None"). The slider allows adjusting the
+/// filter intensity from 0% to 100%.
+class VideoEditorFilterOverlayControls extends StatelessWidget {
+  const VideoEditorFilterOverlayControls({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: .expand,
+      children: [
+        Align(
+          alignment: .centerRight,
+          child:
+              BlocSelector<VideoEditorFilterBloc, VideoEditorFilterState, bool>(
+                selector: (state) => state.hasFilter,
+                builder: (context, hasFilter) {
+                  return AnimatedSwitcher(
+                    transitionBuilder: (child, animation) {
+                      return FadeTransition(
+                        opacity: animation,
+                        child: SlideTransition(
+                          position: Tween(
+                            begin: const Offset(1, 0),
+                            end: Offset.zero,
+                          ).animate(animation),
+                          child: child,
+                        ),
+                      );
+                    },
+                    switchInCurve: Curves.easeInOut,
+                    duration: const Duration(milliseconds: 220),
+                    child: hasFilter
+                        ? const _OpacitySlider()
+                        : const SizedBox.shrink(),
+                  );
+                },
+              ),
+        ),
+        const _TopBarContent(),
+      ],
+    );
+  }
+}
+
+/// Vertical slider for adjusting filter opacity.
+class _OpacitySlider extends StatelessWidget {
+  const _OpacitySlider();
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const .only(right: 16),
+      child: LayoutBuilder(
+        builder: (_, constraints) {
+          return BlocSelector<
+            VideoEditorFilterBloc,
+            VideoEditorFilterState,
+            double
+          >(
+            selector: (state) => state.opacity,
+            builder: (context, opacity) {
+              return VideoEditorVerticalSlider(
+                height: min(300, constraints.maxHeight * 0.8),
+                value: opacity,
+                onChanged: (value) {
+                  context.read<VideoEditorFilterBloc>().add(
+                    VideoEditorFilterOpacityChanged(value),
+                  );
+                  final scope = VideoEditorScope.of(context);
+
+                  scope.filterEditor?.setFilterOpacity(value);
+                },
+              );
+            },
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _TopBarContent extends StatelessWidget {
+  const _TopBarContent();
+
+  @override
+  Widget build(BuildContext context) {
+    final bloc = context.read<VideoEditorFilterBloc>();
+    final scope = VideoEditorScope.of(context);
+
+    return Align(
+      alignment: .topCenter,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Close button
+            _CloseButton(
+              onTap: () {
+                bloc.add(const VideoEditorFilterCancelled());
+                scope.editor?.closeSubEditor();
+              },
+            ),
+            // Done button
+            _DoneButton(
+              onTap: () {
+                scope.filterEditor?.done();
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Close button with scrim background.
+class _CloseButton extends StatelessWidget {
+  const _CloseButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Close',
+      button: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const .all(8),
+          decoration: BoxDecoration(
+            color: const Color(0x26000000), // scrim-15
+            borderRadius: .circular(16),
+          ),
+          child: SvgPicture.asset(
+            'assets/icon/close.svg',
+            width: 24,
+            height: 24,
+            colorFilter: const .mode(Colors.white, .srcIn),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Done button with white background.
+class _DoneButton extends StatelessWidget {
+  const _DoneButton({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: 'Done',
+      button: true,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const .symmetric(horizontal: 16, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: .circular(16),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1A000000),
+                offset: Offset(1, 1),
+                blurRadius: 1,
+              ),
+              BoxShadow(
+                color: Color(0x1A000000),
+                offset: Offset(0.4, 0.4),
+                blurRadius: 0.6,
+              ),
+            ],
+          ),
+          child: Text(
+            'Done',
+            style: VineTheme.titleMediumFont(color: const Color(0xFF00452D)),
+          ),
+        ),
+      ),
+    );
+  }
+}
