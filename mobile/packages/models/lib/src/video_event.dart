@@ -56,6 +56,7 @@ class VideoEvent {
     this.nostrLikeCount,
     this.authorName,
     this.authorAvatar,
+    this.allVideoUrls,
   });
 
   /// Create VideoEvent from Nostr event
@@ -562,6 +563,10 @@ class VideoEvent {
       expirationTimestamp: expirationTimestamp,
       audioEventId: audioEventId,
       audioEventRelay: audioEventRelay,
+      // Store all video URL candidates for platform-aware URL selection
+      allVideoUrls: videoUrlCandidates.isNotEmpty
+          ? List.unmodifiable(videoUrlCandidates)
+          : null,
     );
   }
   final String id;
@@ -624,6 +629,10 @@ class VideoEvent {
 
   /// Author avatar URL (from Funnelcake API for classic Viners)
   final String? authorAvatar;
+
+  /// All video URL candidates discovered during event parsing.
+  /// Used by platform-aware URL selection to choose HLS on Android.
+  final List<String>? allVideoUrls;
 
   /// NIP-40: Check if this event has expired
   /// Returns true if expiration timestamp is set and current time >= expiration
@@ -967,6 +976,7 @@ class VideoEvent {
     int? nostrLikeCount,
     String? authorName,
     String? authorAvatar,
+    List<String>? allVideoUrls,
   }) => VideoEvent(
     id: id ?? this.id,
     pubkey: pubkey ?? this.pubkey,
@@ -1005,6 +1015,7 @@ class VideoEvent {
     nostrLikeCount: nostrLikeCount ?? this.nostrLikeCount,
     authorName: authorName ?? this.authorName,
     authorAvatar: authorAvatar ?? this.authorAvatar,
+    allVideoUrls: allVideoUrls ?? this.allVideoUrls,
   );
 
   @override

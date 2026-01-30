@@ -109,6 +109,65 @@ extension VideoEventAppExtensions on VideoEvent {
   }
 
   // ---------------------------------------------------------------------------
+  // Platform-Aware URL Selection
+  // ---------------------------------------------------------------------------
+
+  /// Get the optimal video URL based on platform capabilities.
+  ///
+  /// **Android**: Prefers HLS (.m3u8) for adaptive bitrate streaming.
+  /// Many Android devices (Motorola, Huawei, OnePlus) have hardware decoders
+  /// that cannot handle H.264 High Profile at high resolutions. HLS with
+  /// adaptive bitrate allows the device to receive a resolution it CAN decode.
+  ///
+  /// **iOS/macOS**: Prefers MP4 (original behavior). AVPlayer handles
+  /// high-resolution content well with hardware acceleration.
+  ///
+  /// Returns the optimal URL from available candidates, or falls back to
+  /// the default [videoUrl] if no better option is available.
+  String? getOptimalVideoUrlForPlatform() {
+    // On non-Android platforms, use default URL selection (MP4 preferred)
+    if (!Platform.isAndroid) {
+      return videoUrl;
+    }
+
+    // On Android, prefer HLS for adaptive streaming
+    final urls = allVideoUrls;
+
+    if (urls == null || urls.isEmpty) {
+      developer.log(
+        '📱 Android: No URL candidates available, using default: $videoUrl',
+        name: 'VideoEventExtensions',
+      );
+      return videoUrl;
+    }
+
+    // Find HLS URL (.m3u8)
+    String? hlsUrl;
+    for (final url in urls) {
+      final urlLower = url.toLowerCase();
+      if (urlLower.contains('.m3u8')) {
+        hlsUrl = url;
+        break;
+      }
+    }
+
+    if (hlsUrl != null) {
+      developer.log(
+        '📱 Android: Using HLS URL for adaptive streaming: $hlsUrl',
+        name: 'VideoEventExtensions',
+      );
+      return hlsUrl;
+    }
+
+    // No HLS available, fall back to default URL
+    developer.log(
+      '📱 Android: No HLS URL available, using default: $videoUrl',
+      name: 'VideoEventExtensions',
+    );
+    return videoUrl;
+  }
+
+  // ---------------------------------------------------------------------------
   // URL Resolution (m3u8 to MP4)
   // ---------------------------------------------------------------------------
 

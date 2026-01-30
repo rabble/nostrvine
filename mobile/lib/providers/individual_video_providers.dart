@@ -2,6 +2,8 @@
 // ABOUTME: Each video gets its own controller with automatic lifecycle management via autoDispose
 
 import 'dart:async';
+import 'dart:io' show Platform;
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:video_player/video_player.dart';
@@ -616,6 +618,14 @@ VideoPlayerController individualVideoController(
               '\n⚠️  No Nostr event details available (consider passing videoEvent to VideoControllerParams)';
         }
 
+        // Add Android device info for codec-related errors
+        // This helps diagnose hardware decoder issues on specific devices
+        if (!kIsWeb && Platform.isAndroid && _isCodecError(errorMessage)) {
+          logMessage += '\n📱 Android Device Info (codec error detected):';
+          // Device info is async, so we log it separately
+          _logAndroidDeviceInfo(params.videoId, errorMessage);
+        }
+
         Log.error(
           logMessage,
           name: 'IndividualVideoController',
@@ -1061,6 +1071,60 @@ bool _isVideoError(String errorMessage) {
       lowerError.contains('connection refused') ||
       lowerError.contains('network error') ||
       lowerError.contains('video initialization timed out');
+}
+
+/// Check if error indicates Android codec/decoder failure
+///
+/// These errors typically occur when hardware decoders cannot handle
+/// certain video formats (e.g., H.264 High Profile at high resolutions
+/// on Motorola, Huawei, OnePlus devices).
+bool _isCodecError(String errorMessage) {
+  final lowerError = errorMessage.toLowerCase();
+  return lowerError.contains('mediacodec') ||
+      lowerError.contains('decoder init failed') ||
+      lowerError.contains('no_exceeds_capabilities') ||
+      lowerError.contains('omx.') ||
+      lowerError.contains('format_supported=no') ||
+      lowerError.contains('codec') ||
+      lowerError.contains('unsupported video format') ||
+      lowerError.contains('decoder') ||
+      lowerError.contains('video format');
+}
+
+/// Log Android device info for codec-related errors
+///
+/// This helps diagnose which devices have hardware decoder limitations.
+Future<void> _logAndroidDeviceInfo(String videoId, String errorMessage) async {
+  try {
+    final deviceInfo = DeviceInfoPlugin();
+    final androidInfo = await deviceInfo.androidInfo;
+
+    final deviceInfoLog =
+        '''
+📱 Android Device Info for video $videoId:
+   • Model: ${androidInfo.model}
+   • Manufacturer: ${androidInfo.manufacturer}
+   • Android Version: ${androidInfo.version.release}
+   • SDK Level: ${androidInfo.version.sdkInt}
+   • Brand: ${androidInfo.brand}
+   • Device: ${androidInfo.device}
+   • Hardware: ${androidInfo.hardware}
+   • 64-bit ABIs: ${androidInfo.supported64BitAbis}
+   • 32-bit ABIs: ${androidInfo.supported32BitAbis}
+   • Error: $errorMessage''';
+
+    Log.warning(
+      deviceInfoLog,
+      name: 'AndroidCodecDiagnostics',
+      category: LogCategory.video,
+    );
+  } catch (e) {
+    Log.warning(
+      '📱 Failed to get Android device info: $e',
+      name: 'AndroidCodecDiagnostics',
+      category: LogCategory.video,
+    );
+  }
 }
 
 /// Provider for video loading state
