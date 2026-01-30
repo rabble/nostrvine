@@ -877,25 +877,27 @@ void main() {
     });
 
     group('addRelays', () {
-      test('adds multiple relays and returns count of successful additions',
-          () async {
-        final relayUrls = [
-          'wss://relay1.example.com',
-          'wss://relay2.example.com',
-          'wss://relay3.example.com',
-        ];
+      test(
+        'adds multiple relays and returns count of successful additions',
+        () async {
+          final relayUrls = [
+            'wss://relay1.example.com',
+            'wss://relay2.example.com',
+            'wss://relay3.example.com',
+          ];
 
-        when(
-          () => mockRelayManager.addRelay(any()),
-        ).thenAnswer((_) async => true);
+          when(
+            () => mockRelayManager.addRelay(any()),
+          ).thenAnswer((_) async => true);
 
-        final result = await client.addRelays(relayUrls);
+          final result = await client.addRelays(relayUrls);
 
-        expect(result, equals(3));
-        verify(() => mockRelayManager.addRelay(relayUrls[0])).called(1);
-        verify(() => mockRelayManager.addRelay(relayUrls[1])).called(1);
-        verify(() => mockRelayManager.addRelay(relayUrls[2])).called(1);
-      });
+          expect(result, equals(3));
+          verify(() => mockRelayManager.addRelay(relayUrls[0])).called(1);
+          verify(() => mockRelayManager.addRelay(relayUrls[1])).called(1);
+          verify(() => mockRelayManager.addRelay(relayUrls[2])).called(1);
+        },
+      );
 
       test('returns 0 when empty list is provided', () async {
         final result = await client.addRelays([]);
@@ -904,29 +906,31 @@ void main() {
         verifyNever(() => mockRelayManager.addRelay(any()));
       });
 
-      test('handles partial failures and returns count of successful only',
-          () async {
-        final relayUrls = [
-          'wss://relay1.example.com',
-          'wss://relay2.example.com',
-          'wss://relay3.example.com',
-        ];
+      test(
+        'handles partial failures and returns count of successful only',
+        () async {
+          final relayUrls = [
+            'wss://relay1.example.com',
+            'wss://relay2.example.com',
+            'wss://relay3.example.com',
+          ];
 
-        // First and third succeed, second fails
-        when(
-          () => mockRelayManager.addRelay('wss://relay1.example.com'),
-        ).thenAnswer((_) async => true);
-        when(
-          () => mockRelayManager.addRelay('wss://relay2.example.com'),
-        ).thenAnswer((_) async => false);
-        when(
-          () => mockRelayManager.addRelay('wss://relay3.example.com'),
-        ).thenAnswer((_) async => true);
+          // First and third succeed, second fails
+          when(
+            () => mockRelayManager.addRelay('wss://relay1.example.com'),
+          ).thenAnswer((_) async => true);
+          when(
+            () => mockRelayManager.addRelay('wss://relay2.example.com'),
+          ).thenAnswer((_) async => false);
+          when(
+            () => mockRelayManager.addRelay('wss://relay3.example.com'),
+          ).thenAnswer((_) async => true);
 
-        final result = await client.addRelays(relayUrls);
+          final result = await client.addRelays(relayUrls);
 
-        expect(result, equals(2));
-      });
+          expect(result, equals(2));
+        },
+      );
 
       test('returns 0 when all relays fail to add', () async {
         final relayUrls = [
