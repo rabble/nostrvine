@@ -1,5 +1,5 @@
 // ABOUTME: Tests for VideoEditorDrawOverlayControls widget.
-// ABOUTME: Validates top bar buttons (Close, Undo, Redo, Done) and their interactions.
+// ABOUTME: Validates top bar buttons (Close, Undo, Redo, Done) and their state.
 
 import 'dart:async';
 
@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_overlay_controls.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 
 class MockVideoEditorDrawBloc
     extends MockBloc<VideoEditorDrawEvent, VideoEditorDrawState>
@@ -17,13 +18,6 @@ class MockVideoEditorDrawBloc
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-
-  setUpAll(() {
-    registerFallbackValue(const VideoEditorDrawCloseRequested());
-    registerFallbackValue(const VideoEditorDrawUndoRequested());
-    registerFallbackValue(const VideoEditorDrawRedoRequested());
-    registerFallbackValue(const VideoEditorDrawDoneRequested());
-  });
 
   group('VideoEditorDrawOverlayControls', () {
     late MockVideoEditorDrawBloc mockBloc;
@@ -38,12 +32,16 @@ void main() {
     Widget buildWidget() {
       return MaterialApp(
         home: Scaffold(
-          body: BlocProvider<VideoEditorDrawBloc>.value(
-            value: mockBloc,
-            child: const SizedBox(
-              width: 400,
-              height: 600,
-              child: VideoEditorDrawOverlayControls(),
+          body: VideoEditorScope(
+            editorKey: GlobalKey(),
+            onAddStickers: () {},
+            child: BlocProvider<VideoEditorDrawBloc>.value(
+              value: mockBloc,
+              child: const SizedBox(
+                width: 400,
+                height: 600,
+                child: VideoEditorDrawOverlayControls(),
+              ),
             ),
           ),
         ),
@@ -62,23 +60,6 @@ void main() {
           ),
           findsOneWidget,
         );
-      });
-
-      testWidgets('dispatches CloseRequested when tapped', (tester) async {
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
-
-        await tester.tap(
-          find.byWidgetPredicate(
-            (widget) =>
-                widget is Semantics && widget.properties.label == 'Close',
-          ),
-        );
-        await tester.pump();
-
-        verify(
-          () => mockBloc.add(const VideoEditorDrawCloseRequested()),
-        ).called(1);
       });
     });
 
@@ -129,48 +110,6 @@ void main() {
         );
         expect(semantics.properties.enabled, isTrue);
       });
-
-      testWidgets('dispatches UndoRequested when tapped and enabled', (
-        tester,
-      ) async {
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const VideoEditorDrawState(canUndo: true));
-
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
-
-        await tester.tap(
-          find.byWidgetPredicate(
-            (widget) =>
-                widget is Semantics && widget.properties.label == 'Undo',
-          ),
-        );
-        await tester.pump();
-
-        verify(
-          () => mockBloc.add(const VideoEditorDrawUndoRequested()),
-        ).called(1);
-      });
-
-      testWidgets('does not dispatch when tapped and disabled', (tester) async {
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const VideoEditorDrawState(canUndo: false));
-
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
-
-        await tester.tap(
-          find.byWidgetPredicate(
-            (widget) =>
-                widget is Semantics && widget.properties.label == 'Undo',
-          ),
-        );
-        await tester.pump();
-
-        verifyNever(() => mockBloc.add(const VideoEditorDrawUndoRequested()));
-      });
     });
 
     group('Redo button', () {
@@ -220,48 +159,6 @@ void main() {
         );
         expect(semantics.properties.enabled, isTrue);
       });
-
-      testWidgets('dispatches RedoRequested when tapped and enabled', (
-        tester,
-      ) async {
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const VideoEditorDrawState(canRedo: true));
-
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
-
-        await tester.tap(
-          find.byWidgetPredicate(
-            (widget) =>
-                widget is Semantics && widget.properties.label == 'Redo',
-          ),
-        );
-        await tester.pump();
-
-        verify(
-          () => mockBloc.add(const VideoEditorDrawRedoRequested()),
-        ).called(1);
-      });
-
-      testWidgets('does not dispatch when tapped and disabled', (tester) async {
-        when(
-          () => mockBloc.state,
-        ).thenReturn(const VideoEditorDrawState(canRedo: false));
-
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
-
-        await tester.tap(
-          find.byWidgetPredicate(
-            (widget) =>
-                widget is Semantics && widget.properties.label == 'Redo',
-          ),
-        );
-        await tester.pump();
-
-        verifyNever(() => mockBloc.add(const VideoEditorDrawRedoRequested()));
-      });
     });
 
     group('Done button', () {
@@ -278,21 +175,17 @@ void main() {
         );
       });
 
-      testWidgets('dispatches DoneRequested when tapped', (tester) async {
+      testWidgets('is marked as a button', (tester) async {
         await tester.pumpWidget(buildWidget());
         await tester.pump();
 
-        await tester.tap(
+        final semantics = tester.widget<Semantics>(
           find.byWidgetPredicate(
             (widget) =>
                 widget is Semantics && widget.properties.label == 'Done',
           ),
         );
-        await tester.pump();
-
-        verify(
-          () => mockBloc.add(const VideoEditorDrawDoneRequested()),
-        ).called(1);
+        expect(semantics.properties.button, isTrue);
       });
     });
 

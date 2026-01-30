@@ -34,6 +34,9 @@ class VideoEditorScope extends InheritedWidget {
   /// Returns the [FilterEditorState] if available.
   FilterEditorState? get filterEditor => editor?.filterEditor.currentState;
 
+  /// Returns the [PaintEditorState] if available.
+  PaintEditorState? get paintEditor => editor?.paintEditor.currentState;
+
   /// Gets the nearest [VideoEditorScope] from the widget tree.
   ///
   /// Throws if no [VideoEditorScope] is found.

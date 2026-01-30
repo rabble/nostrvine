@@ -11,6 +11,7 @@ import 'package:openvine/widgets/video_editor/draw_editor/tools/video_editor_dra
 import 'package:openvine/widgets/video_editor/draw_editor/tools/video_editor_draw_tool_marker.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/tools/video_editor_draw_tool_pencil.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_item_indicator.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_color_picker_sheet.dart';
 
 /// Bottom bar for the video editor draw screen.
@@ -24,6 +25,7 @@ class VideoEditorDrawBottomBar extends StatelessWidget {
     VideoEditorDrawBloc bloc,
     VideoEditorDrawState state,
   ) async {
+    final scope = VideoEditorScope.of(context);
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
@@ -31,10 +33,27 @@ class VideoEditorDrawBottomBar extends StatelessWidget {
         selectedColor: state.selectedColor,
         onColorSelected: (color) {
           bloc.add(VideoEditorDrawColorSelected(color));
+          scope.paintEditor?.setColor(color);
           context.pop();
         },
       ),
     );
+  }
+
+  void _onToolSelected(BuildContext context, DrawToolType tool) {
+    final bloc = context.read<VideoEditorDrawBloc>();
+    final scope = VideoEditorScope.of(context);
+    final paintEditor = scope.paintEditor;
+
+    bloc.add(VideoEditorDrawToolSelected(tool));
+
+    if (paintEditor != null) {
+      final config = tool.config;
+      paintEditor
+        ..setMode(config.mode)
+        ..setOpacity(config.opacity)
+        ..setStrokeWidth(config.strokeWidth);
+    }
   }
 
   @override
@@ -55,24 +74,20 @@ class VideoEditorDrawBottomBar extends StatelessWidget {
                   DrawToolPencil(
                     isSelected: state.selectedTool == .pencil,
                     color: state.selectedColor,
-                    onTap: () =>
-                        bloc.add(const VideoEditorDrawToolSelected(.pencil)),
+                    onTap: () => _onToolSelected(context, .pencil),
                   ),
                   DrawToolMarker(
                     isSelected: state.selectedTool == .marker,
                     color: state.selectedColor,
-                    onTap: () =>
-                        bloc.add(const VideoEditorDrawToolSelected(.marker)),
+                    onTap: () => _onToolSelected(context, .marker),
                   ),
                   DrawToolArrow(
                     isSelected: state.selectedTool == .arrow,
-                    onTap: () =>
-                        bloc.add(const VideoEditorDrawToolSelected(.arrow)),
+                    onTap: () => _onToolSelected(context, .arrow),
                   ),
                   DrawToolEraser(
                     isSelected: state.selectedTool == .eraser,
-                    onTap: () =>
-                        bloc.add(const VideoEditorDrawToolSelected(.eraser)),
+                    onTap: () => _onToolSelected(context, .eraser),
                   ),
 
                   const Spacer(),

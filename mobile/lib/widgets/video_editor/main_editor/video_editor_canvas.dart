@@ -24,6 +24,22 @@ class VideoEditorCanvas extends ConsumerWidget {
   /// Creates a [VideoEditorCanvas].
   const VideoEditorCanvas({super.key});
 
+  /// Syncs the draw capabilities from the paint editor to the bloc.
+  static void _syncDrawCapabilities(
+    VideoEditorScope scope,
+    VideoEditorDrawBloc bloc,
+  ) {
+    final paintEditor = scope.paintEditor;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      bloc.add(
+        VideoEditorDrawCapabilitiesChanged(
+          canUndo: paintEditor?.canUndo ?? false,
+          canRedo: paintEditor?.canRedo ?? false,
+        ),
+      );
+    });
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final bloc = context.read<VideoEditorMainBloc>();
@@ -129,14 +145,20 @@ class VideoEditorCanvas extends ConsumerWidget {
                 ),
                 paintEditorCallbacks: PaintEditorCallbacks(
                   onInit: () {
-                    drawBloc.add(const VideoEditorDrawEditorInitialized());
+                    drawBloc.add(const VideoEditorDrawReset());
+
+                    final paintEditor = scope.paintEditor;
+                    final drawState = context.read<VideoEditorDrawBloc>().state;
+                    // Sync editor with current BLoC state
+                    paintEditor
+                      ?..setColor(drawState.selectedColor)
+                      ..setStrokeWidth(drawState.strokeWidth)
+                      ..setOpacity(drawState.opacity)
+                      ..setMode(drawState.mode);
                   },
-                  onDrawingDone: () =>
-                      drawBloc.add(const VideoEditorDrawLayerChanged()),
-                  onRedo: () =>
-                      drawBloc.add(const VideoEditorDrawRedoPerformed()),
-                  onUndo: () =>
-                      drawBloc.add(const VideoEditorDrawUndoPerformed()),
+                  onDrawingDone: () => _syncDrawCapabilities(scope, drawBloc),
+                  onRedo: () => _syncDrawCapabilities(scope, drawBloc),
+                  onUndo: () => _syncDrawCapabilities(scope, drawBloc),
                 ),
                 filterEditorCallbacks: FilterEditorCallbacks(
                   onInit: () {

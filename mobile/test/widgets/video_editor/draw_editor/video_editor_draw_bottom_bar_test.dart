@@ -15,10 +15,18 @@ import 'package:openvine/widgets/video_editor/draw_editor/tools/video_editor_dra
 import 'package:openvine/widgets/video_editor/draw_editor/tools/video_editor_draw_tool_pencil.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_bottom_bar.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_item_indicator.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 
 class MockVideoEditorDrawBloc
     extends MockBloc<VideoEditorDrawEvent, VideoEditorDrawState>
     implements VideoEditorDrawBloc {}
+
+class MockPaintEditorState extends Mock implements PaintEditorState {
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) =>
+      'MockPaintEditorState';
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -28,27 +36,43 @@ void main() {
       const VideoEditorDrawToolSelected(DrawToolType.pencil),
     );
     registerFallbackValue(const VideoEditorDrawColorSelected(Colors.red));
+    registerFallbackValue(PaintMode.freeStyle);
+    registerFallbackValue(Colors.black);
   });
 
   group('VideoEditorDrawBottomBar', () {
     late MockVideoEditorDrawBloc mockBloc;
+    late GlobalKey<ProImageEditorState> editorKey;
+    late MockPaintEditorState mockPaintEditor;
 
     setUp(() {
       mockBloc = MockVideoEditorDrawBloc();
+      editorKey = GlobalKey<ProImageEditorState>();
+      mockPaintEditor = MockPaintEditorState();
 
       when(() => mockBloc.state).thenReturn(const VideoEditorDrawState());
       when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
+
+      // Setup mock paint editor methods
+      when(() => mockPaintEditor.setMode(any())).thenReturn(null);
+      when(() => mockPaintEditor.setOpacity(any())).thenReturn(null);
+      when(() => mockPaintEditor.setStrokeWidth(any())).thenReturn(null);
+      when(() => mockPaintEditor.setColor(any())).thenReturn(null);
     });
 
-    Widget buildWidget() {
+    Widget buildWidget({MockPaintEditorState? paintEditor}) {
       return MaterialApp(
         home: Scaffold(
           body: BlocProvider<VideoEditorDrawBloc>.value(
             value: mockBloc,
-            child: const SizedBox(
-              width: 400,
-              height: 600,
-              child: VideoEditorDrawBottomBar(),
+            child: VideoEditorScope(
+              editorKey: editorKey,
+              onAddStickers: () {},
+              child: const SizedBox(
+                width: 400,
+                height: 600,
+                child: VideoEditorDrawBottomBar(),
+              ),
             ),
           ),
         ),
@@ -81,69 +105,26 @@ void main() {
         expect(marker.isSelected, isFalse);
       });
 
-      testWidgets('tapping pencil dispatches ToolSelected event', (
-        tester,
-      ) async {
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
+      for (final (tool, widgetType) in [
+        (DrawToolType.pencil, DrawToolPencil),
+        (DrawToolType.marker, DrawToolMarker),
+        (DrawToolType.arrow, DrawToolArrow),
+        (DrawToolType.eraser, DrawToolEraser),
+      ]) {
+        testWidgets('tapping ${tool.name} dispatches ToolSelected event', (
+          tester,
+        ) async {
+          await tester.pumpWidget(buildWidget(paintEditor: mockPaintEditor));
+          await tester.pump();
 
-        await tester.tap(find.byType(DrawToolPencil));
-        await tester.pump();
+          await tester.tap(find.byType(widgetType));
+          await tester.pump();
 
-        verify(
-          () => mockBloc.add(
-            const VideoEditorDrawToolSelected(DrawToolType.pencil),
-          ),
-        ).called(1);
-      });
-
-      testWidgets('tapping marker dispatches ToolSelected event', (
-        tester,
-      ) async {
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
-
-        await tester.tap(find.byType(DrawToolMarker));
-        await tester.pump();
-
-        verify(
-          () => mockBloc.add(
-            const VideoEditorDrawToolSelected(DrawToolType.marker),
-          ),
-        ).called(1);
-      });
-
-      testWidgets('tapping arrow dispatches ToolSelected event', (
-        tester,
-      ) async {
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
-
-        await tester.tap(find.byType(DrawToolArrow));
-        await tester.pump();
-
-        verify(
-          () => mockBloc.add(
-            const VideoEditorDrawToolSelected(DrawToolType.arrow),
-          ),
-        ).called(1);
-      });
-
-      testWidgets('tapping eraser dispatches ToolSelected event', (
-        tester,
-      ) async {
-        await tester.pumpWidget(buildWidget());
-        await tester.pump();
-
-        await tester.tap(find.byType(DrawToolEraser));
-        await tester.pump();
-
-        verify(
-          () => mockBloc.add(
-            const VideoEditorDrawToolSelected(DrawToolType.eraser),
-          ),
-        ).called(1);
-      });
+          verify(
+            () => mockBloc.add(VideoEditorDrawToolSelected(tool)),
+          ).called(1);
+        });
+      }
 
       testWidgets('shows correct tool as selected based on state', (
         tester,
@@ -200,7 +181,7 @@ void main() {
       });
 
       testWidgets('tapping color picker opens bottom sheet', (tester) async {
-        await tester.pumpWidget(buildWidget());
+        await tester.pumpWidget(buildWidget(paintEditor: mockPaintEditor));
         await tester.pump();
 
         await tester.tap(

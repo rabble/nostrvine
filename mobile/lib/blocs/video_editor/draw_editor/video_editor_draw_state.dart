@@ -12,8 +12,19 @@ enum DrawToolType {
   arrow,
 
   /// Eraser tool.
-  eraser,
+  eraser;
+
+  /// Returns the paint configuration (mode, opacity, stroke width) for this tool.
+  DrawToolConfig get config => switch (this) {
+    .pencil => (mode: .freeStyle, opacity: 1.0, strokeWidth: 6.0),
+    .marker => (mode: .freeStyle, opacity: 0.7, strokeWidth: 12.0),
+    .arrow => (mode: .freeStyleArrowEnd, opacity: 1.0, strokeWidth: 8.0),
+    .eraser => (mode: .eraser, opacity: 1.0, strokeWidth: 12.0),
+  };
 }
+
+/// Paint configuration for a drawing tool.
+typedef DrawToolConfig = ({PaintMode mode, double opacity, double strokeWidth});
 
 /// State for the video editor draw/paint screen.
 class VideoEditorDrawState extends Equatable {

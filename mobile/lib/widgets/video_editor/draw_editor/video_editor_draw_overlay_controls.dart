@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 
 /// Top overlay controls for the draw editor screen.
 ///
@@ -15,6 +16,8 @@ class VideoEditorDrawOverlayControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scope = VideoEditorScope.of(context);
+
     return Align(
       alignment: Alignment.topCenter,
       child: Padding(
@@ -28,38 +31,32 @@ class VideoEditorDrawOverlayControls extends StatelessWidget {
               selector: (state) =>
                   (canUndo: state.canUndo, canRedo: state.canRedo),
               builder: (context, state) {
-                final bloc = context.read<VideoEditorDrawBloc>();
-
                 return Row(
                   spacing: 8,
                   children: [
                     _IconButton(
                       semanticsLabel: 'Close',
                       iconPath: 'assets/icon/CaretLeft.svg',
-                      onTap: () =>
-                          bloc.add(const VideoEditorDrawCloseRequested()),
+                      onTap: () => scope.editor?.closeSubEditor(),
                     ),
                     const Spacer(),
                     _IconButton(
                       semanticsLabel: 'Undo',
                       iconPath: 'assets/icon/arrow_arc_left.svg',
                       onTap: state.canUndo
-                          ? () => bloc.add(const VideoEditorDrawUndoRequested())
+                          ? () => scope.paintEditor?.undoAction()
                           : null,
                     ),
                     _IconButton(
                       semanticsLabel: 'Redo',
                       iconPath: 'assets/icon/arrow_arc_right.svg',
                       onTap: state.canRedo
-                          ? () => bloc.add(const VideoEditorDrawRedoRequested())
+                          ? () => scope.paintEditor?.redoAction()
                           : null,
                     ),
                     const Spacer(),
                     // TODO(@hm21): replace with done button.
-                    _DoneButton(
-                      onTap: () =>
-                          bloc.add(const VideoEditorDrawDoneRequested()),
-                    ),
+                    _DoneButton(onTap: () => scope.paintEditor?.done()),
                   ],
                 );
               },

@@ -1,4 +1,4 @@
-// ABOUTME: Tests for VideoEditorDrawBloc - tool selection, color selection, undo/redo.
+// ABOUTME: Tests for VideoEditorDrawBloc - tool selection, color selection, capabilities.
 // ABOUTME: Covers initial state, draw events, and state transitions.
 
 import 'package:bloc_test/bloc_test.dart';
@@ -12,14 +12,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('VideoEditorDrawBloc', () {
-    late GlobalKey<ProImageEditorState> editorKey;
-
-    setUp(() {
-      editorKey = GlobalKey<ProImageEditorState>();
-    });
-
     VideoEditorDrawBloc buildBloc() {
-      return VideoEditorDrawBloc(editorKey: editorKey);
+      return VideoEditorDrawBloc();
     }
 
     test('initial state has correct default values', () {
@@ -34,48 +28,37 @@ void main() {
       bloc.close();
     });
 
-    group('VideoEditorDrawEditorInitialized', () {
+    group('VideoEditorDrawCapabilitiesChanged', () {
       blocTest<VideoEditorDrawBloc, VideoEditorDrawState>(
-        'does not emit when editor is null',
+        'emits state with updated canUndo and canRedo',
         build: buildBloc,
-        act: (bloc) => bloc.add(const VideoEditorDrawEditorInitialized()),
-        expect: () => <VideoEditorDrawState>[],
+        act: (bloc) => bloc.add(
+          const VideoEditorDrawCapabilitiesChanged(
+            canUndo: true,
+            canRedo: false,
+          ),
+        ),
+        expect: () => [
+          isA<VideoEditorDrawState>()
+              .having((s) => s.canUndo, 'canUndo', isTrue)
+              .having((s) => s.canRedo, 'canRedo', isFalse),
+        ],
       );
-    });
 
-    group('VideoEditorDrawCloseRequested', () {
       blocTest<VideoEditorDrawBloc, VideoEditorDrawState>(
-        'does not emit state change when close is requested',
+        'updates both canUndo and canRedo to true',
         build: buildBloc,
-        act: (bloc) => bloc.add(const VideoEditorDrawCloseRequested()),
-        expect: () => <VideoEditorDrawState>[],
-      );
-    });
-
-    group('VideoEditorDrawUndoRequested', () {
-      blocTest<VideoEditorDrawBloc, VideoEditorDrawState>(
-        'does not emit state change when undo is requested without editor',
-        build: buildBloc,
-        act: (bloc) => bloc.add(const VideoEditorDrawUndoRequested()),
-        expect: () => <VideoEditorDrawState>[],
-      );
-    });
-
-    group('VideoEditorDrawRedoRequested', () {
-      blocTest<VideoEditorDrawBloc, VideoEditorDrawState>(
-        'does not emit state change when redo is requested without editor',
-        build: buildBloc,
-        act: (bloc) => bloc.add(const VideoEditorDrawRedoRequested()),
-        expect: () => <VideoEditorDrawState>[],
-      );
-    });
-
-    group('VideoEditorDrawDoneRequested', () {
-      blocTest<VideoEditorDrawBloc, VideoEditorDrawState>(
-        'does not emit state change when done is requested',
-        build: buildBloc,
-        act: (bloc) => bloc.add(const VideoEditorDrawDoneRequested()),
-        expect: () => <VideoEditorDrawState>[],
+        act: (bloc) => bloc.add(
+          const VideoEditorDrawCapabilitiesChanged(
+            canUndo: true,
+            canRedo: true,
+          ),
+        ),
+        expect: () => [
+          isA<VideoEditorDrawState>()
+              .having((s) => s.canUndo, 'canUndo', isTrue)
+              .having((s) => s.canRedo, 'canRedo', isTrue),
+        ],
       );
     });
 
@@ -142,24 +125,6 @@ void main() {
             Colors.blue,
           ),
         ],
-      );
-    });
-
-    group('VideoEditorDrawToolSelected', () {
-      blocTest<VideoEditorDrawBloc, VideoEditorDrawState>(
-        'does not emit when editor is null',
-        build: buildBloc,
-        act: (bloc) =>
-            bloc.add(const VideoEditorDrawToolSelected(DrawToolType.marker)),
-        expect: () => <VideoEditorDrawState>[],
-      );
-
-      blocTest<VideoEditorDrawBloc, VideoEditorDrawState>(
-        'does not emit when paint editor is null',
-        build: buildBloc,
-        act: (bloc) =>
-            bloc.add(const VideoEditorDrawToolSelected(DrawToolType.pencil)),
-        expect: () => <VideoEditorDrawState>[],
       );
     });
   });
@@ -322,58 +287,39 @@ void main() {
   });
 
   group('VideoEditorDrawEvent', () {
-    test('VideoEditorDrawEditorInitialized supports value equality', () {
-      const event1 = VideoEditorDrawEditorInitialized();
-      const event2 = VideoEditorDrawEditorInitialized();
-      expect(event1, equals(event2));
-    });
-
-    test('VideoEditorDrawLayerChanged supports value equality', () {
-      const event1 = VideoEditorDrawLayerChanged();
-      const event2 = VideoEditorDrawLayerChanged();
-      expect(event1, equals(event2));
-    });
-
     test('VideoEditorDrawCapabilitiesChanged supports value equality', () {
-      const event1 = VideoEditorDrawCapabilitiesChanged();
-      const event2 = VideoEditorDrawCapabilitiesChanged();
+      const event1 = VideoEditorDrawCapabilitiesChanged(
+        canUndo: true,
+        canRedo: false,
+      );
+      const event2 = VideoEditorDrawCapabilitiesChanged(
+        canUndo: true,
+        canRedo: false,
+      );
       expect(event1, equals(event2));
     });
 
-    test('VideoEditorDrawCloseRequested supports value equality', () {
-      const event1 = VideoEditorDrawCloseRequested();
-      const event2 = VideoEditorDrawCloseRequested();
-      expect(event1, equals(event2));
-    });
+    test(
+      'VideoEditorDrawCapabilitiesChanged is not equal with different values',
+      () {
+        const event1 = VideoEditorDrawCapabilitiesChanged(
+          canUndo: true,
+          canRedo: false,
+        );
+        const event2 = VideoEditorDrawCapabilitiesChanged(
+          canUndo: false,
+          canRedo: true,
+        );
+        expect(event1, isNot(equals(event2)));
+      },
+    );
 
-    test('VideoEditorDrawUndoRequested supports value equality', () {
-      const event1 = VideoEditorDrawUndoRequested();
-      const event2 = VideoEditorDrawUndoRequested();
-      expect(event1, equals(event2));
-    });
-
-    test('VideoEditorDrawRedoRequested supports value equality', () {
-      const event1 = VideoEditorDrawRedoRequested();
-      const event2 = VideoEditorDrawRedoRequested();
-      expect(event1, equals(event2));
-    });
-
-    test('VideoEditorDrawDoneRequested supports value equality', () {
-      const event1 = VideoEditorDrawDoneRequested();
-      const event2 = VideoEditorDrawDoneRequested();
-      expect(event1, equals(event2));
-    });
-
-    test('VideoEditorDrawUndoPerformed supports value equality', () {
-      const event1 = VideoEditorDrawUndoPerformed();
-      const event2 = VideoEditorDrawUndoPerformed();
-      expect(event1, equals(event2));
-    });
-
-    test('VideoEditorDrawRedoPerformed supports value equality', () {
-      const event1 = VideoEditorDrawRedoPerformed();
-      const event2 = VideoEditorDrawRedoPerformed();
-      expect(event1, equals(event2));
+    test('VideoEditorDrawCapabilitiesChanged props contains values', () {
+      const event = VideoEditorDrawCapabilitiesChanged(
+        canUndo: true,
+        canRedo: false,
+      );
+      expect(event.props, [true, false]);
     });
 
     test(

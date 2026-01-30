@@ -8,49 +8,21 @@ sealed class VideoEditorDrawEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Triggered when the filter editor is initialized.
-class VideoEditorDrawEditorInitialized extends VideoEditorDrawEvent {
-  const VideoEditorDrawEditorInitialized();
-}
-
-/// Triggered when a layer is added, removed, or modified.
-class VideoEditorDrawLayerChanged extends VideoEditorDrawEvent {
-  const VideoEditorDrawLayerChanged();
-}
-
-/// Triggered when draw capabilities may have changed (e.g., after drawing).
+/// Triggered when draw capabilities change (e.g., after drawing, undo, redo).
+///
+/// The UI is responsible for calling the actual undo/redo/done actions
+/// via [VideoEditorScope].
 class VideoEditorDrawCapabilitiesChanged extends VideoEditorDrawEvent {
-  const VideoEditorDrawCapabilitiesChanged();
-}
+  const VideoEditorDrawCapabilitiesChanged({
+    required this.canUndo,
+    required this.canRedo,
+  });
 
-/// Triggered when the close/back button is tapped.
-class VideoEditorDrawCloseRequested extends VideoEditorDrawEvent {
-  const VideoEditorDrawCloseRequested();
-}
+  final bool canUndo;
+  final bool canRedo;
 
-/// Triggered when undo action is requested.
-class VideoEditorDrawUndoRequested extends VideoEditorDrawEvent {
-  const VideoEditorDrawUndoRequested();
-}
-
-/// Triggered when redo action is requested.
-class VideoEditorDrawRedoRequested extends VideoEditorDrawEvent {
-  const VideoEditorDrawRedoRequested();
-}
-
-/// Triggered when done/complete action is requested.
-class VideoEditorDrawDoneRequested extends VideoEditorDrawEvent {
-  const VideoEditorDrawDoneRequested();
-}
-
-/// Triggered when undo was performed (from editor callback).
-class VideoEditorDrawUndoPerformed extends VideoEditorDrawEvent {
-  const VideoEditorDrawUndoPerformed();
-}
-
-/// Triggered when redo was performed (from editor callback).
-class VideoEditorDrawRedoPerformed extends VideoEditorDrawEvent {
-  const VideoEditorDrawRedoPerformed();
+  @override
+  List<Object?> get props => [canUndo, canRedo];
 }
 
 /// Triggered when a drawing tool is selected.
@@ -71,4 +43,9 @@ class VideoEditorDrawColorSelected extends VideoEditorDrawEvent {
 
   @override
   List<Object?> get props => [color];
+}
+
+/// Triggered when the draw editor is closed to reset undo/redo capabilities.
+class VideoEditorDrawReset extends VideoEditorDrawEvent {
+  const VideoEditorDrawReset();
 }
