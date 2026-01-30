@@ -12,7 +12,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Page widget that creates the [MyFollowingBloc] and provides it to the view.
-class VideoFollowButton extends ConsumerWidget {
+///
+/// Uses StatefulConsumerWidget to avoid unnecessary rebuilds - the follow
+/// repository and nostr client are read once during initState, not on every
+/// build. The BLoC is created once and reused.
+class VideoFollowButton extends ConsumerStatefulWidget {
   const VideoFollowButton({
     super.key,
     required this.pubkey,
@@ -28,39 +32,85 @@ class VideoFollowButton extends ConsumerWidget {
   final bool hideIfFollowing;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final followRepository = ref.watch(followRepositoryProvider);
-    final nostrClient = ref.watch(nostrServiceProvider);
+  ConsumerState<VideoFollowButton> createState() => _VideoFollowButtonState();
+}
 
-    // Don't show follow button until NostrClient has keys
+class _VideoFollowButtonState extends ConsumerState<VideoFollowButton> {
+  MyFollowingBloc? _bloc;
+  bool _isOwnVideo = false;
+  bool _isInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeButton();
+  }
+
+  void _initializeButton() {
+    // Use read() to get values once, not watch() which causes rebuilds
+    final followRepository = ref.read(followRepositoryProvider);
+    final nostrClient = ref.read(nostrServiceProvider);
+
+    // Check if this is the user's own video (read once, never changes)
+    _isOwnVideo = nostrClient.publicKey == widget.pubkey;
+
+    // Only create BLoC if we actually need to show the button
+    if (followRepository != null && !_isOwnVideo) {
+      // Check if already following and should hide
+      final isFollowing = followRepository.isFollowing(widget.pubkey);
+      if (!(widget.hideIfFollowing && isFollowing)) {
+        _bloc = MyFollowingBloc(followRepository: followRepository)
+          ..add(const MyFollowingListLoadRequested());
+      }
+    }
+
+    _isInitialized = true;
+  }
+
+  @override
+  void dispose() {
+    _bloc?.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Fast path: not initialized yet
+    if (!_isInitialized) {
+      return const SizedBox.shrink();
+    }
+
+    // Fast path: own video - never show follow button
+    if (_isOwnVideo) {
+      return const SizedBox.shrink();
+    }
+
+    // Fast path: no repository available
+    final followRepository = ref.read(followRepositoryProvider);
     if (followRepository == null) {
       return const SizedBox.shrink();
     }
 
-    // Don't show follow button for own videos
-    if (nostrClient.publicKey == pubkey) {
+    // Check current follow state for hide logic
+    // Use read() since we only need the value, not reactivity here
+    // The BlocSelector below handles reactivity for the actual button
+    if (widget.hideIfFollowing) {
+      final isFollowing = followRepository.isFollowing(widget.pubkey);
+      if (isFollowing) {
+        return const SizedBox.shrink();
+      }
+    }
+
+    // No BLoC means we determined early we don't need to show
+    if (_bloc == null) {
       return const SizedBox.shrink();
     }
 
-    // Check follow state directly from repository for immediate hide
-    // This avoids race conditions with BLoC initialization
-    final isFollowing = followRepository.isFollowing(pubkey);
-    Log.debug(
-      '🔘 VideoFollowButton: pubkey=$pubkey, hideIfFollowing=$hideIfFollowing, isFollowing=$isFollowing, followingCount=${followRepository.followingCount}',
-      name: 'VideoFollowButton',
-      category: LogCategory.ui,
-    );
-    if (hideIfFollowing && isFollowing) {
-      return const SizedBox.shrink();
-    }
-
-    return BlocProvider(
-      create: (_) =>
-          MyFollowingBloc(followRepository: followRepository)
-            ..add(const MyFollowingListLoadRequested()),
+    return BlocProvider.value(
+      value: _bloc!,
       child: VideoFollowButtonView(
-        pubkey: pubkey,
-        hideIfFollowing: hideIfFollowing,
+        pubkey: widget.pubkey,
+        hideIfFollowing: widget.hideIfFollowing,
       ),
     );
   }

@@ -127,7 +127,17 @@ class BlossomServerDiscoveryService {
       category: LogCategory.system,
     );
 
-    // Check cache first
+    // Check negative cache first - skip discovery if we recently found no servers
+    if (await _hasNegativeCache(npub)) {
+      Log.debug(
+        'Skipping Blossom discovery - negative cache hit for ${_maskNpub(npub)}',
+        name: 'BlossomServerDiscoveryService',
+        category: LogCategory.system,
+      );
+      return BlossomDiscoveryResult.failure('No server list (cached)');
+    }
+
+    // Check cache for existing servers
     final cached = await _getCachedServers(npub);
     if (cached != null) {
       Log.info(
@@ -193,12 +203,14 @@ class BlossomServerDiscoveryService {
         }
       }
 
-      // No server list found on any indexer
+      // No server list found on any indexer - cache this negative result
+      // to avoid repeated queries for users without kind 10063 events
       Log.info(
-        'No Blossom server list found for ${_maskNpub(npub)} on any indexer',
+        'No Blossom server list found for ${_maskNpub(npub)} on any indexer - caching negative result',
         name: 'BlossomServerDiscoveryService',
         category: LogCategory.system,
       );
+      await _cacheNegativeResult(npub);
       return BlossomDiscoveryResult.failure('No server list found');
     } catch (e) {
       Log.error(
@@ -448,5 +460,59 @@ class BlossomServerDiscoveryService {
     if (npub.length <= 12) return npub;
     final lastFour = npub.substring(npub.length - 4);
     return '${npub.substring(0, 8)}...$lastFour';
+  }
+
+  // --- Negative cache methods ---
+  // Cache empty results to avoid repeated queries for users without kind 10063
+
+  static const String _negativeCachePrefix = 'blossom_no_servers_';
+  static const Duration _negativeCacheExpiry = Duration(hours: 72);
+
+  /// Cache that no servers were found for a user (negative result)
+  Future<void> _cacheNegativeResult(String npub) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = '$_negativeCachePrefix$npub';
+      await prefs.setInt(cacheKey, DateTime.now().millisecondsSinceEpoch);
+
+      Log.debug(
+        'Cached negative Blossom result for ${_maskNpub(npub)} (valid 72h)',
+        name: 'BlossomServerDiscoveryService',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.warning(
+        'Failed to cache negative Blossom result: $e',
+        name: 'BlossomServerDiscoveryService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Check if we have a recent negative cache for a user
+  Future<bool> _hasNegativeCache(String npub) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = '$_negativeCachePrefix$npub';
+
+      final timestamp = prefs.getInt(cacheKey);
+      if (timestamp == null) return false;
+
+      final cacheAge = DateTime.now().millisecondsSinceEpoch - timestamp;
+      return cacheAge < _negativeCacheExpiry.inMilliseconds;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /// Clear negative cache for a user (e.g., when they might have published servers)
+  Future<void> clearNegativeCache(String npub) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = '$_negativeCachePrefix$npub';
+      await prefs.remove(cacheKey);
+    } catch (_) {
+      // Ignore cleanup errors
+    }
   }
 }
