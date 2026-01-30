@@ -1354,40 +1354,12 @@ class MockSocialService extends _i1.Mock implements _i16.SocialService {
   }
 
   @override
-  List<String> get followingPubkeys =>
-      (super.noSuchMethod(
-            Invocation.getter(#followingPubkeys),
-            returnValue: <String>[],
-          )
-          as List<String>);
-
-  @override
   List<_i16.FollowSet> get followSets =>
       (super.noSuchMethod(
             Invocation.getter(#followSets),
             returnValue: <_i16.FollowSet>[],
           )
           as List<_i16.FollowSet>);
-
-  @override
-  bool hasReposted(String? eventId, {String? pubkey, String? dTag}) =>
-      (super.noSuchMethod(
-            Invocation.method(
-              #hasReposted,
-              [eventId],
-              {#pubkey: pubkey, #dTag: dTag},
-            ),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  bool isFollowing(String? pubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#isFollowing, [pubkey]),
-            returnValue: false,
-          )
-          as bool);
 
   @override
   Map<String, int>? getCachedFollowerStats(String? pubkey) =>
@@ -1406,15 +1378,6 @@ class MockSocialService extends _i1.Mock implements _i16.SocialService {
             returnValue: false,
           )
           as bool);
-
-  @override
-  _i8.Future<void> fetchCurrentUserFollowList() =>
-      (super.noSuchMethod(
-            Invocation.method(#fetchCurrentUserFollowList, []),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
 
   @override
   _i8.Future<Map<String, int>> getFollowerStats(String? pubkey) =>
@@ -1491,24 +1454,6 @@ class MockSocialService extends _i1.Mock implements _i16.SocialService {
             returnValue: _i8.Future<int>.value(0),
           )
           as _i8.Future<int>);
-
-  @override
-  _i8.Future<void> toggleRepost(_i11.VideoEvent? videoToRepost) =>
-      (super.noSuchMethod(
-            Invocation.method(#toggleRepost, [videoToRepost]),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
-
-  @override
-  _i8.Future<void> repostEvent(_i9.Event? eventToRepost) =>
-      (super.noSuchMethod(
-            Invocation.method(#repostEvent, [eventToRepost]),
-            returnValue: _i8.Future<void>.value(),
-            returnValueForMissingStub: _i8.Future<void>.value(),
-          )
-          as _i8.Future<void>);
 
   @override
   _i8.Future<void> publishRightToBeForgotten() =>

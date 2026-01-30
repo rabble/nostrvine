@@ -692,18 +692,16 @@ UserProfileService userProfileService(Ref ref) {
   return service;
 }
 
-/// Social service depends on Nostr service, Auth service, and SubscriptionManager
+/// Social service depends on Nostr service and Auth service
 @Riverpod(keepAlive: true)
 SocialService socialService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
-  final subscriptionManager = ref.watch(subscriptionManagerProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
 
   return SocialService(
     nostrService,
     authService,
-    subscriptionManager: subscriptionManager,
     personalEventCache: personalEventCache,
   );
 }

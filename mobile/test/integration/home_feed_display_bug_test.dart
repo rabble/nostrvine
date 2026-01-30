@@ -4,12 +4,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mockito/mockito.dart';
 import 'package:models/models.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
-import 'package:openvine/providers/social_providers.dart' as social;
+import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/screens/video_feed_screen.dart';
-import 'package:openvine/state/social_state.dart';
 import 'package:openvine/state/video_feed_state.dart';
+import 'package:rxdart/rxdart.dart';
 import '../helpers/test_provider_overrides.dart';
 
 void main() {
@@ -50,16 +52,10 @@ void main() {
         final container = ProviderContainer(
           overrides: [
             ...getStandardTestOverrides(),
-            // Mock social provider with following list
-            social.socialProvider.overrideWith(() {
-              return _TestSocialNotifier(
-                SocialState(
-                  followingPubkeys: ['author1', 'author2'],
-                  isInitialized: true,
-                  isLoading: false,
-                ),
-              );
-            }),
+            // Mock follow repository with following list
+            followRepositoryProvider.overrideWithValue(
+              _createMockFollowRepository(['author1', 'author2']),
+            ),
             // Mock home feed provider with videos
             homeFeedProvider.overrideWith(() {
               return _TestHomeFeedNotifier(
@@ -120,16 +116,10 @@ void main() {
       final container = ProviderContainer(
         overrides: [
           ...getStandardTestOverrides(),
-          // Mock social provider with NO following list
-          social.socialProvider.overrideWith(() {
-            return _TestSocialNotifier(
-              const SocialState(
-                followingPubkeys: [], // Empty following list
-                isInitialized: true,
-                isLoading: false,
-              ),
-            );
-          }),
+          // Mock follow repository with NO following list
+          followRepositoryProvider.overrideWithValue(
+            _createMockFollowRepository([]), // Empty following list
+          ),
           // Mock home feed provider with no videos
           homeFeedProvider.overrideWith(() {
             return _TestHomeFeedNotifier(
@@ -165,14 +155,20 @@ void main() {
 }
 
 // Test helper classes
-class _TestSocialNotifier extends social.SocialNotifier {
-  _TestSocialNotifier(this._initialState);
 
-  final SocialState _initialState;
-
-  @override
-  SocialState build() => _initialState;
+/// Creates a mock FollowRepository with the given following pubkeys
+FollowRepository _createMockFollowRepository(List<String> followingPubkeys) {
+  final mock = _MockFollowRepository();
+  when(mock.followingPubkeys).thenReturn(followingPubkeys);
+  when(mock.followingStream).thenAnswer(
+    (_) => BehaviorSubject<List<String>>.seeded(followingPubkeys).stream,
+  );
+  when(mock.isInitialized).thenReturn(true);
+  when(mock.followingCount).thenReturn(followingPubkeys.length);
+  return mock;
 }
+
+class _MockFollowRepository extends Mock implements FollowRepository {}
 
 class _TestHomeFeedNotifier extends HomeFeed {
   _TestHomeFeedNotifier(this._state);
