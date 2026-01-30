@@ -731,7 +731,8 @@ class AnalyticsApiService {
     }
 
     try {
-      var url = '$_baseUrl/api/search?tag=$normalizedTag&limit=$limit';
+      var url =
+          '$_baseUrl/api/search?tag=$normalizedTag&sort=trending&limit=$limit';
       if (before != null) {
         url += '&before=$before';
       }

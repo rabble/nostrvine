@@ -17,7 +17,6 @@ class IndexerRelayConfig {
   static const List<String> defaultIndexers = [
     'wss://purplepag.es', // Purple Pages - primary NIP-65 indexer
     'wss://user.kindpag.es', // Kind Pages - specialized user metadata indexer
-    'wss://index.coracle.social', // Coracle Social - comprehensive indexer
   ];
 }
 
