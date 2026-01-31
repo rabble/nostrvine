@@ -31,6 +31,13 @@ class NostrService extends _$NostrService {
     _authSubscription?.cancel();
     _authSubscription = authService.authStateStream.listen(_onAuthStateChanged);
 
+    // Get user relay URLs from discovered relays (NIP-65)
+    // Include all relays - NostrClient needs both read and write capable relays
+    // for subscribing to events and publishing events respectively
+    final userRelayUrls = authService.userRelays
+        .map((relay) => relay.url)
+        .toList();
+
     // Create initial NostrClient (prefer RPC signer when available)
     final client = NostrServiceFactory.create(
       keyContainer: authService.currentKeyContainer,
@@ -41,9 +48,14 @@ class NostrService extends _$NostrService {
     );
 
     // Schedule initialization after build completes
-    // This ensures relays are connected when the client is first used
+    // Add user relays BEFORE initialize() to avoid race condition
     Future.microtask(() async {
       try {
+        // Add user relays first (must complete before initialize)
+        if (userRelayUrls.isNotEmpty) {
+          await client.addRelays(userRelayUrls);
+        }
+        // Then initialize the client
         await client.initialize();
         Log.info(
           '[NostrService] Client initialized via build()',
@@ -87,6 +99,13 @@ class NostrService extends _$NostrService {
       final environmentConfig = ref.read(currentEnvironmentProvider);
       final dbClient = ref.read(appDbClientProvider);
 
+      // Get user relay URLs from discovered relays (NIP-65)
+      // Include all relays - NostrClient needs both read and write capable relays
+      // for subscribing to events and publishing events respectively
+      final userRelayUrls = authService.userRelays
+          .map((relay) => relay.url)
+          .toList();
+
       final newClient = NostrServiceFactory.create(
         keyContainer: authService.currentKeyContainer,
         statisticsService: statisticsService,
@@ -97,7 +116,11 @@ class NostrService extends _$NostrService {
 
       _lastPubkey = currentPubkey;
 
-      // Initialize the new client
+      // Add user relays first (must complete before initialize)
+      if (userRelayUrls.isNotEmpty) {
+        await newClient.addRelays(userRelayUrls);
+      }
+      // Then initialize the new client
       await newClient.initialize();
       state = newClient;
     }

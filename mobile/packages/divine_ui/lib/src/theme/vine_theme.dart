@@ -115,6 +115,16 @@ class VineTheme {
         color: color,
       );
 
+  /// Title tiny: Bricolage Grotesque 800 12/20/0.1
+  static TextStyle titleTinyFont({Color color = whiteText}) =>
+      GoogleFonts.bricolageGrotesque(
+        fontSize: 12,
+        fontWeight: FontWeight.w800,
+        height: 20 / 12,
+        letterSpacing: 0.1,
+        color: color,
+      );
+
   /// @Deprecated Use [titleLargeFont] instead.
   static TextStyle titleFont({
     double fontSize = 22,
@@ -226,6 +236,9 @@ class VineTheme {
   /// Darker variant of the brand green.
   static const Color vineGreenDark = Color(0xFF009A72);
 
+  /// Dark green for primary accents on dark backgrounds.
+  static const Color primaryDarkGreen = Color(0xFF06281D);
+
   /// Lighter variant of the brand green.
   static const Color vineGreenLight = Color(0xFF33C49F);
 
@@ -290,6 +303,9 @@ class VineTheme {
   /// Disabled outline color.
   static const Color outlinedDisabled = Color(0xFF032017);
 
+  /// Disabled outline color for separators.
+  static const Color outlineDisabled = Color(0xFF001A12);
+
   /// Low-emphasis container background.
   static const Color containerLow = Color(0xFF0E2B21);
 
@@ -349,6 +365,27 @@ class VineTheme {
 
   /// Comment blue color.
   static const Color commentBlue = Color(0xFF3182CE);
+
+  /// Accent orange/amber color.
+  static const Color accentOrange = Color(0xFFFF7640);
+
+  /// Accent yellow color.
+  static const Color accentYellow = Color(0xFFFFF140);
+
+  /// Accent blue color.
+  static const Color accentBlue = Color(0xFF34BBF1);
+
+  /// Accent lime color.
+  static const Color accentLime = Color(0xFFD2FF40);
+
+  /// Accent pink color.
+  static const Color accentPink = Color(0xFFFF7FAF);
+
+  /// Accent violet color.
+  static const Color accentViolet = Color(0xFFA3A9FF);
+
+  /// Accent purple color.
+  static const Color accentPurple = Color(0xFF8568FF);
 
   /// The complete theme data for the app.
   static ThemeData get theme => ThemeData(

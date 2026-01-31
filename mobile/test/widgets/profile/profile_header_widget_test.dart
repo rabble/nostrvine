@@ -11,7 +11,6 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
@@ -38,6 +37,12 @@ class MockFollowRepository extends Mock implements FollowRepository {
 
   @override
   int get followingCount => 0;
+
+  @override
+  Future<List<String>> getMyFollowers() async => [];
+
+  @override
+  Future<List<String>> getFollowers(String pubkey) async => [];
 }
 
 class MockNostrClient extends Mock implements NostrClient {
@@ -139,19 +144,22 @@ void main() {
       UserProfile? profile,
       VoidCallback? onSetupProfile,
       bool isAnonymous = false,
+      String? displayNameHint,
+      String? avatarUrlHint,
     }) {
       final authService = MockAuthService(isAnonymousValue: isAnonymous);
       final mockUserProfileService = createMockUserProfileService();
       return ProviderScope(
         overrides: [
+          // Pass test's mock so we don't duplicate nostrServiceProvider override
           ...getStandardTestOverrides(
+            mockNostrService: mockNostrClient,
             mockUserProfileService: mockUserProfileService,
           ),
           fetchUserProfileProvider(
             userIdHex,
           ).overrideWith((ref) async => profile),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
-          nostrServiceProvider.overrideWithValue(mockNostrClient),
           authServiceProvider.overrideWithValue(authService),
           currentAuthStateProvider.overrideWith(
             (ref) => AuthState.authenticated,
@@ -171,6 +179,8 @@ void main() {
                   videoCount: videoCount,
                   profileStatsAsync: profileStatsAsync,
                   onSetupProfile: onSetupProfile,
+                  displayNameHint: displayNameHint,
+                  avatarUrlHint: avatarUrlHint,
                 ),
               ),
             ),
@@ -330,6 +340,8 @@ void main() {
             isOwnProfile: false,
             profileStatsAsync: AsyncValue.data(createTestStats()),
             profile: null,
+            displayNameHint: 'Unknown',
+            avatarUrlHint: 'https://example.com/fallback.png',
           ),
         );
         await tester.pumpAndSettle();

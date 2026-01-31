@@ -5,13 +5,16 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i3;
 
-import 'package:keycast_flutter/keycast_flutter.dart' as _i6;
+import 'package:keycast_flutter/keycast_flutter.dart' as _i8;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i4;
-import 'package:nostr_sdk/nostr_sdk.dart' as _i7;
-import 'package:openvine/services/audio_sharing_preference_service.dart' as _i8;
+import 'package:mockito/src/dummies.dart' as _i6;
+import 'package:nostr_sdk/nostr_sdk.dart' as _i9;
+import 'package:openvine/services/audio_sharing_preference_service.dart'
+    as _i10;
 import 'package:openvine/services/auth_service.dart' as _i2;
-import 'package:openvine/services/user_profile_service.dart' as _i5;
+import 'package:openvine/services/blossom_server_discovery_service.dart' as _i5;
+import 'package:openvine/services/relay_discovery_service.dart' as _i4;
+import 'package:openvine/services/user_profile_service.dart' as _i7;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -92,6 +95,38 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as bool);
 
   @override
+  List<_i4.DiscoveredRelay> get userRelays =>
+      (super.noSuchMethod(
+            Invocation.getter(#userRelays),
+            returnValue: <_i4.DiscoveredRelay>[],
+          )
+          as List<_i4.DiscoveredRelay>);
+
+  @override
+  bool get hasExistingProfile =>
+      (super.noSuchMethod(
+            Invocation.getter(#hasExistingProfile),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
+  List<_i5.DiscoveredBlossomServer> get userBlossomServers =>
+      (super.noSuchMethod(
+            Invocation.getter(#userBlossomServers),
+            returnValue: <_i5.DiscoveredBlossomServer>[],
+          )
+          as List<_i5.DiscoveredBlossomServer>);
+
+  @override
+  bool get hasUserBlossomServers =>
+      (super.noSuchMethod(
+            Invocation.getter(#hasUserBlossomServers),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
   Map<String, dynamic> get userStats =>
       (super.noSuchMethod(
             Invocation.getter(#userStats),
@@ -103,7 +138,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
   String get serviceName =>
       (super.noSuchMethod(
             Invocation.getter(#serviceName),
-            returnValue: _i4.dummyValue<String>(
+            returnValue: _i6.dummyValue<String>(
               this,
               Invocation.getter(#serviceName),
             ),
@@ -205,7 +240,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
 
   @override
   _i3.Future<void> refreshCurrentProfile(
-    _i5.UserProfileService? userProfileService,
+    _i7.UserProfileService? userProfileService,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#refreshCurrentProfile, [userProfileService]),
@@ -224,7 +259,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i3.Future<void>);
 
   @override
-  _i3.Future<void> signInWithDivineOAuth(_i6.KeycastSession? session) =>
+  _i3.Future<void> signInWithDivineOAuth(_i8.KeycastSession? session) =>
       (super.noSuchMethod(
             Invocation.method(#signInWithDivineOAuth, [session]),
             returnValue: _i3.Future<void>.value(),
@@ -270,7 +305,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i3.Future<String?>);
 
   @override
-  _i3.Future<_i7.Event?> createAndSignEvent({
+  _i3.Future<_i9.Event?> createAndSignEvent({
     required int? kind,
     required String? content,
     List<List<String>>? tags,
@@ -283,9 +318,9 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
               #tags: tags,
               #biometricPrompt: biometricPrompt,
             }),
-            returnValue: _i3.Future<_i7.Event?>.value(),
+            returnValue: _i3.Future<_i9.Event?>.value(),
           )
-          as _i3.Future<_i7.Event?>);
+          as _i3.Future<_i9.Event?>);
 
   @override
   _i3.Future<void> acceptTerms() =>
@@ -334,7 +369,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockAudioSharingPreferenceService extends _i1.Mock
-    implements _i8.AudioSharingPreferenceService {
+    implements _i10.AudioSharingPreferenceService {
   MockAudioSharingPreferenceService() {
     _i1.throwOnMissingStub(this);
   }

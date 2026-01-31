@@ -9,6 +9,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_clip_gallery.dart';
 import 'package:openvine/widgets/video_clip_editor/video_clip_editor_bottom_bar.dart';
 import 'package:openvine/widgets/video_clip_editor/video_clip_editor_progress_bar.dart';
+import 'package:openvine/widgets/video_clip_editor/video_clip_editor_render_status.dart';
 import 'package:openvine/widgets/video_clip_editor/video_clip_editor_split_bar.dart';
 import 'package:openvine/widgets/video_clip_editor/video_clip_editor_top_bar.dart';
 
@@ -72,40 +73,49 @@ class _VideoClipEditorScreenState extends ConsumerState<VideoClipEditorScreen> {
       child: PopScope(
         canPop: !isProcessing,
         child: SafeArea(
-          child: Scaffold(
-            resizeToAvoidBottomInset: false,
-            backgroundColor: VineTheme.surfaceContainerHigh,
-            body: _isLoadingDraft
-                ? const Center(child: CircularProgressIndicator.adaptive())
-                : Column(
-                    children: [
-                      /// Top bar
-                      VideoClipEditorTopBar(fromLibrary: widget.fromLibrary),
+          child: Stack(
+            children: [
+              Scaffold(
+                resizeToAvoidBottomInset: false,
+                backgroundColor: VineTheme.surfaceContainerHigh,
+                body: _isLoadingDraft
+                    ? const Center(child: CircularProgressIndicator.adaptive())
+                    : Column(
+                        children: [
+                          /// Top bar
+                          VideoClipEditorTopBar(
+                            fromLibrary: widget.fromLibrary,
+                          ),
 
-                      /// Main content area with clips
-                      const Expanded(child: VideoEditorClipGallery()),
+                          /// Main content area with clips
+                          const Expanded(child: VideoEditorClipGallery()),
 
-                      /// Progress or Split bar
-                      Container(
-                        height: 40,
-                        padding: const .symmetric(horizontal: 16),
-                        child: Consumer(
-                          builder: (_, ref, _) {
-                            final isEditing = ref.watch(
-                              videoEditorProvider.select((p) => p.isEditing),
-                            );
+                          /// Progress or Split bar
+                          Container(
+                            height: 40,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Consumer(
+                              builder: (_, ref, _) {
+                                final isEditing = ref.watch(
+                                  videoEditorProvider.select(
+                                    (p) => p.isEditing,
+                                  ),
+                                );
 
-                            return isEditing
-                                ? const VideoClipEditorSplitBar()
-                                : const VideoClipEditorProgressBar();
-                          },
-                        ),
+                                return isEditing
+                                    ? const VideoClipEditorSplitBar()
+                                    : const VideoClipEditorProgressBar();
+                              },
+                            ),
+                          ),
+
+                          /// Bottom bar
+                          const VideoClipEditorBottomBar(),
+                        ],
                       ),
-
-                      /// Bottom bar
-                      const VideoClipEditorBottomBar(),
-                    ],
-                  ),
+              ),
+              const VideoClipEditorRenderStatus(),
+            ],
           ),
         ),
       ),

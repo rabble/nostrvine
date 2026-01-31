@@ -45,6 +45,7 @@ class ProfileSetupScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final profileRepository = ref.watch(profileRepositoryProvider);
     final userProfileService = ref.watch(userProfileServiceProvider);
+    final authService = ref.watch(authServiceProvider);
 
     // Show loading until NostrClient has keys
     if (profileRepository == null) {
@@ -55,6 +56,7 @@ class ProfileSetupScreen extends ConsumerWidget {
       create: (context) => ProfileEditorBloc(
         profileRepository: profileRepository,
         userProfileService: userProfileService,
+        hasExistingProfile: authService.hasExistingProfile,
       ),
       child: ProfileSetupScreenView(isNewUser: isNewUser),
     );
@@ -265,6 +267,43 @@ class _ProfileSetupScreenViewState
               context.go('/');
             }
           }
+        } else if (state.status == ProfileEditorStatus.confirmationRequired) {
+          // Show confirmation dialog for blank profile overwrite warning
+          showDialog<void>(
+            context: context,
+            builder: (dialogContext) => AlertDialog(
+              backgroundColor: VineTheme.cardBackground,
+              title: const Text(
+                'Create new profile?',
+                style: TextStyle(color: VineTheme.whiteText),
+              ),
+              content: const Text(
+                "We didn't find an existing profile on your relays. Publishing will create a new profile. Continue?",
+                style: TextStyle(color: VineTheme.secondaryText),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  child: Text(
+                    'Cancel',
+                    style: TextStyle(color: VineTheme.lightText),
+                  ),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(dialogContext).pop();
+                    context.read<ProfileEditorBloc>().add(
+                      const ProfileSaveConfirmed(),
+                    );
+                  },
+                  child: const Text(
+                    'Publish',
+                    style: TextStyle(color: VineTheme.vineGreen),
+                  ),
+                ),
+              ],
+            ),
+          );
         } else if (state.status == ProfileEditorStatus.failure) {
           // Invalidate profile providers after rollback so UI shows correct data
           final currentPubkey = ref

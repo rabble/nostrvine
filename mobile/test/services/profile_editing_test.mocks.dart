@@ -4,19 +4,21 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i6;
-import 'dart:ui' as _i12;
+import 'dart:ui' as _i14;
 
-import 'package:keycast_flutter/keycast_flutter.dart' as _i9;
+import 'package:keycast_flutter/keycast_flutter.dart' as _i11;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i5;
 import 'package:nostr_client/nostr_client.dart' as _i4;
 import 'package:nostr_client/src/models/models.dart' as _i2;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i7;
-import 'package:openvine/models/user_profile.dart' as _i10;
+import 'package:openvine/models/user_profile.dart' as _i12;
 import 'package:openvine/services/auth_service.dart' as _i3;
-import 'package:openvine/services/profile_cache_service.dart' as _i11;
-import 'package:openvine/services/subscription_manager.dart' as _i13;
-import 'package:openvine/services/user_profile_service.dart' as _i8;
+import 'package:openvine/services/blossom_server_discovery_service.dart' as _i9;
+import 'package:openvine/services/profile_cache_service.dart' as _i13;
+import 'package:openvine/services/relay_discovery_service.dart' as _i8;
+import 'package:openvine/services/subscription_manager.dart' as _i15;
+import 'package:openvine/services/user_profile_service.dart' as _i10;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -304,6 +306,14 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
           as _i6.Future<bool>);
 
   @override
+  _i6.Future<int> addRelays(List<String>? relayUrls) =>
+      (super.noSuchMethod(
+            Invocation.method(#addRelays, [relayUrls]),
+            returnValue: _i6.Future<int>.value(0),
+          )
+          as _i6.Future<int>);
+
+  @override
   _i6.Future<bool> removeRelay(String? relayUrl) =>
       (super.noSuchMethod(
             Invocation.method(#removeRelay, [relayUrl]),
@@ -585,6 +595,38 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as bool);
 
   @override
+  List<_i8.DiscoveredRelay> get userRelays =>
+      (super.noSuchMethod(
+            Invocation.getter(#userRelays),
+            returnValue: <_i8.DiscoveredRelay>[],
+          )
+          as List<_i8.DiscoveredRelay>);
+
+  @override
+  bool get hasExistingProfile =>
+      (super.noSuchMethod(
+            Invocation.getter(#hasExistingProfile),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
+  List<_i9.DiscoveredBlossomServer> get userBlossomServers =>
+      (super.noSuchMethod(
+            Invocation.getter(#userBlossomServers),
+            returnValue: <_i9.DiscoveredBlossomServer>[],
+          )
+          as List<_i9.DiscoveredBlossomServer>);
+
+  @override
+  bool get hasUserBlossomServers =>
+      (super.noSuchMethod(
+            Invocation.getter(#hasUserBlossomServers),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
   Map<String, dynamic> get userStats =>
       (super.noSuchMethod(
             Invocation.getter(#userStats),
@@ -698,7 +740,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
 
   @override
   _i6.Future<void> refreshCurrentProfile(
-    _i8.UserProfileService? userProfileService,
+    _i10.UserProfileService? userProfileService,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#refreshCurrentProfile, [userProfileService]),
@@ -717,7 +759,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i6.Future<void>);
 
   @override
-  _i6.Future<void> signInWithDivineOAuth(_i9.KeycastSession? session) =>
+  _i6.Future<void> signInWithDivineOAuth(_i11.KeycastSession? session) =>
       (super.noSuchMethod(
             Invocation.method(#signInWithDivineOAuth, [session]),
             returnValue: _i6.Future<void>.value(),
@@ -827,18 +869,18 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockUserProfileService extends _i1.Mock
-    implements _i8.UserProfileService {
+    implements _i10.UserProfileService {
   MockUserProfileService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  Map<String, _i10.UserProfile> get allProfiles =>
+  Map<String, _i12.UserProfile> get allProfiles =>
       (super.noSuchMethod(
             Invocation.getter(#allProfiles),
-            returnValue: <String, _i10.UserProfile>{},
+            returnValue: <String, _i12.UserProfile>{},
           )
-          as Map<String, _i10.UserProfile>);
+          as Map<String, _i12.UserProfile>);
 
   @override
   bool get hasListeners =>
@@ -852,16 +894,16 @@ class MockUserProfileService extends _i1.Mock
   );
 
   @override
-  void setPersistentCache(_i11.ProfileCacheService? cacheService) =>
+  void setPersistentCache(_i13.ProfileCacheService? cacheService) =>
       super.noSuchMethod(
         Invocation.method(#setPersistentCache, [cacheService]),
         returnValueForMissingStub: null,
       );
 
   @override
-  _i10.UserProfile? getCachedProfile(String? pubkey) =>
+  _i12.UserProfile? getCachedProfile(String? pubkey) =>
       (super.noSuchMethod(Invocation.method(#getCachedProfile, [pubkey]))
-          as _i10.UserProfile?);
+          as _i12.UserProfile?);
 
   @override
   bool hasProfile(String? pubkey) =>
@@ -886,7 +928,7 @@ class MockUserProfileService extends _i1.Mock
   );
 
   @override
-  _i6.Future<void> updateCachedProfile(_i10.UserProfile? profile) =>
+  _i6.Future<void> updateCachedProfile(_i12.UserProfile? profile) =>
       (super.noSuchMethod(
             Invocation.method(#updateCachedProfile, [profile]),
             returnValue: _i6.Future<void>.value(),
@@ -904,7 +946,7 @@ class MockUserProfileService extends _i1.Mock
           as _i6.Future<void>);
 
   @override
-  _i6.Future<_i10.UserProfile?> fetchProfile(
+  _i6.Future<_i12.UserProfile?> fetchProfile(
     String? pubkey, {
     bool? forceRefresh = false,
   }) =>
@@ -914,9 +956,9 @@ class MockUserProfileService extends _i1.Mock
               [pubkey],
               {#forceRefresh: forceRefresh},
             ),
-            returnValue: _i6.Future<_i10.UserProfile?>.value(),
+            returnValue: _i6.Future<_i12.UserProfile?>.value(),
           )
-          as _i6.Future<_i10.UserProfile?>);
+          as _i6.Future<_i12.UserProfile?>);
 
   @override
   _i6.Future<void> prefetchProfilesImmediately(List<String>? pubkeys) =>
@@ -961,14 +1003,14 @@ class MockUserProfileService extends _i1.Mock
   );
 
   @override
-  _i6.Future<List<_i10.UserProfile>> searchUsers(String? query, {int? limit}) =>
+  _i6.Future<List<_i12.UserProfile>> searchUsers(String? query, {int? limit}) =>
       (super.noSuchMethod(
             Invocation.method(#searchUsers, [query], {#limit: limit}),
-            returnValue: _i6.Future<List<_i10.UserProfile>>.value(
-              <_i10.UserProfile>[],
+            returnValue: _i6.Future<List<_i12.UserProfile>>.value(
+              <_i12.UserProfile>[],
             ),
           )
-          as _i6.Future<List<_i10.UserProfile>>);
+          as _i6.Future<List<_i12.UserProfile>>);
 
   @override
   void handleProfileEventForTesting(_i7.Event? event) => super.noSuchMethod(
@@ -983,13 +1025,13 @@ class MockUserProfileService extends _i1.Mock
   );
 
   @override
-  void addListener(_i12.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i14.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#addListener, [listener]),
     returnValueForMissingStub: null,
   );
 
   @override
-  void removeListener(_i12.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i14.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#removeListener, [listener]),
     returnValueForMissingStub: null,
   );
@@ -1005,7 +1047,7 @@ class MockUserProfileService extends _i1.Mock
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockSubscriptionManager extends _i1.Mock
-    implements _i13.SubscriptionManager {
+    implements _i15.SubscriptionManager {
   MockSubscriptionManager() {
     _i1.throwOnMissingStub(this);
   }

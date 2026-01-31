@@ -4,18 +4,15 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/widgets/feature_flag_widget.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
-import 'package:openvine/providers/curation_providers.dart';
-import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/classic_viners_slider.dart';
-import 'package:openvine/widgets/composable_video_grid.dart';
-import 'package:openvine/widgets/trending_hashtags_section.dart';
+import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
 /// Tab widget displaying Classics archive videos (pre-2017).
 ///
@@ -78,57 +75,221 @@ class _ClassicVinesTabState extends ConsumerState<ClassicVinesTab> {
       return const _ClassicVinesEmptyState();
     }
 
-    return _ClassicVinesContent(videos: videos, onVideoTap: widget.onVideoTap);
+    return _ClassicVinesContent(
+      videos: videos,
+      onVideoTap: widget.onVideoTap,
+      isLoadingMore: feedState.isLoadingMore,
+      hasMoreContent: feedState.hasMoreContent,
+    );
   }
 }
 
-/// Content widget displaying classic Viners slider, hashtags, and video grid
-class _ClassicVinesContent extends ConsumerWidget {
-  const _ClassicVinesContent({required this.videos, required this.onVideoTap});
+/// Content widget displaying classic Viners slider and video grid.
+///
+/// Uses a simple vertical layout (no scroll-to-hide) to ensure pull-to-refresh
+/// works reliably. The slider scrolls away naturally as user scrolls the grid.
+/// Supports infinite scroll pagination via scroll detection.
+class _ClassicVinesContent extends ConsumerStatefulWidget {
+  const _ClassicVinesContent({
+    required this.videos,
+    required this.onVideoTap,
+    this.isLoadingMore = false,
+    this.hasMoreContent = false,
+  });
+
+  final List<VideoEvent> videos;
+  final void Function(List<VideoEvent> videos, int index) onVideoTap;
+  final bool isLoadingMore;
+  final bool hasMoreContent;
+
+  @override
+  ConsumerState<_ClassicVinesContent> createState() =>
+      _ClassicVinesContentState();
+}
+
+class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent> {
+  final ScrollController _scrollController = ScrollController();
+  bool _isLoadingTriggered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!widget.hasMoreContent) return;
+    if (widget.isLoadingMore) return;
+    if (_isLoadingTriggered) return;
+
+    final position = _scrollController.position;
+    final maxScroll = position.maxScrollExtent;
+    final currentScroll = position.pixels;
+
+    // Trigger load more when within 200 pixels of the bottom
+    if (currentScroll >= maxScroll - 200) {
+      _triggerLoadMore();
+    }
+  }
+
+  Future<void> _triggerLoadMore() async {
+    if (_isLoadingTriggered) return;
+    _isLoadingTriggered = true;
+
+    try {
+      Log.info(
+        '📜 ClassicVinesTab: Loading more classics',
+        name: 'ClassicVinesTab',
+        category: LogCategory.video,
+      );
+      await ref.read(classicVinesFeedProvider.notifier).loadMore();
+    } finally {
+      if (mounted) {
+        _isLoadingTriggered = false;
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      color: VineTheme.onPrimary,
+      backgroundColor: VineTheme.vineGreen,
+      onRefresh: () async {
+        Log.info(
+          '🔄 ClassicVinesTab: Spinning to next batch of classics',
+          name: 'ClassicVinesTab',
+          category: LogCategory.video,
+        );
+        // Only refresh classics feed (roulette to next page)
+        await ref.read(classicVinesFeedProvider.notifier).refresh();
+      },
+      child: CustomScrollView(
+        controller: _scrollController,
+        slivers: [
+          // Viners slider at top
+          const SliverToBoxAdapter(child: ClassicVinersSlider()),
+          // Video grid below
+          _ClassicVideosSliverGrid(
+            videos: widget.videos,
+            onVideoTap: widget.onVideoTap,
+          ),
+          // Loading indicator at bottom
+          if (widget.isLoadingMore || widget.hasMoreContent)
+            SliverToBoxAdapter(
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                alignment: Alignment.center,
+                child: widget.isLoadingMore
+                    ? SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: VineTheme.vineGreen,
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Sliver grid for classic videos using masonry layout
+class _ClassicVideosSliverGrid extends ConsumerWidget {
+  const _ClassicVideosSliverGrid({
+    required this.videos,
+    required this.onVideoTap,
+  });
 
   final List<VideoEvent> videos;
   final void Function(List<VideoEvent> videos, int index) onVideoTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch trending hashtags (synchronous, returns List<TrendingHashtag>)
-    final trendingHashtags = ref.watch(trendingHashtagsProvider);
+    // Watch broken video tracker
+    final brokenTrackerAsync = ref.watch(brokenVideoTrackerProvider);
 
-    return Column(
-      children: [
-        // Top Classic Viners horizontal slider
-        const ClassicVinersSlider(),
-        // Trending Hashtags section (hidden by default, enable via feature flag)
-        FeatureFlagWidget(
-          flag: FeatureFlag.classicsHashtags,
-          child: TrendingHashtagsSection(
-            hashtags: trendingHashtags.isNotEmpty
-                ? trendingHashtags.map((h) => h.tag).toList()
-                : TopHashtagsService.instance.getTopHashtags(limit: 20),
-          ),
-        ),
-        // Video grid
-        Expanded(
-          child: ComposableVideoGrid(
-            videos: videos,
-            thumbnailAspectRatio: 1.0, // Square thumbnails for classic vines
+    return brokenTrackerAsync.when(
+      loading: () => const SliverToBoxAdapter(
+        child: Center(child: CircularProgressIndicator()),
+      ),
+      error: (_, __) => _buildGrid(context, ref, videos),
+      data: (tracker) {
+        final filteredVideos = videos
+            .where((video) => !tracker.isVideoBroken(video.id))
+            .toList();
+        return _buildGrid(context, ref, filteredVideos);
+      },
+    );
+  }
+
+  Widget _buildGrid(
+    BuildContext context,
+    WidgetRef ref,
+    List<VideoEvent> videosToShow,
+  ) {
+    if (videosToShow.isEmpty) {
+      return const SliverToBoxAdapter(child: _ClassicVinesEmptyState());
+    }
+
+    // Responsive column count
+    final screenWidth = MediaQuery.of(context).size.width;
+    final crossAxisCount = screenWidth >= 600 ? 3 : 2;
+
+    return SliverPadding(
+      padding: const EdgeInsets.all(4),
+      sliver: SliverMasonryGrid.count(
+        crossAxisCount: crossAxisCount,
+        mainAxisSpacing: 4,
+        crossAxisSpacing: 4,
+        childCount: videosToShow.length,
+        itemBuilder: (context, index) {
+          final video = videosToShow[index];
+          return _ClassicVideoItem(
+            video: video,
+            index: index,
+            videos: videosToShow,
             onVideoTap: onVideoTap,
-            onRefresh: () async {
-              Log.info(
-                '🔄 ClassicVinesTab: Refreshing from REST API',
-                name: 'ClassicVinesTab',
-                category: LogCategory.video,
-              );
-              // Fetch fresh data from both providers concurrently
-              await Future.wait([
-                ref.read(classicVinesFeedProvider.notifier).refresh(),
-                ref.read(trendingHashtagsProvider.notifier).refresh(),
-              ]);
-            },
-            emptyBuilder: () => const _ClassicVinesEmptyState(),
-          ),
-        ),
-      ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Individual video item for the classics grid
+class _ClassicVideoItem extends StatelessWidget {
+  const _ClassicVideoItem({
+    required this.video,
+    required this.index,
+    required this.videos,
+    required this.onVideoTap,
+  });
+
+  final VideoEvent video;
+  final int index;
+  final List<VideoEvent> videos;
+  final void Function(List<VideoEvent> videos, int index) onVideoTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => onVideoTap(videos, index),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: VideoThumbnailWidget(video: video),
+      ),
     );
   }
 }

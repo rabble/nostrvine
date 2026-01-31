@@ -11,6 +11,7 @@ import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
@@ -107,6 +108,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     final repostsRepository = ref.watch(repostsRepositoryProvider);
     final videosRepository = ref.watch(videosRepositoryProvider);
     final nostrService = ref.watch(nostrServiceProvider);
+    final analyticsApiService = ref.watch(analyticsApiServiceProvider);
     final currentUserPubkey = nostrService.publicKey;
 
     // Show loading state until NostrClient has keys
@@ -138,6 +140,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                   videosRepository: videosRepository,
                   currentUserPubkey: currentUserPubkey,
                   targetUserPubkey: widget.userIdHex,
+                  analyticsApiService: analyticsApiService,
                 )
                 ..add(const ProfileRepostedVideosSubscriptionRequested())
                 ..add(const ProfileRepostedVideosSyncRequested()),

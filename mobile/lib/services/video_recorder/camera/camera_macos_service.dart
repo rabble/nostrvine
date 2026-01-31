@@ -9,6 +9,7 @@ import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// macOS implementation of [CameraService] using the camera_macos package.
@@ -279,11 +280,16 @@ class CameraMacOSService extends CameraService {
         category: .video,
       );
 
-      // Use system temp directory which we have permission to write to
+      // Use documents directory for user-accessible persistent storage
+      final documentsDir = await getApplicationDocumentsDirectory();
+      final recordingsDir = Directory('${documentsDir.path}/recordings');
+      if (!recordingsDir.existsSync()) {
+        await recordingsDir.create(recursive: true);
+      }
+
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final outputPath =
-          '${Directory.systemTemp.path}/'
-          'openvine_recording_$timestamp.mp4';
+          '${recordingsDir.path}/openvine_recording_$timestamp.mp4';
 
       await CameraMacOS.instance.startVideoRecording(url: outputPath);
       _isRecording = true;
@@ -355,7 +361,7 @@ class CameraMacOSService extends CameraService {
         // Try to read from file path if bytes are null but URL exists
         if (result?.url != null && result!.url!.isNotEmpty) {
           final file = File(result.url!);
-          if (await file.exists()) {
+          if (file.existsSync()) {
             Log.info(
               '📷 Reading video from file path: ${result.url}',
               name: 'CameraMacOSService',

@@ -329,17 +329,17 @@ void main() {
   });
 
   group('getEnvironmentAppBarColor', () {
-    test('returns environment color for staging environment', () {
+    test('returns navGreen for staging environment', () {
       final color = getEnvironmentAppBarColor(stagingConfig);
-      expect(color, Color(stagingConfig.indicatorColorValue));
+      expect(color, VineTheme.navGreen);
     });
 
-    test('returns environment color for development environment', () {
+    test('returns navGreen for development environment', () {
       final color = getEnvironmentAppBarColor(devConfig);
-      expect(color, Color(devConfig.indicatorColorValue));
+      expect(color, VineTheme.navGreen);
     });
 
-    test('returns VineTheme.navGreen for production environment', () {
+    test('returns navGreen for production environment', () {
       final color = getEnvironmentAppBarColor(EnvironmentConfig.production);
       expect(color, VineTheme.navGreen);
     });

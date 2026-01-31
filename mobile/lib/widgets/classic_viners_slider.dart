@@ -1,7 +1,6 @@
 // ABOUTME: Horizontal slider showing top classic Viners (most loops)
 // ABOUTME: Displays circular avatars with names, tappable to view profile
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,7 +9,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/user_avatar.dart';
@@ -26,7 +24,8 @@ class ClassicVinersSlider extends ConsumerWidget {
     final vinersAsync = ref.watch(topClassicVinersProvider);
 
     return Container(
-      padding: const EdgeInsets.symmetric(vertical: 16),
+      padding: const EdgeInsets.only(top: 16),
+      color: VineTheme.backgroundColor,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -37,12 +36,8 @@ class ClassicVinersSlider extends ConsumerWidget {
                 Icon(Icons.star, color: VineTheme.vineGreen, size: 20),
                 const SizedBox(width: 8),
                 Text(
-                  'Classic Viners',
-                  style: TextStyle(
-                    color: VineTheme.primaryText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
+                  'OG Viners',
+                  style: VineTheme.titleSmallFont(color: VineTheme.primaryText),
                 ),
               ],
             ),
@@ -79,16 +74,16 @@ class _VinersLoadingPlaceholder extends StatelessWidget {
       itemCount: 5,
       itemBuilder: (context, index) {
         return Padding(
-          padding: const EdgeInsets.only(right: 16),
+          padding: const EdgeInsets.only(right: 12),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Container(
-                width: 64,
-                height: 64,
+                width: 56,
+                height: 56,
                 decoration: BoxDecoration(
                   color: VineTheme.cardBackground,
-                  shape: BoxShape.circle,
+                  borderRadius: BorderRadius.circular(16),
                 ),
               ),
               const SizedBox(height: 8),
@@ -146,67 +141,43 @@ class _VinerAvatar extends ConsumerWidget {
     final profile = userProfileService.getCachedProfile(viner.pubkey);
     final avatarUrl = viner.authorAvatar ?? profile?.picture;
 
-    return GestureDetector(
-      onTap: () => _onTap(context, avatarUrl),
-      child: Padding(
-        padding: const EdgeInsets.only(right: 16),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Avatar with green border
-            Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: VineTheme.vineGreen.withValues(alpha: 0.6),
-                  width: 2,
+    return Semantics(
+      label: 'View profile for $displayName',
+      button: true,
+      child: GestureDetector(
+        onTap: () => _onTap(context, avatarUrl),
+        child: Padding(
+          padding: const EdgeInsets.only(right: 12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Avatar with rounded square
+              SizedBox(
+                width: 56,
+                height: 56,
+                child: UserAvatar(
+                  imageUrl: avatarUrl,
+                  name: displayName,
+                  size: 56,
                 ),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(2),
-                child: ClipOval(child: _buildAvatar(avatarUrl, displayName)),
-              ),
-            ),
-            const SizedBox(height: 4),
-            // Display name from classic Vine data
-            SizedBox(
-              width: 70,
-              child: Text(
-                displayName,
-                style: TextStyle(
-                  color: VineTheme.primaryText,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
+              const SizedBox(height: 4),
+              // Display name from classic Vine data
+              SizedBox(
+                width: 70,
+                child: Text(
+                  displayName,
+                  style: VineTheme.titleTinyFont(color: VineTheme.primaryText),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
-  }
-
-  Widget _buildAvatar(String? avatarUrl, String displayName) {
-    // Use network image if avatar URL is available
-    if (avatarUrl != null && avatarUrl.isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: avatarUrl,
-        width: 56,
-        height: 56,
-        fit: BoxFit.cover,
-        cacheManager: openVineImageCache,
-        placeholder: (context, url) => UserAvatar(name: displayName, size: 56),
-        errorWidget: (context, url, error) =>
-            UserAvatar(name: displayName, size: 56),
-      );
-    }
-    // Fallback to initials avatar
-    return UserAvatar(name: displayName, size: 56);
   }
 
   /// Clean up social media prefixes from display names.

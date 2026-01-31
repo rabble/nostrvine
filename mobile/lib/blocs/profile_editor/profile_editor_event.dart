@@ -33,3 +33,8 @@ final class ProfileSaved extends ProfileEditorEvent {
   /// Profile picture URL (optional).
   final String? picture;
 }
+
+/// Confirmation to proceed with saving profile despite warnings.
+final class ProfileSaveConfirmed extends ProfileEditorEvent {
+  const ProfileSaveConfirmed();
+}

@@ -4,13 +4,14 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
 import 'package:openvine/mixins/pagination_mixin.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
@@ -18,7 +19,6 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/state/video_feed_state.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';

@@ -550,6 +550,23 @@ class NostrClient {
     return _relayManager.addRelay(relayUrl);
   }
 
+  /// Adds multiple relay connections
+  ///
+  /// This should be called and awaited BEFORE calling initialize() to ensure
+  /// all relays are connected before the client starts making requests.
+  ///
+  /// Returns the number of relays successfully added.
+  Future<int> addRelays(List<String> relayUrls) async {
+    var addedCount = 0;
+    for (final relayUrl in relayUrls) {
+      final added = await addRelay(relayUrl);
+      if (added) {
+        addedCount++;
+      }
+    }
+    return addedCount;
+  }
+
   /// Removes a relay connection
   ///
   /// Delegates to RelayManager.
@@ -812,10 +829,16 @@ class NostrClient {
     return contactListEvent;
   }
 
-  /// Searches for video events using NIP-50 search
+  /// Known NIP-50 compatible search relays.
+  static const List<String> _nip50SearchRelays = [
+    'wss://relay.nostr.band',
+    'wss://search.nos.today',
+    'wss://nostr.wine',
+  ];
+
+  /// Searches for video events using NIP-50 search.
   ///
-  /// Returns a stream of video events (kind 34236) matching the search query.
-  /// Uses NIP-50 search parameter for full-text search on compatible relays.
+  /// Includes known NIP-50 relays for better coverage.
   Stream<Event> searchVideos(
     String query, {
     List<String>? authors,
@@ -824,7 +847,7 @@ class NostrClient {
     int? limit,
   }) {
     final filter = Filter(
-      kinds: const [34236], // Video events only (no reposts for search)
+      kinds: const [34236],
       authors: authors,
       since: since != null ? since.millisecondsSinceEpoch ~/ 1000 : null,
       until: until != null ? until.millisecondsSinceEpoch ~/ 1000 : null,
@@ -832,13 +855,12 @@ class NostrClient {
       search: query,
     );
 
-    return subscribe([filter]);
+    return subscribe([filter], tempRelays: _nip50SearchRelays);
   }
 
-  /// Searches for user profiles using NIP-50 search
+  /// Searches for user profiles using NIP-50 search.
   ///
-  /// Returns a stream of profile events (kind 0) matching the search query.
-  /// Uses NIP-50 search parameter for full-text search on compatible relays.
+  /// Includes known NIP-50 relays for better coverage.
   Stream<Event> searchUsers(
     String query, {
     int? limit,
@@ -849,7 +871,7 @@ class NostrClient {
       search: query,
     );
 
-    return subscribe([filter]);
+    return subscribe([filter], tempRelays: _nip50SearchRelays);
   }
 
   /// Creates a NIP-98 HTTP authentication header.

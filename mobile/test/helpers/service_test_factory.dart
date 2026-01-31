@@ -29,17 +29,12 @@ VideoEventService createTestVideoEventService({
 SocialService createTestSocialService({
   required NostrClient mockNostrService,
   required AuthService mockAuthService,
-  required SubscriptionManager mockSubscriptionManager,
 }) {
   // Set up default mock behaviors
   // Skip mocking subscribeToEvents for simplicity
   when(mockAuthService.isAuthenticated).thenReturn(false);
 
-  return SocialService(
-    mockNostrService,
-    mockAuthService,
-    subscriptionManager: mockSubscriptionManager,
-  );
+  return SocialService(mockNostrService, mockAuthService);
 }
 
 /// Creates a UserProfileService with mocked dependencies for testing

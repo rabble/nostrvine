@@ -159,7 +159,10 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
       context.pop();
     } else {
       // Navigate to editor with fromLibrary flag so back goes to recorder
-      await context.push(VideoClipEditorScreen.path);
+      await context.push(
+        VideoClipEditorScreen.path,
+        extra: {'fromLibrary': true},
+      );
 
       // Clear selection
       _clearSelection();

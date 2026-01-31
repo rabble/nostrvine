@@ -4,7 +4,7 @@ env:
   VIDEO_USER: "FunnyVines"
   VIDEO_DESCRIPTION: "When you jammin to JB too hard and you grab a hot mic. " # Setting the video description parameter
   COMMENT: "Boring automated comment"
-  FULL_COMMENT: ""
+  FULL_COMMENT: "Automated comment  on 2026-01-28 14:28:11"
 ---
 #TC to comment a video and delete the comment just posted,
 # given the user is logged in in the app,,
@@ -41,15 +41,22 @@ env:
     id: comment_options_button
 - runFlow: ../asserts/assertCommentsOptions.yaml
 
-# 5. Tap on "Delete Comment": Validate Confirmation modal is displayed
-- tapOn: Delete Comment
-- runFlow: ../asserts/assertDeleteCommentModal.yaml
+# 5. Long press on the comment posted: Validate Confirmation modal is displayed
+#- longPressOn: ${FULL_COMMENT}
+#- longPressOn: |- #    ^\d{1}m ago$
+- longPressOn:
+    point: 50%,40%
+- runFlow: ../asserts/assertCommentsOptions.yaml
 
 # 6. Tap on Delete: The comments section is displayed without the deleted comment
-- tapOn: Delete
-- assertNotVisible: ${COMMENT} on ${output.runId}
+- tapOn:
+    id: delete_comment_option
+- assertNotVisible: ${FULL_COMMENT}
 
 # 7. Close the comments section: Validate playback screen is displayed
-- tapOn:
-    id: close_comments_button
+# 4. Close the comments section: Validate playback screen is displayed
+- swipe:
+    from:
+      text: "\\d+\\sComments?" # Matches one or more digits followed by " Comment" or " Comments"
+    direction: DOWN
 - runFlow: ../asserts/assertVideoPlayback.yaml

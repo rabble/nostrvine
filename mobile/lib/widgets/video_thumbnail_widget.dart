@@ -40,6 +40,7 @@ class VideoThumbnailWidget extends StatefulWidget {
 class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   String? _thumbnailUrl;
   bool _isLoading = false;
+  double? _resolvedAspectRatio;
 
   @override
   void initState() {
@@ -52,6 +53,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
     super.didUpdateWidget(oldWidget);
     // Reload if video ID changed
     if (oldWidget.video.id != widget.video.id) {
+      _resolvedAspectRatio = null;
       _loadThumbnail();
     }
   }
@@ -68,10 +70,10 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
     // Check if we have an existing thumbnail URL
     if (widget.video.thumbnailUrl != null &&
         widget.video.thumbnailUrl!.isNotEmpty) {
-      setState(() {
-        _thumbnailUrl = widget.video.thumbnailUrl;
-        _isLoading = false;
-      });
+      _thumbnailUrl = widget.video.thumbnailUrl;
+      _isLoading = false;
+      _resolveImageDimensions(_thumbnailUrl!);
+      if (mounted) setState(() {});
       return;
     }
 
@@ -120,6 +122,32 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
         _isLoading = false;
       });
     }
+  }
+
+  /// Resolves image dimensions from the network image when video dimensions
+  /// are not available from metadata.
+  void _resolveImageDimensions(String url) {
+    // Skip if video already has dimensions
+    if (widget.video.width != null && widget.video.height != null) return;
+
+    final imageStream = NetworkImage(url).resolve(ImageConfiguration.empty);
+    late ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (ImageInfo info, bool _) {
+        final imageWidth = info.image.width;
+        final imageHeight = info.image.height;
+        if (mounted && imageHeight > 0) {
+          setState(() {
+            _resolvedAspectRatio = imageWidth / imageHeight;
+          });
+        }
+        imageStream.removeListener(listener);
+      },
+      onError: (Object error, StackTrace? stackTrace) {
+        imageStream.removeListener(listener);
+      },
+    );
+    imageStream.addListener(listener);
   }
 
   Widget _buildContent(BoxFit fit) {
@@ -225,21 +253,26 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
 
   @override
   Widget build(BuildContext context) {
-    // Calculate aspect ratio from video dimensions if available, fallback to 1:1 square
+    // Use video metadata dimensions, resolved image dimensions, or fallback
     final double aspectRatio;
     if (widget.video.width != null &&
         widget.video.height != null &&
         widget.video.height! > 0) {
       aspectRatio = widget.video.width! / widget.video.height!;
+    } else if (_resolvedAspectRatio != null) {
+      aspectRatio = _resolvedAspectRatio!;
     } else {
-      // Fallback to square for videos without dimension metadata
-      aspectRatio = 1.0;
+      // Fallback to 2:3 portrait until image dimensions are resolved
+      aspectRatio = 2 / 3;
     }
+
+    // Clamp portrait videos to 2:3 minimum for grid thumbnails
+    final double clampedAspectRatio = aspectRatio < 2 / 3 ? 2 / 3 : aspectRatio;
 
     // Match video player's BoxFit strategy to prevent visual jump:
     // - Portrait videos (aspectRatio < 0.9): Use BoxFit.cover to fill screen
     // - Square/Landscape videos (aspectRatio >= 0.9): Use BoxFit.contain to show full video
-    final bool isPortrait = aspectRatio < 0.9;
+    final bool isPortrait = clampedAspectRatio < 0.9;
     final BoxFit effectiveFit = isPortrait ? BoxFit.cover : BoxFit.contain;
 
     // Build content with the calculated fit
@@ -249,7 +282,7 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
       content = ClipRRect(borderRadius: widget.borderRadius!, child: content);
     }
 
-    return AspectRatio(aspectRatio: aspectRatio, child: content);
+    return AspectRatio(aspectRatio: clampedAspectRatio, child: content);
   }
 }
 

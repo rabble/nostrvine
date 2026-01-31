@@ -13,6 +13,7 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 
@@ -102,6 +103,14 @@ MockNostrClient createMockNostrService() {
   when(mockNostr.isInitialized).thenReturn(true);
   when(mockNostr.connectedRelayCount).thenReturn(1);
 
+  // Stub subscribe() to return empty stream (never null) so SubscriptionManager
+  // and UserProfileService batch fetch do not get type 'Null' is not a subtype of type 'Stream<Event>'
+  when(mockNostr.subscribe(any)).thenAnswer((_) => Stream<Event>.empty());
+
+  // Stub queryEvents() to return empty list (never null) so FollowRepository
+  // getFollowers/getMyFollowers do not get type 'Null' is not a subtype of type 'Future<List<String>>'
+  when(mockNostr.queryEvents(any)).thenAnswer((_) async => <Event>[]);
+
   return mockNostr;
 }
 
@@ -109,8 +118,9 @@ MockNostrClient createMockNostrService() {
 MockSubscriptionManager createMockSubscriptionManager() {
   final mockSub = MockSubscriptionManager();
 
-  // Stub createSubscription to return a valid subscription ID
-  // and immediately call onComplete to simulate empty results
+  // Stub createSubscription to return a valid subscription id (never null)
+  // and immediately call onComplete to simulate empty results, so
+  // UserProfileService batch fetch does not get type 'Null' is not a subtype of type 'Future<String>'.
   when(
     mockSub.createSubscription(
       name: anyNamed('name'),
@@ -158,18 +168,19 @@ List<dynamic> getStandardTestOverrides({
     // Override sharedPreferencesProvider which throws in production
     sharedPreferencesProvider.overrideWithValue(mockPrefs),
 
-    // ONLY override service providers if explicitly requested
-    // Many tests provide their own service mocks, so don't override by default
+    // Always override NostrClient and SubscriptionManager with stubbed mocks
+    // so UserProfileService/FollowRepository never get null Stream<Event> or
+    // Future<List<String>> (fixes type errors during ProfileCacheService use).
+    nostrServiceProvider.overrideWithValue(mockNostr),
+    subscriptionManagerProvider.overrideWithValue(mockSub),
+
+    // ONLY override other service providers if explicitly requested
     if (mockAuthService != null)
       authServiceProvider.overrideWithValue(mockAuth),
     if (mockSocialService != null)
       socialServiceProvider.overrideWithValue(mockSocial),
     if (mockUserProfileService != null)
       userProfileServiceProvider.overrideWithValue(mockProfile),
-    if (mockNostrService != null)
-      nostrServiceProvider.overrideWithValue(mockNostr),
-    if (mockSubscriptionManager != null)
-      subscriptionManagerProvider.overrideWithValue(mockSub),
   ];
 }
 

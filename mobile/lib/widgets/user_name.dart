@@ -91,20 +91,23 @@ class UserName extends ConsumerWidget {
         );
 
     return Row(
+      mainAxisSize: MainAxisSize.min,
       spacing: 4,
       children: [
-        selectable ?? false
-            ? SelectableText(
-                displayName,
-                style: textStyle,
-                maxLines: maxLines ?? 1,
-              )
-            : Text(
-                displayName,
-                style: textStyle,
-                maxLines: maxLines ?? 1,
-                overflow: overflow ?? TextOverflow.ellipsis,
-              ),
+        Flexible(
+          child: selectable ?? false
+              ? SelectableText(
+                  displayName,
+                  style: textStyle,
+                  maxLines: maxLines ?? 1,
+                )
+              : Text(
+                  displayName,
+                  style: textStyle,
+                  maxLines: maxLines ?? 1,
+                  overflow: overflow ?? TextOverflow.ellipsis,
+                ),
+        ),
 
         if (showCheckmark)
           Container(

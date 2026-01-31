@@ -2,18 +2,18 @@
 // ABOUTME: Verifies npub/nip05 is shown instead of raw hex pubkey
 
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:mocktail/mocktail.dart' as mocktail;
 import 'package:models/models.dart' hide UserProfile;
 import 'package:openvine/models/user_profile.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -64,7 +64,6 @@ void main() {
       mockFollowRepository = createMockFollowRepository([testPubkey]);
 
       // Setup default mocks
-      when(mockSocialService.followingPubkeys).thenReturn([testPubkey]);
       when(mockSocialService.followSets).thenReturn([]);
       when(mockUserProfileService.hasProfile(any)).thenReturn(false);
       when(mockUserProfileService.getCachedProfile(any)).thenReturn(null);

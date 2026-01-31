@@ -8,6 +8,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -36,6 +37,10 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
   /// Used to show loading state until subscription has been tried.
   bool _subscriptionAttempted = false;
 
+  /// Cached videos from Funnelcake REST API for popularity ordering.
+  /// When available, these provide engagement-based sorting.
+  List<VideoEvent>? _popularVideos;
+
   @override
   void initState() {
     super.initState();
@@ -43,64 +48,165 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return; // Safety check: don't use ref if widget is disposed
 
-      print('[HASHTAG] 🏷️  Subscribing to hashtag: ${widget.hashtag}');
-      final hashtagService = ref.read(hashtagServiceProvider);
-      hashtagService
-          .subscribeToHashtagVideos([widget.hashtag])
-          .then((_) {
-            if (!mounted) return; // Safety check before async callback
-            print(
-              '[HASHTAG] ✅ Successfully subscribed to hashtag: ${widget.hashtag}',
-            );
-            setState(() => _subscriptionAttempted = true);
-          })
-          .catchError((error) {
-            if (!mounted) return; // Safety check before async callback
-            print(
-              '[HASHTAG] ❌ Failed to subscribe to hashtag ${widget.hashtag}: $error',
-            );
-            setState(() => _subscriptionAttempted = true);
-          });
+      _loadHashtagVideos();
     });
+  }
+
+  /// Load videos from both Funnelcake REST API and WebSocket in parallel.
+  /// Funnelcake is fast and provides complete video data - show immediately.
+  /// WebSocket provides real-time updates and additional videos.
+  Future<void> _loadHashtagVideos({bool forceRefresh = false}) async {
+    if (!mounted) return;
+
+    Log.info(
+      '🏷️ HashtagFeedScreen: Loading #${widget.hashtag}'
+      '${forceRefresh ? ' (force refresh)' : ''}',
+      category: LogCategory.video,
+    );
+
+    final hashtagService = ref.read(hashtagServiceProvider);
+
+    // Run both fetches in parallel for speed
+    // Always try Funnelcake - it will fail fast if unavailable
+    final futures = <Future<void>>[
+      _fetchFromFunnelcake(forceRefresh: forceRefresh),
+      _subscribeViaWebSocket(hashtagService),
+    ];
+
+    // Both run in parallel - Funnelcake shows results immediately via setState
+    await Future.wait(futures);
+
+    if (!mounted) return;
+    setState(() => _subscriptionAttempted = true);
+  }
+
+  /// Fetch videos from Funnelcake REST API and update state immediately.
+  /// Uses a short timeout to fail fast and fall back to WebSocket.
+  Future<void> _fetchFromFunnelcake({bool forceRefresh = false}) async {
+    try {
+      final analyticsService = ref.read(analyticsApiServiceProvider);
+
+      // Quick check - skip if API not configured
+      if (!analyticsService.isAvailable) {
+        Log.debug(
+          '🏷️ HashtagFeedScreen: Funnelcake not configured, skipping',
+          category: LogCategory.video,
+        );
+        return;
+      }
+
+      // Use a 5-second timeout to fail fast
+      final videos = await analyticsService
+          .getVideosByHashtag(
+            hashtag: widget.hashtag,
+            limit: 100,
+            forceRefresh: forceRefresh,
+          )
+          .timeout(const Duration(seconds: 5));
+
+      if (!mounted) return;
+
+      Log.info(
+        '🏷️ HashtagFeedScreen: Got ${videos.length} videos from Funnelcake for #${widget.hashtag}',
+        category: LogCategory.video,
+      );
+
+      // Update immediately - don't wait for WebSocket
+      setState(() {
+        _popularVideos = videos;
+        // Mark as ready to show content if we have videos
+        if (videos.isNotEmpty) {
+          _subscriptionAttempted = true;
+        }
+      });
+    } catch (e) {
+      Log.debug(
+        '🏷️ HashtagFeedScreen: Funnelcake skipped (${e.runtimeType})',
+        category: LogCategory.video,
+      );
+    }
+  }
+
+  /// Subscribe to hashtag via WebSocket for real-time updates.
+  Future<void> _subscribeViaWebSocket(HashtagService hashtagService) async {
+    try {
+      await hashtagService.subscribeToHashtagVideos([widget.hashtag]);
+      if (!mounted) return;
+      Log.debug(
+        '🏷️ HashtagFeedScreen: WebSocket subscription complete for #${widget.hashtag}',
+        category: LogCategory.video,
+      );
+    } catch (e) {
+      Log.error(
+        '🏷️ HashtagFeedScreen: WebSocket subscription failed: $e',
+        category: LogCategory.video,
+      );
+    }
+  }
+
+  /// Combine and sort videos from Funnelcake and WebSocket sources.
+  /// Funnelcake videos are shown first (already sorted by popularity).
+  /// WebSocket-only videos are appended and sorted by local metrics.
+  List<VideoEvent> _combineAndSortVideos(List<VideoEvent> webSocketVideos) {
+    // If no Funnelcake data, just sort WebSocket videos locally
+    if (_popularVideos == null || _popularVideos!.isEmpty) {
+      webSocketVideos.sort(VideoEvent.compareByLoopsThenTime);
+      return webSocketVideos;
+    }
+
+    // Create set of IDs we already have from Funnelcake
+    final funnelcakeIds = <String>{};
+    for (final v in _popularVideos!) {
+      if (v.id.isNotEmpty) funnelcakeIds.add(v.id);
+      if (v.vineId != null && v.vineId!.isNotEmpty) {
+        funnelcakeIds.add(v.vineId!);
+      }
+    }
+
+    // Find WebSocket videos NOT in Funnelcake results (new/real-time videos)
+    final additionalVideos = <VideoEvent>[];
+    for (final video in webSocketVideos) {
+      final isInFunnelcake =
+          funnelcakeIds.contains(video.id) ||
+          (video.vineId != null && funnelcakeIds.contains(video.vineId));
+      if (!isInFunnelcake) {
+        additionalVideos.add(video);
+      }
+    }
+
+    // Sort additional videos by local popularity
+    additionalVideos.sort(VideoEvent.compareByLoopsThenTime);
+
+    // Return Funnelcake videos (already sorted by API) + additional WebSocket videos
+    return [..._popularVideos!, ...additionalVideos];
   }
 
   @override
   Widget build(BuildContext context) {
     final body = Builder(
       builder: (context) {
-        print('[HASHTAG] 🔄 Building HashtagFeedScreen for #${widget.hashtag}');
+        Log.debug(
+          '🏷️ Building HashtagFeedScreen for #${widget.hashtag}',
+          category: LogCategory.video,
+        );
         final videoService = ref.watch(videoEventServiceProvider);
         final hashtagService = ref.watch(hashtagServiceProvider);
-        final videos = List<VideoEvent>.from(
-          hashtagService.getVideosByHashtags([widget.hashtag]),
-        )..sort(VideoEvent.compareByLoopsThenTime);
 
-        print(
-          '[HASHTAG] 📊 Found ${videos.length} videos for #${widget.hashtag}',
+        // Combine Funnelcake videos (fast, pre-sorted) with WebSocket videos
+        final webSocketVideos = List<VideoEvent>.from(
+          hashtagService.getVideosByHashtags([widget.hashtag]),
         );
-        if (videos.isNotEmpty) {
-          print(
-            '[HASHTAG] 📹 First 3 video IDs: ${videos.take(3).map((v) => v.id).join(', ')}',
-          );
-        }
+        final videos = _combineAndSortVideos(webSocketVideos);
+
+        Log.debug(
+          '🏷️ Found ${videos.length} videos for #${widget.hashtag} '
+          '(Funnelcake: ${_popularVideos?.length ?? 0}, WebSocket: ${webSocketVideos.length})',
+          category: LogCategory.video,
+        );
 
         // Use per-subscription loading state for hashtag feed
         final isLoadingHashtag = videoService.isLoadingForSubscription(
           SubscriptionType.hashtag,
-        );
-        print(
-          '[HASHTAG] ⏳ Loading state: $isLoadingHashtag, subscription attempted: $_subscriptionAttempted',
-        );
-
-        // Check if we have videos in different lists
-        final discoveryCount = videoService.getEventCount(
-          SubscriptionType.discovery,
-        );
-        final hashtagCount = videoService.getEventCount(
-          SubscriptionType.hashtag,
-        );
-        print(
-          '[HASHTAG] 📊 Discovery videos: $discoveryCount, Hashtag videos: $hashtagCount',
         );
 
         // Show loading if:
@@ -168,6 +274,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
         if (widget.embedded) {
           return ComposableVideoGrid(
             videos: videos,
+            useMasonryLayout: true,
             onVideoTap:
                 widget.onVideoTap ??
                 (videos, index) {
@@ -179,24 +286,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                     ),
                   );
                 },
-            onRefresh: () async {
-              Log.info(
-                '🔄 HashtagFeedScreen: Refreshing hashtag #${widget.hashtag}',
-                category: LogCategory.video,
-              );
-              // Fetch fresh data from REST API (force bypasses 5-min cache)
-              final analyticsService = ref.read(analyticsApiServiceProvider);
-              final funnelcakeAvailable =
-                  ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
-              if (funnelcakeAvailable) {
-                await analyticsService.getVideosByHashtag(
-                  hashtag: widget.hashtag,
-                  forceRefresh: true,
-                );
-              }
-              // Resubscribe to hashtag to fetch fresh WebSocket data
-              await hashtagService.subscribeToHashtagVideos([widget.hashtag]);
-            },
+            onRefresh: () => _loadHashtagVideos(forceRefresh: true),
           );
         }
 
@@ -207,24 +297,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
           semanticsLabel: 'searching for more videos',
           color: VineTheme.onPrimary,
           backgroundColor: VineTheme.vineGreen,
-          onRefresh: () async {
-            Log.info(
-              '🔄 HashtagFeedScreen: Refreshing hashtag #${widget.hashtag}',
-              category: LogCategory.video,
-            );
-            // Fetch fresh data from REST API (force bypasses 5-min cache)
-            final analyticsService = ref.read(analyticsApiServiceProvider);
-            final funnelcakeAvailable =
-                ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
-            if (funnelcakeAvailable) {
-              await analyticsService.getVideosByHashtag(
-                hashtag: widget.hashtag,
-                forceRefresh: true,
-              );
-            }
-            // Resubscribe to hashtag to fetch fresh WebSocket data
-            await hashtagService.subscribeToHashtagVideos([widget.hashtag]);
-          },
+          onRefresh: () => _loadHashtagVideos(forceRefresh: true),
           child: ListView.builder(
             // Add 1 for loading indicator if still loading
             itemCount: videos.length + (isLoadingMore ? 1 : 0),

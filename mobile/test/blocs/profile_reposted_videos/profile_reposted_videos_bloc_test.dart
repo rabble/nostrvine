@@ -1,6 +1,6 @@
 // ABOUTME: Tests for ProfileRepostedVideosBloc - syncing and fetching reposted
-// ABOUTME: videos. Tests syncing from repository, loading from cache, and state
-// ABOUTME: management.
+// ABOUTME: videos. Tests syncing from repository, loading from cache, state
+// ABOUTME: management, and REST API fallback for videos not on Nostr relays.
 
 import 'dart:async';
 
@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
+import 'package:openvine/services/analytics_api_service.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -16,10 +17,13 @@ class _MockRepostsRepository extends Mock implements RepostsRepository {}
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
+class _MockAnalyticsApiService extends Mock implements AnalyticsApiService {}
+
 void main() {
   group('ProfileRepostedVideosBloc', () {
     late _MockRepostsRepository mockRepostsRepository;
     late _MockVideosRepository mockVideosRepository;
+    late _MockAnalyticsApiService mockAnalyticsApiService;
     late StreamController<Set<String>> repostedIdsController;
 
     // 64-character hex pubkeys for testing
@@ -31,6 +35,7 @@ void main() {
     setUp(() {
       mockRepostsRepository = _MockRepostsRepository();
       mockVideosRepository = _MockVideosRepository();
+      mockAnalyticsApiService = _MockAnalyticsApiService();
       repostedIdsController = StreamController<Set<String>>.broadcast();
 
       // Default stub for watchRepostedAddressableIds
@@ -43,13 +48,16 @@ void main() {
       repostedIdsController.close();
     });
 
-    ProfileRepostedVideosBloc createBloc({String? targetUserPubkey}) =>
-        ProfileRepostedVideosBloc(
-          repostsRepository: mockRepostsRepository,
-          videosRepository: mockVideosRepository,
-          currentUserPubkey: currentUserPubkey,
-          targetUserPubkey: targetUserPubkey,
-        );
+    ProfileRepostedVideosBloc createBloc({
+      String? targetUserPubkey,
+      AnalyticsApiService? analyticsApiService,
+    }) => ProfileRepostedVideosBloc(
+      repostsRepository: mockRepostsRepository,
+      videosRepository: mockVideosRepository,
+      currentUserPubkey: currentUserPubkey,
+      targetUserPubkey: targetUserPubkey,
+      analyticsApiService: analyticsApiService,
+    );
 
     VideoEvent createTestVideo({
       required String id,
@@ -716,6 +724,443 @@ void main() {
                 otherUserPubkey,
               ),
         ],
+      );
+    });
+
+    group('REST API fallback for videos not on Nostr', () {
+      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+        'uses REST API fallback when Nostr returns no videos',
+        setUp: () {
+          final addressableId1 = createAddressableId(currentUserPubkey, 'd1');
+          final video1 = createTestVideo(
+            id: 'e1',
+            pubkey: currentUserPubkey,
+            vineId: 'd1',
+          );
+
+          when(() => mockRepostsRepository.syncUserReposts()).thenAnswer(
+            (_) async => RepostsSyncResult(
+              orderedAddressableIds: [addressableId1],
+              addressableIdToRepostId: {addressableId1: 'repost1'},
+            ),
+          );
+
+          // Nostr returns no videos
+          when(
+            () => mockVideosRepository.getVideosByAddressableIds([
+              addressableId1,
+            ]),
+          ).thenAnswer((_) async => []);
+
+          // REST API fallback returns the video
+          when(
+            () => mockAnalyticsApiService.getVideosByAuthor(
+              pubkey: currentUserPubkey,
+              limit: 100,
+            ),
+          ).thenAnswer((_) async => [video1]);
+        },
+        build: () => createBloc(analyticsApiService: mockAnalyticsApiService),
+        act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        expect: () => [
+          const ProfileRepostedVideosState(
+            status: ProfileRepostedVideosStatus.syncing,
+          ),
+          isA<ProfileRepostedVideosState>().having(
+            (s) => s.status,
+            'status',
+            ProfileRepostedVideosStatus.loading,
+          ),
+          isA<ProfileRepostedVideosState>()
+              .having(
+                (s) => s.status,
+                'status',
+                ProfileRepostedVideosStatus.success,
+              )
+              .having((s) => s.videos.length, 'videos count', 1)
+              .having((s) => s.videos.first.vineId, 'vineId', 'd1'),
+        ],
+        verify: (_) {
+          verify(
+            () => mockAnalyticsApiService.getVideosByAuthor(
+              pubkey: currentUserPubkey,
+              limit: 100,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+        'combines Nostr results with REST API fallback results',
+        setUp: () {
+          final addressableId1 = createAddressableId(currentUserPubkey, 'd1');
+          final addressableId2 = createAddressableId(currentUserPubkey, 'd2');
+          final video1 = createTestVideo(
+            id: 'e1',
+            pubkey: currentUserPubkey,
+            vineId: 'd1',
+          );
+          final video2 = createTestVideo(
+            id: 'e2',
+            pubkey: currentUserPubkey,
+            vineId: 'd2',
+          );
+
+          when(() => mockRepostsRepository.syncUserReposts()).thenAnswer(
+            (_) async => RepostsSyncResult(
+              orderedAddressableIds: [addressableId1, addressableId2],
+              addressableIdToRepostId: {
+                addressableId1: 'repost1',
+                addressableId2: 'repost2',
+              },
+            ),
+          );
+
+          // Nostr returns only video1
+          when(
+            () => mockVideosRepository.getVideosByAddressableIds([
+              addressableId1,
+              addressableId2,
+            ]),
+          ).thenAnswer((_) async => [video1]);
+
+          // REST API fallback returns video2
+          when(
+            () => mockAnalyticsApiService.getVideosByAuthor(
+              pubkey: currentUserPubkey,
+              limit: 100,
+            ),
+          ).thenAnswer((_) async => [video2]);
+        },
+        build: () => createBloc(analyticsApiService: mockAnalyticsApiService),
+        act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        expect: () => [
+          const ProfileRepostedVideosState(
+            status: ProfileRepostedVideosStatus.syncing,
+          ),
+          isA<ProfileRepostedVideosState>().having(
+            (s) => s.status,
+            'status',
+            ProfileRepostedVideosStatus.loading,
+          ),
+          isA<ProfileRepostedVideosState>()
+              .having(
+                (s) => s.status,
+                'status',
+                ProfileRepostedVideosStatus.success,
+              )
+              .having((s) => s.videos.length, 'videos count', 2)
+              .having(
+                (s) => s.videos.map((v) => v.vineId).toList(),
+                'vineIds',
+                ['d1', 'd2'],
+              ),
+        ],
+      );
+
+      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+        'handles REST API fallback failure gracefully',
+        setUp: () {
+          final addressableId1 = createAddressableId(currentUserPubkey, 'd1');
+
+          when(() => mockRepostsRepository.syncUserReposts()).thenAnswer(
+            (_) async => RepostsSyncResult(
+              orderedAddressableIds: [addressableId1],
+              addressableIdToRepostId: {addressableId1: 'repost1'},
+            ),
+          );
+
+          // Nostr returns no videos
+          when(
+            () => mockVideosRepository.getVideosByAddressableIds([
+              addressableId1,
+            ]),
+          ).thenAnswer((_) async => []);
+
+          // REST API fallback throws an exception
+          when(
+            () => mockAnalyticsApiService.getVideosByAuthor(
+              pubkey: currentUserPubkey,
+              limit: 100,
+            ),
+          ).thenThrow(Exception('Network error'));
+        },
+        build: () => createBloc(analyticsApiService: mockAnalyticsApiService),
+        act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        expect: () => [
+          const ProfileRepostedVideosState(
+            status: ProfileRepostedVideosStatus.syncing,
+          ),
+          isA<ProfileRepostedVideosState>().having(
+            (s) => s.status,
+            'status',
+            ProfileRepostedVideosStatus.loading,
+          ),
+          // Should still succeed, just with empty videos
+          isA<ProfileRepostedVideosState>()
+              .having(
+                (s) => s.status,
+                'status',
+                ProfileRepostedVideosStatus.success,
+              )
+              .having((s) => s.videos.length, 'videos count', 0),
+        ],
+      );
+
+      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+        'does not call REST API when analyticsApiService is null',
+        setUp: () {
+          final addressableId1 = createAddressableId(currentUserPubkey, 'd1');
+
+          when(() => mockRepostsRepository.syncUserReposts()).thenAnswer(
+            (_) async => RepostsSyncResult(
+              orderedAddressableIds: [addressableId1],
+              addressableIdToRepostId: {addressableId1: 'repost1'},
+            ),
+          );
+
+          // Nostr returns no videos
+          when(
+            () => mockVideosRepository.getVideosByAddressableIds([
+              addressableId1,
+            ]),
+          ).thenAnswer((_) async => []);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        expect: () => [
+          const ProfileRepostedVideosState(
+            status: ProfileRepostedVideosStatus.syncing,
+          ),
+          isA<ProfileRepostedVideosState>().having(
+            (s) => s.status,
+            'status',
+            ProfileRepostedVideosStatus.loading,
+          ),
+          // Should succeed with empty videos since no fallback available
+          isA<ProfileRepostedVideosState>()
+              .having(
+                (s) => s.status,
+                'status',
+                ProfileRepostedVideosStatus.success,
+              )
+              .having((s) => s.videos.length, 'videos count', 0),
+        ],
+        verify: (_) {
+          verifyNever(
+            () => mockAnalyticsApiService.getVideosByAuthor(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+        'REST API fallback preserves original addressable ID order',
+        setUp: () {
+          // IDs from different authors to test grouping logic
+          final addressableId1 = createAddressableId(currentUserPubkey, 'd1');
+          final addressableId2 = createAddressableId(otherUserPubkey, 'd2');
+          final addressableId3 = createAddressableId(currentUserPubkey, 'd3');
+
+          final video1 = createTestVideo(
+            id: 'e1',
+            pubkey: currentUserPubkey,
+            vineId: 'd1',
+          );
+          final video2 = createTestVideo(
+            id: 'e2',
+            pubkey: otherUserPubkey,
+            vineId: 'd2',
+          );
+          final video3 = createTestVideo(
+            id: 'e3',
+            pubkey: currentUserPubkey,
+            vineId: 'd3',
+          );
+
+          when(() => mockRepostsRepository.syncUserReposts()).thenAnswer(
+            (_) async => RepostsSyncResult(
+              orderedAddressableIds: [
+                addressableId1,
+                addressableId2,
+                addressableId3,
+              ],
+              addressableIdToRepostId: {},
+            ),
+          );
+
+          // Nostr returns no videos
+          when(
+            () => mockVideosRepository.getVideosByAddressableIds([
+              addressableId1,
+              addressableId2,
+              addressableId3,
+            ]),
+          ).thenAnswer((_) async => []);
+
+          // REST API fallback returns videos for each author
+          when(
+            () => mockAnalyticsApiService.getVideosByAuthor(
+              pubkey: currentUserPubkey,
+              limit: 100,
+            ),
+          ).thenAnswer((_) async => [video1, video3]);
+
+          when(
+            () => mockAnalyticsApiService.getVideosByAuthor(
+              pubkey: otherUserPubkey,
+              limit: 100,
+            ),
+          ).thenAnswer((_) async => [video2]);
+        },
+        build: () => createBloc(analyticsApiService: mockAnalyticsApiService),
+        act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        expect: () => [
+          const ProfileRepostedVideosState(
+            status: ProfileRepostedVideosStatus.syncing,
+          ),
+          isA<ProfileRepostedVideosState>().having(
+            (s) => s.status,
+            'status',
+            ProfileRepostedVideosStatus.loading,
+          ),
+          isA<ProfileRepostedVideosState>()
+              .having(
+                (s) => s.status,
+                'status',
+                ProfileRepostedVideosStatus.success,
+              )
+              .having((s) => s.videos.length, 'videos count', 3)
+              .having(
+                (s) => s.videos.map((v) => v.vineId).toList(),
+                'vineIds preserves order',
+                ['d1', 'd2', 'd3'],
+              ),
+        ],
+      );
+
+      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+        'REST API fallback skips Nostr-found videos',
+        setUp: () {
+          final addressableId1 = createAddressableId(currentUserPubkey, 'd1');
+          final addressableId2 = createAddressableId(currentUserPubkey, 'd2');
+          final video1 = createTestVideo(
+            id: 'e1',
+            pubkey: currentUserPubkey,
+            vineId: 'd1',
+          );
+          final video2 = createTestVideo(
+            id: 'e2',
+            pubkey: currentUserPubkey,
+            vineId: 'd2',
+          );
+
+          when(() => mockRepostsRepository.syncUserReposts()).thenAnswer(
+            (_) async => RepostsSyncResult(
+              orderedAddressableIds: [addressableId1, addressableId2],
+              addressableIdToRepostId: {},
+            ),
+          );
+
+          // Nostr returns both videos (no fallback needed)
+          when(
+            () => mockVideosRepository.getVideosByAddressableIds([
+              addressableId1,
+              addressableId2,
+            ]),
+          ).thenAnswer((_) async => [video1, video2]);
+        },
+        build: () => createBloc(analyticsApiService: mockAnalyticsApiService),
+        act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
+        expect: () => [
+          const ProfileRepostedVideosState(
+            status: ProfileRepostedVideosStatus.syncing,
+          ),
+          isA<ProfileRepostedVideosState>().having(
+            (s) => s.status,
+            'status',
+            ProfileRepostedVideosStatus.loading,
+          ),
+          isA<ProfileRepostedVideosState>()
+              .having(
+                (s) => s.status,
+                'status',
+                ProfileRepostedVideosStatus.success,
+              )
+              .having((s) => s.videos.length, 'videos count', 2),
+        ],
+        verify: (_) {
+          // Should NOT call REST API since all videos found on Nostr
+          verifyNever(
+            () => mockAnalyticsApiService.getVideosByAuthor(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
+        'REST API fallback works for load more',
+        setUp: () {
+          final addressableId3 = createAddressableId(currentUserPubkey, 'd3');
+          final video3 = createTestVideo(
+            id: 'e3',
+            pubkey: currentUserPubkey,
+            vineId: 'd3',
+          );
+
+          // Nostr returns no videos for next page
+          when(
+            () => mockVideosRepository.getVideosByAddressableIds([
+              addressableId3,
+            ]),
+          ).thenAnswer((_) async => []);
+
+          // REST API fallback returns the video
+          when(
+            () => mockAnalyticsApiService.getVideosByAuthor(
+              pubkey: currentUserPubkey,
+              limit: 100,
+            ),
+          ).thenAnswer((_) async => [video3]);
+        },
+        build: () => createBloc(analyticsApiService: mockAnalyticsApiService),
+        seed: () => ProfileRepostedVideosState(
+          status: ProfileRepostedVideosStatus.success,
+          repostedAddressableIds: [
+            createAddressableId(currentUserPubkey, 'd1'),
+            createAddressableId(currentUserPubkey, 'd2'),
+            createAddressableId(currentUserPubkey, 'd3'),
+          ],
+          videos: [
+            createTestVideo(id: 'e1', pubkey: currentUserPubkey, vineId: 'd1'),
+            createTestVideo(id: 'e2', pubkey: currentUserPubkey, vineId: 'd2'),
+          ],
+          hasMoreContent: true,
+        ),
+        act: (bloc) => bloc.add(const ProfileRepostedVideosLoadMoreRequested()),
+        expect: () => [
+          isA<ProfileRepostedVideosState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<ProfileRepostedVideosState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.videos.length, 'videos count', 3)
+              .having((s) => s.videos.last.vineId, 'last vineId', 'd3'),
+        ],
+        verify: (_) {
+          verify(
+            () => mockAnalyticsApiService.getVideosByAuthor(
+              pubkey: currentUserPubkey,
+              limit: 100,
+            ),
+          ).called(1);
+        },
       );
     });
   });

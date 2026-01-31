@@ -13,6 +13,11 @@ class MockPathProviderPlatform extends Fake
   Future<String?> getApplicationCachePath() async {
     return '/cache';
   }
+
+  @override
+  Future<String?> getApplicationDocumentsPath() async {
+    return '/documents';
+  }
 }
 
 class MockProVideoEditor extends ProVideoEditor {

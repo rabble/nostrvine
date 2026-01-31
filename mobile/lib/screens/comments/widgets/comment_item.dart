@@ -239,7 +239,14 @@ class _CommentContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SelectableText(content, style: const TextStyle(color: Colors.white));
+    // TapRegion dismisses text selection toolbar when tapping outside
+    return TapRegion(
+      onTapOutside: (_) => FocusScope.of(context).unfocus(),
+      child: SelectableText(
+        content,
+        style: const TextStyle(color: Colors.white),
+      ),
+    );
   }
 }
 
