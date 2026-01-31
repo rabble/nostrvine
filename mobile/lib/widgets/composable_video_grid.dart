@@ -541,6 +541,7 @@ class _VideoInfoSection extends ConsumerWidget {
           if (hasUsername)
             UserName.fromPubKey(
               video.pubkey,
+              embeddedName: video.authorName,
               maxLines: 1,
               style: VineTheme.titleTinyFont(color: Colors.white).copyWith(
                 shadows: const [

@@ -1224,9 +1224,13 @@ class VideoOverlayActions extends ConsumerWidget {
                     final profile = userProfileService.getCachedProfile(
                       video.pubkey,
                     );
-                    final avatarUrl = profile?.picture;
+                    // Use embedded author data from REST API as fallback
+                    // This avoids WebSocket profile fetches for videos
+                    // that already have author_name/author_avatar embedded
+                    final avatarUrl = profile?.picture ?? video.authorAvatar;
                     final displayName =
                         profile?.bestDisplayName ??
+                        video.authorName ??
                         NostrKeyUtils.truncateNpub(video.pubkey);
                     final loopCount = video.originalLoops ?? 0;
 
@@ -1859,6 +1863,7 @@ class VideoAuthorRow extends ConsumerWidget {
                 const SizedBox(width: 6),
                 UserName.fromPubKey(
                   video.pubkey,
+                  embeddedName: video.authorName,
                   style: const TextStyle(color: Colors.white, fontSize: 12),
                   overflow: TextOverflow.ellipsis,
                 ),
