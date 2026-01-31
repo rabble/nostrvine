@@ -6,8 +6,15 @@ import 'dart:developer' as developer;
 import 'dart:io' show Platform;
 
 import 'package:models/models.dart';
+import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/m3u8_resolver_service.dart';
 import 'package:openvine/services/thumbnail_api_service.dart';
+
+/// Get quality string based on bandwidth tracker recommendation
+String? _getBandwidthBasedQuality() {
+  final tracker = bandwidthTracker;
+  return tracker.shouldUseHighQuality ? 'high' : 'low';
+}
 
 /// Extension methods for VideoEvent that require app-level dependencies.
 ///
@@ -157,18 +164,32 @@ extension VideoEventAppExtensions on VideoEvent {
   /// Returns null if:
   /// - Video is not from Divine servers
   /// - Hash cannot be extracted from URL
-  String? get hlsUrl {
+  String? get hlsUrl => getHlsUrl();
+
+  /// Get HLS URL with optional quality override.
+  ///
+  /// [quality] - null for master playlist (ABR), 'high' for 720p, 'low' for 480p
+  String? getHlsUrl({String? quality}) {
     final hash = _extractVideoHash(videoUrl);
     if (hash == null) return null;
-    return '$_divineMediaBase/$hash/hls/master.m3u8';
+
+    // Quality-specific streams vs adaptive master playlist
+    switch (quality) {
+      case 'high':
+        return '$_divineMediaBase/$hash/hls/stream_720p.m3u8';
+      case 'low':
+        return '$_divineMediaBase/$hash/hls/stream_480p.m3u8';
+      default:
+        return '$_divineMediaBase/$hash/hls/master.m3u8';
+    }
   }
 
-  /// Get the optimal video URL based on platform capabilities.
+  /// Get the optimal video URL based on platform and bandwidth.
   ///
-  /// **Android**: Uses HLS (.m3u8) for adaptive bitrate streaming.
-  /// Many Android devices (Motorola, Huawei, OnePlus) have hardware decoders
-  /// that cannot handle H.264 High Profile at high resolutions. HLS with
-  /// H.264 baseline profile and adaptive bitrate solves this.
+  /// **Android**: Uses HLS (.m3u8) for codec compatibility.
+  /// Quality is selected based on measured bandwidth:
+  /// - Good connection (>2 Mbps): 720p stream
+  /// - Slow connection (<2 Mbps): 480p stream
   ///
   /// **iOS/macOS**: Uses original MP4 URL. AVPlayer handles high-resolution
   /// content well with hardware acceleration.
@@ -177,10 +198,14 @@ extension VideoEventAppExtensions on VideoEvent {
   String? getOptimalVideoUrlForPlatform() {
     // On Android, prefer HLS for codec compatibility
     if (Platform.isAndroid) {
-      final hls = hlsUrl;
+      // Use bandwidth tracker for quality selection
+      // Import deferred to avoid circular dependency
+      final quality = _getBandwidthBasedQuality();
+      final hls = getHlsUrl(quality: quality);
+
       if (hls != null) {
         developer.log(
-          '📱 Android: Using HLS for adaptive streaming: $hls',
+          '📱 Android: Using HLS ($quality quality): $hls',
           name: 'VideoEventExtensions',
         );
         return hls;

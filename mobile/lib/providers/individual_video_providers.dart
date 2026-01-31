@@ -12,6 +12,7 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/services/video_cache_manager.dart';
 import 'package:openvine/services/broken_video_tracker.dart'
     show BrokenVideoTracker;
+import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/providers/app_providers.dart';
 
 part 'individual_video_providers.g.dart';
@@ -489,10 +490,25 @@ VideoPlayerController individualVideoController(
     }
   }
 
+  // Track time-to-first-frame for bandwidth-based quality selection
+  final initStartTime = DateTime.now();
+
   final initFuture = initializeWithRetry();
 
   initFuture
       .then((_) {
+        // Record time-to-first-frame for bandwidth tracking
+        // This helps select appropriate quality (720p vs 480p) for future videos
+        final ttffMs = DateTime.now().difference(initStartTime).inMilliseconds;
+        if (ttffMs > 0) {
+          bandwidthTracker.recordTimeToFirstFrame(ttffMs);
+          Log.debug(
+            '📊 Recorded TTFF: ${ttffMs}ms for bandwidth tracking',
+            name: 'IndividualVideoController',
+            category: LogCategory.video,
+          );
+        }
+
         final initialPosition = controller.value.position;
         final initialSize = controller.value.size;
 
