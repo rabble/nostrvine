@@ -25,6 +25,7 @@ import 'package:openvine/services/profile_stats_cache_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/proofmode_publishing_helpers.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/constants/app_constants.dart';
 
 /// Service for publishing processed videos to Nostr relays
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
@@ -201,7 +202,11 @@ class VideoEventPublisher {
       }
 
       // Use the existing Nostr service to publish
-      final sentEvent = await _nostrService.publishEvent(event);
+      // Explicitly target the primary relay to ensure video is visible to others
+      final sentEvent = await _nostrService.publishEvent(
+        event,
+        targetRelays: [AppConstants.defaultRelayUrl],
+      );
 
       // Check if publish was successful
       if (sentEvent != null) {
@@ -700,6 +705,27 @@ class VideoEventPublisher {
       // Cache the video event immediately after creation
       _personalEventCache?.cacheUserEvent(event);
 
+      // Add to discovery cache immediately for instant local UI feedback
+      // This ensures the video appears in the user's feed even before relay
+      // confirmation
+      if (_videoEventService != null) {
+        try {
+          final videoEvent = VideoEvent.fromNostrEvent(event);
+          _videoEventService.addVideoEvent(videoEvent);
+          Log.info(
+            'Added video to discovery cache immediately: ${event.id}',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+        } catch (e) {
+          Log.warning(
+            'Failed to add video to discovery cache: $e',
+            name: 'VideoEventPublisher',
+            category: LogCategory.video,
+          );
+        }
+      }
+
       Log.info(
         'Created video event: ${event.id}',
         name: 'VideoEventPublisher',
@@ -759,24 +785,8 @@ class VideoEventPublisher {
         _totalEventsPublished++;
         _lastPublishTime = DateTime.now();
 
-        // Add the published video to local cache immediately for instant UI updates
-        if (_videoEventService != null) {
-          try {
-            final videoEvent = VideoEvent.fromNostrEvent(event);
-            _videoEventService.addVideoEvent(videoEvent);
-            Log.info(
-              'Added published video to discovery cache: ${event.id}',
-              name: 'VideoEventPublisher',
-              category: LogCategory.video,
-            );
-          } catch (e) {
-            Log.warning(
-              'Failed to add published video to cache: $e',
-              name: 'VideoEventPublisher',
-              category: LogCategory.video,
-            );
-          }
-        }
+        // Note: Discovery cache was already updated immediately after event
+        // creation (before relay publish) for instant local UI feedback.
 
         // Invalidate profile stats cache so video count updates immediately
         final currentPubkey = _nostrService.publicKey;
