@@ -120,11 +120,17 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                         _DrawerItem(
                           title: 'Support',
                           onTap: () async {
-                            print('🎫 Contact Support tapped');
+                            Log.debug(
+                              '🎫 Contact Support tapped',
+                              category: LogCategory.ui,
+                            );
 
                             final isZendeskAvailable =
                                 ZendeskSupportService.isAvailable;
-                            print('🔍 Zendesk available: $isZendeskAvailable');
+                            Log.debug(
+                              '🔍 Zendesk available: $isZendeskAvailable',
+                              category: LogCategory.ui,
+                            );
 
                             final bugReportService = ref.read(
                               bugReportServiceProvider,
@@ -144,8 +150,9 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                               const Duration(milliseconds: 300),
                             );
                             if (!navigatorContext.mounted) {
-                              print(
+                              Log.warning(
                                 '⚠️ Context not mounted after drawer close',
+                                category: LogCategory.ui,
                               );
                               return;
                             }
@@ -323,7 +330,10 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     userPubkey,
                     userProfileService,
                   );
-                  print('💬 Opening Zendesk ticket list');
+                  Log.debug(
+                    '💬 Opening Zendesk ticket list',
+                    category: LogCategory.ui,
+                  );
                   await ZendeskSupportService.showTicketList();
                 } else {
                   if (context.mounted) {
@@ -370,7 +380,10 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   ) async {
     if (userPubkey == null) {
       // Users always have pubkey in this app, but handle edge case gracefully
-      print('⚠️ Zendesk: No userPubkey, using baseline anonymous identity');
+      Log.warning(
+        '⚠️ Zendesk: No userPubkey, using baseline anonymous identity',
+        category: LogCategory.system,
+      );
       return;
     }
 
@@ -378,10 +391,14 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
       final npub = NostrKeyUtils.encodePubKey(userPubkey);
       final profile = userProfileService.getCachedProfile(userPubkey);
 
-      print(
+      Log.debug(
         '🎫 Zendesk: Setting identity for ${profile?.bestDisplayName ?? npub}',
+        category: LogCategory.system,
       );
-      print('🎫 Zendesk: NIP-05: ${profile?.nip05 ?? "none"}');
+      Log.debug(
+        '🎫 Zendesk: NIP-05: ${profile?.nip05 ?? "none"}',
+        category: LogCategory.system,
+      );
 
       await ZendeskSupportService.setUserIdentity(
         displayName: profile?.bestDisplayName,
@@ -389,11 +406,13 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
         npub: npub,
       );
 
-      print('✅ Zendesk: Identity set successfully');
+      Log.debug(
+        '✅ Zendesk: Identity set successfully',
+        category: LogCategory.system,
+      );
     } catch (e) {
-      print('❌ Zendesk: Failed to set identity: $e');
-      Log.warning(
-        'Failed to set Zendesk identity: $e',
+      Log.error(
+        '❌ Zendesk: Failed to set identity: $e',
         category: LogCategory.system,
       );
     }
@@ -424,7 +443,7 @@ App Version: $appVersion
 Platform: ${Theme.of(context).platform.name}
 ''';
 
-      print('🐛 Opening Zendesk for bug report');
+      Log.debug('🐛 Opening Zendesk for bug report', category: LogCategory.ui);
       final success = await ZendeskSupportService.showNewTicketScreen(
         subject: 'Bug Report',
         description: description,
