@@ -102,6 +102,11 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
             enableLimitCacheSize: false,
           ),
         ),
+        exportConfigs: WidgetLayerExportConfigs(
+          assetPath: sticker.assetPath,
+          networkUrl: sticker.networkUrl,
+          meta: {'description': sticker.description, 'tags': sticker.tags},
+        ),
       );
       _editor!.addLayer(layer);
     }
