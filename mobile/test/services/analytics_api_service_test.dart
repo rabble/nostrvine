@@ -300,6 +300,183 @@ void main() {
         expect(event.thumbnailUrl, isNull);
         expect(event.vineId, isNull);
       });
+
+      test('includes description in VideoEvent content field', () {
+        final stats = VideoStats(
+          id: 'event123',
+          pubkey: 'pubkey456',
+          createdAt: DateTime.now(),
+          kind: 34236,
+          dTag: 'vine-id',
+          title: 'My Video',
+          thumbnail: '',
+          videoUrl: 'https://example.com/video.mp4',
+          description: 'This is my video description',
+          reactions: 0,
+          comments: 0,
+          reposts: 0,
+          engagementScore: 0,
+        );
+
+        final event = stats.toVideoEvent();
+
+        expect(event.content, 'This is my video description');
+      });
+
+      test('handles null description as empty content', () {
+        final stats = VideoStats(
+          id: 'event123',
+          pubkey: 'pubkey456',
+          createdAt: DateTime.now(),
+          kind: 34236,
+          dTag: '',
+          title: '',
+          thumbnail: '',
+          videoUrl: '',
+          reactions: 0,
+          comments: 0,
+          reposts: 0,
+          engagementScore: 0,
+        );
+
+        final event = stats.toVideoEvent();
+
+        expect(event.content, '');
+      });
+    });
+
+    group('description parsing', () {
+      test('parses description from event content field (NIP-71 standard)', () {
+        final json = {
+          'event': {
+            'id': 'abc123',
+            'pubkey': 'def456',
+            'created_at': 1767316187,
+            'kind': 34236,
+            'content': 'This is my video description',
+            'tags': [
+              ['title', 'My Video'],
+            ],
+          },
+          'stats': {
+            'reactions': 5,
+            'comments': 2,
+            'reposts': 1,
+            'engagement_score': 10,
+          },
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.description, 'This is my video description');
+
+        final event = stats.toVideoEvent();
+        expect(event.content, 'This is my video description');
+      });
+
+      test('parses description from flat json content field', () {
+        final json = {
+          'id': 'abc123',
+          'pubkey': 'def456',
+          'created_at': 1767316187,
+          'kind': 34236,
+          'content': 'Flat structure description',
+          'title': 'My Video',
+          'thumbnail': '',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.description, 'Flat structure description');
+      });
+
+      test('falls back to summary tag when content is empty', () {
+        final json = {
+          'id': 'abc123',
+          'pubkey': 'def456',
+          'created_at': 1767316187,
+          'kind': 34236,
+          'content': '',
+          'tags': [
+            ['title', 'My Video'],
+            ['summary', 'Description from summary tag'],
+          ],
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.description, 'Description from summary tag');
+      });
+
+      test('falls back to summary tag when content is missing', () {
+        final json = {
+          'id': 'abc123',
+          'pubkey': 'def456',
+          'created_at': 1767316187,
+          'kind': 34236,
+          'tags': [
+            ['summary', 'Fallback description'],
+          ],
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.description, 'Fallback description');
+      });
+
+      test('prefers content field over summary tag', () {
+        final json = {
+          'id': 'abc123',
+          'pubkey': 'def456',
+          'created_at': 1767316187,
+          'kind': 34236,
+          'content': 'Primary description from content',
+          'tags': [
+            ['summary', 'Secondary description from tag'],
+          ],
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.description, 'Primary description from content');
+      });
+
+      test('handles missing description gracefully', () {
+        final json = {
+          'id': 'abc123',
+          'pubkey': 'def456',
+          'created_at': 1767316187,
+          'kind': 34236,
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.description, isNull);
+
+        final event = stats.toVideoEvent();
+        expect(event.content, '');
+      });
     });
   });
 

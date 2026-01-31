@@ -16,6 +16,7 @@ class VideoStats {
   final int kind;
   final String dTag;
   final String title;
+  final String? description; // Video description from event.content (NIP-71)
   final String thumbnail;
   final String videoUrl;
   final String? sha256; // Content hash for Blossom authentication
@@ -36,6 +37,7 @@ class VideoStats {
     required this.kind,
     required this.dTag,
     required this.title,
+    this.description,
     required this.thumbnail,
     required this.videoUrl,
     this.sha256,
@@ -115,8 +117,14 @@ class VideoStats {
     String? sha256 =
         eventData['sha256']?.toString() ?? json['sha256']?.toString();
 
-    // Also check for blurhash in tags (NIP-71 standard)
+    // Parse description from event content (NIP-71 standard: content = description)
+    // Fall back to summary tag for backward compatibility
+    String? description = eventData['content']?.toString();
+    if (description != null && description.isEmpty) description = null;
+
+    // Also check for blurhash and summary in tags (NIP-71 standard)
     String? blurhashFromTag;
+    String? summaryFromTag;
 
     if (eventData['tags'] is List) {
       final tags = eventData['tags'] as List;
@@ -137,9 +145,15 @@ class VideoStats {
           if (tagName == 'blurhash' && blurhashFromTag == null) {
             blurhashFromTag = tagValue;
           }
+          if (tagName == 'summary' && summaryFromTag == null) {
+            summaryFromTag = tagValue;
+          }
         }
       }
     }
+
+    // Fall back to summary tag if content is empty
+    description ??= summaryFromTag;
 
     // Normalize empty sha256 to null
     if (sha256 != null && sha256.isEmpty) sha256 = null;
@@ -192,6 +206,7 @@ class VideoStats {
       kind: eventData['kind'] ?? 34236,
       dTag: dTag,
       title: title,
+      description: description,
       thumbnail: thumbnail,
       videoUrl: videoUrl,
       sha256: sha256,
@@ -215,7 +230,7 @@ class VideoStats {
       id: id,
       pubkey: pubkey,
       createdAt: createdAt.millisecondsSinceEpoch ~/ 1000,
-      content: '',
+      content: description ?? '',
       timestamp: createdAt,
       title: title.isNotEmpty ? title : null,
       videoUrl: videoUrl.isNotEmpty ? videoUrl : null,
