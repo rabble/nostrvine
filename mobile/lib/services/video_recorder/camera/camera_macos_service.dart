@@ -8,10 +8,12 @@ import 'package:audio_session/audio_session.dart';
 import 'package:camera_macos_plus/camera_macos.dart';
 import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
+import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// macOS implementation of [CameraService] using the camera_macos package.
 ///
@@ -148,7 +150,7 @@ class CameraMacOSService extends CameraService {
 
     try {
       final deviceId = _videoDevices![_currentCameraIndex].deviceId;
-      final audioDeviceId = _selectBestAudioDevice();
+      final audioDeviceId = await _selectBestAudioDevice();
 
       Log.info(
         '📷 Initializing camera with video=$deviceId, audio=$audioDeviceId',
@@ -509,20 +511,54 @@ class CameraMacOSService extends CameraService {
 
   /// Selects the best audio device for recording.
   ///
-  /// Prefers built-in microphone over virtual devices (Zoom, etc.)
+  /// Priority order:
+  /// 1. User's manually selected preference (if still available)
+  /// 2. Built-in microphone (most reliable for recording)
+  /// 3. Any device with "Microphone" in the name
+  /// 4. First non-virtual device
+  /// 5. First device as fallback
+  ///
   /// Returns null if no audio devices available.
-  String? _selectBestAudioDevice() {
+  Future<String?> _selectBestAudioDevice() async {
     if (_audioDevices == null || _audioDevices!.isEmpty) {
       return null;
     }
 
-    // Priority order for audio device selection
-    // 1. Built-in microphone (most reliable for recording)
-    // 2. Any device with "Microphone" in the name
-    // 3. First non-virtual device
-    // 4. First device as fallback
+    // Check for user's manual preference first
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final preferredId = prefs.getString(
+        AudioDevicePreferenceService.prefsKey,
+      );
+      if (preferredId != null) {
+        // Check if the preferred device is still available
+        final preferred = _audioDevices!.where(
+          (d) => d.deviceId == preferredId,
+        );
+        if (preferred.isNotEmpty) {
+          Log.info(
+            '🎤 Using user-selected audio device: ${preferred.first.deviceId}',
+            name: 'CameraMacOSService',
+            category: LogCategory.video,
+          );
+          return preferred.first.deviceId;
+        } else {
+          Log.warning(
+            '⚠️ User-selected audio device no longer available: $preferredId',
+            name: 'CameraMacOSService',
+            category: LogCategory.video,
+          );
+        }
+      }
+    } catch (e) {
+      Log.warning(
+        '⚠️ Failed to load audio device preference: $e',
+        name: 'CameraMacOSService',
+        category: LogCategory.video,
+      );
+    }
 
-    // Try to find built-in microphone first
+    // Auto-select: Try to find built-in microphone first
     final builtIn = _audioDevices!.where(
       (d) =>
           d.deviceId.toLowerCase().contains('builtinmicrophone') ||
@@ -530,7 +566,7 @@ class CameraMacOSService extends CameraService {
     );
     if (builtIn.isNotEmpty) {
       Log.info(
-        '🎤 Selected built-in microphone: ${builtIn.first.deviceId}',
+        '🎤 Auto-selected built-in microphone: ${builtIn.first.deviceId}',
         name: 'CameraMacOSService',
         category: LogCategory.video,
       );
@@ -543,7 +579,7 @@ class CameraMacOSService extends CameraService {
     );
     if (microphone.isNotEmpty) {
       Log.info(
-        '🎤 Selected microphone device: ${microphone.first.deviceId}',
+        '🎤 Auto-selected microphone device: ${microphone.first.deviceId}',
         name: 'CameraMacOSService',
         category: LogCategory.video,
       );
@@ -559,7 +595,8 @@ class CameraMacOSService extends CameraService {
     );
     if (nonVirtual.isNotEmpty) {
       Log.info(
-        '🎤 Selected non-virtual audio device: ${nonVirtual.first.deviceId}',
+        '🎤 Auto-selected non-virtual audio device: '
+        '${nonVirtual.first.deviceId}',
         name: 'CameraMacOSService',
         category: LogCategory.video,
       );

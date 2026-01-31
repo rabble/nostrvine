@@ -24,6 +24,7 @@ import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/audio_playback_service.dart';
+import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
@@ -311,6 +312,15 @@ AgeVerificationService ageVerificationService(Ref ref) {
 @Riverpod(keepAlive: true)
 AudioSharingPreferenceService audioSharingPreferenceService(Ref ref) {
   final service = AudioSharingPreferenceService();
+  service.initialize(); // Initialize asynchronously
+  return service;
+}
+
+/// Audio device preference service for managing the preferred input device
+/// for recording on macOS. keepAlive ensures preference persists.
+@Riverpod(keepAlive: true)
+AudioDevicePreferenceService audioDevicePreferenceService(Ref ref) {
+  final service = AudioDevicePreferenceService();
   service.initialize(); // Initialize asynchronously
   return service;
 }

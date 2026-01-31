@@ -651,6 +651,63 @@ final class AudioSharingPreferenceServiceProvider
 String _$audioSharingPreferenceServiceHash() =>
     r'6d09af615c19937bc2842079c368161b513dd323';
 
+/// Audio device preference service for managing the preferred input device
+/// for recording on macOS. keepAlive ensures preference persists.
+
+@ProviderFor(audioDevicePreferenceService)
+const audioDevicePreferenceServiceProvider =
+    AudioDevicePreferenceServiceProvider._();
+
+/// Audio device preference service for managing the preferred input device
+/// for recording on macOS. keepAlive ensures preference persists.
+
+final class AudioDevicePreferenceServiceProvider
+    extends
+        $FunctionalProvider<
+          AudioDevicePreferenceService,
+          AudioDevicePreferenceService,
+          AudioDevicePreferenceService
+        >
+    with $Provider<AudioDevicePreferenceService> {
+  /// Audio device preference service for managing the preferred input device
+  /// for recording on macOS. keepAlive ensures preference persists.
+  const AudioDevicePreferenceServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'audioDevicePreferenceServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$audioDevicePreferenceServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<AudioDevicePreferenceService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AudioDevicePreferenceService create(Ref ref) {
+    return audioDevicePreferenceService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AudioDevicePreferenceService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AudioDevicePreferenceService>(value),
+    );
+  }
+}
+
+String _$audioDevicePreferenceServiceHash() =>
+    r'9880cf38a5d5ae812a798e7a5c4fa96ffa3578d6';
+
 /// Geo-blocking service for regional compliance
 
 @ProviderFor(geoBlockingService)
