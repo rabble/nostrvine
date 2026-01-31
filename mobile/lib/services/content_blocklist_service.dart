@@ -4,7 +4,6 @@
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Service for managing content blocklist
@@ -41,30 +40,8 @@ class ContentBlocklistService {
   String? _ourPubkey;
 
   void _addInitialBlockedContent() {
-    // Add the specific npubs requested by user
-    final targetNpubs = [
-      'npub1w3z04t3z6n2f88yptqvaeg7ysgkzp96ch7r2l3nrvhd4770k0hds43lfey',
-      'npub19hml4ddt36mh2u435epzrd5q2m80hnx3d73hp5e6t7l2mc77he0s4m6pur',
-      'npub1t9pu3reuvrxeakcjtfngu2g344qelszwj32fakt2wgvsrhv4sdeqe6jz4j',
-    ];
-
-    for (final npub in targetNpubs) {
-      final hexPubkey = _npubToHex(npub);
-      if (hexPubkey != null) {
-        _runtimeBlocklist.add(hexPubkey);
-        Log.debug(
-          'Added to blocklist: ${npub.substring(0, 16)}... -> ${hexPubkey}...',
-          name: 'ContentBlocklistService',
-          category: LogCategory.system,
-        );
-      }
-    }
-  }
-
-  /// Convert any public identifier (npub/nprofile/hex) to hex format
-  String? _npubToHex(String identifier) {
-    // Use universal normalizer to handle npub, nprofile, and hex formats
-    return normalizeToHex(identifier);
+    // No hardcoded blocks - moderation should happen at relay level
+    // Users can still block individuals via the app UI
   }
 
   /// Check if a public key is blocked
