@@ -10,5 +10,5 @@ appId: co.openvine.app
 - assertVisible: "Privacy
     Policy"
 - assertVisible: "Safety Standards"
-- assertVisible: Already have keys? Import them here →
 - assertVisible: Accept Terms to Continue
+- assertVisible: Have an account? Log In

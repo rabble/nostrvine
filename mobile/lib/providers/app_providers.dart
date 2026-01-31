@@ -228,12 +228,34 @@ void relaySetChangeBridge(Ref ref) {
 
       // Debounce: collapse rapid changes into a single reset
       debounceTimer?.cancel();
-      debounceTimer = Timer(const Duration(seconds: 2), () {
+      debounceTimer = Timer(const Duration(seconds: 2), () async {
         Log.info(
-          'Debounce elapsed - triggering feed reset for new relay set',
+          'Debounce elapsed - forcing WebSocket reconnection and feed reset',
           name: 'RelaySetChangeBridge',
           category: LogCategory.relay,
         );
+
+        // CRITICAL FIX: Force reconnect all WebSocket connections
+        // When relays are added/removed, the existing WebSocket connections
+        // can become stale/zombie - showing as "connected" but not responding
+        // to subscription requests. Force disconnect and reconnect all relays
+        // to establish fresh connections.
+        try {
+          await nostrService.forceReconnectAll();
+          Log.info(
+            'Successfully reconnected all relay WebSockets',
+            name: 'RelaySetChangeBridge',
+            category: LogCategory.relay,
+          );
+        } catch (e) {
+          Log.error(
+            'Failed to reconnect relays: $e',
+            name: 'RelaySetChangeBridge',
+            category: LogCategory.relay,
+          );
+        }
+
+        // Now reset and resubscribe all feeds with fresh connections
         videoEventService.resetAndResubscribeAll();
       });
     }

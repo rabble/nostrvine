@@ -33,6 +33,31 @@ class TopHashtagsService {
   static final TopHashtagsService _instance = TopHashtagsService._();
   static TopHashtagsService get instance => _instance;
 
+  /// Default fallback hashtags shown when loading fails or is slow.
+  /// These are popular hashtags that provide immediate discoverability.
+  static const List<String> defaultHashtags = [
+    'cats',
+    'dogs',
+    'music',
+    'art',
+    'nature',
+    'food',
+    'travel',
+    'funny',
+    'dance',
+    'gaming',
+    'bitcoin',
+    'nostr',
+    'photography',
+    'fitness',
+    'comedy',
+    'animals',
+    'sunset',
+    'coffee',
+    'tech',
+    'fashion',
+  ];
+
   List<HashtagData>? _topHashtags;
   bool _isLoaded = false;
 
@@ -109,9 +134,13 @@ class TopHashtagsService {
     }
   }
 
-  /// Get top N hashtags
+  /// Get top N hashtags.
+  /// Returns fallback defaults if data hasn't loaded yet.
   List<String> getTopHashtags({int limit = 50}) {
-    if (!_isLoaded || _topHashtags == null) return [];
+    if (!_isLoaded || _topHashtags == null || _topHashtags!.isEmpty) {
+      // Return default hashtags as fallback
+      return defaultHashtags.take(limit).toList();
+    }
 
     return _topHashtags!.take(limit).map((h) => h.hashtag).toList();
   }

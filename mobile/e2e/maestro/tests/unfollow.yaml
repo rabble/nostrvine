@@ -1,18 +1,12 @@
 appId: co.openvine.app
-env:
-  VIDEO_DATA: "Play video IG: @SamuelGrubbs Yaga 😂💀 162.6k 84.8M"
-  VIDEO_USER: "IG: @SamuelGrubbs"
-  VIDEO_DESCRIPTION: "Yaga 😂💀"
-  VIDEO_USER_BIO: "IG: @SamuelGrubbs IG: @SamuelGrubbs ✞He>i✞ 📧Biz Email👉SamuelGrubbsBiz@gmail.com📧 👻Snapchat/IFunny👉@SamuelGrubbs👻 📷Instagram🐥Twitter👉@SamuelGrubbs1📷🐥 #TheNerd and #Money🏀"
-
 tags:
   - Social
 ---
 #TC to unfollow a user,
-# given the user is logged in in the app,
-# by starting to unfollow and validate it on the home screen and on the following count
+# given the user is logged in in the app and already following VIDEO_USER,
+# by starting to unfollow and validate it on the home screen and on the following count in the profile
 #Steps:
-# 1. Given an already logged in user, tap on Explore: Explore screen is presented
+# 1. Given an already logged in user, tap on Home: Home screen is presented with VIDEO_USER videos displayed
 # 2. Tap on a VIDEO_USER video and unfollow the user VIDEO_USER. Expected: Follow is displayed
 # 3. Browse to the home screen: Home screen is empty
 # 4. Tap on profile: validate 0 following user
@@ -22,11 +16,9 @@ tags:
     id: explore_tab
     delay: 100
 - runFlow: ../asserts/assertExplore.yaml
+- waitForAnimationToEnd
 
 # 2. Tap on a VIDEO_USER video and unfollow the user VIDEO_USER. Expected: Follow is displayed
-- waitForAnimationToEnd
-# TO-DO: add regext to match likes. Something like "^\\d{3}\\.\\d{k}$"
-# TO-DO: add regext to match loops. Something like "^\\d{2}\\.\\d{M}$"
 - assertVisible:
     text: ${VIDEO_DATA}
 - tapOn:

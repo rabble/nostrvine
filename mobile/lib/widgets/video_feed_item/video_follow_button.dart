@@ -100,34 +100,39 @@ class VideoFollowButtonView extends StatelessWidget {
         if (hideIfFollowing && isFollowing) {
           return const SizedBox.shrink();
         }
-        return GestureDetector(
-          onTap: () {
-            Log.info(
-              'Follow button tapped for $pubkey',
-              name: 'VideoFollowButton',
-              category: LogCategory.ui,
-            );
-            context.read<MyFollowingBloc>().add(
-              MyFollowingToggleRequested(pubkey),
-            );
-          },
-          child: Container(
-            width: 20,
-            height: 20,
-            decoration: BoxDecoration(
-              color: isFollowing ? Colors.white : VineTheme.cameraButtonGreen,
-              shape: BoxShape.circle,
-            ),
-            child: Center(
-              child: SvgPicture.asset(
-                isFollowing
-                    ? 'assets/icon/Icon-Following.svg'
-                    : 'assets/icon/Icon-Follow.svg',
-                width: 13,
-                height: 13,
-                colorFilter: isFollowing
-                    ? null // Icon-Following.svg has its own green color
-                    : const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+        return Semantics(
+          identifier: 'follow_button',
+          container: true,
+          explicitChildNodes: true,
+          child: GestureDetector(
+            onTap: () {
+              Log.info(
+                'Follow button tapped for $pubkey',
+                name: 'VideoFollowButton',
+                category: LogCategory.ui,
+              );
+              context.read<MyFollowingBloc>().add(
+                MyFollowingToggleRequested(pubkey),
+              );
+            },
+            child: Container(
+              width: 20,
+              height: 20,
+              decoration: BoxDecoration(
+                color: isFollowing ? Colors.white : VineTheme.cameraButtonGreen,
+                shape: BoxShape.circle,
+              ),
+              child: Center(
+                child: SvgPicture.asset(
+                  isFollowing
+                      ? 'assets/icon/Icon-Following.svg'
+                      : 'assets/icon/Icon-Follow.svg',
+                  width: 13,
+                  height: 13,
+                  colorFilter: isFollowing
+                      ? null // Icon-Following.svg has its own green color
+                      : const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+                ),
               ),
             ),
           ),

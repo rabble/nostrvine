@@ -1,5 +1,5 @@
 appId: co.openvine.app
 ---
 - assertVisible: Options
-- assertVisible: Delete Comment
-- assertVisible: Cancel
+- assertVisible:
+    id: delete_comment_option

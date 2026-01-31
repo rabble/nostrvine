@@ -2,6 +2,10 @@ appId: co.openvine.app
 ---
 - runFlow: ../tests/loginFreshInstall.yaml
 - runFlow: ../tests/profileFreshInstall.yaml
+
+#healthy app re-open
+- stopApp
+- launchApp
 - runFlow: ../tests/profileNavigation.yaml
 
 #Tear down

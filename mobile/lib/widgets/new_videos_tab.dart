@@ -176,7 +176,7 @@ class _NewVideosContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return ComposableVideoGrid(
       videos: videos,
-      thumbnailAspectRatio: 9 / 16, // Portrait thumbnail (0.5625)
+      useMasonryLayout: true,
       onVideoTap: (videoList, index) {
         Log.info(
           '🎯 NewVideosTab TAP: gridIndex=$index, '

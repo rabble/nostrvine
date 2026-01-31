@@ -66,10 +66,12 @@ void main() {
       ).thenAnswer((_) async {});
     });
 
-    ProfileEditorBloc createBloc() => ProfileEditorBloc(
-      profileRepository: mockProfileRepository,
-      userProfileService: mockUserProfileService,
-    );
+    ProfileEditorBloc createBloc({bool hasExistingProfile = true}) =>
+        ProfileEditorBloc(
+          profileRepository: mockProfileRepository,
+          userProfileService: mockUserProfileService,
+          hasExistingProfile: hasExistingProfile,
+        );
 
     test('initial state is ProfileEditorStatus.initial', () {
       final bloc = createBloc();

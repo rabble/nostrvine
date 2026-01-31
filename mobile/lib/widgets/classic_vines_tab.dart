@@ -5,17 +5,13 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/widgets/feature_flag_widget.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
-import 'package:openvine/providers/curation_providers.dart';
-import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/classic_viners_slider.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
-import 'package:openvine/widgets/trending_hashtags_section.dart';
+import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 
 /// Tab widget displaying Classics archive videos (pre-2017).
 ///
@@ -82,51 +78,67 @@ class _ClassicVinesTabState extends ConsumerState<ClassicVinesTab> {
   }
 }
 
-/// Content widget displaying classic Viners slider, hashtags, and video grid
-class _ClassicVinesContent extends ConsumerWidget {
+/// Content widget displaying classic Viners slider and video grid.
+///
+/// Viners slider pushes up as user scrolls down (1:1 with scroll distance).
+/// When scrolling up, slider slides back in as an overlay with animation.
+class _ClassicVinesContent extends ConsumerStatefulWidget {
   const _ClassicVinesContent({required this.videos, required this.onVideoTap});
 
   final List<VideoEvent> videos;
   final void Function(List<VideoEvent> videos, int index) onVideoTap;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Watch trending hashtags (synchronous, returns List<TrendingHashtag>)
-    final trendingHashtags = ref.watch(trendingHashtagsProvider);
+  ConsumerState<_ClassicVinesContent> createState() =>
+      _ClassicVinesContentState();
+}
 
-    return Column(
+class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent>
+    with ScrollToHideMixin {
+  @override
+  Widget build(BuildContext context) {
+    measureHeaderHeight();
+
+    return Stack(
       children: [
-        // Top Classic Viners horizontal slider
-        const ClassicVinersSlider(),
-        // Trending Hashtags section (hidden by default, enable via feature flag)
-        FeatureFlagWidget(
-          flag: FeatureFlag.classicsHashtags,
-          child: TrendingHashtagsSection(
-            hashtags: trendingHashtags.isNotEmpty
-                ? trendingHashtags.map((h) => h.tag).toList()
-                : TopHashtagsService.instance.getTopHashtags(limit: 20),
+        // Grid takes full space
+        Positioned.fill(
+          child: NotificationListener<ScrollNotification>(
+            onNotification: handleScrollNotification,
+            child: ComposableVideoGrid(
+              videos: widget.videos,
+              useMasonryLayout: true,
+              padding: EdgeInsets.only(
+                left: 4,
+                right: 4,
+                bottom: 4,
+                top: headerHeight > 0 ? headerHeight + 4 : 4,
+              ),
+              onVideoTap: widget.onVideoTap,
+              onRefresh: () async {
+                Log.info(
+                  '🔄 ClassicVinesTab: Spinning to next batch of classics',
+                  name: 'ClassicVinesTab',
+                  category: LogCategory.video,
+                );
+                // Only refresh classics feed (roulette to next page)
+                // Don't refresh trending hashtags - it can cause disposal errors
+                await ref.read(classicVinesFeedProvider.notifier).refresh();
+              },
+              emptyBuilder: () => const _ClassicVinesEmptyState(),
+            ),
           ),
         ),
-        // Video grid
-        Expanded(
-          child: ComposableVideoGrid(
-            videos: videos,
-            thumbnailAspectRatio: 1.0, // Square thumbnails for classic vines
-            onVideoTap: onVideoTap,
-            onRefresh: () async {
-              Log.info(
-                '🔄 ClassicVinesTab: Refreshing from REST API',
-                name: 'ClassicVinesTab',
-                category: LogCategory.video,
-              );
-              // Fetch fresh data from both providers concurrently
-              await Future.wait([
-                ref.read(classicVinesFeedProvider.notifier).refresh(),
-                ref.read(trendingHashtagsProvider.notifier).refresh(),
-              ]);
-            },
-            emptyBuilder: () => const _ClassicVinesEmptyState(),
-          ),
+        // Viners slider overlay on top, animated when returning
+        AnimatedPositioned(
+          duration: headerFullyHidden
+              ? const Duration(milliseconds: 250)
+              : Duration.zero,
+          curve: Curves.easeOut,
+          top: headerOffset,
+          left: 0,
+          right: 0,
+          child: ClassicVinersSlider(key: headerKey),
         ),
       ],
     );

@@ -1,6 +1,8 @@
 appId: co.openvine.app
 ---
 - assertVisible: Clips
+- assertVisible: Back
+
 # Check if "No Clips Yet" is visible
 - runFlow:
     when:

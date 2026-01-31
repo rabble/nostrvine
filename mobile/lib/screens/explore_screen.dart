@@ -374,8 +374,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             },
             tabs: [
               if (_classicsAvailable) const Tab(text: 'Classics'),
-              const Tab(text: 'New Videos'),
-              const Tab(text: 'Trending'),
+              const Tab(text: 'New'),
+              const Tab(text: 'Popular'),
               if (_forYouAvailable) const Tab(text: 'For You'),
               const Tab(text: 'Lists'),
             ],
@@ -960,46 +960,51 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       left: 0,
       right: 0,
       child: Center(
-        child: GestureDetector(
-          onTap: () {
-            // Load buffered videos
-            ref.read(videoEventsProvider.notifier).loadBufferedVideos();
-            Log.info(
-              '🔄 ExploreScreen: Loaded $bufferedCount buffered videos',
-              category: LogCategory.video,
-            );
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: BoxDecoration(
-              color: VineTheme.vineGreen,
-              borderRadius: BorderRadius.circular(24),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.arrow_upward,
-                  color: VineTheme.backgroundColor,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '$bufferedCount new ${bufferedCount == 1 ? 'video' : 'videos'}',
-                  style: TextStyle(
-                    color: VineTheme.backgroundColor,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
+        child: Semantics(
+          label:
+              'Load $bufferedCount new ${bufferedCount == 1 ? 'video' : 'videos'}',
+          button: true,
+          child: GestureDetector(
+            onTap: () {
+              // Load buffered videos
+              ref.read(videoEventsProvider.notifier).loadBufferedVideos();
+              Log.info(
+                '🔄 ExploreScreen: Loaded $bufferedCount buffered videos',
+                category: LogCategory.video,
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              decoration: BoxDecoration(
+                color: VineTheme.vineGreen,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
                   ),
-                ),
-              ],
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.arrow_upward,
+                    color: VineTheme.backgroundColor,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '$bufferedCount new ${bufferedCount == 1 ? 'video' : 'videos'}',
+                    style: TextStyle(
+                      color: VineTheme.backgroundColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

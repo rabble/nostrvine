@@ -10,6 +10,7 @@ import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
+import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 
 /// Tab widget displaying For You personalized recommendations.
 ///
@@ -76,13 +77,22 @@ class _ForYouTabState extends ConsumerState<ForYouTab> {
   }
 }
 
-/// Content widget displaying personalized video recommendations grid
-class _ForYouContent extends ConsumerWidget {
+/// Content widget displaying personalized video recommendations grid.
+///
+/// Header pushes up as user scrolls down (1:1 with scroll distance).
+/// When scrolling up, header slides back in as an overlay with animation.
+class _ForYouContent extends ConsumerStatefulWidget {
   const _ForYouContent({required this.videos, required this.onVideoTap});
 
   final List<VideoEvent> videos;
   final void Function(List<VideoEvent> videos, int index) onVideoTap;
 
+  @override
+  ConsumerState<_ForYouContent> createState() => _ForYouContentState();
+}
+
+class _ForYouContentState extends ConsumerState<_ForYouContent>
+    with ScrollToHideMixin {
   void _showAlgorithmExplainer(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
@@ -96,51 +106,77 @@ class _ForYouContent extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return Column(
+  Widget build(BuildContext context) {
+    measureHeaderHeight();
+
+    return Stack(
       children: [
-        // Tappable header - "The Divine Algorithm"
-        GestureDetector(
-          onTap: () => _showAlgorithmExplainer(context),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Icon(Icons.auto_awesome, color: VineTheme.vineGreen, size: 20),
-                const SizedBox(width: 8),
-                Text(
-                  'The Divine Algorithm',
-                  style: TextStyle(
-                    color: VineTheme.vineGreen,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.info_outline,
-                  color: VineTheme.secondaryText,
-                  size: 16,
-                ),
-              ],
+        // Grid takes full space
+        Positioned.fill(
+          child: NotificationListener<ScrollNotification>(
+            onNotification: handleScrollNotification,
+            child: ComposableVideoGrid(
+              videos: widget.videos,
+              useMasonryLayout: true,
+              padding: EdgeInsets.only(
+                left: 4,
+                right: 4,
+                bottom: 4,
+                top: headerHeight > 0 ? headerHeight + 4 : 4,
+              ),
+              onVideoTap: widget.onVideoTap,
+              onRefresh: () async {
+                Log.info(
+                  '🔄 ForYouTab: Refreshing recommendations',
+                  name: 'ForYouTab',
+                  category: LogCategory.video,
+                );
+                await ref.read(forYouFeedProvider.notifier).refresh();
+              },
+              emptyBuilder: () => const _ForYouEmptyState(),
             ),
           ),
         ),
-        // Video grid
-        Expanded(
-          child: ComposableVideoGrid(
-            videos: videos,
-            thumbnailAspectRatio: 1.0, // Square thumbnails
-            onVideoTap: onVideoTap,
-            onRefresh: () async {
-              Log.info(
-                '🔄 ForYouTab: Refreshing recommendations',
-                name: 'ForYouTab',
-                category: LogCategory.video,
-              );
-              await ref.read(forYouFeedProvider.notifier).refresh();
-            },
-            emptyBuilder: () => const _ForYouEmptyState(),
+        // Header overlay on top, animated when returning
+        AnimatedPositioned(
+          duration: headerFullyHidden
+              ? const Duration(milliseconds: 250)
+              : Duration.zero,
+          curve: Curves.easeOut,
+          top: headerOffset,
+          left: 0,
+          right: 0,
+          child: GestureDetector(
+            key: headerKey,
+            onTap: () => _showAlgorithmExplainer(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              color: Colors.black,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.auto_awesome,
+                    color: VineTheme.vineGreen,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'The Divine Algorithm',
+                    style: TextStyle(
+                      color: VineTheme.vineGreen,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.info_outline,
+                    color: VineTheme.secondaryText,
+                    size: 16,
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ],

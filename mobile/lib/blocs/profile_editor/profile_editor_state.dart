@@ -16,6 +16,9 @@ enum ProfileEditorStatus {
 
   /// Operation failed - check [ProfileEditorState.error] for details.
   failure,
+
+  /// Waiting for user confirmation before saving.
+  confirmationRequired,
 }
 
 /// Error types for l10n-friendly error handling.
@@ -37,6 +40,7 @@ final class ProfileEditorState extends Equatable {
   const ProfileEditorState({
     this.status = ProfileEditorStatus.initial,
     this.error,
+    this.pendingEvent,
   });
 
   /// Current status of the operation.
@@ -45,14 +49,22 @@ final class ProfileEditorState extends Equatable {
   /// Error type when [status] is [ProfileEditorStatus.failure].
   final ProfileEditorError? error;
 
+  /// Pending event awaiting confirmation (for blank profile overwrite warning).
+  final ProfileSaved? pendingEvent;
+
   /// Creates a copy with updated values.
   ProfileEditorState copyWith({
     ProfileEditorStatus? status,
     ProfileEditorError? error,
+    ProfileSaved? pendingEvent,
   }) {
-    return ProfileEditorState(status: status ?? this.status, error: error);
+    return ProfileEditorState(
+      status: status ?? this.status,
+      error: error,
+      pendingEvent: pendingEvent,
+    );
   }
 
   @override
-  List<Object?> get props => [status, error];
+  List<Object?> get props => [status, error, pendingEvent];
 }

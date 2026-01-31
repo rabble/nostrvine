@@ -17,6 +17,7 @@ import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
+import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 
 class UserListPeopleScreen extends ConsumerStatefulWidget {
   const UserListPeopleScreen({required this.userList, super.key});
@@ -28,7 +29,8 @@ class UserListPeopleScreen extends ConsumerStatefulWidget {
       _UserListPeopleScreenState();
 }
 
-class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen> {
+class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen>
+    with ScrollToHideMixin {
   int? _activeVideoIndex;
 
   @override
@@ -124,160 +126,115 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen> {
       userListMemberVideosProvider(widget.userList.pubkeys),
     );
 
-    return Column(
-      children: [
-        // Horizontal carousel of people in the list
-        _buildPeopleCarousel(),
+    measureHeaderHeight();
 
-        // Divider
-        Container(
-          height: 1,
-          color: VineTheme.cardBackground,
-          margin: const EdgeInsets.symmetric(vertical: 8),
-        ),
-
-        // Video grid from all list members
-        Expanded(
-          child: videosAsync.when(
-            data: (videos) {
-              if (videos.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.video_library,
-                        size: 64,
-                        color: VineTheme.secondaryText,
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No videos yet',
-                        style: TextStyle(
-                          color: VineTheme.primaryText,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Videos from list members will appear here',
-                        style: TextStyle(
-                          color: VineTheme.secondaryText,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              return ComposableVideoGrid(
-                videos: videos,
-                onVideoTap: (videos, index) {
-                  Log.info(
-                    'Tapped video in user list: ${videos[index].id}',
-                    category: LogCategory.ui,
-                  );
-                  setState(() {
-                    _activeVideoIndex = index;
-                  });
-                },
-                onRefresh: () async {
-                  // Invalidate the provider to refresh
-                  ref.invalidate(
-                    userListMemberVideosProvider(widget.userList.pubkeys),
-                  );
-                },
-                emptyBuilder: () => Center(
-                  child: Text(
-                    'No videos available',
-                    style: TextStyle(color: VineTheme.secondaryText),
+    return videosAsync.when(
+      data: (videos) {
+        if (videos.isEmpty) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.video_library,
+                  size: 64,
+                  color: VineTheme.secondaryText,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'No videos yet',
+                  style: TextStyle(
+                    color: VineTheme.primaryText,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
-              );
-            },
-            loading: () => Center(
-              child: CircularProgressIndicator(color: VineTheme.vineGreen),
+                const SizedBox(height: 8),
+                Text(
+                  'Videos from list members will appear here',
+                  style: TextStyle(
+                    color: VineTheme.secondaryText,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
             ),
-            error: (error, stack) => Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.error, size: 64, color: VineTheme.likeRed),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Failed to load videos',
-                    style: TextStyle(color: VineTheme.likeRed, fontSize: 18),
+          );
+        }
+
+        return Stack(
+          children: [
+            Positioned.fill(
+              child: NotificationListener<ScrollNotification>(
+                onNotification: handleScrollNotification,
+                child: ComposableVideoGrid(
+                  videos: videos,
+                  useMasonryLayout: true,
+                  padding: EdgeInsets.only(
+                    left: 4,
+                    right: 4,
+                    bottom: 4,
+                    top: headerHeight > 0 ? headerHeight + 4 : 4,
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    error.toString(),
-                    style: TextStyle(
-                      color: VineTheme.secondaryText,
-                      fontSize: 12,
+                  onVideoTap: (videos, index) {
+                    Log.info(
+                      'Tapped video in user list: ${videos[index].id}',
+                      category: LogCategory.ui,
+                    );
+                    setState(() {
+                      _activeVideoIndex = index;
+                    });
+                  },
+                  onRefresh: () async {
+                    ref.invalidate(
+                      userListMemberVideosProvider(widget.userList.pubkeys),
+                    );
+                  },
+                  emptyBuilder: () => Center(
+                    child: Text(
+                      'No videos available',
+                      style: TextStyle(color: VineTheme.secondaryText),
                     ),
-                    textAlign: TextAlign.center,
                   ),
-                ],
+                ),
               ),
             ),
-          ),
+            AnimatedPositioned(
+              duration: headerFullyHidden
+                  ? const Duration(milliseconds: 250)
+                  : Duration.zero,
+              curve: Curves.easeOut,
+              top: headerOffset,
+              left: 0,
+              right: 0,
+              child: _PeopleCarousel(
+                key: headerKey,
+                pubkeys: widget.userList.pubkeys,
+              ),
+            ),
+          ],
+        );
+      },
+      loading: () =>
+          Center(child: CircularProgressIndicator(color: VineTheme.vineGreen)),
+      error: (error, stack) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error, size: 64, color: VineTheme.likeRed),
+            const SizedBox(height: 16),
+            Text(
+              'Failed to load videos',
+              style: TextStyle(color: VineTheme.likeRed, fontSize: 18),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              error.toString(),
+              style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
+          ],
         ),
-      ],
-    );
-  }
-
-  Widget _buildPeopleCarousel() {
-    final userProfileService = ref.watch(userProfileServiceProvider);
-
-    return Container(
-      height: 120,
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        itemCount: widget.userList.pubkeys.length,
-        itemBuilder: (context, index) {
-          final pubkey = widget.userList.pubkeys[index];
-
-          return FutureBuilder(
-            future: userProfileService.fetchProfile(pubkey),
-            builder: (context, snapshot) {
-              final profile = userProfileService.getCachedProfile(pubkey);
-
-              return GestureDetector(
-                onTap: () {
-                  final npub = normalizeToNpub(pubkey);
-                  if (npub != null) {
-                    context.push(ProfileScreenRouter.pathForIndex(npub, 0));
-                  }
-                },
-                child: Container(
-                  width: 80,
-                  margin: const EdgeInsets.symmetric(horizontal: 6),
-                  child: Column(
-                    children: [
-                      UserAvatar(imageUrl: profile?.picture, size: 64),
-                      const SizedBox(height: 6),
-                      Text(
-                        profile?.bestDisplayName ??
-                            NostrKeyUtils.truncateNpub(pubkey),
-                        style: const TextStyle(
-                          color: VineTheme.whiteText,
-                          fontSize: 12,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
-          );
-        },
       ),
     );
   }
@@ -417,6 +374,79 @@ class _UserListPeopleScreenState extends ConsumerState<UserListPeopleScreen> {
         child: Text(
           'Error loading videos',
           style: TextStyle(color: VineTheme.likeRed),
+        ),
+      ),
+    );
+  }
+}
+
+/// Horizontal carousel of people avatars for a user list.
+class _PeopleCarousel extends ConsumerWidget {
+  const _PeopleCarousel({super.key, required this.pubkeys});
+
+  final List<String> pubkeys;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final userProfileService = ref.watch(userProfileServiceProvider);
+
+    return Container(
+      color: VineTheme.backgroundColor,
+      child: SizedBox(
+        height: 100,
+        child: ListView.builder(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.only(left: 16, right: 16, top: 12),
+          itemCount: pubkeys.length,
+          itemBuilder: (context, index) {
+            final pubkey = pubkeys[index];
+
+            return FutureBuilder(
+              future: userProfileService.fetchProfile(pubkey),
+              builder: (context, snapshot) {
+                final profile = userProfileService.getCachedProfile(pubkey);
+
+                final displayName =
+                    profile?.bestDisplayName ??
+                    NostrKeyUtils.truncateNpub(pubkey);
+
+                return Semantics(
+                  label: 'View profile for $displayName',
+                  button: true,
+                  child: GestureDetector(
+                    onTap: () {
+                      final npub = normalizeToNpub(pubkey);
+                      if (npub != null) {
+                        context.push(ProfileScreenRouter.pathForIndex(npub, 0));
+                      }
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 12),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          UserAvatar(imageUrl: profile?.picture, size: 56),
+                          const SizedBox(height: 4),
+                          SizedBox(
+                            width: 70,
+                            child: Text(
+                              displayName,
+                              style: VineTheme.titleTinyFont(
+                                color: VineTheme.primaryText,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
         ),
       ),
     );

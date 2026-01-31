@@ -5,6 +5,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/foundation.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path_provider/path_provider.dart';
@@ -27,7 +28,7 @@ class VideoThumbnailService {
   static Future<ThumbnailFileResult?> extractThumbnail({
     required String videoPath,
     // Extract frame at 210ms by default
-    Duration targetTimestamp = const Duration(milliseconds: 210),
+    Duration targetTimestamp = VideoEditorConstants.defaultThumbnailExtractTime,
     int quality = _thumbnailQuality,
   }) async {
     try {
@@ -134,7 +135,7 @@ class VideoThumbnailService {
   /// Returns a [ThumbnailResult] containing the bytes and actual timestamp used.
   static Future<ThumbnailResult?> extractThumbnailBytes({
     required String videoPath,
-    Duration timestamp = const Duration(milliseconds: 210),
+    Duration timestamp = VideoEditorConstants.defaultThumbnailExtractTime,
     int quality = _thumbnailQuality,
   }) async {
     // Build list of retry attempts with increasing delays and fallback timestamps

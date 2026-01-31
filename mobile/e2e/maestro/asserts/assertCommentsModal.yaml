@@ -1,4 +1,8 @@
 appId: co.openvine.app
 ---
-- assertVisible: Comments
-- assertVisible: Add comment...
+- assertVisible:
+    text: "\\d+\\sComments?" # Matches one or more digits followed by " Comment" or " Comments"
+- assertVisible:
+    text: "Add comment..." # Ensure this line is properly formatted
+- assertVisible:
+    id: comment_text_field

@@ -22,18 +22,14 @@ class EnvironmentBadge extends ConsumerWidget {
 
     return Container(
       margin: const EdgeInsets.only(left: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
       decoration: BoxDecoration(
         color: Color(environment.indicatorColorValue),
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: BorderRadius.circular(14),
       ),
       child: Text(
         _getEnvironmentLabel(environment),
-        style: const TextStyle(
-          color: Colors.white,
-          fontSize: 10,
-          fontWeight: FontWeight.bold,
-        ),
+        style: VineTheme.titleSmallFont(color: VineTheme.onPrimary),
       ),
     );
   }
@@ -89,10 +85,7 @@ class EnvironmentBanner extends ConsumerWidget {
 }
 
 /// Helper function to get app bar color based on environment
-/// Production uses nav green, other environments use their indicator color
+/// Always uses nav green — environment is indicated by the EnvironmentBadge tag
 Color getEnvironmentAppBarColor(EnvironmentConfig environment) {
-  if (environment.isProduction) {
-    return VineTheme.navGreen;
-  }
-  return Color(environment.indicatorColorValue);
+  return VineTheme.navGreen;
 }

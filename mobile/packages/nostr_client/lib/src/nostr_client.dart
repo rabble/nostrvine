@@ -550,6 +550,23 @@ class NostrClient {
     return _relayManager.addRelay(relayUrl);
   }
 
+  /// Adds multiple relay connections
+  ///
+  /// This should be called and awaited BEFORE calling initialize() to ensure
+  /// all relays are connected before the client starts making requests.
+  ///
+  /// Returns the number of relays successfully added.
+  Future<int> addRelays(List<String> relayUrls) async {
+    var addedCount = 0;
+    for (final relayUrl in relayUrls) {
+      final added = await addRelay(relayUrl);
+      if (added) {
+        addedCount++;
+      }
+    }
+    return addedCount;
+  }
+
   /// Removes a relay connection
   ///
   /// Delegates to RelayManager.

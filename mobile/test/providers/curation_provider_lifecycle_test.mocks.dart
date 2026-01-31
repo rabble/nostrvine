@@ -6,7 +6,7 @@
 import 'dart:async' as _i8;
 import 'dart:ui' as _i12;
 
-import 'package:keycast_flutter/keycast_flutter.dart' as _i18;
+import 'package:keycast_flutter/keycast_flutter.dart' as _i20;
 import 'package:likes_repository/likes_repository.dart' as _i3;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i7;
@@ -17,9 +17,12 @@ import 'package:nostr_sdk/nostr_sdk.dart' as _i9;
 import 'package:openvine/services/age_verification_service.dart' as _i14;
 import 'package:openvine/services/analytics_api_service.dart' as _i5;
 import 'package:openvine/services/auth_service.dart' as _i4;
+import 'package:openvine/services/blossom_server_discovery_service.dart'
+    as _i18;
 import 'package:openvine/services/content_blocklist_service.dart' as _i13;
+import 'package:openvine/services/relay_discovery_service.dart' as _i17;
 import 'package:openvine/services/social_service.dart' as _i16;
-import 'package:openvine/services/user_profile_service.dart' as _i17;
+import 'package:openvine/services/user_profile_service.dart' as _i19;
 import 'package:openvine/services/video_event_service.dart' as _i10;
 import 'package:openvine/services/video_filter_builder.dart' as _i15;
 
@@ -63,6 +66,12 @@ class _FakeHomeFeedResult_3 extends _i1.SmartFake
 class _FakeRecommendationsResult_4 extends _i1.SmartFake
     implements _i5.RecommendationsResult {
   _FakeRecommendationsResult_4(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakePaginatedPubkeys_5 extends _i1.SmartFake
+    implements _i5.PaginatedPubkeys {
+  _FakePaginatedPubkeys_5(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -325,6 +334,14 @@ class MockNostrClient extends _i1.Mock implements _i6.NostrClient {
             returnValue: _i8.Future<bool>.value(false),
           )
           as _i8.Future<bool>);
+
+  @override
+  _i8.Future<int> addRelays(List<String>? relayUrls) =>
+      (super.noSuchMethod(
+            Invocation.method(#addRelays, [relayUrls]),
+            returnValue: _i8.Future<int>.value(0),
+          )
+          as _i8.Future<int>);
 
   @override
   _i8.Future<bool> removeRelay(String? relayUrl) =>
@@ -1676,6 +1693,38 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
           as bool);
 
   @override
+  List<_i17.DiscoveredRelay> get userRelays =>
+      (super.noSuchMethod(
+            Invocation.getter(#userRelays),
+            returnValue: <_i17.DiscoveredRelay>[],
+          )
+          as List<_i17.DiscoveredRelay>);
+
+  @override
+  bool get hasExistingProfile =>
+      (super.noSuchMethod(
+            Invocation.getter(#hasExistingProfile),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
+  List<_i18.DiscoveredBlossomServer> get userBlossomServers =>
+      (super.noSuchMethod(
+            Invocation.getter(#userBlossomServers),
+            returnValue: <_i18.DiscoveredBlossomServer>[],
+          )
+          as List<_i18.DiscoveredBlossomServer>);
+
+  @override
+  bool get hasUserBlossomServers =>
+      (super.noSuchMethod(
+            Invocation.getter(#hasUserBlossomServers),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
   Map<String, dynamic> get userStats =>
       (super.noSuchMethod(
             Invocation.getter(#userStats),
@@ -1789,7 +1838,7 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
 
   @override
   _i8.Future<void> refreshCurrentProfile(
-    _i17.UserProfileService? userProfileService,
+    _i19.UserProfileService? userProfileService,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#refreshCurrentProfile, [userProfileService]),
@@ -1808,7 +1857,7 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
           as _i8.Future<void>);
 
   @override
-  _i8.Future<void> signInWithDivineOAuth(_i18.KeycastSession? session) =>
+  _i8.Future<void> signInWithDivineOAuth(_i20.KeycastSession? session) =>
       (super.noSuchMethod(
             Invocation.method(#signInWithDivineOAuth, [session]),
             returnValue: _i8.Future<void>.value(),
@@ -2083,12 +2132,34 @@ class MockAnalyticsApiService extends _i1.Mock
   @override
   _i8.Future<List<_i11.VideoEvent>> getClassicVines({
     int? limit = 50,
+    int? offset = 0,
     int? before,
+    String? sort = 'loops',
   }) =>
       (super.noSuchMethod(
             Invocation.method(#getClassicVines, [], {
               #limit: limit,
+              #offset: offset,
               #before: before,
+              #sort: sort,
+            }),
+            returnValue: _i8.Future<List<_i11.VideoEvent>>.value(
+              <_i11.VideoEvent>[],
+            ),
+          )
+          as _i8.Future<List<_i11.VideoEvent>>);
+
+  @override
+  _i8.Future<List<_i11.VideoEvent>> getClassicVinesPage({
+    required int? page,
+    int? pageSize = 100,
+    String? sort = 'loops',
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#getClassicVinesPage, [], {
+              #page: page,
+              #pageSize: pageSize,
+              #sort: sort,
             }),
             returnValue: _i8.Future<List<_i11.VideoEvent>>.value(
               <_i11.VideoEvent>[],
@@ -2147,6 +2218,88 @@ class MockAnalyticsApiService extends _i1.Mock
             ),
           )
           as _i8.Future<_i5.RecommendationsResult>);
+
+  @override
+  _i8.Future<Map<String, Map<String, dynamic>>> getBulkProfiles(
+    List<String>? pubkeys,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#getBulkProfiles, [pubkeys]),
+            returnValue: _i8.Future<Map<String, Map<String, dynamic>>>.value(
+              <String, Map<String, dynamic>>{},
+            ),
+          )
+          as _i8.Future<Map<String, Map<String, dynamic>>>);
+
+  @override
+  _i8.Future<Map<String, _i5.BulkVideoStatsEntry>> getBulkVideoStats(
+    List<String>? eventIds,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#getBulkVideoStats, [eventIds]),
+            returnValue: _i8.Future<Map<String, _i5.BulkVideoStatsEntry>>.value(
+              <String, _i5.BulkVideoStatsEntry>{},
+            ),
+          )
+          as _i8.Future<Map<String, _i5.BulkVideoStatsEntry>>);
+
+  @override
+  _i8.Future<_i5.SocialCounts?> getSocialCounts(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#getSocialCounts, [pubkey]),
+            returnValue: _i8.Future<_i5.SocialCounts?>.value(),
+          )
+          as _i8.Future<_i5.SocialCounts?>);
+
+  @override
+  _i8.Future<_i5.PaginatedPubkeys> getFollowers(
+    String? pubkey, {
+    int? limit = 100,
+    int? offset = 0,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #getFollowers,
+              [pubkey],
+              {#limit: limit, #offset: offset},
+            ),
+            returnValue: _i8.Future<_i5.PaginatedPubkeys>.value(
+              _FakePaginatedPubkeys_5(
+                this,
+                Invocation.method(
+                  #getFollowers,
+                  [pubkey],
+                  {#limit: limit, #offset: offset},
+                ),
+              ),
+            ),
+          )
+          as _i8.Future<_i5.PaginatedPubkeys>);
+
+  @override
+  _i8.Future<_i5.PaginatedPubkeys> getFollowing(
+    String? pubkey, {
+    int? limit = 100,
+    int? offset = 0,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #getFollowing,
+              [pubkey],
+              {#limit: limit, #offset: offset},
+            ),
+            returnValue: _i8.Future<_i5.PaginatedPubkeys>.value(
+              _FakePaginatedPubkeys_5(
+                this,
+                Invocation.method(
+                  #getFollowing,
+                  [pubkey],
+                  {#limit: limit, #offset: offset},
+                ),
+              ),
+            ),
+          )
+          as _i8.Future<_i5.PaginatedPubkeys>);
 
   @override
   void clearCache() => super.noSuchMethod(

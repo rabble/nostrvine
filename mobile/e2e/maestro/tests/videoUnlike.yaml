@@ -1,12 +1,9 @@
 appId: co.openvine.app
 tags:
   - Social
-env:
-  VIDEO_TITLE: "when you jammin to JB" # Setting the video title parameter
-  VIDEO_DESCRIPTION: "When you jammin to JB too hard and you grab a hot mic. " # Setting the video description parameter
 ---
 #TC to unlike a video,
-# given the user is logged in in the app,,
+# given the user is logged in in the app and only has 1 video liked,
 # validate the like is on for the video VIDEO_TITLE unlike it, and empty likes tab on the profile
 #Steps:
 # 1. Open specific video VIDEO_TITLE
@@ -31,5 +28,5 @@ env:
 # 4. Tap on the likes tab: Validate tab is loaded and VIDEO_TITLE is not listed
 - tapOn: Tab 2 of 3
 - tapOn:
-    point: 20%,74%
-- assertNotVisible: ${VIDEO_DESCRIPTION}
+    point: 1%,78%
+- assertNotVisible: ${VIDEO_TITLE}

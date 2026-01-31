@@ -11,40 +11,50 @@ env:
 # 1. Tap on the profile icon: Validate profile page is displayed
 # 2. Tap on Edit profile: Edit modal is displayed
 # 3. Tap on anywhere on the screen: Validate modal is closed
-# 4. Tap on Clips: Edit modal is displayed - Moved clips to the end since there's an issue and back arrow does not work
+# 4. Tap on Library: The Library modal is displayed
 # 5. Tap on the back arrow: Profile screen is displayed
-# 6. Tap on Share profile: OS modal is displayed
-# 7. Tap on close: Profile screen is displayed
+# 6. Tap on More - the 3 dots: modal is displayed
+# 7. Tap on Share profile: OS modal is displayed
+# 8. Tap on close: Profile screen is displayed
+# 9. Tap on More, copy public key: "Public key copied to clipboard" is displayed
 
 # 1. Tap on the profile icon: Validate profile page is displayed
 - doubleTapOn:
     id: profile_tab
     delay: 100
 - runFlow: ../asserts/assertProfile.yaml
+
 # 2. Tap on Edit profile: Edit modal is displayed
-- tapOn: Edit Profile
+- tapOn: Edit
 - runFlow: ../asserts/assertEditProfileModal.yaml
 
-# 3. Tap on anywhere on the screen: Validate modal is closed
-- tapOn:
-    point: "50%, 50%" # Coordinates for the middle of the screen
-- assertNotVisible: "Delete Account and Data"
+# 3. Tap on Back: Validate modal is closed
+- tapOn: Back
+- assertNotVisible: "Edit Profile"
 
-#TO-DO: Once issue on the back button of clips is fixed, uncomment and re-arrange the following steps.
-# 4. Tap on Clips: Edit modal is displayed
-#- tapOn: Clips
-#- runFlow: ../asserts/assertClipsScreen.yaml
+# 4. Tap on Library: The Library modal is displayed
+- tapOn: Library
+- runFlow: ../asserts/assertLibraryScreen.yaml
 
 # 5. Tap on the back arrow: Profile screen is displayed
-#- tapOn:
-#    point: 1%,8%
-#- assertVisible: Profile
+- tapOn: Back
+- assertVisible: My Profile
 
-# 6. Tap on Share profile: OS modal is displayed
+# 6. Tap on More - the 3 dots: modal is displayed
+- tapOn: More
+- assertVisible: Share profile
+- assertVisible: Copy public key (npub)
+
+# 7. Tap on Share profile: OS modal is displayed
 - tapOn: Share Profile
 - assertVisible: User on divine #To improve once tested on Android. For now it only validates the iOS menu
 
-# 7. Tap on close: Profile screen is displayed
+# 8. Tap on close: Profile screen is displayed
 - tapOn:
     id: UICloseButtonBackground
 - assertVisible: Refresh
+
+# 9. Tap on More, copy public key: "Public key copied to clipboard" is displayed
+- tapOn: More
+- tapOn: Copy public key (npub)
+- assertVisible: Public key copied to clipboard

@@ -13,6 +13,7 @@ import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/trending_hashtags_section.dart';
@@ -168,50 +169,83 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
   }
 }
 
-/// Content widget displaying trending hashtags and video grid
-class _PopularVideosTrendingContent extends ConsumerWidget {
+/// Content widget displaying trending hashtags and video grid.
+///
+/// Hashtags push up as user scrolls down (1:1 with scroll distance).
+/// When scrolling up, hashtags slide back in as an overlay with animation.
+class _PopularVideosTrendingContent extends ConsumerStatefulWidget {
   const _PopularVideosTrendingContent({required this.videos});
 
   final List<VideoEvent> videos;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_PopularVideosTrendingContent> createState() =>
+      _PopularVideosTrendingContentState();
+}
+
+class _PopularVideosTrendingContentState
+    extends ConsumerState<_PopularVideosTrendingContent>
+    with ScrollToHideMixin {
+  @override
+  Widget build(BuildContext context) {
     final hashtags = TopHashtagsService.instance.getTopHashtags(limit: 20);
 
-    return Column(
+    measureHeaderHeight();
+
+    return Stack(
       children: [
-        TrendingHashtagsSection(
-          hashtags: hashtags,
-          isLoading: !TopHashtagsService.instance.isLoaded,
+        // Grid takes full space
+        Positioned.fill(
+          child: NotificationListener<ScrollNotification>(
+            onNotification: handleScrollNotification,
+            child: ComposableVideoGrid(
+              videos: widget.videos,
+              useMasonryLayout: true,
+              padding: EdgeInsets.only(
+                left: 4,
+                right: 4,
+                bottom: 4,
+                top: headerHeight > 0 ? headerHeight + 4 : 4,
+              ),
+              onVideoTap: (videoList, index) {
+                Log.info(
+                  '🎯 PopularVideosTab TAP: gridIndex=$index, '
+                  'videoId=${videoList[index].id}',
+                  category: LogCategory.video,
+                );
+                context.push(
+                  FullscreenVideoFeedScreen.path,
+                  extra: FullscreenVideoFeedArgs(
+                    source: StaticFeedSource(videoList),
+                    initialIndex: index,
+                    contextTitle: 'Popular Videos',
+                  ),
+                );
+              },
+              onRefresh: () async {
+                Log.info(
+                  '🔄 PopularVideosTab: Refreshing',
+                  category: LogCategory.video,
+                );
+                await ref.read(popularVideosFeedProvider.notifier).refresh();
+              },
+              emptyBuilder: () => const _PopularVideosEmptyState(),
+            ),
+          ),
         ),
-        Expanded(
-          child: ComposableVideoGrid(
-            videos: videos,
-            thumbnailAspectRatio: 0.8,
-            onVideoTap: (videoList, index) {
-              Log.info(
-                '🎯 PopularVideosTab TAP: gridIndex=$index, '
-                'videoId=${videoList[index].id}',
-                category: LogCategory.video,
-              );
-              // Navigate to fullscreen video feed
-              context.push(
-                FullscreenVideoFeedScreen.path,
-                extra: FullscreenVideoFeedArgs(
-                  source: StaticFeedSource(videoList),
-                  initialIndex: index,
-                  contextTitle: 'Popular Videos',
-                ),
-              );
-            },
-            onRefresh: () async {
-              Log.info(
-                '🔄 PopularVideosTab: Refreshing',
-                category: LogCategory.video,
-              );
-              await ref.read(popularVideosFeedProvider.notifier).refresh();
-            },
-            emptyBuilder: () => const _PopularVideosEmptyState(),
+        // Hashtags overlay on top, animated when returning
+        AnimatedPositioned(
+          duration: headerFullyHidden
+              ? const Duration(milliseconds: 250)
+              : Duration.zero,
+          curve: Curves.easeOut,
+          top: headerOffset,
+          left: 0,
+          right: 0,
+          child: TrendingHashtagsSection(
+            key: headerKey,
+            hashtags: hashtags,
+            isLoading: !TopHashtagsService.instance.isLoaded,
           ),
         ),
       ],
