@@ -112,58 +112,86 @@ extension VideoEventAppExtensions on VideoEvent {
   // Platform-Aware URL Selection
   // ---------------------------------------------------------------------------
 
+  /// Divine media server base URL for HLS streaming.
+  static const String _divineMediaBase = 'https://media.divine.video';
+
+  /// Extract video hash from a Divine server URL.
+  ///
+  /// Handles URLs like:
+  /// - https://media.divine.video/{hash}
+  /// - https://cdn.divine.video/{hash}
+  /// - https://media.divine.video/{hash}/hls/master.m3u8
+  static String? _extractVideoHash(String? url) {
+    if (url == null || url.isEmpty) return null;
+
+    try {
+      final uri = Uri.parse(url);
+      final host = uri.host.toLowerCase();
+
+      // Only extract from Divine servers
+      if (!host.contains('divine.video')) return null;
+
+      // Path segments: ['', 'hash'] or ['', 'hash', 'hls', 'master.m3u8']
+      final segments = uri.pathSegments;
+      if (segments.isEmpty) return null;
+
+      // First segment should be the hash (64 hex characters)
+      final hash = segments.first;
+      if (hash.length == 64 && RegExp(r'^[a-fA-F0-9]+$').hasMatch(hash)) {
+        return hash;
+      }
+    } catch (_) {
+      // Invalid URL, return null
+    }
+    return null;
+  }
+
+  /// Get HLS streaming URL for Divine videos.
+  ///
+  /// All Divine videos are automatically transcoded to HLS format with
+  /// adaptive bitrate (720p/480p). This URL provides:
+  /// - Android compatibility via H.264 baseline profile
+  /// - iOS/macOS native AVPlayer support
+  /// - Automatic quality switching based on connection speed
+  ///
+  /// Returns null if:
+  /// - Video is not from Divine servers
+  /// - Hash cannot be extracted from URL
+  String? get hlsUrl {
+    final hash = _extractVideoHash(videoUrl);
+    if (hash == null) return null;
+    return '$_divineMediaBase/$hash/hls/master.m3u8';
+  }
+
   /// Get the optimal video URL based on platform capabilities.
   ///
-  /// **Android**: Prefers HLS (.m3u8) for adaptive bitrate streaming.
+  /// **Android**: Uses HLS (.m3u8) for adaptive bitrate streaming.
   /// Many Android devices (Motorola, Huawei, OnePlus) have hardware decoders
   /// that cannot handle H.264 High Profile at high resolutions. HLS with
-  /// adaptive bitrate allows the device to receive a resolution it CAN decode.
+  /// H.264 baseline profile and adaptive bitrate solves this.
   ///
-  /// **iOS/macOS**: Prefers MP4 (original behavior). AVPlayer handles
-  /// high-resolution content well with hardware acceleration.
+  /// **iOS/macOS**: Uses original MP4 URL. AVPlayer handles high-resolution
+  /// content well with hardware acceleration.
   ///
-  /// Returns the optimal URL from available candidates, or falls back to
-  /// the default [videoUrl] if no better option is available.
+  /// Falls back to original [videoUrl] if HLS is unavailable.
   String? getOptimalVideoUrlForPlatform() {
-    // On non-Android platforms, use default URL selection (MP4 preferred)
-    if (!Platform.isAndroid) {
-      return videoUrl;
-    }
-
-    // On Android, prefer HLS for adaptive streaming
-    final urls = allVideoUrls;
-
-    if (urls == null || urls.isEmpty) {
-      developer.log(
-        '📱 Android: No URL candidates available, using default: $videoUrl',
-        name: 'VideoEventExtensions',
-      );
-      return videoUrl;
-    }
-
-    // Find HLS URL (.m3u8)
-    String? hlsUrl;
-    for (final url in urls) {
-      final urlLower = url.toLowerCase();
-      if (urlLower.contains('.m3u8')) {
-        hlsUrl = url;
-        break;
+    // On Android, prefer HLS for codec compatibility
+    if (Platform.isAndroid) {
+      final hls = hlsUrl;
+      if (hls != null) {
+        developer.log(
+          '📱 Android: Using HLS for adaptive streaming: $hls',
+          name: 'VideoEventExtensions',
+        );
+        return hls;
       }
-    }
-
-    if (hlsUrl != null) {
       developer.log(
-        '📱 Android: Using HLS URL for adaptive streaming: $hlsUrl',
+        '📱 Android: No HLS available (non-Divine video), using: $videoUrl',
         name: 'VideoEventExtensions',
       );
-      return hlsUrl;
     }
 
-    // No HLS available, fall back to default URL
-    developer.log(
-      '📱 Android: No HLS URL available, using default: $videoUrl',
-      name: 'VideoEventExtensions',
-    );
+    // iOS/macOS and non-Divine videos use original URL
     return videoUrl;
   }
 
