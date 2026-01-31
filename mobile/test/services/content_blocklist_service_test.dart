@@ -18,31 +18,35 @@ void main() {
       service = ContentBlocklistService();
     });
 
-    test('should initialize with blocked accounts', () {
-      expect(service.totalBlockedCount, greaterThan(0));
+    test('should initialize with no hardcoded blocked accounts', () {
+      // Moderation should happen at relay level, not hardcoded in app
+      expect(service.totalBlockedCount, equals(0));
     });
 
-    test('should block specified npubs', () {
-      // The service should have blocked the specified users (3 npubs)
-      expect(service.totalBlockedCount, equals(3));
+    test('should block users at runtime', () {
+      const testPubkey1 = 'pubkey_to_block_1';
+      const testPubkey2 = 'pubkey_to_block_2';
 
-      // Verify the specific hex keys are blocked (correct values from bech32 decoding)
-      const expectedHex1 =
-          '7444faae22d4d4939c815819dca3c4822c209758bf86afc66365db5f79f67ddb';
-      const expectedHex2 =
-          '2df7fab5ab8eb77572b1a64221b68056cefbccd16fa370d33a5fbeade3debe5f';
-      const expectedHex3 =
-          '5943c88f3c60cd9edb125a668e2911ad419fc04e94549ed96a721901dd958372';
+      // Initially no blocks
+      expect(service.totalBlockedCount, equals(0));
+      expect(service.isBlocked(testPubkey1), isFalse);
+      expect(service.isBlocked(testPubkey2), isFalse);
 
-      expect(service.isBlocked(expectedHex1), isTrue);
-      expect(service.isBlocked(expectedHex2), isTrue);
-      expect(service.isBlocked(expectedHex3), isTrue);
+      // Block users at runtime
+      service.blockUser(testPubkey1);
+      service.blockUser(testPubkey2);
+
+      expect(service.totalBlockedCount, equals(2));
+      expect(service.isBlocked(testPubkey1), isTrue);
+      expect(service.isBlocked(testPubkey2), isTrue);
     });
 
     test('should filter blocked content from feeds', () {
-      const blockedPubkey =
-          '7444faae22d4d4939c815819dca3c4822c209758bf86afc66365db5f79f67ddb';
+      const blockedPubkey = 'blocked_user_pubkey';
       const allowedPubkey = 'allowed_user_pubkey';
+
+      // Block a user first
+      service.blockUser(blockedPubkey);
 
       expect(service.shouldFilterFromFeeds(blockedPubkey), isTrue);
       expect(service.shouldFilterFromFeeds(allowedPubkey), isFalse);
@@ -64,18 +68,17 @@ void main() {
     });
 
     test('should filter content list correctly', () {
+      const blockedPubkey1 = 'blocked_pubkey_1';
+      const blockedPubkey2 = 'blocked_pubkey_2';
+
+      // Block users first
+      service.blockUser(blockedPubkey1);
+      service.blockUser(blockedPubkey2);
+
       final testItems = [
-        {
-          'pubkey':
-              '7444faae22d4d4939c815819dca3c4822c209758bf86afc66365db5f79f67ddb',
-          'content': 'blocked',
-        },
+        {'pubkey': blockedPubkey1, 'content': 'blocked'},
         {'pubkey': 'allowed_user', 'content': 'allowed'},
-        {
-          'pubkey':
-              '2df7fab5ab8eb77572b1a64221b68056cefbccd16fa370d33a5fbeade3debe5f',
-          'content': 'blocked2',
-        },
+        {'pubkey': blockedPubkey2, 'content': 'blocked2'},
       ];
 
       final filtered = service.filterContent(
