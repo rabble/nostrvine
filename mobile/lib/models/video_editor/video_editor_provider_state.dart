@@ -5,6 +5,10 @@ import 'package:flutter/widgets.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 
+/// Sentinel value to distinguish between "not provided" and "explicitly null"
+/// in copyWith for nullable fields like renderErrorMessage.
+const _sentinel = Object();
+
 /// Immutable state model for the video editor.
 ///
 /// Manages the complete editing state including:
@@ -33,6 +37,7 @@ class VideoEditorProviderState {
     this.tags = const {},
     this.expiration = .notExpire,
     this.metadataLimitReached = false,
+    this.renderErrorMessage,
     this.finalRenderedClip,
     GlobalKey? deleteButtonKey,
   }) : deleteButtonKey = deleteButtonKey ?? GlobalKey();
@@ -96,6 +101,10 @@ class VideoEditorProviderState {
   /// Whether the 64KB metadata limit was reached during the last update.
   final bool metadataLimitReached;
 
+  /// Error message from the last render attempt, or null if no error.
+  /// Set when video rendering fails, cleared when a new render starts.
+  final String? renderErrorMessage;
+
   /// The final rendered clip after all editing and processing operations are
   /// complete.
   /// This represents the video output ready for publishing.
@@ -113,6 +122,9 @@ class VideoEditorProviderState {
   ///
   /// All parameters are optional. Only provided fields will be updated,
   /// others retain their current values.
+  /// Whether a render error occurred.
+  bool get hasRenderError => renderErrorMessage != null;
+
   VideoEditorProviderState copyWith({
     int? currentClipIndex,
     Duration? currentPosition,
@@ -133,6 +145,7 @@ class VideoEditorProviderState {
     Set<String>? tags,
     VideoMetadataExpiration? expiration,
     bool? metadataLimitReached,
+    Object? renderErrorMessage = _sentinel,
     RecordingClip? finalRenderedClip,
   }) {
     return VideoEditorProviderState(
@@ -155,6 +168,9 @@ class VideoEditorProviderState {
       tags: tags ?? this.tags,
       expiration: expiration ?? this.expiration,
       metadataLimitReached: metadataLimitReached ?? this.metadataLimitReached,
+      renderErrorMessage: renderErrorMessage == _sentinel
+          ? this.renderErrorMessage
+          : renderErrorMessage as String?,
       finalRenderedClip: finalRenderedClip ?? this.finalRenderedClip,
     );
   }

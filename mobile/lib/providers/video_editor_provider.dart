@@ -707,6 +707,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   ///
   /// Combines all clips, applies audio settings, generates proofmode
   /// attestation, and creates the final rendered clip for publishing.
+  ///
+  /// On success, sets [finalRenderedClip] and clears any previous error.
+  /// On failure, sets [renderErrorMessage] with the failure reason.
   Future<void> startRenderVideo() async {
     if (state.isProcessing) return;
 
@@ -715,14 +718,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       name: 'VideoEditorNotifier',
       category: .video,
     );
-    state = state.copyWith(isProcessing: true);
 
-    // Render video and get proofmode data
+    state = state.copyWith(isProcessing: true, renderErrorMessage: null);
+
     final (outputPath, proofManifestJson) = await _renderVideo();
-
     final validToPublish = outputPath != null;
 
-    // Extract metadata from rendered video
     final metaData = validToPublish
         ? await ProVideoEditor.instance.getMetadata(
             EditorVideo.file(outputPath),
@@ -735,6 +736,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         name: 'VideoEditorNotifier',
         category: .video,
       );
+      state = state.copyWith(
+        isProcessing: false,
+        renderErrorMessage: 'Video rendering failed. Please try again.',
+      );
       return;
     }
 
@@ -745,7 +750,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       category: .video,
     );
 
-    // Create final clip for publishing
     final finalRenderedClip = RecordingClip(
       id: 'clip-${DateTime.now()}',
       video: EditorVideo.file(outputPath),
@@ -757,7 +761,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
 
     Log.info(
-      '📤 Navigating to publish screen',
+      '📤 Ready to navigate to publish screen',
       name: 'VideoEditorNotifier',
       category: .video,
     );
@@ -765,7 +769,13 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     state = state.copyWith(
       isProcessing: false,
       finalRenderedClip: finalRenderedClip,
+      renderErrorMessage: null,
     );
+  }
+
+  /// Clear the render error message.
+  void clearRenderError() {
+    state = state.copyWith(renderErrorMessage: null);
   }
 
   /// Cancel an ongoing video render operation.
