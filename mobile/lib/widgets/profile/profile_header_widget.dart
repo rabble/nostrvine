@@ -436,17 +436,65 @@ class _UniqueIdentifier extends StatelessWidget {
   }
 }
 
-/// About/bio text display.
-class _AboutText extends StatelessWidget {
+/// About/bio text display with expandable "Show more/less" functionality.
+class _AboutText extends StatefulWidget {
   const _AboutText({required this.about});
 
   final String about;
 
+  /// Maximum lines to show when collapsed.
+  static const int _collapsedMaxLines = 3;
+
+  @override
+  State<_AboutText> createState() => _AboutTextState();
+}
+
+class _AboutTextState extends State<_AboutText> {
+  bool _isExpanded = false;
+  bool _needsExpansion = false;
+
   @override
   Widget build(BuildContext context) {
-    return SelectableText(
-      about,
-      style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+    final textStyle = VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Measure if text exceeds max lines
+        final textSpan = TextSpan(text: widget.about, style: textStyle);
+        final textPainter = TextPainter(
+          text: textSpan,
+          maxLines: _AboutText._collapsedMaxLines,
+          textDirection: TextDirection.ltr,
+        )..layout(maxWidth: constraints.maxWidth);
+
+        _needsExpansion = textPainter.didExceedMaxLines;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            if (_isExpanded)
+              SelectableText(widget.about, style: textStyle)
+            else
+              Text(
+                widget.about,
+                style: textStyle,
+                maxLines: _AboutText._collapsedMaxLines,
+                overflow: TextOverflow.ellipsis,
+              ),
+            if (_needsExpansion)
+              GestureDetector(
+                onTap: () => setState(() => _isExpanded = !_isExpanded),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: Text(
+                    _isExpanded ? 'Show less' : 'Show more',
+                    style: VineTheme.bodySmallFont(color: VineTheme.vineGreen),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
