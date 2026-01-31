@@ -50,6 +50,8 @@ import 'package:openvine/widgets/video_metrics_tracker.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
 
+import '../video_thumbnail_widget.dart';
+
 /// Video feed item using individual controller architecture
 class VideoFeedItem extends ConsumerStatefulWidget {
   const VideoFeedItem({
@@ -808,9 +810,47 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                   individualVideoControllerProvider(_controllerParams),
                 );
 
+                final isAgeVerificationRetry = ref.watch(
+                  ageVerificationRetryProvider.select(
+                    (state) => state[video.id] ?? false,
+                  ),
+                );
+
                 final videoWidget = ValueListenableBuilder<VideoPlayerValue>(
                   valueListenable: controller,
                   builder: (context, value, _) {
+                    if (isAgeVerificationRetry) {
+                      return Stack(
+                        fit: StackFit.expand,
+                        children: [
+                          VideoThumbnailWidget(
+                            video: video,
+                            fit: BoxFit.cover,
+                            showPlayIcon: false,
+                          ),
+                          Container(
+                            color: Colors.black54,
+                            child: const Center(
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  BrandedLoadingIndicator(size: 60),
+                                  SizedBox(height: 16),
+                                  Text(
+                                    'Loading video...',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      );
+                    }
+
                     // Check for video error state
                     // IMPORTANT: Only show error if video is NOT playing
                     // hasError can be stale after transient errors; if video recovered

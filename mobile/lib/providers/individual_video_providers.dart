@@ -27,6 +27,16 @@ const loopCheckInterval = Duration(milliseconds: 200);
 final authHeadersCacheProvider =
     StateProvider<Map<String, Map<String, String>>>((ref) => {});
 
+/// Tracks videos that are retrying after age verification
+/// Key: videoId, Value: true if actively retrying
+/// Used to:
+/// 1. Skip cache on retry (ensure fresh fetch with auth headers)
+/// 2. Show loading UI during retry
+/// 3. Trigger auto-play after successful retry
+final ageVerificationRetryProvider = StateProvider<Map<String, bool>>(
+  (ref) => {},
+);
+
 /// Cache for fallback video URLs by video ID
 /// When a video fails to load from cdn/stream.divine.video, we store a fallback URL
 /// to media.divine.video which is tried on the next retry
@@ -282,6 +292,16 @@ VideoPlayerController individualVideoController(
 
   final VideoPlayerController controller;
 
+  final isAgeVerificationRetry =
+      ref.read(ageVerificationRetryProvider)[params.videoId] ?? false;
+  if (isAgeVerificationRetry) {
+    Log.info(
+      '🔐 [AGE-RETRY] Detected age verification retry for video ${params.videoId} - will skip cache',
+      name: 'IndividualVideoController',
+      category: LogCategory.video,
+    );
+  }
+
   // On web, skip file caching entirely and always use network URL
   if (kIsWeb) {
     Log.debug(
@@ -302,7 +322,9 @@ VideoPlayerController individualVideoController(
     final videoCache = openVineVideoCache;
 
     // Synchronous cache check - use getCachedVideoSync() which checks file existence without async
-    final cachedFile = videoCache.getCachedVideoSync(params.videoId);
+    final cachedFile = isAgeVerificationRetry
+        ? null
+        : videoCache.getCachedVideoSync(params.videoId);
 
     if (cachedFile != null && cachedFile.existsSync()) {
       // Use cached file!
@@ -471,6 +493,19 @@ VideoPlayerController individualVideoController(
           category: LogCategory.system,
         );
 
+        if (isAgeVerificationRetry) {
+          Log.info(
+            '🔐 [AGE-RETRY] ✅ Age verification retry successful for video ${params.videoId}',
+            name: 'IndividualVideoController',
+            category: LogCategory.video,
+          );
+          ref.read(ageVerificationRetryProvider.notifier).update((state) {
+            final newState = {...state};
+            newState.remove(params.videoId);
+            return newState;
+          });
+        }
+
         // Set looping for Vine-like behavior
         controller.setLooping(true);
 
@@ -537,6 +572,19 @@ VideoPlayerController individualVideoController(
         final videoIdDisplay = params.videoId.length > 8
             ? params.videoId
             : params.videoId;
+
+        if (isAgeVerificationRetry) {
+          Log.warning(
+            '🔐 [AGE-RETRY] ❌ Age verification retry failed for video ${params.videoId}',
+            name: 'IndividualVideoController',
+            category: LogCategory.video,
+          );
+          ref.read(ageVerificationRetryProvider.notifier).update((state) {
+            final newState = {...state};
+            newState.remove(params.videoId);
+            return newState;
+          });
+        }
 
         // Enhanced error logging with full Nostr event details
         final errorMessage = error.toString();
