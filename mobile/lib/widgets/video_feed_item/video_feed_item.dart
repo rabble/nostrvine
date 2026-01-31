@@ -201,10 +201,12 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
   /// Controller params for the current video
   /// Uses platform-aware URL selection: HLS on Android, MP4 on iOS/macOS
+  /// Cache uses original MP4 URL (HLS can't be cached as single file)
   VideoControllerParams get _controllerParams => VideoControllerParams(
     videoId: widget.video.id,
     videoUrl:
         widget.video.getOptimalVideoUrlForPlatform() ?? widget.video.videoUrl!,
+    cacheUrl: widget.video.videoUrl, // Always cache original MP4
     videoEvent: widget.video,
   );
 
@@ -1625,6 +1627,7 @@ class VideoOverlayActions extends ConsumerWidget {
       final controllerParams = VideoControllerParams(
         videoId: video.id,
         videoUrl: video.getOptimalVideoUrlForPlatform() ?? video.videoUrl!,
+        cacheUrl: video.videoUrl,
         videoEvent: video,
       );
       final controller = ref.read(
@@ -1676,6 +1679,7 @@ class VideoOverlayActions extends ConsumerWidget {
       final controllerParams = VideoControllerParams(
         videoId: video.id,
         videoUrl: video.getOptimalVideoUrlForPlatform() ?? video.videoUrl!,
+        cacheUrl: video.videoUrl,
         videoEvent: video,
       );
       final controller = ref.read(
@@ -2002,6 +2006,7 @@ class _CommentActionButton extends StatelessWidget {
                     videoUrl:
                         video.getOptimalVideoUrlForPlatform() ??
                         video.videoUrl!,
+                    cacheUrl: video.videoUrl,
                     videoEvent: video,
                   );
                   final controller = ref.read(

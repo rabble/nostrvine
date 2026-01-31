@@ -145,12 +145,23 @@ class VideoControllerParams {
   const VideoControllerParams({
     required this.videoId,
     required this.videoUrl,
+    this.cacheUrl,
     this.videoEvent,
   });
 
   final String videoId;
+
+  /// URL for playback (may be HLS on Android for codec compatibility)
   final String videoUrl;
+
+  /// URL for caching (original MP4 - HLS can't be cached as single file)
+  /// If null, uses videoUrl for caching.
+  final String? cacheUrl;
+
   final dynamic videoEvent; // VideoEvent for enhanced error reporting
+
+  /// Get the URL to use for caching (prefers cacheUrl, falls back to videoUrl)
+  String get effectiveCacheUrl => cacheUrl ?? videoUrl;
 
   @override
   bool operator ==(Object other) =>
@@ -165,7 +176,7 @@ class VideoControllerParams {
 
   @override
   String toString() =>
-      'VideoControllerParams(videoId: $videoId, videoUrl: $videoUrl, hasEvent: ${videoEvent != null})';
+      'VideoControllerParams(videoId: $videoId, videoUrl: $videoUrl, cacheUrl: $cacheUrl, hasEvent: ${videoEvent != null})';
 }
 
 /// Loading state for individual videos
@@ -1034,8 +1045,10 @@ Future<dynamic> _cacheVideoWithAuth(
   }
 
   // Cache video with optional auth headers
+  // Use effectiveCacheUrl (original MP4) not videoUrl (may be HLS on Android)
+  // HLS manifests can't be cached as single files
   return videoCache.cacheVideo(
-    params.videoUrl,
+    params.effectiveCacheUrl,
     params.videoId,
     brokenVideoTracker: tracker,
     authHeaders: authHeaders,
