@@ -46,7 +46,7 @@ class RelayManager {
     try {
       final uri = Uri.parse(url);
       return _blockedRelayHosts.contains(uri.host);
-    } catch (_) {
+    } on FormatException {
       return false;
     }
   }

@@ -1080,7 +1080,7 @@ void main() {
       final manager = RelayManager(
         config: _createTestConfig(),
         relayPool: mockRelayPool,
-        relayFactory: (url) => _FakeRelay(url),
+        relayFactory: _FakeRelay.new,
       );
       await manager.initialize();
 
@@ -1098,7 +1098,7 @@ void main() {
       final manager = RelayManager(
         config: _createTestConfig(),
         relayPool: mockRelayPool,
-        relayFactory: (url) => _FakeRelay(url),
+        relayFactory: _FakeRelay.new,
       );
       await manager.initialize();
 
@@ -1118,7 +1118,7 @@ void main() {
       final manager = RelayManager(
         config: _createTestConfig(storage: storage),
         relayPool: mockRelayPool,
-        relayFactory: (url) => _FakeRelay(url),
+        relayFactory: _FakeRelay.new,
       );
 
       await manager.initialize();
