@@ -52,7 +52,7 @@ class DivineSnackbarContainer extends StatelessWidget {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            bannerText,
+            Expanded(child: bannerText),
             if (actionLabel != null && onActionPressed != null)
               TextButton(
                 onPressed: onActionPressed,
