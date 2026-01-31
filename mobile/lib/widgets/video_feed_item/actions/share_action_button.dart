@@ -58,6 +58,7 @@ class ShareActionButton extends ConsumerWidget {
       final controllerParams = VideoControllerParams(
         videoId: video.id,
         videoUrl: video.getOptimalVideoUrlForPlatform() ?? video.videoUrl!,
+        cacheUrl: video.videoUrl,
         videoEvent: video,
       );
       final controller = ref.read(
@@ -99,6 +100,7 @@ class ShareActionButton extends ConsumerWidget {
         final controllerParams = VideoControllerParams(
           videoId: video.id,
           videoUrl: video.getOptimalVideoUrlForPlatform() ?? video.videoUrl!,
+          cacheUrl: video.videoUrl,
           videoEvent: video,
         );
         final controller = ref.read(
