@@ -184,40 +184,42 @@ extension VideoEventAppExtensions on VideoEvent {
     }
   }
 
-  /// Get the optimal video URL based on platform and bandwidth.
+  /// Get the optimal video URL for initial playback.
   ///
-  /// **Android**: Uses HLS (.m3u8) for codec compatibility.
-  /// Quality is selected based on measured bandwidth:
-  /// - Good connection (>2 Mbps): 720p stream
-  /// - Slow connection (<2 Mbps): 480p stream
+  /// **Strategy**: Try original video first on all platforms.
+  /// Many Android devices CAN play the original codec fine.
+  /// HLS is used as a fallback only when codec errors occur.
   ///
-  /// **iOS/macOS**: Uses original MP4 URL. AVPlayer handles high-resolution
-  /// content well with hardware acceleration.
-  ///
-  /// Falls back to original [videoUrl] if HLS is unavailable.
+  /// For HLS fallback on Android codec errors, see [getHlsFallbackUrl].
   String? getOptimalVideoUrlForPlatform() {
-    // On Android, prefer HLS for codec compatibility
-    if (Platform.isAndroid) {
-      // Use bandwidth tracker for quality selection
-      // Import deferred to avoid circular dependency
-      final quality = _getBandwidthBasedQuality();
-      final hls = getHlsUrl(quality: quality);
+    // Always try original video first - many devices can play it
+    // HLS fallback is handled in error recovery (see individual_video_providers.dart)
+    return videoUrl;
+  }
 
-      if (hls != null) {
-        developer.log(
-          '📱 Android: Using HLS ($quality quality): $hls',
-          name: 'VideoEventExtensions',
-        );
-        return hls;
-      }
+  /// Get HLS fallback URL for Android codec errors.
+  ///
+  /// Called when original video fails with a codec error on Android.
+  /// HLS transcoding provides H.264 Baseline Profile which is universally
+  /// supported, unlike High Profile which some devices can't decode.
+  ///
+  /// Returns null if:
+  /// - Not on Android
+  /// - Video is not from Divine servers (no HLS available)
+  String? getHlsFallbackUrl() {
+    if (!Platform.isAndroid) return null;
+
+    final quality = _getBandwidthBasedQuality();
+    final hls = getHlsUrl(quality: quality);
+
+    if (hls != null) {
       developer.log(
-        '📱 Android: No HLS available (non-Divine video), using: $videoUrl',
+        '📱 Android: HLS fallback available ($quality quality): $hls',
         name: 'VideoEventExtensions',
       );
     }
 
-    // iOS/macOS and non-Divine videos use original URL
-    return videoUrl;
+    return hls;
   }
 
   // ---------------------------------------------------------------------------

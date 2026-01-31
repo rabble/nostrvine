@@ -81,7 +81,7 @@ final class IndividualVideoControllerProvider
 }
 
 String _$individualVideoControllerHash() =>
-    r'c82a0d1fbdb1dafb86d8b212344edbd105e1412a';
+    r'91caee8048a1067bda5060ac6f55b86655db7971';
 
 /// Provider for individual video controllers with autoDispose
 /// Each video gets its own controller instance

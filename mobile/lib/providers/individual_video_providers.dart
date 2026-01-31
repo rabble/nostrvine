@@ -13,7 +13,9 @@ import 'package:openvine/services/video_cache_manager.dart';
 import 'package:openvine/services/broken_video_tracker.dart'
     show BrokenVideoTracker;
 import 'package:openvine/services/bandwidth_tracker_service.dart';
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:models/models.dart' show VideoEvent;
 
 part 'individual_video_providers.g.dart';
 
@@ -724,6 +726,47 @@ VideoPlayerController individualVideoController(
                   category: LogCategory.video,
                 );
               });
+        } else if (_isCodecError(errorMessage) &&
+            !kIsWeb &&
+            Platform.isAndroid &&
+            ref.mounted) {
+          // Android codec error - try HLS fallback with H.264 Baseline Profile
+          final currentFallbackCache = ref.read(fallbackUrlCacheProvider);
+          final alreadyUsedFallback = currentFallbackCache.containsKey(
+            params.videoId,
+          );
+
+          if (!alreadyUsedFallback && params.videoEvent is VideoEvent) {
+            // Cast to VideoEvent to use the extension method
+            final videoEvent = params.videoEvent as VideoEvent;
+            final hlsFallback = videoEvent.getHlsFallbackUrl();
+
+            if (hlsFallback != null) {
+              // Store HLS URL as fallback for retry
+              final newCache = {...currentFallbackCache};
+              newCache[params.videoId] = hlsFallback;
+              ref.read(fallbackUrlCacheProvider.notifier).state = newCache;
+
+              Log.info(
+                '📱 Android codec error - stored HLS fallback for retry: $hlsFallback',
+                name: 'IndividualVideoController',
+                category: LogCategory.video,
+              );
+
+              // Cancel loop timer and invalidate to trigger retry with HLS
+              loopEnforcementTimer?.cancel();
+              if (ref.mounted) {
+                ref.invalidateSelf();
+              }
+              return;
+            } else {
+              Log.warning(
+                '📱 Android codec error but no HLS fallback available (non-Divine video)',
+                name: 'IndividualVideoController',
+                category: LogCategory.video,
+              );
+            }
+          }
         } else if (_isVideoError(errorMessage) && ref.mounted) {
           // Check if we can try a fallback URL before marking as broken
           final currentFallbackCache = ref.read(fallbackUrlCacheProvider);
