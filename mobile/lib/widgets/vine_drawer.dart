@@ -175,12 +175,18 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     title: 'Contact Support',
                     subtitle: 'Get help or report an issue',
                     onTap: () async {
-                      print('🎫 Contact Support tapped');
+                      Log.debug(
+                        '🎫 Contact Support tapped',
+                        category: LogCategory.ui,
+                      );
 
                       // Check Zendesk availability BEFORE closing drawer
                       final isZendeskAvailable =
                           ZendeskSupportService.isAvailable;
-                      print('🔍 Zendesk available: $isZendeskAvailable');
+                      Log.debug(
+                        '🔍 Zendesk available: $isZendeskAvailable',
+                        category: LogCategory.ui,
+                      );
 
                       // CRITICAL: Capture provider values BEFORE closing drawer
                       // to avoid "ref unmounted" error when dialog buttons are tapped
@@ -210,7 +216,10 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                       // Use the navigator's overlay context which is stable
                       final overlayContext = navigatorState.overlay?.context;
                       if (overlayContext == null || !overlayContext.mounted) {
-                        print('⚠️ Context not mounted after drawer close');
+                        Log.warning(
+                          '⚠️ Context not mounted after drawer close',
+                          category: LogCategory.ui,
+                        );
                         return;
                       }
 
@@ -395,7 +404,10 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     userPubkey,
                     userProfileService,
                   );
-                  print('💬 Opening Zendesk ticket list');
+                  Log.debug(
+                    '💬 Opening Zendesk ticket list',
+                    category: LogCategory.ui,
+                  );
                   await ZendeskSupportService.showTicketList();
                 } else {
                   scaffoldMessenger.showSnackBar(
@@ -492,7 +504,10 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   ) async {
     if (userPubkey == null) {
       // Users always have pubkey in this app, but handle edge case gracefully
-      print('⚠️ Zendesk: No userPubkey, using baseline anonymous identity');
+      Log.warning(
+        '⚠️ Zendesk: No userPubkey, using baseline anonymous identity',
+        category: LogCategory.system,
+      );
       return;
     }
 
@@ -500,10 +515,14 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
       final npub = NostrKeyUtils.encodePubKey(userPubkey);
       final profile = userProfileService.getCachedProfile(userPubkey);
 
-      print(
+      Log.debug(
         '🎫 Zendesk: Setting identity for ${profile?.bestDisplayName ?? npub}',
+        category: LogCategory.system,
       );
-      print('🎫 Zendesk: NIP-05: ${profile?.nip05 ?? "none"}');
+      Log.debug(
+        '🎫 Zendesk: NIP-05: ${profile?.nip05 ?? "none"}',
+        category: LogCategory.system,
+      );
 
       await ZendeskSupportService.setUserIdentity(
         displayName: profile?.bestDisplayName,
@@ -511,11 +530,13 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
         npub: npub,
       );
 
-      print('✅ Zendesk: Identity set successfully');
+      Log.debug(
+        '✅ Zendesk: Identity set successfully',
+        category: LogCategory.system,
+      );
     } catch (e) {
-      print('❌ Zendesk: Failed to set identity: $e');
-      Log.warning(
-        'Failed to set Zendesk identity: $e',
+      Log.error(
+        '❌ Zendesk: Failed to set identity: $e',
         category: LogCategory.system,
       );
     }
@@ -551,7 +572,7 @@ App Version: $appVersion
 Platform: $platformName
 ''';
 
-      print('🐛 Opening Zendesk for bug report');
+      Log.debug('🐛 Opening Zendesk for bug report', category: LogCategory.ui);
       final success = await ZendeskSupportService.showNewTicketScreen(
         subject: 'Bug Report',
         description: description,
@@ -575,7 +596,10 @@ Platform: $platformName
     String? userPubkey,
   ) {
     if (!stableContext.mounted) {
-      print('⚠️ Cannot show bug report dialog - context not mounted');
+      Log.warning(
+        '⚠️ Cannot show bug report dialog - context not mounted',
+        category: LogCategory.ui,
+      );
       return;
     }
 
