@@ -11,6 +11,8 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
@@ -74,6 +76,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
   bool _isSearchingWebSocket = false; // Track WebSocket search phase separately
   String _currentQuery = '';
   Timer? _debounceTimer;
+  int _searchGeneration = 0; // Prevents race conditions between search phases
 
   @override
   void initState() {
@@ -246,8 +249,14 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
   ///
   /// Strategy: Try Funnelcake REST API first (fast), then WebSocket NIP-50 (slower)
   /// Results flow incrementally - REST results appear first, WS results merge in
+  ///
+  /// Uses a generation counter to prevent race conditions when queries change
+  /// mid-search - stale results from old queries are discarded.
   Future<void> _searchExternalRelays() async {
     if (_currentQuery.isEmpty || _isSearchingExternal) return;
+
+    // Increment generation to invalidate any in-flight searches
+    final generation = ++_searchGeneration;
 
     setState(() {
       _isSearchingExternal = true;
@@ -256,6 +265,9 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     final querySnapshot = _currentQuery;
     final blocklistService = ref.read(contentBlocklistServiceProvider);
     final profileService = ref.read(userProfileServiceProvider);
+
+    // Helper to check if this search is still valid
+    bool isSearchStale() => !mounted || _searchGeneration != generation;
 
     // Check if Funnelcake REST API is available
     final funnelcakeAvailable =
@@ -289,13 +301,14 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
             )
             .toList();
 
-        if (filteredRestResults.isNotEmpty && mounted) {
+        if (filteredRestResults.isNotEmpty && !isSearchStale()) {
           // Merge REST results with local results
           _mergeAndUpdateResults(
             newVideos: filteredRestResults,
             blocklistService: blocklistService,
             profileService: profileService,
             querySnapshot: querySnapshot,
+            generation: generation,
           );
 
           Log.info(
@@ -314,7 +327,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
     // ===== PHASE 2: WebSocket NIP-50 search (slower, more comprehensive) =====
     // Always run WebSocket search to catch results not in Funnelcake
-    if (mounted && _currentQuery == querySnapshot) {
+    if (!isSearchStale()) {
       setState(() {
         _isSearchingWebSocket = true;
       });
@@ -349,7 +362,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
           limit: 50,
         ).map((p) => p.pubkey).toList();
 
-        if (mounted && _currentQuery == querySnapshot) {
+        if (!isSearchStale()) {
           // Merge WebSocket results
           _mergeAndUpdateResults(
             newVideos: wsResults,
@@ -357,6 +370,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
             blocklistService: blocklistService,
             profileService: profileService,
             querySnapshot: querySnapshot,
+            generation: generation,
           );
 
           Log.info(
@@ -366,7 +380,8 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
           );
         }
       } catch (e) {
-        Log.error(
+        // Use warning level since this is recoverable - partial results may exist
+        Log.warning(
           '🔍 SearchScreenPure: WebSocket search failed: $e',
           category: LogCategory.video,
         );
@@ -389,13 +404,26 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
   }
 
   /// Merge new results with existing results and update UI
+  ///
+  /// Uses generation counter to ensure we don't update UI with stale results
+  /// from a previous search that completed after the user changed queries.
   void _mergeAndUpdateResults({
     required List<VideoEvent> newVideos,
     List<String>? newUsers,
-    required dynamic blocklistService,
-    required dynamic profileService,
+    required ContentBlocklistService blocklistService,
+    required UserProfileService profileService,
     required String querySnapshot,
+    required int generation,
   }) {
+    // Check if this search is still valid before updating
+    if (!mounted || _searchGeneration != generation) {
+      Log.debug(
+        '🔍 SearchScreenPure: Discarding stale results for "$querySnapshot"',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
     // Combine existing + new results
     final allVideos = [..._videoResults, ...newVideos];
 
@@ -428,15 +456,13 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       }
     }
 
-    if (mounted && _currentQuery == querySnapshot) {
-      setState(() {
-        _videoResults = uniqueVideos;
-        _hashtagResults = allHashtags.take(20).toList();
-        _userResults = allUsers.take(20).toList();
-      });
-      // Update provider so active video system can access merged search results
-      ref.read(searchScreenVideosProvider.notifier).state = uniqueVideos;
-    }
+    setState(() {
+      _videoResults = uniqueVideos;
+      _hashtagResults = allHashtags.take(20).toList();
+      _userResults = allUsers.take(20).toList();
+    });
+    // Update provider so active video system can access merged search results
+    ref.read(searchScreenVideosProvider.notifier).state = uniqueVideos;
   }
 
   @override
