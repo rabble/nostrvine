@@ -131,12 +131,13 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       case MoreSheetResult.blockConfirmed:
         final blocklistService = ref.read(contentBlocklistServiceProvider);
         blocklistService.blockUser(userIdHex);
-        // Increment version to trigger rebuild of widgets watching blocklist
         ref.read(blocklistVersionProvider.notifier).increment();
+        if (mounted) {
+          context.pop();
+        }
       case MoreSheetResult.unblockConfirmed:
         final blocklistService = ref.read(contentBlocklistServiceProvider);
         blocklistService.unblockUser(userIdHex);
-        // Increment version to trigger rebuild of widgets watching blocklist
         ref.read(blocklistVersionProvider.notifier).increment();
     }
   }

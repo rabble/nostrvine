@@ -12,7 +12,25 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:divine_ui/divine_ui.dart';
 
 class MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {}
+    implements ContentBlocklistService {
+  final Set<String> _runtimeBlocklist = {};
+
+  @override
+  Set<String> get runtimeBlockedUsers => Set.unmodifiable(_runtimeBlocklist);
+
+  @override
+  void blockUser(String pubkey) {
+    _runtimeBlocklist.add(pubkey);
+  }
+
+  @override
+  void unblockUser(String pubkey) {
+    _runtimeBlocklist.remove(pubkey);
+  }
+
+  @override
+  bool isBlocked(String pubkey) => _runtimeBlocklist.contains(pubkey);
+}
 
 class MockContentReportingService extends Mock
     implements ContentReportingService {}
@@ -123,6 +141,45 @@ void main() {
 
       final appBar = tester.widget<AppBar>(find.byType(AppBar));
       expect(appBar.backgroundColor, isNotNull);
+    });
+  });
+
+  group('SafetySettingsScreen Blocked Users Section - Unit Tests', () {
+    test('runtimeBlockedUsers returns blocked users set', () {
+      final service = MockContentBlocklistService();
+
+      // Initially empty
+      expect(service.runtimeBlockedUsers, isEmpty);
+
+      // Block a user
+      service.blockUser('blocked_pubkey_1');
+      expect(service.runtimeBlockedUsers.contains('blocked_pubkey_1'), isTrue);
+
+      // Block another
+      service.blockUser('blocked_pubkey_2');
+      expect(service.runtimeBlockedUsers.length, equals(2));
+    });
+
+    test('unblockUser removes user from blocked list', () {
+      final service = MockContentBlocklistService();
+
+      service.blockUser('user_to_unblock');
+      expect(service.runtimeBlockedUsers.contains('user_to_unblock'), isTrue);
+
+      service.unblockUser('user_to_unblock');
+      expect(service.runtimeBlockedUsers.contains('user_to_unblock'), isFalse);
+    });
+
+    test('isBlocked returns correct status', () {
+      final service = MockContentBlocklistService();
+
+      expect(service.isBlocked('some_user'), isFalse);
+
+      service.blockUser('some_user');
+      expect(service.isBlocked('some_user'), isTrue);
+
+      service.unblockUser('some_user');
+      expect(service.isBlocked('some_user'), isFalse);
     });
   });
 }

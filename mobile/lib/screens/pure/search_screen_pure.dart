@@ -158,6 +158,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       final videos = videoEventService.discoveryVideos;
 
       final profileService = ref.read(userProfileServiceProvider);
+      final blocklistService = ref.read(contentBlocklistServiceProvider);
 
       Log.debug(
         '🔍 SearchScreenPure: Filtering ${videos.length} cached videos',
@@ -166,9 +167,11 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
       final users = <String>{};
 
-      // Find user profiles for matching the query
       final matchingProfilesKeys = profileService.allProfiles.values
           .where((profile) {
+            if (blocklistService.shouldFilterFromFeeds(profile.pubkey)) {
+              return false;
+            }
             final displayNameMatch = profile.bestDisplayName
                 .toLowerCase()
                 .contains(query.toLowerCase());
@@ -179,8 +182,11 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
       _userResults.addAll(matchingProfilesKeys.toList());
 
-      // Filter local videos based on search query
       final filteredVideos = videos.where((video) {
+        if (blocklistService.shouldFilterFromFeeds(video.pubkey)) {
+          return false;
+        }
+
         final titleMatch =
             video.title?.toLowerCase().contains(query.toLowerCase()) ?? false;
         final contentMatch = video.content.toLowerCase().contains(
@@ -204,7 +210,9 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
             hashtags.add(tag);
           }
         }
-        users.add(video.pubkey);
+        if (!blocklistService.shouldFilterFromFeeds(video.pubkey)) {
+          users.add(video.pubkey);
+        }
       }
 
       // Sort local results before showing
@@ -258,19 +266,25 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
     try {
       final videoEventService = ref.read(videoEventServiceProvider);
+      final blocklistService = ref.read(contentBlocklistServiceProvider);
 
       // Search external relays via NIP-50
       await videoEventService.searchVideos(_currentQuery, limit: 100);
 
-      // Get remote results
-      final remoteResults = videoEventService.searchResults;
+      final remoteResults = videoEventService.searchResults
+          .where(
+            (video) => !blocklistService.shouldFilterFromFeeds(video.pubkey),
+          )
+          .toList();
 
       final profileService = ref.read(userProfileServiceProvider);
       await profileService.searchUsers(_currentQuery, limit: 100);
 
-      // Find user profiles for matching the query
       final matchingRemoteUsers = profileService.allProfiles.values
           .where((profile) {
+            if (blocklistService.shouldFilterFromFeeds(profile.pubkey)) {
+              return false;
+            }
             final displayNameMatch = profile.bestDisplayName
                 .toLowerCase()
                 .contains(_currentQuery.toLowerCase());
@@ -303,7 +317,9 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
             allHashtags.add(tag);
           }
         }
-        allUsers.add(video.pubkey);
+        if (!blocklistService.shouldFilterFromFeeds(video.pubkey)) {
+          allUsers.add(video.pubkey);
+        }
       }
 
       if (mounted) {
