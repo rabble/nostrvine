@@ -147,6 +147,9 @@ class RelayManager {
       }
       if (blockedCount > 0) {
         _log('Filtered $blockedCount blocked relays from storage');
+        // Persist the filtered list so blocked relays are permanently removed
+        await storage.saveRelays(_configuredRelays);
+        _log('Saved filtered relay list to storage');
       }
       _log('Loaded ${_configuredRelays.length} relays from storage');
     }

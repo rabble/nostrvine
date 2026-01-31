@@ -1131,6 +1131,12 @@ void main() {
       // Other relays should be present
       expect(manager.configuredRelays, contains(testDefaultRelayUrl));
       expect(manager.configuredRelays, contains(testCustomRelayUrl));
+
+      // Verify storage was updated to remove blocked relay
+      final savedRelays = await storage.loadRelays();
+      expect(savedRelays, isNot(contains('wss://index.coracle.social')));
+      expect(savedRelays, contains(testDefaultRelayUrl));
+      expect(savedRelays, contains(testCustomRelayUrl));
     });
   });
 }
