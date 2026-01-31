@@ -10,8 +10,7 @@ import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/others_following/others_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/utils/public_identifier_normalizer.dart';
+import 'package:openvine/router/nav_extensions.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
@@ -174,12 +173,7 @@ class _FollowingListBody extends StatelessWidget {
             builder: (context, isFollowing) {
               return UserProfileTile(
                 pubkey: userPubkey,
-                onTap: () {
-                  final npub = normalizeToNpub(userPubkey);
-                  if (npub != null) {
-                    context.go(ProfileScreenRouter.pathForIndex(npub, 0));
-                  }
-                },
+                onTap: () => context.goOtherProfile(userPubkey),
                 isFollowing: isFollowing,
                 onToggleFollow: () {
                   context.read<MyFollowingBloc>().add(
