@@ -164,10 +164,7 @@ class _VideoEditorMoreButtonState
         elevation: 0,
         behavior: .floating,
         duration: Duration(seconds: isError ? 3 : 2),
-        content: DivineSnackbarContainer(
-          label: message,
-          error: isError,
-        ),
+        content: DivineSnackbarContainer(label: message, error: isError),
       ),
     );
   }

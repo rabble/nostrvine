@@ -29,10 +29,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
         behavior: .floating,
         margin: const .fromLTRB(16, 0, 16, 68),
         duration: Duration(seconds: isError ? 3 : 2),
-        content: DivineSnackbarContainer(
-          label: message,
-          error: isError,
-        ),
+        content: DivineSnackbarContainer(label: message, error: isError),
       ),
     );
   }
