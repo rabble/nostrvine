@@ -520,7 +520,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
   }
 
-
   // === EDITOR STATE PERSISTENCE ===
 
   /// Update the editor state history for undo/redo functionality.
