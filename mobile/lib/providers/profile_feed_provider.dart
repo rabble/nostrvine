@@ -275,9 +275,11 @@ class ProfileFeed extends _$ProfileFeed {
       return;
     }
 
-    // Check for duplicates
-    final existingIds = currentState.videos.map((v) => v.id).toSet();
-    if (existingIds.contains(newVideo.id)) {
+    // Check for duplicates (case-insensitive for Nostr IDs)
+    final existingIds = currentState.videos
+        .map((v) => v.id.toLowerCase())
+        .toSet();
+    if (existingIds.contains(newVideo.id.toLowerCase())) {
       Log.debug(
         'ProfileFeed: Video ${newVideo.id} already in state, skipping optimistic add',
         name: 'ProfileFeedProvider',
@@ -413,10 +415,12 @@ class ProfileFeed extends _$ProfileFeed {
         if (!ref.mounted) return;
 
         if (apiVideos.isNotEmpty) {
-          // Deduplicate and merge
-          final existingIds = currentState.videos.map((v) => v.id).toSet();
+          // Deduplicate and merge (case-insensitive for Nostr IDs)
+          final existingIds = currentState.videos
+              .map((v) => v.id.toLowerCase())
+              .toSet();
           final newVideos = apiVideos
-              .where((v) => !existingIds.contains(v.id))
+              .where((v) => !existingIds.contains(v.id.toLowerCase()))
               .where((v) => !v.isRepost)
               .toList();
 

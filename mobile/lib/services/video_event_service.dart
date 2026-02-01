@@ -2529,7 +2529,8 @@ class VideoEventService extends ChangeNotifier {
 
     final followingSet = followingPubkeys.toSet();
     final homeFeedList = _eventLists[SubscriptionType.homeFeed] ?? [];
-    final existingIds = homeFeedList.map((v) => v.id).toSet();
+    // Use case-insensitive comparison for Nostr IDs
+    final existingIds = homeFeedList.map((v) => v.id.toLowerCase()).toSet();
     final discoveryVideos = _eventLists[SubscriptionType.discovery] ?? [];
 
     // Find videos in discovery that belong to followed users but aren't in home feed
@@ -2537,7 +2538,7 @@ class VideoEventService extends ChangeNotifier {
         .where(
           (video) =>
               followingSet.contains(video.pubkey) &&
-              !existingIds.contains(video.id),
+              !existingIds.contains(video.id.toLowerCase()),
         )
         .toList();
 
@@ -2621,20 +2622,21 @@ class VideoEventService extends ChangeNotifier {
       }
 
       // Get existing video IDs in home feed for deduplication
+      // Use case-insensitive comparison for Nostr IDs
       final homeFeedList = _eventLists[SubscriptionType.homeFeed] ?? [];
-      final existingIds = homeFeedList.map((v) => v.id).toSet();
+      final existingIds = homeFeedList.map((v) => v.id.toLowerCase()).toSet();
 
       final videosToSeed = <VideoEvent>[];
 
       for (final event in events) {
-        // Skip if already in home feed
-        if (existingIds.contains(event.id)) continue;
+        // Skip if already in home feed (case-insensitive)
+        if (existingIds.contains(event.id.toLowerCase())) continue;
 
         // Check if video exists in other subscription lists
         VideoEvent? existingVideo;
         for (final list in _eventLists.values) {
           existingVideo = list.cast<VideoEvent?>().firstWhere(
-            (v) => v?.id == event.id,
+            (v) => v?.id.toLowerCase() == event.id.toLowerCase(),
             orElse: () => null,
           );
           if (existingVideo != null) break;

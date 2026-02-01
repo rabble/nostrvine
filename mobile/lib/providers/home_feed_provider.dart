@@ -733,10 +733,12 @@ class HomeFeed extends _$HomeFeed {
         if (!ref.mounted) return;
 
         if (feedResult.videos.isNotEmpty) {
-          // Deduplicate and merge
-          final existingIds = currentState.videos.map((v) => v.id).toSet();
+          // Deduplicate and merge (case-insensitive for Nostr IDs)
+          final existingIds = currentState.videos
+              .map((v) => v.id.toLowerCase())
+              .toSet();
           final newVideos = feedResult.videos
-              .where((v) => !existingIds.contains(v.id))
+              .where((v) => !existingIds.contains(v.id.toLowerCase()))
               .where((v) => v.isSupportedOnCurrentPlatform)
               .toList();
 
