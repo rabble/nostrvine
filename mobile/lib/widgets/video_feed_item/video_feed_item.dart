@@ -367,15 +367,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
     // Close the interactions bloc
     _interactionsBloc.close();
 
-    // When using override mode, we need to stop playback manually on dispose
-    // (provider mode handles this automatically via provider cleanup)
-    if (widget.isActiveOverride == true && widget.video.videoUrl != null) {
-      Log.info(
-        '🛑 VideoFeedItem.dispose: stopping playback for ${widget.video.id} (override mode)',
-        name: 'VideoFeedItem',
-        category: LogCategory.video,
-      );
-
+    // Always pause video on dispose - defensive cleanup required because:
+    // 1. iOS back gesture may dispose widget before reactive listeners fire
+    // 2. Provider cleanup only triggers on route TYPE changes, not videoIndex changes
+    // 3. Feed→grid transition stays on same route type (e.g., explore)
+    if (widget.video.videoUrl != null) {
       // Directly pause the controller - don't rely on _handlePlaybackChange
       // which might fail if ref is in an inconsistent state during dispose
       // Use safePause to handle "No active player with ID" errors gracefully
