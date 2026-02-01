@@ -205,6 +205,16 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i4.Future<_i2.AuthResult>);
 
   @override
+  _i4.Future<_i2.AuthResult> connectWithAmber() =>
+      (super.noSuchMethod(
+            Invocation.method(#connectWithAmber, []),
+            returnValue: _i4.Future<_i2.AuthResult>.value(
+              _FakeAuthResult_0(this, Invocation.method(#connectWithAmber, [])),
+            ),
+          )
+          as _i4.Future<_i2.AuthResult>);
+
+  @override
   _i4.Future<_i2.AuthResult> importFromNsec(
     String? nsec, {
     String? biometricPrompt,
