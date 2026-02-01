@@ -156,7 +156,10 @@ void main() {
             () => mockLikesRepository.getLikeCount(testEventId),
           ).thenAnswer((_) async => 10);
           when(
-            () => mockCommentsRepository.getCommentsCount(testEventId),
+            () => mockCommentsRepository.getCommentsCount(
+              testEventId,
+              rootAddressableId: testAddressableId,
+            ),
           ).thenAnswer((_) async => 5);
           when(
             () => mockRepostsRepository.getRepostCount(testAddressableId),
