@@ -501,17 +501,11 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
   );
 
   // Initialize auth service
+  // NOTE: NostrService (relay connections) is initialized lazily in AuthService
+  // when user actually authenticates, to avoid blocking startup for unauthenticated users
   await container.read(authServiceProvider).initialize();
   Log.info(
     '[INIT] ✅ AuthService initialized',
-    name: 'Main',
-    category: LogCategory.system,
-  );
-
-  // Initialize nostr service (depends on auth)
-  await container.read(nostrServiceProvider).initialize();
-  Log.info(
-    '[INIT] ✅ NostrService initialized',
     name: 'Main',
     category: LogCategory.system,
   );

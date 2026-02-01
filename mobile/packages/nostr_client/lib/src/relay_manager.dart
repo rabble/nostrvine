@@ -449,13 +449,22 @@ class RelayManager {
     }
     _notifyStatusChange();
 
-    for (final url in relaysToConnect) {
-      final success = await _connectToRelay(url);
-      if (success) {
-        _updateRelayStatus(url, RelayState.connected);
+    // Connect to all relays in PARALLEL instead of sequential.
+    // This reduces startup from O(n * timeout) to O(max timeout).
+    final results = await Future.wait(
+      relaysToConnect.map((url) async {
+        final success = await _connectToRelay(url);
+        return MapEntry(url, success);
+      }),
+    );
+
+    // Update statuses based on results
+    for (final entry in results) {
+      if (entry.value) {
+        _updateRelayStatus(entry.key, RelayState.connected);
       } else {
         _updateRelayStatus(
-          url,
+          entry.key,
           RelayState.error,
           errorMessage: 'Failed to connect',
         );
