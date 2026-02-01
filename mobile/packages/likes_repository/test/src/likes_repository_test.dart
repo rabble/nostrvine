@@ -231,9 +231,7 @@ void main() {
           () => mockNostrClient.sendLike(
             testEventId,
             content: '+',
-            addressableId: null,
             targetAuthorPubkey: testAuthorPubkey,
-            targetKind: null,
           ),
         ).called(1);
         verify(() => mockLocalStorage.saveLikeRecord(any())).called(1);
