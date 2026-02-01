@@ -19,6 +19,12 @@ import 'package:openvine/utils/unified_logger.dart';
 /// Service for managing user profiles from Nostr kind 0 events
 /// Reactive service that notifies listeners when profiles are updated
 class UserProfileService extends ChangeNotifier {
+  /// Well-known indexer relays that maintain broad coverage of kind 0 events
+  /// These are specialized relays that aggregate profile metadata from many sources
+  static const List<String> _profileIndexerRelays = [
+    'wss://purplepag.es', // Purple Pages - primary metadata indexer
+    'wss://user.kindpag.es', // Kind Pages - specialized user metadata indexer
+  ];
   UserProfileService(
     this._nostrService, {
     required SubscriptionManager subscriptionManager,
@@ -775,32 +781,35 @@ class UserProfileService extends ChangeNotifier {
         category: LogCategory.system,
       );
 
-      // Track attempts and only mark as missing after 2+ failures
+      // Track attempts - on first failure try indexers, on second mark as missing
       for (final pubkey in unfetchedPubkeys) {
         final attempts = (_fetchAttempts[pubkey] ?? 0) + 1;
         _fetchAttempts[pubkey] = attempts;
 
-        if (attempts >= 2) {
-          // Only mark as missing after 2+ failed attempts
+        if (attempts == 1) {
+          // First failure: Try indexer relays as fallback
+          Log.info(
+            '🔍 Profile not found on main relay, trying indexers: $pubkey',
+            name: 'UserProfileService',
+            category: LogCategory.system,
+          );
+          // Fire and forget - indexer query will complete the completer if found
+          unawaited(_queryIndexersForProfile(pubkey));
+        } else if (attempts >= 2) {
+          // Second failure (indexers also failed): Mark as missing
           markProfileAsMissing(pubkey);
           _fetchAttempts.remove(pubkey);
           Log.debug(
-            '❌ Profile marked as missing after $attempts attempts: $pubkey',
+            '❌ Profile marked as missing after $attempts attempts (including indexers): $pubkey',
             name: 'UserProfileService',
             category: LogCategory.system,
           );
-        } else {
-          Log.debug(
-            '⚠️ Profile not found (attempt $attempts/2), will retry: $pubkey',
-            name: 'UserProfileService',
-            category: LogCategory.system,
-          );
-        }
 
-        // Complete pending fetch requests with null for this batch
-        final completer = _profileFetchCompleters.remove(pubkey);
-        if (completer != null && !completer.isCompleted) {
-          completer.complete(null);
+          // Complete pending fetch requests with null
+          final completer = _profileFetchCompleters.remove(pubkey);
+          if (completer != null && !completer.isCompleted) {
+            completer.complete(null);
+          }
         }
       }
 
@@ -825,6 +834,103 @@ class UserProfileService extends ChangeNotifier {
       );
       Timer(const Duration(milliseconds: 50), _executeBatchFetch);
     }
+  }
+
+  /// Query profile indexer relays for a kind 0 profile.
+  /// This is a fallback when the main relay doesn't have the profile.
+  Future<void> _queryIndexersForProfile(String pubkey) async {
+    for (final indexerUrl in _profileIndexerRelays) {
+      try {
+        Log.debug(
+          '🔍 Querying indexer $indexerUrl for profile: $pubkey',
+          name: 'UserProfileService',
+          category: LogCategory.system,
+        );
+
+        // Temporarily add the indexer relay
+        final added = await _nostrService.addRelay(indexerUrl);
+        if (!added) {
+          Log.warning(
+            'Failed to add indexer relay: $indexerUrl',
+            name: 'UserProfileService',
+            category: LogCategory.system,
+          );
+          continue;
+        }
+
+        // Create filter for kind 0 profile
+        final filter = Filter(kinds: [0], authors: [pubkey], limit: 1);
+
+        // Query with timeout
+        final events = await _nostrService
+            .queryEvents([filter])
+            .timeout(
+              const Duration(seconds: 10),
+              onTimeout: () {
+                Log.warning(
+                  'Timeout querying indexer: $indexerUrl for profile',
+                  name: 'UserProfileService',
+                  category: LogCategory.system,
+                );
+                return <Event>[];
+              },
+            );
+
+        // Remove the indexer relay after querying
+        await _nostrService.removeRelay(indexerUrl);
+
+        if (events.isNotEmpty) {
+          // Found profile on indexer - handle it
+          final event = events.first;
+          Log.info(
+            '✅ Found profile on indexer $indexerUrl: $pubkey',
+            name: 'UserProfileService',
+            category: LogCategory.system,
+          );
+
+          // Process the profile event (this will cache it and notify)
+          _handleProfileEvent(event);
+
+          // Clear attempt tracking since we found it
+          _fetchAttempts.remove(pubkey);
+          _pendingRequests.remove(pubkey);
+
+          return; // Success - stop trying other indexers
+        } else {
+          Log.debug(
+            'No kind 0 event found on $indexerUrl for $pubkey',
+            name: 'UserProfileService',
+            category: LogCategory.system,
+          );
+        }
+      } catch (e) {
+        Log.warning(
+          'Error querying indexer $indexerUrl for profile: $e',
+          name: 'UserProfileService',
+          category: LogCategory.system,
+        );
+        // Try to clean up relay connection
+        try {
+          await _nostrService.removeRelay(indexerUrl);
+        } catch (_) {
+          // Ignore cleanup errors
+        }
+      }
+    }
+
+    // All indexers failed - increment attempt count and trigger retry logic
+    Log.warning(
+      '❌ Profile not found on any indexer: $pubkey',
+      name: 'UserProfileService',
+      category: LogCategory.system,
+    );
+
+    // Re-add to batch for one more attempt (this will hit the attempts >= 2 case)
+    _pendingBatchPubkeys.add(pubkey);
+    _batchDebounceTimer?.cancel();
+    _batchDebounceTimer = Timer(const Duration(milliseconds: 200), () {
+      _executeBatchFetch();
+    });
   }
 
   /// Get display name for a user (with fallback)

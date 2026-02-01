@@ -185,7 +185,11 @@ class ProfileFeed extends _$ProfileFeed {
       authorPubkey,
     ) {
       if (authorPubkey == userId && ref.mounted) {
-        refreshFromService();
+        // CRITICAL FIX: Optimistically add the new video to state immediately
+        // instead of re-fetching from REST API which may have stale data.
+        // This fixes the "video disappears after upload" bug where Funnelcake
+        // hasn't indexed the new video yet but the user expects to see it.
+        _addNewVideoToState(newVideo);
       }
     });
 
@@ -241,6 +245,60 @@ class ProfileFeed extends _$ProfileFeed {
         videos: updatedVideos,
         hasMoreContent:
             updatedVideos.length >= AppConstants.hasMoreContentThreshold,
+        isLoadingMore: false,
+        lastUpdated: DateTime.now(),
+      ),
+    );
+  }
+
+  /// Optimistically add a newly published video to the profile feed state.
+  /// This is called when the user publishes a new video to ensure instant feedback
+  /// without waiting for Funnelcake REST API to index the event.
+  void _addNewVideoToState(VideoEvent newVideo) {
+    // Skip reposts - profile feed shows only original videos
+    if (newVideo.isRepost) {
+      Log.debug(
+        'ProfileFeed: Skipping repost in optimistic update',
+        name: 'ProfileFeedProvider',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    final currentState = state.asData?.value;
+    if (currentState == null) {
+      Log.warning(
+        'ProfileFeed: Cannot add video to state - state is null',
+        name: 'ProfileFeedProvider',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    // Check for duplicates
+    final existingIds = currentState.videos.map((v) => v.id).toSet();
+    if (existingIds.contains(newVideo.id)) {
+      Log.debug(
+        'ProfileFeed: Video ${newVideo.id} already in state, skipping optimistic add',
+        name: 'ProfileFeedProvider',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    // Add new video to the front of the list (most recent first)
+    final updatedVideos = <VideoEvent>[newVideo, ...currentState.videos];
+
+    Log.info(
+      'ProfileFeed: Optimistically added new video ${newVideo.id} to state (total: ${updatedVideos.length})',
+      name: 'ProfileFeedProvider',
+      category: LogCategory.video,
+    );
+
+    state = AsyncData(
+      VideoFeedState(
+        videos: updatedVideos,
+        hasMoreContent: currentState.hasMoreContent,
         isLoadingMore: false,
         lastUpdated: DateTime.now(),
       ),
