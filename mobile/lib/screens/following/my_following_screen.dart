@@ -142,7 +142,7 @@ class _FollowingListBody extends StatelessWidget {
             builder: (context, isFollowing) {
               return UserProfileTile(
                 pubkey: userPubkey,
-                onTap: () => context.goOtherProfile(userPubkey),
+                onTap: () => context.pushOtherProfile(userPubkey),
                 isFollowing: isFollowing,
                 onToggleFollow: () {
                   context.read<MyFollowingBloc>().add(

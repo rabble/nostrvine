@@ -54,6 +54,7 @@ class ClipLibraryScreen extends ConsumerStatefulWidget {
 class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
   List<SavedClip> _clips = [];
   bool _isLoading = true;
+  bool _isDeleting = false;
   // Always show selection checkboxes when not in single-selection mode
   // This makes multi-select the default behavior for better UX
   final Set<String> _selectedClipIds = {};
@@ -113,6 +114,105 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
   void _clearSelection() {
     setState(_selectedClipIds.clear);
     _selectedDuration = .zero;
+  }
+
+  void _showDeleteConfirmationDialog() {
+    final clipCount = _selectedClipIds.length;
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: VineTheme.cardBackground,
+        title: const Text(
+          'Delete Clips',
+          style: TextStyle(color: VineTheme.whiteText),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Are you sure you want to delete $clipCount '
+              'selected clip${clipCount == 1 ? '' : 's'}?',
+              style: const TextStyle(color: VineTheme.whiteText),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'This action cannot be undone. The video files will be '
+              'permanently removed from your device.',
+              style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+              _deleteSelectedClips();
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _deleteSelectedClips() async {
+    if (_selectedClipIds.isEmpty) return;
+
+    setState(() => _isDeleting = true);
+
+    try {
+      final clipService = ref.read(clipLibraryServiceProvider);
+      final deletedCount = _selectedClipIds.length;
+
+      for (final clipId in _selectedClipIds.toList()) {
+        await clipService.deleteClip(clipId);
+      }
+
+      _clearSelection();
+      await _loadClips();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            behavior: SnackBarBehavior.floating,
+            content: DivineSnackbarContainer(
+              label:
+                  '$deletedCount clip${deletedCount == 1 ? '' : 's'} deleted',
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            behavior: SnackBarBehavior.floating,
+            content: DivineSnackbarContainer(
+              label: 'Failed to delete clips: $e',
+              error: true,
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isDeleting = false);
+      }
+    }
   }
 
   void _toggleClipSelection(SavedClip clip) {
@@ -197,85 +297,97 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
               .aspectRatioValue
         : null;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
-        statusBarColor: Colors.black,
-        statusBarIconBrightness: .light,
-        statusBarBrightness: .dark,
-      ),
-      child: Scaffold(
-        backgroundColor: widget.selectionMode
-            ? VineTheme.surfaceBackground
-            : const Color(0xFF101111),
-        appBar: widget.selectionMode
-            ? null
-            : AppBar(
-                backgroundColor: const Color(0xFF101111),
-                foregroundColor: VineTheme.whiteText,
-                leading: IconButton(
-                  icon: const Icon(Icons.arrow_back),
-                  onPressed: () {
-                    if (context.canPop()) {
-                      context.pop();
-                    } else {
-                      context.go(HomeScreenRouter.pathForIndex(0));
-                    }
-                  },
+    return Stack(
+      children: [
+        AnnotatedRegion<SystemUiOverlayStyle>(
+          value: SystemUiOverlayStyle(
+            statusBarColor: Colors.black,
+            statusBarIconBrightness: .light,
+            statusBarBrightness: .dark,
+          ),
+          child: Scaffold(
+            backgroundColor: widget.selectionMode
+                ? VineTheme.surfaceBackground
+                : const Color(0xFF101111),
+            appBar: widget.selectionMode
+                ? null
+                : AppBar(
+                    backgroundColor: const Color(0xFF101111),
+                    foregroundColor: VineTheme.whiteText,
+                    leading: IconButton(
+                      icon: const Icon(Icons.arrow_back),
+                      onPressed: () {
+                        if (context.canPop()) {
+                          context.pop();
+                        } else {
+                          context.go(HomeScreenRouter.pathForIndex(0));
+                        }
+                      },
+                    ),
+                    title: Text(_buildAppBarTitle()),
+                    actions: [
+                      // Delete button when clips are selected
+                      if (_selectedClipIds.isNotEmpty && !widget.selectionMode)
+                        IconButton(
+                          icon: const Icon(
+                            Icons.delete_outline,
+                            color: Colors.red,
+                          ),
+                          onPressed: _showDeleteConfirmationDialog,
+                          tooltip: 'Delete selected clips',
+                        ),
+                    ],
+                  ),
+            body: Column(
+              children: [
+                if (widget.selectionMode)
+                  _SelectionHeader(
+                    isSelectionMode: widget.selectionMode,
+                    selectedClipIds: _selectedClipIds,
+                    remainingDuration: _remainingDuration,
+                    onCreate: _createVideoFromSelected,
+                  )
+                else
+                  const SizedBox(height: 4),
+                Expanded(
+                  child: _isLoading
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            color: VineTheme.vineGreen,
+                          ),
+                        )
+                      : _clips.isEmpty
+                      ? _EmptyClips(isSelectionMode: widget.selectionMode)
+                      : _MasonryLayout(
+                          clips: _clips,
+                          selectedClipIds: _selectedClipIds,
+                          remainingDuration: _remainingDuration,
+                          targetAspectRatio: targetAspectRatio,
+                          onTapClip: _toggleClipSelection,
+                          onLongPressClip: _showClipPreview,
+                        ),
                 ),
-                title: Text(_buildAppBarTitle()),
-                actions: [
-                  // Clear selection button when clips are selected
-                  if (_selectedClipIds.isNotEmpty && !widget.selectionMode)
-                    TextButton(
-                      onPressed: _clearSelection,
-                      child: const Text(
-                        'Clear',
-                        style: TextStyle(color: VineTheme.whiteText),
-                      ),
-                    ),
-                ],
-              ),
-        body: Column(
-          children: [
-            if (widget.selectionMode)
-              _SelectionHeader(
-                isSelectionMode: widget.selectionMode,
-                selectedClipIds: _selectedClipIds,
-                remainingDuration: _remainingDuration,
-                onCreate: _createVideoFromSelected,
-              )
-            else
-              const SizedBox(height: 4),
-            Expanded(
-              child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: VineTheme.vineGreen,
-                      ),
-                    )
-                  : _clips.isEmpty
-                  ? _EmptyClips(isSelectionMode: widget.selectionMode)
-                  : _MasonryLayout(
-                      clips: _clips,
-                      selectedClipIds: _selectedClipIds,
-                      remainingDuration: _remainingDuration,
-                      targetAspectRatio: targetAspectRatio,
-                      onTapClip: _toggleClipSelection,
-                      onLongPressClip: _showClipPreview,
-                    ),
+              ],
             ),
-          ],
+            floatingActionButton:
+                !widget.selectionMode && _selectedClipIds.isNotEmpty
+                ? FloatingActionButton.extended(
+                    onPressed: _createVideoFromSelected,
+                    icon: const Icon(Icons.movie_creation),
+                    label: const Text('Create Video'),
+                    backgroundColor: VineTheme.vineGreen,
+                  )
+                : null,
+          ),
         ),
-        floatingActionButton:
-            !widget.selectionMode && _selectedClipIds.isNotEmpty
-            ? FloatingActionButton.extended(
-                onPressed: _createVideoFromSelected,
-                icon: const Icon(Icons.movie_creation),
-                label: const Text('Create Video'),
-                backgroundColor: VineTheme.vineGreen,
-              )
-            : null,
-      ),
+        if (_isDeleting)
+          Container(
+            color: Colors.black54,
+            child: const Center(
+              child: CircularProgressIndicator(color: VineTheme.vineGreen),
+            ),
+          ),
+      ],
     );
   }
 }

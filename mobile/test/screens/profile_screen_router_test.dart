@@ -255,7 +255,21 @@ void main() {
         () => mockFollowRepository.getFollowers(any()),
       ).thenAnswer((_) async => <String>[]);
       mockLikesRepository = _MockLikesRepository();
+      when(
+        () => mockLikesRepository.watchLikedEventIds(),
+      ).thenAnswer((_) => const Stream<Set<String>>.empty());
+      when(
+        () => mockLikesRepository.fetchUserLikes(any()),
+      ).thenAnswer((_) async => <String>[]);
+
       mockRepostsRepository = _MockRepostsRepository();
+      when(
+        () => mockRepostsRepository.watchRepostedAddressableIds(),
+      ).thenAnswer((_) => const Stream<Set<String>>.empty());
+      when(
+        () => mockRepostsRepository.fetchUserReposts(any()),
+      ).thenAnswer((_) async => <String>[]);
+
       mockVideosRepository = _MockVideosRepository();
       mockNostrClient = _MockNostrClient();
       mockUserProfileService = _MockUserProfileService();

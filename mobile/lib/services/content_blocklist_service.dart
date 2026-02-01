@@ -58,6 +58,13 @@ class ContentBlocklistService {
         _mutualMuteBlocklist.contains(pubkey);
   }
 
+  /// Check if another user has muted us (mutual mute blocking)
+  ///
+  /// This is different from [isBlocked] which checks users WE blocked.
+  /// Use this for profile viewing - users can view profiles they blocked,
+  /// but cannot view profiles of users who muted them.
+  bool hasMutedUs(String pubkey) => _mutualMuteBlocklist.contains(pubkey);
+
   /// Add a public key to the runtime blocklist
   ///
   /// If [ourPubkey] is provided, it will be used to prevent self-blocking.

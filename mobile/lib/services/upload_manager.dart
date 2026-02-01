@@ -306,6 +306,7 @@ class UploadManager {
               .map((clip) => VideoSegment(video: clip.video))
               .toList(),
           endTime: VideoEditorConstants.maxDuration,
+          shouldOptimizeForNetworkUse: true,
         ),
       );
     }

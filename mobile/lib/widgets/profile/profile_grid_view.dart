@@ -35,6 +35,7 @@ class ProfileGridView extends ConsumerStatefulWidget {
     this.scrollController,
     this.displayNameHint,
     this.avatarUrlHint,
+    this.refreshNotifier,
     super.key,
   });
 
@@ -74,6 +75,10 @@ class ProfileGridView extends ConsumerStatefulWidget {
   /// Optional avatar URL hint for users without Kind 0 profiles.
   final String? avatarUrlHint;
 
+  /// Notifier that triggers BLoC refresh when its value changes.
+  /// Parent should call `notifier.value++` to trigger refresh.
+  final ValueNotifier<int>? refreshNotifier;
+
   @override
   ConsumerState<ProfileGridView> createState() => _ProfileGridViewState();
 }
@@ -82,11 +87,28 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     with TickerProviderStateMixin {
   late TabController _tabController;
 
+  /// Direct references to BLoCs for refresh capability.
+  ProfileLikedVideosBloc? _likedVideosBloc;
+  ProfileRepostedVideosBloc? _repostedVideosBloc;
+
+  /// Track the userIdHex the BLoCs were created for.
+  String? _blocsUserIdHex;
+
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
     _tabController.addListener(_onTabChanged);
+    widget.refreshNotifier?.addListener(_onRefreshRequested);
+  }
+
+  @override
+  void didUpdateWidget(ProfileGridView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.refreshNotifier != widget.refreshNotifier) {
+      oldWidget.refreshNotifier?.removeListener(_onRefreshRequested);
+      widget.refreshNotifier?.addListener(_onRefreshRequested);
+    }
   }
 
   void _onTabChanged() {
@@ -94,10 +116,20 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     if (mounted) setState(() {});
   }
 
+  void _onRefreshRequested() {
+    // Dispatch sync events to BLoCs to refresh likes/reposts
+    _likedVideosBloc?.add(const ProfileLikedVideosSyncRequested());
+    _repostedVideosBloc?.add(const ProfileRepostedVideosSyncRequested());
+  }
+
   @override
   void dispose() {
+    widget.refreshNotifier?.removeListener(_onRefreshRequested);
     _tabController.removeListener(_onTabChanged);
     _tabController.dispose();
+    // Close the BLoCs we created
+    _likedVideosBloc?.close();
+    _repostedVideosBloc?.close();
     super.dispose();
   }
 
@@ -116,34 +148,43 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       return const Center(child: CircularProgressIndicator());
     }
 
+    // Create BLoCs if not already created, or recreate if userIdHex changed
+    // Store references for refresh capability
+    if (_blocsUserIdHex != widget.userIdHex) {
+      _likedVideosBloc?.close();
+      _repostedVideosBloc?.close();
+
+      _likedVideosBloc =
+          ProfileLikedVideosBloc(
+              likesRepository: likesRepository,
+              videosRepository: videosRepository,
+              currentUserPubkey: currentUserPubkey,
+              targetUserPubkey: widget.userIdHex,
+            )
+            ..add(const ProfileLikedVideosSubscriptionRequested())
+            ..add(const ProfileLikedVideosSyncRequested());
+
+      _repostedVideosBloc =
+          ProfileRepostedVideosBloc(
+              repostsRepository: repostsRepository,
+              videosRepository: videosRepository,
+              currentUserPubkey: currentUserPubkey,
+              targetUserPubkey: widget.userIdHex,
+              analyticsApiService: analyticsApiService,
+            )
+            ..add(const ProfileRepostedVideosSubscriptionRequested())
+            ..add(const ProfileRepostedVideosSyncRequested());
+
+      _blocsUserIdHex = widget.userIdHex;
+    }
+
     // Build the base widget with ProfileLikedVideosBloc and
-    // ProfileRepostedVideosBloc
-    // Pass userIdHex as targetUserPubkey so the BLoCs know whose
-    // likes/reposts to fetch
+    // ProfileRepostedVideosBloc using .value() to provide our managed instances
     final tabContent = MultiBlocProvider(
       providers: [
-        BlocProvider<ProfileLikedVideosBloc>(
-          create: (_) =>
-              ProfileLikedVideosBloc(
-                  likesRepository: likesRepository,
-                  videosRepository: videosRepository,
-                  currentUserPubkey: currentUserPubkey,
-                  targetUserPubkey: widget.userIdHex,
-                )
-                ..add(const ProfileLikedVideosSubscriptionRequested())
-                ..add(const ProfileLikedVideosSyncRequested()),
-        ),
-        BlocProvider<ProfileRepostedVideosBloc>(
-          create: (_) =>
-              ProfileRepostedVideosBloc(
-                  repostsRepository: repostsRepository,
-                  videosRepository: videosRepository,
-                  currentUserPubkey: currentUserPubkey,
-                  targetUserPubkey: widget.userIdHex,
-                  analyticsApiService: analyticsApiService,
-                )
-                ..add(const ProfileRepostedVideosSubscriptionRequested())
-                ..add(const ProfileRepostedVideosSyncRequested()),
+        BlocProvider<ProfileLikedVideosBloc>.value(value: _likedVideosBloc!),
+        BlocProvider<ProfileRepostedVideosBloc>.value(
+          value: _repostedVideosBloc!,
         ),
       ],
       child: TabBarView(
