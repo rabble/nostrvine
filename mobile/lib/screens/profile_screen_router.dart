@@ -63,6 +63,12 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     with TickerProviderStateMixin {
   final ScrollController _scrollController = ScrollController();
 
+  /// Notifier to trigger refresh of profile BLoCs (likes, reposts).
+  final _refreshNotifier = ValueNotifier<int>(0);
+
+  /// Whether a refresh is currently in progress.
+  bool _isRefreshing = false;
+
   void _fetchProfileIfNeeded(String userIdHex, bool isOwnProfile) {
     if (isOwnProfile) return; // Own profile loads automatically
 
@@ -90,7 +96,47 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
   @override
   void dispose() {
     _scrollController.dispose();
+    _refreshNotifier.dispose();
     super.dispose();
+  }
+
+  Future<void> _refreshProfile(String userIdHex) async {
+    if (_isRefreshing) return;
+
+    setState(() => _isRefreshing = true);
+
+    try {
+      // Run refresh operations and minimum duration in parallel
+      // This ensures the spinner shows for at least 500ms for visual feedback
+      await Future.wait([
+        _doRefresh(userIdHex),
+        Future<void>.delayed(const Duration(milliseconds: 500)),
+      ]);
+
+      Log.info(
+        '🔄 Profile refreshed for $userIdHex',
+        name: 'ProfileScreenRouter',
+        category: LogCategory.ui,
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
+    }
+  }
+
+  Future<void> _doRefresh(String userIdHex) async {
+    // Refresh videos from provider
+    await ref.read(profileFeedProvider(userIdHex).notifier).refresh();
+
+    // Invalidate stats to recompute
+    ref.invalidate(fetchProfileStatsProvider(userIdHex));
+
+    // Refresh user profile info
+    ref.read(userProfileServiceProvider).fetchProfile(userIdHex);
+
+    // Trigger BLoC refresh for likes/reposts via notifier
+    _refreshNotifier.value++;
   }
 
   @override
@@ -121,6 +167,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         onSetupProfile: _setupProfile,
         onEditProfile: _editProfile,
         onOpenClips: _openClips,
+        refreshNotifier: _refreshNotifier,
       ),
     };
 
@@ -183,6 +230,45 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
             overflow: TextOverflow.ellipsis,
           ),
           actions: [
+            // Refresh button
+            IconButton(
+              key: const Key('refresh-icon-button'),
+              tooltip: 'Refresh',
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Container(
+                width: 48,
+                height: 48,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: VineTheme.iconButtonBackground,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: _isRefreshing
+                    ? const SizedBox(
+                        width: 28,
+                        height: 28,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : SvgPicture.asset(
+                        'assets/icon/refresh.svg',
+                        width: 28,
+                        height: 28,
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+              ),
+              onPressed: userIdHex != null && !_isRefreshing
+                  ? () => _refreshProfile(userIdHex)
+                  : null,
+            ),
+            const SizedBox(width: 8),
+            // More button
             Padding(
               padding: const EdgeInsets.only(right: 16),
               child: IconButton(
@@ -364,6 +450,7 @@ class _ProfileContentView extends ConsumerWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
+    required this.refreshNotifier,
   });
 
   final RouteContext routeContext;
@@ -372,6 +459,7 @@ class _ProfileContentView extends ConsumerWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
+  final ValueNotifier<int> refreshNotifier;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -429,6 +517,7 @@ class _ProfileContentView extends ConsumerWidget {
       onSetupProfile: onSetupProfile,
       onEditProfile: onEditProfile,
       onOpenClips: onOpenClips,
+      refreshNotifier: refreshNotifier,
     );
   }
 }
@@ -485,6 +574,7 @@ class _ProfileDataView extends ConsumerWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
+    required this.refreshNotifier,
     this.displayName,
   });
 
@@ -497,6 +587,7 @@ class _ProfileDataView extends ConsumerWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
+  final ValueNotifier<int> refreshNotifier;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -537,6 +628,7 @@ class _ProfileDataView extends ConsumerWidget {
           onSetupProfile: onSetupProfile,
           onEditProfile: onEditProfile,
           onOpenClips: onOpenClips,
+          refreshNotifier: refreshNotifier,
         ),
       },
     );
@@ -558,6 +650,7 @@ class ProfileViewSwitcher extends StatelessWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
+    this.refreshNotifier,
     this.displayName,
     super.key,
   });
@@ -573,6 +666,9 @@ class ProfileViewSwitcher extends StatelessWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
+
+  /// Optional notifier to trigger BLoC refresh when its value changes.
+  final ValueNotifier<int>? refreshNotifier;
 
   @override
   Widget build(BuildContext context) {
@@ -604,6 +700,7 @@ class ProfileViewSwitcher extends StatelessWidget {
             onSetupProfile: onSetupProfile,
             onEditProfile: onEditProfile,
             onOpenClips: onOpenClips,
+            refreshNotifier: refreshNotifier,
           );
 
     final completedWithErrorUploads = backgroundPublishBloc.state.uploads
