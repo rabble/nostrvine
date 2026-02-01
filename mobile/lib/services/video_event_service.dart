@@ -3709,6 +3709,16 @@ class VideoEventService extends ChangeNotifier {
       return; // Don't add expired events per NIP-40
     }
 
+    // Filter blocked users (centralized check for all subscription types)
+    if (_blocklistService?.shouldFilterFromFeeds(videoEvent.pubkey) == true) {
+      Log.verbose(
+        'Filtering blocked content from ${videoEvent.pubkey} in $subscriptionType',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+      return; // Don't show content from blocked users
+    }
+
     // CRITICAL: Validate that video has an accessible URL before adding to feed
     if (!_hasValidVideoUrl(videoEvent)) {
       Log.warning(
@@ -4974,16 +4984,13 @@ class VideoEventService extends ChangeNotifier {
     }
 
     final videoEvent = VideoEvent.fromNostrEvent(event);
-    if (!_hasValidVideoUrl(videoEvent)) {
-      Log.debug(
-        '❌ Rejected search result (invalid URL): ${videoEvent.id}',
-        name: 'VideoEventService',
-        category: LogCategory.video,
-      );
-      return;
-    }
 
-    _eventLists[SubscriptionType.search]?.add(videoEvent);
+    // Use centralized method for filtering (blocklist, expiry, URL validation)
+    _addVideoToSubscription(
+      videoEvent,
+      SubscriptionType.search,
+      isHistorical: false,
+    );
     _scheduleFrameUpdate();
   }
 

@@ -7,6 +7,7 @@ import 'package:mockito/mockito.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
@@ -216,6 +217,93 @@ void main() {
               limit: anyNamed('limit'),
             ),
           ).called(1);
+        },
+      );
+    });
+
+    group('Search Blocklist Filtering (Issue #948)', () {
+      // Valid 64-character hex pubkeys for testing
+      const blockedPubkey =
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
+      const normalPubkey =
+          'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb';
+      const otherBlockedPubkey =
+          'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
+
+      test('should filter blocked user videos from search results', () async {
+        // Create a real blocklist service and block a user
+        final blocklistService = ContentBlocklistService();
+        blocklistService.blockUser(blockedPubkey);
+
+        // Set the blocklist service on the video event service
+        videoEventService.setBlocklistService(blocklistService);
+
+        // Create a mock video event from the blocked user (NIP-71 kind 34236)
+        // Event constructor: Event(pubkey, kind, tags, content, {createdAt})
+        final blockedUserEvent = Event(
+          blockedPubkey,
+          34236, // NIP-71 short-form video
+          [
+            ['d', 'video-identifier'],
+            ['url', 'https://example.com/video.mp4'],
+            ['m', 'video/mp4'],
+          ],
+          'Test video from blocked user',
+        );
+
+        // Process the event through the search handler
+        videoEventService.handleEventForTesting(
+          blockedUserEvent,
+          SubscriptionType.search,
+        );
+
+        // Verify the blocked user's video is NOT in search results
+        final searchResults = videoEventService.searchResults;
+        expect(
+          searchResults.any((v) => v.pubkey == blockedPubkey),
+          isFalse,
+          reason: 'Blocked user videos should be filtered from search results',
+        );
+      });
+
+      test(
+        'should include non-blocked user videos in search results',
+        () async {
+          // Create a real blocklist service
+          final blocklistService = ContentBlocklistService();
+
+          // Block a different user (not normalPubkey)
+          blocklistService.blockUser(otherBlockedPubkey);
+
+          // Set the blocklist service on the video event service
+          videoEventService.setBlocklistService(blocklistService);
+
+          // Create a mock video event from a non-blocked user
+          // Event constructor: Event(pubkey, kind, tags, content, {createdAt})
+          final normalUserEvent = Event(
+            normalPubkey,
+            34236, // NIP-71 short-form video
+            [
+              ['d', 'video-identifier-2'],
+              ['url', 'https://example.com/video2.mp4'],
+              ['m', 'video/mp4'],
+            ],
+            'Test video from normal user',
+          );
+
+          // Process the event through the search handler
+          videoEventService.handleEventForTesting(
+            normalUserEvent,
+            SubscriptionType.search,
+          );
+
+          // Verify the non-blocked user's video IS in search results
+          final searchResults = videoEventService.searchResults;
+          expect(
+            searchResults.any((v) => v.pubkey == normalPubkey),
+            isTrue,
+            reason: 'Non-blocked user videos should appear in search results',
+          );
         },
       );
     });
