@@ -123,7 +123,10 @@ class VideoInteractionsBloc
 
       final results = await Future.wait([
         _likesRepository.getLikeCount(_eventId),
-        _commentsRepository.getCommentsCount(_eventId),
+        _commentsRepository.getCommentsCount(
+          _eventId,
+          rootAddressableId: _addressableId,
+        ),
         repostCountFuture,
       ]);
 

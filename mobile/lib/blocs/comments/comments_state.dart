@@ -49,6 +49,7 @@ final class CommentsState extends Equatable {
     this.rootEventId = '',
     this.rootEventKind = 0,
     this.rootAuthorPubkey = '',
+    this.rootAddressableId,
     this.commentsById = const {},
     this.error,
     this.mainInputText = '',
@@ -70,6 +71,11 @@ final class CommentsState extends Equatable {
 
   /// The author pubkey of the root event (video)
   final String rootAuthorPubkey;
+
+  /// Optional addressable identifier for the root event (format: `kind:pubkey:d-tag`).
+  /// Used for Kind 34236 addressable events to ensure comments can be found/created
+  /// using both E and A tags.
+  final String? rootAddressableId;
 
   /// Comments indexed by ID for O(1) deduplication.
   /// Uses [Comment] from the repository layer.
@@ -114,6 +120,7 @@ final class CommentsState extends Equatable {
     String? rootEventId,
     int? rootEventKind,
     String? rootAuthorPubkey,
+    String? rootAddressableId,
     Map<String, Comment>? commentsById,
     CommentsError? error,
     String? mainInputText,
@@ -128,6 +135,7 @@ final class CommentsState extends Equatable {
       rootEventId: rootEventId ?? this.rootEventId,
       rootEventKind: rootEventKind ?? this.rootEventKind,
       rootAuthorPubkey: rootAuthorPubkey ?? this.rootAuthorPubkey,
+      rootAddressableId: rootAddressableId ?? this.rootAddressableId,
       commentsById: commentsById ?? this.commentsById,
       error: error,
       mainInputText: mainInputText ?? this.mainInputText,
@@ -150,6 +158,7 @@ final class CommentsState extends Equatable {
       rootEventId: rootEventId,
       rootEventKind: rootEventKind,
       rootAuthorPubkey: rootAuthorPubkey,
+      rootAddressableId: rootAddressableId,
       commentsById: commentsById ?? this.commentsById,
       mainInputText: mainInputText,
       replyInputText: '',
@@ -165,6 +174,7 @@ final class CommentsState extends Equatable {
     rootEventId,
     rootEventKind,
     rootAuthorPubkey,
+    rootAddressableId,
     commentsById,
     error,
     mainInputText,

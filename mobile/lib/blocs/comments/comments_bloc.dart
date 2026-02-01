@@ -24,6 +24,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     required String rootEventId,
     required int rootEventKind,
     required String rootAuthorPubkey,
+    String? rootAddressableId,
     int? initialTotalCount,
   }) : _commentsRepository = commentsRepository,
        _authService = authService,
@@ -33,6 +34,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
            rootEventId: rootEventId,
            rootEventKind: rootEventKind,
            rootAuthorPubkey: rootAuthorPubkey,
+           rootAddressableId: rootAddressableId,
          ),
        ) {
     on<CommentsLoadRequested>(_onLoadRequested);
@@ -66,6 +68,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       final thread = await _commentsRepository.loadComments(
         rootEventId: state.rootEventId,
         rootEventKind: state.rootEventKind,
+        rootAddressableId: state.rootAddressableId,
         limit: _pageSize,
       );
 
@@ -131,6 +134,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       final thread = await _commentsRepository.loadComments(
         rootEventId: state.rootEventId,
         rootEventKind: state.rootEventKind,
+        rootAddressableId: state.rootAddressableId,
         limit: _pageSize,
         before: cursor,
       );
@@ -218,6 +222,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         rootEventId: state.rootEventId,
         rootEventKind: state.rootEventKind,
         rootEventAuthorPubkey: state.rootAuthorPubkey,
+        rootAddressableId: state.rootAddressableId,
         replyToEventId: event.parentCommentId,
         replyToAuthorPubkey: event.parentAuthorPubkey,
       );

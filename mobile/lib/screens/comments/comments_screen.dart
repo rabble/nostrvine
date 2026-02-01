@@ -127,6 +127,7 @@ class CommentsScreen extends ConsumerWidget {
         rootEventId: videoEvent.id,
         rootEventKind: NIP71VideoKinds.addressableShortVideo,
         rootAuthorPubkey: videoEvent.pubkey,
+        rootAddressableId: videoEvent.addressableId,
         initialTotalCount: initialCount,
       )..add(const CommentsLoadRequested()),
       child: VineBottomSheet(

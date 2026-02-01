@@ -33,6 +33,10 @@ class Filter {
   /// a list of event ids that are referenced in an uppercase "E" tag (NIP-22 root scope)
   List<String>? uppercaseE;
 
+  /// a list of addressable IDs referenced in an uppercase "A" tag (NIP-22 root scope for addressable events)
+  /// Format: `kind:pubkey:d-tag`
+  List<String>? uppercaseA;
+
   /// a list of kind values that are referenced in an uppercase "K" tag (NIP-22 root kind)
   List<String>? uppercaseK;
 
@@ -60,6 +64,7 @@ class Filter {
     this.d,
     this.a,
     this.uppercaseE,
+    this.uppercaseA,
     this.uppercaseK,
     this.since,
     this.until,
@@ -81,6 +86,7 @@ class Filter {
     d = json['#d'] == null ? null : List<String>.from(json['#d']);
     a = json['#a'] == null ? null : List<String>.from(json['#a']);
     uppercaseE = json['#E'] == null ? null : List<String>.from(json['#E']);
+    uppercaseA = json['#A'] == null ? null : List<String>.from(json['#A']);
     uppercaseK = json['#K'] == null ? null : List<String>.from(json['#K']);
     since = json['since'];
     until = json['until'];
@@ -120,6 +126,9 @@ class Filter {
     }
     if (uppercaseE != null) {
       data['#E'] = uppercaseE;
+    }
+    if (uppercaseA != null) {
+      data['#A'] = uppercaseA;
     }
     if (uppercaseK != null) {
       data['#K'] = uppercaseK;
@@ -163,6 +172,7 @@ class Filter {
     List<String> ds = [];
     List<String> as_ = [];
     List<String> uppercaseEs = [];
+    List<String> uppercaseAs = [];
     List<String> uppercaseKs = [];
     for (var tag in event.tags) {
       if (tag is List && tag.length > 1) {
@@ -183,6 +193,8 @@ class Filter {
           as_.add(v);
         } else if (k == "E") {
           uppercaseEs.add(v);
+        } else if (k == "A") {
+          uppercaseAs.add(v);
         } else if (k == "K") {
           uppercaseKs.add(v);
         }
@@ -235,6 +247,13 @@ class Filter {
           return uppercaseE!.contains(v);
         })))) {
       // filter query E but Es don't contains E.
+      return false;
+    }
+    if (uppercaseA != null &&
+        (!(uppercaseAs.any((v) {
+          return uppercaseA!.contains(v);
+        })))) {
+      // filter query A but As don't contains A.
       return false;
     }
     if (uppercaseK != null &&
