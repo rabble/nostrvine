@@ -16,6 +16,7 @@ final class ProfileSaved extends ProfileEditorEvent {
     this.about,
     this.username,
     this.picture,
+    this.banner,
   });
 
   /// User's public key in hex format.
@@ -32,6 +33,9 @@ final class ProfileSaved extends ProfileEditorEvent {
 
   /// Profile picture URL (optional).
   final String? picture;
+
+  /// Banner field - can be a hex color (e.g., "0x33ccbf") or URL (optional).
+  final String? banner;
 }
 
 /// Confirmation to proceed with saving profile despite warnings.

@@ -1,4 +1,4 @@
-// ABOUTME: Fullscreen profile screen for viewing other users (no bottom nav)
+// ABOUTME: Profile screen for viewing other users with bottom navigation
 // ABOUTME: Pushed on stack from video feeds, profiles, search results, etc.
 
 import 'package:flutter/material.dart';
@@ -19,6 +19,7 @@ import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
+import 'package:openvine/widgets/vine_bottom_nav.dart';
 
 /// Fullscreen profile screen for viewing other users' profiles.
 ///
@@ -267,10 +268,12 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     // Watch profile reactively to get display name for AppBar
     // Use hint as fallback for users without Kind 0 profiles (e.g., classic Viners)
     final profileAsync = ref.watch(userProfileReactiveProvider(userIdHex));
+    final profile = profileAsync.value;
     final displayName =
-        profileAsync.value?.bestDisplayName ??
-        widget.displayNameHint ??
-        'Profile';
+        profile?.bestDisplayName ?? widget.displayNameHint ?? 'Profile';
+
+    // Get profile color for Vine-style colored header
+    final profileColor = profile?.profileBackgroundColor;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -281,7 +284,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         leadingWidth: 80,
         centerTitle: false,
         titleSpacing: 0,
-        backgroundColor: VineTheme.navGreen,
+        backgroundColor: profileColor ?? VineTheme.navGreen,
         leading: IconButton(
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
@@ -398,6 +401,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           refreshNotifier: _refreshNotifier,
         ),
       },
+      bottomNavigationBar: const VineBottomNav(currentIndex: 3),
     );
   }
 }
@@ -453,6 +457,7 @@ class _ProfileErrorScreen extends StatelessWidget {
       body: Center(
         child: Text(message, style: const TextStyle(color: Colors.white)),
       ),
+      bottomNavigationBar: const VineBottomNav(currentIndex: 3),
     );
   }
 }

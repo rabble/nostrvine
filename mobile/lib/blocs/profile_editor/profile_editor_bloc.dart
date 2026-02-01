@@ -87,6 +87,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     final picture = (event.picture?.trim().isEmpty ?? true)
         ? null
         : event.picture;
+    final banner = (event.banner?.trim().isEmpty ?? true) ? null : event.banner;
 
     final currentProfile = await _profileRepository.getProfile(
       pubkey: event.pubkey,
@@ -107,6 +108,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         about: about,
         nip05: nip05,
         picture: picture,
+        banner: banner,
         currentProfile: currentProfile,
       );
       Log.info(
@@ -169,6 +171,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         about: about,
         nip05: currentProfile?.nip05,
         picture: picture,
+        banner: banner,
         currentProfile: currentProfile,
       );
       final appProfile = app_models.UserProfile.fromJson(rolledBack.toJson());
