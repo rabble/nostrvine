@@ -15,6 +15,7 @@ import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/repositories/video_repository.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 
 @GenerateMocks([
@@ -72,6 +73,7 @@ void main() {
         userProfileService: mockUserProfileService,
         eventRouter: mockEventRouter,
         videoFilterBuilder: filterBuilder,
+        videoRepository: VideoRepository(),
       );
     });
 
@@ -358,6 +360,7 @@ void main() {
             userProfileService: mockUserProfileService,
             eventRouter: mockEventRouter,
             // No videoFilterBuilder parameter
+            videoRepository: VideoRepository(),
           );
 
           await serviceWithoutBuilder.subscribeToVideoFeed(

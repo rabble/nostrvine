@@ -10,6 +10,7 @@ import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/repositories/video_repository.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:path/path.dart' as p;
@@ -97,6 +98,7 @@ void main() {
         mockNostrService,
         subscriptionManager: subscriptionManager,
         eventRouter: eventRouter, // NEW: Pass EventRouter to VideoEventService
+        videoRepository: VideoRepository(),
       );
     });
 

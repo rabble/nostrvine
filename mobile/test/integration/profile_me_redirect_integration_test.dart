@@ -17,6 +17,7 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_prewarmer.dart';
+import 'package:openvine/repositories/video_repository.dart';
 import 'package:openvine/ui/overlay_policy.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -249,6 +250,7 @@ class _FakeVideoEventService extends VideoEventService {
       super(
         _FakeNostrService(),
         subscriptionManager: _FakeSubscriptionManager(),
+        videoRepository: VideoRepository(),
       );
 
   final Map<String, List<VideoEvent>> _authorVideos;

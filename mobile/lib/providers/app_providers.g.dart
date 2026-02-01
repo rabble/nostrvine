@@ -2079,12 +2079,12 @@ final class SubscriptionManagerProvider
 String _$subscriptionManagerHash() =>
     r'b65a6978927d3004c6f841e0b80075f9db9645d2';
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager services
+/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
 
 @ProviderFor(videoEventService)
 const videoEventServiceProvider = VideoEventServiceProvider._();
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager services
+/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
 
 final class VideoEventServiceProvider
     extends
@@ -2094,7 +2094,7 @@ final class VideoEventServiceProvider
           VideoEventService
         >
     with $Provider<VideoEventService> {
-  /// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager services
+  /// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
   const VideoEventServiceProvider._()
     : super(
         from: null,
@@ -2129,7 +2129,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'2e58eabbb8807979c479042abb7adc1bbb3bfade';
+String _$videoEventServiceHash() => r'912579edfca6f3157a2c1d999b09f17f96358077';
 
 /// Hashtag service depends on Video event service and cache service
 

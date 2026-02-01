@@ -9,6 +9,7 @@ import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/repositories/video_repository.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'test_nostr_service.dart';
 
@@ -84,6 +85,7 @@ class ServiceInitHelper {
       final videoEventService = VideoEventService(
         nostrService,
         subscriptionManager: subscriptionManager,
+        videoRepository: VideoRepository(),
       );
 
       return ServiceBundle(
@@ -109,6 +111,7 @@ class ServiceInitHelper {
     final videoEventService = VideoEventService(
       testNostrService,
       subscriptionManager: subscriptionManager,
+      videoRepository: VideoRepository(),
     );
 
     return ServiceBundle(

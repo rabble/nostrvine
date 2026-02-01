@@ -14,6 +14,7 @@ import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/repositories/video_repository.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
@@ -47,6 +48,7 @@ void main() {
       videoEventService = VideoEventService(
         nostrService,
         subscriptionManager: subscriptionManager,
+        videoRepository: VideoRepository(),
       );
       videoEventService.setBlocklistService(blocklistService);
 

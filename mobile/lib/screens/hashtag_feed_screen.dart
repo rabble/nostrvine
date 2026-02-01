@@ -154,21 +154,22 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
       return webSocketVideos;
     }
 
-    // Create set of IDs we already have from Funnelcake
     final funnelcakeIds = <String>{};
     for (final v in _popularVideos!) {
-      if (v.id.isNotEmpty) funnelcakeIds.add(v.id);
+      if (v.id.isNotEmpty) funnelcakeIds.add(v.id.toLowerCase());
       if (v.vineId != null && v.vineId!.isNotEmpty) {
-        funnelcakeIds.add(v.vineId!);
+        funnelcakeIds.add(v.vineId!.toLowerCase());
       }
     }
 
     // Find WebSocket videos NOT in Funnelcake results (new/real-time videos)
+    // Use case-insensitive comparison to prevent duplicates
     final additionalVideos = <VideoEvent>[];
     for (final video in webSocketVideos) {
       final isInFunnelcake =
-          funnelcakeIds.contains(video.id) ||
-          (video.vineId != null && funnelcakeIds.contains(video.vineId));
+          funnelcakeIds.contains(video.id.toLowerCase()) ||
+          (video.vineId != null &&
+              funnelcakeIds.contains(video.vineId!.toLowerCase()));
       if (!isInFunnelcake) {
         additionalVideos.add(video);
       }
