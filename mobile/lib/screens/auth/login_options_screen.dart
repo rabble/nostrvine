@@ -1,5 +1,5 @@
 // ABOUTME: Gateway screen for existing users to choose their login method
-// ABOUTME: Options: Login/Register with diVine, Import Nostr Key, or Sign with Amber (Android)
+// ABOUTME: Options: Login/Register with diVine, Import Nostr Key, Signer App, or Amber (Android)
 
 import 'dart:io' show Platform;
 
@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show AndroidPlugin;
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 
@@ -185,6 +186,38 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
                       const SizedBox(height: 12),
                       const Text(
                         'Already have an nsec? Import it here',
+                        style: TextStyle(fontSize: 12, color: Colors.white60),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Tertiary: Connect with Signer App (NIP-46)
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () =>
+                              context.push(NostrConnectScreen.path),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white,
+                            side: const BorderSide(color: Colors.white54),
+                            padding: const EdgeInsets.symmetric(vertical: 16),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(Icons.qr_code_scanner),
+                          label: const Text(
+                            'Connect with Signer App',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'Use Amber, nsecBunker, or other NIP-46 signers',
                         style: TextStyle(fontSize: 12, color: Colors.white60),
                       ),
 
