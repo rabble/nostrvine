@@ -79,8 +79,8 @@ class MockContentBlocklistService extends _i1.Mock
           as bool);
 
   @override
-  void blockUser(String? pubkey) => super.noSuchMethod(
-    Invocation.method(#blockUser, [pubkey]),
+  void blockUser(String? pubkey, {String? ourPubkey}) => super.noSuchMethod(
+    Invocation.method(#blockUser, [pubkey], {#ourPubkey: ourPubkey}),
     returnValueForMissingStub: null,
   );
 

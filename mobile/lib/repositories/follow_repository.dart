@@ -180,6 +180,16 @@ class FollowRepository {
       throw Exception('User not authenticated');
     }
 
+    // Guard: Prevent following self
+    if (pubkey == _nostrClient.publicKey) {
+      Log.warning(
+        'Attempted to follow self - ignoring',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
     if (_followingPubkeys.contains(pubkey)) {
       Log.debug(
         'Already following user: $pubkey',
@@ -237,6 +247,16 @@ class FollowRepository {
         category: LogCategory.system,
       );
       throw Exception('User not authenticated');
+    }
+
+    // Guard: Prevent unfollowing self
+    if (pubkey == _nostrClient.publicKey) {
+      Log.warning(
+        'Attempted to unfollow self - ignoring',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return;
     }
 
     if (!_followingPubkeys.contains(pubkey)) {

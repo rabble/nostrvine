@@ -19,7 +19,7 @@ class MockContentBlocklistService extends Mock
   Set<String> get runtimeBlockedUsers => Set.unmodifiable(_runtimeBlocklist);
 
   @override
-  void blockUser(String pubkey) {
+  void blockUser(String pubkey, {String? ourPubkey}) {
     _runtimeBlocklist.add(pubkey);
   }
 

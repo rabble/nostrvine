@@ -53,6 +53,7 @@ import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
@@ -987,6 +988,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       // Other user's profile screen (no bottom nav, pushed from feeds/search)
+      // Uses router widget to redirect self-visits to own profile tab
       GoRoute(
         path: OtherProfileScreen.pathWithNpub,
         name: OtherProfileScreen.routeName,
@@ -1002,7 +1004,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final extra = st.extra as Map<String, String?>?;
           final displayNameHint = extra?['displayName'];
           final avatarUrlHint = extra?['avatarUrl'];
-          return OtherProfileScreen(
+          return _OtherProfileScreenRouter(
             npub: npub,
             displayNameHint: displayNameHint,
             avatarUrlHint: avatarUrlHint,
@@ -1012,6 +1014,47 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     ],
   );
 });
+
+/// Router widget that redirects own-profile visits to ProfileScreenRouter.
+/// Prevents users from accessing follow/block actions on their own profile
+/// via the OtherProfileScreen route (e.g., deep links).
+class _OtherProfileScreenRouter extends ConsumerWidget {
+  const _OtherProfileScreenRouter({
+    required this.npub,
+    this.displayNameHint,
+    this.avatarUrlHint,
+  });
+
+  final String npub;
+  final String? displayNameHint;
+  final String? avatarUrlHint;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nostrClient = ref.watch(nostrServiceProvider);
+    final targetHex = npubToHexOrNull(npub);
+    final currentUserHex = nostrClient.publicKey;
+
+    final isCurrentUser =
+        targetHex != null &&
+        currentUserHex.isNotEmpty &&
+        targetHex == currentUserHex;
+
+    if (isCurrentUser) {
+      // Redirect to own profile
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        context.go(ProfileScreenRouter.pathForNpub(npub));
+      });
+      return const BrandedLoadingScaffold();
+    }
+
+    return OtherProfileScreen(
+      npub: npub,
+      displayNameHint: displayNameHint,
+      avatarUrlHint: avatarUrlHint,
+    );
+  }
+}
 
 /// Router widget that decides between MyFollowersScreen and OthersFollowersScreen
 /// based on whether the pubkey matches the current user.

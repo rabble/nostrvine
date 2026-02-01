@@ -59,12 +59,26 @@ class ContentBlocklistService {
   }
 
   /// Add a public key to the runtime blocklist
-  void blockUser(String pubkey) {
+  ///
+  /// If [ourPubkey] is provided, it will be used to prevent self-blocking.
+  /// Otherwise falls back to [_ourPubkey] set during [syncMuteListsInBackground].
+  void blockUser(String pubkey, {String? ourPubkey}) {
+    // Guard: Prevent blocking self
+    final selfPubkey = ourPubkey ?? _ourPubkey;
+    if (selfPubkey != null && pubkey == selfPubkey) {
+      Log.warning(
+        'Attempted to block self - ignoring',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
     if (!_runtimeBlocklist.contains(pubkey)) {
       _runtimeBlocklist.add(pubkey);
 
       Log.debug(
-        'Added user to blocklist: ${pubkey}...',
+        'Added user to blocklist: $pubkey...',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );

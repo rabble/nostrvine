@@ -97,6 +97,37 @@ void main() {
       expect(stats['runtime_blocks'], isA<int>());
       expect(stats['internal_blocks'], isA<int>());
     });
+
+    group('self-block prevention', () {
+      test('blockUser() ignores when pubkey matches ourPubkey parameter', () {
+        const ourPubkey = 'test_our_pubkey';
+
+        service.blockUser(ourPubkey, ourPubkey: ourPubkey);
+
+        expect(service.isBlocked(ourPubkey), isFalse);
+        expect(service.totalBlockedCount, equals(0));
+      });
+
+      test('blockUser() allows blocking other users', () {
+        const ourPubkey = 'our_pubkey';
+        const otherPubkey = 'other_pubkey';
+
+        service.blockUser(otherPubkey, ourPubkey: ourPubkey);
+
+        expect(service.isBlocked(otherPubkey), isTrue);
+        expect(service.totalBlockedCount, equals(1));
+      });
+
+      test('blockUser() allows blocking when ourPubkey is null', () {
+        const otherPubkey = 'other_pubkey';
+
+        // No ourPubkey provided - should allow blocking
+        service.blockUser(otherPubkey);
+
+        expect(service.isBlocked(otherPubkey), isTrue);
+        expect(service.totalBlockedCount, equals(1));
+      });
+    });
   });
 
   group('ContentBlocklistService - Mutual Mute Sync', () {
