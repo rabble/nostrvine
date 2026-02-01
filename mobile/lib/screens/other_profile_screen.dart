@@ -101,9 +101,10 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     // If NostrClient doesn't have keys yet, treat as not following
     final isFollowing = followRepository?.isFollowing(userIdHex) ?? false;
 
-    // Get display name for actions
+    // Get display name for actions (match pattern from build())
     final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
-    final displayName = profile?.bestDisplayName ?? 'user';
+    final displayName =
+        profile?.bestDisplayName ?? widget.displayNameHint ?? 'user';
 
     final result = await VineBottomSheet.show<MoreSheetResult>(
       context: context,
@@ -147,7 +148,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   Future<void> _unfollowUser() async {
     final userIdHex = _userIdHex!;
     final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
-    final displayName = profile?.bestDisplayName ?? 'user';
+    final displayName =
+        profile?.bestDisplayName ?? widget.displayNameHint ?? 'user';
 
     final followRepository = ref.read(followRepositoryProvider);
     // Can't unfollow if NostrClient doesn't have keys yet
@@ -164,7 +166,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   Future<void> _showUnblockConfirmation() async {
     final userIdHex = _userIdHex!;
     final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
-    final displayName = profile?.bestDisplayName ?? 'user';
+    final displayName =
+        profile?.bestDisplayName ?? widget.displayNameHint ?? 'user';
 
     final result = await VineBottomSheet.show<MoreSheetResult>(
       context: context,
