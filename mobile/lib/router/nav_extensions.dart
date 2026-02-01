@@ -3,28 +3,29 @@
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 
 /// Extension on BuildContext for common navigation patterns
 extension NavExtensions on BuildContext {
-  /// Navigate to another user's profile using their hex pubkey.
+  /// Navigate to another user's profile (fullscreen, no bottom nav).
   ///
-  /// Converts the hex pubkey to npub format and pushes the profile screen.
-  /// Use this for navigating to profiles from mentions, comments, etc.
+  /// Converts the hex pubkey to npub format and pushes the fullscreen profile.
+  /// Use this for tapping profiles from mentions, search, feeds, etc.
+  /// The user can navigate back to the previous screen.
   void pushOtherProfile(String hexPubkey) {
     final npub = NostrKeyUtils.encodePubKey(hexPubkey);
-    push(ProfileScreenRouter.pathForNpub(npub));
+    push(OtherProfileScreen.pathForNpub(npub));
   }
 
-  /// Navigate to another user's profile using their hex pubkey (using go).
+  /// Navigate to another user's profile using go (replaces stack).
   ///
-  /// Converts the hex pubkey to npub format and goes to the profile screen.
-  /// Use this when you want to replace the current route.
+  /// Converts the hex pubkey to npub format and goes to the fullscreen profile.
+  /// Use this when you want the profile to become the new root.
   void goOtherProfile(String hexPubkey) {
     final npub = NostrKeyUtils.encodePubKey(hexPubkey);
-    go(ProfileScreenRouter.pathForNpub(npub));
+    go(OtherProfileScreen.pathForNpub(npub));
   }
 
   /// Navigate to search with an optional pre-filled search term.
