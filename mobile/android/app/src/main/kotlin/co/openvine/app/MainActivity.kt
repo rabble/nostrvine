@@ -1,5 +1,6 @@
 package co.openvine.app
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.util.Log
@@ -34,6 +35,9 @@ class MainActivity : FlutterActivity() {
     private val PROOFMODE_TAG = "OpenVineProofMode"
     private val ZENDESK_TAG = "OpenVineZendesk"
 
+    // NIP-55 Android Signer plugin
+    private var nostrSignerPlugin: NostrSignerPlugin? = null
+
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         try {
             super.configureFlutterEngine(flutterEngine)
@@ -61,6 +65,18 @@ class MainActivity : FlutterActivity() {
 
         // Set up navigation channel for back button handling
         setupNavigationChannel(flutterEngine)
+
+        // Set up NIP-55 Android Signer plugin
+        nostrSignerPlugin = NostrSignerPlugin(this, flutterEngine)
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        // Forward activity result to NIP-55 signer plugin
+        if (nostrSignerPlugin?.onActivityResult(requestCode, resultCode, data) == true) {
+            return
+        }
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun onBackPressed() {

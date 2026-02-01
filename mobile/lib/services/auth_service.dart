@@ -4,6 +4,7 @@
 // with secure storage
 
 import 'dart:async';
+import 'dart:io' show Platform;
 
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
@@ -30,13 +31,18 @@ const _kAuthSourceKey = 'authentication_source';
 // Keys for bunker connection persistence
 const _kBunkerInfoKey = 'bunker_info';
 
+// Keys for Amber (NIP-55) connection persistence
+const _kAmberPubkeyKey = 'amber_pubkey';
+const _kAmberPackageKey = 'amber_package';
+
 /// Source of authentication used to restore session at startup
 enum AuthenticationSource {
   none('none'),
   divineOAuth('divineOAuth'),
   importedKeys('imported_keys'),
   automatic('automatic'),
-  bunker('bunker');
+  bunker('bunker'),
+  amber('amber');
 
   const AuthenticationSource(this.code);
 
@@ -152,6 +158,9 @@ class AuthService implements BackgroundAwareService {
   // NIP-46 bunker signer state
   NostrRemoteSigner? _bunkerSigner;
 
+  // NIP-55 Android signer (Amber) state
+  AndroidNostrSigner? _amberSigner;
+
   // Relay discovery state (NIP-65)
   List<DiscoveredRelay> _userRelays = [];
   bool _hasExistingProfile = false;
@@ -163,8 +172,8 @@ class AuthService implements BackgroundAwareService {
   final BlossomServerDiscoveryService _blossomDiscoveryService =
       BlossomServerDiscoveryService();
 
-  /// Returns the active remote signer (bunker takes priority over OAuth RPC)
-  NostrSigner? get rpcSigner => _bunkerSigner ?? _keycastSigner;
+  /// Returns the active remote signer (Amber > bunker > OAuth RPC)
+  NostrSigner? get rpcSigner => _amberSigner ?? _bunkerSigner ?? _keycastSigner;
   final OAuthConfig _oauthConfig;
 
   // Streaming controllers for reactive auth state
@@ -329,6 +338,17 @@ class AuthService implements BackgroundAwareService {
             return;
           }
           // Bunker info not found — fall back to unauthenticated
+          _setAuthState(AuthState.unauthenticated);
+          return;
+
+        case AuthenticationSource.amber:
+          // Try to restore Amber (NIP-55) connection from secure storage
+          final amberInfo = await _loadAmberInfo();
+          if (amberInfo != null) {
+            await _reconnectAmber(amberInfo.pubkey, amberInfo.package);
+            return;
+          }
+          // Amber info not found — fall back to unauthenticated
           _setAuthState(AuthState.unauthenticated);
           return;
       }
@@ -568,6 +588,220 @@ class AuthService implements BackgroundAwareService {
         category: LogCategory.auth,
       );
       _bunkerSigner = null;
+      _setAuthState(AuthState.unauthenticated);
+    }
+  }
+
+  /// Connect using NIP-55 Android signer (Amber) for local signing
+  ///
+  /// This establishes a connection with an external Android signer app
+  /// (e.g., Amber) that holds the user's private keys. All signing operations
+  /// will be delegated to the signer app via Android intents.
+  ///
+  /// Only available on Android. Throws [UnsupportedError] on other platforms.
+  Future<AuthResult> connectWithAmber() async {
+    Log.info(
+      'Connecting with Android signer (Amber)...',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    _setAuthState(AuthState.authenticating);
+    _lastError = null;
+
+    try {
+      // Check platform
+      if (!_isAndroid()) {
+        throw UnsupportedError(
+          'NIP-55 Android signer only supported on Android',
+        );
+      }
+
+      // Check if a signer app is installed
+      final exists = await AndroidPlugin.existAndroidNostrSigner();
+      if (exists != true) {
+        throw Exception(
+          'No Android signer app (e.g., Amber) installed. '
+          'Please install a NIP-55 compatible signer app.',
+        );
+      }
+
+      // Create the signer and get public key
+      _amberSigner = AndroidNostrSigner();
+      final pubkey = await _amberSigner!.getPublicKey();
+
+      if (pubkey == null || pubkey.isEmpty) {
+        throw Exception(
+          'Failed to get public key from signer. '
+          'The user may have denied the permission request.',
+        );
+      }
+
+      // Save connection info for session restoration
+      await _saveAmberInfo(pubkey, _amberSigner!.getPackage());
+
+      // Set up user session
+      await _setupUserSession(
+        SecureKeyContainer.fromPublicKey(pubkey),
+        AuthenticationSource.amber,
+      );
+
+      Log.info(
+        'Amber connection successful for user: $pubkey',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+
+      return const AuthResult(success: true);
+    } catch (e) {
+      Log.error(
+        'Amber connection failed: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _amberSigner = null;
+      _lastError = 'Amber connection failed: $e';
+      _setAuthState(AuthState.unauthenticated);
+
+      return AuthResult.failure(_lastError!);
+    }
+  }
+
+  /// Helper to check if running on Android
+  bool _isAndroid() {
+    try {
+      // This import is available at the top of the file
+      return Platform.isAndroid;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Save Amber connection info to secure storage
+  Future<void> _saveAmberInfo(String pubkey, String? package) async {
+    if (_flutterSecureStorage == null) return;
+    try {
+      await _flutterSecureStorage.write(key: _kAmberPubkeyKey, value: pubkey);
+      if (package != null) {
+        await _flutterSecureStorage.write(
+          key: _kAmberPackageKey,
+          value: package,
+        );
+      }
+      Log.info(
+        'Saved Amber info to secure storage',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to save Amber info: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    }
+  }
+
+  /// Load Amber connection info from secure storage
+  Future<({String pubkey, String? package})?> _loadAmberInfo() async {
+    if (_flutterSecureStorage == null) return null;
+    try {
+      final pubkey = await _flutterSecureStorage.read(key: _kAmberPubkeyKey);
+      if (pubkey == null || pubkey.isEmpty) return null;
+
+      final package = await _flutterSecureStorage.read(key: _kAmberPackageKey);
+      Log.info(
+        'Loaded Amber info from secure storage',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return (pubkey: pubkey, package: package);
+    } catch (e) {
+      Log.error(
+        'Failed to load Amber info: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      return null;
+    }
+  }
+
+  /// Clear Amber connection info from secure storage
+  Future<void> _clearAmberInfo() async {
+    if (_flutterSecureStorage == null) return;
+    try {
+      await _flutterSecureStorage.delete(key: _kAmberPubkeyKey);
+      await _flutterSecureStorage.delete(key: _kAmberPackageKey);
+      Log.info(
+        'Cleared Amber info from secure storage',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to clear Amber info: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    }
+  }
+
+  /// Reconnect to Amber using saved connection info
+  Future<void> _reconnectAmber(String pubkey, String? package) async {
+    Log.info(
+      'Reconnecting to Amber...',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
+
+    _setAuthState(AuthState.authenticating);
+
+    try {
+      // Check platform
+      if (!_isAndroid()) {
+        throw UnsupportedError(
+          'NIP-55 Android signer only supported on Android',
+        );
+      }
+
+      // Check if a signer app is still installed
+      final exists = await AndroidPlugin.existAndroidNostrSigner();
+      if (exists != true) {
+        throw Exception('Android signer app no longer installed');
+      }
+
+      // Recreate signer with saved pubkey and package
+      _amberSigner = AndroidNostrSigner(pubkey: pubkey, package: package);
+
+      _currentKeyContainer = SecureKeyContainer.fromPublicKey(pubkey);
+
+      // Create a minimal profile for the Amber user
+      final npub = NostrKeyUtils.encodePubKey(pubkey);
+      _currentProfile = UserProfile(
+        npub: npub,
+        publicKeyHex: pubkey,
+        displayName: NostrKeyUtils.maskKey(npub),
+      );
+
+      _authSource = AuthenticationSource.amber;
+
+      await _performDiscovery();
+
+      _setAuthState(AuthState.authenticated);
+      _profileController.add(_currentProfile);
+
+      Log.info(
+        'Amber reconnection successful for user: $pubkey',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+    } catch (e) {
+      Log.error(
+        'Amber reconnection failed: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _amberSigner = null;
       _setAuthState(AuthState.unauthenticated);
     }
   }
@@ -1101,6 +1335,13 @@ class AuthService implements BackgroundAwareService {
         _bunkerSigner!.close();
         _bunkerSigner = null;
         await _clearBunkerInfo();
+      }
+
+      // Clean up Amber signer if active
+      if (_amberSigner != null) {
+        _amberSigner!.close();
+        _amberSigner = null;
+        await _clearAmberInfo();
       }
 
       try {
@@ -1779,6 +2020,10 @@ class AuthService implements BackgroundAwareService {
     // Close bunker signer if active
     _bunkerSigner?.close();
     _bunkerSigner = null;
+
+    // Close Amber signer if active
+    _amberSigner?.close();
+    _amberSigner = null;
 
     // Securely dispose of key container
     _currentKeyContainer?.dispose();
