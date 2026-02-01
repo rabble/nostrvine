@@ -79,6 +79,14 @@ class MockContentBlocklistService extends _i1.Mock
           as bool);
 
   @override
+  bool hasMutedUs(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#hasMutedUs, [pubkey]),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
   void blockUser(String? pubkey, {String? ourPubkey}) => super.noSuchMethod(
     Invocation.method(#blockUser, [pubkey], {#ourPubkey: ourPubkey}),
     returnValueForMissingStub: null,

@@ -309,5 +309,52 @@ void main() {
       // Random user should not be filtered
       expect(service.shouldFilterFromFeeds(randomPubkey), isFalse);
     });
+
+    test(
+      'hasMutedUs only checks mutual mute blocklist, not runtime blocks',
+      () async {
+        const ourPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000001';
+        const muterPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000002';
+        const blockedByUsPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000003';
+
+        final event = Event(
+          muterPubkey,
+          10000,
+          [
+            ['p', ourPubkey],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
+        event.id = 'event-id';
+        event.sig = 'signature';
+
+        when(
+          mockNostrService.subscribe(argThat(anything)),
+        ).thenAnswer((_) => Stream.fromIterable([event]));
+
+        await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
+
+        // Give the stream time to emit
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        // Block a user ourselves
+        service.blockUser(blockedByUsPubkey);
+
+        // hasMutedUs should return true for mutual muter
+        expect(service.hasMutedUs(muterPubkey), isTrue);
+
+        // hasMutedUs should return false for user WE blocked
+        // (this is the key distinction - we can still view their profile)
+        expect(service.hasMutedUs(blockedByUsPubkey), isFalse);
+
+        // But shouldFilterFromFeeds includes both
+        expect(service.shouldFilterFromFeeds(muterPubkey), isTrue);
+        expect(service.shouldFilterFromFeeds(blockedByUsPubkey), isTrue);
+      },
+    );
   });
 }
