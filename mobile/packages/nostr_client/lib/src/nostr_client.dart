@@ -649,16 +649,31 @@ class NostrClient {
 
   /// Sends a like reaction to an event
   ///
+  /// Parameters:
+  /// - [eventId]: The event ID being liked (required)
+  /// - [content]: Reaction content, defaults to '+' for likes
+  /// - [addressableId]: Optional addressable ID for Kind 30000+ events
+  ///   (format: "kind:pubkey:d-tag"). When provided, adds an 'a' tag for
+  ///   better discoverability of likes on addressable events.
+  /// - [targetAuthorPubkey]: Optional pubkey of the liked event's author
+  /// - [targetKind]: Optional kind of the event being liked (e.g., 34236)
+  ///
   /// Successfully sent events are cached locally with 1-day expiry.
   Future<Event?> sendLike(
     String eventId, {
     String? content,
+    String? addressableId,
+    String? targetAuthorPubkey,
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
     final likeEvent = await _nostr.sendLike(
       eventId,
+      pubkey: targetAuthorPubkey,
       content: content,
+      addressableId: addressableId,
+      targetKind: targetKind,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
     );

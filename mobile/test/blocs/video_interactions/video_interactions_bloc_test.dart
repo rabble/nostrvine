@@ -152,8 +152,12 @@ void main() {
           when(
             () => mockRepostsRepository.isReposted(testAddressableId),
           ).thenAnswer((_) async => true);
+          // Mock with addressableId parameter for addressable videos
           when(
-            () => mockLikesRepository.getLikeCount(testEventId),
+            () => mockLikesRepository.getLikeCount(
+              testEventId,
+              addressableId: testAddressableId,
+            ),
           ).thenAnswer((_) async => 10);
           when(
             () => mockCommentsRepository.getCommentsCount(
@@ -186,6 +190,13 @@ void main() {
           verifyNever(
             () => mockRepostsRepository.getRepostCountByEventId(any()),
           );
+          // Verifies getLikeCount is called with addressableId
+          verify(
+            () => mockLikesRepository.getLikeCount(
+              testEventId,
+              addressableId: testAddressableId,
+            ),
+          ).called(1);
         },
       );
 
@@ -297,10 +308,13 @@ void main() {
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
         'likes video when not already liked',
         setUp: () {
+          // Non-addressable video: no addressableId or targetKind
           when(
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
               authorPubkey: testAuthorPubkey,
+              addressableId: null,
+              targetKind: null,
             ),
           ).thenAnswer((_) async => true);
         },
@@ -328,12 +342,60 @@ void main() {
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
+        'likes addressable video with a-tag params',
+        setUp: () {
+          // Addressable video: includes addressableId and targetKind 34236
+          when(
+            () => mockLikesRepository.toggleLike(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+              addressableId: testAddressableId,
+              targetKind: 34236,
+            ),
+          ).thenAnswer((_) async => true);
+        },
+        build: () => createBloc(addressableId: testAddressableId),
+        seed: () => const VideoInteractionsState(
+          status: VideoInteractionsStatus.success,
+          isLiked: false,
+          likeCount: 10,
+        ),
+        act: (bloc) => bloc.add(const VideoInteractionsLikeToggled()),
+        expect: () => [
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: false,
+            likeCount: 10,
+            isLikeInProgress: true,
+          ),
+          const VideoInteractionsState(
+            status: VideoInteractionsStatus.success,
+            isLiked: true,
+            likeCount: 11,
+            isLikeInProgress: false,
+          ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockLikesRepository.toggleLike(
+              eventId: testEventId,
+              authorPubkey: testAuthorPubkey,
+              addressableId: testAddressableId,
+              targetKind: 34236,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoInteractionsBloc, VideoInteractionsState>(
         'unlikes video when already liked',
         setUp: () {
           when(
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
               authorPubkey: testAuthorPubkey,
+              addressableId: null,
+              targetKind: null,
             ),
           ).thenAnswer((_) async => false);
         },
@@ -367,6 +429,8 @@ void main() {
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
               authorPubkey: testAuthorPubkey,
+              addressableId: null,
+              targetKind: null,
             ),
           ).thenAnswer((_) async => false);
         },
@@ -411,6 +475,8 @@ void main() {
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
               authorPubkey: testAuthorPubkey,
+              addressableId: null,
+              targetKind: null,
             ),
           ).thenThrow(const AlreadyLikedException(testEventId));
         },
@@ -441,6 +507,8 @@ void main() {
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
               authorPubkey: testAuthorPubkey,
+              addressableId: null,
+              targetKind: null,
             ),
           ).thenThrow(const NotLikedException(testEventId));
         },
@@ -471,6 +539,8 @@ void main() {
             () => mockLikesRepository.toggleLike(
               eventId: testEventId,
               authorPubkey: testAuthorPubkey,
+              addressableId: null,
+              targetKind: null,
             ),
           ).thenThrow(Exception('Network error'));
         },

@@ -369,6 +369,9 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
   _i7.Future<_i8.Event?> sendLike(
     String? eventId, {
     String? content,
+    String? addressableId,
+    String? targetAuthorPubkey,
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) =>
@@ -378,6 +381,9 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
               [eventId],
               {
                 #content: content,
+                #addressableId: addressableId,
+                #targetAuthorPubkey: targetAuthorPubkey,
+                #targetKind: targetKind,
                 #tempRelays: tempRelays,
                 #targetRelays: targetRelays,
               },
@@ -1386,11 +1392,15 @@ class MockLikesRepository extends _i1.Mock implements _i3.LikesRepository {
   _i7.Future<String> likeEvent({
     required String? eventId,
     required String? authorPubkey,
+    String? addressableId,
+    int? targetKind,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#likeEvent, [], {
               #eventId: eventId,
               #authorPubkey: authorPubkey,
+              #addressableId: addressableId,
+              #targetKind: targetKind,
             }),
             returnValue: _i7.Future<String>.value(
               _i6.dummyValue<String>(
@@ -1398,6 +1408,8 @@ class MockLikesRepository extends _i1.Mock implements _i3.LikesRepository {
                 Invocation.method(#likeEvent, [], {
                   #eventId: eventId,
                   #authorPubkey: authorPubkey,
+                  #addressableId: addressableId,
+                  #targetKind: targetKind,
                 }),
               ),
             ),
@@ -1417,28 +1429,43 @@ class MockLikesRepository extends _i1.Mock implements _i3.LikesRepository {
   _i7.Future<bool> toggleLike({
     required String? eventId,
     required String? authorPubkey,
+    String? addressableId,
+    int? targetKind,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#toggleLike, [], {
               #eventId: eventId,
               #authorPubkey: authorPubkey,
+              #addressableId: addressableId,
+              #targetKind: targetKind,
             }),
             returnValue: _i7.Future<bool>.value(false),
           )
           as _i7.Future<bool>);
 
   @override
-  _i7.Future<int> getLikeCount(String? eventId) =>
+  _i7.Future<int> getLikeCount(String? eventId, {String? addressableId}) =>
       (super.noSuchMethod(
-            Invocation.method(#getLikeCount, [eventId]),
+            Invocation.method(
+              #getLikeCount,
+              [eventId],
+              {#addressableId: addressableId},
+            ),
             returnValue: _i7.Future<int>.value(0),
           )
           as _i7.Future<int>);
 
   @override
-  _i7.Future<Map<String, int>> getLikeCounts(List<String>? eventIds) =>
+  _i7.Future<Map<String, int>> getLikeCounts(
+    List<String>? eventIds, {
+    Map<String, String>? addressableIds,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#getLikeCounts, [eventIds]),
+            Invocation.method(
+              #getLikeCounts,
+              [eventIds],
+              {#addressableIds: addressableIds},
+            ),
             returnValue: _i7.Future<Map<String, int>>.value(<String, int>{}),
           )
           as _i7.Future<Map<String, int>>);

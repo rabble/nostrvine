@@ -59,14 +59,28 @@ class Nostr {
     String id, {
     String? pubkey,
     String? content,
+    String? addressableId,
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
     content ??= "+";
 
-    Event event = Event(_cachedPublicKey, EventKind.reaction, [
+    final tags = <List<String>>[
       ["e", id],
-    ], content);
+    ];
+
+    if (addressableId != null && addressableId.isNotEmpty) {
+      tags.add(["a", addressableId]);
+    }
+    if (pubkey != null && pubkey.isNotEmpty) {
+      tags.add(["p", pubkey]);
+    }
+    if (targetKind != null) {
+      tags.add(["k", targetKind.toString()]);
+    }
+
+    Event event = Event(_cachedPublicKey, EventKind.reaction, tags, content);
     return await sendEvent(
       event,
       tempRelays: tempRelays,
