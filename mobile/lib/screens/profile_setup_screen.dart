@@ -1032,7 +1032,7 @@ class _ProfileSetupScreenViewState
                             username: _nip05Controller.text,
                             picture: _pictureController.text,
                             banner: _selectedProfileColor != null
-                                ? '0x${_selectedProfileColor!.value.toRadixString(16).substring(2)}'
+                                ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
                                 : null,
                           ),
                         ),
@@ -1752,7 +1752,7 @@ class _ProfileColorPicker extends StatelessWidget {
             for (final color in _presetColors)
               _ColorSwatch(
                 color: color,
-                isSelected: selectedColor?.value == color.value,
+                isSelected: selectedColor == color,
                 onTap: () => onColorChanged(color),
               ),
             // Custom color picker

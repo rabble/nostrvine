@@ -98,7 +98,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      profileColor!,
+                      profileColor,
                       profileColor,
                       VineTheme.backgroundColor,
                     ],
