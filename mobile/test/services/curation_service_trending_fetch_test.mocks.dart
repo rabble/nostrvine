@@ -796,6 +796,12 @@ class MockVideoEventService extends _i1.Mock implements _i9.VideoEventService {
           as List<_i10.VideoEvent>);
 
   @override
+  void removeVideoCompletely(String? videoId) => super.noSuchMethod(
+    Invocation.method(#removeVideoCompletely, [videoId]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   void removeVideoFromAuthorList(String? authorPubkey, String? videoId) =>
       super.noSuchMethod(
         Invocation.method(#removeVideoFromAuthorList, [authorPubkey, videoId]),
