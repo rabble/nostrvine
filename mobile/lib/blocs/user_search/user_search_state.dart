@@ -24,7 +24,6 @@ final class UserSearchState extends Equatable {
     this.status = UserSearchStatus.initial,
     this.query = '',
     this.results = const [],
-    this.errorMessage,
   });
 
   /// The current status of the search
@@ -36,24 +35,19 @@ final class UserSearchState extends Equatable {
   /// The list of user profiles matching the search
   final List<UserProfile> results;
 
-  /// Error message if search failed
-  final String? errorMessage;
-
   /// Create a copy with updated values
   UserSearchState copyWith({
     UserSearchStatus? status,
     String? query,
     List<UserProfile>? results,
-    String? errorMessage,
   }) {
     return UserSearchState(
       status: status ?? this.status,
       query: query ?? this.query,
       results: results ?? this.results,
-      errorMessage: errorMessage,
     );
   }
 
   @override
-  List<Object?> get props => [status, query, results, errorMessage];
+  List<Object> get props => [status, query, results];
 }

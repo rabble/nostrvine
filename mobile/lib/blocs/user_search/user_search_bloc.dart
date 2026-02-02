@@ -59,13 +59,8 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       final results = await _profileRepository.searchUsers(query: query);
 
       emit(state.copyWith(status: UserSearchStatus.success, results: results));
-    } catch (e) {
-      emit(
-        state.copyWith(
-          status: UserSearchStatus.failure,
-          errorMessage: e.toString(),
-        ),
-      );
+    } catch (_) {
+      emit(state.copyWith(status: UserSearchStatus.failure));
     }
   }
 

@@ -36,7 +36,6 @@ void main() {
       expect(bloc.state.status, UserSearchStatus.initial);
       expect(bloc.state.query, isEmpty);
       expect(bloc.state.results, isEmpty);
-      expect(bloc.state.errorMessage, isNull);
       bloc.close();
     });
 
@@ -93,9 +92,10 @@ void main() {
             status: UserSearchStatus.loading,
             query: 'error',
           ),
-          isA<UserSearchState>()
-              .having((s) => s.status, 'status', UserSearchStatus.failure)
-              .having((s) => s.errorMessage, 'errorMessage', isNotNull),
+          const UserSearchState(
+            status: UserSearchStatus.failure,
+            query: 'error',
+          ),
         ],
       );
 
@@ -235,19 +235,6 @@ void main() {
         expect(updated.status, UserSearchStatus.success);
         expect(updated.query, 'test');
         expect(updated.results, isEmpty);
-        expect(updated.errorMessage, isNull);
-      });
-
-      test('copyWith clears errorMessage when not provided', () {
-        const state = UserSearchState(
-          status: UserSearchStatus.failure,
-          errorMessage: 'error',
-        );
-
-        final updated = state.copyWith(status: UserSearchStatus.loading);
-
-        expect(updated.status, UserSearchStatus.loading);
-        expect(updated.errorMessage, isNull);
       });
 
       test('props includes all fields', () {
@@ -256,14 +243,12 @@ void main() {
           status: UserSearchStatus.success,
           query: 'alice',
           results: [profile],
-          errorMessage: null,
         );
 
         expect(state.props, [
           UserSearchStatus.success,
           'alice',
           [profile],
-          null,
         ]);
       });
     });

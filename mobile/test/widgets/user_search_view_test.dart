@@ -120,7 +120,6 @@ void main() {
           const UserSearchState(
             status: UserSearchStatus.failure,
             query: 'test',
-            errorMessage: 'Network error',
           ),
         );
 

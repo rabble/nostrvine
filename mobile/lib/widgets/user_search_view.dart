@@ -27,9 +27,7 @@ class UserSearchView extends StatelessWidget {
           UserSearchStatus.success => _UserSearchResultsList(
             results: state.results,
           ),
-          UserSearchStatus.failure => _UserSearchErrorState(
-            error: state.errorMessage,
-          ),
+          UserSearchStatus.failure => const _UserSearchErrorState(),
         };
       },
     );
@@ -169,9 +167,7 @@ class _UserSearchNoResultsState extends StatelessWidget {
 }
 
 class _UserSearchErrorState extends StatelessWidget {
-  const _UserSearchErrorState({this.error});
-
-  final String? error;
+  const _UserSearchErrorState();
 
   @override
   Widget build(BuildContext context) {
