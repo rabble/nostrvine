@@ -231,8 +231,12 @@ class RelayNotificationApiService {
         return NotificationsResponse.empty;
       }
 
+      final header = authToken.authorizationHeader;
+      final headerPreview = header.length > 50
+          ? '${header.substring(0, 50)}...'
+          : header;
       Log.debug(
-        'NIP-98 Auth header: ${authToken.authorizationHeader.substring(0, 50)}...',
+        'NIP-98 Auth header: $headerPreview',
         name: 'RelayNotificationApiService',
         category: LogCategory.system,
       );
