@@ -15,15 +15,7 @@ dependencies:
     sdk: flutter
   media_kit: ^1.2.6
   media_kit_libs_video: ^1.0.7
-  # Temporary override to fix mp_image_crop crash on iOS Simulator
-# See: https://github.com/media-kit/media-kit/issues/627
-# Remove once fix is merged upstream
-  media_kit_video:
-    git:
-      url: https://github.com/magicyoda/media-kit.git
-      path: media_kit_video
-      ref: 7d1b8f0bd72cf19fd500d3cb8a85be3ed14864da
-
+  media_kit_video: ^2.0.1
 
 dev_dependencies:
   flutter_test:
