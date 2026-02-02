@@ -121,9 +121,9 @@ void main() {
 
       // Account section should be visible before tabs
       expect(find.text('ACCOUNT'), findsOneWidget);
-      expect(find.text('Log Out'), findsOneWidget);
-      expect(find.text('Remove Keys from Device'), findsOneWidget);
-      expect(find.text('Delete All Content from Relays'), findsOneWidget);
+      expect(find.text('Sign Out'), findsOneWidget);
+      expect(find.text('Forget This Device'), findsOneWidget);
+      expect(find.text('Delete Account and Data'), findsOneWidget);
       // TODO(Any): Fix and re-enable these tests
     }, skip: true);
 

@@ -272,11 +272,11 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 _buildSettingsTile(
                   context,
-                  icon: Icons.switch_account,
-                  title: 'Switch Account',
+                  icon: Icons.logout,
+                  title: 'Sign Out',
                   subtitle:
-                      'Go to login screen to use a different account. '
-                      'Your current keys stay saved on this device.',
+                      'Return to the login screen. '
+                      'Your keys stay saved on this device.',
                   onTap: () => _handleSwitchAccount(context, ref),
                 ),
                 _buildSettingsTile(
@@ -289,11 +289,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 _buildSettingsTile(
                   context,
                   icon: Icons.key_off,
-                  title: 'Remove Keys from Device',
+                  title: 'Forget This Device',
                   subtitle:
-                      'Delete your private key from this device only. '
-                      'Your content stays on relays, but you\'ll need your '
-                      'nsec backup to access your account again.',
+                      'Remove your keys from this device. '
+                      'You\'ll need your nsec backup to sign back in.',
                   onTap: () => _handleRemoveKeys(context, ref),
                   iconColor: Colors.orange,
                   titleColor: Colors.orange,
@@ -668,15 +667,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
         title: const Text(
-          'Switch Account?',
+          'Sign Out?',
           style: TextStyle(color: VineTheme.whiteText),
         ),
         content: const Text(
-          'You will be taken to the login screen where you can:\n\n'
-          '• Continue with your saved keys\n'
-          '• Import a different account\n'
-          '• Create a new identity\n\n'
-          'Your current keys will stay saved on this device.',
+          'You\'ll return to the login screen. '
+          'Your keys will stay saved on this device.',
           style: TextStyle(color: Colors.grey),
         ),
         actions: [
@@ -691,7 +687,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               context.pop(true);
             },
             child: const Text(
-              'Switch Account',
+              'Sign Out',
               style: TextStyle(color: VineTheme.vineGreen),
             ),
           ),
@@ -707,6 +703,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     // Show warning dialog
     await showRemoveKeysWarningDialog(
       context: context,
+      onExportKeys: () => context.push(KeyManagementScreen.path),
       onConfirm: () async {
         // Show loading indicator
         if (!context.mounted) return;

@@ -16,6 +16,7 @@ import 'package:openvine/utils/unified_logger.dart';
 Future<void> showRemoveKeysWarningDialog({
   required BuildContext context,
   required VoidCallback onConfirm,
+  VoidCallback? onExportKeys,
 }) {
   return showDialog(
     context: context,
@@ -23,7 +24,7 @@ Future<void> showRemoveKeysWarningDialog({
     builder: (context) => AlertDialog(
       backgroundColor: VineTheme.cardBackground,
       title: const Text(
-        '⚠️ Remove Keys from Device?',
+        '⚠️ Forget This Device?',
         style: TextStyle(
           color: Colors.white,
           fontSize: 20,
@@ -31,14 +32,13 @@ Future<void> showRemoveKeysWarningDialog({
         ),
       ),
       content: const Text(
-        'This will:\n'
-        '• Remove your Nostr private key (nsec) from this device\n'
-        '• Sign you out immediately\n'
-        '• Your content will REMAIN on Nostr relays\n\n'
-        'Make sure you have your nsec backed up elsewhere or you will lose access to your account!\n\n'
-        'Continue?',
+        'This will remove your keys from this device. '
+        'Your content will remain on Nostr relays.\n\n'
+        'To sign back in, you\'ll need your nsec backup. '
+        'If you haven\'t saved it, export your keys first.',
         style: TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
       ),
+      actionsAlignment: MainAxisAlignment.spaceBetween,
       actions: [
         TextButton(
           onPressed: context.pop,
@@ -47,19 +47,36 @@ Future<void> showRemoveKeysWarningDialog({
             style: TextStyle(color: Colors.grey, fontSize: 16),
           ),
         ),
-        ElevatedButton(
-          onPressed: () {
-            context.pop();
-            onConfirm();
-          },
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
-            foregroundColor: Colors.white,
-          ),
-          child: const Text(
-            'Remove Keys',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (onExportKeys != null)
+              TextButton(
+                onPressed: () {
+                  context.pop();
+                  onExportKeys();
+                },
+                child: const Text(
+                  'Export My Keys First',
+                  style: TextStyle(color: VineTheme.vineGreen, fontSize: 16),
+                ),
+              ),
+            const SizedBox(width: 8),
+            ElevatedButton(
+              onPressed: () {
+                context.pop();
+                onConfirm();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text(
+                'Forget This Device',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+              ),
+            ),
+          ],
         ),
       ],
     ),

@@ -169,9 +169,9 @@ void main() {
 
       // Account section should have all key/account related items together
       expect(find.text('ACCOUNT'), findsOneWidget);
-      expect(find.text('Switch Account'), findsOneWidget);
+      expect(find.text('Sign Out'), findsOneWidget);
       expect(find.text('Key Management'), findsOneWidget);
-      expect(find.text('Remove Keys from Device'), findsOneWidget);
+      expect(find.text('Forget This Device'), findsOneWidget);
       expect(find.text('Delete Account and Data'), findsOneWidget);
 
       // Dispose and pump to clear any pending timers from overlay visibility
