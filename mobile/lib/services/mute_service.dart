@@ -672,9 +672,9 @@ class MuteService {
         .toList();
   }
 
-  /// Start background sync of mutual mute lists (NIP-51 kind 10000)
+  /// Fetch mutual mute lists (NIP-51 kind 10000)
   ///
-  /// Subscribes to kind 10000 events WHERE our pubkey appears in 'p' tags.
+  /// Queries kind 10000 events WHERE our pubkey appears in 'p' tags.
   /// This allows us to detect when other users have muted us.
   Future<void> syncMuteListsInBackground(String ourPubkey) async {
     if (_mutualMuteSyncStarted) {
@@ -690,29 +690,31 @@ class MuteService {
     _ourPubkey = ourPubkey;
 
     Log.info(
-      'Starting mutual mute list sync for pubkey: $ourPubkey',
+      'Fetching mutual mute lists for pubkey: $ourPubkey',
       name: 'MuteService',
       category: LogCategory.system,
     );
 
     try {
-      // Subscribe to kind 10000 (mute list) events WHERE our pubkey is in 'p' tags
+      // Query kind 10000 (mute list) events WHERE our pubkey is in 'p' tags
       final filter = Filter(kinds: const [10000]);
       filter.p = [ourPubkey]; // Filter by 'p' tags containing our pubkey
 
-      final subscription = _nostrService.subscribe([filter]);
+      final events = await _nostrService.queryEvents([filter]);
 
-      // Listen to the stream
-      subscription.listen(_handleMuteListEvent);
+      // Process all returned events
+      for (final event in events) {
+        _handleMuteListEvent(event);
+      }
 
       Log.info(
-        'Mutual mute subscription created',
+        'Mutual mute query complete: found ${_mutualMuteBlocklist.length} users who muted us',
         name: 'MuteService',
         category: LogCategory.system,
       );
     } catch (e) {
       Log.error(
-        'Failed to start mutual mute sync: $e',
+        'Failed to fetch mutual mute lists: $e',
         name: 'MuteService',
         category: LogCategory.system,
       );
