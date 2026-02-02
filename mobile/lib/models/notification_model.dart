@@ -132,6 +132,8 @@ class NotificationModel extends Equatable {
   String get navigationAction {
     switch (type) {
       case NotificationType.like:
+        // Likes navigate to the liker's profile
+        return 'open_profile';
       case NotificationType.comment:
       case NotificationType.repost:
         return targetEventId != null ? 'open_video' : 'open_profile';
@@ -147,6 +149,8 @@ class NotificationModel extends Equatable {
   String? get navigationTarget {
     switch (type) {
       case NotificationType.like:
+        // Likes navigate to the liker's profile
+        return actorPubkey;
       case NotificationType.comment:
       case NotificationType.repost:
         return targetEventId ?? actorPubkey;
