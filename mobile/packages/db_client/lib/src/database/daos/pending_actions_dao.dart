@@ -130,21 +130,20 @@ class PendingAction {
     int? retryCount,
     String? lastError,
     DateTime? lastAttemptAt,
-  }) =>
-      PendingAction(
-        id: id ?? this.id,
-        type: type ?? this.type,
-        targetId: targetId ?? this.targetId,
-        authorPubkey: authorPubkey ?? this.authorPubkey,
-        addressableId: addressableId ?? this.addressableId,
-        targetKind: targetKind ?? this.targetKind,
-        status: status ?? this.status,
-        userPubkey: userPubkey ?? this.userPubkey,
-        createdAt: createdAt ?? this.createdAt,
-        retryCount: retryCount ?? this.retryCount,
-        lastError: lastError ?? this.lastError,
-        lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
-      );
+  }) => PendingAction(
+    id: id ?? this.id,
+    type: type ?? this.type,
+    targetId: targetId ?? this.targetId,
+    authorPubkey: authorPubkey ?? this.authorPubkey,
+    addressableId: addressableId ?? this.addressableId,
+    targetKind: targetKind ?? this.targetKind,
+    status: status ?? this.status,
+    userPubkey: userPubkey ?? this.userPubkey,
+    createdAt: createdAt ?? this.createdAt,
+    retryCount: retryCount ?? this.retryCount,
+    lastError: lastError ?? this.lastError,
+    lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
+  );
 
   @override
   String toString() =>
@@ -251,8 +250,7 @@ class PendingActionsDao extends DatabaseAccessor<AppDatabase>
   ) async {
     final query = select(pendingActions)
       ..where(
-        (t) =>
-            t.userPubkey.equals(userPubkey) & t.status.equals(status.name),
+        (t) => t.userPubkey.equals(userPubkey) & t.status.equals(status.name),
       )
       ..orderBy([(t) => OrderingTerm(expression: t.createdAt)]);
     final rows = await query.get();
@@ -302,17 +300,19 @@ class PendingActionsDao extends DatabaseAccessor<AppDatabase>
     String? lastError,
     int? retryCount,
   }) async {
-    final rowsAffected = await (update(pendingActions)
-          ..where((t) => t.id.equals(id)))
-        .write(
-      PendingActionsCompanion(
-        status: Value(status.name),
-        lastError: lastError != null ? Value(lastError) : const Value.absent(),
-        retryCount:
-            retryCount != null ? Value(retryCount) : const Value.absent(),
-        lastAttemptAt: Value(DateTime.now()),
-      ),
-    );
+    final rowsAffected =
+        await (update(pendingActions)..where((t) => t.id.equals(id))).write(
+          PendingActionsCompanion(
+            status: Value(status.name),
+            lastError: lastError != null
+                ? Value(lastError)
+                : const Value.absent(),
+            retryCount: retryCount != null
+                ? Value(retryCount)
+                : const Value.absent(),
+            lastAttemptAt: Value(DateTime.now()),
+          ),
+        );
     return rowsAffected > 0;
   }
 
@@ -323,25 +323,23 @@ class PendingActionsDao extends DatabaseAccessor<AppDatabase>
 
   /// Delete completed actions (status = completed)
   Future<int> deleteCompleted(String userPubkey) {
-    return (delete(pendingActions)
-          ..where(
-            (t) =>
-                t.userPubkey.equals(userPubkey) &
-                t.status.equals(PendingActionStatus.completed.name),
-          ))
+    return (delete(pendingActions)..where(
+          (t) =>
+              t.userPubkey.equals(userPubkey) &
+              t.status.equals(PendingActionStatus.completed.name),
+        ))
         .go();
   }
 
   /// Delete old completed actions (older than specified duration)
   Future<int> deleteOldCompleted(String userPubkey, Duration olderThan) {
     final cutoff = DateTime.now().subtract(olderThan);
-    return (delete(pendingActions)
-          ..where(
-            (t) =>
-                t.userPubkey.equals(userPubkey) &
-                t.status.equals(PendingActionStatus.completed.name) &
-                t.createdAt.isSmallerThanValue(cutoff),
-          ))
+    return (delete(pendingActions)..where(
+          (t) =>
+              t.userPubkey.equals(userPubkey) &
+              t.status.equals(PendingActionStatus.completed.name) &
+              t.createdAt.isSmallerThanValue(cutoff),
+        ))
         .go();
   }
 
@@ -367,23 +365,22 @@ class PendingActionsDao extends DatabaseAccessor<AppDatabase>
 
   /// Clear all actions for a user
   Future<int> clearAll(String userPubkey) {
-    return (delete(pendingActions)
-          ..where((t) => t.userPubkey.equals(userPubkey)))
-        .go();
+    return (delete(
+      pendingActions,
+    )..where((t) => t.userPubkey.equals(userPubkey))).go();
   }
 
   /// Reset syncing actions to pending (for app restart recovery)
   Future<int> resetSyncingToPending(String userPubkey) async {
-    return (update(pendingActions)
-          ..where(
-            (t) =>
-                t.userPubkey.equals(userPubkey) &
-                t.status.equals(PendingActionStatus.syncing.name),
-          ))
+    return (update(pendingActions)..where(
+          (t) =>
+              t.userPubkey.equals(userPubkey) &
+              t.status.equals(PendingActionStatus.syncing.name),
+        ))
         .write(
-      PendingActionsCompanion(
-        status: Value(PendingActionStatus.pending.name),
-      ),
-    );
+          PendingActionsCompanion(
+            status: Value(PendingActionStatus.pending.name),
+          ),
+        );
   }
 }

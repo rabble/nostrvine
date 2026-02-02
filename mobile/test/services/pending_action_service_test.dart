@@ -27,9 +27,7 @@ void main() {
 
   setUp(() async {
     // Create in-memory database for testing
-    database = AppDatabase.test(
-      NativeDatabase.memory(logStatements: false),
-    );
+    database = AppDatabase.test(NativeDatabase.memory(logStatements: false));
     dao = database.pendingActionsDao;
 
     mockConnectionService = MockConnectionStatusService();
@@ -295,8 +293,7 @@ void main() {
     group('pendingActionsStream', () {
       test('emits updates when actions are added', () async {
         final emissions = <List<PendingAction>>[];
-        final subscription =
-            service.pendingActionsStream.listen(emissions.add);
+        final subscription = service.pendingActionsStream.listen(emissions.add);
 
         await service.queueAction(
           type: PendingActionType.like,

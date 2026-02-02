@@ -46,10 +46,10 @@ class PendingActionService extends ChangeNotifier {
     required PendingActionsDao pendingActionsDao,
     required String userPubkey,
     PendingActionRetryConfig? retryConfig,
-  })  : _connectionStatusService = connectionStatusService,
-        _dao = pendingActionsDao,
-        _userPubkey = userPubkey,
-        _retryConfig = retryConfig ?? const PendingActionRetryConfig();
+  }) : _connectionStatusService = connectionStatusService,
+       _dao = pendingActionsDao,
+       _userPubkey = userPubkey,
+       _retryConfig = retryConfig ?? const PendingActionRetryConfig();
 
   final ConnectionStatusService _connectionStatusService;
   final PendingActionsDao _dao;
@@ -64,8 +64,9 @@ class PendingActionService extends ChangeNotifier {
   final Map<PendingActionType, ActionExecutor> _executors = {};
 
   /// Stream controller for pending actions
-  final _pendingActionsController =
-      BehaviorSubject<List<PendingAction>>.seeded(const []);
+  final _pendingActionsController = BehaviorSubject<List<PendingAction>>.seeded(
+    const [],
+  );
 
   /// In-memory cache of pending actions
   List<PendingAction> _cachedPendingActions = [];
