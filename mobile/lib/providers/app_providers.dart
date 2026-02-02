@@ -809,7 +809,7 @@ ProfileRepository? profileRepository(Ref ref) {
     httpClient: Client(),
     userBlockFilter: blocklistService.shouldFilterFromFeeds,
     profileSearchFilter: (query, profiles) =>
-        SearchUtils.searchProfiles(query, profiles),
+        SearchUtils.searchProfiles(query, profiles, minScore: 0.3, limit: 50),
   );
 }
 
