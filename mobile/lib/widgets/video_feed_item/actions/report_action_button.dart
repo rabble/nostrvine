@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/circular_icon_button.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
@@ -10,6 +11,8 @@ import 'package:openvine/widgets/share_video_menu.dart';
 /// Report action button with label for video overlay.
 ///
 /// Shows a flag icon that opens the report content dialog.
+/// Video playback is automatically paused while the dialog is open via
+/// [showVideoPausingDialog] and the overlay visibility provider.
 class ReportActionButton extends StatelessWidget {
   const ReportActionButton({required this.video, super.key});
 
@@ -33,8 +36,7 @@ class ReportActionButton extends StatelessWidget {
                 name: 'ReportActionButton',
                 category: LogCategory.ui,
               );
-              showDialog<void>(
-                context: context,
+              context.showVideoPausingDialog<void>(
                 builder: (context) => ReportContentDialog(video: video),
               );
             },
