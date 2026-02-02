@@ -11,7 +11,7 @@ void main() {
 
     group('constructor', () {
       test('creates instance with required fields', () {
-        final result = ProfileSearchResult(pubkey: testPubkey);
+        const result = ProfileSearchResult(pubkey: testPubkey);
 
         expect(result.pubkey, equals(testPubkey));
         expect(result.name, isNull);
@@ -192,7 +192,7 @@ void main() {
 
     group('bestDisplayName', () {
       test('returns displayName when available', () {
-        final result = ProfileSearchResult(
+        const result = ProfileSearchResult(
           pubkey: testPubkey,
           name: 'username',
           displayName: 'Display Name',
@@ -202,7 +202,7 @@ void main() {
       });
 
       test('falls back to name when displayName is null', () {
-        final result = ProfileSearchResult(
+        const result = ProfileSearchResult(
           pubkey: testPubkey,
           name: 'username',
         );
@@ -211,7 +211,7 @@ void main() {
       });
 
       test('falls back to pubkey prefix when both are null', () {
-        final result = ProfileSearchResult(pubkey: testPubkey);
+        const result = ProfileSearchResult(pubkey: testPubkey);
 
         expect(result.bestDisplayName, equals('12345678'));
       });
@@ -251,7 +251,7 @@ void main() {
       });
 
       test('uses DateTime.now() when createdAt is null', () {
-        final result = ProfileSearchResult(pubkey: testPubkey);
+        const result = ProfileSearchResult(pubkey: testPubkey);
 
         final before = DateTime.now();
         final profile = result.toUserProfile();
@@ -270,7 +270,7 @@ void main() {
       });
 
       test('uses empty string when eventId is null', () {
-        final result = ProfileSearchResult(pubkey: testPubkey);
+        const result = ProfileSearchResult(pubkey: testPubkey);
 
         final profile = result.toUserProfile();
 
@@ -280,13 +280,13 @@ void main() {
 
     group('equality', () {
       test('two instances with same pubkey are equal', () {
-        final result1 = ProfileSearchResult(
+        const result1 = ProfileSearchResult(
           pubkey: testPubkey,
           name: 'name1',
           displayName: 'Display 1',
         );
 
-        final result2 = ProfileSearchResult(
+        const result2 = ProfileSearchResult(
           pubkey: testPubkey,
           name: 'name2',
           displayName: 'Display 2',
@@ -297,12 +297,12 @@ void main() {
       });
 
       test('two instances with different pubkeys are not equal', () {
-        final result1 = ProfileSearchResult(
+        const result1 = ProfileSearchResult(
           pubkey: 'pubkey1',
           name: 'name',
         );
 
-        final result2 = ProfileSearchResult(
+        const result2 = ProfileSearchResult(
           pubkey: 'pubkey2',
           name: 'name',
         );
@@ -313,7 +313,7 @@ void main() {
 
     group('toString', () {
       test('returns formatted string with pubkey and name', () {
-        final result = ProfileSearchResult(
+        const result = ProfileSearchResult(
           pubkey: testPubkey,
           displayName: 'Test User',
         );
