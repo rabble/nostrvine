@@ -504,6 +504,86 @@ void main() {
           expect(result.any((p) => p.pubkey == blockedPubkey), isFalse);
         },
       );
+
+      test(
+        'uses profileSearchFilter when provided',
+        () async {
+          // Arrange
+          final mockProfileEvent1 = MockEvent();
+          final mockProfileEvent2 = MockEvent();
+          const testPubkey1 =
+              'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+              'c3d4e5f6a1b2c3d4e5f6a1b2';
+          const testPubkey2 =
+              'b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+              'c3d4e5f6a1b2c3d4e5f6a1b2c3';
+          const testEventId1 =
+              'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+              'd3c4b5a6f1e2d3c4b5a6f1e2';
+          const testEventId2 =
+              'e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+              'd3c4b5a6f1e2d3c4b5a6f1e2d3';
+
+          when(() => mockProfileEvent1.kind).thenReturn(0);
+          when(() => mockProfileEvent1.pubkey).thenReturn(testPubkey1);
+          when(() => mockProfileEvent1.createdAt).thenReturn(1704067200);
+          when(() => mockProfileEvent1.id).thenReturn(testEventId1);
+          when(() => mockProfileEvent1.content).thenReturn(
+            jsonEncode({
+              'display_name': 'Bob Smith',
+              'about': 'First user',
+            }),
+          );
+
+          when(() => mockProfileEvent2.kind).thenReturn(0);
+          when(() => mockProfileEvent2.pubkey).thenReturn(testPubkey2);
+          when(() => mockProfileEvent2.createdAt).thenReturn(1704067300);
+          when(() => mockProfileEvent2.id).thenReturn(testEventId2);
+          when(() => mockProfileEvent2.content).thenReturn(
+            jsonEncode({
+              'display_name': 'Alice Jones',
+              'about': 'Second user',
+            }),
+          );
+
+          when(
+            () => mockNostrClient.queryUsers('test', limit: 200),
+          ).thenAnswer(
+            (_) async => [mockProfileEvent1, mockProfileEvent2],
+          );
+
+          // Track filter invocations
+          var filterCalled = false;
+          String? receivedQuery;
+          List<UserProfile>? receivedProfiles;
+
+          // Create repository with custom search filter that reverses the list
+          final repoWithFilter = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            profileSearchFilter: (query, profiles) {
+              filterCalled = true;
+              receivedQuery = query;
+              receivedProfiles = profiles;
+              // Return reversed list to prove custom filter was used
+              return profiles.reversed.toList();
+            },
+          );
+
+          // Act
+          final result = await repoWithFilter.searchUsers(query: 'test');
+
+          // Assert
+          expect(filterCalled, isTrue);
+          expect(receivedQuery, equals('test'));
+          expect(receivedProfiles, hasLength(2));
+          // Verify the custom filter's reversal was applied
+          expect(result, hasLength(2));
+          expect(result[0].displayName, equals('Alice Jones'));
+          expect(result[1].displayName, equals('Bob Smith'));
+        },
+      );
     });
 
     group('exceptions', () {
