@@ -51,6 +51,8 @@ class _VideoEditorMoreButtonState
 
   /// Shows options for the overview mode: add clip, save clip, delete all.
   Future<void> _openOverviewOptions() async {
+    final isMuted = ref.read(videoEditorProvider).isMuted;
+
     await VineBottomSheetActionMenu.show(
       context: context,
       options: [
@@ -67,6 +69,13 @@ class _VideoEditorMoreButtonState
           onTap: _saveClipToLibrary,
         ),
         VineBottomSheetActionData(
+          iconPath: isMuted
+              ? 'assets/icon/volume_off.svg'
+              : 'assets/icon/volume_on.svg',
+          label: isMuted ? 'Unmute original audio' : 'Mute original audio',
+          onTap: ref.read(videoEditorProvider.notifier).toggleMute,
+        ),
+        VineBottomSheetActionData(
           iconPath: 'assets/icon/trash.svg',
           // TODO(l10n): Replace with context.l10n when localization is added.
           label: 'Delete clips & start over',
@@ -79,6 +88,8 @@ class _VideoEditorMoreButtonState
 
   /// Shows options for clip editing mode: split, save, or delete current clip.
   Future<void> _openClipEditOptions() async {
+    final isMuted = ref.read(videoEditorProvider).isMuted;
+
     await VineBottomSheetActionMenu.show(
       context: context,
       options: [
@@ -94,6 +105,13 @@ class _VideoEditorMoreButtonState
           // TODO(l10n): Replace with context.l10n when localization is added.
           label: 'Save clip',
           onTap: _saveClipToLibrary,
+        ),
+        VineBottomSheetActionData(
+          iconPath: isMuted
+              ? 'assets/icon/volume_off.svg'
+              : 'assets/icon/volume_on.svg',
+          label: isMuted ? 'Unmute original audio' : 'Mute original audio',
+          onTap: ref.read(videoEditorProvider.notifier).toggleMute,
         ),
         VineBottomSheetActionData(
           iconPath: 'assets/icon/trash.svg',

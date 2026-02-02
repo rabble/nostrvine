@@ -104,7 +104,7 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
           _controller?.seekTo(next.splitPosition);
         },
       )
-      // Listen to trim-position changes
+      // Listen to editing mode changes
       ..listenManual(videoEditorProvider.select((state) => state.isEditing), (
         previous,
         next,
@@ -112,6 +112,13 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
         if (previous == next) return;
 
         _controller?.setLooping(!next);
+      })
+      // Listen to mute state changes
+      ..listenManual(videoEditorProvider.select((state) => state.isMuted), (
+        previous,
+        next,
+      ) {
+        _controller?.setVolume(next ? 0.0 : 1.0);
       });
   }
 
@@ -126,6 +133,12 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
       await _controller?.seekTo(thumbnailTimestamp);
     }
     if (mounted) await _controller?.setLooping(true);
+
+    // Set initial volume based on mute state
+    if (mounted) {
+      final isMuted = ref.read(videoEditorProvider).isMuted;
+      await _controller?.setVolume(isMuted ? 0.0 : 1.0);
+    }
 
     // Add listener to detect when video ends
     _controller?.addListener(_videoPlayerListener);
