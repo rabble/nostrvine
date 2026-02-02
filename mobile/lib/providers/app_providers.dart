@@ -47,6 +47,7 @@ import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
+import 'package:openvine/utils/search_utils.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip05_service.dart';
@@ -807,6 +808,8 @@ ProfileRepository? profileRepository(Ref ref) {
     userProfilesDao: userProfilesDao,
     httpClient: Client(),
     userBlockFilter: blocklistService.shouldFilterFromFeeds,
+    profileSearchFilter: (query, profiles) =>
+        SearchUtils.searchProfiles(query, profiles),
   );
 }
 

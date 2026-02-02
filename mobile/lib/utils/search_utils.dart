@@ -1,7 +1,8 @@
 // ABOUTME: Search utility functions for fuzzy matching and relevance scoring
 // ABOUTME: Provides tokenized search matching for user profiles and content
 
-import 'package:openvine/models/user_profile.dart';
+import 'package:models/models.dart';
+import 'package:nostr_sdk/nip19/nip19.dart';
 
 /// Result of a fuzzy search match with relevance score
 class SearchMatch<T> {
@@ -128,7 +129,7 @@ class SearchUtils {
     }
 
     if (queryLower.startsWith('npub')) {
-      final npub = profile.npub.toLowerCase();
+      final npub = Nip19.encodePubKey(profile.pubkey).toLowerCase();
       if (npub.startsWith(queryLower)) {
         final score = queryLower.length / npub.length;
         if (score > bestScore) {

@@ -16,6 +16,16 @@ const _usernameClaimUrl = 'https://names.divine.video/api/username/claim';
 /// Callback to check if a user should be filtered from results.
 typedef UserBlockFilter = bool Function(String pubkey);
 
+// TODO(search): Move ProfileSearchFilter to a shared package
+// (e.g., search_utils) when we need to reuse search logic across
+// multiple repositories.
+/// Callback to filter and sort profiles by search relevance.
+/// Takes a query and list of profiles, returns filtered/sorted profiles.
+typedef ProfileSearchFilter = List<UserProfile> Function(
+  String query,
+  List<UserProfile> profiles,
+);
+
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
 class ProfileRepository {
   /// Creates a new profile repository.
@@ -24,15 +34,18 @@ class ProfileRepository {
     required UserProfilesDao userProfilesDao,
     required Client httpClient,
     UserBlockFilter? userBlockFilter,
+    ProfileSearchFilter? profileSearchFilter,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
        _httpClient = httpClient,
-       _userBlockFilter = userBlockFilter;
+       _userBlockFilter = userBlockFilter,
+       _profileSearchFilter = profileSearchFilter;
 
   final NostrClient _nostrClient;
   final UserProfilesDao _userProfilesDao;
   final Client _httpClient;
   final UserBlockFilter? _userBlockFilter;
+  final ProfileSearchFilter? _profileSearchFilter;
 
   /// Fetches a user profile by pubkey using cache-first strategy.
   ///
@@ -137,7 +150,8 @@ class ProfileRepository {
 
   /// Searches for user profiles matching the query.
   ///
-  /// Fetches profiles via NIP-50 and filters by bestDisplayName.
+  /// Fetches profiles via NIP-50 and filters using [ProfileSearchFilter] if
+  /// provided, otherwise falls back to simple bestDisplayName matching.
   /// If a [UserBlockFilter] was provided, blocked users are excluded.
   /// Returns list of [UserProfile] matching the search query.
   /// Returns empty list if query is empty or no results found.
@@ -149,13 +163,19 @@ class ProfileRepository {
 
     final events = await _nostrClient.queryUsers(query, limit: limit);
     final profiles = events.map(UserProfile.fromNostrEvent).toList();
-    final queryLower = query.toLowerCase();
 
-    return profiles.where((profile) {
-      // Filter blocked users if filter is provided
-      if (_userBlockFilter?.call(profile.pubkey) ?? false) {
-        return false;
-      }
+    // Filter out blocked users first
+    final unblockedProfiles = profiles.where((profile) {
+      return !(_userBlockFilter?.call(profile.pubkey) ?? false);
+    }).toList();
+
+    // Use custom search filter if provided, otherwise simple contains match
+    if (_profileSearchFilter != null) {
+      return _profileSearchFilter(query, unblockedProfiles);
+    }
+
+    final queryLower = query.toLowerCase();
+    return unblockedProfiles.where((profile) {
       return profile.bestDisplayName.toLowerCase().contains(queryLower);
     }).toList();
   }
