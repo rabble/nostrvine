@@ -1,9 +1,6 @@
-// ABOUTME: Unit tests for PendingActionsDao with offline action queue operations.
-// ABOUTME: Tests all DAO methods including CRUD, status updates, and reactive
-// ABOUTME: streams.
-
-// No need for const constructors in tests
-// ignore_for_file: prefer_const_constructors
+// ABOUTME: Unit tests for PendingActionsDao with offline action queue
+// ABOUTME: operations. Tests all DAO methods including CRUD, status updates,
+// ABOUTME: and reactive streams.
 
 import 'dart:io';
 
@@ -166,7 +163,7 @@ void main() {
           targetId: testTargetId,
           status: PendingActionStatus.pending,
           userPubkey: testUserPubkey,
-          createdAt: DateTime(2024, 1, 1),
+          createdAt: DateTime(2024),
         );
         final action2 = PendingAction(
           id: 'id2',
@@ -867,7 +864,7 @@ void main() {
         targetId: testTargetId,
         status: PendingActionStatus.pending,
         userPubkey: testUserPubkey,
-        createdAt: DateTime(2024, 1, 1),
+        createdAt: DateTime(2024),
       );
 
       final action2 = PendingAction(
