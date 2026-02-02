@@ -1,10 +1,9 @@
-// ABOUTME: Unit tests for Nip05VerificationsDao with TTL-based cache expiry.
-// ABOUTME: Tests upsert, getValidVerification, deleteExpired, watchVerification.
+// ABOUTME: Unit tests for Nip05VerificationsDao with TTL-based cache.
+// ABOUTME: Tests upsert, getValidVerification, deleteExpired, watch.
 
 import 'dart:io';
 
 import 'package:db_client/db_client.dart';
-import 'package:drift/drift.dart' hide isNotNull, isNull;
 import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
 

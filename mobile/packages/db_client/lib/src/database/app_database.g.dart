@@ -6349,6 +6349,380 @@ class PendingActionsCompanion extends UpdateCompanion<PendingActionRow> {
   }
 }
 
+class $Nip05VerificationsTable extends Nip05Verifications
+    with TableInfo<$Nip05VerificationsTable, Nip05VerificationRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $Nip05VerificationsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _pubkeyMeta = const VerificationMeta('pubkey');
+  @override
+  late final GeneratedColumn<String> pubkey = GeneratedColumn<String>(
+    'pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _nip05Meta = const VerificationMeta('nip05');
+  @override
+  late final GeneratedColumn<String> nip05 = GeneratedColumn<String>(
+    'nip05',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _verifiedAtMeta = const VerificationMeta(
+    'verifiedAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> verifiedAt = GeneratedColumn<DateTime>(
+    'verified_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _expiresAtMeta = const VerificationMeta(
+    'expiresAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> expiresAt = GeneratedColumn<DateTime>(
+    'expires_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  @override
+  List<GeneratedColumn> get $columns => [
+    pubkey,
+    nip05,
+    status,
+    verifiedAt,
+    expiresAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'nip05_verifications';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<Nip05VerificationRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('pubkey')) {
+      context.handle(
+        _pubkeyMeta,
+        pubkey.isAcceptableOrUnknown(data['pubkey']!, _pubkeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_pubkeyMeta);
+    }
+    if (data.containsKey('nip05')) {
+      context.handle(
+        _nip05Meta,
+        nip05.isAcceptableOrUnknown(data['nip05']!, _nip05Meta),
+      );
+    } else if (isInserting) {
+      context.missing(_nip05Meta);
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('verified_at')) {
+      context.handle(
+        _verifiedAtMeta,
+        verifiedAt.isAcceptableOrUnknown(data['verified_at']!, _verifiedAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_verifiedAtMeta);
+    }
+    if (data.containsKey('expires_at')) {
+      context.handle(
+        _expiresAtMeta,
+        expiresAt.isAcceptableOrUnknown(data['expires_at']!, _expiresAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_expiresAtMeta);
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {pubkey};
+  @override
+  Nip05VerificationRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Nip05VerificationRow(
+      pubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}pubkey'],
+      )!,
+      nip05: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}nip05'],
+      )!,
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      verifiedAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}verified_at'],
+      )!,
+      expiresAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}expires_at'],
+      )!,
+    );
+  }
+
+  @override
+  $Nip05VerificationsTable createAlias(String alias) {
+    return $Nip05VerificationsTable(attachedDatabase, alias);
+  }
+}
+
+class Nip05VerificationRow extends DataClass
+    implements Insertable<Nip05VerificationRow> {
+  /// The pubkey of the user whose NIP-05 is being verified
+  final String pubkey;
+
+  /// The claimed NIP-05 address (e.g., "alice@example.com")
+  final String nip05;
+
+  /// Verification status: 'verified', 'failed', 'error', 'pending'
+  final String status;
+
+  /// When the verification was performed
+  final DateTime verifiedAt;
+
+  /// When this cache entry expires (TTL-based)
+  final DateTime expiresAt;
+  const Nip05VerificationRow({
+    required this.pubkey,
+    required this.nip05,
+    required this.status,
+    required this.verifiedAt,
+    required this.expiresAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['pubkey'] = Variable<String>(pubkey);
+    map['nip05'] = Variable<String>(nip05);
+    map['status'] = Variable<String>(status);
+    map['verified_at'] = Variable<DateTime>(verifiedAt);
+    map['expires_at'] = Variable<DateTime>(expiresAt);
+    return map;
+  }
+
+  Nip05VerificationsCompanion toCompanion(bool nullToAbsent) {
+    return Nip05VerificationsCompanion(
+      pubkey: Value(pubkey),
+      nip05: Value(nip05),
+      status: Value(status),
+      verifiedAt: Value(verifiedAt),
+      expiresAt: Value(expiresAt),
+    );
+  }
+
+  factory Nip05VerificationRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Nip05VerificationRow(
+      pubkey: serializer.fromJson<String>(json['pubkey']),
+      nip05: serializer.fromJson<String>(json['nip05']),
+      status: serializer.fromJson<String>(json['status']),
+      verifiedAt: serializer.fromJson<DateTime>(json['verifiedAt']),
+      expiresAt: serializer.fromJson<DateTime>(json['expiresAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'pubkey': serializer.toJson<String>(pubkey),
+      'nip05': serializer.toJson<String>(nip05),
+      'status': serializer.toJson<String>(status),
+      'verifiedAt': serializer.toJson<DateTime>(verifiedAt),
+      'expiresAt': serializer.toJson<DateTime>(expiresAt),
+    };
+  }
+
+  Nip05VerificationRow copyWith({
+    String? pubkey,
+    String? nip05,
+    String? status,
+    DateTime? verifiedAt,
+    DateTime? expiresAt,
+  }) => Nip05VerificationRow(
+    pubkey: pubkey ?? this.pubkey,
+    nip05: nip05 ?? this.nip05,
+    status: status ?? this.status,
+    verifiedAt: verifiedAt ?? this.verifiedAt,
+    expiresAt: expiresAt ?? this.expiresAt,
+  );
+  Nip05VerificationRow copyWithCompanion(Nip05VerificationsCompanion data) {
+    return Nip05VerificationRow(
+      pubkey: data.pubkey.present ? data.pubkey.value : this.pubkey,
+      nip05: data.nip05.present ? data.nip05.value : this.nip05,
+      status: data.status.present ? data.status.value : this.status,
+      verifiedAt: data.verifiedAt.present
+          ? data.verifiedAt.value
+          : this.verifiedAt,
+      expiresAt: data.expiresAt.present ? data.expiresAt.value : this.expiresAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Nip05VerificationRow(')
+          ..write('pubkey: $pubkey, ')
+          ..write('nip05: $nip05, ')
+          ..write('status: $status, ')
+          ..write('verifiedAt: $verifiedAt, ')
+          ..write('expiresAt: $expiresAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(pubkey, nip05, status, verifiedAt, expiresAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Nip05VerificationRow &&
+          other.pubkey == this.pubkey &&
+          other.nip05 == this.nip05 &&
+          other.status == this.status &&
+          other.verifiedAt == this.verifiedAt &&
+          other.expiresAt == this.expiresAt);
+}
+
+class Nip05VerificationsCompanion
+    extends UpdateCompanion<Nip05VerificationRow> {
+  final Value<String> pubkey;
+  final Value<String> nip05;
+  final Value<String> status;
+  final Value<DateTime> verifiedAt;
+  final Value<DateTime> expiresAt;
+  final Value<int> rowid;
+  const Nip05VerificationsCompanion({
+    this.pubkey = const Value.absent(),
+    this.nip05 = const Value.absent(),
+    this.status = const Value.absent(),
+    this.verifiedAt = const Value.absent(),
+    this.expiresAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  Nip05VerificationsCompanion.insert({
+    required String pubkey,
+    required String nip05,
+    required String status,
+    required DateTime verifiedAt,
+    required DateTime expiresAt,
+    this.rowid = const Value.absent(),
+  }) : pubkey = Value(pubkey),
+       nip05 = Value(nip05),
+       status = Value(status),
+       verifiedAt = Value(verifiedAt),
+       expiresAt = Value(expiresAt);
+  static Insertable<Nip05VerificationRow> custom({
+    Expression<String>? pubkey,
+    Expression<String>? nip05,
+    Expression<String>? status,
+    Expression<DateTime>? verifiedAt,
+    Expression<DateTime>? expiresAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (pubkey != null) 'pubkey': pubkey,
+      if (nip05 != null) 'nip05': nip05,
+      if (status != null) 'status': status,
+      if (verifiedAt != null) 'verified_at': verifiedAt,
+      if (expiresAt != null) 'expires_at': expiresAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  Nip05VerificationsCompanion copyWith({
+    Value<String>? pubkey,
+    Value<String>? nip05,
+    Value<String>? status,
+    Value<DateTime>? verifiedAt,
+    Value<DateTime>? expiresAt,
+    Value<int>? rowid,
+  }) {
+    return Nip05VerificationsCompanion(
+      pubkey: pubkey ?? this.pubkey,
+      nip05: nip05 ?? this.nip05,
+      status: status ?? this.status,
+      verifiedAt: verifiedAt ?? this.verifiedAt,
+      expiresAt: expiresAt ?? this.expiresAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (pubkey.present) {
+      map['pubkey'] = Variable<String>(pubkey.value);
+    }
+    if (nip05.present) {
+      map['nip05'] = Variable<String>(nip05.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (verifiedAt.present) {
+      map['verified_at'] = Variable<DateTime>(verifiedAt.value);
+    }
+    if (expiresAt.present) {
+      map['expires_at'] = Variable<DateTime>(expiresAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Nip05VerificationsCompanion(')
+          ..write('pubkey: $pubkey, ')
+          ..write('nip05: $nip05, ')
+          ..write('status: $status, ')
+          ..write('verifiedAt: $verifiedAt, ')
+          ..write('expiresAt: $expiresAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -6365,6 +6739,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     this,
   );
   late final $PendingActionsTable pendingActions = $PendingActionsTable(this);
+  late final $Nip05VerificationsTable nip05Verifications =
+      $Nip05VerificationsTable(this);
   late final UserProfilesDao userProfilesDao = UserProfilesDao(
     this as AppDatabase,
   );
@@ -6395,6 +6771,8 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final PendingActionsDao pendingActionsDao = PendingActionsDao(
     this as AppDatabase,
   );
+  late final Nip05VerificationsDao nip05VerificationsDao =
+      Nip05VerificationsDao(this as AppDatabase);
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -6410,6 +6788,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     personalReactions,
     personalReposts,
     pendingActions,
+    nip05Verifications,
   ];
 }
 
@@ -9469,6 +9848,221 @@ typedef $$PendingActionsTableProcessedTableManager =
       PendingActionRow,
       PrefetchHooks Function()
     >;
+typedef $$Nip05VerificationsTableCreateCompanionBuilder =
+    Nip05VerificationsCompanion Function({
+      required String pubkey,
+      required String nip05,
+      required String status,
+      required DateTime verifiedAt,
+      required DateTime expiresAt,
+      Value<int> rowid,
+    });
+typedef $$Nip05VerificationsTableUpdateCompanionBuilder =
+    Nip05VerificationsCompanion Function({
+      Value<String> pubkey,
+      Value<String> nip05,
+      Value<String> status,
+      Value<DateTime> verifiedAt,
+      Value<DateTime> expiresAt,
+      Value<int> rowid,
+    });
+
+class $$Nip05VerificationsTableFilterComposer
+    extends Composer<_$AppDatabase, $Nip05VerificationsTable> {
+  $$Nip05VerificationsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get pubkey => $composableBuilder(
+    column: $table.pubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get nip05 => $composableBuilder(
+    column: $table.nip05,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get verifiedAt => $composableBuilder(
+    column: $table.verifiedAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$Nip05VerificationsTableOrderingComposer
+    extends Composer<_$AppDatabase, $Nip05VerificationsTable> {
+  $$Nip05VerificationsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get pubkey => $composableBuilder(
+    column: $table.pubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get nip05 => $composableBuilder(
+    column: $table.nip05,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get verifiedAt => $composableBuilder(
+    column: $table.verifiedAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get expiresAt => $composableBuilder(
+    column: $table.expiresAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$Nip05VerificationsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $Nip05VerificationsTable> {
+  $$Nip05VerificationsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get pubkey =>
+      $composableBuilder(column: $table.pubkey, builder: (column) => column);
+
+  GeneratedColumn<String> get nip05 =>
+      $composableBuilder(column: $table.nip05, builder: (column) => column);
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get verifiedAt => $composableBuilder(
+    column: $table.verifiedAt,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get expiresAt =>
+      $composableBuilder(column: $table.expiresAt, builder: (column) => column);
+}
+
+class $$Nip05VerificationsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $Nip05VerificationsTable,
+          Nip05VerificationRow,
+          $$Nip05VerificationsTableFilterComposer,
+          $$Nip05VerificationsTableOrderingComposer,
+          $$Nip05VerificationsTableAnnotationComposer,
+          $$Nip05VerificationsTableCreateCompanionBuilder,
+          $$Nip05VerificationsTableUpdateCompanionBuilder,
+          (
+            Nip05VerificationRow,
+            BaseReferences<
+              _$AppDatabase,
+              $Nip05VerificationsTable,
+              Nip05VerificationRow
+            >,
+          ),
+          Nip05VerificationRow,
+          PrefetchHooks Function()
+        > {
+  $$Nip05VerificationsTableTableManager(
+    _$AppDatabase db,
+    $Nip05VerificationsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$Nip05VerificationsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$Nip05VerificationsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$Nip05VerificationsTableAnnotationComposer(
+                $db: db,
+                $table: table,
+              ),
+          updateCompanionCallback:
+              ({
+                Value<String> pubkey = const Value.absent(),
+                Value<String> nip05 = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<DateTime> verifiedAt = const Value.absent(),
+                Value<DateTime> expiresAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => Nip05VerificationsCompanion(
+                pubkey: pubkey,
+                nip05: nip05,
+                status: status,
+                verifiedAt: verifiedAt,
+                expiresAt: expiresAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String pubkey,
+                required String nip05,
+                required String status,
+                required DateTime verifiedAt,
+                required DateTime expiresAt,
+                Value<int> rowid = const Value.absent(),
+              }) => Nip05VerificationsCompanion.insert(
+                pubkey: pubkey,
+                nip05: nip05,
+                status: status,
+                verifiedAt: verifiedAt,
+                expiresAt: expiresAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$Nip05VerificationsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $Nip05VerificationsTable,
+      Nip05VerificationRow,
+      $$Nip05VerificationsTableFilterComposer,
+      $$Nip05VerificationsTableOrderingComposer,
+      $$Nip05VerificationsTableAnnotationComposer,
+      $$Nip05VerificationsTableCreateCompanionBuilder,
+      $$Nip05VerificationsTableUpdateCompanionBuilder,
+      (
+        Nip05VerificationRow,
+        BaseReferences<
+          _$AppDatabase,
+          $Nip05VerificationsTable,
+          Nip05VerificationRow
+        >,
+      ),
+      Nip05VerificationRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -9493,4 +10087,6 @@ class $AppDatabaseManager {
       $$PersonalRepostsTableTableManager(_db, _db.personalReposts);
   $$PendingActionsTableTableManager get pendingActions =>
       $$PendingActionsTableTableManager(_db, _db.pendingActions);
+  $$Nip05VerificationsTableTableManager get nip05Verifications =>
+      $$Nip05VerificationsTableTableManager(_db, _db.nip05Verifications);
 }
