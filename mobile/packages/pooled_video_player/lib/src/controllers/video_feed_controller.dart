@@ -37,8 +37,8 @@ class VideoFeedController extends ChangeNotifier {
     PlayerPool? pool,
     this.preloadAhead = 2,
     this.preloadBehind = 1,
-  })  : pool = pool ?? PlayerPool.instance,
-        _videos = List.from(videos) {
+  }) : pool = pool ?? PlayerPool.instance,
+       _videos = List.from(videos) {
     _initialize();
   }
 
@@ -251,12 +251,13 @@ class VideoFeedController extends ChangeNotifier {
 
       // Set up buffer subscription
       unawaited(_bufferSubscriptions[index]?.cancel());
-      _bufferSubscriptions[index] =
-          pooledPlayer.player.stream.buffering.listen((isBuffering) {
-        if (!isBuffering && _loadStates[index] == LoadState.loading) {
-          _onBufferReady(index);
-        }
-      });
+      _bufferSubscriptions[index] = pooledPlayer.player.stream.buffering.listen(
+        (isBuffering) {
+          if (!isBuffering && _loadStates[index] == LoadState.loading) {
+            _onBufferReady(index);
+          }
+        },
+      );
 
       // Start buffering (muted)
       await pooledPlayer.player.setVolume(0);

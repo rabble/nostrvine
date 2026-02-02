@@ -24,8 +24,8 @@ class VideoPoolProvider extends InheritedWidget {
   /// First checks the widget tree for a provider with a pool.
   /// If not found, returns [PlayerPool.instance].
   static PlayerPool poolOf(BuildContext context) {
-    final provider =
-        context.dependOnInheritedWidgetOfExactType<VideoPoolProvider>();
+    final provider = context
+        .dependOnInheritedWidgetOfExactType<VideoPoolProvider>();
     if (provider?.pool != null) {
       return provider!.pool!;
     }
@@ -37,8 +37,8 @@ class VideoPoolProvider extends InheritedWidget {
   ///
   /// Throws [StateError] if no provider with a feed controller is found.
   static VideoFeedController feedOf(BuildContext context) {
-    final provider =
-        context.dependOnInheritedWidgetOfExactType<VideoPoolProvider>();
+    final provider = context
+        .dependOnInheritedWidgetOfExactType<VideoPoolProvider>();
     if (provider?.feedController != null) {
       return provider!.feedController!;
     }
@@ -50,15 +50,15 @@ class VideoPoolProvider extends InheritedWidget {
 
   /// Returns the [PlayerPool] if available, or null.
   static PlayerPool? maybePoolOf(BuildContext context) {
-    final provider =
-        context.dependOnInheritedWidgetOfExactType<VideoPoolProvider>();
+    final provider = context
+        .dependOnInheritedWidgetOfExactType<VideoPoolProvider>();
     return provider?.pool;
   }
 
   /// Returns the [VideoFeedController] if available, or null.
   static VideoFeedController? maybeFeedOf(BuildContext context) {
-    final provider =
-        context.dependOnInheritedWidgetOfExactType<VideoPoolProvider>();
+    final provider = context
+        .dependOnInheritedWidgetOfExactType<VideoPoolProvider>();
     return provider?.feedController;
   }
 

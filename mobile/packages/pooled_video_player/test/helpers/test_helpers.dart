@@ -93,17 +93,17 @@ MockPlayerSetup createMockPlayerSetup({
   when(() => mockPlayer.state).thenReturn(mockState);
 
   // Set up streams
-  when(() => mockStream.buffering)
-      .thenAnswer((_) => bufferingController.stream);
-  when(() => mockStream.playing)
-      .thenAnswer((_) => playingController.stream);
-  when(() => mockStream.position)
-      .thenAnswer((_) => positionController.stream);
+  when(
+    () => mockStream.buffering,
+  ).thenAnswer((_) => bufferingController.stream);
+  when(() => mockStream.playing).thenAnswer((_) => playingController.stream);
+  when(() => mockStream.position).thenAnswer((_) => positionController.stream);
   when(() => mockPlayer.stream).thenReturn(mockStream);
 
   // Set up common methods
-  when(() => mockPlayer.open(any(), play: any(named: 'play')))
-      .thenAnswer((_) async {});
+  when(
+    () => mockPlayer.open(any(), play: any(named: 'play')),
+  ).thenAnswer((_) async {});
   when(mockPlayer.play).thenAnswer((_) async {});
   when(mockPlayer.pause).thenAnswer((_) async {});
   when(mockPlayer.stop).thenAnswer((_) async {});
@@ -149,10 +149,12 @@ MockPooledPlayer createMockPooledPlayer({
   MockVideoController? videoController,
 }) {
   final mockPooledPlayer = MockPooledPlayer();
-  final mockPlayer = player ?? createMockPlayer(
-    isPlaying: isPlaying,
-    isBuffering: isBuffering,
-  );
+  final mockPlayer =
+      player ??
+      createMockPlayer(
+        isPlaying: isPlaying,
+        isBuffering: isBuffering,
+      );
   final mockController = videoController ?? createMockVideoController();
 
   when(() => mockPooledPlayer.player).thenReturn(mockPlayer);
@@ -203,8 +205,9 @@ MockVideoFeedController createMockVideoFeedController({
   when(() => mockController.seek(any())).thenAnswer((_) async {});
   when(() => mockController.setVolume(any())).thenReturn(null);
   when(() => mockController.setPlaybackSpeed(any())).thenReturn(null);
-  when(() => mockController.setActive(active: any(named: 'active')))
-      .thenReturn(null);
+  when(
+    () => mockController.setActive(active: any(named: 'active')),
+  ).thenReturn(null);
   when(() => mockController.addVideos(any())).thenReturn(null);
   when(() => mockController.addListener(any())).thenReturn(null);
   when(() => mockController.removeListener(any())).thenReturn(null);

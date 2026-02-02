@@ -75,8 +75,9 @@ void main() {
       testWidgets('shows default loading when LoadState is loading', (
         tester,
       ) async {
-        when(() => mockController.getLoadState(0))
-            .thenReturn(LoadState.loading);
+        when(
+          () => mockController.getLoadState(0),
+        ).thenReturn(LoadState.loading);
 
         await tester.pumpWidget(buildWidget());
 
@@ -107,8 +108,9 @@ void main() {
       });
 
       testWidgets('shows thumbnail in default loading state', (tester) async {
-        when(() => mockController.getLoadState(0))
-            .thenReturn(LoadState.loading);
+        when(
+          () => mockController.getLoadState(0),
+        ).thenReturn(LoadState.loading);
 
         await tester.pumpWidget(
           buildWidget(thumbnailUrl: 'https://example.com/thumb.jpg'),
@@ -121,8 +123,9 @@ void main() {
     group('Ready State', () {
       setUp(() {
         when(() => mockController.getLoadState(0)).thenReturn(LoadState.ready);
-        when(() => mockController.getVideoController(0))
-            .thenReturn(mockVideoController);
+        when(
+          () => mockController.getVideoController(0),
+        ).thenReturn(mockVideoController);
         when(() => mockController.getPlayer(0)).thenReturn(mockPlayer);
       });
 
@@ -228,8 +231,9 @@ void main() {
     group('Tap Handling', () {
       setUp(() {
         when(() => mockController.getLoadState(0)).thenReturn(LoadState.ready);
-        when(() => mockController.getVideoController(0))
-            .thenReturn(mockVideoController);
+        when(
+          () => mockController.getVideoController(0),
+        ).thenReturn(mockVideoController);
         when(() => mockController.getPlayer(0)).thenReturn(mockPlayer);
       });
 
@@ -314,8 +318,9 @@ void main() {
 
         // Change to ready state
         when(() => mockController.getLoadState(0)).thenReturn(LoadState.ready);
-        when(() => mockController.getVideoController(0))
-            .thenReturn(mockVideoController);
+        when(
+          () => mockController.getVideoController(0),
+        ).thenReturn(mockVideoController);
         when(() => mockController.getPlayer(0)).thenReturn(mockPlayer);
 
         // Notify listeners

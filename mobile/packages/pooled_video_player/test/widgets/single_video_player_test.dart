@@ -23,8 +23,9 @@ void main() {
 
           final mockPooledPlayer = MockPooledPlayer();
           when(() => mockPooledPlayer.player).thenReturn(setup.player);
-          when(() => mockPooledPlayer.videoController)
-              .thenReturn(createMockVideoController());
+          when(
+            () => mockPooledPlayer.videoController,
+          ).thenReturn(createMockVideoController());
           when(() => mockPooledPlayer.isDisposed).thenReturn(false);
           when(mockPooledPlayer.dispose).thenAnswer((_) async {});
 

@@ -8,17 +8,19 @@ import 'package:pooled_video_player/src/controllers/player_pool.dart';
 import 'package:pooled_video_player/src/models/video_item.dart';
 
 /// Builder for the video layer.
-typedef SingleVideoBuilder = Widget Function(
-  BuildContext context,
-  VideoController videoController,
-  Player player,
-);
+typedef SingleVideoBuilder =
+    Widget Function(
+      BuildContext context,
+      VideoController videoController,
+      Player player,
+    );
 
 /// Builder for the error state.
-typedef SingleErrorBuilder = Widget Function(
-  BuildContext context,
-  VoidCallback onRetry,
-);
+typedef SingleErrorBuilder =
+    Widget Function(
+      BuildContext context,
+      VoidCallback onRetry,
+    );
 
 /// State of the single video player.
 enum SingleVideoState {
@@ -114,8 +116,9 @@ class _SingleVideoPlayerState extends State<SingleVideoPlayer> {
 
       // Set up buffer subscription
       unawaited(_bufferSubscription?.cancel());
-      _bufferSubscription =
-          pooledPlayer.player.stream.buffering.listen((isBuffering) {
+      _bufferSubscription = pooledPlayer.player.stream.buffering.listen((
+        isBuffering,
+      ) {
         if (!isBuffering && _state == SingleVideoState.loading) {
           _onBufferReady();
         }

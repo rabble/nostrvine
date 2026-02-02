@@ -43,9 +43,7 @@ void main() {
           );
           final oldInstance = PlayerPool.instance;
 
-          await PlayerPool.init(
-            
-          );
+          await PlayerPool.init();
 
           expect(PlayerPool.instance, isNot(same(oldInstance)));
           expect(PlayerPool.instance.maxPlayers, equals(5));
@@ -190,9 +188,7 @@ void main() {
       });
 
       test('does not affect singleton', () async {
-        await PlayerPool.init(
-          
-        );
+        await PlayerPool.init();
         final manualPool = PlayerPool(maxPlayers: 10);
 
         expect(PlayerPool.instance.maxPlayers, equals(5));
