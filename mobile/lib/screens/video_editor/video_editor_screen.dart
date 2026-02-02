@@ -11,6 +11,8 @@ import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.d
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
+import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
+import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker_sheet.dart';
@@ -108,8 +110,37 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
           meta: {'description': sticker.description, 'tags': sticker.tags},
         ),
       );
-      _editor!.addLayer(layer);
+      _editor!.addLayer(layer, blockSelectLayer: true);
     }
+  }
+
+  Future<TextLayer?> _addEditTextLayer(
+    BuildContext context, [
+    TextLayer? layer,
+  ]) async {
+    final bloc = context.read<VideoEditorMainBloc>();
+    final textBloc = context.read<VideoEditorTextBloc>();
+    bloc.add(VideoEditorMainOpenSubEditor(.text));
+
+    final result = await Navigator.push<TextLayer>(
+      context,
+      PageRouteBuilder<TextLayer>(
+        opaque: false,
+        barrierDismissible: true,
+        barrierColor: Colors.transparent,
+        pageBuilder: (_, _, _) => BlocProvider.value(
+          value: textBloc,
+          child: VideoTextEditorScreen(layer: layer),
+        ),
+        transitionsBuilder: (_, animation, __, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+      ),
+    );
+
+    textBloc.add(const VideoEditorTextClosePanels());
+    if (mounted) bloc.add(VideoEditorMainSubEditorClosed());
+    return result;
   }
 
   @override
@@ -120,11 +151,17 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
         BlocProvider.value(value: _stickerBloc),
         BlocProvider(create: (_) => VideoEditorFilterBloc()),
         BlocProvider(create: (_) => VideoEditorDrawBloc()),
+        BlocProvider(create: (_) => VideoEditorTextBloc()),
       ],
-      child: VideoEditorScope(
-        editorKey: _editorKey,
-        onAddStickers: _addStickers,
-        child: const VideoEditorScaffold(),
+      child: Builder(
+        builder: (context) {
+          return VideoEditorScope(
+            editorKey: _editorKey,
+            onAddStickers: _addStickers,
+            onAddEditTextLayer: ([layer]) => _addEditTextLayer(context, layer),
+            child: const VideoEditorScaffold(),
+          );
+        },
       ),
     );
   }

@@ -156,6 +156,10 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                     layerAlignColor: VideoEditorConstants.primaryColor,
                   ),
                 ),
+                layerInteraction: LayerInteractionConfigs(
+                  selectable: .disabled,
+                  initialSelected: false,
+                ),
                 dialogConfigs: DialogConfigs(
                   widgets: DialogWidgets(
                     loadingDialog: (message, configs) => SizedBox.shrink(),
@@ -204,6 +208,8 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                       bloc.add(const VideoEditorLayerInteractionStarted()),
                   onScaleEnd: (_) =>
                       bloc.add(const VideoEditorLayerInteractionEnded()),
+                  onCreateTextLayer: scope.onAddEditTextLayer,
+                  onEditTextLayer: scope.onAddEditTextLayer,
                 ),
                 paintEditorCallbacks: PaintEditorCallbacks(
                   onInit: () {

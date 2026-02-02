@@ -5,16 +5,22 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/widgets/video_editor/video_editor_blurred_panel.dart';
 
 /// Bottom sheet for color selection with iOS-style blurred background.
 class VideoEditorColorPickerSheet extends StatelessWidget {
   const VideoEditorColorPickerSheet({
+    super.key,
     required this.selectedColor,
     required this.onColorSelected,
+    this.height,
   });
 
   final Color selectedColor;
   final ValueChanged<Color> onColorSelected;
+
+  /// Optional height constraint for inline display (e.g., replacing keyboard).
+  final double? height;
 
   void _openColorPicker() {
     // TODO(@hm21): implement color-picker when the design is ready.
@@ -22,54 +28,42 @@ class VideoEditorColorPickerSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const .vertical(top: .circular(27)),
-      child: BackdropFilter(
-        filter: .blur(sigmaX: 30, sigmaY: 30),
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0D0D0D),
-            backgroundBlendMode: .lighten,
-          ),
-          child: DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Color.fromRGBO(38, 38, 38, .9),
-              backgroundBlendMode: .luminosity,
-            ),
-            child: Padding(
-              padding: const .fromLTRB(20, 25, 20, 32),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 44,
-                  mainAxisSpacing: 22,
-                  crossAxisSpacing: 14,
-                  childAspectRatio: 1,
-                ),
-                itemBuilder: (context, index) {
-                  final isColorPicker = index == 0;
-                  final color = isColorPicker
-                      ? Colors.white
-                      : VideoEditorConstants.colors[index - 1];
-                  final isSelected = color == selectedColor;
-
-                  return _ColorButton(
-                    color: color,
-                    isSelected: isSelected,
-                    isColorPicker: isColorPicker,
-                    onTap: () => isColorPicker
-                        ? _openColorPicker()
-                        : onColorSelected(color),
-                  );
-                },
-                itemCount: VideoEditorConstants.colors.length + 1,
-              ),
-            ),
-          ),
+    Widget content = VideoEditorBlurredPanel(
+      child: GridView.builder(
+        padding: const EdgeInsets.fromLTRB(20, 25, 20, 32),
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 44,
+          mainAxisSpacing: 22,
+          crossAxisSpacing: 14,
+          childAspectRatio: 1,
         ),
+        itemBuilder: (context, index) {
+          final isColorPicker = index == 0;
+          final color = isColorPicker
+              ? Colors.white
+              : VideoEditorConstants.colors[index - 1];
+          final isSelected = color == selectedColor;
+
+          return _ColorButton(
+            color: color,
+            isSelected: isSelected,
+            isColorPicker: isColorPicker,
+            onTap: () =>
+                isColorPicker ? _openColorPicker() : onColorSelected(color),
+          );
+        },
+        itemCount: VideoEditorConstants.colors.length + 1,
       ),
     );
+
+    // Wrap with SizedBox if height is specified (inline mode)
+    if (height != null) {
+      content = SizedBox(height: height, child: content);
+    }
+
+    return content;
   }
 }
 

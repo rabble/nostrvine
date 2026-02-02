@@ -344,6 +344,9 @@ class VineTheme {
   /// Scrim at 15% opacity (black 15%).
   static const Color scrim15 = Color(0x26000000);
 
+  /// Scrim at 65% opacity (black 65%).
+  static const Color scrim65 = Color(0xA6000000);
+
   // Text colors (dark theme optimized)
 
   /// Primary text color (white for dark backgrounds).

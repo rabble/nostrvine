@@ -1,5 +1,11 @@
 import 'dart:ui';
 
+import 'package:flutter/painting.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+/// A text font with its style getter.
+typedef TextFont = TextStyle Function({double? fontSize, Color? color});
+
 /// Constants for the video editor feature.
 class VideoEditorConstants {
   /// Key used to identify autosaved drafts in storage.
@@ -50,6 +56,17 @@ class VideoEditorConstants {
     Color(0xFF3E0C1F),
     Color(0xFF272F0E),
     Color(0xFF363313),
+  ];
+
+  /// Available text fonts for text overlays.
+  static const List<TextFont> textFonts = [
+    GoogleFonts.anonymousPro,
+    GoogleFonts.caveat,
+    GoogleFonts.crimsonText,
+    GoogleFonts.ibmPlexMono,
+    GoogleFonts.inter,
+    GoogleFonts.pacifico,
+    GoogleFonts.playfairDisplay,
   ];
 }
 

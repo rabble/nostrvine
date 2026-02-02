@@ -41,6 +41,7 @@ class _VideoEditorVerticalSliderState extends State<VideoEditorVerticalSlider> {
 
   double _dragValue = 0;
   bool _isDragging = false;
+  double _actualHeight = 300;
 
   double get _currentValue => _isDragging ? _dragValue : widget.value;
 
@@ -60,7 +61,7 @@ class _VideoEditorVerticalSliderState extends State<VideoEditorVerticalSlider> {
 
   void _updateValue(Offset localPosition) {
     // Invert because 0 is at bottom, 1 is at top
-    final normalizedY = 1 - (localPosition.dy / widget.height).clamp(0.0, 1.0);
+    final normalizedY = 1 - (localPosition.dy / _actualHeight).clamp(0.0, 1.0);
     setState(() => _dragValue = normalizedY);
     widget.onChanged(normalizedY);
   }
@@ -68,34 +69,43 @@ class _VideoEditorVerticalSliderState extends State<VideoEditorVerticalSlider> {
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
-      child: GestureDetector(
-        onVerticalDragStart: _handleDragStart,
-        onVerticalDragUpdate: _handleDragUpdate,
-        onVerticalDragEnd: _handleDragEnd,
-        behavior: .opaque,
-        child: SizedBox(
-          height: widget.height,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              // Extra padding for touch target
-              minWidth: kMinInteractiveDimension,
-            ),
-            child: Stack(
-              alignment: .centerRight,
-              clipBehavior: .none,
-              children: [
-                // Track
-                _Track(
-                  height: widget.height,
-                  trackWidth: _trackWidth,
-                  value: _currentValue,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Use actual available height, constrained by widget.height
+          _actualHeight = constraints.maxHeight.isFinite
+              ? constraints.maxHeight.clamp(0, widget.height)
+              : widget.height;
+
+          return GestureDetector(
+            onVerticalDragStart: _handleDragStart,
+            onVerticalDragUpdate: _handleDragUpdate,
+            onVerticalDragEnd: _handleDragEnd,
+            behavior: HitTestBehavior.opaque,
+            child: SizedBox(
+              height: _actualHeight,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  // Extra padding for touch target
+                  minWidth: kMinInteractiveDimension,
                 ),
-                // Thumb
-                _Thumb(value: _currentValue, height: widget.height),
-              ],
+                child: Stack(
+                  alignment: Alignment.centerRight,
+                  clipBehavior: Clip.none,
+                  children: [
+                    // Track
+                    _Track(
+                      height: _actualHeight,
+                      trackWidth: _trackWidth,
+                      value: _currentValue,
+                    ),
+                    // Thumb
+                    _Thumb(value: _currentValue, height: _actualHeight),
+                  ],
+                ),
+              ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
