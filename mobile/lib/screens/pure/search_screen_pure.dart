@@ -83,7 +83,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     _tabController = TabController(length: 3, vsync: this);
     _userSearchBloc = UserSearchBloc(
       profileRepository: ref.read(profileRepositoryProvider)!,
-      analyticsApiService: ref.read(analyticsApiServiceProvider),
     );
     _searchController.addListener(_onSearchChanged);
 

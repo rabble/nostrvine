@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:http/http.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -16,6 +17,8 @@ class MockEvent extends Mock implements Event {}
 class MockUserProfilesDao extends Mock implements UserProfilesDao {}
 
 class MockHttpClient extends Mock implements Client {}
+
+class MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 void main() {
   group('ProfileRepository', () {
@@ -584,6 +587,182 @@ void main() {
           expect(result[1].displayName, equals('Bob Smith'));
         },
       );
+    });
+
+    group('searchUsers with FunnelcakeApiClient', () {
+      late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+      setUp(() {
+        mockFunnelcakeClient = MockFunnelcakeApiClient();
+      });
+
+      test(
+        'uses Funnelcake first then WebSocket when both available',
+        () async {
+          // Arrange
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'alice',
+              limit: 200,
+            ),
+          ).thenAnswer(
+            (_) async => [
+              ProfileSearchResult(
+                pubkey: 'a' * 64,
+                displayName: 'Alice REST',
+                createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              ),
+            ],
+          );
+
+          final mockWsEvent = MockEvent();
+          when(() => mockWsEvent.kind).thenReturn(0);
+          when(() => mockWsEvent.pubkey).thenReturn('b' * 64);
+          when(() => mockWsEvent.createdAt).thenReturn(1704067200);
+          when(() => mockWsEvent.id).thenReturn('c' * 64);
+          when(() => mockWsEvent.content).thenReturn(
+            jsonEncode({'display_name': 'Bob WS'}),
+          );
+
+          when(
+            () => mockNostrClient.queryUsers('alice', limit: 200),
+          ).thenAnswer((_) async => [mockWsEvent]);
+
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          // Act
+          final result = await repoWithFunnelcake.searchUsers(query: 'alice');
+
+          // Assert - both results merged
+          expect(result, hasLength(2));
+          expect(result.any((p) => p.displayName == 'Alice REST'), isTrue);
+          expect(result.any((p) => p.displayName == 'Bob WS'), isTrue);
+
+          verify(
+            () =>
+                mockFunnelcakeClient.searchProfiles(query: 'alice', limit: 200),
+          ).called(1);
+          verify(
+            () => mockNostrClient.queryUsers('alice', limit: 200),
+          ).called(1);
+        },
+      );
+
+      test('skips Funnelcake when not available', () async {
+        // Arrange
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
+
+        // Use 'test' as query so it matches 'Test User' display name
+        when(
+          () => mockNostrClient.queryUsers('test', limit: 200),
+        ).thenAnswer((_) async => [mockProfileEvent]);
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        // Act
+        final result = await repoWithFunnelcake.searchUsers(query: 'test');
+
+        // Assert
+        expect(result, hasLength(1));
+        expect(result.first.displayName, equals('Test User'));
+
+        verifyNever(
+          () => mockFunnelcakeClient.searchProfiles(
+            query: any(named: 'query'),
+            limit: any(named: 'limit'),
+          ),
+        );
+        verify(() => mockNostrClient.queryUsers('test', limit: 200)).called(1);
+      });
+
+      test('continues to WebSocket when Funnelcake fails', () async {
+        // Arrange
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.searchProfiles(
+            query: 'test',
+            limit: 200,
+          ),
+        ).thenThrow(Exception('REST API error'));
+
+        // Use 'test' as query so it matches 'Test User' display name
+        when(
+          () => mockNostrClient.queryUsers('test', limit: 200),
+        ).thenAnswer((_) async => [mockProfileEvent]);
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        // Act
+        final result = await repoWithFunnelcake.searchUsers(query: 'test');
+
+        // Assert - falls back to WebSocket results
+        expect(result, hasLength(1));
+        expect(result.first.displayName, equals('Test User'));
+      });
+
+      test('deduplicates results by pubkey (REST takes priority)', () async {
+        // Arrange
+        final samePubkey = 'd' * 64;
+
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.searchProfiles(
+            query: 'alice',
+            limit: 200,
+          ),
+        ).thenAnswer(
+          (_) async => [
+            ProfileSearchResult(
+              pubkey: samePubkey,
+              displayName: 'Alice REST',
+              createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+            ),
+          ],
+        );
+
+        final mockWsEvent = MockEvent();
+        when(() => mockWsEvent.kind).thenReturn(0);
+        when(() => mockWsEvent.pubkey).thenReturn(samePubkey);
+        when(() => mockWsEvent.createdAt).thenReturn(1704067200);
+        when(() => mockWsEvent.id).thenReturn('e' * 64);
+        when(() => mockWsEvent.content).thenReturn(
+          jsonEncode({'display_name': 'Alice WS'}),
+        );
+
+        when(
+          () => mockNostrClient.queryUsers('alice', limit: 200),
+        ).thenAnswer((_) async => [mockWsEvent]);
+
+        final repoWithFunnelcake = ProfileRepository(
+          nostrClient: mockNostrClient,
+          userProfilesDao: mockUserProfilesDao,
+          httpClient: mockHttpClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        // Act
+        final result = await repoWithFunnelcake.searchUsers(query: 'alice');
+
+        // Assert - only one result, REST version preserved
+        expect(result, hasLength(1));
+        expect(result.first.displayName, equals('Alice REST'));
+      });
     });
 
     group('exceptions', () {

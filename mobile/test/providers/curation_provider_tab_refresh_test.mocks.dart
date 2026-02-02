@@ -2222,6 +2222,22 @@ class MockAnalyticsApiService extends _i1.Mock
           as _i9.Future<List<_i11.VideoEvent>>);
 
   @override
+  _i9.Future<List<Map<String, dynamic>>> searchProfiles({
+    required String? query,
+    int? limit = 50,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#searchProfiles, [], {
+              #query: query,
+              #limit: limit,
+            }),
+            returnValue: _i9.Future<List<Map<String, dynamic>>>.value(
+              <Map<String, dynamic>>[],
+            ),
+          )
+          as _i9.Future<List<Map<String, dynamic>>>);
+
+  @override
   _i9.Future<_i6.VideoStats?> getVideoStats(String? eventId) =>
       (super.noSuchMethod(
             Invocation.method(#getVideoStats, [eventId]),

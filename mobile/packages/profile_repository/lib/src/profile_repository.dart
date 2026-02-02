@@ -5,6 +5,7 @@
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:http/http.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -34,17 +35,20 @@ class ProfileRepository {
     required NostrClient nostrClient,
     required UserProfilesDao userProfilesDao,
     required Client httpClient,
+    FunnelcakeApiClient? funnelcakeApiClient,
     UserBlockFilter? userBlockFilter,
     ProfileSearchFilter? profileSearchFilter,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
        _httpClient = httpClient,
+       _funnelcakeApiClient = funnelcakeApiClient,
        _userBlockFilter = userBlockFilter,
        _profileSearchFilter = profileSearchFilter;
 
   final NostrClient _nostrClient;
   final UserProfilesDao _userProfilesDao;
   final Client _httpClient;
+  final FunnelcakeApiClient? _funnelcakeApiClient;
   final UserBlockFilter? _userBlockFilter;
   final ProfileSearchFilter? _profileSearchFilter;
 
@@ -151,8 +155,13 @@ class ProfileRepository {
 
   /// Searches for user profiles matching the query.
   ///
-  /// Fetches profiles via NIP-50 and filters using [ProfileSearchFilter] if
-  /// provided, otherwise falls back to simple bestDisplayName matching.
+  /// Uses a hybrid search approach:
+  /// 1. First tries Funnelcake REST API (fast, if available)
+  /// 2. Then fetches via NIP-50 WebSocket (comprehensive)
+  /// 3. Merges results (REST results take priority by pubkey)
+  ///
+  /// Filters using [ProfileSearchFilter] if provided, otherwise falls back to
+  /// simple bestDisplayName matching.
   /// If a [UserBlockFilter] was provided, blocked users are excluded.
   /// Returns list of [UserProfile] matching the search query.
   /// Returns empty list if query is empty or no results found.
@@ -162,10 +171,34 @@ class ProfileRepository {
   }) async {
     if (query.trim().isEmpty) return [];
 
-    final events = await _nostrClient.queryUsers(query, limit: limit);
-    final profiles = events.map(UserProfile.fromNostrEvent).toList();
+    final resultMap = <String, UserProfile>{};
 
-    // Filter out blocked users first
+    // Phase 1: Try Funnelcake REST API (fast)
+    if (_funnelcakeApiClient?.isAvailable ?? false) {
+      try {
+        final restResults = await _funnelcakeApiClient!.searchProfiles(
+          query: query,
+          limit: limit,
+        );
+        for (final result in restResults) {
+          resultMap[result.pubkey] = result.toUserProfile();
+        }
+      } on Exception {
+        // Continue to WebSocket search on failure
+      }
+    }
+
+    // Phase 2: NIP-50 WebSocket search (comprehensive)
+    final events = await _nostrClient.queryUsers(query, limit: limit);
+    for (final event in events) {
+      final profile = UserProfile.fromNostrEvent(event);
+      // Don't overwrite REST results - they may have more complete data
+      resultMap.putIfAbsent(profile.pubkey, () => profile);
+    }
+
+    final profiles = resultMap.values.toList();
+
+    // Filter out blocked users
     final unblockedProfiles = profiles.where((profile) {
       return !(_userBlockFilter?.call(profile.pubkey) ?? false);
     }).toList();
