@@ -622,7 +622,7 @@ void main() {
           when(() => mockWsEvent.createdAt).thenReturn(1704067200);
           when(() => mockWsEvent.id).thenReturn('c' * 64);
           when(() => mockWsEvent.content).thenReturn(
-            jsonEncode({'display_name': 'Bob WS'}),
+            jsonEncode({'display_name': 'Alice WS'}),
           );
 
           when(
@@ -642,7 +642,7 @@ void main() {
           // Assert - both results merged
           expect(result, hasLength(2));
           expect(result.any((p) => p.displayName == 'Alice REST'), isTrue);
-          expect(result.any((p) => p.displayName == 'Bob WS'), isTrue);
+          expect(result.any((p) => p.displayName == 'Alice WS'), isTrue);
 
           verify(
             () =>
