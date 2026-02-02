@@ -352,6 +352,131 @@ void main() {
       },
     );
 
+    group('Expandable Bio', () {
+      // Create a bio that will definitely exceed 3 lines on a phone screen
+      // Using many short words to ensure wrapping at narrow widths
+      final longBio = List.generate(
+        20,
+        (i) => 'This is line $i of the bio.',
+      ).join(' ');
+
+      testWidgets('short bio does not show "Show more" button', (tester) async {
+        final testProfile = createTestProfile(
+          displayName: 'Test User',
+          about: 'Short bio',
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profileStatsAsync: AsyncValue.data(createTestStats()),
+            profile: testProfile,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Short bio'), findsOneWidget);
+        expect(find.text('Show more'), findsNothing);
+        expect(find.text('Show less'), findsNothing);
+      });
+
+      testWidgets('long bio shows "Show more" button and truncates', (
+        tester,
+      ) async {
+        // Set a phone-like screen size to ensure text wraps
+        tester.view.physicalSize = const Size(400, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
+
+        final testProfile = createTestProfile(
+          displayName: 'Test User',
+          about: longBio,
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profileStatsAsync: AsyncValue.data(createTestStats()),
+            profile: testProfile,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('Show more'), findsOneWidget);
+        expect(find.text('Show less'), findsNothing);
+      });
+
+      testWidgets('tapping "Show more" expands bio and shows "Show less"', (
+        tester,
+      ) async {
+        // Set a phone-like screen size to ensure text wraps
+        tester.view.physicalSize = const Size(400, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
+
+        final testProfile = createTestProfile(
+          displayName: 'Test User',
+          about: longBio,
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profileStatsAsync: AsyncValue.data(createTestStats()),
+            profile: testProfile,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // Tap "Show more"
+        await tester.tap(find.text('Show more'));
+        await tester.pumpAndSettle();
+
+        // Should now show "Show less"
+        expect(find.text('Show less'), findsOneWidget);
+        expect(find.text('Show more'), findsNothing);
+      });
+
+      testWidgets('tapping "Show less" collapses bio and shows "Show more"', (
+        tester,
+      ) async {
+        // Set a phone-like screen size to ensure text wraps
+        tester.view.physicalSize = const Size(400, 800);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(() => tester.view.resetPhysicalSize());
+
+        final testProfile = createTestProfile(
+          displayName: 'Test User',
+          about: longBio,
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            userIdHex: testUserHex,
+            isOwnProfile: true,
+            profileStatsAsync: AsyncValue.data(createTestStats()),
+            profile: testProfile,
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        // First expand
+        await tester.tap(find.text('Show more'));
+        await tester.pumpAndSettle();
+
+        // Then collapse
+        await tester.tap(find.text('Show less'));
+        await tester.pumpAndSettle();
+
+        // Should be back to "Show more"
+        expect(find.text('Show more'), findsOneWidget);
+        expect(find.text('Show less'), findsNothing);
+      });
+    });
+
     group('Secure Account Banner', () {
       testWidgets(
         'shows secure account banner for own profile when anonymous',

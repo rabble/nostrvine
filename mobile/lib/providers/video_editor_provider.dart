@@ -515,7 +515,39 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       allowAudioReuse: state.allowAudioReuse,
       expireTime: state.expiration.value,
       selectedApproach: 'video',
+      editorStateHistory: state.editorStateHistory,
+      editorEditingParameters: state.editorEditingParameters,
     );
+  }
+
+  // === EDITOR STATE PERSISTENCE ===
+
+  /// Update the editor state history for undo/redo functionality.
+  ///
+  /// This stores the serialized state history from ProImageEditor,
+  /// allowing users to restore their editing progress when reopening a draft.
+  void updateEditorStateHistory(Map<String, dynamic> stateHistory) {
+    Log.debug(
+      '📜 Updated editor state history',
+      name: 'VideoEditorNotifier',
+      category: LogCategory.video,
+    );
+    state = state.copyWith(editorStateHistory: stateHistory);
+    triggerAutosave();
+  }
+
+  /// Update the editor editing parameters (filters, drawings, etc.).
+  ///
+  /// This stores the serialized editing parameters from ProImageEditor,
+  /// enabling restoration of all applied effects when reopening a draft.
+  void updateEditorEditingParameters(Map<String, dynamic> editingParameters) {
+    Log.debug(
+      '🎨 Updated editor editing parameters',
+      name: 'VideoEditorNotifier',
+      category: LogCategory.video,
+    );
+    state = state.copyWith(editorEditingParameters: editingParameters);
+    triggerAutosave();
   }
 
   // === DRAFT PERSISTENCE ===
@@ -657,6 +689,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         tags: draft.hashtags,
         allowAudioReuse: draft.allowAudioReuse,
         expiration: VideoMetadataExpiration.fromDuration(draft.expireTime),
+        editorStateHistory: draft.editorStateHistory,
+        editorEditingParameters: draft.editorEditingParameters,
       );
       _clipManager.addMultipleClips(draft.clips);
       // We set the aspect ratio in the video recorder to match the clips,

@@ -57,6 +57,7 @@ class ProfileRepository {
     String? about,
     String? nip05,
     String? picture,
+    String? banner,
     UserProfile? currentProfile,
   }) async {
     final profileContent = {
@@ -65,6 +66,7 @@ class ProfileRepository {
       'about': ?about,
       'nip05': ?nip05,
       'picture': ?picture,
+      'banner': ?banner,
     };
 
     final profileEvent = await _nostrClient.sendProfile(

@@ -119,7 +119,13 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
       _feedTracker?.trackEmptyFeed('popular');
     }
 
-    return _PopularVideosTrendingContent(videos: videos);
+    // Get the feed state for pagination info
+    final feedState = ref.watch(popularVideosFeedProvider).value;
+    return _PopularVideosTrendingContent(
+      videos: videos,
+      isLoadingMore: feedState?.isLoadingMore ?? false,
+      hasMoreContent: feedState?.hasMoreContent ?? false,
+    );
   }
 
   void _trackErrorState(Object? error) {
@@ -174,9 +180,15 @@ class _PopularVideosTabState extends ConsumerState<PopularVideosTab> {
 /// Hashtags push up as user scrolls down (1:1 with scroll distance).
 /// When scrolling up, hashtags slide back in as an overlay with animation.
 class _PopularVideosTrendingContent extends ConsumerStatefulWidget {
-  const _PopularVideosTrendingContent({required this.videos});
+  const _PopularVideosTrendingContent({
+    required this.videos,
+    required this.isLoadingMore,
+    required this.hasMoreContent,
+  });
 
   final List<VideoEvent> videos;
+  final bool isLoadingMore;
+  final bool hasMoreContent;
 
   @override
   ConsumerState<_PopularVideosTrendingContent> createState() =>
@@ -229,6 +241,15 @@ class _PopularVideosTrendingContentState
                 );
                 await ref.read(popularVideosFeedProvider.notifier).refresh();
               },
+              onLoadMore: () async {
+                Log.info(
+                  '📜 PopularVideosTab: Loading more',
+                  category: LogCategory.video,
+                );
+                await ref.read(popularVideosFeedProvider.notifier).loadMore();
+              },
+              isLoadingMore: widget.isLoadingMore,
+              hasMoreContent: widget.hasMoreContent,
               emptyBuilder: () => const _PopularVideosEmptyState(),
             ),
           ),

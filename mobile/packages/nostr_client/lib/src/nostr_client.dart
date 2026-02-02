@@ -649,16 +649,31 @@ class NostrClient {
 
   /// Sends a like reaction to an event
   ///
+  /// Parameters:
+  /// - [eventId]: The event ID being liked (required)
+  /// - [content]: Reaction content, defaults to '+' for likes
+  /// - [addressableId]: Optional addressable ID for Kind 30000+ events
+  ///   (format: "kind:pubkey:d-tag"). When provided, adds an 'a' tag for
+  ///   better discoverability of likes on addressable events.
+  /// - [targetAuthorPubkey]: Optional pubkey of the liked event's author
+  /// - [targetKind]: Optional kind of the event being liked (e.g., 34236)
+  ///
   /// Successfully sent events are cached locally with 1-day expiry.
   Future<Event?> sendLike(
     String eventId, {
     String? content,
+    String? addressableId,
+    String? targetAuthorPubkey,
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
     final likeEvent = await _nostr.sendLike(
       eventId,
+      pubkey: targetAuthorPubkey,
       content: content,
+      addressableId: addressableId,
+      targetKind: targetKind,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
     );
@@ -829,10 +844,16 @@ class NostrClient {
     return contactListEvent;
   }
 
-  /// Searches for video events using NIP-50 search
+  /// Known NIP-50 compatible search relays.
+  static const List<String> _nip50SearchRelays = [
+    'wss://relay.nostr.band',
+    'wss://search.nos.today',
+    'wss://nostr.wine',
+  ];
+
+  /// Searches for video events using NIP-50 search.
   ///
-  /// Returns a stream of video events (kind 34236) matching the search query.
-  /// Uses NIP-50 search parameter for full-text search on compatible relays.
+  /// Includes known NIP-50 relays for better coverage.
   Stream<Event> searchVideos(
     String query, {
     List<String>? authors,
@@ -841,7 +862,7 @@ class NostrClient {
     int? limit,
   }) {
     final filter = Filter(
-      kinds: const [34236], // Video events only (no reposts for search)
+      kinds: const [34236],
       authors: authors,
       since: since != null ? since.millisecondsSinceEpoch ~/ 1000 : null,
       until: until != null ? until.millisecondsSinceEpoch ~/ 1000 : null,
@@ -849,13 +870,12 @@ class NostrClient {
       search: query,
     );
 
-    return subscribe([filter]);
+    return subscribe([filter], tempRelays: _nip50SearchRelays);
   }
 
-  /// Searches for user profiles using NIP-50 search
+  /// Searches for user profiles using NIP-50 search.
   ///
-  /// Returns a stream of profile events (kind 0) matching the search query.
-  /// Uses NIP-50 search parameter for full-text search on compatible relays.
+  /// Includes known NIP-50 relays for better coverage.
   Stream<Event> searchUsers(
     String query, {
     int? limit,
@@ -866,7 +886,7 @@ class NostrClient {
       search: query,
     );
 
-    return subscribe([filter]);
+    return subscribe([filter], tempRelays: _nip50SearchRelays);
   }
 
   /// Creates a NIP-98 HTTP authentication header.

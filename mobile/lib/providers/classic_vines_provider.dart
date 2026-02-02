@@ -15,12 +15,17 @@ part 'classic_vines_provider.g.dart';
 
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
-/// Uses REST API (Funnelcake) when available for comprehensive classic Vine data.
-/// Falls back to Nostr discovery videos that have embedded loop stats (originalLoops > 0),
-/// which includes imported classic Vines that have the loop count in their event tags.
+/// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
+/// Each page is 100 videos. With ~10k classic vines, there are ~100 pages.
+///
+/// Pull-to-refresh spins to the next page of classics.
 @Riverpod(keepAlive: true)
 class ClassicVinesFeed extends _$ClassicVinesFeed {
-  int _currentLimit = 100;
+  static const int _pageSize = 100;
+  static const int _totalClassicVines = 10000; // Approximate total
+
+  /// Current page (0-indexed)
+  int _currentPage = 0;
 
   @override
   Future<VideoFeedState> build() async {
@@ -34,11 +39,6 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     );
 
     if (!isAppReady) {
-      Log.info(
-        '🎬 ClassicVinesFeed: App not ready, returning empty state',
-        name: 'ClassicVinesFeedProvider',
-        category: LogCategory.video,
-      );
       return VideoFeedState(
         videos: const [],
         hasMoreContent: false,
@@ -51,44 +51,31 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     final funnelcakeAvailable =
         ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
 
-    Log.info(
-      '🎬 ClassicVinesFeed: Funnelcake available: $funnelcakeAvailable',
-      name: 'ClassicVinesFeedProvider',
-      category: LogCategory.video,
-    );
-
     // Try REST API first (Funnelcake has comprehensive classic Vine data)
     if (funnelcakeAvailable) {
       try {
-        final apiVideos = await analyticsService.getClassicVines(
-          limit: _currentLimit,
+        // Load just the current page (100 videos) - not all 10k!
+        final videos = await analyticsService.getClassicVinesPage(
+          page: _currentPage,
+          pageSize: _pageSize,
+          sort: 'loops', // Most viral first
         );
 
+        // Filter for platform compatibility
+        final filteredVideos = videos
+            .where((v) => v.isSupportedOnCurrentPlatform)
+            .toList();
+
         Log.info(
-          '✅ ClassicVinesFeed: Got ${apiVideos.length} classic vines from REST API',
+          '🎬 ClassicVinesFeed: Loaded page $_currentPage with ${filteredVideos.length} videos',
           name: 'ClassicVinesFeedProvider',
           category: LogCategory.video,
         );
 
-        // Log first video stats for debugging
-        if (apiVideos.isNotEmpty) {
-          final first = apiVideos.first;
-          Log.info(
-            '🎬 First video: loops=${first.originalLoops}, likes=${first.originalLikes}, '
-            'title="${first.title ?? 'no title'}"',
-            name: 'ClassicVinesFeedProvider',
-            category: LogCategory.video,
-          );
-        }
-
-        // Filter for platform compatibility (WebM not supported on iOS/macOS)
-        final filteredVideos = apiVideos
-            .where((v) => v.isSupportedOnCurrentPlatform)
-            .toList();
-
+        final maxPages = (_totalClassicVines / _pageSize).ceil();
         return VideoFeedState(
           videos: filteredVideos,
-          hasMoreContent: filteredVideos.length >= 50,
+          hasMoreContent: _currentPage < maxPages - 1,
           isLoadingMore: false,
           lastUpdated: DateTime.now(),
         );
@@ -103,83 +90,123 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     }
 
     // Fallback: Get videos from Nostr that have embedded loop stats
-    // These are imported classic Vines with originalLoops in their event tags
     Log.info(
-      '🎬 ClassicVinesFeed: Using Nostr fallback - videos with embedded stats',
+      '🎬 ClassicVinesFeed: Using Nostr fallback',
       name: 'ClassicVinesFeedProvider',
       category: LogCategory.video,
     );
 
-    // Get all discovery videos and filter for those with embedded loop stats
     final allVideos = videoEventService.discoveryVideos;
-    final classicVideos = allVideos
-        .where((v) => v.originalLoops != null && v.originalLoops! > 0)
-        .where((v) => v.isSupportedOnCurrentPlatform)
-        .toList();
-
-    // Sort by loops descending (most popular first)
-    classicVideos.sort((a, b) {
-      final aLoops = a.originalLoops ?? 0;
-      final bLoops = b.originalLoops ?? 0;
-      return bLoops.compareTo(aLoops);
-    });
-
-    Log.info(
-      '✅ ClassicVinesFeed: Found ${classicVideos.length} videos with embedded stats from Nostr',
-      name: 'ClassicVinesFeedProvider',
-      category: LogCategory.video,
-    );
+    final classicVideos =
+        allVideos
+            .where((v) => v.originalLoops != null && v.originalLoops! > 0)
+            .where((v) => v.isSupportedOnCurrentPlatform)
+            .toList()
+          ..sort(
+            (a, b) => (b.originalLoops ?? 0).compareTo(a.originalLoops ?? 0),
+          );
 
     return VideoFeedState(
-      videos: classicVideos.take(_currentLimit).toList(),
-      hasMoreContent: classicVideos.length > _currentLimit,
+      videos: classicVideos.take(_pageSize).toList(),
+      hasMoreContent: classicVideos.length > _pageSize,
       isLoadingMore: false,
       lastUpdated: DateTime.now(),
     );
   }
 
-  /// Load more classic vines
-  Future<void> loadMore() async {
-    final currentState = await future;
+  /// Spin to the next page of classic vines
+  Future<void> refresh() async {
+    final analyticsService = ref.read(analyticsApiServiceProvider);
+    final funnelcakeAvailable =
+        ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
 
-    if (!ref.mounted || currentState.isLoadingMore) {
+    if (!funnelcakeAvailable) {
+      // Can't paginate without API
+      ref.invalidateSelf();
       return;
     }
 
-    state = AsyncData(currentState.copyWith(isLoadingMore: true));
+    // Advance to next page
+    final maxPages = (_totalClassicVines / _pageSize).ceil();
+    _currentPage = (_currentPage + 1) % maxPages;
+
+    Log.info(
+      '🎬 ClassicVinesFeed: Spinning to page $_currentPage of $maxPages',
+      name: 'ClassicVinesFeedProvider',
+      category: LogCategory.video,
+    );
+
+    state = const AsyncLoading();
 
     try {
-      final funnelcakeAvailable =
-          ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
-      if (!funnelcakeAvailable) {
-        state = AsyncData(currentState.copyWith(isLoadingMore: false));
-        return;
-      }
-
-      final analyticsService = ref.read(analyticsApiServiceProvider);
-      final newLimit = _currentLimit + 50;
-      final apiVideos = await analyticsService.getClassicVines(limit: newLimit);
-
-      if (!ref.mounted) return;
-
-      final filteredVideos = apiVideos
-          .where((v) => v.isSupportedOnCurrentPlatform)
-          .toList();
-      final newEventsLoaded =
-          filteredVideos.length - currentState.videos.length;
-
-      Log.info(
-        '🎬 ClassicVinesFeed: Loaded $newEventsLoaded more classic vines (total: ${filteredVideos.length})',
-        name: 'ClassicVinesFeedProvider',
-        category: LogCategory.video,
+      final videos = await analyticsService.getClassicVinesPage(
+        page: _currentPage,
+        pageSize: _pageSize,
+        sort: 'loops',
       );
 
-      _currentLimit = newLimit;
+      final filteredVideos = videos
+          .where((v) => v.isSupportedOnCurrentPlatform)
+          .toList();
 
       state = AsyncData(
         VideoFeedState(
           videos: filteredVideos,
-          hasMoreContent: newEventsLoaded > 0,
+          hasMoreContent: _currentPage < maxPages - 1,
+          isLoadingMore: false,
+          lastUpdated: DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      Log.error(
+        '🎬 ClassicVinesFeed: Error loading page $_currentPage: $e',
+        name: 'ClassicVinesFeedProvider',
+        category: LogCategory.video,
+      );
+      state = AsyncError(e, StackTrace.current);
+    }
+  }
+
+  /// Load more videos (append next page to current list)
+  Future<void> loadMore() async {
+    if (!state.hasValue || state.value == null) return;
+    final currentState = state.value!;
+    if (currentState.isLoadingMore) return;
+
+    final analyticsService = ref.read(analyticsApiServiceProvider);
+    final funnelcakeAvailable =
+        ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
+
+    if (!funnelcakeAvailable || !currentState.hasMoreContent) return;
+
+    state = AsyncData(currentState.copyWith(isLoadingMore: true));
+
+    try {
+      // Load next page and append
+      final nextPage = _currentPage + 1;
+      final videos = await analyticsService.getClassicVinesPage(
+        page: nextPage,
+        pageSize: _pageSize,
+        sort: 'loops',
+      );
+
+      final filteredVideos = videos
+          .where((v) => v.isSupportedOnCurrentPlatform)
+          .toList();
+
+      final maxPages = (_totalClassicVines / _pageSize).ceil();
+      final allVideos = [...currentState.videos, ...filteredVideos];
+
+      Log.info(
+        '🎬 ClassicVinesFeed: Loaded ${filteredVideos.length} more (total: ${allVideos.length})',
+        name: 'ClassicVinesFeedProvider',
+        category: LogCategory.video,
+      );
+
+      state = AsyncData(
+        VideoFeedState(
+          videos: allVideos,
+          hasMoreContent: nextPage < maxPages - 1,
           isLoadingMore: false,
           lastUpdated: DateTime.now(),
         ),
@@ -190,32 +217,10 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
         name: 'ClassicVinesFeedProvider',
         category: LogCategory.video,
       );
-
-      if (!ref.mounted) return;
-      final currentState = await future;
-      if (!ref.mounted) return;
       state = AsyncData(
         currentState.copyWith(isLoadingMore: false, error: e.toString()),
       );
     }
-  }
-
-  /// Refresh the classic vines feed
-  ///
-  /// Forces a fresh fetch from the REST API by:
-  /// 1. Resetting the limit
-  /// 2. Invalidating the provider
-  /// 3. Waiting for the rebuild to complete (ensures pull-to-refresh shows properly)
-  Future<void> refresh() async {
-    Log.info(
-      '🎬 ClassicVinesFeed: Refreshing feed - fetching fresh data from API',
-      name: 'ClassicVinesFeedProvider',
-      category: LogCategory.video,
-    );
-
-    _currentLimit = 100; // Reset limit on refresh
-    ref.invalidateSelf();
-    await future; // Wait for rebuild to complete so refresh indicator shows properly
   }
 }
 

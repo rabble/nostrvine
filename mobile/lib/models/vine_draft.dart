@@ -26,6 +26,8 @@ class VineDraft {
     this.expireTime,
     required this.publishAttempts,
     this.proofManifestJson,
+    this.editorStateHistory = const {},
+    this.editorEditingParameters = const {},
   });
 
   factory VineDraft.create({
@@ -38,6 +40,8 @@ class VineDraft {
     Duration? expireTime,
     String? id,
     String? proofManifestJson,
+    Map<String, dynamic>? editorStateHistory,
+    Map<String, dynamic>? editorEditingParameters,
   }) {
     final now = DateTime.now();
     return VineDraft(
@@ -55,6 +59,8 @@ class VineDraft {
       publishError: null,
       publishAttempts: 0,
       proofManifestJson: proofManifestJson,
+      editorStateHistory: editorStateHistory ?? const {},
+      editorEditingParameters: editorEditingParameters ?? const {},
     );
   }
 
@@ -107,6 +113,11 @@ class VineDraft {
       publishError: json['publishError'] as String?,
       publishAttempts: json['publishAttempts'] as int? ?? 0,
       proofManifestJson: json['proofManifestJson'] as String?,
+      editorStateHistory:
+          (json['editorStateHistory'] as Map<String, dynamic>?) ?? const {},
+      editorEditingParameters:
+          (json['editorEditingParameters'] as Map<String, dynamic>?) ??
+          const {},
     );
   }
 
@@ -124,6 +135,9 @@ class VineDraft {
   final String? publishError;
   final int publishAttempts;
   final bool allowAudioReuse;
+
+  final Map<String, dynamic> editorStateHistory;
+  final Map<String, dynamic> editorEditingParameters;
 
   /// Check if this draft has ProofMode data
   bool get hasProofMode => proofManifestJson != null;
@@ -160,6 +174,8 @@ class VineDraft {
     bool? allowAudioReuse,
     int? publishAttempts,
     Object? proofManifestJson = _sentinel,
+    Map<String, dynamic>? editorStateHistory,
+    Map<String, dynamic>? editorEditingParameters,
   }) => VineDraft(
     id: id,
     clips: clips ?? this.clips,
@@ -179,6 +195,9 @@ class VineDraft {
     proofManifestJson: proofManifestJson == _sentinel
         ? this.proofManifestJson
         : proofManifestJson as String?,
+    editorStateHistory: editorStateHistory ?? this.editorStateHistory,
+    editorEditingParameters:
+        editorEditingParameters ?? this.editorEditingParameters,
   );
 
   static const _sentinel = Object();
@@ -198,6 +217,9 @@ class VineDraft {
     'publishError': publishError,
     'publishAttempts': publishAttempts,
     'proofManifestJson': proofManifestJson,
+    if (editorStateHistory.isNotEmpty) 'editorStateHistory': editorStateHistory,
+    if (editorEditingParameters.isNotEmpty)
+      'editorEditingParameters': editorEditingParameters,
   };
 
   String get displayDuration {

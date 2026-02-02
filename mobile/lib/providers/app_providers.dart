@@ -19,11 +19,13 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/repositories/username_repository.dart';
+import 'package:openvine/providers/video_repository_provider.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/audio_playback_service.dart';
+import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
@@ -311,6 +313,15 @@ AgeVerificationService ageVerificationService(Ref ref) {
 @Riverpod(keepAlive: true)
 AudioSharingPreferenceService audioSharingPreferenceService(Ref ref) {
   final service = AudioSharingPreferenceService();
+  service.initialize(); // Initialize asynchronously
+  return service;
+}
+
+/// Audio device preference service for managing the preferred input device
+/// for recording on macOS. keepAlive ensures preference persists.
+@Riverpod(keepAlive: true)
+AudioDevicePreferenceService audioDevicePreferenceService(Ref ref) {
+  final service = AudioDevicePreferenceService();
   service.initialize(); // Initialize asynchronously
   return service;
 }
@@ -643,7 +654,7 @@ SubscriptionManager subscriptionManager(Ref ref) {
   return SubscriptionManager(nostrService);
 }
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager services
+/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
 @Riverpod(keepAlive: true)
 VideoEventService videoEventService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
@@ -652,6 +663,7 @@ VideoEventService videoEventService(Ref ref) {
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
   final userProfileService = ref.watch(userProfileServiceProvider);
   final videoFilterBuilder = ref.watch(videoFilterBuilderProvider);
+  final videoRepository = ref.watch(videoRepositoryProvider);
   final db = ref.watch(databaseProvider);
   final eventRouter = EventRouter(db);
 
@@ -660,6 +672,7 @@ VideoEventService videoEventService(Ref ref) {
   final service = VideoEventService(
     nostrService,
     subscriptionManager: subscriptionManager,
+    videoRepository: videoRepository,
     userProfileService: userProfileService,
     eventRouter: eventRouter,
     videoFilterBuilder: videoFilterBuilder,

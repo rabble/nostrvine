@@ -578,30 +578,55 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
       );
     });
 
+    // Add +1 to itemCount when at end of feed to show the end card
+    final showEndCard = !feedState.hasMoreContent && videos.isNotEmpty;
+    final itemCount = showEndCard ? videos.length + 1 : videos.length;
+
     return PageView.builder(
-      itemCount: videos.length,
+      // PageStorageKey preserves scroll position across provider rebuilds
+      key: const PageStorageKey<String>('home_feed_page_view'),
+      itemCount: itemCount,
       controller: _pageController,
       scrollDirection: Axis.vertical,
       allowImplicitScrolling: true,
       onPageChanged: (index) {
-        setState(() => _currentIndex = index);
-        _onPageChanged(index);
-        _cacheNextPage(videos);
+        // Don't update index if we're on the end card
+        if (index < videos.length) {
+          setState(() => _currentIndex = index);
+          _onPageChanged(index);
+          _cacheNextPage(videos);
+        }
 
         // Trigger pagination when near the end using PaginationMixin
-        checkForPagination(
-          currentIndex: index,
-          totalItems: videos.length,
-          onLoadMore: () => ref.read(homeFeedProvider.notifier).loadMore(),
-        );
+        // Only trigger if there's potentially more content
+        if (feedState.hasMoreContent) {
+          checkForPagination(
+            currentIndex: index,
+            totalItems: videos.length,
+            onLoadMore: () => ref.read(homeFeedProvider.notifier).loadMore(),
+          );
+        }
 
-        Log.debug(
-          '📄 Page changed to index $index (${videos[index].id}...)',
-          name: 'VideoFeedScreen',
-          category: LogCategory.video,
-        );
+        if (index < videos.length) {
+          Log.debug(
+            '📄 Page changed to index $index (${videos[index].id}...)',
+            name: 'VideoFeedScreen',
+            category: LogCategory.video,
+          );
+        } else {
+          Log.debug(
+            '📄 Page changed to end-of-feed card',
+            name: 'VideoFeedScreen',
+            category: LogCategory.video,
+          );
+        }
       },
       itemBuilder: (context, index) {
+        // Show end-of-feed card as the last item
+        if (index >= videos.length) {
+          return const _EndOfFeedCard();
+        }
+
         final video = videos[index];
         // Check if this video is "list-only" (only in feed because of subscribed list)
         final isListOnly = feedState.listOnlyVideoIds.contains(video.id);
@@ -707,6 +732,76 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
 
     // Fetch profile only for the currently visible video
     userProfilesNotifier.prefetchProfilesImmediately(pubkeysToFetch.toList());
+  }
+}
+
+/// End of feed card shown when user has viewed all available videos
+class _EndOfFeedCard extends StatelessWidget {
+  const _EndOfFeedCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Colors.black,
+      child: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(32.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Friendly icon
+                Container(
+                  width: 120,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: VineTheme.vineGreen.withValues(alpha: 0.15),
+                  ),
+                  child: const Icon(
+                    Icons.check_circle_outline,
+                    size: 64,
+                    color: VineTheme.vineGreen,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                const Text(
+                  "You've reached the end,\nmy friend",
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  "Follow more viners to see more content",
+                  style: TextStyle(color: Colors.white70, fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    context.go(ExploreScreen.path);
+                  },
+                  icon: const Icon(Icons.explore_outlined),
+                  label: const Text('Explore to find more videos'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: VineTheme.vineGreen,
+                    side: const BorderSide(color: VineTheme.vineGreen),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
 

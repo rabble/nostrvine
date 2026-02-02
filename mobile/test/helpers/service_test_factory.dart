@@ -8,11 +8,13 @@ import 'package:openvine/services/social_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/repositories/video_repository.dart';
 
 /// Creates a VideoEventService with mocked dependencies for testing
 VideoEventService createTestVideoEventService({
   required NostrClient mockNostrService,
   required SubscriptionManager mockSubscriptionManager,
+  VideoRepository? videoRepository,
 }) {
   // Set up default mock behaviors
   when(mockNostrService.isInitialized).thenReturn(true);
@@ -22,6 +24,7 @@ VideoEventService createTestVideoEventService({
   return VideoEventService(
     mockNostrService,
     subscriptionManager: mockSubscriptionManager,
+    videoRepository: videoRepository ?? VideoRepository(),
   );
 }
 

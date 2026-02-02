@@ -4,6 +4,7 @@
 // ABOUTME: and Kind 5 deletions for likes/unlikes.
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:likes_repository/src/exceptions.dart';
 import 'package:likes_repository/src/likes_local_storage.dart';
@@ -131,6 +132,14 @@ class LikesRepository {
   /// The reaction event is broadcast to Nostr relays and the mapping
   /// is stored locally for later retrieval.
   ///
+  /// Parameters:
+  /// - [eventId]: The event ID to like (required)
+  /// - [authorPubkey]: The pubkey of the event author (required)
+  /// - [addressableId]: Optional addressable ID for Kind 30000+ events
+  ///   (format: "kind:pubkey:d-tag"). When provided, adds an 'a' tag for
+  ///   better discoverability of likes on addressable events like videos.
+  /// - [targetKind]: Optional kind of the event being liked (e.g., 34236)
+  ///
   /// Returns the reaction event ID (needed for unlikes).
   ///
   /// Throws `LikeFailedException` if the operation fails.
@@ -138,6 +147,8 @@ class LikesRepository {
   Future<String> likeEvent({
     required String eventId,
     required String authorPubkey,
+    String? addressableId,
+    int? targetKind,
   }) async {
     await _ensureInitialized();
 
@@ -150,6 +161,9 @@ class LikesRepository {
     final reactionEvent = await _nostrClient.sendLike(
       eventId,
       content: _likeContent,
+      addressableId: addressableId,
+      targetAuthorPubkey: authorPubkey,
+      targetKind: targetKind,
     );
 
     if (reactionEvent == null) {
@@ -211,11 +225,21 @@ class LikesRepository {
   /// If the event is not liked, likes it and returns `true`.
   /// If the event is liked, unlikes it and returns `false`.
   ///
+  /// Parameters:
+  /// - [eventId]: The event ID to toggle like on (required)
+  /// - [authorPubkey]: The pubkey of the event author (required)
+  /// - [addressableId]: Optional addressable ID for Kind 30000+ events
+  ///   (format: "kind:pubkey:d-tag"). When provided, adds an 'a' tag for
+  ///   better discoverability of likes on addressable events like videos.
+  /// - [targetKind]: Optional kind of the event being liked (e.g., 34236)
+  ///
   /// This is a convenience method that combines [isLiked], [likeEvent],
   /// and [unlikeEvent].
   Future<bool> toggleLike({
     required String eventId,
     required String authorPubkey,
+    String? addressableId,
+    int? targetKind,
   }) async {
     await _ensureInitialized();
 
@@ -229,7 +253,12 @@ class LikesRepository {
       await unlikeEvent(eventId);
       return false;
     } else {
-      await likeEvent(eventId: eventId, authorPubkey: authorPubkey);
+      await likeEvent(
+        eventId: eventId,
+        authorPubkey: authorPubkey,
+        addressableId: addressableId,
+        targetKind: targetKind,
+      );
       return true;
     }
   }
@@ -237,15 +266,35 @@ class LikesRepository {
   /// Get the like count for an event.
   ///
   /// Queries relays for the count of Kind 7 reactions on the event.
+  /// When [addressableId] is provided, queries by both 'e' and 'a' tags
+  /// and returns the maximum count (since relays may index differently).
+  ///
   /// Note: This counts all likes, not just the current user's.
-  Future<int> getLikeCount(String eventId) async {
+  Future<int> getLikeCount(String eventId, {String? addressableId}) async {
     // Query relays for count of Kind 7 reactions on this event
-    final filter = Filter(
+    final filterByE = Filter(
       kinds: const [EventKind.reaction],
       e: [eventId],
     );
 
-    final result = await _nostrClient.countEvents([filter]);
+    // If addressable ID provided, query by both e and a tags
+    if (addressableId != null && addressableId.isNotEmpty) {
+      final filterByA = Filter(
+        kinds: const [EventKind.reaction],
+        a: [addressableId],
+      );
+
+      // Query both filters in parallel and return the maximum count
+      // Some relays may index by e-tag, others by a-tag
+      final results = await Future.wait([
+        _nostrClient.countEvents([filterByE]),
+        _nostrClient.countEvents([filterByA]),
+      ]);
+
+      return max(results[0].count, results[1].count);
+    }
+
+    final result = await _nostrClient.countEvents([filterByE]);
     return result.count;
   }
 
@@ -255,31 +304,40 @@ class LikesRepository {
   /// This is more efficient than calling [getLikeCount] multiple times
   /// as it sends a single request with multiple event IDs in the filter.
   ///
+  /// Parameters:
+  /// - [eventIds]: List of event IDs to get counts for
+  /// - [addressableIds]: Optional map of event ID to addressable ID for
+  ///   Kind 30000+ events. When provided, also queries by 'a' tag and
+  ///   merges results (taking max count per event).
+  ///
   /// Returns a map of event ID to like count. Events with zero likes
   /// are included with a count of 0.
   ///
   /// Note: This counts all likes, not just the current user's.
-  Future<Map<String, int>> getLikeCounts(List<String> eventIds) async {
+  Future<Map<String, int>> getLikeCounts(
+    List<String> eventIds, {
+    Map<String, String>? addressableIds,
+  }) async {
     if (eventIds.isEmpty) return {};
 
     // Query relays for count of Kind 7 reactions on all events at once
     // Using a single filter with multiple event IDs in the 'e' array
-    final filter = Filter(
+    final filterByE = Filter(
       kinds: const [EventKind.reaction],
       e: eventIds,
     );
 
     // NIP-45 COUNT with multiple event IDs returns total count, not per-event
     // So we need to fall back to querying events and counting client-side
-    final events = await _nostrClient.queryEvents([filter]);
+    final eventsByE = await _nostrClient.queryEvents([filterByE]);
 
-    // Count reactions per target event
+    // Count reactions per target event from e-tag query
     final counts = <String, int>{};
     for (final eventId in eventIds) {
       counts[eventId] = 0;
     }
 
-    for (final event in events) {
+    for (final event in eventsByE) {
       // Find the 'e' tag that references the target event
       for (final tag in event.tags) {
         if (tag is List && tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
@@ -288,6 +346,49 @@ class LikesRepository {
             counts[targetId] = counts[targetId]! + 1;
           }
         }
+      }
+    }
+
+    // If addressable IDs provided, also query by a-tag and merge results
+    if (addressableIds != null && addressableIds.isNotEmpty) {
+      final aTagValues = addressableIds.values.toList();
+      final filterByA = Filter(
+        kinds: const [EventKind.reaction],
+        a: aTagValues,
+      );
+
+      final eventsByA = await _nostrClient.queryEvents([filterByA]);
+
+      // Create reverse lookup: addressableId -> eventId
+      final aTagToEventId = <String, String>{};
+      for (final entry in addressableIds.entries) {
+        aTagToEventId[entry.value] = entry.key;
+      }
+
+      // Count reactions from a-tag query
+      final countsFromA = <String, int>{};
+      for (final eventId in eventIds) {
+        countsFromA[eventId] = 0;
+      }
+
+      for (final event in eventsByA) {
+        for (final tag in event.tags) {
+          if (tag is List &&
+              tag.isNotEmpty &&
+              tag[0] == 'a' &&
+              tag.length > 1) {
+            final aTagValue = tag[1] as String;
+            final eventId = aTagToEventId[aTagValue];
+            if (eventId != null && countsFromA.containsKey(eventId)) {
+              countsFromA[eventId] = countsFromA[eventId]! + 1;
+            }
+          }
+        }
+      }
+
+      // Merge counts, taking maximum for each event
+      for (final eventId in eventIds) {
+        counts[eventId] = max(counts[eventId]!, countsFromA[eventId] ?? 0);
       }
     }
 

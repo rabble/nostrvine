@@ -80,6 +80,9 @@ class VideoEditorMainTopBar extends StatelessWidget {
   }
 }
 
+// TODO(@hm21): Once the design decision has been made regarding what the
+// buttons will look like, create them in the divine_ui package and reuse them.
+
 /// A styled icon button for the top bar with accessibility support.
 class _IconButton extends StatelessWidget {
   const _IconButton({

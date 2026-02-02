@@ -94,53 +94,25 @@ class VideoMetadataBottomBar extends StatelessWidget {
     // invalid after navigate to the home page.
     final router = GoRouter.of(context);
 
-    // TODO(@hm21): Update after new final snackbar-design is implemented.
     final scaffoldMessenger = ScaffoldMessenger.of(context);
     scaffoldMessenger.showSnackBar(
       SnackBar(
-        duration: Duration(seconds: 5),
-        shape: RoundedRectangleBorder(borderRadius: .circular(16)),
-        content: Row(
-          children: [
-            Expanded(
-              child: Text(
-                // TODO(l10n): Replace with context.l10n when localization is added.
-                success ? 'Draft has been saved!' : 'Failed to save draft',
-                style: VineTheme.bodyFont(
-                  fontSize: 14,
-                  fontWeight: .w600,
-                  height: 1.43,
-                  letterSpacing: 0.1,
-                  color: VineTheme.whiteText,
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                scaffoldMessenger.hideCurrentSnackBar();
-                router.push(ClipLibraryScreen.draftsPath);
-              },
-              style: TextButton.styleFrom(
-                padding: .symmetric(horizontal: 8),
-                minimumSize: .zero,
-                tapTargetSize: .shrinkWrap,
-              ),
-              child: Text(
-                // TODO(l10n): Replace with context.l10n when localization is added.
-                'Go to Library',
-                style: GoogleFonts.bricolageGrotesque(
-                  fontSize: 18,
-                  fontWeight: .w800,
-                  height: 1.33,
-                  letterSpacing: 0.15,
-                  color: VineTheme.primary,
-                ),
-              ),
-            ),
-          ],
-        ),
-        backgroundColor: Color(0xFF000A06),
+        padding: EdgeInsets.zero,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         behavior: .floating,
+        duration: Duration(seconds: 5),
+        content: DivineSnackbarContainer(
+          // TODO(l10n): Replace with context.l10n when localization is added.
+          label: success ? 'Draft has been saved!' : 'Failed to save draft',
+          error: !success,
+          // TODO(l10n): Replace with context.l10n when localization is added.
+          actionLabel: 'Go to Library',
+          onActionPressed: () {
+            scaffoldMessenger.hideCurrentSnackBar();
+            router.push(ClipLibraryScreen.draftsPath);
+          },
+        ),
       ),
     );
 

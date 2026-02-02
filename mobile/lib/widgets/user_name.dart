@@ -10,6 +10,7 @@ class UserName extends ConsumerWidget {
     super.key,
     this.pubkey,
     this.userProfile,
+    this.embeddedName,
     this.style,
     this.maxLines,
     this.overflow,
@@ -17,8 +18,15 @@ class UserName extends ConsumerWidget {
     this.anonymousName,
   });
 
+  /// Create a UserName widget from a pubkey.
+  ///
+  /// If [embeddedName] is provided (e.g., from REST API response with
+  /// author_name), it will be used as a fallback when the profile isn't
+  /// cached yet. This avoids unnecessary WebSocket profile fetches for
+  /// videos that already have author data embedded.
   factory UserName.fromPubKey(
     String pubkey, {
+    String? embeddedName,
     key,
     style,
     maxLines,
@@ -27,6 +35,7 @@ class UserName extends ConsumerWidget {
     anonymousName,
   }) => UserName._(
     pubkey: pubkey,
+    embeddedName: embeddedName,
     key: key,
     style: style,
     maxLines: maxLines,
@@ -55,6 +64,10 @@ class UserName extends ConsumerWidget {
 
   final String? pubkey;
   final UserProfile? userProfile;
+
+  /// Optional embedded author name from REST API (e.g., video.authorName).
+  /// Used as fallback when profile isn't cached, avoiding WebSocket fetches.
+  final String? embeddedName;
   final TextStyle? style;
   final int? maxLines;
   final TextOverflow? overflow;
@@ -71,14 +84,18 @@ class UserName extends ConsumerWidget {
     } else {
       final profileAsync = ref.watch(userProfileReactiveProvider(pubkey!));
 
+      // Use embedded name from REST API as fallback before truncated npub.
+      // This avoids unnecessary WebSocket profile fetches for videos with
+      // author_name already embedded.
+      final fallbackName = embeddedName ?? NostrKeyUtils.truncateNpub(pubkey!);
+
       (displayName, showCheckmark) = switch (profileAsync) {
         AsyncData(:final value) when value != null => (
           value.betterDisplayName(anonymousName),
           _isReserved(value),
         ),
-        AsyncLoading() ||
-        AsyncData() => (NostrKeyUtils.truncateNpub(pubkey!), false),
-        AsyncError() => (NostrKeyUtils.truncateNpub(pubkey!), false),
+        AsyncLoading() || AsyncData() => (fallbackName, false),
+        AsyncError() => (fallbackName, false),
       };
     }
 

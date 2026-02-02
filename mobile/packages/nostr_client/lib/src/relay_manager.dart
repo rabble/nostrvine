@@ -32,6 +32,25 @@ class RelayManager {
        _relayPool = relayPool,
        _relayFactory = relayFactory;
 
+  /// Known-dead relays that should never be added.
+  ///
+  /// These relays have DNS failures or are permanently offline.
+  /// Adding them causes connection errors and degrades UX.
+  /// Users may have these in their NIP-65 relay lists, so we filter them out.
+  static const Set<String> _blockedRelayHosts = {
+    'index.coracle.social', // DNS dead since ~2024
+  };
+
+  /// Check if a relay URL is blocked
+  static bool _isBlockedRelay(String url) {
+    try {
+      final uri = Uri.parse(url);
+      return _blockedRelayHosts.contains(uri.host);
+    } on FormatException {
+      return false;
+    }
+  }
+
   final RelayManagerConfig _config;
   final RelayPool _relayPool;
   final Relay Function(String url)? _relayFactory;
@@ -113,13 +132,24 @@ class RelayManager {
     final storage = _config.storage;
     if (storage != null) {
       final savedRelays = await storage.loadRelays();
-      // Normalize loaded relays to prevent duplicates from URL format
-      // mismatches
+      // Normalize loaded relays and filter out blocked/duplicate relays
+      var blockedCount = 0;
       for (final url in savedRelays) {
         final normalized = _normalizeUrl(url);
-        if (normalized != null && !_configuredRelays.contains(normalized)) {
+        if (normalized == null) continue;
+        if (_isBlockedRelay(normalized)) {
+          blockedCount++;
+          continue;
+        }
+        if (!_configuredRelays.contains(normalized)) {
           _configuredRelays.add(normalized);
         }
+      }
+      if (blockedCount > 0) {
+        _log('Filtered $blockedCount blocked relays from storage');
+        // Persist the filtered list so blocked relays are permanently removed
+        await storage.saveRelays(_configuredRelays);
+        _log('Saved filtered relay list to storage');
       }
       _log('Loaded ${_configuredRelays.length} relays from storage');
     }
@@ -159,12 +189,18 @@ class RelayManager {
   /// Add a relay to the configuration and connect to it
   ///
   /// Returns true if the relay was added and connected successfully.
-  /// Returns false if the relay URL is invalid or already configured.
+  /// Returns false if the relay URL is invalid, blocked, or already configured.
   Future<bool> addRelay(String url) async {
     final normalizedUrl = _normalizeUrl(url);
 
     if (normalizedUrl == null) {
       _log('Invalid relay URL: $url');
+      return false;
+    }
+
+    // Block known-dead relays
+    if (_isBlockedRelay(normalizedUrl)) {
+      _log('Blocked dead relay: $normalizedUrl');
       return false;
     }
 
@@ -413,13 +449,22 @@ class RelayManager {
     }
     _notifyStatusChange();
 
-    for (final url in relaysToConnect) {
-      final success = await _connectToRelay(url);
-      if (success) {
-        _updateRelayStatus(url, RelayState.connected);
+    // Connect to all relays in PARALLEL instead of sequential.
+    // This reduces startup from O(n * timeout) to O(max timeout).
+    final results = await Future.wait(
+      relaysToConnect.map((url) async {
+        final success = await _connectToRelay(url);
+        return MapEntry(url, success);
+      }),
+    );
+
+    // Update statuses based on results
+    for (final entry in results) {
+      if (entry.value) {
+        _updateRelayStatus(entry.key, RelayState.connected);
       } else {
         _updateRelayStatus(
-          url,
+          entry.key,
           RelayState.error,
           errorMessage: 'Failed to connect',
         );

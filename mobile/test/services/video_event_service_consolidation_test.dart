@@ -8,6 +8,7 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/repositories/video_repository.dart';
 import '../builders/test_video_event_builder.dart';
 
 import 'video_event_service_consolidation_test.mocks.dart';
@@ -31,6 +32,7 @@ void main() {
     service = VideoEventService(
       mockNostrService,
       subscriptionManager: mockSubscriptionManager,
+      videoRepository: VideoRepository(),
     );
   });
 

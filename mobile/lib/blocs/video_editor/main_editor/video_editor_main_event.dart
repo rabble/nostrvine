@@ -51,4 +51,4 @@ class VideoEditorMainSubEditorClosed extends VideoEditorMainEvent {
 }
 
 /// Types of sub-editors that can be opened.
-enum SubEditorType { text, paint, filter, stickers, music }
+enum SubEditorType { text, draw, filter, stickers, music }

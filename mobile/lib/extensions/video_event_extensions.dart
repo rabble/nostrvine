@@ -6,8 +6,15 @@ import 'dart:developer' as developer;
 import 'dart:io' show Platform;
 
 import 'package:models/models.dart';
+import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/m3u8_resolver_service.dart';
 import 'package:openvine/services/thumbnail_api_service.dart';
+
+/// Get quality string based on bandwidth tracker recommendation
+String? _getBandwidthBasedQuality() {
+  final tracker = bandwidthTracker;
+  return tracker.shouldUseHighQuality ? 'high' : 'low';
+}
 
 /// Extension methods for VideoEvent that require app-level dependencies.
 ///
@@ -106,6 +113,113 @@ extension VideoEventAppExtensions on VideoEvent {
       timeSeconds: timeSeconds,
       size: size,
     );
+  }
+
+  // ---------------------------------------------------------------------------
+  // Platform-Aware URL Selection
+  // ---------------------------------------------------------------------------
+
+  /// Divine media server base URL for HLS streaming.
+  static const String _divineMediaBase = 'https://media.divine.video';
+
+  /// Extract video hash from a Divine server URL.
+  ///
+  /// Handles URLs like:
+  /// - https://media.divine.video/{hash}
+  /// - https://cdn.divine.video/{hash}
+  /// - https://media.divine.video/{hash}/hls/master.m3u8
+  static String? _extractVideoHash(String? url) {
+    if (url == null || url.isEmpty) return null;
+
+    try {
+      final uri = Uri.parse(url);
+      final host = uri.host.toLowerCase();
+
+      // Only extract from Divine servers
+      if (!host.contains('divine.video')) return null;
+
+      // Path segments: ['', 'hash'] or ['', 'hash', 'hls', 'master.m3u8']
+      final segments = uri.pathSegments;
+      if (segments.isEmpty) return null;
+
+      // First segment should be the hash (64 hex characters)
+      final hash = segments.first;
+      if (hash.length == 64 && RegExp(r'^[a-fA-F0-9]+$').hasMatch(hash)) {
+        return hash;
+      }
+    } catch (_) {
+      // Invalid URL, return null
+    }
+    return null;
+  }
+
+  /// Get HLS streaming URL for Divine videos.
+  ///
+  /// All Divine videos are automatically transcoded to HLS format with
+  /// adaptive bitrate (720p/480p). This URL provides:
+  /// - Android compatibility via H.264 baseline profile
+  /// - iOS/macOS native AVPlayer support
+  /// - Automatic quality switching based on connection speed
+  ///
+  /// Returns null if:
+  /// - Video is not from Divine servers
+  /// - Hash cannot be extracted from URL
+  String? get hlsUrl => getHlsUrl();
+
+  /// Get HLS URL with optional quality override.
+  ///
+  /// [quality] - null for master playlist (ABR), 'high' for 720p, 'low' for 480p
+  String? getHlsUrl({String? quality}) {
+    final hash = _extractVideoHash(videoUrl);
+    if (hash == null) return null;
+
+    // Quality-specific streams vs adaptive master playlist
+    switch (quality) {
+      case 'high':
+        return '$_divineMediaBase/$hash/hls/stream_720p.m3u8';
+      case 'low':
+        return '$_divineMediaBase/$hash/hls/stream_480p.m3u8';
+      default:
+        return '$_divineMediaBase/$hash/hls/master.m3u8';
+    }
+  }
+
+  /// Get the optimal video URL for initial playback.
+  ///
+  /// **Strategy**: Try original video first on all platforms.
+  /// Many Android devices CAN play the original codec fine.
+  /// HLS is used as a fallback only when codec errors occur.
+  ///
+  /// For HLS fallback on Android codec errors, see [getHlsFallbackUrl].
+  String? getOptimalVideoUrlForPlatform() {
+    // Always try original video first - many devices can play it
+    // HLS fallback is handled in error recovery (see individual_video_providers.dart)
+    return videoUrl;
+  }
+
+  /// Get HLS fallback URL for Android codec errors.
+  ///
+  /// Called when original video fails with a codec error on Android.
+  /// HLS transcoding provides H.264 Baseline Profile which is universally
+  /// supported, unlike High Profile which some devices can't decode.
+  ///
+  /// Returns null if:
+  /// - Not on Android
+  /// - Video is not from Divine servers (no HLS available)
+  String? getHlsFallbackUrl() {
+    if (!Platform.isAndroid) return null;
+
+    final quality = _getBandwidthBasedQuality();
+    final hls = getHlsUrl(quality: quality);
+
+    if (hls != null) {
+      developer.log(
+        '📱 Android: HLS fallback available ($quality quality): $hls',
+        name: 'VideoEventExtensions',
+      );
+    }
+
+    return hls;
   }
 
   // ---------------------------------------------------------------------------

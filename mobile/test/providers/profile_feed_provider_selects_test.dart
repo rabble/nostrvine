@@ -15,6 +15,7 @@ import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/repositories/video_repository.dart';
 import 'package:openvine/utils/npub_hex.dart';
 
 /// Helper to wait for pageContext to emit a value
@@ -118,6 +119,7 @@ class _FakeVideoEventService extends VideoEventService {
       super(
         _FakeNostrService(),
         subscriptionManager: _FakeSubscriptionManager(),
+        videoRepository: VideoRepository(),
       );
 
   final Map<String, List<VideoEvent>> _authorVideos;

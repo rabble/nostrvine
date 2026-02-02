@@ -104,7 +104,13 @@ class _NewVideosTabState extends ConsumerState<NewVideosTab> {
         _feedTracker?.trackEmptyFeed('new_vines');
       }
 
-      return _NewVideosContent(videos: videos);
+      // Get feed state for pagination info
+      final feedState = popularNowAsync.value!;
+      return _NewVideosContent(
+        videos: videos,
+        isLoadingMore: feedState.isLoadingMore,
+        hasMoreContent: feedState.hasMoreContent,
+      );
     }
 
     if (popularNowAsync.hasError) {
@@ -168,9 +174,15 @@ class _NewVideosTabState extends ConsumerState<NewVideosTab> {
 
 /// Content widget displaying the video grid
 class _NewVideosContent extends ConsumerWidget {
-  const _NewVideosContent({required this.videos});
+  const _NewVideosContent({
+    required this.videos,
+    this.isLoadingMore = false,
+    this.hasMoreContent = false,
+  });
 
   final List<VideoEvent> videos;
+  final bool isLoadingMore;
+  final bool hasMoreContent;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -203,6 +215,12 @@ class _NewVideosContent extends ConsumerWidget {
         );
         await ref.read(popularNowFeedProvider.notifier).refresh();
       },
+      onLoadMore: () async {
+        Log.info('📜 NewVideosTab: Loading more', category: LogCategory.video);
+        await ref.read(popularNowFeedProvider.notifier).loadMore();
+      },
+      isLoadingMore: isLoadingMore,
+      hasMoreContent: hasMoreContent,
       emptyBuilder: _NewVideosEmptyState.new,
     );
   }

@@ -194,6 +194,29 @@ void main() {
         ).called(1);
       });
 
+      test('includes banner when provided', () async {
+        when(() => mockProfileEvent.content).thenReturn(
+          jsonEncode({
+            'display_name': 'Test User',
+            'banner': '0x33ccbf',
+          }),
+        );
+
+        await profileRepository.saveProfileEvent(
+          displayName: 'Test User',
+          banner: '0x33ccbf',
+        );
+
+        verify(
+          () => mockNostrClient.sendProfile(
+            profileContent: {
+              'display_name': 'Test User',
+              'banner': '0x33ccbf',
+            },
+          ),
+        ).called(1);
+      });
+
       test(
         'throws ProfilePublishFailedException when sendProfile fails',
         () async {
