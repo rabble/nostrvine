@@ -9,8 +9,7 @@ import 'package:models/models.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
-import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/router_location_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 
 void main() {

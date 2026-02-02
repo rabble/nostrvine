@@ -1,12 +1,16 @@
 // ABOUTME: Safety Settings screen for content moderation and user safety controls
 // ABOUTME: Provides age verification, adult content preferences, and moderation providers
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/age_verification_service.dart';
+import 'package:openvine/services/image_cache_manager.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -136,7 +140,7 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
                 _buildAgeVerificationSection(),
                 _buildAdultContentSection(),
                 _buildModerationProvidersSection(),
-                _buildSectionHeader('BLOCKED USERS'),
+                _buildBlockedUsersSection(),
                 _buildSectionHeader('MUTED CONTENT'),
                 _buildSectionHeader('REPORT HISTORY'),
               ],
@@ -343,6 +347,125 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
         ),
         // TODO: List of added custom labelers
       ],
+    );
+  }
+
+  Widget _buildBlockedUsersSection() {
+    ref.watch(blocklistVersionProvider);
+
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final blockedUsers = blocklistService.runtimeBlockedUsers.toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildSectionHeader('BLOCKED USERS'),
+        if (blockedUsers.isEmpty)
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'No blocked users',
+              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
+            ),
+          )
+        else
+          ...blockedUsers.map(
+            (pubkey) => _BlockedUserTile(
+              pubkey: pubkey,
+              onUnblock: () => _unblockUser(pubkey),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Future<void> _unblockUser(String pubkey) async {
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    blocklistService.unblockUser(pubkey);
+    ref.read(blocklistVersionProvider.notifier).increment();
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('User unblocked'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+}
+
+/// Tile widget for displaying a blocked user with unblock option.
+class _BlockedUserTile extends ConsumerWidget {
+  const _BlockedUserTile({required this.pubkey, required this.onUnblock});
+
+  final String pubkey;
+  final VoidCallback onUnblock;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(userProfileReactiveProvider(pubkey));
+    final profile = profileAsync.value;
+    final truncatedNpub = NostrKeyUtils.truncateNpub(pubkey);
+    final displayName = profile?.bestDisplayName ?? truncatedNpub;
+
+    return ListTile(
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: VineTheme.onSurfaceDisabled, width: 1),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(11),
+          child: profile?.picture != null && profile!.picture!.isNotEmpty
+              ? CachedNetworkImage(
+                  imageUrl: profile.picture!,
+                  width: 38,
+                  height: 38,
+                  fit: BoxFit.cover,
+                  cacheManager: openVineImageCache,
+                  placeholder: (context, url) => Image.asset(
+                    'assets/icon/acid_avatar.png',
+                    width: 38,
+                    height: 38,
+                    fit: BoxFit.cover,
+                  ),
+                  errorWidget: (context, url, error) => Image.asset(
+                    'assets/icon/acid_avatar.png',
+                    width: 38,
+                    height: 38,
+                    fit: BoxFit.cover,
+                  ),
+                )
+              : Image.asset(
+                  'assets/icon/acid_avatar.png',
+                  width: 38,
+                  height: 38,
+                  fit: BoxFit.cover,
+                ),
+        ),
+      ),
+      title: Text(
+        displayName,
+        style: const TextStyle(color: Colors.white),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      subtitle: Text(
+        truncatedNpub,
+        style: const TextStyle(color: Colors.grey, fontSize: 12),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+      ),
+      trailing: TextButton(
+        onPressed: onUnblock,
+        child: const Text(
+          'Unblock',
+          style: TextStyle(color: VineTheme.vineGreen),
+        ),
+      ),
     );
   }
 }

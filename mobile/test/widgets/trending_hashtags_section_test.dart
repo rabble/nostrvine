@@ -33,10 +33,10 @@ void main() {
       );
     }
 
-    testWidgets('displays title "Trending Hashtags"', (tester) async {
+    testWidgets('displays title "Trending"', (tester) async {
       await tester.pumpWidget(buildTestWidget(hashtags: ['funny', 'cats']));
 
-      expect(find.text('Trending Hashtags'), findsOneWidget);
+      expect(find.text('Trending'), findsOneWidget);
     });
 
     testWidgets('displays loading placeholder when isLoading is true', (

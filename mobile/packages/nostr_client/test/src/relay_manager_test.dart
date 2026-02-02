@@ -1064,4 +1064,79 @@ void main() {
       expect(relays, contains(testCustomRelayUrl));
     });
   });
+
+  group('Blocked Relays', () {
+    late _MockRelayPool mockRelayPool;
+
+    setUp(() {
+      mockRelayPool = _MockRelayPool();
+      when(() => mockRelayPool.activeRelays()).thenReturn([]);
+      when(() => mockRelayPool.getRelay(any())).thenReturn(null);
+      when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+      when(() => mockRelayPool.remove(any())).thenReturn(null);
+    });
+
+    test('addRelay rejects blocked relay hosts', () async {
+      final manager = RelayManager(
+        config: _createTestConfig(),
+        relayPool: mockRelayPool,
+        relayFactory: _FakeRelay.new,
+      );
+      await manager.initialize();
+
+      // Try to add the blocked relay
+      final result = await manager.addRelay('wss://index.coracle.social');
+
+      expect(result, isFalse);
+      expect(
+        manager.configuredRelays,
+        isNot(contains('wss://index.coracle.social')),
+      );
+    });
+
+    test('addRelay accepts non-blocked relays', () async {
+      final manager = RelayManager(
+        config: _createTestConfig(),
+        relayPool: mockRelayPool,
+        relayFactory: _FakeRelay.new,
+      );
+      await manager.initialize();
+
+      // Add a non-blocked relay
+      final result = await manager.addRelay('wss://relay.damus.io');
+
+      expect(result, isTrue);
+      expect(manager.configuredRelays, contains('wss://relay.damus.io'));
+    });
+
+    test('initialize filters out blocked relays from storage', () async {
+      final storage = InMemoryRelayStorage([
+        testDefaultRelayUrl,
+        'wss://index.coracle.social', // blocked
+        testCustomRelayUrl,
+      ]);
+      final manager = RelayManager(
+        config: _createTestConfig(storage: storage),
+        relayPool: mockRelayPool,
+        relayFactory: _FakeRelay.new,
+      );
+
+      await manager.initialize();
+
+      // Blocked relay should not be in configured relays
+      expect(
+        manager.configuredRelays,
+        isNot(contains('wss://index.coracle.social')),
+      );
+      // Other relays should be present
+      expect(manager.configuredRelays, contains(testDefaultRelayUrl));
+      expect(manager.configuredRelays, contains(testCustomRelayUrl));
+
+      // Verify storage was updated to remove blocked relay
+      final savedRelays = await storage.loadRelays();
+      expect(savedRelays, isNot(contains('wss://index.coracle.social')));
+      expect(savedRelays, contains(testDefaultRelayUrl));
+      expect(savedRelays, contains(testCustomRelayUrl));
+    });
+  });
 }

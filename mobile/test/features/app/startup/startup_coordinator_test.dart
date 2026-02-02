@@ -198,10 +198,20 @@ void main() {
 
       final initFuture = coordinator.initialize();
 
-      // Critical service failure should throw
-      expect(initFuture, throwsException);
+      // Critical service failure should throw; await so the future completes
+      await expectLater(initFuture, throwsException);
 
-      // But optional service can fail without breaking initialization
+      // Optional service can fail without breaking initialization (tested below)
+      serviceCompleters['OptionalService']!.complete();
+    });
+
+    test('optional service failure does not abort initialization', () async {
+      coordinator.registerService(
+        name: 'CriticalService',
+        phase: StartupPhase.critical,
+        initialize: createServiceInitializer('CriticalService'),
+      );
+
       coordinator.registerService(
         name: 'AnotherOptionalService',
         phase: StartupPhase.deferred,
@@ -211,9 +221,11 @@ void main() {
         optional: true,
       );
 
-      // Should complete without throwing for optional services
-      serviceCompleters['OptionalService']!.complete();
-      // Note: In real implementation, optional service failures wouldn't break the flow
+      final initFuture = coordinator.initialize();
+      serviceCompleters['CriticalService']!.complete();
+
+      // Should complete without throwing; optional failure is logged only
+      await initFuture;
     });
 
     test('should provide initialization progress', () async {

@@ -7,7 +7,7 @@ import 'package:models/models.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
-import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
@@ -77,6 +77,34 @@ void main() {
 
       container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
       expect(container.read(hasVisibleOverlayProvider), isTrue);
+    });
+
+    test('returns true when modal is opened', () {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      container.read(overlayVisibilityProvider.notifier).setModalOpen(true);
+      expect(container.read(hasVisibleOverlayProvider), isTrue);
+    });
+
+    test('modal open/close cycle returns to false', () {
+      // This test verifies the behavior that override mode videos depend on:
+      // When a modal (like comments) opens, hasVisibleOverlay becomes true.
+      // When the modal closes, hasVisibleOverlay returns to false.
+      // VideoFeedItem with isActiveOverride listens to this provider directly.
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      // Initially no overlay
+      expect(container.read(hasVisibleOverlayProvider), isFalse);
+
+      // Open modal (e.g., comments modal)
+      container.read(overlayVisibilityProvider.notifier).setModalOpen(true);
+      expect(container.read(hasVisibleOverlayProvider), isTrue);
+
+      // Close modal
+      container.read(overlayVisibilityProvider.notifier).setModalOpen(false);
+      expect(container.read(hasVisibleOverlayProvider), isFalse);
     });
   });
 

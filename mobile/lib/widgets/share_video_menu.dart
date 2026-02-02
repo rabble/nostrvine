@@ -27,7 +27,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:openvine/constants/nip71_migration.dart';
-import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 
@@ -984,6 +984,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
 
   void _handleBlockUser(WidgetRef ref, bool currentlyBlocked) {
     final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final nostrClient = ref.read(nostrServiceProvider);
 
     if (currentlyBlocked) {
       // Unblock without confirmation
@@ -1014,7 +1015,10 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
             ),
             TextButton(
               onPressed: () {
-                blocklistService.blockUser(widget.video.pubkey);
+                blocklistService.blockUser(
+                  widget.video.pubkey,
+                  ourPubkey: nostrClient.publicKey,
+                );
                 context.pop();
                 if (mounted) {
                   ScaffoldMessenger.of(
@@ -1267,15 +1271,12 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           ),
         );
 
-        // Remove video from local feeds after successful deletion
+        // Remove video from all local feeds after successful deletion
         if (result.success) {
           final videoEventService = ref.read(videoEventServiceProvider);
-          videoEventService.removeVideoFromAuthorList(
-            widget.video.pubkey,
-            widget.video.id,
-          );
+          videoEventService.removeVideoCompletely(widget.video.id);
           Log.info(
-            'Video removed from local feeds after deletion: ${widget.video.id}',
+            'Video removed from all local feeds after deletion: ${widget.video.id}',
             name: 'ShareVideoMenu',
             category: LogCategory.ui,
           );
@@ -1455,11 +1456,11 @@ class _SendToUserDialogState extends ConsumerState<_SendToUserDialog> {
   /// Load user's contacts from their follow list (NIP-02)
   Future<void> _loadUserContacts() async {
     try {
-      final socialService = ref.read(socialServiceProvider);
+      final followRepository = ref.read(followRepositoryProvider);
       final userProfileService = ref.read(userProfileServiceProvider);
 
       // Get the user's follow list
-      final followList = socialService.followingPubkeys;
+      final followList = followRepository?.followingPubkeys ?? [];
       final contacts = <ShareableUser>[];
 
       // Convert follows to ShareableUser objects with profile data
@@ -2070,7 +2071,11 @@ class ReportContentDialogState extends ConsumerState<ReportContentDialog> {
 
             // 3. Also add to local blocklist for immediate filtering
             final blocklistService = ref.read(contentBlocklistServiceProvider);
-            blocklistService.blockUser(widget.video.pubkey);
+            final nostrClient = ref.read(nostrServiceProvider);
+            blocklistService.blockUser(
+              widget.video.pubkey,
+              ourPubkey: nostrClient.publicKey,
+            );
 
             Log.info(
               'User blocked with Nostr events: kind 1984 user report + kind 10000 mute list: ${widget.video.pubkey}',

@@ -220,7 +220,11 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
       final clips = ref.read(clipManagerProvider).clips;
       if (targetIndex >= 0 && targetIndex < clips.length) {
         final clipToDelete = clips[targetIndex];
-        ref.read(clipManagerProvider.notifier).removeClipById(clipToDelete.id);
+        unawaited(
+          ref
+              .read(clipManagerProvider.notifier)
+              .removeClipById(clipToDelete.id),
+        );
         ref.read(videoEditorProvider.notifier).setOverDeleteZone(false);
 
         if (ref.read(clipManagerProvider.notifier).clips.isEmpty) {

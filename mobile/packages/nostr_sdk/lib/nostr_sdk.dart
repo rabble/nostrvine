@@ -24,6 +24,7 @@ export 'nip23/long_form_info.dart';
 export 'nip29/group_identifier.dart';
 export 'nip29/nip29.dart';
 export 'nip44/nip44_v2.dart';
+export 'nip46/nostr_connect_session.dart';
 export 'nip46/nostr_remote_signer.dart';
 export 'nip46/nostr_remote_signer_info.dart';
 export 'nip47/nwc_info.dart';

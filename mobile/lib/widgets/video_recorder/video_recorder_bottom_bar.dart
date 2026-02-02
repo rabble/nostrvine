@@ -1,6 +1,8 @@
 // ABOUTME: Bottom bar widget for video recorder screen
 // ABOUTME: Contains flash, timer, record button, camera flip, and more options
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,27 +21,15 @@ class VideoRecorderBottomBar extends ConsumerWidget {
     required String message,
     bool isError = false,
   }) {
-    // TODO(@hm21): Update after new final snackbar-design is implemented.
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        shape: RoundedRectangleBorder(borderRadius: .circular(16)),
-        clipBehavior: .hardEdge,
-        content: Text(
-          message,
-          style: VineTheme.bodyFont(
-            fontSize: 14,
-            fontWeight: .w600,
-            height: 1.43,
-            letterSpacing: 0.1,
-            color: isError ? const Color(0xFFF44336) : VineTheme.whiteText,
-          ),
-        ),
-        duration: Duration(seconds: isError ? 3 : 2),
-        backgroundColor: isError
-            ? const Color(0xFF410001)
-            : const Color(0xFF000A06),
+        padding: EdgeInsets.zero,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         behavior: .floating,
         margin: const .fromLTRB(16, 0, 16, 68),
+        duration: Duration(seconds: isError ? 3 : 2),
+        content: DivineSnackbarContainer(label: message, error: isError),
       ),
     );
   }
@@ -83,7 +73,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
           label: 'Remove last clip',
           onTap: clipManager.hasClips
               ? () {
-                  clipsNotifier.removeLastClip();
+                  unawaited(clipsNotifier.removeLastClip());
                   // TODO(l10n): Replace with context.l10n when localization is added.
                   _showSnackBar(context: context, message: 'Clip removed');
                 }
@@ -95,7 +85,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
           label: 'Clear all clips',
           onTap: clipManager.hasClips
               ? () {
-                  clipsNotifier.clearAll();
+                  unawaited(clipsNotifier.clearAll());
                   // TODO(l10n): Replace with context.l10n when localization is added.
                   _showSnackBar(context: context, message: 'All clips cleared');
                 }

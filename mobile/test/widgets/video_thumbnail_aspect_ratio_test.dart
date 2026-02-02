@@ -24,7 +24,7 @@ void main() {
       );
     });
 
-    testWidgets('thumbnail should maintain 1:1 aspect ratio for square videos', (
+    testWidgets('thumbnail without dimensions defaults to 2:3 portrait', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -53,13 +53,13 @@ void main() {
       final aspectRatioWidget = tester.widget<AspectRatio>(aspectRatioFinder);
       expect(
         aspectRatioWidget.aspectRatio,
-        equals(1.0),
+        equals(2 / 3),
         reason:
-            'Thumbnail aspect ratio should be 1.0 (square) for 480x480 videos',
+            'Thumbnail aspect ratio should be 2:3 portrait fallback when no dimensions metadata',
       );
     });
 
-    testWidgets('thumbnail with explicit width should be square', (
+    testWidgets('thumbnail with explicit width defaults to 2:3 portrait', (
       tester,
     ) async {
       const thumbnailWidth = 200.0;
@@ -82,12 +82,12 @@ void main() {
       final aspectRatioFinder = find.byType(AspectRatio);
       expect(aspectRatioFinder, findsOneWidget);
 
-      // Verify square aspect ratio
+      // Verify 2:3 portrait fallback
       final aspectRatioWidget = tester.widget<AspectRatio>(aspectRatioFinder);
-      expect(aspectRatioWidget.aspectRatio, equals(1.0));
+      expect(aspectRatioWidget.aspectRatio, equals(2 / 3));
     });
 
-    testWidgets('thumbnail with explicit height should be square', (
+    testWidgets('thumbnail with explicit height defaults to 2:3 portrait', (
       tester,
     ) async {
       const thumbnailHeight = 300.0;
@@ -110,9 +110,9 @@ void main() {
       final aspectRatioFinder = find.byType(AspectRatio);
       expect(aspectRatioFinder, findsOneWidget);
 
-      // Verify square aspect ratio
+      // Verify 2:3 portrait fallback
       final aspectRatioWidget = tester.widget<AspectRatio>(aspectRatioFinder);
-      expect(aspectRatioWidget.aspectRatio, equals(1.0));
+      expect(aspectRatioWidget.aspectRatio, equals(2 / 3));
     });
 
     testWidgets('thumbnail with play icon should maintain aspect ratio', (
@@ -143,7 +143,7 @@ void main() {
       );
     });
 
-    testWidgets('thumbnail with blurhash fallback should be square', (
+    testWidgets('thumbnail with blurhash fallback defaults to 2:3 portrait', (
       tester,
     ) async {
       final now = DateTime.now();
@@ -171,63 +171,65 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Even with blurhash fallback, should maintain square aspect ratio
+      // With blurhash fallback, should use 2:3 portrait default
       expect(find.byType(AspectRatio), findsOneWidget);
 
       final aspectRatioWidget = tester.widget<AspectRatio>(
         find.byType(AspectRatio),
       );
-      expect(aspectRatioWidget.aspectRatio, equals(1.0));
+      expect(aspectRatioWidget.aspectRatio, equals(2 / 3));
     });
 
     // NEW TESTS: Dynamic aspect ratio based on video dimensions
     group('Dynamic aspect ratio from dimensions metadata', () {
-      testWidgets('portrait video (720x1280) should have portrait aspect ratio', (
-        tester,
-      ) async {
-        final now = DateTime.now();
-        final portraitVideo = VideoEvent(
-          id: 'portrait-video-id',
-          pubkey: 'test-pubkey',
-          createdAt: now.millisecondsSinceEpoch ~/ 1000,
-          timestamp: now,
-          content: 'Portrait video',
-          videoUrl: 'https://example.com/portrait.mp4',
-          thumbnailUrl: 'https://example.com/portrait-thumb.jpg',
-          dimensions: '720x1280', // Portrait dimensions
-          blurhash: 'LEHV6nWB2yk8pyo0adR*.7kCMdnj',
-        );
+      testWidgets(
+        'portrait video (720x1280) should have portrait aspect ratio',
+        (tester) async {
+          final now = DateTime.now();
+          final portraitVideo = VideoEvent(
+            id: 'portrait-video-id',
+            pubkey: 'test-pubkey',
+            createdAt: now.millisecondsSinceEpoch ~/ 1000,
+            timestamp: now,
+            content: 'Portrait video',
+            videoUrl: 'https://example.com/portrait.mp4',
+            thumbnailUrl: 'https://example.com/portrait-thumb.jpg',
+            dimensions: '720x1280', // Portrait dimensions
+            blurhash: 'LEHV6nWB2yk8pyo0adR*.7kCMdnj',
+          );
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: VideoThumbnailWidget(
-                video: portraitVideo,
-                fit: BoxFit.cover,
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                body: VideoThumbnailWidget(
+                  video: portraitVideo,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
-          ),
-        );
+          );
 
-        await tester.pumpAndSettle();
+          await tester.pumpAndSettle();
 
-        // Find AspectRatio widget
-        final aspectRatioFinder = find.byType(AspectRatio);
-        expect(
-          aspectRatioFinder,
-          findsOneWidget,
-          reason: 'Thumbnail should be wrapped in AspectRatio widget',
-        );
+          // Find AspectRatio widget
+          final aspectRatioFinder = find.byType(AspectRatio);
+          expect(
+            aspectRatioFinder,
+            findsOneWidget,
+            reason: 'Thumbnail should be wrapped in AspectRatio widget',
+          );
 
-        // Verify aspect ratio matches video dimensions (720/1280 = 0.5625)
-        final aspectRatioWidget = tester.widget<AspectRatio>(aspectRatioFinder);
-        expect(
-          aspectRatioWidget.aspectRatio,
-          equals(720 / 1280),
-          reason:
-              'Thumbnail aspect ratio should match video dimensions (portrait)',
-        );
-      });
+          // Portrait 720/1280 = 0.5625, clamped to 2:3 minimum
+          final aspectRatioWidget = tester.widget<AspectRatio>(
+            aspectRatioFinder,
+          );
+          expect(
+            aspectRatioWidget.aspectRatio,
+            equals(2 / 3),
+            reason: 'Portrait aspect ratio should be clamped to 2:3 minimum',
+          );
+        },
+      );
 
       testWidgets('square video (480x480) should have 1:1 aspect ratio', (
         tester,
@@ -315,7 +317,7 @@ void main() {
       );
 
       testWidgets(
-        'video without dimensions should fallback to 1:1 aspect ratio',
+        'video without dimensions should fallback to 2:3 portrait aspect ratio',
         (tester) async {
           final now = DateTime.now();
           final noDimensionsVideo = VideoEvent(
@@ -347,15 +349,15 @@ void main() {
           final aspectRatioFinder = find.byType(AspectRatio);
           expect(aspectRatioFinder, findsOneWidget);
 
-          // Verify aspect ratio defaults to 1:1 when dimensions are missing
+          // Verify aspect ratio defaults to 2:3 when dimensions are missing
           final aspectRatioWidget = tester.widget<AspectRatio>(
             aspectRatioFinder,
           );
           expect(
             aspectRatioWidget.aspectRatio,
-            equals(1.0),
+            equals(2 / 3),
             reason:
-                'Thumbnail should fallback to 1:1 aspect ratio when dimensions are missing',
+                'Thumbnail should fallback to 2:3 portrait aspect ratio when dimensions are missing',
           );
         },
       );

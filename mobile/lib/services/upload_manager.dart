@@ -306,6 +306,7 @@ class UploadManager {
               .map((clip) => VideoSegment(video: clip.video))
               .toList(),
           endTime: VideoEditorConstants.maxDuration,
+          shouldOptimizeForNetworkUse: true,
         ),
       );
     }
@@ -1277,8 +1278,8 @@ class UploadManager {
 
     await _updateUpload(resumedUpload);
 
-    // Start upload process again
-    _performUpload(resumedUpload);
+    // Start upload process again and wait for completion
+    await _performUpload(resumedUpload);
 
     Log.info(
       'Upload resumed: $uploadId',
@@ -1323,8 +1324,8 @@ class UploadManager {
 
     await _updateUpload(resetUpload);
 
-    // Start upload again
-    _performUpload(resetUpload);
+    // Start upload again and wait for completion
+    await _performUpload(resetUpload);
   }
 
   /// Cancel an upload (stops the upload but keeps it for retry)
@@ -1439,7 +1440,17 @@ class UploadManager {
       );
 
       await _updateUpload(resetUpload);
-      _performUpload(resetUpload);
+      // Intentional fire-and-forget for parallel processing of interrupted uploads
+      // Wrap in unawaited to make the intent explicit and add error handling
+      unawaited(
+        _performUpload(resetUpload).catchError((Object e) {
+          Log.error(
+            'Error resuming interrupted upload ${resetUpload.id}: $e',
+            name: 'UploadManager',
+            category: LogCategory.video,
+          );
+        }),
+      );
     }
   }
 
@@ -2181,12 +2192,12 @@ Upload Timeout Failure:
       );
 
       // Generate thumbnail at optimal timestamp
-      final thumbnailPath = await VideoThumbnailService.extractThumbnail(
+      final thumbnailExtraction = await VideoThumbnailService.extractThumbnail(
         videoPath: videoFile.path,
         quality: 85,
       );
 
-      if (thumbnailPath == null) {
+      if (thumbnailExtraction == null) {
         Log.warning(
           '❌ Failed to extract thumbnail from video',
           name: 'UploadManager',
@@ -2195,7 +2206,7 @@ Upload Timeout Failure:
         return null;
       }
 
-      final thumbnailFile = File(thumbnailPath);
+      final thumbnailFile = File(thumbnailExtraction.path);
       if (!thumbnailFile.existsSync()) {
         Log.warning(
           '❌ Thumbnail file not found after extraction',
@@ -2214,7 +2225,7 @@ Upload Timeout Failure:
       _updateUploadProgress(upload.id, 0.85);
 
       // Upload thumbnail to Blossom server
-      final thumbnailResult = await _blossomService.uploadImage(
+      final uploadResult = await _blossomService.uploadImage(
         imageFile: thumbnailFile,
         nostrPubkey: nostrPubkey,
         mimeType: 'image/jpeg',
@@ -2240,8 +2251,8 @@ Upload Timeout Failure:
         );
       }
 
-      if (thumbnailResult.success && thumbnailResult.cdnUrl != null) {
-        return thumbnailResult.cdnUrl;
+      if (uploadResult.success && uploadResult.cdnUrl != null) {
+        return uploadResult.cdnUrl;
       }
 
       return null;

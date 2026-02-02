@@ -56,7 +56,6 @@ class VideoEditorClipPreview extends ConsumerStatefulWidget {
 class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
   VideoPlayerController? _controller;
   bool _isInitialized = false;
-  bool _hadPlayed = false;
 
   @override
   void initState() {
@@ -75,6 +74,7 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
     }
 
     final shouldPlay = widget.isCurrentClip && isPlaying;
+
     await _videoPlayerListener();
 
     if (shouldPlay && !_controller!.value.isPlaying) {
@@ -120,12 +120,18 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
 
     _controller = VideoPlayerController.file(File(videoPath));
     await _controller?.initialize();
+    // Seek to thumbnail timestamp for seamless transition from thumbnail to video
+    final thumbnailTimestamp = widget.clip.thumbnailTimestamp;
+    if (mounted && thumbnailTimestamp > .zero) {
+      await _controller?.seekTo(thumbnailTimestamp);
+    }
     if (mounted) await _controller?.setLooping(true);
 
     // Add listener to detect when video ends
     _controller?.addListener(_videoPlayerListener);
 
     if (mounted) {
+      ref.read(videoEditorProvider.notifier).setPlayerReady(true);
       setState(() {
         _isInitialized = true;
       });
@@ -133,12 +139,14 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
   }
 
   Future<void> _videoPlayerListener() async {
-    if (_controller == null || !mounted) return;
+    if (_controller == null || !mounted || !widget.isCurrentClip) return;
 
-    final isEditing = ref.read(videoEditorProvider).isEditing;
-    final isPlaying = ref.read(videoEditorProvider).isPlaying;
-    final splitPosition = ref.read(videoEditorProvider).splitPosition;
     final notifier = ref.read(videoEditorProvider.notifier);
+    final provider = ref.read(videoEditorProvider);
+
+    final isEditing = provider.isEditing;
+    final isPlaying = provider.isPlaying;
+    final splitPosition = provider.splitPosition;
 
     // Check if video has ended
     final position = _controller!.value.position;
@@ -146,11 +154,11 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
         ? splitPosition
         : _controller!.value.duration;
 
-    notifier.updatePosition(_controller!.value.position);
+    notifier.updatePosition(widget.clip.id, _controller!.value.position);
 
-    if (!_hadPlayed) {
-      _hadPlayed = _controller?.value.isPlaying ?? false;
-      setState(() {});
+    // Track when video starts playing (to hide thumbnail)
+    if (!provider.hasPlayedOnce && (_controller?.value.isPlaying ?? false)) {
+      notifier.setHasPlayedOnce();
     }
 
     if (isEditing &&
@@ -179,8 +187,8 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
 
     // Dispose video player when no longer current clip
     if (oldWidget.isCurrentClip && !widget.isCurrentClip) {
+      ref.read(videoEditorProvider.notifier).setPlayerReady(false);
       unawaited(_disposeController());
-      _hadPlayed = false;
       _isInitialized = false;
     }
 
@@ -213,7 +221,7 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
 
     return Center(
       child: AspectRatio(
-        aspectRatio: widget.clip.aspectRatio.value,
+        aspectRatio: widget.clip.targetAspectRatio.value,
         child: GestureDetector(
           onTap: widget.onTap,
           onLongPress: widget.onLongPress,
@@ -262,18 +270,9 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
                       ),
                     ),
 
-                  AnimatedSwitcher(
-                    layoutBuilder: (currentChild, previousChildren) => Stack(
-                      fit: .expand,
-                      alignment: .center,
-                      children: [...previousChildren, ?currentChild],
-                    ),
-                    duration: const Duration(milliseconds: 150),
-                    child:
-                        (_controller != null && _controller!.value.isPlaying) ||
-                            _hadPlayed
-                        ? const SizedBox.shrink()
-                        : _ClipThumbnail(clip: widget.clip),
+                  _ThumbnailVisibility(
+                    isCurrentClip: widget.isCurrentClip,
+                    clip: widget.clip,
                   ),
 
                   VideoClipEditorProcessingOverlay(
@@ -286,6 +285,37 @@ class _VideoClipPreviewState extends ConsumerState<VideoEditorClipPreview> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Controls thumbnail visibility based on playback state.
+///
+/// Shows thumbnail when video hasn't played yet, hides when playing or has played.
+/// Uses AnimatedSwitcher internally for smooth fade transitions.
+class _ThumbnailVisibility extends ConsumerWidget {
+  const _ThumbnailVisibility({required this.isCurrentClip, required this.clip});
+
+  final bool isCurrentClip;
+  final RecordingClip clip;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Only watch hasPlayedOnce for current clip
+    final hasPlayedOnce = isCurrentClip
+        ? ref.watch(videoEditorProvider.select((s) => s.hasPlayedOnce))
+        : false;
+
+    return AnimatedSwitcher(
+      layoutBuilder: (currentChild, previousChildren) => Stack(
+        fit: StackFit.expand,
+        alignment: Alignment.center,
+        children: [...previousChildren, if (currentChild != null) currentChild],
+      ),
+      duration: const Duration(milliseconds: 150),
+      child: hasPlayedOnce
+          ? const SizedBox.shrink()
+          : _ClipThumbnail(clip: clip),
     );
   }
 }

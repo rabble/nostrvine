@@ -290,6 +290,12 @@ class MockVideoEventService extends _i1.Mock implements _i3.VideoEventService {
           as List<_i4.VideoEvent>);
 
   @override
+  void removeVideoCompletely(String? videoId) => super.noSuchMethod(
+    Invocation.method(#removeVideoCompletely, [videoId]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   void removeVideoFromAuthorList(String? authorPubkey, String? videoId) =>
       super.noSuchMethod(
         Invocation.method(#removeVideoFromAuthorList, [authorPubkey, videoId]),
@@ -1097,6 +1103,14 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
           as _i11.Future<bool>);
 
   @override
+  _i11.Future<int> addRelays(List<String>? relayUrls) =>
+      (super.noSuchMethod(
+            Invocation.method(#addRelays, [relayUrls]),
+            returnValue: _i11.Future<int>.value(0),
+          )
+          as _i11.Future<int>);
+
+  @override
   _i11.Future<bool> removeRelay(String? relayUrl) =>
       (super.noSuchMethod(
             Invocation.method(#removeRelay, [relayUrl]),
@@ -1142,6 +1156,9 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
   _i11.Future<_i10.Event?> sendLike(
     String? eventId, {
     String? content,
+    String? addressableId,
+    String? targetAuthorPubkey,
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) =>
@@ -1151,6 +1168,9 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
               [eventId],
               {
                 #content: content,
+                #addressableId: addressableId,
+                #targetAuthorPubkey: targetAuthorPubkey,
+                #targetKind: targetKind,
                 #tempRelays: tempRelays,
                 #targetRelays: targetRelays,
               },

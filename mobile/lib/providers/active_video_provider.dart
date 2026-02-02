@@ -9,7 +9,7 @@ import 'package:openvine/providers/liked_videos_state_bridge.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
-import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';

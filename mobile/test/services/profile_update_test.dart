@@ -263,6 +263,10 @@ void main() {
         ),
       ).thenAnswer((_) async => 'sub_123');
 
+      // Mock addRelay to return false (indexer relays not available)
+      // This prevents the indexer fallback from throwing MissingStubError
+      when(mockNostrService.addRelay(any)).thenAnswer((_) async => false);
+
       // Initialize service
       await service.initialize();
 
@@ -278,6 +282,9 @@ void main() {
       await service.fetchProfile(pubkey, forceRefresh: true);
 
       // Verify subscription was created
+      // Note: With the indexer fallback logic, createSubscription is called twice:
+      // 1. First attempt via main relay batch fetch
+      // 2. Retry attempt after indexer fallback fails
       verify(
         mockSubscriptionManager.createSubscription(
           name: anyNamed('name'),
@@ -287,7 +294,7 @@ void main() {
           onComplete: anyNamed('onComplete'),
           priority: anyNamed('priority'),
         ),
-      ).called(1);
+      ).called(2);
     });
   });
 }

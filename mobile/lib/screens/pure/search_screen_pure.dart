@@ -11,11 +11,14 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
-import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/router/router.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/utils/search_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/user_search_view.dart';
@@ -69,8 +72,10 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
   bool _isSearching = false;
   bool _isSearchingExternal = false;
+  bool _isSearchingWebSocket = false; // Track WebSocket search phase separately
   String _currentQuery = '';
   Timer? _debounceTimer;
+  int _searchGeneration = 0; // Prevents race conditions between search phases
 
   @override
   void initState() {
@@ -159,11 +164,10 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     );
 
     try {
-      // Search local cache ONLY
       final videoEventService = ref.read(videoEventServiceProvider);
       final videos = videoEventService.discoveryVideos;
-
       final profileService = ref.read(userProfileServiceProvider);
+      final blocklistService = ref.read(contentBlocklistServiceProvider);
 
       Log.debug(
         '🔍 SearchScreenPure: Filtering ${videos.length} cached videos',
@@ -172,18 +176,20 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
       // Filter local videos based on search query
       final filteredVideos = videos.where((video) {
-        final titleMatch =
-            video.title?.toLowerCase().contains(query.toLowerCase()) ?? false;
-        final contentMatch = video.content.toLowerCase().contains(
-          query.toLowerCase(),
-        );
-        final hashtagMatch = video.hashtags.any(
-          (tag) => tag.toLowerCase().contains(query.toLowerCase()),
-        );
+        // Filter out blocked users first
+        if (blocklistService.shouldFilterFromFeeds(video.pubkey)) {
+          return false;
+        }
 
-        final profile = profileService.getDisplayName(video.pubkey);
-        final userMatch = profile.toLowerCase().contains(query.toLowerCase());
-        return titleMatch || contentMatch || hashtagMatch || userMatch;
+        final creatorName = profileService.getDisplayName(video.pubkey);
+        final score = SearchUtils.matchVideo(
+          query: query,
+          title: video.title,
+          content: video.content,
+          hashtags: video.hashtags,
+          creatorName: creatorName,
+        );
+        return score >= 0.3;
       }).toList();
 
       // Extract unique hashtags from local results
@@ -197,17 +203,14 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
         }
       }
 
-      // Sort local results before showing
       filteredVideos.sort(VideoEvent.compareByLoopsThenTime);
 
-      // Show local results
       if (mounted) {
         setState(() {
           _videoResults = filteredVideos;
           _hashtagResults = hashtags.take(20).toList();
           _isSearching = false;
         });
-        // Update provider so active video system can access search results
         ref.read(searchScreenVideosProvider.notifier).state = filteredVideos;
       }
 
@@ -216,8 +219,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
         category: LogCategory.video,
       );
 
-      // Automatically search external relays (no button needed)
-      _searchExternalRelays();
+      unawaited(_searchExternalRelays());
     } catch (e) {
       Log.error(
         '🔍 SearchScreenPure: Local search failed: $e',
@@ -232,91 +234,207 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     }
   }
 
-  /// Search external relays for more results (user-initiated)
+  /// Search external sources for more results
+  ///
+  /// Strategy: Try Funnelcake REST API first (fast), then WebSocket NIP-50 (slower)
+  /// Results flow incrementally - REST results appear first, WS results merge in
+  ///
+  /// Uses a generation counter to prevent race conditions when queries change
+  /// mid-search - stale results from old queries are discarded.
   Future<void> _searchExternalRelays() async {
     if (_currentQuery.isEmpty || _isSearchingExternal) return;
+
+    // Increment generation to invalidate any in-flight searches
+    final generation = ++_searchGeneration;
 
     setState(() {
       _isSearchingExternal = true;
     });
 
+    final querySnapshot = _currentQuery;
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
+
+    // Helper to check if this search is still valid
+    bool isSearchStale() => !mounted || _searchGeneration != generation;
+
+    // Check if Funnelcake REST API is available
+    final funnelcakeAvailable =
+        ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
+
     Log.info(
-      '🔍 SearchScreenPure: Searching external relays for: $_currentQuery',
+      '🔍 SearchScreenPure: External search for "$querySnapshot" '
+      '(funnelcake: $funnelcakeAvailable)',
       category: LogCategory.video,
     );
 
-    try {
-      final videoEventService = ref.read(videoEventServiceProvider);
+    // ===== PHASE 1: Funnelcake REST API (fast) =====
+    if (funnelcakeAvailable) {
+      try {
+        final analyticsService = ref.read(analyticsApiServiceProvider);
 
-      // Search external relays via NIP-50
-      await videoEventService.searchVideos(_currentQuery, limit: 100);
+        Log.debug(
+          '🔍 SearchScreenPure: Trying Funnelcake REST search...',
+          category: LogCategory.video,
+        );
 
-      // Get remote results
-      final remoteResults = videoEventService.searchResults;
+        final restResults = await analyticsService.searchVideos(
+          query: querySnapshot,
+          limit: 100,
+        );
 
-      // Combine local + remote results
-      final allVideos = [..._videoResults, ...remoteResults];
+        // Filter out blocked users
+        final filteredRestResults = restResults
+            .where(
+              (video) => !blocklistService.shouldFilterFromFeeds(video.pubkey),
+            )
+            .toList();
 
-      // Deduplicate by video ID
-      final seenIds = <String>{};
-      final uniqueVideos = allVideos.where((video) {
-        if (seenIds.contains(video.id)) return false;
-        seenIds.add(video.id);
-        return true;
-      }).toList();
+        if (filteredRestResults.isNotEmpty && !isSearchStale()) {
+          // Merge REST results with local results
+          _mergeAndUpdateResults(
+            newVideos: filteredRestResults,
+            blocklistService: blocklistService,
+            querySnapshot: querySnapshot,
+            generation: generation,
+          );
 
-      // Sort: new vines (no loops) chronologically, then original vines by loop count
-      uniqueVideos.sort(VideoEvent.compareByLoopsThenTime);
-
-      // Extract all unique hashtags from combined results
-      final allHashtags = <String>{};
-
-      for (final video in uniqueVideos) {
-        for (final tag in video.hashtags) {
-          if (tag.toLowerCase().contains(_currentQuery.toLowerCase())) {
-            allHashtags.add(tag);
-          }
+          Log.info(
+            '🔍 SearchScreenPure: REST search returned '
+            '${filteredRestResults.length} results',
+            category: LogCategory.video,
+          );
         }
-      }
-
-      if (mounted) {
-        setState(() {
-          _videoResults = uniqueVideos;
-          _hashtagResults = allHashtags.take(20).toList();
-          _isSearchingExternal = false;
-        });
-        // Update provider so active video system can access merged search results
-        ref.read(searchScreenVideosProvider.notifier).state = uniqueVideos;
-      }
-
-      Log.info(
-        '🔍 SearchScreenPure: External search complete: ${remoteResults.length} new results (total: ${uniqueVideos.length})',
-        category: LogCategory.video,
-      );
-    } catch (e) {
-      Log.error(
-        '🔍 SearchScreenPure: External search failed: $e',
-        category: LogCategory.video,
-      );
-
-      if (mounted) {
-        setState(() {
-          _isSearchingExternal = false;
-        });
+      } catch (e) {
+        Log.warning(
+          '🔍 SearchScreenPure: REST search failed, continuing to WebSocket: $e',
+          category: LogCategory.video,
+        );
       }
     }
+
+    // ===== PHASE 2: WebSocket NIP-50 search (slower, more comprehensive) =====
+    // Always run WebSocket search to catch results not in Funnelcake
+    if (!isSearchStale()) {
+      setState(() {
+        _isSearchingWebSocket = true;
+      });
+
+      try {
+        final videoEventService = ref.read(videoEventServiceProvider);
+
+        Log.debug(
+          '🔍 SearchScreenPure: Starting WebSocket NIP-50 search...',
+          category: LogCategory.video,
+        );
+
+        // Search external relays via NIP-50
+        await videoEventService.searchVideos(querySnapshot, limit: 100);
+
+        final wsResults = videoEventService.searchResults
+            .where(
+              (video) => !blocklistService.shouldFilterFromFeeds(video.pubkey),
+            )
+            .toList();
+
+        if (!isSearchStale()) {
+          // Merge WebSocket results
+          _mergeAndUpdateResults(
+            newVideos: wsResults,
+            blocklistService: blocklistService,
+            querySnapshot: querySnapshot,
+            generation: generation,
+          );
+
+          Log.info(
+            '🔍 SearchScreenPure: WebSocket search returned '
+            '${wsResults.length} results',
+            category: LogCategory.video,
+          );
+        }
+      } catch (e) {
+        // Use warning level since this is recoverable - partial results may exist
+        Log.warning(
+          '🔍 SearchScreenPure: WebSocket search failed: $e',
+          category: LogCategory.video,
+        );
+      }
+    }
+
+    // ===== Complete =====
+    if (mounted) {
+      setState(() {
+        _isSearchingExternal = false;
+        _isSearchingWebSocket = false;
+      });
+
+      Log.info(
+        '🔍 SearchScreenPure: External search complete '
+        '(total: ${_videoResults.length} videos)',
+        category: LogCategory.video,
+      );
+    }
+  }
+
+  /// Merge new results with existing results and update UI
+  ///
+  /// Uses generation counter to ensure we don't update UI with stale results
+  /// from a previous search that completed after the user changed queries.
+  void _mergeAndUpdateResults({
+    required List<VideoEvent> newVideos,
+    required ContentBlocklistService blocklistService,
+    required String querySnapshot,
+    required int generation,
+  }) {
+    // Check if this search is still valid before updating
+    if (!mounted || _searchGeneration != generation) {
+      Log.debug(
+        '🔍 SearchScreenPure: Discarding stale results for "$querySnapshot"',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    // Combine existing + new results
+    final allVideos = [..._videoResults, ...newVideos];
+
+    // Deduplicate by video ID
+    final seenIds = <String>{};
+    final uniqueVideos = allVideos.where((video) {
+      if (seenIds.contains(video.id)) return false;
+      seenIds.add(video.id);
+      return true;
+    }).toList();
+
+    // Sort: by loops then time
+    uniqueVideos.sort(VideoEvent.compareByLoopsThenTime);
+
+    // Extract all unique hashtags from combined results
+    final allHashtags = <String>{};
+
+    for (final video in uniqueVideos) {
+      for (final tag in video.hashtags) {
+        if (tag.toLowerCase().contains(querySnapshot.toLowerCase())) {
+          allHashtags.add(tag);
+        }
+      }
+    }
+
+    setState(() {
+      _videoResults = uniqueVideos;
+      _hashtagResults = allHashtags.take(20).toList();
+    });
+    // Update provider so active video system can access merged search results
+    ref.read(searchScreenVideosProvider.notifier).state = uniqueVideos;
   }
 
   @override
   Widget build(BuildContext context) {
-    // Check if we're in feed mode (videoIndex set in URL)
     final pageContext = ref.watch(pageContextProvider);
     final isInFeedMode = pageContext.maybeWhen(
       data: (ctx) => ctx.type == RouteType.search && ctx.videoIndex != null,
       orElse: () => false,
     );
 
-    // If in feed mode, show video player instead of search UI
     if (isInFeedMode && _videoResults.isNotEmpty) {
       final videoIndex = pageContext.asData?.value.videoIndex ?? 0;
       final safeIndex = videoIndex.clamp(0, _videoResults.length - 1);
@@ -504,30 +622,54 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
     return Column(
       children: [
-        // Show loading indicator when searching external relays
+        // Show search status indicator
         if (_isSearchingExternal)
           Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             decoration: BoxDecoration(
               color: VineTheme.cardBackground,
               borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: VineTheme.vineGreen.withValues(alpha: 0.3),
+              ),
             ),
             child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 SizedBox(
-                  width: 20,
-                  height: 20,
+                  width: 16,
+                  height: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
                     color: VineTheme.vineGreen,
                   ),
                 ),
                 const SizedBox(width: 12),
-                Text(
-                  'Searching servers...',
-                  style: TextStyle(color: VineTheme.whiteText),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(
+                        _isSearchingWebSocket
+                            ? 'Searching Nostr relays...'
+                            : 'Searching servers...',
+                        style: TextStyle(
+                          color: VineTheme.whiteText,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      if (_videoResults.isNotEmpty)
+                        Text(
+                          '${_videoResults.length} results found',
+                          style: TextStyle(
+                            color: VineTheme.secondaryText,
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
+                  ),
                 ),
               ],
             ),

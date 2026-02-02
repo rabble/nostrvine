@@ -1,8 +1,20 @@
 appId: co.openvine.app
+env:
+  VIDEO_USER: ""
+  VIDEO_DESCRIPTION: ""
+  VIDEO_TITLE: "time to"
 ---
 - runFlow: ../tests/loginFreshInstall.yaml
 - runFlow: ../tests/videoLike.yaml
-- runFlow: ../tests/videoUnlike.yaml
+
+#healthy app re-open
+- stopApp
+- launchApp
+
+- runFlow:
+    file: ../tests/videoUnlike.yaml
+    env:
+      VIDEO_TITLE: ${VIDEO_TITLE}
 
 #Tear down
 - killApp

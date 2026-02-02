@@ -1,4 +1,7 @@
 appId: co.openvine.app
+env:
+  VIDEO_USER: ""
+  VIDEO_DESCRIPTION: ""
 ---
 - runFlow: ../tests/loginFreshInstall.yaml
 - runFlow: ../tests/follow.yaml

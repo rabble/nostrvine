@@ -9,12 +9,12 @@ import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
-import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/router_location_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/repositories/video_repository.dart';
 import 'package:openvine/utils/npub_hex.dart';
 
 /// Helper to wait for pageContext to emit a value
@@ -118,6 +118,7 @@ class _FakeVideoEventService extends VideoEventService {
       super(
         _FakeNostrService(),
         subscriptionManager: _FakeSubscriptionManager(),
+        videoRepository: VideoRepository(),
       );
 
   final Map<String, List<VideoEvent>> _authorVideos;

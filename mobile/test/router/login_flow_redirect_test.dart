@@ -2,7 +2,7 @@
 // ABOUTME: Tests redirect function behavior without full router instantiation
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/divine_auth_screen.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';

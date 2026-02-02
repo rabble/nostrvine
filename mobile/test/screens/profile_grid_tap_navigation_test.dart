@@ -12,7 +12,7 @@ import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/state/video_feed_state.dart';

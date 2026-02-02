@@ -22,6 +22,10 @@ class NostrServiceFactory {
   /// If not provided, falls back to [AppConstants.defaultRelayUrl].
   ///
   /// Takes [dbClient] for local event caching with optimistic updates.
+  ///
+  /// Note: User relays (NIP-65) should be added separately via
+  /// [NostrClient.addRelays] and awaited BEFORE calling [initialize]
+  /// to avoid race conditions.
   static NostrClient create({
     SecureKeyContainer? keyContainer,
     RelayStatisticsService? statisticsService,
@@ -32,8 +36,11 @@ class NostrServiceFactory {
     /// signer will be used instead of the local `AuthServiceSigner`.
     NostrSigner? rpcSigner,
   }) {
+    final divineRelayUrl =
+        environmentConfig?.relayUrl ?? AppConstants.defaultRelayUrl;
+
     UnifiedLogger.info(
-      'Creating NostrClient via factory',
+      'Creating NostrClient via factory with diVine relay: $divineRelayUrl',
       name: 'NostrServiceFactory',
     );
 
@@ -46,20 +53,20 @@ class NostrServiceFactory {
     final config = NostrClientConfig(signer: signer);
 
     // Create relay manager config with persistent storage
-    // Use relay URL from environment config if provided, otherwise fall back to default
-    final relayUrl =
-        environmentConfig?.relayUrl ?? AppConstants.defaultRelayUrl;
+    // The diVine relay is always the default relay (cannot be removed)
     final relayManagerConfig = RelayManagerConfig(
-      defaultRelayUrl: relayUrl,
+      defaultRelayUrl: divineRelayUrl,
       storage: SharedPreferencesRelayStorage(),
     );
 
     // Create the NostrClient
-    return NostrClient(
+    final client = NostrClient(
       config: config,
       relayManagerConfig: relayManagerConfig,
       dbClient: dbClient,
     );
+
+    return client;
   }
 
   /// Initialize the created client

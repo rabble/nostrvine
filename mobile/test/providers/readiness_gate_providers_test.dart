@@ -10,7 +10,7 @@ import 'package:mockito/mockito.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
-import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:nostr_client/nostr_client.dart';
 
 import 'readiness_gate_providers_test.mocks.dart';

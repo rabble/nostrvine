@@ -16,8 +16,9 @@ RecordingClip _createClip({Completer<bool>? processingCompleter}) {
     video: EditorVideo.file('/test/video.mp4'),
     duration: const Duration(seconds: 2),
     recordedAt: DateTime.now(),
-    aspectRatio: model.AspectRatio.square,
+    targetAspectRatio: model.AspectRatio.square,
     processingCompleter: processingCompleter,
+    originalAspectRatio: 9 / 16,
   );
 }
 

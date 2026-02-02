@@ -1,6 +1,7 @@
 appId: co.openvine.app
 ---
-- assertVisible: Profile
+- assertVisible: My Profile
+- assertVisible: More
 - assertVisible: Videos
 - assertVisible:
     text: "^.*\\sFollowers$"
@@ -8,11 +9,10 @@ appId: co.openvine.app
     text: "^.*\\sFollowing$"
 - assertVisible:
     text: "^npub.*"
-- assertVisible: Known Loops
-- assertVisible: Known Likes
-- assertVisible: Edit Profile
-- assertVisible: Clips
-- assertVisible: Share Profile
+
+- assertVisible: Edit
+- assertVisible: Library
+
 - assertVisible: Tab 1 of 3
 - assertVisible: Tab 2 of 3
 - assertVisible: Tab 3 of 3

@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
@@ -46,8 +47,18 @@ void main() {
       mockNostrClient = MockNostrClient();
       mockRepository = MockSoundsRepository();
 
-      // Default stubs for NostrClient
+      // Default stubs for NostrClient (SoundsRepository.initialize uses these)
       when(() => mockNostrClient.hasKeys).thenReturn(false);
+      when(
+        () => mockNostrClient.queryEvents(any()),
+      ).thenAnswer((_) async => <Event>[]);
+      when(
+        () => mockNostrClient.subscribe(
+          any(),
+          subscriptionId: any(named: 'subscriptionId'),
+        ),
+      ).thenAnswer((_) => Stream<Event>.empty());
+      when(() => mockNostrClient.unsubscribe(any())).thenAnswer((_) async {});
     });
 
     group('soundsRepositoryProvider', () {

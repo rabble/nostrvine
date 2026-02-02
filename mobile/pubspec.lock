@@ -65,14 +65,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.2+1"
-  app_device_integrity:
-    dependency: "direct main"
-    description:
-      name: app_device_integrity
-      sha256: "626e4f94ce393866e9aeb2d2c989817e13722ce5e5c93f81aae967f187f96dda"
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.0"
   app_links:
     dependency: "direct main"
     description:
@@ -922,6 +914,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.0.3"
+  flutter_staggered_grid_view:
+    dependency: "direct main"
+    description:
+      name: flutter_staggered_grid_view
+      sha256: "19e7abb550c96fbfeb546b23f3ff356ee7c59a019a651f8f102a4ba9b7349395"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.7.0"
   flutter_svg:
     dependency: "direct main"
     description:
@@ -1586,18 +1586,18 @@ packages:
     dependency: "direct main"
     description:
       name: pro_image_editor
-      sha256: baa12ac91b25617d0f98e3146a890edf47a2a6ab5f575cf3caf9abbb9366f24c
+      sha256: "8b610108fdcd1b0e8b5c170533096c64cbdf9d786555d05114e7a84e815ff4b8"
       url: "https://pub.dev"
     source: hosted
-    version: "11.15.5"
+    version: "11.18.4"
   pro_video_editor:
     dependency: "direct main"
     description:
       name: pro_video_editor
-      sha256: "04f85966e2210267551e96047fa7532706ae400162b0748d2e8721f4736e479a"
+      sha256: ce3c181983231917b51c0e1bf791e630b541764346c6f9db95a8d04b8c98bc1a
       url: "https://pub.dev"
     source: hosted
-    version: "1.2.1"
+    version: "1.4.0"
   process:
     dependency: transitive
     description:
@@ -1654,6 +1654,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.5.0"
+  qr:
+    dependency: transitive
+    description:
+      name: qr
+      sha256: "5a1d2586170e172b8a8c8470bbbffd5eb0cd38a66c0d77155ea138d3af3a4445"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.2"
+  qr_flutter:
+    dependency: "direct main"
+    description:
+      name: qr_flutter
+      sha256: "5095f0fc6e3f71d08adef8feccc8cea4f12eec18a2e31c2e8d82cb6019f4b097"
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.1.0"
   recase:
     dependency: transitive
     description:

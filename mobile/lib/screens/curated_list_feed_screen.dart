@@ -214,6 +214,7 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
   Widget _buildVideoGrid(List<VideoEvent> videos) {
     return ComposableVideoGrid(
       videos: videos,
+      useMasonryLayout: true,
       onVideoTap: (videoList, index) {
         Log.info(
           'Tapped video in curated list: ${videoList[index].id}',

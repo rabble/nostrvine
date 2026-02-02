@@ -2,3 +2,5 @@ appId: co.openvine.app
 ---
 - assertVisible: Back
 - assertVisible: Following
+- assertVisible:
+    text: ${VIDEO_USER}

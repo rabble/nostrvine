@@ -10,7 +10,7 @@ import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:openvine/providers/home_screen_controllers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
