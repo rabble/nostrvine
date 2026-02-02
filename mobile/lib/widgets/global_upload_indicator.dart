@@ -18,23 +18,48 @@ class GlobalUploadIndicator extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final uploadManager = ref.watch(uploadManagerProvider);
     final uploadManagerNotifier = ref.read(uploadManagerProvider);
-    // Get active uploads (uploading, processing, or ready to publish)
+    // Get all non-completed uploads (including pending, failed, paused)
+    // This ensures users can see and manage ALL their uploads
     final activeUploads = uploadManager.pendingUploads
         .where(
           (upload) =>
-              upload.status == UploadStatus.uploading ||
-              upload.status == UploadStatus.processing ||
-              upload.status == UploadStatus.readyToPublish ||
-              upload.status == UploadStatus.retrying,
+              upload.status != UploadStatus.published &&
+              upload.status != UploadStatus.readyToPublish,
         )
         .toList();
 
-    if (activeUploads.isEmpty) {
+    // Also check for uploads ready to publish (separate concern)
+    final readyToPublish = uploadManager.pendingUploads
+        .where((upload) => upload.status == UploadStatus.readyToPublish)
+        .toList();
+
+    // Combine and prioritize: show failed/pending first, then active, then ready
+    final allUploads = [
+      ...activeUploads.where(
+        (u) =>
+            u.status == UploadStatus.failed || u.status == UploadStatus.pending,
+      ),
+      ...activeUploads.where(
+        (u) =>
+            u.status != UploadStatus.failed && u.status != UploadStatus.pending,
+      ),
+      ...readyToPublish,
+    ];
+
+    if (allUploads.isEmpty) {
       return const SizedBox.shrink();
     }
 
-    // Show the most recent upload
-    final latestUpload = activeUploads.first;
+    // Show the most important upload (failed/pending first)
+    final latestUpload = allUploads.first;
+
+    // Determine indicator color based on overall state
+    final hasFailedUploads = allUploads.any(
+      (u) => u.status == UploadStatus.failed,
+    );
+    final hasPendingUploads = allUploads.any(
+      (u) => u.status == UploadStatus.pending,
+    );
 
     return Positioned(
       top: MediaQuery.of(context).padding.top + 8,
@@ -43,11 +68,13 @@ class GlobalUploadIndicator extends ConsumerWidget {
       child: SafeArea(
         child: GestureDetector(
           onTap: () =>
-              _showUploadDetails(context, activeUploads, uploadManagerNotifier),
+              _showUploadDetails(context, allUploads, uploadManagerNotifier),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
-              color: Colors.black.withValues(alpha: 0.8),
+              color: hasFailedUploads
+                  ? Colors.red.withValues(alpha: 0.9)
+                  : Colors.black.withValues(alpha: 0.8),
               borderRadius: BorderRadius.circular(20),
               boxShadow: [
                 BoxShadow(
@@ -60,27 +87,38 @@ class GlobalUploadIndicator extends ConsumerWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Progress indicator
-                SizedBox(
-                  width: 16,
-                  height: 16,
-                  child: CircularProgressIndicator(
-                    value: latestUpload.progressValue,
-                    strokeWidth: 2,
-                    backgroundColor: Colors.grey[600],
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      latestUpload.status == UploadStatus.failed
-                          ? Colors.red
-                          : VineTheme.vineGreen,
+                // Progress indicator or warning icon
+                if (hasFailedUploads)
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.white,
+                    size: 16,
+                  )
+                else if (hasPendingUploads)
+                  const Icon(
+                    Icons.hourglass_empty,
+                    color: Colors.white70,
+                    size: 16,
+                  )
+                else
+                  SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(
+                      value: latestUpload.progressValue,
+                      strokeWidth: 2,
+                      backgroundColor: Colors.grey[600],
+                      valueColor: const AlwaysStoppedAnimation<Color>(
+                        VineTheme.vineGreen,
+                      ),
                     ),
                   ),
-                ),
                 const SizedBox(width: 8),
 
                 // Status text
                 Flexible(
                   child: Text(
-                    _getStatusText(latestUpload, activeUploads.length),
+                    _getStatusText(latestUpload, allUploads.length),
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 12,
@@ -92,7 +130,7 @@ class GlobalUploadIndicator extends ConsumerWidget {
                 ),
 
                 // Chevron if multiple uploads
-                if (activeUploads.length > 1) ...[
+                if (allUploads.length > 1) ...[
                   const SizedBox(width: 4),
                   const Icon(
                     Icons.chevron_right,
@@ -112,6 +150,12 @@ class GlobalUploadIndicator extends ConsumerWidget {
     String baseText;
 
     switch (upload.status) {
+      case UploadStatus.failed:
+        baseText = 'Upload failed - tap to retry';
+      case UploadStatus.pending:
+        baseText = 'Upload pending...';
+      case UploadStatus.paused:
+        baseText = 'Upload paused';
       case UploadStatus.uploading:
         baseText = 'Uploading ${(upload.progressValue * 100).toInt()}%';
       case UploadStatus.processing:
@@ -120,8 +164,8 @@ class GlobalUploadIndicator extends ConsumerWidget {
         baseText = 'Ready to publish';
       case UploadStatus.retrying:
         baseText = 'Retrying upload...';
-      default:
-        baseText = upload.statusText;
+      case UploadStatus.published:
+        baseText = 'Published';
     }
 
     if (totalCount > 1) {
@@ -153,13 +197,26 @@ class GlobalUploadIndicator extends ConsumerWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'Active Uploads (${uploads.length})',
-                    style: const TextStyle(
-                      color: VineTheme.primaryText,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Pending Uploads (${uploads.length})',
+                        style: const TextStyle(
+                          color: VineTheme.primaryText,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (uploads.any((u) => u.status == UploadStatus.failed))
+                        Text(
+                          '${uploads.where((u) => u.status == UploadStatus.failed).length} failed - tap to retry',
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontSize: 12,
+                          ),
+                        ),
+                    ],
                   ),
                   IconButton(
                     icon: const Icon(
