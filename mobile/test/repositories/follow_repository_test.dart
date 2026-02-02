@@ -539,6 +539,64 @@ void main() {
       });
     });
 
+    group('self-follow prevention', () {
+      test('follow() silently ignores when target is self', () async {
+        await repository.initialize();
+
+        // Attempt to follow self (testCurrentUserPubkey is the mock's publicKey)
+        await repository.follow(testCurrentUserPubkey);
+
+        expect(repository.isFollowing(testCurrentUserPubkey), isFalse);
+        expect(repository.followingCount, 0);
+
+        // Verify sendContactList was never called
+        verifyNever(
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
+      });
+
+      test('unfollow() silently ignores when target is self', () async {
+        await repository.initialize();
+
+        // Attempt to unfollow self
+        await repository.unfollow(testCurrentUserPubkey);
+
+        // Verify sendContactList was never called
+        verifyNever(
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
+      });
+
+      test('toggleFollow() silently ignores when target is self', () async {
+        await repository.initialize();
+
+        // Attempt to toggle follow on self
+        await repository.toggleFollow(testCurrentUserPubkey);
+
+        expect(repository.isFollowing(testCurrentUserPubkey), isFalse);
+
+        // Verify sendContactList was never called
+        verifyNever(
+          () => mockNostrClient.sendContactList(
+            any(),
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
+      });
+    });
+
     group('getFollowers', () {
       test('returns empty list when pubkey is empty', () async {
         final followers = await repository.getFollowers('');

@@ -1,12 +1,44 @@
-// ABOUTME: Unit tests for VideoRecorderUIState behavior
-// ABOUTME: Tests state getters and properties without requiring camera
+// ABOUTME: Unit tests for VideoRecorderProviderState and VideoRecorderNotifier
+// ABOUTME: Tests state getters, properties, and recording lifecycle
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
+import 'package:openvine/providers/video_recorder_provider.dart';
+
+import '../mocks/mock_camera_service.dart';
+
+/// Shared test setup for VideoRecorderNotifier tests.
+class NotifierTestSetup {
+  late MockCameraService mockCamera;
+  late ProviderContainer container;
+
+  Future<void> setUp() async {
+    mockCamera = MockCameraService.create(
+      onUpdateState: ({forceCameraRebuild}) {},
+      onAutoStopped: (_) {},
+    );
+    await mockCamera.initialize();
+
+    container = ProviderContainer(
+      overrides: [
+        videoRecorderProvider.overrideWith(
+          () => VideoRecorderNotifier(mockCamera),
+        ),
+      ],
+    );
+
+    await container.read(videoRecorderProvider.notifier).initialize();
+  }
+
+  void tearDown() {
+    container.dispose();
+  }
+}
 
 void main() {
   group('VideoRecorderUIState AspectRatio', () {
@@ -297,6 +329,131 @@ void main() {
       expect(state.aspectRatio, AspectRatio.vertical);
       expect(state.flashMode, DivineFlashMode.auto);
       expect(state.timerDuration, TimerDuration.off);
+    });
+  });
+
+  group('VideoRecorderNotifier - Concurrent Stop Handling', () {
+    final setup = NotifierTestSetup();
+
+    setUp(() => setup.setUp());
+    tearDown(setup.tearDown);
+
+    test(
+      'multiple simultaneous stopRecording calls do not cause errors',
+      () async {
+        final notifier = setup.container.read(videoRecorderProvider.notifier);
+
+        // Start recording
+        await notifier.startRecording();
+
+        // Verify recording started
+        expect(
+          setup.container.read(videoRecorderProvider).recordingState,
+          VideoRecorderState.recording,
+        );
+
+        // Fire multiple stop calls simultaneously
+        final stopFutures = [
+          notifier.stopRecording(),
+          notifier.stopRecording(),
+          notifier.stopRecording(),
+        ];
+
+        // All should complete without throwing
+        await expectLater(Future.wait(stopFutures), completes);
+
+        // State should be idle after stopping
+        expect(
+          setup.container.read(videoRecorderProvider).recordingState,
+          VideoRecorderState.idle,
+        );
+      },
+    );
+
+    test(
+      'startRecording is blocked while stopRecording is in progress',
+      () async {
+        final notifier = setup.container.read(videoRecorderProvider.notifier);
+
+        // Start recording
+        await notifier.startRecording();
+        expect(
+          setup.container.read(videoRecorderProvider).recordingState,
+          VideoRecorderState.recording,
+        );
+
+        // Begin stopping (don't await yet)
+        final stopFuture = notifier.stopRecording();
+
+        // Try to start recording while stop is in progress
+        // This should be blocked by _isStoppingRecording flag
+        await notifier.startRecording();
+
+        // Wait for stop to complete
+        await stopFuture;
+
+        // State should be idle (start was blocked)
+        expect(
+          setup.container.read(videoRecorderProvider).recordingState,
+          VideoRecorderState.idle,
+        );
+      },
+    );
+  });
+
+  group('VideoRecorderNotifier - Recording Lifecycle', () {
+    final setup = NotifierTestSetup();
+
+    setUp(() => setup.setUp());
+    tearDown(setup.tearDown);
+
+    test('can start and stop recording normally', () async {
+      final notifier = setup.container.read(videoRecorderProvider.notifier);
+
+      // Start recording
+      await notifier.startRecording();
+      expect(
+        setup.container.read(videoRecorderProvider).recordingState,
+        VideoRecorderState.recording,
+      );
+
+      // Stop recording
+      await notifier.stopRecording();
+      expect(
+        setup.container.read(videoRecorderProvider).recordingState,
+        VideoRecorderState.idle,
+      );
+    });
+
+    test('stopRecording without starting does nothing', () async {
+      final notifier = setup.container.read(videoRecorderProvider.notifier);
+
+      // Try to stop when not recording
+      await notifier.stopRecording();
+
+      // State should remain idle
+      expect(
+        setup.container.read(videoRecorderProvider).recordingState,
+        VideoRecorderState.idle,
+      );
+    });
+
+    test('toggleRecording starts when idle and stops when recording', () async {
+      final notifier = setup.container.read(videoRecorderProvider.notifier);
+
+      // Toggle to start
+      await notifier.toggleRecording();
+      expect(
+        setup.container.read(videoRecorderProvider).recordingState,
+        VideoRecorderState.recording,
+      );
+
+      // Toggle to stop
+      await notifier.toggleRecording();
+      expect(
+        setup.container.read(videoRecorderProvider).recordingState,
+        VideoRecorderState.idle,
+      );
     });
   });
 }

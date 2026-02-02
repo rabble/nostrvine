@@ -191,7 +191,10 @@ class CameraMobileService extends CameraService {
         name: 'CameraMobileService',
         category: .video,
       );
-      final success = await _camera.startRecording(maxDuration: maxDuration);
+      final success = await _camera.startRecording(
+        maxDuration: maxDuration,
+        useCache: false,
+      );
       if (success) {
         Log.info(
           '📷 Video recording truly started',

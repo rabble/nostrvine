@@ -7,6 +7,7 @@ import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/page_context_provider.dart'
     show parseRoute, buildRoute;
 import 'package:openvine/screens/auth/email_verification_screen.dart';
+import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -23,6 +24,7 @@ final routeNormalizationProvider = Provider<void>((ref) {
     // EmailVerificationScreen supports both token mode (?token=) and polling mode (?deviceCode=)
     // Use contains() to handle both path-only and full URL formats (deep links include host)
     if (loc.startsWith(WelcomeScreen.path) ||
+        loc.startsWith(NostrConnectScreen.path) ||
         loc.contains('${ResetPasswordScreen.path}?token=') ||
         loc.contains('${EmailVerificationScreen.path}?')) {
       Log.info(

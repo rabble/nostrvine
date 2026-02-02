@@ -2,17 +2,21 @@
 // ABOUTME: Header title uses Bricolage Grotesque font, camera button in bottom nav
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/vine_drawer.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/classic_vines_provider.dart';
+import 'package:openvine/providers/for_you_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
@@ -43,16 +47,20 @@ class AppShell extends ConsumerWidget {
         // When in feed mode (watching a video), show the tab name
         if (ctx?.videoIndex != null) {
           final tabIndex = ref.watch(exploreTabIndexProvider);
-          switch (tabIndex) {
-            case 0:
-              return 'New Videos';
-            case 1:
-              return 'Popular Videos';
-            case 2:
-              return 'Lists';
-            default:
-              return 'Explore';
+          // Build dynamic tab names based on which optional tabs are available
+          // Order: [Classics], New Videos, Trending, [For You], Lists
+          final forYouAvailable = ref.watch(forYouAvailableProvider);
+          final classicsAvailable =
+              ref.watch(classicVinesAvailableProvider).asData?.value ?? false;
+          final tabNames = <String>[];
+          if (classicsAvailable) tabNames.add('Classics');
+          tabNames.addAll(['New Videos', 'Trending']);
+          if (forYouAvailable) tabNames.add('For You');
+          tabNames.add('Lists');
+          if (tabIndex >= 0 && tabIndex < tabNames.length) {
+            return tabNames[tabIndex];
           }
+          return 'Explore';
         }
         return 'Explore';
       case RouteType.notifications:
@@ -222,21 +230,18 @@ class AppShell extends ConsumerWidget {
     String semanticIdentifier,
   ) {
     final isSelected = currentIndex == tabIndex;
-    final iconColor = isSelected ? Colors.white : VineTheme.tabIconInactive;
 
     return Semantics(
       identifier: semanticIdentifier,
       child: GestureDetector(
         onTap: () => _handleTabTap(context, ref, tabIndex),
-        child: Container(
-          width: 48,
-          height: 48,
-          padding: const EdgeInsets.all(8),
-          child: SvgPicture.asset(
-            iconPath,
-            width: 32,
-            height: 32,
-            colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
+        child: Opacity(
+          opacity: isSelected ? 1.0 : 0.5,
+          child: Container(
+            width: 48,
+            height: 48,
+            padding: const EdgeInsets.all(8),
+            child: SvgPicture.asset(iconPath, width: 32, height: 32),
           ),
         ),
       ),
@@ -340,10 +345,6 @@ class AppShell extends ConsumerWidget {
                     'assets/icon/CaretLeft.svg',
                     width: 32,
                     height: 32,
-                    colorFilter: const ColorFilter.mode(
-                      Colors.white,
-                      BlendMode.srcIn,
-                    ),
                   ),
                 ),
                 onPressed: () {
@@ -482,10 +483,6 @@ class AppShell extends ConsumerWidget {
                       'assets/icon/menu.svg',
                       width: 32,
                       height: 32,
-                      colorFilter: const ColorFilter.mode(
-                        Colors.white,
-                        BlendMode.srcIn,
-                      ),
                     ),
                   ),
                   onPressed: () {
@@ -526,10 +523,6 @@ class AppShell extends ConsumerWidget {
                       'assets/icon/search.svg',
                       width: 32,
                       height: 32,
-                      colorFilter: const ColorFilter.mode(
-                        Colors.white,
-                        BlendMode.srcIn,
-                      ),
                     ),
                   ),
                   onPressed: () {
@@ -573,37 +566,58 @@ class AppShell extends ConsumerWidget {
                 'explore_tab',
               ),
               // Camera button in center of bottom nav
-              Semantics(
-                identifier: 'camera_button',
-                button: true,
-                label: 'Open camera',
-                child: GestureDetector(
-                  onTap: () {
-                    Log.info(
-                      '👆 User tapped camera button',
-                      name: 'Navigation',
-                      category: LogCategory.ui,
-                    );
-                    context.push(VideoRecorderScreen.path);
-                  },
-                  child: Container(
-                    width: 72,
-                    height: 48,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 8,
+              BlocBuilder<BackgroundPublishBloc, BackgroundPublishState>(
+                builder: (context, state) {
+                  final isDisabled = state.hasUploadInProgress;
+
+                  return Semantics(
+                    identifier: 'camera_button',
+                    button: true,
+                    label: isDisabled
+                        ? 'Camera disabled during upload'
+                        : 'Open camera',
+                    child: GestureDetector(
+                      onTap: isDisabled
+                          ? null
+                          : () {
+                              Log.info(
+                                '👆 User tapped camera button',
+                                name: 'Navigation',
+                                category: LogCategory.ui,
+                              );
+                              context.push(VideoRecorderScreen.path);
+                            },
+                      child: Opacity(
+                        opacity: isDisabled ? 0.5 : 1.0,
+                        child: Container(
+                          width: 72,
+                          height: 48,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 20,
+                            vertical: 8,
+                          ),
+                          decoration: BoxDecoration(
+                            color: isDisabled
+                                ? VineTheme.tabIconInactive
+                                : VineTheme.cameraButtonGreen,
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: SvgPicture.asset(
+                            'assets/icon/retro-camera.svg',
+                            width: 32,
+                            height: 32,
+                            colorFilter: isDisabled
+                                ? const ColorFilter.mode(
+                                    Colors.grey,
+                                    BlendMode.srcIn,
+                                  )
+                                : null,
+                          ),
+                        ),
+                      ),
                     ),
-                    decoration: BoxDecoration(
-                      color: VineTheme.cameraButtonGreen,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: SvgPicture.asset(
-                      'assets/icon/retro-camera.svg',
-                      width: 32,
-                      height: 32,
-                    ),
-                  ),
-                ),
+                  );
+                },
               ),
               _buildTabButton(
                 context,

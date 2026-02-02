@@ -4,6 +4,7 @@
 import 'dart:convert';
 
 import 'package:openvine/models/vine_draft.dart';
+import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,6 +15,7 @@ class DraftStorageService {
   static const String _storageKey = 'vine_drafts';
 
   /// Save a draft to storage. If a draft with the same ID exists, it will be updated.
+  /// When updating, orphaned clip files (video/thumbnail) from the old draft are deleted.
   Future<void> saveDraft(VineDraft draft) async {
     final drafts = await getAllDrafts();
 
@@ -21,6 +23,27 @@ class DraftStorageService {
     final existingIndex = drafts.indexWhere((d) => d.id == draft.id);
 
     if (existingIndex != -1) {
+      final existingDraft = drafts[existingIndex];
+
+      // Find orphaned files (in old draft but not in new draft)
+      final newFilePaths = <String?>{
+        for (final clip in draft.clips) ...[
+          clip.video.file?.path,
+          clip.thumbnailPath,
+        ],
+      };
+
+      final orphanedFiles = <String?>[
+        for (final clip in existingDraft.clips) ...[
+          if (!newFilePaths.contains(clip.video.file?.path))
+            clip.video.file?.path,
+          if (!newFilePaths.contains(clip.thumbnailPath)) clip.thumbnailPath,
+        ],
+      ];
+
+      // Delete orphaned files (only if not referenced by clip library)
+      await FileCleanupService.deleteFilesIfUnreferenced(orphanedFiles);
+
       // Update existing draft
       drafts[existingIndex] = draft;
     } else {
@@ -32,15 +55,13 @@ class DraftStorageService {
   }
 
   Future<VineDraft?> getDraftById(String id) async {
-    final prefs = await SharedPreferences.getInstance();
-    final draftService = DraftStorageService(prefs);
-    final drafts = await draftService.getAllDrafts();
+    final drafts = await getAllDrafts();
 
     final index = drafts.indexWhere((d) => d.id == id);
 
     if (index >= 0) return drafts[index];
 
-    Log.error('📝 Draft not found: ${id}', category: .video);
+    Log.error('📝 Draft not found: $id', category: LogCategory.video);
     return null;
   }
 
@@ -63,16 +84,36 @@ class DraftStorageService {
     }
   }
 
-  /// Delete a draft by ID
+  /// Delete a draft by ID and remove associated video/thumbnail files
   Future<void> deleteDraft(String id) async {
     final drafts = await getAllDrafts();
-    drafts.removeWhere((draft) => draft.id == id);
+    final draftIndex = drafts.indexWhere((draft) => draft.id == id);
+
+    if (draftIndex != -1) {
+      final draft = drafts[draftIndex];
+      drafts.removeAt(draftIndex);
+
+      // Save first, then delete files (so reference check sees updated state)
+      await _saveDrafts(drafts);
+
+      // Delete clip files only if not referenced by clip library
+      await FileCleanupService.deleteRecordingClipsFiles(draft.clips);
+      return;
+    }
+
     await _saveDrafts(drafts);
   }
 
-  /// Clear all drafts from storage
+  /// Clear all drafts from storage and delete associated files
   Future<void> clearAllDrafts() async {
+    final drafts = await getAllDrafts();
+    final allClips = drafts.expand((draft) => draft.clips).toList();
+
+    // Clear storage first, then delete files (so reference check sees updated state)
     await _prefs.remove(_storageKey);
+
+    // Delete clip files only if not referenced by clip library
+    await FileCleanupService.deleteRecordingClipsFiles(allClips);
   }
 
   /// Internal helper to save drafts list to storage

@@ -1,42 +1,44 @@
 appId: co.openvine.app
 env:
-  VIDEO_TITLE: "when you jammin to JB" # Setting the video title parameter
-  VIDEO_USER: "FunnyVines"
-  VIDEO_DESCRIPTION: "When you jammin to JB too hard and you grab a hot mic. " # Setting the video description parameter
-  COMMENT: "Boring automated comment"
+  COMMENT: "Automated comment"
   FULL_COMMENT: ""
 ---
+- evalScript: ${output.FULL_COMMENT = COMMENT + " on " + new Date().toISOString().replace('T',' ').split('.')[0]}
+
 #TC to comment a video,
-# given the user is logged in in the app,,
+# given the user is logged in in the app,
 # Comment the video with description VIDEO_TITLE
 #Steps:
 # 1. Open specific video VIDEO_TITLE
-# 2. Tap on Comment: Validate Comments section is displayed
-# 3. Input comment COMMENT and tap send: Validate comment is displayed with "now" as timestamp.
+# 2. Tap on Comment to Open the comments modal: Validate Comments section is displayed
+# 3. Input comment FULL_COMMENT and tap send: Validate comment is displayed with "now" as timestamp.
 # 4. Close the comments section: Validate playback screen is displayed
 
 # 1. Open specific video VIDEO_TITLE
-- runFlow: ../utils/openSpecificVideo.yaml
+#- runFlow: ../utils/openSpecificVideo.yaml
 
-# 2. Tap on Comment: Validate Comments section is displayed
+# 2. Tap on Comment to Open the comments modal: Validate Comments section is displayed
 - tapOn:
     id: comments_button
 - runFlow: "../asserts/assertCommentsModal.yaml"
 
 # 3. Input comment COMMENT with current timestamp: Validate comment is displayed with "now" as timestamp
-- tapOn: Add comment...
-- evalScript: ${output.runId = new Date().toISOString().replace('T',' ').split('.')[0]}
-- inputText: ${COMMENT} on ${output.runId}
-#Send comment
-- runFlow: ../utils/hideKeyboard.yaml #if displayed, hide the keyboard
+- tapOn:
+    id: comment_text_field
+- inputText: ${output.FULL_COMMENT}
+#- runFlow: ../utils/hideKeyboard.yaml #if displayed, hide the keyboard
 - tapOn:
     id: send_comment_button
-- assertVisible: ${COMMENT} # TO-DO Validate undefined on ${output.runId} - the variable is loosing the value
+- assertVisible: ${FULL_COMMENT}
+- waitForAnimationToEnd
+- assertVisible: |-
+    now
+     • 
+    You
 
 # 4. Close the comments section: Validate playback screen is displayed
-- tapOn:
-    id: close_comments_button
-- tapOn:
-    point: 50%,15%
-
+- swipe:
+    from:
+      text: "\\d+\\sComments?" # Matches one or more digits followed by " Comment" or " Comments"
+    direction: DOWN
 - runFlow: ../asserts/assertVideoPlayback.yaml

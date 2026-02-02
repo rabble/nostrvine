@@ -1,16 +1,17 @@
 // ABOUTME: Navigation drawer providing access to settings, relays, bug reports and other app options
 // ABOUTME: Reusable sidebar menu that appears from the top right on all main screens
 
+import 'dart:math';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 // import 'package:openvine/screens/p2p_sync_screen.dart'; // Hidden for release
-import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -79,257 +80,205 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
   @override
   Widget build(BuildContext context) {
     final authService = ref.watch(authServiceProvider);
-    final authState = ref.watch(currentAuthStateProvider);
-    final isAuthenticated = authState == AuthState.authenticated;
+    final statusBarHeight = MediaQuery.of(context).padding.top;
 
     return Drawer(
-      backgroundColor: VineTheme.backgroundColor,
-      child: SafeArea(
-        top: false,
-        child: Column(
-          children: [
-            // Header
-            Container(
-              width: double.infinity,
-              padding: EdgeInsets.fromLTRB(
-                20,
-                20 + MediaQuery.of(context).padding.top,
-                20,
-                20,
-              ),
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [VineTheme.vineGreen, Colors.green],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-              ),
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Divine logo
-                      Image.asset(
-                        'assets/icon/White cropped.png',
-                        width: constraints.maxWidth * 0.5,
-                        fit: BoxFit.contain,
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Version $_appVersion',
-                        style: const TextStyle(
-                          color: Colors.white70,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  );
-                },
-              ),
-            ),
-
-            // Menu items
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.symmetric(vertical: 8),
+      backgroundColor: Colors.transparent,
+      child: Container(
+        margin: EdgeInsets.only(top: statusBarHeight),
+        decoration: const BoxDecoration(
+          color: VineTheme.surfaceBackground,
+          borderRadius: const BorderRadius.only(topRight: Radius.circular(32)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: SafeArea(
+          top: false,
+          child: Stack(
+            children: [
+              Column(
                 children: [
-                  // Profile section
-                  if (isAuthenticated) ...[
-                    _buildDrawerItem(
-                      icon: Icons.person,
-                      title: 'Edit Profile',
-                      onTap: () {
-                        // Capture router before closing drawer to avoid context issues
-                        final router = GoRouter.of(context);
-                        Navigator.of(
-                          context,
-                        ).pop(); // Close drawer (not context.pop!)
-                        router.push(ProfileSetupScreen.editPath);
-                      },
+                  const SizedBox(height: 24),
+                  // Menu items
+                  Expanded(
+                    child: ListView(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      children: [
+                        _DrawerItem(
+                          title: 'Settings',
+                          onTap: () {
+                            final router = GoRouter.of(context);
+                            Navigator.of(context).pop();
+                            router.push(SettingsScreen.path);
+                          },
+                        ),
+
+                        const Divider(
+                          color: VineTheme.outlineDisabled,
+                          height: 1,
+                        ),
+
+                        _DrawerItem(
+                          title: 'Support',
+                          onTap: () async {
+                            Log.debug(
+                              '🎫 Contact Support tapped',
+                              category: LogCategory.ui,
+                            );
+
+                            final isZendeskAvailable =
+                                ZendeskSupportService.isAvailable;
+                            Log.debug(
+                              '🔍 Zendesk available: $isZendeskAvailable',
+                              category: LogCategory.ui,
+                            );
+
+                            final bugReportService = ref.read(
+                              bugReportServiceProvider,
+                            );
+                            final userProfileService = ref.read(
+                              userProfileServiceProvider,
+                            );
+                            final userPubkey = authService.currentPublicKeyHex;
+
+                            final navigatorContext = Navigator.of(
+                              context,
+                            ).context;
+
+                            Navigator.of(context).pop();
+
+                            await Future.delayed(
+                              const Duration(milliseconds: 300),
+                            );
+                            if (!navigatorContext.mounted) {
+                              Log.warning(
+                                '⚠️ Context not mounted after drawer close',
+                                category: LogCategory.ui,
+                              );
+                              return;
+                            }
+
+                            _showSupportOptionsDialog(
+                              navigatorContext,
+                              bugReportService,
+                              userProfileService,
+                              userPubkey,
+                              isZendeskAvailable,
+                            );
+                          },
+                        ),
+
+                        const Divider(
+                          color: VineTheme.outlineDisabled,
+                          height: 1,
+                        ),
+
+                        _DrawerItem(
+                          title: 'Privacy policy',
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            _launchWebPage(
+                              context,
+                              'https://divine.video/privacy',
+                              'Privacy Policy',
+                            );
+                          },
+                        ),
+
+                        const Divider(
+                          color: VineTheme.outlineDisabled,
+                          height: 1,
+                        ),
+
+                        _DrawerItem(
+                          title: 'Safety center',
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            _launchWebPage(
+                              context,
+                              'https://divine.video/safety',
+                              'Safety Center',
+                            );
+                          },
+                        ),
+
+                        const Divider(
+                          color: VineTheme.outlineDisabled,
+                          height: 1,
+                        ),
+
+                        _DrawerItem(
+                          title: 'FAQ',
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            _launchWebPage(
+                              context,
+                              'https://divine.video/faq',
+                              'FAQ',
+                            );
+                          },
+                        ),
+
+                        const Divider(
+                          color: VineTheme.outlineDisabled,
+                          height: 1,
+                        ),
+
+                        // Developer section (debug mode only)
+                        if (kDebugMode)
+                          _DrawerItem(
+                            title: 'BLoC Test Screen',
+                            onTap: () {
+                              final router = GoRouter.of(context);
+                              Navigator.of(context).pop();
+                              router.push(VideoFeedPage.path);
+                            },
+                          ),
+                      ],
                     ),
-                    const Divider(color: Colors.grey, height: 1),
-                  ],
-
-                  // Settings section
-                  _buildSectionHeader('Configuration'),
-                  _buildDrawerItem(
-                    icon: Icons.settings,
-                    title: 'Settings',
-                    onTap: () {
-                      // Capture router before closing drawer to avoid context issues
-                      final router = GoRouter.of(context);
-                      Navigator.of(
-                        context,
-                      ).pop(); // Close drawer (not context.pop!)
-                      router.push(SettingsScreen.path);
-                    },
                   ),
 
-                  const Divider(color: Colors.grey, height: 1),
-
-                  // Support section
-                  _buildSectionHeader('Support'),
-                  _buildDrawerItem(
-                    icon: Icons.support_agent,
-                    title: 'Contact Support',
-                    subtitle: 'Get help or report an issue',
-                    onTap: () async {
-                      print('🎫 Contact Support tapped');
-
-                      // Check Zendesk availability BEFORE closing drawer
-                      final isZendeskAvailable =
-                          ZendeskSupportService.isAvailable;
-                      print('🔍 Zendesk available: $isZendeskAvailable');
-
-                      // CRITICAL: Capture provider values BEFORE closing drawer
-                      // to avoid "ref unmounted" error when dialog buttons are tapped
-                      final bugReportService = ref.read(
-                        bugReportServiceProvider,
-                      );
-                      final userProfileService = ref.read(
-                        userProfileServiceProvider,
-                      );
-                      final userPubkey = authService.currentPublicKeyHex;
-
-                      // Get root context before closing drawer
-                      final navigatorContext = Navigator.of(context).context;
-
-                      Navigator.of(context).pop(); // Close drawer
-
-                      // Wait for drawer close animation
-                      await Future.delayed(const Duration(milliseconds: 300));
-                      if (!navigatorContext.mounted) {
-                        print('⚠️ Context not mounted after drawer close');
-                        return;
-                      }
-
-                      // Show support options dialog using root context
-                      // Pass captured services instead of ref
-                      _showSupportOptionsDialog(
-                        navigatorContext,
-                        bugReportService,
-                        userProfileService,
-                        userPubkey,
-                        isZendeskAvailable,
-                      );
-                    },
-                  ),
-
-                  const Divider(color: Colors.grey, height: 1),
-
-                  // Legal & Safety section
-                  _buildSectionHeader('Legal & Safety'),
-                  _buildDrawerItem(
-                    icon: Icons.privacy_tip,
-                    title: 'Privacy Policy',
-                    subtitle: 'How we handle your data',
-                    onTap: () {
-                      Navigator.of(context).pop(); // Close drawer
-                      _launchWebPage(
-                        context,
-                        'https://divine.video/privacy',
-                        'Privacy Policy',
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.shield,
-                    title: 'Safety Center',
-                    subtitle: 'Community safety guidelines',
-                    onTap: () {
-                      Navigator.of(context).pop(); // Close drawer
-                      _launchWebPage(
-                        context,
-                        'https://divine.video/safety',
-                        'Safety Center',
-                      );
-                    },
-                  ),
-                  _buildDrawerItem(
-                    icon: Icons.help,
-                    title: 'FAQ',
-                    subtitle: 'Frequently asked questions',
-                    onTap: () {
-                      Navigator.of(context).pop(); // Close drawer
-                      _launchWebPage(
-                        context,
-                        'https://divine.video/faq',
-                        'FAQ',
-                      );
-                    },
+                  // Logo and version at bottom
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(16, 128, 16, 0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SvgPicture.asset(
+                          'assets/icon/logo.svg',
+                          width: 125,
+                          height: 32,
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'App version v$_appVersion',
+                          style: VineTheme.bodySmallFont(
+                            color: VineTheme.onSurfaceDisabled,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
-            ),
-            // Developer section (debug mode only)
-            if (kDebugMode) ...[
-              const Divider(color: Colors.grey, height: 1),
-              _buildSectionHeader('Developer'),
-              _buildDrawerItem(
-                icon: Icons.science,
-                title: 'BLoC Test Screen',
-                subtitle: 'Test VideoFeedBloc architecture',
-                onTap: () {
-                  // Capture router before closing drawer
-                  final router = GoRouter.of(context);
-                  Navigator.of(context).pop(); // Close drawer
-                  router.push(VideoFeedPage.path);
-                },
+              Positioned(
+                bottom: -18,
+                right: -44,
+                child: Transform.rotate(
+                  angle: 19.07 * pi / 180,
+                  child: Image.asset(
+                    'assets/icon/MascotCropped=yes.png',
+                    width: 148,
+                    height: 148,
+                  ),
+                ),
               ),
             ],
-
-            // Footer
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: const Text(
-                'Decentralized video sharing\npowered by Nostr',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey, fontSize: 12, height: 1.4),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
-
-  Widget _buildSectionHeader(String title) => Padding(
-    padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-    child: Text(
-      title.toUpperCase(),
-      style: const TextStyle(
-        color: VineTheme.vineGreen,
-        fontSize: 12,
-        fontWeight: FontWeight.w600,
-        letterSpacing: 1.2,
-      ),
-    ),
-  );
-
-  Widget _buildDrawerItem({
-    required IconData icon,
-    required String title,
-    String? subtitle,
-    required VoidCallback onTap,
-  }) => ListTile(
-    leading: Icon(icon, color: VineTheme.vineGreen, size: 24),
-    title: Text(
-      title,
-      style: const TextStyle(
-        color: Colors.white,
-        fontSize: 16,
-        fontWeight: FontWeight.w500,
-      ),
-    ),
-    subtitle: subtitle != null
-        ? Text(
-            subtitle,
-            style: const TextStyle(color: Colors.grey, fontSize: 12),
-          )
-        : null,
-    onTap: onTap,
-  );
 
   /// Show support options dialog
   /// NOTE: All services and values must be captured BEFORE the drawer
@@ -353,8 +302,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildSupportOption(
-              context: dialogContext,
+            _SupportOption(
               icon: Icons.bug_report,
               title: 'Report a Bug',
               subtitle: 'Technical issues with the app',
@@ -370,8 +318,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
               },
             ),
             const SizedBox(height: 12),
-            _buildSupportOption(
-              context: dialogContext,
+            _SupportOption(
               icon: Icons.chat,
               title: 'View Past Messages',
               subtitle: 'Check responses from support',
@@ -383,7 +330,10 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                     userPubkey,
                     userProfileService,
                   );
-                  print('💬 Opening Zendesk ticket list');
+                  Log.debug(
+                    '💬 Opening Zendesk ticket list',
+                    category: LogCategory.ui,
+                  );
                   await ZendeskSupportService.showTicketList();
                 } else {
                   if (context.mounted) {
@@ -398,8 +348,7 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
               },
             ),
             const SizedBox(height: 12),
-            _buildSupportOption(
-              context: dialogContext,
+            _SupportOption(
               icon: Icons.help,
               title: 'View FAQ',
               subtitle: 'Common questions & answers',
@@ -423,14 +372,152 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
     );
   }
 
-  /// Build a support option button
-  Widget _buildSupportOption({
-    required BuildContext context,
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required VoidCallback onTap,
-  }) {
+  /// Set Zendesk user identity from user pubkey using pre-captured service
+  /// This version doesn't use ref, so it works after drawer is closed
+  Future<void> _setZendeskIdentityWithService(
+    String? userPubkey,
+    dynamic userProfileService,
+  ) async {
+    if (userPubkey == null) {
+      // Users always have pubkey in this app, but handle edge case gracefully
+      Log.warning(
+        '⚠️ Zendesk: No userPubkey, using baseline anonymous identity',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    try {
+      final npub = NostrKeyUtils.encodePubKey(userPubkey);
+      final profile = userProfileService.getCachedProfile(userPubkey);
+
+      Log.debug(
+        '🎫 Zendesk: Setting identity for ${profile?.bestDisplayName ?? npub}',
+        category: LogCategory.system,
+      );
+      Log.debug(
+        '🎫 Zendesk: NIP-05: ${profile?.nip05 ?? "none"}',
+        category: LogCategory.system,
+      );
+
+      await ZendeskSupportService.setUserIdentity(
+        displayName: profile?.bestDisplayName,
+        nip05: profile?.nip05,
+        npub: npub,
+      );
+
+      Log.debug(
+        '✅ Zendesk: Identity set successfully',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.error(
+        '❌ Zendesk: Failed to set identity: $e',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Handle bug report submission
+  Future<void> _handleBugReportWithServices(
+    BuildContext context,
+    dynamic bugReportService,
+    dynamic userProfileService,
+    String? userPubkey,
+    bool isZendeskAvailable,
+  ) async {
+    // Set Zendesk identity for all paths (native SDK and REST API)
+    await _setZendeskIdentityWithService(userPubkey, userProfileService);
+
+    if (isZendeskAvailable) {
+      // Get device and app info
+      final packageInfo = await PackageInfo.fromPlatform();
+      final appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
+
+      final description =
+          '''
+Please describe the bug you encountered:
+
+---
+App Version: $appVersion
+Platform: ${Theme.of(context).platform.name}
+''';
+
+      Log.debug('🐛 Opening Zendesk for bug report', category: LogCategory.ui);
+      final success = await ZendeskSupportService.showNewTicketScreen(
+        subject: 'Bug Report',
+        description: description,
+        tags: ['mobile', 'bug', 'ios'],
+      );
+
+      if (!success && context.mounted) {
+        _showSupportFallbackWithServices(context, bugReportService, userPubkey);
+      }
+    } else {
+      _showSupportFallbackWithServices(context, bugReportService, userPubkey);
+    }
+  }
+
+  /// Show fallback support options when Zendesk is not available
+  /// Note: Zendesk identity is already set by the calling method
+  void _showSupportFallbackWithServices(
+    BuildContext context,
+    dynamic bugReportService,
+    String? userPubkey,
+  ) {
+    showDialog(
+      context: context,
+      builder: (context) => BugReportDialog(
+        bugReportService: bugReportService,
+        currentScreen: 'VineDrawer',
+        userPubkey: userPubkey,
+      ),
+    );
+  }
+}
+
+class _DrawerItem extends StatelessWidget {
+  const _DrawerItem({required this.title, required this.onTap});
+
+  final String title;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListTile(
+      title: Text(
+        title,
+        style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+      ),
+      trailing: SvgPicture.asset(
+        'assets/icon/caret_right.svg',
+        width: 24,
+        height: 24,
+        colorFilter: const ColorFilter.mode(
+          VineTheme.vineGreen,
+          BlendMode.srcIn,
+        ),
+      ),
+      onTap: onTap,
+    );
+  }
+}
+
+class _SupportOption extends StatelessWidget {
+  const _SupportOption({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
@@ -468,100 +555,6 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
             Icon(Icons.chevron_right, color: Colors.grey.shade600),
           ],
         ),
-      ),
-    );
-  }
-
-  /// Set Zendesk user identity from user pubkey using pre-captured service
-  /// This version doesn't use ref, so it works after drawer is closed
-  Future<void> _setZendeskIdentityWithService(
-    String? userPubkey,
-    dynamic userProfileService,
-  ) async {
-    if (userPubkey == null) {
-      // Users always have pubkey in this app, but handle edge case gracefully
-      print('⚠️ Zendesk: No userPubkey, using baseline anonymous identity');
-      return;
-    }
-
-    try {
-      final npub = NostrKeyUtils.encodePubKey(userPubkey);
-      final profile = userProfileService.getCachedProfile(userPubkey);
-
-      print(
-        '🎫 Zendesk: Setting identity for ${profile?.bestDisplayName ?? npub}',
-      );
-      print('🎫 Zendesk: NIP-05: ${profile?.nip05 ?? "none"}');
-
-      await ZendeskSupportService.setUserIdentity(
-        displayName: profile?.bestDisplayName,
-        nip05: profile?.nip05,
-        npub: npub,
-      );
-
-      print('✅ Zendesk: Identity set successfully');
-    } catch (e) {
-      print('❌ Zendesk: Failed to set identity: $e');
-      Log.warning(
-        'Failed to set Zendesk identity: $e',
-        category: LogCategory.system,
-      );
-    }
-  }
-
-  /// Handle bug report submission
-  Future<void> _handleBugReportWithServices(
-    BuildContext context,
-    dynamic bugReportService,
-    dynamic userProfileService,
-    String? userPubkey,
-    bool isZendeskAvailable,
-  ) async {
-    // Set Zendesk identity for all paths (native SDK and REST API)
-    await _setZendeskIdentityWithService(userPubkey, userProfileService);
-
-    if (isZendeskAvailable) {
-      // Get device and app info
-      final packageInfo = await PackageInfo.fromPlatform();
-      final appVersion = '${packageInfo.version}+${packageInfo.buildNumber}';
-
-      final description =
-          '''
-Please describe the bug you encountered:
-
----
-App Version: $appVersion
-Platform: ${Theme.of(context).platform.name}
-''';
-
-      print('🐛 Opening Zendesk for bug report');
-      final success = await ZendeskSupportService.showNewTicketScreen(
-        subject: 'Bug Report',
-        description: description,
-        tags: ['mobile', 'bug', 'ios'],
-      );
-
-      if (!success && context.mounted) {
-        _showSupportFallbackWithServices(context, bugReportService, userPubkey);
-      }
-    } else {
-      _showSupportFallbackWithServices(context, bugReportService, userPubkey);
-    }
-  }
-
-  /// Show fallback support options when Zendesk is not available
-  /// Note: Zendesk identity is already set by the calling method
-  void _showSupportFallbackWithServices(
-    BuildContext context,
-    dynamic bugReportService,
-    String? userPubkey,
-  ) {
-    showDialog(
-      context: context,
-      builder: (context) => BugReportDialog(
-        bugReportService: bugReportService,
-        currentScreen: 'VineDrawer',
-        userPubkey: userPubkey,
       ),
     );
   }

@@ -93,7 +93,7 @@ class VideoEditorSplitService {
       processingCompleter: Completer<bool>(),
     );
 
-    final cachedDirectory = await getApplicationCacheDirectory();
+    final cachedDirectory = await getApplicationDocumentsDirectory();
     final startClipPath = '${cachedDirectory.path}/${startClipId}_start.mp4';
     final endClipPath = '${cachedDirectory.path}/${endClipId}_end.mp4';
 
@@ -175,14 +175,14 @@ class VideoEditorSplitService {
         name: 'VideoEditorSplitService',
         category: .video,
       );
-      final thumbnailPath = await VideoThumbnailService.extractThumbnail(
+      final thumbnailResult = await VideoThumbnailService.extractThumbnail(
         videoPath: await sourceClip.video.safeFilePath(),
-        timestamp: timestamp,
+        targetTimestamp: timestamp,
       );
-      if (thumbnailPath != null) {
-        onThumbnailExtracted?.call(targetClip, thumbnailPath);
+      if (thumbnailResult != null) {
+        onThumbnailExtracted?.call(targetClip, thumbnailResult.path);
         Log.debug(
-          '✅ Thumbnail extracted: $thumbnailPath',
+          '✅ Thumbnail extracted: ${thumbnailResult.path}',
           name: 'VideoEditorSplitService',
           category: .video,
         );

@@ -1,10 +1,7 @@
 appId: co.openvine.app
 env:
-  VIDEO_DATA: "Play video IG: @SamuelGrubbs Yaga 😂💀 162.6k 84.8M"
-  VIDEO_USER: "IG: @SamuelGrubbs"
-  VIDEO_DESCRIPTION: "Yaga 😂💀"
-  VIDEO_USER_BIO: "IG: @SamuelGrubbs IG: @SamuelGrubbs ✞He>i✞ 📧Biz Email👉SamuelGrubbsBiz@gmail.com📧 👻Snapchat/IFunny👉@SamuelGrubbs👻 📷Instagram🐥Twitter👉@SamuelGrubbs1📷🐥 #TheNerd and #Money🏀"
-
+  VIDEO_USER: ""
+  VIDEO_DESCRIPTION: ""
 tags:
   - Social
 ---
@@ -13,7 +10,7 @@ tags:
 # by starting to follow and validate it on the home screen and on the following count
 #Steps:
 # 1. Given an already logged in user, tap on Explore: Explore screen is presented
-# 2. Tap on a VIDEO_USER video and follow the user VIDEO_USER. Expected: Following is displayed
+# 2. Tap on the first video of the grid and follow the user VIDEO_USER and set VIDEO_DESCRIPTION. Expected: Following is displayed
 # 3. Browse to the home screen: VIDEO_USER videos are displayed validated thru username
 # 4. Tap on profile: validate 1 following user
 # 5. Tap on Following: VIDEO_USER is listed in User's Following
@@ -22,29 +19,38 @@ tags:
 - doubleTapOn:
     id: explore_tab
     delay: 100
-- runFlow: ../asserts/assertExplore.yaml
-# 2. Scroll until VIDEO_USER + VIDEO_DESCRIPTION is visible, tap on the video and follow the user VIDEO_USER. Expected: Unfollow is displayed
 - waitForAnimationToEnd
-# TO-DO: add regext to match likes. Something like "^\\d{3}\\.\\d{k}$"
-# TO-DO: add regext to match loops. Something like "^\\d{2}\\.\\d{M}$"
-- assertVisible:
-    text: ${VIDEO_DATA}
+
+- runFlow: ../asserts/assertExplore.yaml
+
+# 2. Tap on the first video of the grid and follow the user VIDEO_USER and set VIDEO_DESCRIPTION. Expected: Following is displayed
 - tapOn:
     id: play_button
     index: 0
-- runFlow: "../asserts/assertVideoUser&Description.yaml"
+- tapOn: #Pause the video
+    point: 50%,50%
+- runFlow: "../asserts/assertVideoPaused.yaml"
+#once added IDs by devs tap follow and validate
 - assertVisible: Follow
 #Follow VIDEO_USER
 - tapOn: Follow
 - assertVisible: Following
-
+# Extract the text from the video description
+- copyTextFrom:
+    id: video_description
+- evalScript: |
+    env.video_description = maestro.copiedText;  # Assign copied text to the variable
+# TO-DO: Extract the text from the username
 # 3. Browse to the home screen: VIDEO_USER videos are displayed validated thru username
+- tapOn:
+    point: 4%,8%
 - doubleTapOn:
     id: home_tab
     delay: 100
 - assertVisible:
     text: ${VIDEO_USER}
     optional: true
+#TO-DO: assert once ID added
 - assertVisible: Following
 
 # 4. Tap on profile: validate 1 following user
@@ -60,6 +66,6 @@ tags:
     1
     Following
 - assertVisible:
-    text: ${VIDEO_USER_BIO}
+    text: ${VIDEO_USER}
 - runFlow: ../asserts/assertUsersFollowing.yaml
 - tapOn: Back

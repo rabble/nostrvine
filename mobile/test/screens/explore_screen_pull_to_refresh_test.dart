@@ -1,4 +1,4 @@
-// ABOUTME: Test for explore screen pull-to-refresh behavior on New Videos tab
+// ABOUTME: Test for explore screen pull-to-refresh behavior on New tab
 // ABOUTME: Ensures pull-to-refresh forces a new subscription to get fresh videos
 
 import 'package:flutter_test/flutter_test.dart';

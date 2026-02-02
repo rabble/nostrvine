@@ -21,11 +21,11 @@ void main() {
       );
     });
 
-    test('RED: Tab labels should be [New Videos, Popular Videos, Lists]', () {
+    test('RED: Tab labels should be [New, Popular, Lists]', () {
       // This defines the expected tab configuration
       const expectedTabs = [
-        'New Videos',
-        'Popular Videos',
+        'New',
+        'Popular',
         'Lists', // Replaces 'Divine Team'
       ];
 
@@ -34,15 +34,11 @@ void main() {
         3,
         reason: 'Should have exactly 3 tab labels',
       );
-      expect(
-        expectedTabs[0],
-        'New Videos',
-        reason: 'First tab should be New Videos',
-      );
+      expect(expectedTabs[0], 'New', reason: 'First tab should be New');
       expect(
         expectedTabs[1],
-        'Popular Videos',
-        reason: 'Second tab should be Popular Videos',
+        'Popular',
+        reason: 'Second tab should be Popular',
       );
       expect(
         expectedTabs[2],
@@ -66,14 +62,14 @@ void main() {
         expect(
           container.read(exploreTabIndexProvider),
           0,
-          reason: 'Index 0 = New Videos',
+          reason: 'Index 0 = New',
         );
 
         container.read(exploreTabIndexProvider.notifier).state = 1;
         expect(
           container.read(exploreTabIndexProvider),
           1,
-          reason: 'Index 1 = Popular Videos',
+          reason: 'Index 1 = Popular',
         );
 
         container.read(exploreTabIndexProvider.notifier).state = 2;

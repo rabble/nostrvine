@@ -480,7 +480,7 @@ final class RelaySetChangeBridgeProvider
 }
 
 String _$relaySetChangeBridgeHash() =>
-    r'd57982bcec97c066fb5db91322facf82744f8e60';
+    r'69fd17051348b968d05f92adbaf87cc6844dea05';
 
 /// Analytics service with opt-out support
 
@@ -650,6 +650,63 @@ final class AudioSharingPreferenceServiceProvider
 
 String _$audioSharingPreferenceServiceHash() =>
     r'6d09af615c19937bc2842079c368161b513dd323';
+
+/// Audio device preference service for managing the preferred input device
+/// for recording on macOS. keepAlive ensures preference persists.
+
+@ProviderFor(audioDevicePreferenceService)
+const audioDevicePreferenceServiceProvider =
+    AudioDevicePreferenceServiceProvider._();
+
+/// Audio device preference service for managing the preferred input device
+/// for recording on macOS. keepAlive ensures preference persists.
+
+final class AudioDevicePreferenceServiceProvider
+    extends
+        $FunctionalProvider<
+          AudioDevicePreferenceService,
+          AudioDevicePreferenceService,
+          AudioDevicePreferenceService
+        >
+    with $Provider<AudioDevicePreferenceService> {
+  /// Audio device preference service for managing the preferred input device
+  /// for recording on macOS. keepAlive ensures preference persists.
+  const AudioDevicePreferenceServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'audioDevicePreferenceServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$audioDevicePreferenceServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<AudioDevicePreferenceService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AudioDevicePreferenceService create(Ref ref) {
+    return audioDevicePreferenceService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AudioDevicePreferenceService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AudioDevicePreferenceService>(value),
+    );
+  }
+}
+
+String _$audioDevicePreferenceServiceHash() =>
+    r'9880cf38a5d5ae812a798e7a5c4fa96ffa3578d6';
 
 /// Geo-blocking service for regional compliance
 
@@ -1177,11 +1234,13 @@ final class NostrKeyManagerProvider
 String _$nostrKeyManagerHash() => r'a0d67b6d79af5ecdc42bc6616542249200a24b64';
 
 /// Profile cache service for persistent profile storage
+/// keepAlive to avoid expensive Hive reinitialization on auth state changes
 
 @ProviderFor(profileCacheService)
 const profileCacheServiceProvider = ProfileCacheServiceProvider._();
 
 /// Profile cache service for persistent profile storage
+/// keepAlive to avoid expensive Hive reinitialization on auth state changes
 
 final class ProfileCacheServiceProvider
     extends
@@ -1192,13 +1251,14 @@ final class ProfileCacheServiceProvider
         >
     with $Provider<ProfileCacheService> {
   /// Profile cache service for persistent profile storage
+  /// keepAlive to avoid expensive Hive reinitialization on auth state changes
   const ProfileCacheServiceProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'profileCacheServiceProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -1227,7 +1287,7 @@ final class ProfileCacheServiceProvider
 }
 
 String _$profileCacheServiceHash() =>
-    r'2d81bd6aabd04896ce3f967da9c4c3cf99cb2824';
+    r'4de2ae89686e284dcadf4ad8d5611f7e4af8604b';
 
 /// Hashtag cache service for persistent hashtag storage
 
@@ -2019,12 +2079,12 @@ final class SubscriptionManagerProvider
 String _$subscriptionManagerHash() =>
     r'b65a6978927d3004c6f841e0b80075f9db9645d2';
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager services
+/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
 
 @ProviderFor(videoEventService)
 const videoEventServiceProvider = VideoEventServiceProvider._();
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager services
+/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
 
 final class VideoEventServiceProvider
     extends
@@ -2034,7 +2094,7 @@ final class VideoEventServiceProvider
           VideoEventService
         >
     with $Provider<VideoEventService> {
-  /// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager services
+  /// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
   const VideoEventServiceProvider._()
     : super(
         from: null,
@@ -2069,7 +2129,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'2e58eabbb8807979c479042abb7adc1bbb3bfade';
+String _$videoEventServiceHash() => r'912579edfca6f3157a2c1d999b09f17f96358077';
 
 /// Hashtag service depends on Video event service and cache service
 
@@ -2168,19 +2228,19 @@ final class UserProfileServiceProvider
 }
 
 String _$userProfileServiceHash() =>
-    r'abc2ef09d33c40550c1bdaf52206aa650c5e97b5';
+    r'c794efc557e51b13c9cf3ff59fd3f56f1582cbd0';
 
-/// Social service depends on Nostr service, Auth service, and SubscriptionManager
+/// Social service depends on Nostr service and Auth service
 
 @ProviderFor(socialService)
 const socialServiceProvider = SocialServiceProvider._();
 
-/// Social service depends on Nostr service, Auth service, and SubscriptionManager
+/// Social service depends on Nostr service and Auth service
 
 final class SocialServiceProvider
     extends $FunctionalProvider<SocialService, SocialService, SocialService>
     with $Provider<SocialService> {
-  /// Social service depends on Nostr service, Auth service, and SubscriptionManager
+  /// Social service depends on Nostr service and Auth service
   const SocialServiceProvider._()
     : super(
         from: null,
@@ -2214,7 +2274,7 @@ final class SocialServiceProvider
   }
 }
 
-String _$socialServiceHash() => r'213dee56c5edc2193f20d68b36573570f28148a1';
+String _$socialServiceHash() => r'5b4d5751d3f2ef22c9ee2610cda1c4e70b2302a7';
 
 /// Provider for FollowRepository instance
 ///

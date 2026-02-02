@@ -19,6 +19,7 @@ class CommentOptionsModal {
   static Future<bool?> show(BuildContext modalContext) {
     return VineBottomSheet.show<bool>(
       context: modalContext,
+      scrollable: false,
       expanded: false,
       title: Text(
         'Options',
@@ -28,6 +29,7 @@ class CommentOptionsModal {
         identifier: 'delete_comment_option',
         button: true,
         label: 'Delete comment',
+        excludeSemantics: true,
         child: GestureDetector(
           child: Padding(
             padding: EdgeInsets.all(16),
@@ -43,7 +45,7 @@ class CommentOptionsModal {
                 ),
                 SizedBox(width: 16),
                 Text(
-                  'Delete ',
+                  'Delete',
                   style: VineTheme.bodyFont(
                     color: Colors.red,
                     fontWeight: FontWeight.w800,

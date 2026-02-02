@@ -38,6 +38,20 @@ cd ios
 export LANG=en_US.UTF-8
 export LC_ALL=en_US.UTF-8
 
+# Find CocoaPods command
+POD_CMD=""
+if command -v pod >/dev/null 2>&1; then
+    POD_CMD="pod"
+elif [ -f "/opt/homebrew/bin/pod" ]; then
+    POD_CMD="/opt/homebrew/bin/pod"
+elif [ -f "/usr/local/bin/pod" ]; then
+    POD_CMD="/usr/local/bin/pod"
+else
+    echo "❌ ERROR: CocoaPods not found!"
+    echo "   Please install: sudo gem install cocoapods"
+    exit 1
+fi
+
 # Ensure we use the correct Ruby environment (rbenv if available)
 if [ -d "$HOME/.rbenv" ]; then
     export PATH="$HOME/.rbenv/shims:$HOME/.rbenv/bin:$PATH"
@@ -47,10 +61,10 @@ fi
 # Check if CocoaPods needs to be installed or updated
 if [ ! -f "Pods/Manifest.lock" ] || [ ! -d "Pods" ]; then
     echo "⚠️  CocoaPods not found, running pod install..."
-    pod install --verbose
+    "$POD_CMD" install --verbose
 elif [ "Podfile.lock" -nt "Pods/Manifest.lock" ]; then
     echo "⚠️  Podfile.lock is newer than Manifest.lock, running pod install..."
-    pod install --verbose
+    "$POD_CMD" install --verbose
 else
     echo "✅ CocoaPods dependencies are up to date"
 fi

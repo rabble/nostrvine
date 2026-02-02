@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -56,7 +57,8 @@ class ShareActionButton extends ConsumerWidget {
     try {
       final controllerParams = VideoControllerParams(
         videoId: video.id,
-        videoUrl: video.videoUrl!,
+        videoUrl: video.getOptimalVideoUrlForPlatform() ?? video.videoUrl!,
+        cacheUrl: video.videoUrl,
         videoEvent: video,
       );
       final controller = ref.read(
@@ -97,7 +99,8 @@ class ShareActionButton extends ConsumerWidget {
       try {
         final controllerParams = VideoControllerParams(
           videoId: video.id,
-          videoUrl: video.videoUrl!,
+          videoUrl: video.getOptimalVideoUrlForPlatform() ?? video.videoUrl!,
+          cacheUrl: video.videoUrl,
           videoEvent: video,
         );
         final controller = ref.read(

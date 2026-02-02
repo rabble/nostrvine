@@ -9,13 +9,19 @@ import android.app.Activity
 import android.content.Context
 import android.content.pm.PackageManager
 import android.graphics.SurfaceTexture
+import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CameraManager
+import android.hardware.camera2.CaptureRequest
+import android.hardware.camera2.CaptureResult
+import android.hardware.camera2.TotalCaptureResult
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
 import android.view.Surface
 import android.view.WindowManager
+import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.Camera2Interop
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
@@ -66,6 +72,39 @@ class CameraController(
     // Screen brightness for front camera "torch" mode
     private var isScreenFlashEnabled: Boolean = false
     private var screenFlashFeatureEnabled: Boolean = true
+
+    // Auto flash mode - checks brightness once when recording starts
+    private var isAutoFlashMode: Boolean = false
+    private var autoFlashTorchEnabled: Boolean = false
+    
+    // Camera2 Interop for exposure measurement (no ImageAnalysis needed)
+    // These values are continuously updated from CaptureResult
+    private var currentIso: Int = 100
+    private var currentExposureTime: Long = 0L  // nanoseconds
+    // Thresholds for "dark" detection:
+    // Front camera: Lower thresholds - screen flash helps even in moderate darkness
+    // Back camera: Higher thresholds - real flash is more aggressive, only for true darkness
+    private val frontCameraIsoThreshold: Int = 650
+    private val frontCameraExposureThreshold: Long = 20_000_000L  // 20ms
+    private val backCameraIsoThreshold: Int = 800
+    private val backCameraExposureThreshold: Long = 40_000_000L  // 40ms
+    
+    // Camera2 CaptureCallback to monitor exposure values continuously
+    private val exposureCaptureCallback = object : CameraCaptureSession.CaptureCallback() {
+        override fun onCaptureCompleted(
+            session: CameraCaptureSession,
+            request: CaptureRequest,
+            result: TotalCaptureResult
+        ) {
+            // Extract exposure values from capture result
+            result.get(CaptureResult.SENSOR_SENSITIVITY)?.let { iso ->
+                currentIso = iso
+            }
+            result.get(CaptureResult.SENSOR_EXPOSURE_TIME)?.let { exposureTime ->
+                currentExposureTime = exposureTime
+            }
+        }
+    }
 
     private var minZoom: Float = 1.0f
     private var maxZoom: Float = 1.0f
@@ -228,9 +267,23 @@ class CameraController(
     }
 
     /**
+     * Creates a Preview with Camera2Interop for exposure monitoring.
+     * Uses CaptureCallback to track ISO and exposure time for auto-flash.
+     */
+    private fun buildPreviewWithExposureMonitoring(aspectRatio: Int): Preview {
+        val previewBuilder = Preview.Builder()
+            .setTargetAspectRatio(aspectRatio)
+        
+        // Add Camera2 capture callback to monitor exposure values
+        val camera2Extender = Camera2Interop.Extender(previewBuilder)
+        camera2Extender.setSessionCaptureCallback(exposureCaptureCallback)
+        
+        return previewBuilder.build()
+    }
+
+    /**
      * Starts the camera with preview and video capture use cases.
      */
-    @OptIn(ExperimentalPersistentRecording::class)
     private fun startCamera(callback: (Map<String, Any>?, String?) -> Unit) {
         val provider = cameraProvider ?: run {
             Log.e(TAG, "Camera provider not available")
@@ -279,10 +332,8 @@ class CameraController(
             // Get the best aspect ratio based on the camera sensor
             val targetAspectRatio = getBestAspectRatio()
 
-            // Build preview with same aspect ratio as video
-            preview = Preview.Builder()
-                .setTargetAspectRatio(targetAspectRatio)
-                .build()
+            // Build preview with Camera2Interop for exposure monitoring
+            preview = buildPreviewWithExposureMonitoring(targetAspectRatio)
 
             // Variable to track if callback was already called
             var callbackCalled = false
@@ -433,10 +484,8 @@ class CameraController(
             // Get aspect ratio for this camera
             val targetAspectRatio = getBestAspectRatio()
 
-            // Create new preview with same aspect ratio
-            preview = Preview.Builder()
-                .setTargetAspectRatio(targetAspectRatio)
-                .build()
+            // Build preview with Camera2Interop for exposure monitoring
+            preview = buildPreviewWithExposureMonitoring(targetAspectRatio)
 
             // Reuse the existing flutter texture - just update buffer size when we get new resolution
             preview?.setSurfaceProvider(ContextCompat.getMainExecutor(context)) { request ->
@@ -535,6 +584,7 @@ class CameraController(
     /**
      * Sets the flash mode.
      * For front camera with torch mode, maximizes screen brightness instead.
+     * For "auto" mode, brightness will be checked once when recording starts.
      */
     fun setFlashMode(mode: String): Boolean {
         val cam = camera ?: return false
@@ -547,9 +597,19 @@ class CameraController(
                 if (mode == "torch") {
                     enableScreenFlash()
                     isTorchEnabled = true
+                    isAutoFlashMode = false
+                    return true
+                } else if (mode == "auto") {
+                    // Auto mode for front camera - will check brightness when recording starts
+                    disableScreenFlash()
+                    isTorchEnabled = false
+                    isAutoFlashMode = true
+                    currentFlashMode = ImageCapture.FLASH_MODE_AUTO
+                    Log.d(TAG, "Auto flash mode enabled for front camera")
                     return true
                 } else {
                     disableScreenFlash()
+                    isAutoFlashMode = false
                 }
             }
 
@@ -557,24 +617,32 @@ class CameraController(
                 "off" -> {
                     cam.cameraControl.enableTorch(false)
                     isTorchEnabled = false
+                    isAutoFlashMode = false
+                    autoFlashTorchEnabled = false
                     currentFlashMode = ImageCapture.FLASH_MODE_OFF
                 }
 
                 "auto" -> {
+                    // Auto mode - will check brightness when recording starts
                     cam.cameraControl.enableTorch(false)
                     isTorchEnabled = false
+                    isAutoFlashMode = true
+                    autoFlashTorchEnabled = false
                     currentFlashMode = ImageCapture.FLASH_MODE_AUTO
+                    Log.d(TAG, "Auto flash mode enabled - will check brightness when recording starts")
                 }
 
                 "on" -> {
                     cam.cameraControl.enableTorch(false)
                     isTorchEnabled = false
+                    isAutoFlashMode = false
                     currentFlashMode = ImageCapture.FLASH_MODE_ON
                 }
 
                 "torch" -> {
                     cam.cameraControl.enableTorch(true)
                     isTorchEnabled = true
+                    isAutoFlashMode = false
                 }
             }
             true
@@ -634,6 +702,80 @@ class CameraController(
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to disable screen flash", e)
             }
+        }
+    }
+
+    /**
+     * Checks if the current environment is dark based on Camera2 exposure values.
+     * Uses ISO and exposure time as indicators.
+     * Front camera has lower thresholds since screen flash is less intrusive.
+     */
+    private fun isEnvironmentDark(): Boolean {
+        val isoThreshold = if (currentLens == CameraSelector.LENS_FACING_FRONT) 
+            frontCameraIsoThreshold else backCameraIsoThreshold
+        val exposureThreshold = if (currentLens == CameraSelector.LENS_FACING_FRONT) 
+            frontCameraExposureThreshold else backCameraExposureThreshold
+        
+        // If ISO is high or exposure time is long, it's dark
+        val isDark = currentIso >= isoThreshold || currentExposureTime >= exposureThreshold
+        Log.d(TAG, "Auto flash: ISO=$currentIso (threshold=$isoThreshold), " +
+                   "ExposureTime=${currentExposureTime/1_000_000}ms (threshold=${exposureThreshold/1_000_000}ms) -> isDark=$isDark")
+        return isDark
+    }
+    
+    /**
+     * Checks the current exposure values and enables auto-flash if needed.
+     * Uses Camera2 exposure data - no ImageAnalysis required.
+     */
+    private fun checkAndEnableAutoFlash() {
+        if (!isAutoFlashMode) return
+        
+        if (isEnvironmentDark()) {
+            Log.d(TAG, "Auto flash: Dark environment detected - enabling flash")
+            enableAutoFlashTorch()
+        } else {
+            Log.d(TAG, "Auto flash: Bright environment - flash not needed")
+        }
+    }
+
+    /**
+     * Enables torch/screen flash for auto flash mode.
+     */
+    private fun enableAutoFlashTorch() {
+        autoFlashTorchEnabled = true
+        
+        try {
+            if (currentLens == CameraSelector.LENS_FACING_FRONT) {
+                enableScreenFlash()
+                Log.d(TAG, "Auto flash: Screen flash enabled for front camera")
+            } else {
+                camera?.cameraControl?.enableTorch(true)
+                Log.d(TAG, "Auto flash: Torch enabled for back camera")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Auto flash: Failed to enable torch", e)
+        }
+    }
+    
+    /**
+     * Disables torch/screen flash if it was enabled by auto flash mode.
+     * Called when recording stops.
+     */
+    private fun disableAutoFlashTorch() {
+        if (!autoFlashTorchEnabled) return
+        
+        autoFlashTorchEnabled = false
+        
+        try {
+            if (currentLens == CameraSelector.LENS_FACING_FRONT) {
+                disableScreenFlash()
+                Log.d(TAG, "Auto flash: Screen flash disabled for front camera")
+            } else {
+                camera?.cameraControl?.enableTorch(false)
+                Log.d(TAG, "Auto flash: Torch disabled for back camera")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Auto flash: Failed to disable torch", e)
         }
     }
 
@@ -723,6 +865,9 @@ class CameraController(
             callback("Audio permission not granted")
             return
         }
+
+        // Check brightness and enable auto-flash if needed (instant, uses Camera2 exposure values)
+        checkAndEnableAutoFlash()
 
         try {
             // Create output file - use cache or documents directory based on useCache parameter
@@ -874,6 +1019,9 @@ class CameraController(
         }
 
         Log.d(TAG, "Auto-stopping recording...")
+        
+        // Disable auto-flash torch if it was enabled
+        disableAutoFlashTorch()
 
         // Set the callback that will be invoked when Finalize event fires
         autoStopCallback = { result, error ->
@@ -912,6 +1060,8 @@ class CameraController(
         try {
             Log.d(TAG, "Stopping recording...")
             
+            // Disable auto-flash torch if it was enabled
+            disableAutoFlashTorch()
             // Store callback to be invoked when Finalize event fires
             manualStopCallback = callback
             
@@ -1016,8 +1166,18 @@ class CameraController(
             textureEntry = null
             flutterSurfaceTexture = null
 
+            // Shutdown executor after a delay to let CameraX finish pending tasks
+            // This prevents RejectedExecutionException during cleanup
             if (!cameraExecutor.isShutdown) {
-                cameraExecutor.shutdown()
+                mainHandler.postDelayed({
+                    try {
+                        if (!cameraExecutor.isShutdown) {
+                            cameraExecutor.shutdown()
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Error shutting down executor: ${e.message}")
+                    }
+                }, 500)
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error releasing camera", e)

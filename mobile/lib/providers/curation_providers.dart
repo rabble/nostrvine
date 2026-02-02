@@ -313,10 +313,10 @@ class AnalyticsTrending extends _$AnalyticsTrending {
       if (!ref.mounted) return;
 
       if (videos.isNotEmpty) {
-        // Deduplicate and merge
-        final existingIds = state.map((v) => v.id).toSet();
+        // Deduplicate and merge (case-insensitive for Nostr IDs)
+        final existingIds = state.map((v) => v.id.toLowerCase()).toSet();
         final newVideos = videos
-            .where((v) => !existingIds.contains(v.id))
+            .where((v) => !existingIds.contains(v.id.toLowerCase()))
             .toList();
 
         if (newVideos.isNotEmpty) {

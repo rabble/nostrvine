@@ -10,25 +10,28 @@ part of 'classic_vines_provider.dart';
 // ignore_for_file: type=lint, type=warning
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
-/// Uses REST API (Funnelcake) when available for comprehensive classic Vine data.
-/// Falls back to Nostr discovery videos that have embedded loop stats (originalLoops > 0),
-/// which includes imported classic Vines that have the loop count in their event tags.
+/// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
+/// Each page is 100 videos. With ~10k classic vines, there are ~100 pages.
+///
+/// Pull-to-refresh spins to the next page of classics.
 
 @ProviderFor(ClassicVinesFeed)
 const classicVinesFeedProvider = ClassicVinesFeedProvider._();
 
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
-/// Uses REST API (Funnelcake) when available for comprehensive classic Vine data.
-/// Falls back to Nostr discovery videos that have embedded loop stats (originalLoops > 0),
-/// which includes imported classic Vines that have the loop count in their event tags.
+/// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
+/// Each page is 100 videos. With ~10k classic vines, there are ~100 pages.
+///
+/// Pull-to-refresh spins to the next page of classics.
 final class ClassicVinesFeedProvider
     extends $AsyncNotifierProvider<ClassicVinesFeed, VideoFeedState> {
   /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
   ///
-  /// Uses REST API (Funnelcake) when available for comprehensive classic Vine data.
-  /// Falls back to Nostr discovery videos that have embedded loop stats (originalLoops > 0),
-  /// which includes imported classic Vines that have the loop count in their event tags.
+  /// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
+  /// Each page is 100 videos. With ~10k classic vines, there are ~100 pages.
+  ///
+  /// Pull-to-refresh spins to the next page of classics.
   const ClassicVinesFeedProvider._()
     : super(
         from: null,
@@ -48,13 +51,14 @@ final class ClassicVinesFeedProvider
   ClassicVinesFeed create() => ClassicVinesFeed();
 }
 
-String _$classicVinesFeedHash() => r'ff2c7359c5ad536a87b84b101a50a8f0bea35d94';
+String _$classicVinesFeedHash() => r'a9c9c3ec82f783c5a250cd1f68aa32e07578032a';
 
 /// ClassicVines feed provider - shows pre-2017 Vine archive sorted by loops
 ///
-/// Uses REST API (Funnelcake) when available for comprehensive classic Vine data.
-/// Falls back to Nostr discovery videos that have embedded loop stats (originalLoops > 0),
-/// which includes imported classic Vines that have the loop count in their event tags.
+/// Uses REST API (Funnelcake) with offset pagination to load pages on demand.
+/// Each page is 100 videos. With ~10k classic vines, there are ~100 pages.
+///
+/// Pull-to-refresh spins to the next page of classics.
 
 abstract class _$ClassicVinesFeed extends $AsyncNotifier<VideoFeedState> {
   FutureOr<VideoFeedState> build();
@@ -219,14 +223,16 @@ String _$classicVinesAvailableHash() =>
 
 /// Provider for top classic Viners derived from classic videos
 ///
-/// Aggregates videos by pubkey and sorts by total loop count
+/// Aggregates videos by pubkey and sorts by total loop count.
+/// Also triggers profile prefetching for Viners without avatars.
 
 @ProviderFor(topClassicViners)
 const topClassicVinersProvider = TopClassicVinersProvider._();
 
 /// Provider for top classic Viners derived from classic videos
 ///
-/// Aggregates videos by pubkey and sorts by total loop count
+/// Aggregates videos by pubkey and sorts by total loop count.
+/// Also triggers profile prefetching for Viners without avatars.
 
 final class TopClassicVinersProvider
     extends
@@ -240,7 +246,8 @@ final class TopClassicVinersProvider
         $FutureProvider<List<ClassicViner>> {
   /// Provider for top classic Viners derived from classic videos
   ///
-  /// Aggregates videos by pubkey and sorts by total loop count
+  /// Aggregates videos by pubkey and sorts by total loop count.
+  /// Also triggers profile prefetching for Viners without avatars.
   const TopClassicVinersProvider._()
     : super(
         from: null,
@@ -267,4 +274,4 @@ final class TopClassicVinersProvider
   }
 }
 
-String _$topClassicVinersHash() => r'580ba7973d049a9db3ff40c2d3cd6dcc3d451adf';
+String _$topClassicVinersHash() => r'90b684e574cff9f8f46ac85a9c8b78fe5640cfb9';

@@ -104,13 +104,13 @@ class EnvironmentConfig {
   int get indicatorColorValue {
     switch (environment) {
       case AppEnvironment.production:
-        return 0xFF4CAF50; // Green
+        return 0xFF27C58B; // primaryGreen
       case AppEnvironment.productionNew:
-        return 0xFF2196F3; // Blue (Funnelcake production)
+        return 0xFF34BBF1; // accentBlue
       case AppEnvironment.staging:
-        return 0xFFFFC107; // Yellow/Amber
+        return 0xFFFFF140; // accentYellow
       case AppEnvironment.dev:
-        return 0xFFFF9800; // Orange
+        return 0xFFFF7640; // accentOrange
     }
   }
 

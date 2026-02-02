@@ -45,7 +45,8 @@ RecordingClip _createClip({
     video: EditorVideo.file('/test/video.mp4'),
     duration: duration,
     recordedAt: DateTime.now(),
-    aspectRatio: model.AspectRatio.square,
+    targetAspectRatio: model.AspectRatio.square,
+    originalAspectRatio: 9 / 16,
   );
 }
 

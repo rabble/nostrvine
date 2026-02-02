@@ -208,7 +208,13 @@ void main() {
         final mockEvent = MockEvent();
         when(() => mockEvent.id).thenReturn(testReactionEventId);
         when(
-          () => mockNostrClient.sendLike(testEventId, content: '+'),
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => mockEvent);
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
@@ -222,14 +228,61 @@ void main() {
 
         expect(result, equals(testReactionEventId));
         verify(
-          () => mockNostrClient.sendLike(testEventId, content: '+'),
+          () => mockNostrClient.sendLike(
+            testEventId,
+            content: '+',
+            targetAuthorPubkey: testAuthorPubkey,
+          ),
         ).called(1);
         verify(() => mockLocalStorage.saveLikeRecord(any())).called(1);
       });
 
+      test('publishes like with addressable ID when provided', () async {
+        const testAddressableId = '34236:$testAuthorPubkey:test-d-tag';
+        final mockEvent = MockEvent();
+        when(() => mockEvent.id).thenReturn(testReactionEventId);
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer((_) async => mockEvent);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+
+        repository = createRepository();
+        final result = await repository.likeEvent(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+          addressableId: testAddressableId,
+          targetKind: 34236,
+        );
+
+        expect(result, equals(testReactionEventId));
+        verify(
+          () => mockNostrClient.sendLike(
+            testEventId,
+            content: '+',
+            addressableId: testAddressableId,
+            targetAuthorPubkey: testAuthorPubkey,
+            targetKind: 34236,
+          ),
+        ).called(1);
+      });
+
       test('throws LikeFailedException when publish fails', () async {
         when(
-          () => mockNostrClient.sendLike(testEventId, content: '+'),
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => null);
 
         repository = createRepository();
@@ -334,7 +387,13 @@ void main() {
         final mockEvent = MockEvent();
         when(() => mockEvent.id).thenReturn(testReactionEventId);
         when(
-          () => mockNostrClient.sendLike(testEventId, content: '+'),
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => mockEvent);
         when(
           () => mockLocalStorage.saveLikeRecord(any()),
@@ -348,6 +407,42 @@ void main() {
           ),
           isTrue,
         );
+      });
+
+      test('toggleLike passes addressableId and targetKind', () async {
+        const testAddressableId = '34236:$testAuthorPubkey:test-d-tag';
+        final mockEvent = MockEvent();
+        when(() => mockEvent.id).thenReturn(testReactionEventId);
+        when(
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
+        ).thenAnswer((_) async => mockEvent);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+
+        repository = createRepository();
+        await repository.toggleLike(
+          eventId: testEventId,
+          authorPubkey: testAuthorPubkey,
+          addressableId: testAddressableId,
+          targetKind: 34236,
+        );
+
+        verify(
+          () => mockNostrClient.sendLike(
+            testEventId,
+            content: '+',
+            addressableId: testAddressableId,
+            targetAuthorPubkey: testAuthorPubkey,
+            targetKind: 34236,
+          ),
+        ).called(1);
       });
 
       test('unlikes when liked and returns false', () async {
@@ -380,7 +475,13 @@ void main() {
         final mockEvent = MockEvent();
         when(() => mockEvent.id).thenReturn(testReactionEventId);
         when(
-          () => mockNostrClient.sendLike(testEventId, content: '+'),
+          () => mockNostrClient.sendLike(
+            any(),
+            content: any(named: 'content'),
+            addressableId: any(named: 'addressableId'),
+            targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
+            targetKind: any(named: 'targetKind'),
+          ),
         ).thenAnswer((_) async => mockEvent);
         when(
           () => mockNostrClient.deleteEvent(testReactionEventId),
@@ -403,13 +504,79 @@ void main() {
     });
 
     group('getLikeCount', () {
-      test('queries relay for like count', () async {
+      test('queries relay for like count by event ID', () async {
         when(
           () => mockNostrClient.countEvents(any()),
         ).thenAnswer((_) async => const CountResult(count: 42));
 
         repository = createRepository();
         expect(await repository.getLikeCount(testEventId), equals(42));
+        verify(() => mockNostrClient.countEvents(any())).called(1);
+      });
+
+      test(
+        'queries by both e and a tags when addressableId provided',
+        () async {
+          const testAddressableId = '34236:$testAuthorPubkey:test-d-tag';
+
+          // First call returns e-tag count, second call returns a-tag count
+          var callCount = 0;
+          when(
+            () => mockNostrClient.countEvents(any()),
+          ).thenAnswer((_) async {
+            callCount++;
+            return callCount == 1
+                ? const CountResult(count: 10)
+                : const CountResult(count: 15);
+          });
+
+          repository = createRepository();
+          final count = await repository.getLikeCount(
+            testEventId,
+            addressableId: testAddressableId,
+          );
+
+          // Should return the max of both counts
+          expect(count, equals(15));
+          verify(() => mockNostrClient.countEvents(any())).called(2);
+        },
+      );
+
+      test('returns max count when e-tag count is higher', () async {
+        const testAddressableId = '34236:$testAuthorPubkey:test-d-tag';
+
+        var callCount = 0;
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async {
+          callCount++;
+          return callCount == 1
+              ? const CountResult(count: 20) // e-tag count
+              : const CountResult(count: 5); // a-tag count
+        });
+
+        repository = createRepository();
+        final count = await repository.getLikeCount(
+          testEventId,
+          addressableId: testAddressableId,
+        );
+
+        expect(count, equals(20));
+      });
+
+      test('ignores empty addressableId', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer((_) async => const CountResult(count: 7));
+
+        repository = createRepository();
+        final count = await repository.getLikeCount(
+          testEventId,
+          addressableId: '',
+        );
+
+        expect(count, equals(7));
+        // Should only call once (e-tag only) since addressableId is empty
         verify(() => mockNostrClient.countEvents(any())).called(1);
       });
     });
@@ -467,6 +634,104 @@ void main() {
 
         repository = createRepository();
         expect(await repository.getLikeCounts([eventId]), {eventId: 0});
+      });
+
+      test(
+        'queries by both e and a tags when addressableIds provided',
+        () async {
+          const eventId1 = 'event_id_1_1234567890abcdef01234567890abcdef';
+          const eventId2 = 'event_id_2_1234567890abcdef01234567890abcdef';
+          const aTag1 = '34236:author1:d1';
+          const aTag2 = '34236:author2:d2';
+
+          // Reaction found via e-tag for event1
+          final mockReactionByE = MockEvent();
+          when(() => mockReactionByE.tags).thenReturn([
+            ['e', eventId1],
+          ]);
+
+          // Reactions found via a-tag for event2
+          final mockReactionByA1 = MockEvent();
+          when(() => mockReactionByA1.tags).thenReturn([
+            ['a', aTag2],
+          ]);
+          final mockReactionByA2 = MockEvent();
+          when(() => mockReactionByA2.tags).thenReturn([
+            ['a', aTag2],
+          ]);
+
+          var callCount = 0;
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async {
+            callCount++;
+            // First call is e-tag query, second is a-tag query
+            return callCount == 1
+                ? [mockReactionByE]
+                : [mockReactionByA1, mockReactionByA2];
+          });
+
+          repository = createRepository();
+          final counts = await repository.getLikeCounts(
+            [eventId1, eventId2],
+            addressableIds: {
+              eventId1: aTag1,
+              eventId2: aTag2,
+            },
+          );
+
+          // event1 has 1 from e-tag, event2 has 2 from a-tag
+          expect(counts, {eventId1: 1, eventId2: 2});
+          verify(() => mockNostrClient.queryEvents(any())).called(2);
+        },
+      );
+
+      test('returns max count when merging e and a tag results', () async {
+        const eventId = 'event_id_1234567890abcdef01234567890abcdef';
+        const aTag = '34236:author:d-tag';
+
+        // 3 reactions via e-tag
+        final mockReactionByE1 = MockEvent();
+        when(() => mockReactionByE1.tags).thenReturn([
+          ['e', eventId],
+        ]);
+        final mockReactionByE2 = MockEvent();
+        when(() => mockReactionByE2.tags).thenReturn([
+          ['e', eventId],
+        ]);
+        final mockReactionByE3 = MockEvent();
+        when(() => mockReactionByE3.tags).thenReturn([
+          ['e', eventId],
+        ]);
+
+        // 2 reactions via a-tag
+        final mockReactionByA1 = MockEvent();
+        when(() => mockReactionByA1.tags).thenReturn([
+          ['a', aTag],
+        ]);
+        final mockReactionByA2 = MockEvent();
+        when(() => mockReactionByA2.tags).thenReturn([
+          ['a', aTag],
+        ]);
+
+        var callCount = 0;
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenAnswer((_) async {
+          callCount++;
+          return callCount == 1
+              ? [mockReactionByE1, mockReactionByE2, mockReactionByE3]
+              : [mockReactionByA1, mockReactionByA2];
+        });
+
+        repository = createRepository();
+        final counts = await repository.getLikeCounts(
+          [eventId],
+          addressableIds: {eventId: aTag},
+        );
+
+        // Should return 3 (max of 3 from e-tag and 2 from a-tag)
+        expect(counts[eventId], equals(3));
       });
     });
 

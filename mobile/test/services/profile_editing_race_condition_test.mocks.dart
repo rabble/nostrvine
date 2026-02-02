@@ -51,6 +51,12 @@ class MockUserProfileService extends _i1.Mock
           as bool);
 
   @override
+  void setFunnelcakeAvailable(bool? available) => super.noSuchMethod(
+    Invocation.method(#setFunnelcakeAvailable, [available]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   void setPersistentCache(_i4.ProfileCacheService? cacheService) =>
       super.noSuchMethod(
         Invocation.method(#setPersistentCache, [cacheService]),

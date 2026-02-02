@@ -22,6 +22,8 @@ class VideoEditorProviderState {
     this.isReordering = false,
     this.isOverDeleteZone = false,
     this.isPlaying = false,
+    this.isPlayerReady = false,
+    this.hasPlayedOnce = false,
     this.isMuted = false,
     this.isProcessing = false,
     this.isSavingDraft = false,
@@ -32,6 +34,8 @@ class VideoEditorProviderState {
     this.expiration = .notExpire,
     this.metadataLimitReached = false,
     this.finalRenderedClip,
+    this.editorStateHistory = const {},
+    this.editorEditingParameters = const {},
     GlobalKey? deleteButtonKey,
   }) : deleteButtonKey = deleteButtonKey ?? GlobalKey();
 
@@ -55,6 +59,13 @@ class VideoEditorProviderState {
 
   /// Whether video playback is currently active.
   final bool isPlaying;
+
+  /// Whether the video player is initialized and ready for playback.
+  final bool isPlayerReady;
+
+  /// Whether the video has started playing at least once.
+  /// Used to determine if thumbnail should be hidden.
+  final bool hasPlayedOnce;
 
   /// Whether audio is muted during playback.
   final bool isMuted;
@@ -92,6 +103,12 @@ class VideoEditorProviderState {
   /// This represents the video output ready for publishing.
   final RecordingClip? finalRenderedClip;
 
+  /// Serialized state history from ProImageEditor for undo/redo restoration.
+  final Map<String, dynamic> editorStateHistory;
+
+  /// Serialized editing parameters (filters, drawings, etc.) from ProImageEditor.
+  final Map<String, dynamic> editorEditingParameters;
+
   /// Whether the video is valid and ready to be posted.
   ///
   /// Returns true if:
@@ -112,6 +129,8 @@ class VideoEditorProviderState {
     bool? isReordering,
     bool? isOverDeleteZone,
     bool? isPlaying,
+    bool? isPlayerReady,
+    bool? hasPlayedOnce,
     bool? isMuted,
     bool? isProcessing,
     bool? isSavingDraft,
@@ -123,6 +142,8 @@ class VideoEditorProviderState {
     VideoMetadataExpiration? expiration,
     bool? metadataLimitReached,
     RecordingClip? finalRenderedClip,
+    Map<String, dynamic>? editorStateHistory,
+    Map<String, dynamic>? editorEditingParameters,
   }) {
     return VideoEditorProviderState(
       currentClipIndex: currentClipIndex ?? this.currentClipIndex,
@@ -132,6 +153,8 @@ class VideoEditorProviderState {
       isReordering: isReordering ?? this.isReordering,
       isOverDeleteZone: isOverDeleteZone ?? this.isOverDeleteZone,
       isPlaying: isPlaying ?? this.isPlaying,
+      isPlayerReady: isPlayerReady ?? this.isPlayerReady,
+      hasPlayedOnce: hasPlayedOnce ?? this.hasPlayedOnce,
       isMuted: isMuted ?? this.isMuted,
       isProcessing: isProcessing ?? this.isProcessing,
       isSavingDraft: isSavingDraft ?? this.isSavingDraft,
@@ -143,6 +166,9 @@ class VideoEditorProviderState {
       expiration: expiration ?? this.expiration,
       metadataLimitReached: metadataLimitReached ?? this.metadataLimitReached,
       finalRenderedClip: finalRenderedClip ?? this.finalRenderedClip,
+      editorStateHistory: editorStateHistory ?? this.editorStateHistory,
+      editorEditingParameters:
+          editorEditingParameters ?? this.editorEditingParameters,
     );
   }
 }

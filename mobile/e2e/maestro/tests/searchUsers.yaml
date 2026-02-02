@@ -16,6 +16,9 @@ appId: co.openvine.app
 # 2. Input text "lele": Validate user is found
 - tapOn: Find something cool...
 - inputText: ${SEARCH_USER}
+- runFlow: ../utils/searchWorkaround.yaml
+- eraseText
+- inputText: ${SEARCH_USER}
 #Assert Users result
 - assertVisible: |-
     Users \((?!0)\d+\)
