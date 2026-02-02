@@ -362,7 +362,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
       category: LogCategory.ui,
     );
 
-    // Navigate to profile screen (grid view, not video index)
+    // Navigate to profile screen (grid view, not first video)
     final npub = normalizeToNpub(userPubkey);
     if (npub != null) {
       context.push(ProfileScreenRouter.pathForNpub(npub));
