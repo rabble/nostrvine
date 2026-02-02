@@ -90,15 +90,21 @@ void main() {
         // Verified TTL is 24 hours
         final expectedExpiry = before.add(Nip05CacheTtl.verified);
         expect(
-          result!.expiresAt.isAfter(expectedExpiry.subtract(
-            const Duration(seconds: 1),
-          )),
+          result!.expiresAt.isAfter(
+            expectedExpiry.subtract(
+              const Duration(seconds: 1),
+            ),
+          ),
           isTrue,
         );
         expect(
-          result.expiresAt.isBefore(after.add(Nip05CacheTtl.verified).add(
-            const Duration(seconds: 1),
-          )),
+          result.expiresAt.isBefore(
+            after
+                .add(Nip05CacheTtl.verified)
+                .add(
+                  const Duration(seconds: 1),
+                ),
+          ),
           isTrue,
         );
       });
@@ -117,9 +123,11 @@ void main() {
         // Failed TTL is 1 hour
         final expectedExpiry = before.add(Nip05CacheTtl.failed);
         expect(
-          result!.expiresAt.isAfter(expectedExpiry.subtract(
-            const Duration(seconds: 1),
-          )),
+          result!.expiresAt.isAfter(
+            expectedExpiry.subtract(
+              const Duration(seconds: 1),
+            ),
+          ),
           isTrue,
         );
       });
@@ -138,9 +146,11 @@ void main() {
         // Error TTL is 5 minutes
         final expectedExpiry = before.add(Nip05CacheTtl.error);
         expect(
-          result!.expiresAt.isAfter(expectedExpiry.subtract(
-            const Duration(seconds: 1),
-          )),
+          result!.expiresAt.isAfter(
+            expectedExpiry.subtract(
+              const Duration(seconds: 1),
+            ),
+          ),
           isTrue,
         );
       });
