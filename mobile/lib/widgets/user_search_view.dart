@@ -7,7 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
-import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -82,7 +82,7 @@ class _UserSearchResultsList extends StatelessWidget {
           onTap: () {
             final npub = normalizeToNpub(profile.pubkey);
             if (npub != null) {
-              context.push(ProfileScreenRouter.pathForNpub(npub));
+              context.push(OtherProfileScreen.pathForNpub(npub));
             }
           },
         );
