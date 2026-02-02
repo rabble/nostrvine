@@ -168,38 +168,41 @@ class BlossomServerDiscoveryService {
       }
 
       Log.debug(
-        'Querying ${_indexerRelays.length} indexers for kind 10063...',
+        'Querying ${_indexerRelays.length} indexers in parallel for kind 10063...',
         name: 'BlossomServerDiscoveryService',
         category: LogCategory.system,
       );
 
-      // Try each indexer until we find the server list
-      for (final indexerUrl in _indexerRelays) {
-        try {
-          final servers = await _queryIndexer(
-            indexerUrl,
-            pubkeyHex,
-            nostrClient,
-          );
-          if (servers.isNotEmpty) {
-            Log.info(
-              'Found ${servers.length} Blossom servers on indexer: $indexerUrl',
+      // Query all indexers in parallel - first success wins
+      final results = await Future.wait(
+        _indexerRelays.map((indexerUrl) async {
+          try {
+            return await _queryIndexer(indexerUrl, pubkeyHex, nostrClient);
+          } catch (e) {
+            Log.warning(
+              'Failed to query indexer $indexerUrl: $e',
               name: 'BlossomServerDiscoveryService',
               category: LogCategory.system,
             );
-
-            // Cache the result
-            await _cacheServers(npub, servers);
-
-            return BlossomDiscoveryResult.success(servers, indexerUrl);
+            return <DiscoveredBlossomServer>[];
           }
-        } catch (e) {
-          Log.warning(
-            'Failed to query indexer $indexerUrl: $e',
+        }),
+      );
+
+      // Use first non-empty result (maintains indexer priority order)
+      for (int i = 0; i < results.length; i++) {
+        if (results[i].isNotEmpty) {
+          final indexerUrl = _indexerRelays[i];
+          Log.info(
+            'Found ${results[i].length} Blossom servers on indexer: $indexerUrl',
             name: 'BlossomServerDiscoveryService',
             category: LogCategory.system,
           );
-          continue;
+
+          // Cache the result
+          await _cacheServers(npub, results[i]);
+
+          return BlossomDiscoveryResult.success(results[i], indexerUrl);
         }
       }
 
@@ -235,8 +238,20 @@ class BlossomServerDiscoveryService {
     );
 
     try {
-      // Temporarily add the indexer relay
-      final added = await client.addRelay(indexerUrl);
+      // Temporarily add the indexer relay with timeout to prevent hanging
+      final added = await client
+          .addRelay(indexerUrl)
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              Log.warning(
+                'Timeout adding indexer relay: $indexerUrl',
+                name: 'BlossomServerDiscoveryService',
+                category: LogCategory.system,
+              );
+              return false;
+            },
+          );
       if (!added) {
         Log.warning(
           'Failed to add indexer relay: $indexerUrl',
@@ -257,7 +272,7 @@ class BlossomServerDiscoveryService {
       final events = await client
           .queryEvents([filter])
           .timeout(
-            const Duration(seconds: 15),
+            const Duration(seconds: 2),
             onTimeout: () {
               Log.warning(
                 'Timeout querying indexer: $indexerUrl',

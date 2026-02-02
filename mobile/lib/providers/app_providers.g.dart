@@ -30,7 +30,7 @@ final class ConnectionStatusServiceProvider
         argument: null,
         retry: null,
         name: r'connectionStatusServiceProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -59,7 +59,63 @@ final class ConnectionStatusServiceProvider
 }
 
 String _$connectionStatusServiceHash() =>
-    r'996c945a4e09628f52d45da659e79a2529d58bcb';
+    r'30fc9602e77f81edd6e26b19f6e36e0c82a02353';
+
+/// Pending action service for offline sync of social actions
+/// Returns null when not authenticated (no userPubkey available)
+
+@ProviderFor(pendingActionService)
+const pendingActionServiceProvider = PendingActionServiceProvider._();
+
+/// Pending action service for offline sync of social actions
+/// Returns null when not authenticated (no userPubkey available)
+
+final class PendingActionServiceProvider
+    extends
+        $FunctionalProvider<
+          PendingActionService?,
+          PendingActionService?,
+          PendingActionService?
+        >
+    with $Provider<PendingActionService?> {
+  /// Pending action service for offline sync of social actions
+  /// Returns null when not authenticated (no userPubkey available)
+  const PendingActionServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'pendingActionServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$pendingActionServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<PendingActionService?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  PendingActionService? create(Ref ref) {
+    return pendingActionService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(PendingActionService? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<PendingActionService?>(value),
+    );
+  }
+}
+
+String _$pendingActionServiceHash() =>
+    r'67a3a30b8cc1072263ce47f4e2bb3c34fa876fa1';
 
 /// Relay capability service for detecting NIP-11 divine extensions
 
@@ -2347,7 +2403,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'97f26591526d0afb776def48904f4562a5338d42';
+String _$followRepositoryHash() => r'4da90451c0432828d297f3ba7350cc00873b6e7e';
 
 /// Provider for ProfileRepository instance
 ///
@@ -3755,7 +3811,7 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'22888a04bfa6cff194c104b5be555fdf22062e40';
+String _$likesRepositoryHash() => r'9376994f8bb85d89e5356830c093f4b3673a3368';
 
 /// Provider for RepostsRepository instance
 ///
@@ -3828,4 +3884,4 @@ final class RepostsRepositoryProvider
   }
 }
 
-String _$repostsRepositoryHash() => r'5676fc10ff4d2bb059f3348f3f3d8a77a14826f4';
+String _$repostsRepositoryHash() => r'66177802944101f3bdf06e338e3730047ddda2cd';

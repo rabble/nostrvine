@@ -27,6 +27,7 @@ workspace:
   - packages/divine_ui
   - packages/db_client
   - packages/divine_camera
+  - packages/funnelcake_api_client
   - packages/keycast_flutter
   - packages/likes_repository
   - packages/media_cache
