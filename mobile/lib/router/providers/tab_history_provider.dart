@@ -2,7 +2,7 @@
 // ABOUTME: Maintains a stack of visited tabs, allows navigating back through tab history
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/router/providers/providers.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Tab history provider that tracks visited tabs in order

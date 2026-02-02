@@ -9,8 +9,7 @@ import 'package:mockito/mockito.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/router/app_router.dart';
-import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/services/video_event_service.dart';
 

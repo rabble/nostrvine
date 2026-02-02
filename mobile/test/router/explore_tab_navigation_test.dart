@@ -7,8 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:mockito/annotations.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
-import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/router_location_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 

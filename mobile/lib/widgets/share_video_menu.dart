@@ -27,7 +27,7 @@ import 'package:share_plus/share_plus.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:openvine/constants/nip71_migration.dart';
-import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 

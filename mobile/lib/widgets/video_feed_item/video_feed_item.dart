@@ -20,7 +20,7 @@ import 'package:openvine/providers/overlay_visibility_provider.dart'; // For has
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/home_screen_router.dart';

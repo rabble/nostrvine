@@ -1,21 +1,16 @@
 // ABOUTME: GoRouter configuration with ShellRoute for per-tab state preservation
 // ABOUTME: URL is source of truth, bottom nav bound to routes
 
-import 'dart:convert';
-
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/providers/sounds_providers.dart';
-import 'package:openvine/router/app_shell.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/divine_auth_screen.dart';
-import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
+import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
@@ -26,10 +21,6 @@ import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
-import 'package:openvine/screens/followers/my_followers_screen.dart';
-import 'package:openvine/screens/followers/others_followers_screen.dart';
-import 'package:openvine/screens/following/my_following_screen.dart';
-import 'package:openvine/screens/following/others_following_screen.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/home_screen_router.dart';
@@ -48,268 +39,33 @@ import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
+import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
-import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-/// Route constants for followers screen.
-class FollowersRoutes {
-  FollowersRoutes._();
+// Track if we've done initial navigation to avoid redirect loops
+bool _hasNavigated = false;
 
-  /// Route name for followers screen.
-  static const routeName = 'followers';
-
-  /// Base path for followers routes.
-  static const basePath = '/followers';
-
-  /// Path pattern for followers route.
-  static const path = '/followers/:pubkey';
-
-  /// Build path for a specific user's followers.
-  static String pathForPubkey(String pubkey) => '$basePath/$pubkey';
-}
-
-/// Route constants for following screen.
-class FollowingRoutes {
-  FollowingRoutes._();
-
-  /// Route name for following screen.
-  static const routeName = 'following';
-
-  /// Base path for following routes.
-  static const basePath = '/following';
-
-  /// Path pattern for following route.
-  static const path = '/following/:pubkey';
-
-  /// Build path for a specific user's following list.
-  static String pathForPubkey(String pubkey) => '$basePath/$pubkey';
-}
-
-/// Extra data for curated list route (passed via GoRouter extra)
-class CuratedListRouteExtra {
-  const CuratedListRouteExtra({
-    required this.listName,
-    this.videoIds,
-    this.authorPubkey,
-  });
-
-  final String listName;
-  final List<String>? videoIds;
-  final String? authorPubkey;
-}
-
-/// Extra data for video editor route (passed via GoRouter extra)
-class VideoEditorRouteExtra {
-  const VideoEditorRouteExtra({
-    required this.videoPath,
-    this.externalAudioEventId,
-    this.externalAudioUrl,
-    this.externalAudioIsBundled = false,
-    this.externalAudioAssetPath,
-  });
-
-  final String videoPath;
-  final String? externalAudioEventId;
-  final String? externalAudioUrl;
-  final bool externalAudioIsBundled;
-  final String? externalAudioAssetPath;
-}
-
-// Navigator keys for per-tab state preservation
-final _rootKey = GlobalKey<NavigatorState>(debugLabel: 'root');
-final _homeKey = GlobalKey<NavigatorState>(debugLabel: 'home');
-final _exploreGridKey = GlobalKey<NavigatorState>(debugLabel: 'explore-grid');
-final _exploreFeedKey = GlobalKey<NavigatorState>(debugLabel: 'explore-feed');
-final _notificationsKey = GlobalKey<NavigatorState>(
-  debugLabel: 'notifications',
-);
-final _searchEmptyKey = GlobalKey<NavigatorState>(debugLabel: 'search-empty');
-final _searchGridKey = GlobalKey<NavigatorState>(debugLabel: 'search-grid');
-final _searchFeedKey = GlobalKey<NavigatorState>(debugLabel: 'search-feed');
-final _hashtagGridKey = GlobalKey<NavigatorState>(debugLabel: 'hashtag-grid');
-final _hashtagFeedKey = GlobalKey<NavigatorState>(debugLabel: 'hashtag-feed');
-final _profileGridKey = GlobalKey<NavigatorState>(debugLabel: 'profile-grid');
-final _profileFeedKey = GlobalKey<NavigatorState>(debugLabel: 'profile-feed');
-final _likedVideosGridKey = GlobalKey<NavigatorState>(
-  debugLabel: 'liked-videos-grid',
-);
-final _likedVideosFeedKey = GlobalKey<NavigatorState>(
-  debugLabel: 'liked-videos-feed',
-);
-
-/// Maps URL location to bottom nav tab index
-/// Returns -1 for non-tab routes (like search, settings, edit-profile) to hide bottom nav
-int tabIndexFromLocation(String loc) {
-  final uri = Uri.parse(loc);
-  final first = uri.pathSegments.isEmpty ? '' : uri.pathSegments.first;
-  switch (first) {
-    case 'home':
-      return 0;
-    case 'explore':
-      return 1;
-    case 'hashtag':
-      return 1; // Hashtag keeps explore tab active
-    case 'notifications':
-      return 2;
-    case 'profile':
-    case 'liked-videos':
-      return 3; // Liked videos keeps profile tab active
-    case 'search':
-    case 'settings':
-    case 'relay-settings':
-    case 'relay-diagnostic':
-    case 'blossom-settings':
-    case 'notification-settings':
-    case 'key-management':
-    case 'safety-settings':
-    case 'developer-options':
-    case 'edit-profile':
-    case 'setup-profile':
-    case 'import-key':
-    case 'nostr-connect':
-    case 'welcome':
-    case 'video-recorder':
-    case 'video-editor':
-    case 'video-metadata':
-    case 'clip-manager':
-    case 'drafts':
-    case 'followers':
-    case 'following':
-    case 'video-feed':
-    case 'profile-view':
-    case 'sound':
-    case 'new-video-feed':
-    case 'list':
-    case 'discover-lists':
-      return -1; // Non-tab routes - no bottom nav (outside shell)
-    default:
-      return 0; // fallback to home
-  }
-}
-
-/// Check if the CURRENT user has any cached following list in SharedPreferences
-/// Exposed for testing
-Future<bool> hasAnyFollowingInCache(SharedPreferences prefs) async {
-  // Get the current user's pubkey
-  final currentUserPubkey = prefs.getString('current_user_pubkey_hex');
-  Log.debug(
-    'Current user pubkey from prefs: $currentUserPubkey',
-    name: 'AppRouter',
-    category: LogCategory.ui,
-  );
-
-  if (currentUserPubkey == null || currentUserPubkey.isEmpty) {
-    // No current user stored - treat as no following
-    Log.debug(
-      'No current user pubkey stored, treating as no following',
-      name: 'AppRouter',
-      category: LogCategory.ui,
-    );
-    return false;
-  }
-
-  // Check only the current user's following list
-  final key = 'following_list_$currentUserPubkey';
-  final value = prefs.getString(key);
-
-  if (value == null || value.isEmpty) {
-    Log.debug(
-      'No following list cache for current user',
-      name: 'AppRouter',
-      category: LogCategory.ui,
-    );
-    return false;
-  }
-
-  try {
-    final List<dynamic> decoded = jsonDecode(value);
-    Log.debug(
-      'Current user following list has ${decoded.length} entries',
-      name: 'AppRouter',
-      category: LogCategory.ui,
-    );
-    return decoded.isNotEmpty;
-  } catch (e) {
-    Log.debug(
-      'Current user following list has invalid JSON: $e',
-      name: 'AppRouter',
-      category: LogCategory.ui,
-    );
-    return false;
-  }
-}
-
-/// Check if we should redirect to explore because user has no following list
-/// Returns the redirect path (/explore) or null if no redirect needed
-Future<String?> _checkEmptyFollowingRedirect({
-  required String location,
-  required SharedPreferences prefs,
-}) async {
-  // Only redirect to explore when coming from WelcomeScreen if user follows
-  // nobody. After that, let users navigate to home freely (they'll see a
-  // message to follow people)
-  if (location.startsWith(WelcomeScreen.path)) {
-    final hasFollowing = await hasAnyFollowingInCache(prefs);
-    Log.debug(
-      'Empty contacts check: hasFollowing=$hasFollowing, redirecting=${!hasFollowing}',
-      name: 'AppRouter',
-      category: LogCategory.ui,
-    );
-    if (!hasFollowing) {
-      Log.debug(
-        'Redirecting to /explore because no following list found',
-        name: 'AppRouter',
-        category: LogCategory.ui,
-      );
-      return ExploreScreen.path;
-    }
-  }
-  return null;
-}
-
-/// Listenable that notifies when auth state changes to/from authenticated
-/// Only notifies on meaningful state changes to avoid unnecessary router refreshes
-class _AuthStateListenable extends ChangeNotifier {
-  _AuthStateListenable(this._authService) {
-    _lastState = _authService.authState;
-    _authService.authStateStream.listen((newState) {
-      // Only notify when transitioning to or from authenticated state
-      // This prevents unnecessary router refreshes during init/login flow
-      final wasAuthenticated = _lastState == AuthState.authenticated;
-      final isAuthenticated = newState == AuthState.authenticated;
-
-      if (wasAuthenticated != isAuthenticated) {
-        _lastState = newState;
-        notifyListeners();
-      } else {
-        _lastState = newState;
-      }
-    });
-  }
-
-  final AuthService _authService;
-  AuthState? _lastState;
+/// Reset navigation state for testing purposes
+@visibleForTesting
+void resetNavigationState() {
+  _hasNavigated = false;
 }
 
 final goRouterProvider = Provider<GoRouter>((ref) {
   // Use ref.read to avoid recreating the router on auth state changes
   // The refreshListenable handles reacting to auth state changes
   final authService = ref.read(authServiceProvider);
-  final authListenable = _AuthStateListenable(authService);
-  // Cache SharedPreferences to avoid slow getInstance() calls in redirect
-  final prefs = ref.read(sharedPreferencesProvider);
+  final authListenable = AuthStateListenable(authService);
+
   return GoRouter(
-    navigatorKey: _rootKey,
+    navigatorKey: NavigatorKeys.root,
     // Start at /welcome - redirect logic will navigate to appropriate route
     initialLocation: WelcomeScreen.path,
     observers: [
@@ -318,7 +74,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     ],
     // Refresh router when auth state changes
     refreshListenable: authListenable,
-    redirect: (context, state) async {
+    redirect: (context, state) {
       final location = state.matchedLocation;
       Log.debug(
         'Redirect START for: $location',
@@ -335,12 +91,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               location == WelcomeScreen.resetPasswordPath ||
               location == EmailVerificationScreen.path)) {
         debugPrint('[Router] Authenticated. moving to /home/0');
-        final emptyFollowingRedirect = await _checkEmptyFollowingRedirect(
-          location: location,
-          prefs: prefs,
-        );
-        if (emptyFollowingRedirect != null) {
-          return emptyFollowingRedirect;
+        // On first navigation, redirect to explore if user has no following
+        if (!_hasNavigated) {
+          _hasNavigated = true;
+          final emptyFollowingRedirect = ref.read(
+            checkEmptyFollowingRedirectProvider(location),
+          );
+          if (emptyFollowingRedirect != null) return emptyFollowingRedirect;
         }
         return HomeScreenRouter.pathForIndex(0);
       }
@@ -360,7 +117,9 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           name: 'AppRouter',
           category: LogCategory.ui,
         );
-        final hasAcceptedTerms = prefs.getBool('age_verified_16_plus') ?? false;
+
+        final hasAcceptedTerms = ref.read(hasTosAcceptedProvider);
+
         Log.debug(
           'TOS accepted: $hasAcceptedTerms',
           name: 'AppRouter',
@@ -368,7 +127,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         );
 
         // Only redirect to welcome if TOS not accepted
-        // Auth state check is separate - users may be unauthenticated during login flow
         if (!hasAcceptedTerms) {
           Log.debug(
             'TOS not accepted, redirecting to ${WelcomeScreen.path}',
@@ -379,7 +137,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         }
 
         // If TOS is accepted but user is not authenticated, redirect to welcome
-        // This handles cases like expired sessions
         if (authState == AuthState.unauthenticated) {
           Log.debug(
             'Not authenticated, redirecting to ${WelcomeScreen.path}',
@@ -394,9 +151,6 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         'Redirect END for: $location, returning null',
         name: 'AppRouter',
         category: LogCategory.ui,
-      );
-      print(
-        '🔵🔵🔵 REDIRECT RETURNING NULL for $location - route builder should be called next 🔵🔵🔵',
       );
       return null;
     },
@@ -416,10 +170,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
-                key: _homeKey,
+                key: NavigatorKeys.home,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const HomeScreenRouter(),
-                  settings: const RouteSettings(name: 'HomeScreen'),
+                  settings: const RouteSettings(
+                    name: HomeScreenRouter.routeName,
+                  ),
                 ),
               ),
             ),
@@ -432,10 +188,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
-                key: _exploreGridKey,
+                key: NavigatorKeys.exploreGrid,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const ExploreScreen(),
-                  settings: const RouteSettings(name: 'ExploreScreen'),
+                  settings: const RouteSettings(name: ExploreScreen.routeName),
                 ),
               ),
             ),
@@ -447,10 +203,10 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
-                key: _exploreFeedKey,
+                key: NavigatorKeys.exploreFeed,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const ExploreScreen(),
-                  settings: const RouteSettings(name: 'ExploreScreen'),
+                  settings: const RouteSettings(name: ExploreScreen.routeName),
                 ),
               ),
             ),
@@ -463,10 +219,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
-                key: _notificationsKey,
+                key: NavigatorKeys.notifications,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const NotificationsScreen(),
-                  settings: const RouteSettings(name: 'NotificationsScreen'),
+                  settings: const RouteSettings(
+                    name: NotificationsScreen.routeName,
+                  ),
                 ),
               ),
             ),
@@ -479,10 +237,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
-                key: _profileGridKey,
+                key: NavigatorKeys.profileGrid,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const ProfileScreenRouter(),
-                  settings: const RouteSettings(name: 'ProfileScreen'),
+                  settings: const RouteSettings(
+                    name: ProfileScreenRouter.routeName,
+                  ),
                 ),
               ),
             ),
@@ -494,10 +254,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
-                key: _profileGridKey,
+                key: NavigatorKeys.profileGrid,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const ProfileScreenRouter(),
-                  settings: const RouteSettings(name: 'ProfileScreen'),
+                  settings: const RouteSettings(
+                    name: ProfileScreenRouter.routeName,
+                  ),
                 ),
               ),
             ),
@@ -508,10 +270,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
-                key: _profileFeedKey,
+                key: NavigatorKeys.profileFeed,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const ProfileScreenRouter(),
-                  settings: const RouteSettings(name: 'ProfileScreen'),
+                  settings: const RouteSettings(
+                    name: ProfileScreenRouter.routeName,
+                  ),
                 ),
               ),
             ),
@@ -524,10 +288,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
-                key: _likedVideosGridKey,
+                key: NavigatorKeys.likedVideosGrid,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const LikedVideosScreenRouter(),
-                  settings: const RouteSettings(name: 'LikedVideosScreen'),
+                  settings: const RouteSettings(
+                    name: LikedVideosScreenRouter.routeName,
+                  ),
                 ),
               ),
             ),
@@ -539,10 +305,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
-                key: _likedVideosFeedKey,
+                key: NavigatorKeys.likedVideosFeed,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const LikedVideosScreenRouter(),
-                  settings: const RouteSettings(name: 'LikedVideosScreen'),
+                  settings: const RouteSettings(
+                    name: LikedVideosScreenRouter.routeName,
+                  ),
                 ),
               ),
             ),
@@ -555,10 +323,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
-                key: _searchEmptyKey,
+                key: NavigatorKeys.searchEmpty,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const SearchScreenPure(embedded: true),
-                  settings: const RouteSettings(name: 'SearchScreen'),
+                  settings: const RouteSettings(
+                    name: SearchScreenPure.routeName,
+                  ),
                 ),
               ),
             ),
@@ -570,10 +340,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
-                key: _searchGridKey,
+                key: NavigatorKeys.searchGrid,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const SearchScreenPure(embedded: true),
-                  settings: const RouteSettings(name: 'SearchScreen'),
+                  settings: const RouteSettings(
+                    name: SearchScreenPure.routeName,
+                  ),
                 ),
               ),
             ),
@@ -585,10 +357,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
-                key: _searchFeedKey,
+                key: NavigatorKeys.searchFeed,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const SearchScreenPure(embedded: true),
-                  settings: const RouteSettings(name: 'SearchScreen'),
+                  settings: const RouteSettings(
+                    name: SearchScreenPure.routeName,
+                  ),
                 ),
               ),
             ),
@@ -601,10 +375,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
-                key: _hashtagGridKey,
+                key: NavigatorKeys.hashtagGrid,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const HashtagScreenRouter(),
-                  settings: const RouteSettings(name: 'HashtagScreen'),
+                  settings: const RouteSettings(
+                    name: HashtagScreenRouter.routeName,
+                  ),
                 ),
               ),
             ),
@@ -616,10 +392,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             pageBuilder: (ctx, st) => NoTransitionPage(
               key: st.pageKey,
               child: Navigator(
-                key: _hashtagFeedKey,
+                key: NavigatorKeys.hashtagFeed,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const HashtagScreenRouter(),
-                  settings: const RouteSettings(name: 'HashtagScreen'),
+                  settings: const RouteSettings(
+                    name: HashtagScreenRouter.routeName,
+                  ),
                 ),
               ),
             ),
@@ -632,8 +410,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       // CURATED LIST route (NIP-51 kind 30005 video lists)
       // Outside shell so the screen's own AppBar is shown without the shell AppBar
       GoRoute(
-        path: '/list/:listId',
-        name: 'list',
+        path: CuratedListFeedScreen.path,
+        name: CuratedListFeedScreen.routeName,
         builder: (ctx, st) {
           final listId = st.pathParameters['listId'];
           if (listId == null || listId.isEmpty) {
@@ -678,9 +456,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                   AuthMode? mode = st.extra as AuthMode?;
                   if (mode == null) {
                     final modeParam = st.uri.queryParameters['mode'];
-                    if (modeParam == 'register') {
-                      mode = AuthMode.register;
-                    }
+                    if (modeParam == 'register') mode = AuthMode.register;
                   }
                   return DivineAuthScreen(initialMode: mode ?? AuthMode.login);
                 },
@@ -864,8 +640,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Followers screen - routes to My or Others based on pubkey
       GoRoute(
-        path: FollowersRoutes.path,
-        name: FollowersRoutes.routeName,
+        path: FollowersScreenRouter.path,
+        name: FollowersScreenRouter.routeName,
         builder: (ctx, st) {
           final pubkey = st.pathParameters['pubkey'];
           final displayName = st.extra as String?;
@@ -875,7 +651,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               body: const Center(child: Text('Invalid user ID')),
             );
           }
-          return _FollowersScreenRouter(
+          return FollowersScreenRouter(
             pubkey: pubkey,
             displayName: displayName,
           );
@@ -883,8 +659,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
       // Following screen - routes to My or Others based on pubkey
       GoRoute(
-        path: FollowingRoutes.path,
-        name: FollowingRoutes.routeName,
+        path: FollowingScreenRouter.path,
+        name: FollowingScreenRouter.routeName,
         builder: (ctx, st) {
           final pubkey = st.pathParameters['pubkey'];
           final displayName = st.extra as String?;
@@ -894,7 +670,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               body: const Center(child: Text('Invalid user ID')),
             );
           }
-          return _FollowingScreenRouter(
+          return FollowingScreenRouter(
             pubkey: pubkey,
             displayName: displayName,
           );
@@ -934,7 +710,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             return SoundDetailScreen(sound: sound);
           }
           // Wrap in a loader that fetches the sound by ID
-          return _SoundDetailLoader(soundId: soundId);
+          return SoundDetailLoader(soundId: soundId);
         },
       ),
       // Video editor route (requires video passed via extra)
@@ -960,8 +736,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       GoRoute(
-        path: '${VideoClipEditorScreen.path}/:draftId',
-        name: '${VideoClipEditorScreen.routeName}-draft',
+        path: VideoClipEditorScreen.draftPathWithId,
+        name: VideoClipEditorScreen.draftRouteName,
         builder: (_, st) {
           // The draft ID is optional if the user wants to continue editing
           // the draft.
@@ -1013,7 +789,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final extra = st.extra as Map<String, String?>?;
           final displayNameHint = extra?['displayName'];
           final avatarUrlHint = extra?['avatarUrl'];
-          return _OtherProfileScreenRouter(
+          return OtherProfileScreenRouter(
             npub: npub,
             displayNameHint: displayNameHint,
             avatarUrlHint: avatarUrlHint,
@@ -1024,139 +800,60 @@ final goRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-/// Router widget that redirects own-profile visits to ProfileScreenRouter.
-/// Prevents users from accessing follow/block actions on their own profile
-/// via the OtherProfileScreen route (e.g., deep links).
-class _OtherProfileScreenRouter extends ConsumerWidget {
-  const _OtherProfileScreenRouter({
-    required this.npub,
-    this.displayNameHint,
-    this.avatarUrlHint,
-  });
-
-  final String npub;
-  final String? displayNameHint;
-  final String? avatarUrlHint;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final nostrClient = ref.watch(nostrServiceProvider);
-    final targetHex = npubToHexOrNull(npub);
-    final currentUserHex = nostrClient.publicKey;
-
-    final isCurrentUser =
-        targetHex != null &&
-        currentUserHex.isNotEmpty &&
-        targetHex == currentUserHex;
-
-    if (isCurrentUser) {
-      // Redirect to own profile
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        context.go(ProfileScreenRouter.pathForNpub(npub));
-      });
-      return const BrandedLoadingScaffold();
-    }
-
-    return OtherProfileScreen(
-      npub: npub,
-      displayNameHint: displayNameHint,
-      avatarUrlHint: avatarUrlHint,
-    );
-  }
-}
-
-/// Router widget that decides between MyFollowersScreen and OthersFollowersScreen
-/// based on whether the pubkey matches the current user.
-class _FollowersScreenRouter extends ConsumerWidget {
-  const _FollowersScreenRouter({
-    required this.pubkey,
-    required this.displayName,
-  });
-
-  final String pubkey;
-  final String? displayName;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final nostrClient = ref.watch(nostrServiceProvider);
-    final isCurrentUser = pubkey == nostrClient.publicKey;
-
-    if (isCurrentUser) {
-      return MyFollowersScreen(displayName: displayName);
-    } else {
-      return OthersFollowersScreen(pubkey: pubkey, displayName: displayName);
-    }
-  }
-}
-
-/// Router widget that decides between MyFollowingScreen and OthersFollowingScreen
-/// based on whether the pubkey matches the current user.
-class _FollowingScreenRouter extends ConsumerWidget {
-  const _FollowingScreenRouter({
-    required this.pubkey,
-    required this.displayName,
-  });
-
-  final String pubkey;
-  final String? displayName;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final nostrClient = ref.watch(nostrServiceProvider);
-    final isCurrentUser = pubkey == nostrClient.publicKey;
-
-    if (isCurrentUser) {
-      return MyFollowingScreen(displayName: displayName);
-    } else {
-      return OthersFollowingScreen(pubkey: pubkey, displayName: displayName);
-    }
-  }
-}
-
-/// Loader widget that fetches a sound by ID before displaying SoundDetailScreen.
-/// Used when navigating via deep link without the sound object.
-class _SoundDetailLoader extends ConsumerWidget {
-  const _SoundDetailLoader({required this.soundId});
-
-  final String soundId;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final soundAsync = ref.watch(soundByIdProvider(soundId));
-
-    return soundAsync.when(
-      data: (sound) {
-        if (sound == null) {
-          return Scaffold(
-            backgroundColor: Colors.black,
-            appBar: AppBar(
-              backgroundColor: Colors.black,
-              title: const Text('Sound Not Found'),
-            ),
-            body: const Center(
-              child: Text(
-                'This sound could not be found',
-                style: TextStyle(color: Colors.white),
-              ),
-            ),
-          );
-        }
-        return SoundDetailScreen(sound: sound);
-      },
-      loading: () => const BrandedLoadingScaffold(),
-      error: (error, stack) => Scaffold(
-        backgroundColor: Colors.black,
-        appBar: AppBar(
-          backgroundColor: Colors.black,
-          title: const Text('Error'),
-        ),
-        body: Center(
-          child: Text(
-            'Failed to load sound: $error',
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-      ),
-    );
+/// Maps URL location to bottom nav tab index.
+///
+/// Returns the tab index for tab routes:
+/// - 0: Home
+/// - 1: Explore (also for hashtag routes)
+/// - 2: Notifications
+/// - 3: Profile (also for liked-videos)
+///
+/// Returns -1 for non-tab routes (like search, settings, edit-profile)
+/// to hide the bottom navigation bar.
+int tabIndexFromLocation(String loc) {
+  final uri = Uri.parse(loc);
+  final first = uri.pathSegments.isEmpty ? '' : uri.pathSegments.first;
+  switch (first) {
+    case 'home':
+      return 0;
+    case 'explore':
+      return 1;
+    case 'hashtag':
+      return 1; // Hashtag keeps explore tab active
+    case 'notifications':
+      return 2;
+    case 'profile':
+    case 'liked-videos':
+      return 3; // Liked videos keeps profile tab active
+    case 'search':
+    case 'settings':
+    case 'relay-settings':
+    case 'relay-diagnostic':
+    case 'blossom-settings':
+    case 'notification-settings':
+    case 'key-management':
+    case 'safety-settings':
+    case 'developer-options':
+    case 'edit-profile':
+    case 'setup-profile':
+    case 'import-key':
+    case 'nostr-connect':
+    case 'welcome':
+    case 'video-recorder':
+    case 'video-editor':
+    case 'video-metadata':
+    case 'clip-manager':
+    case 'drafts':
+    case 'followers':
+    case 'following':
+    case 'video-feed':
+    case 'profile-view':
+    case 'sound':
+    case 'new-video-feed':
+    case 'list':
+    case 'discover-lists':
+      return -1; // Non-tab routes - no bottom nav (outside shell)
+    default:
+      return 0; // fallback to home
   }
 }

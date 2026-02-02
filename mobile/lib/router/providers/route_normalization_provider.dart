@@ -3,9 +3,7 @@
 
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/router/app_router.dart';
-import 'package:openvine/router/page_context_provider.dart'
-    show parseRoute, buildRoute;
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';

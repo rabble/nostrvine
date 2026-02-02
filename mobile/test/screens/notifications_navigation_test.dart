@@ -10,7 +10,7 @@ import 'package:openvine/models/notification_model.dart';
 import 'package:models/models.dart' hide NotificationModel, NotificationType;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
-import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
