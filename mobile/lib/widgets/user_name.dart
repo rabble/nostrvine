@@ -1,7 +1,9 @@
 import 'package:openvine/models/user_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:divine_ui/divine_ui.dart';
 
@@ -77,35 +79,55 @@ class UserName extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     late String displayName;
-    late bool showCheckmark;
+    late String effectivePubkey;
     if (userProfile case final userProfile?) {
       displayName = userProfile.betterDisplayName(anonymousName);
-      showCheckmark = _isReserved(userProfile);
+      effectivePubkey = userProfile.pubkey;
     } else {
       final profileAsync = ref.watch(userProfileReactiveProvider(pubkey!));
+      effectivePubkey = pubkey!;
 
       // Use embedded name from REST API as fallback before truncated npub.
       // This avoids unnecessary WebSocket profile fetches for videos with
       // author_name already embedded.
       final fallbackName = embeddedName ?? NostrKeyUtils.truncateNpub(pubkey!);
 
-      (displayName, showCheckmark) = switch (profileAsync) {
-        AsyncData(:final value) when value != null => (
-          value.betterDisplayName(anonymousName),
-          _isReserved(value),
+      displayName = switch (profileAsync) {
+        AsyncData(:final value) when value != null => value.betterDisplayName(
+          anonymousName,
         ),
-        AsyncLoading() || AsyncData() => (fallbackName, false),
-        AsyncError() => (fallbackName, false),
+        AsyncLoading() || AsyncData() => fallbackName,
+        AsyncError() => fallbackName,
       };
     }
 
-    final textStyle =
+    // Watch NIP-05 verification status using pattern matching
+    final verificationAsync = ref.watch(
+      nip05VerificationProvider(effectivePubkey),
+    );
+    final (showCheckmark, showStrikethrough) = switch (verificationAsync) {
+      AsyncData(:final value) => (
+        value == Nip05VerificationStatus.verified,
+        value == Nip05VerificationStatus.failed,
+      ),
+      _ => (false, false),
+    };
+
+    final baseTextStyle =
         style ??
         TextStyle(
           color: VineTheme.secondaryText,
           fontSize: 10,
           fontWeight: FontWeight.w400,
         );
+
+    // Apply strikethrough for failed NIP-05 verification (impersonation risk)
+    final textStyle = showStrikethrough
+        ? baseTextStyle.copyWith(
+            decoration: TextDecoration.lineThrough,
+            decorationColor: Colors.red,
+          )
+        : baseTextStyle;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -137,15 +159,5 @@ class UserName extends ConsumerWidget {
           ),
       ],
     );
-  }
-
-  bool _isReserved(UserProfile? userProfile) {
-    if (userProfile == null) return false;
-    // NIP-05 verification requires an async HTTP call to the domain's
-    // .well-known/nostr.json endpoint. Having a NIP-05 field set does NOT
-    // mean it's verified - anyone can claim any NIP-05 in their profile.
-    // Until we have a cached verification provider, don't show the badge.
-    // See: https://github.com/nostr-protocol/nips/blob/master/05.md
-    return false;
   }
 }

@@ -27,6 +27,7 @@ const _notificationRetentionDays = 7;
     PersonalReactions,
     PersonalReposts,
     PendingActions,
+    Nip05Verifications,
   ],
   daos: [
     UserProfilesDao,
@@ -39,6 +40,7 @@ const _notificationRetentionDays = 7;
     PersonalReactionsDao,
     PersonalRepostsDao,
     PendingActionsDao,
+    Nip05VerificationsDao,
   ],
 )
 class AppDatabase extends _$AppDatabase {
@@ -73,12 +75,12 @@ class AppDatabase extends _$AppDatabase {
   /// schema version, we check and create missing tables on startup.
   Future<void> _createMissingTables() async {
     // Check if personal_reposts table exists, create if missing
-    final result = await customSelect(
+    final repostsResult = await customSelect(
       "SELECT name FROM sqlite_master WHERE type='table' "
       "AND name='personal_reposts'",
     ).get();
 
-    if (result.isEmpty) {
+    if (repostsResult.isEmpty) {
       await customStatement('''
         CREATE TABLE personal_reposts (
           addressable_id TEXT NOT NULL,
@@ -88,6 +90,28 @@ class AppDatabase extends _$AppDatabase {
           created_at INTEGER NOT NULL,
           PRIMARY KEY (addressable_id, user_pubkey)
         )
+      ''');
+    }
+
+    // Check if nip05_verifications table exists, create if missing
+    final nip05Result = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='nip05_verifications'",
+    ).get();
+
+    if (nip05Result.isEmpty) {
+      await customStatement('''
+        CREATE TABLE nip05_verifications (
+          pubkey TEXT NOT NULL PRIMARY KEY,
+          nip05 TEXT NOT NULL,
+          status TEXT NOT NULL,
+          verified_at INTEGER NOT NULL,
+          expires_at INTEGER NOT NULL
+        )
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_nip05_expires_at
+        ON nip05_verifications (expires_at)
       ''');
     }
   }

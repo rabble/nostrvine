@@ -431,6 +431,46 @@ class PendingActions extends Table {
   ];
 }
 
+/// Cache of NIP-05 verification results.
+///
+/// Stores the verification status of NIP-05 addresses for user profiles.
+/// Uses TTL-based expiration:
+/// - verified: 24 hours (stable, rarely changes)
+/// - failed: 1 hour (allow retry for transient issues)
+/// - error: 5 minutes (network issues, retry soon)
+@DataClassName('Nip05VerificationRow')
+class Nip05Verifications extends Table {
+  @override
+  String get tableName => 'nip05_verifications';
+
+  /// The pubkey of the user whose NIP-05 is being verified
+  TextColumn get pubkey => text()();
+
+  /// The claimed NIP-05 address (e.g., "alice@example.com")
+  TextColumn get nip05 => text()();
+
+  /// Verification status: 'verified', 'failed', 'error', 'pending'
+  TextColumn get status => text()();
+
+  /// When the verification was performed
+  DateTimeColumn get verifiedAt => dateTime().named('verified_at')();
+
+  /// When this cache entry expires (TTL-based)
+  DateTimeColumn get expiresAt => dateTime().named('expires_at')();
+
+  @override
+  Set<Column> get primaryKey => {pubkey};
+
+  List<Index> get indexes => [
+    // Index on expires_at for cache eviction queries
+    Index(
+      'idx_nip05_expires_at',
+      'CREATE INDEX IF NOT EXISTS idx_nip05_expires_at '
+          'ON nip05_verifications (expires_at)',
+    ),
+  ];
+}
+
 /// Stores the current user's own repost events (Kind 16 generic reposts).
 ///
 /// This table tracks the mapping between addressable video IDs and the

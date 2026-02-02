@@ -1,4 +1,5 @@
 export 'hashtag_stats_dao.dart';
+export 'nip05_verifications_dao.dart';
 export 'nostr_events_dao.dart';
 export 'notifications_dao.dart';
 export 'pending_actions_dao.dart';
