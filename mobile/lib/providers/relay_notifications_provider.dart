@@ -593,7 +593,9 @@ bool relayNotificationsLoading(Ref ref) {
   return state.isLoadingMore || state.isInitialLoad;
 }
 
-/// Provider to get notifications filtered by type
+/// Provider to get notifications filtered by type.
+///
+/// Results are sorted by timestamp (newest first).
 @riverpod
 List<NotificationModel> relayNotificationsByType(
   Ref ref,
@@ -604,5 +606,13 @@ List<NotificationModel> relayNotificationsByType(
       asyncState.whenOrNull(data: (state) => state.notifications) ?? [];
 
   if (type == null) return notifications;
-  return notifications.where((n) => n.type == type).toList();
+
+  // Filter and sort to ensure chronological order
+  final filtered = notifications.where((n) => n.type == type).toList();
+  filtered.sort((a, b) {
+    final timeCompare = b.timestamp.compareTo(a.timestamp);
+    if (timeCompare != 0) return timeCompare;
+    return a.id.compareTo(b.id);
+  });
+  return filtered;
 }
