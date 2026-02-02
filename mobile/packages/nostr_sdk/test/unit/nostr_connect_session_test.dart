@@ -207,31 +207,31 @@ void main() {
       session.dispose();
     });
 
-    test('start throws if already started', () async {
-      final session = NostrConnectSession(
-        relays: ['wss://relay.example.com'],
+    test('start throws if already started', () {
+      // Test that start() can only be called from idle state
+      // We use cancel() to transition out of idle state without any network calls
+      final session = NostrConnectSession(relays: ['wss://relay.example.com']);
+
+      // Verify initial state
+      expect(session.state, equals(NostrConnectState.idle));
+
+      // Cancel transitions from idle to cancelled
+      session.cancel();
+      expect(session.state, equals(NostrConnectState.cancelled));
+
+      // Now start() should throw because we're not in idle state
+      expect(
+        () => session.start(),
+        throwsA(
+          isA<StateError>().having(
+            (e) => e.message,
+            'message',
+            contains('already started'),
+          ),
+        ),
       );
 
-      // First start will begin and change state from idle to generating
-      // We don't need to wait for it to complete - just verify double-start throws
-      final startFuture = session.start();
-
-      // Give microtask a chance to run (state changes to generating synchronously)
-      await Future<void>.delayed(Duration.zero);
-
-      // Second start should throw immediately because state is no longer idle
-      expect(() => session.start(), throwsA(isA<StateError>()));
-
-      // Clean up - cancel the pending start
-      session.cancel();
       session.dispose();
-
-      // Ignore any errors from the first start attempt
-      try {
-        await startFuture;
-      } catch (_) {
-        // Expected - relay won't connect or session was cancelled
-      }
     });
   });
 
