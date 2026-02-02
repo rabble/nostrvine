@@ -21,10 +21,11 @@ typedef UserBlockFilter = bool Function(String pubkey);
 // multiple repositories.
 /// Callback to filter and sort profiles by search relevance.
 /// Takes a query and list of profiles, returns filtered/sorted profiles.
-typedef ProfileSearchFilter = List<UserProfile> Function(
-  String query,
-  List<UserProfile> profiles,
-);
+typedef ProfileSearchFilter =
+    List<UserProfile> Function(
+      String query,
+      List<UserProfile> profiles,
+    );
 
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
 class ProfileRepository {
