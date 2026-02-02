@@ -9,6 +9,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -91,6 +92,7 @@ class _ProfileSetupScreenViewState
   File? _selectedImage;
   String? _uploadedImageUrl;
   String? _initialUsername;
+  Color? _selectedProfileColor;
 
   @override
   void initState() {
@@ -153,6 +155,9 @@ class _ProfileSetupScreenViewState
                 _nip05Controller.text = username;
                 _initialUsername = username;
               }
+
+              // Load profile color from banner field
+              _selectedProfileColor = profile.profileBackgroundColor;
             });
 
             Log.info(
@@ -931,6 +936,28 @@ class _ProfileSetupScreenViewState
                               ),
                               // Username status indicators
                               UsernameStatusIndicator(state: usernameState),
+
+                              const SizedBox(height: 24),
+
+                              // Profile Color (optional)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16),
+                                child: Text(
+                                  'Profile Color (Optional)',
+                                  style: VineTheme.labelMediumFont(
+                                    color: VineTheme.onSurfaceMuted,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _ProfileColorPicker(
+                                selectedColor: _selectedProfileColor,
+                                onColorChanged: (color) {
+                                  setState(() {
+                                    _selectedProfileColor = color;
+                                  });
+                                },
+                              ),
                             ],
                           ),
                         ),
@@ -1004,6 +1031,9 @@ class _ProfileSetupScreenViewState
                             about: _bioController.text,
                             username: _nip05Controller.text,
                             picture: _pictureController.text,
+                            banner: _selectedProfileColor != null
+                                ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
+                                : null,
                           ),
                         ),
                       ),
@@ -1677,5 +1707,178 @@ class UsernameReservedDialog extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// Color picker widget for selecting profile background color.
+class _ProfileColorPicker extends StatelessWidget {
+  const _ProfileColorPicker({
+    required this.selectedColor,
+    required this.onColorChanged,
+  });
+
+  final Color? selectedColor;
+  final ValueChanged<Color?> onColorChanged;
+
+  // Preset colors inspired by classic Vine profile colors
+  static const _presetColors = [
+    Color(0xFF33CCBF), // Teal (Vine default)
+    Color(0xFF6B93D6), // Blue
+    Color(0xFF9B59B6), // Purple
+    Color(0xFFE74C3C), // Red
+    Color(0xFFF39C12), // Orange
+    Color(0xFF2ECC71), // Green
+    Color(0xFFE91E63), // Pink
+    Color(0xFF00BCD4), // Cyan
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Preset color swatches
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            // "No color" option
+            _ColorSwatch(
+              color: null,
+              isSelected: selectedColor == null,
+              onTap: () => onColorChanged(null),
+            ),
+            // Preset colors
+            for (final color in _presetColors)
+              _ColorSwatch(
+                color: color,
+                isSelected: selectedColor == color,
+                onTap: () => onColorChanged(color),
+              ),
+            // Custom color picker
+            _CustomColorButton(
+              currentColor: selectedColor,
+              onColorPicked: onColorChanged,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Individual color swatch button.
+class _ColorSwatch extends StatelessWidget {
+  const _ColorSwatch({
+    required this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final Color? color;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: color ?? VineTheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Colors.white : Colors.transparent,
+            width: 3,
+          ),
+        ),
+        child: color == null
+            ? const Icon(Icons.block, color: VineTheme.onSurfaceMuted, size: 20)
+            : isSelected
+            ? const Icon(Icons.check, color: Colors.white, size: 20)
+            : null,
+      ),
+    );
+  }
+}
+
+/// Button to open custom color picker dialog.
+class _CustomColorButton extends StatelessWidget {
+  const _CustomColorButton({
+    required this.currentColor,
+    required this.onColorPicked,
+  });
+
+  final Color? currentColor;
+  final ValueChanged<Color?> onColorPicked;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _showColorPicker(context),
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Colors.red, Colors.orange, Colors.yellow, Colors.green],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: const Icon(Icons.colorize, color: Colors.white, size: 20),
+      ),
+    );
+  }
+
+  Future<void> _showColorPicker(BuildContext context) async {
+    Color pickerColor = currentColor ?? const Color(0xFF33CCBF);
+
+    final result = await showDialog<Color>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: VineTheme.cardBackground,
+        title: const Text(
+          'Pick a color',
+          style: TextStyle(color: VineTheme.whiteText),
+        ),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: pickerColor,
+            onColorChanged: (color) => pickerColor = color,
+            enableAlpha: false,
+            displayThumbColor: true,
+            pickerAreaHeightPercent: 0.8,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: VineTheme.onSurfaceMuted),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(pickerColor),
+            child: const Text(
+              'Select',
+              style: TextStyle(color: VineTheme.vineGreen),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      onColorPicked(result);
+    }
   }
 }

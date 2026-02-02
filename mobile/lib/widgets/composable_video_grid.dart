@@ -407,6 +407,12 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
         reason: DeleteReason.personalChoice,
       );
 
+      // Remove video from local feeds after successful deletion
+      if (result.success) {
+        final videoEventService = ref.read(videoEventServiceProvider);
+        videoEventService.removeVideoCompletely(video.id);
+      }
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

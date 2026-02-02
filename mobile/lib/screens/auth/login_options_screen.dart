@@ -1,13 +1,18 @@
 // ABOUTME: Gateway screen for existing users to choose their login method
-// ABOUTME: Options: Login/Register with diVine (native form) or Import Nostr Key
+// ABOUTME: Options: Login/Register with diVine, Import Nostr Key, or Sign with Amber (Android)
 
+import 'dart:io' show Platform;
+
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:nostr_sdk/nostr_sdk.dart' show AndroidPlugin;
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
 
-class LoginOptionsScreen extends StatelessWidget {
+class LoginOptionsScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
   static const String routeName = 'login-options';
 
@@ -15,6 +20,43 @@ class LoginOptionsScreen extends StatelessWidget {
   static const String path = '/login-options';
 
   const LoginOptionsScreen({super.key});
+
+  @override
+  ConsumerState<LoginOptionsScreen> createState() => _LoginOptionsScreenState();
+}
+
+class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
+  bool _isConnectingAmber = false;
+
+  Future<void> _connectWithAmber() async {
+    setState(() => _isConnectingAmber = true);
+
+    try {
+      final authService = ref.read(authServiceProvider);
+      final result = await authService.connectWithAmber();
+
+      if (!mounted) return;
+
+      if (result.success) {
+        // Navigate to main app - router will handle auth state
+        context.go('/');
+      } else {
+        // Show error
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              result.errorMessage ?? 'Failed to connect with Amber',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isConnectingAmber = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -145,6 +187,15 @@ class LoginOptionsScreen extends StatelessWidget {
                         'Already have an nsec? Import it here',
                         style: TextStyle(fontSize: 12, color: Colors.white60),
                       ),
+
+                      // Amber button (Android only)
+                      if (Platform.isAndroid) ...[
+                        const SizedBox(height: 24),
+                        _AmberButton(
+                          isConnecting: _isConnectingAmber,
+                          onPressed: _connectWithAmber,
+                        ),
+                      ],
                     ],
                   ),
                 ),
@@ -153,6 +204,70 @@ class LoginOptionsScreen extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Amber sign-in button that only appears when Amber is installed
+class _AmberButton extends StatelessWidget {
+  const _AmberButton({required this.isConnecting, required this.onPressed});
+
+  final bool isConnecting;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<bool?>(
+      future: AndroidPlugin.existAndroidNostrSigner(),
+      builder: (context, snapshot) {
+        // Don't show button if Amber is not installed
+        if (snapshot.data != true) {
+          return const SizedBox.shrink();
+        }
+
+        return Column(
+          children: [
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: isConnecting ? null : onPressed,
+                style: OutlinedButton.styleFrom(
+                  foregroundColor: Colors.white,
+                  side: const BorderSide(color: Colors.amber),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                icon: isConnecting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.amber,
+                          ),
+                        ),
+                      )
+                    : const Icon(Icons.security, color: Colors.amber),
+                label: Text(
+                  isConnecting ? 'Connecting...' : 'Sign with Amber',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Use your Amber signer app',
+              style: TextStyle(fontSize: 12, color: Colors.white60),
+            ),
+          ],
+        );
+      },
     );
   }
 }

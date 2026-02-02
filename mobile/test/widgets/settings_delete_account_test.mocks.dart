@@ -197,6 +197,22 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
   );
 
   @override
+  _i4.Future<bool> hasSavedKeys() =>
+      (super.noSuchMethod(
+            Invocation.method(#hasSavedKeys, []),
+            returnValue: _i4.Future<bool>.value(false),
+          )
+          as _i4.Future<bool>);
+
+  @override
+  _i4.Future<String?> getSavedNpub() =>
+      (super.noSuchMethod(
+            Invocation.method(#getSavedNpub, []),
+            returnValue: _i4.Future<String?>.value(),
+          )
+          as _i4.Future<String?>);
+
+  @override
   _i4.Future<void> initialize() =>
       (super.noSuchMethod(
             Invocation.method(#initialize, []),
@@ -218,6 +234,16 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
                   #biometricPrompt: biometricPrompt,
                 }),
               ),
+            ),
+          )
+          as _i4.Future<_i3.AuthResult>);
+
+  @override
+  _i4.Future<_i3.AuthResult> connectWithAmber() =>
+      (super.noSuchMethod(
+            Invocation.method(#connectWithAmber, []),
+            returnValue: _i4.Future<_i3.AuthResult>.value(
+              _FakeAuthResult_1(this, Invocation.method(#connectWithAmber, [])),
             ),
           )
           as _i4.Future<_i3.AuthResult>);

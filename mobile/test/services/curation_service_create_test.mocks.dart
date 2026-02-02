@@ -375,6 +375,9 @@ class MockNostrClient extends _i1.Mock implements _i6.NostrClient {
   _i8.Future<_i9.Event?> sendLike(
     String? eventId, {
     String? content,
+    String? addressableId,
+    String? targetAuthorPubkey,
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) =>
@@ -384,6 +387,9 @@ class MockNostrClient extends _i1.Mock implements _i6.NostrClient {
               [eventId],
               {
                 #content: content,
+                #addressableId: addressableId,
+                #targetAuthorPubkey: targetAuthorPubkey,
+                #targetKind: targetKind,
                 #tempRelays: tempRelays,
                 #targetRelays: targetRelays,
               },
@@ -800,6 +806,12 @@ class MockVideoEventService extends _i1.Mock implements _i10.VideoEventService {
             returnValue: <_i11.VideoEvent>[],
           )
           as List<_i11.VideoEvent>);
+
+  @override
+  void removeVideoCompletely(String? videoId) => super.noSuchMethod(
+    Invocation.method(#removeVideoCompletely, [videoId]),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void removeVideoFromAuthorList(String? authorPubkey, String? videoId) =>
@@ -1392,11 +1404,15 @@ class MockLikesRepository extends _i1.Mock implements _i3.LikesRepository {
   _i8.Future<String> likeEvent({
     required String? eventId,
     required String? authorPubkey,
+    String? addressableId,
+    int? targetKind,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#likeEvent, [], {
               #eventId: eventId,
               #authorPubkey: authorPubkey,
+              #addressableId: addressableId,
+              #targetKind: targetKind,
             }),
             returnValue: _i8.Future<String>.value(
               _i7.dummyValue<String>(
@@ -1404,6 +1420,8 @@ class MockLikesRepository extends _i1.Mock implements _i3.LikesRepository {
                 Invocation.method(#likeEvent, [], {
                   #eventId: eventId,
                   #authorPubkey: authorPubkey,
+                  #addressableId: addressableId,
+                  #targetKind: targetKind,
                 }),
               ),
             ),
@@ -1423,28 +1441,43 @@ class MockLikesRepository extends _i1.Mock implements _i3.LikesRepository {
   _i8.Future<bool> toggleLike({
     required String? eventId,
     required String? authorPubkey,
+    String? addressableId,
+    int? targetKind,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#toggleLike, [], {
               #eventId: eventId,
               #authorPubkey: authorPubkey,
+              #addressableId: addressableId,
+              #targetKind: targetKind,
             }),
             returnValue: _i8.Future<bool>.value(false),
           )
           as _i8.Future<bool>);
 
   @override
-  _i8.Future<int> getLikeCount(String? eventId) =>
+  _i8.Future<int> getLikeCount(String? eventId, {String? addressableId}) =>
       (super.noSuchMethod(
-            Invocation.method(#getLikeCount, [eventId]),
+            Invocation.method(
+              #getLikeCount,
+              [eventId],
+              {#addressableId: addressableId},
+            ),
             returnValue: _i8.Future<int>.value(0),
           )
           as _i8.Future<int>);
 
   @override
-  _i8.Future<Map<String, int>> getLikeCounts(List<String>? eventIds) =>
+  _i8.Future<Map<String, int>> getLikeCounts(
+    List<String>? eventIds, {
+    Map<String, String>? addressableIds,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#getLikeCounts, [eventIds]),
+            Invocation.method(
+              #getLikeCounts,
+              [eventIds],
+              {#addressableIds: addressableIds},
+            ),
             returnValue: _i8.Future<Map<String, int>>.value(<String, int>{}),
           )
           as _i8.Future<Map<String, int>>);
@@ -1772,6 +1805,22 @@ class MockAuthService extends _i1.Mock implements _i5.AuthService {
   );
 
   @override
+  _i8.Future<bool> hasSavedKeys() =>
+      (super.noSuchMethod(
+            Invocation.method(#hasSavedKeys, []),
+            returnValue: _i8.Future<bool>.value(false),
+          )
+          as _i8.Future<bool>);
+
+  @override
+  _i8.Future<String?> getSavedNpub() =>
+      (super.noSuchMethod(
+            Invocation.method(#getSavedNpub, []),
+            returnValue: _i8.Future<String?>.value(),
+          )
+          as _i8.Future<String?>);
+
+  @override
   _i8.Future<void> initialize() =>
       (super.noSuchMethod(
             Invocation.method(#initialize, []),
@@ -1793,6 +1842,16 @@ class MockAuthService extends _i1.Mock implements _i5.AuthService {
                   #biometricPrompt: biometricPrompt,
                 }),
               ),
+            ),
+          )
+          as _i8.Future<_i5.AuthResult>);
+
+  @override
+  _i8.Future<_i5.AuthResult> connectWithAmber() =>
+      (super.noSuchMethod(
+            Invocation.method(#connectWithAmber, []),
+            returnValue: _i8.Future<_i5.AuthResult>.value(
+              _FakeAuthResult_3(this, Invocation.method(#connectWithAmber, [])),
             ),
           )
           as _i8.Future<_i5.AuthResult>);

@@ -176,6 +176,12 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       final environment = ref.watch(currentEnvironmentProvider);
       final userIdHex = ref.read(authServiceProvider).currentPublicKeyHex;
 
+      // Watch profile for profile color
+      final profileAsync = userIdHex != null
+          ? ref.watch(fetchUserProfileProvider(userIdHex))
+          : null;
+      final profileColor = profileAsync?.value?.profileBackgroundColor;
+
       return Scaffold(
         backgroundColor: Colors.black,
         onDrawerChanged: (isOpen) {
@@ -188,7 +194,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
           leadingWidth: 80,
           centerTitle: false,
           titleSpacing: 0,
-          backgroundColor: getEnvironmentAppBarColor(environment),
+          backgroundColor:
+              profileColor ?? getEnvironmentAppBarColor(environment),
           leading: Builder(
             builder: (context) => IconButton(
               key: const Key('menu-icon-button'),
@@ -373,6 +380,27 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       scrollable: false,
       children: [
         InkWell(
+          onTap: () => Navigator.of(context).pop('edit'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icon/content-controls/pencil.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: const ColorFilter.mode(
+                    VineTheme.whiteText,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text('Edit profile', style: VineTheme.titleMediumFont()),
+              ],
+            ),
+          ),
+        ),
+        InkWell(
           onTap: () => Navigator.of(context).pop('share'),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
@@ -422,7 +450,9 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     if (!mounted) return;
 
-    if (result == 'share') {
+    if (result == 'edit') {
+      _editProfile();
+    } else if (result == 'share') {
       await _shareProfile(userIdHex);
     } else if (result == 'copy_npub') {
       await _copyNpub(userIdHex);

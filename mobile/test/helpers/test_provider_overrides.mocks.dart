@@ -412,6 +412,22 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
   );
 
   @override
+  _i5.Future<bool> hasSavedKeys() =>
+      (super.noSuchMethod(
+            Invocation.method(#hasSavedKeys, []),
+            returnValue: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<String?> getSavedNpub() =>
+      (super.noSuchMethod(
+            Invocation.method(#getSavedNpub, []),
+            returnValue: _i5.Future<String?>.value(),
+          )
+          as _i5.Future<String?>);
+
+  @override
   _i5.Future<void> initialize() =>
       (super.noSuchMethod(
             Invocation.method(#initialize, []),
@@ -433,6 +449,16 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
                   #biometricPrompt: biometricPrompt,
                 }),
               ),
+            ),
+          )
+          as _i5.Future<_i2.AuthResult>);
+
+  @override
+  _i5.Future<_i2.AuthResult> connectWithAmber() =>
+      (super.noSuchMethod(
+            Invocation.method(#connectWithAmber, []),
+            returnValue: _i5.Future<_i2.AuthResult>.value(
+              _FakeAuthResult_0(this, Invocation.method(#connectWithAmber, [])),
             ),
           )
           as _i5.Future<_i2.AuthResult>);
@@ -939,6 +965,9 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
   _i5.Future<_i12.Event?> sendLike(
     String? eventId, {
     String? content,
+    String? addressableId,
+    String? targetAuthorPubkey,
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) =>
@@ -948,6 +977,9 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
               [eventId],
               {
                 #content: content,
+                #addressableId: addressableId,
+                #targetAuthorPubkey: targetAuthorPubkey,
+                #targetKind: targetKind,
                 #tempRelays: tempRelays,
                 #targetRelays: targetRelays,
               },

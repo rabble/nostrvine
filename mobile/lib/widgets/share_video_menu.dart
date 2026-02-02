@@ -1271,15 +1271,12 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
           ),
         );
 
-        // Remove video from local feeds after successful deletion
+        // Remove video from all local feeds after successful deletion
         if (result.success) {
           final videoEventService = ref.read(videoEventServiceProvider);
-          videoEventService.removeVideoFromAuthorList(
-            widget.video.pubkey,
-            widget.video.id,
-          );
+          videoEventService.removeVideoCompletely(widget.video.id);
           Log.info(
-            'Video removed from local feeds after deletion: ${widget.video.id}',
+            'Video removed from all local feeds after deletion: ${widget.video.id}',
             name: 'ShareVideoMenu',
             category: LogCategory.ui,
           );

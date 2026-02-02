@@ -63,7 +63,10 @@ class ProfileHeaderWidget extends ConsumerWidget {
     final profile = profileAsync.value;
 
     // Use hints as fallbacks for users without Kind 0 profiles (e.g., classic Viners)
-    final profilePictureUrl = profile?.picture ?? avatarUrlHint;
+    // Check for both null AND empty string - some profiles have empty picture field
+    final profilePictureUrl = (profile?.picture?.isNotEmpty == true)
+        ? profile!.picture
+        : avatarUrlHint;
     final displayName = profile?.bestDisplayName ?? displayNameHint;
     final hasCustomName =
         profile?.name?.isNotEmpty == true ||
@@ -71,6 +74,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
         displayNameHint?.isNotEmpty == true;
     final nip05 = profile?.displayNip05;
     final about = profile?.about;
+    final profileColor = profile?.profileBackgroundColor;
     final authService = ref.watch(authServiceProvider);
 
     // Watch auth state to rebuild when auth state changes
@@ -78,65 +82,107 @@ class ProfileHeaderWidget extends ConsumerWidget {
     ref.watch(currentAuthStateProvider);
     final isAnonymous = authService.isAnonymous;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
-      child: Column(
-        children: [
-          // Setup profile banner for new users with default names
-          // (only on own profile)
-          if (isOwnProfile && !hasCustomName && onSetupProfile != null)
-            _SetupProfileBanner(onSetup: onSetupProfile!),
+    // Use profile color as header background (like original Vine)
+    // Color covers avatar/stats, then fades to dark for name/bio readability
+    final hasProfileColor = profileColor != null;
 
-          // Secure account banner for anonymous users (only on own profile)
-          // Only shown when headless auth feature is enabled
-          if (isOwnProfile && isAnonymous) _IdentityNotRecoverableBanner(),
+    return Column(
+      children: [
+        // Colored section: avatar + stats with gradient fade at bottom
+        Container(
+          width: double.infinity,
+          decoration: BoxDecoration(
+            // Gradient from profile color to dark at the bottom
+            gradient: hasProfileColor
+                ? LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      profileColor,
+                      profileColor,
+                      VineTheme.backgroundColor,
+                    ],
+                    stops: const [0.0, 0.8, 1.0],
+                  )
+                : null,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+            child: Column(
+              children: [
+                // Setup profile banner for new users with default names
+                // (only on own profile)
+                if (isOwnProfile && !hasCustomName && onSetupProfile != null)
+                  _SetupProfileBanner(onSetup: onSetupProfile!),
 
-          // Profile picture and stats row
-          Row(
-            children: [
-              // Profile picture
-              UserAvatar(imageUrl: profilePictureUrl, name: null, size: 88),
+                // Secure account banner for anonymous users (only on own profile)
+                // Only shown when headless auth feature is enabled
+                if (isOwnProfile && isAnonymous)
+                  _IdentityNotRecoverableBanner(),
 
-              const SizedBox(width: 20),
-
-              // Stats
-              Expanded(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                // Profile picture and stats row
+                Row(
                   children: [
-                    ProfileStatColumn(
-                      count: videoCount,
-                      label: 'Videos',
-                      isLoading: false,
-                      onTap: null, // Videos aren't tappable
+                    // Profile picture
+                    _ProfileAvatarWithColor(
+                      imageUrl: profilePictureUrl,
+                      profileColor: profileColor,
                     ),
-                    ProfileFollowersStat(
-                      pubkey: userIdHex,
-                      displayName: displayName,
-                    ),
-                    ProfileFollowingStat(
-                      pubkey: userIdHex,
-                      displayName: displayName,
+
+                    const SizedBox(width: 20),
+
+                    // Stats
+                    Expanded(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          ProfileStatColumn(
+                            count: videoCount,
+                            label: 'Videos',
+                            isLoading: false,
+                            onTap: null, // Videos aren't tappable
+                          ),
+                          ProfileFollowersStat(
+                            pubkey: userIdHex,
+                            displayName: displayName,
+                          ),
+                          ProfileFollowingStat(
+                            pubkey: userIdHex,
+                            displayName: displayName,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+        ),
 
-          const SizedBox(height: 24),
-
-          // Name and bio
-          _ProfileNameAndBio(
-            profile: profile,
-            userIdHex: userIdHex,
-            nip05: nip05,
-            about: about,
-            displayNameHint: displayNameHint,
+        // Dark section: name, link, and bio (always readable)
+        Container(
+          width: double.infinity,
+          color: VineTheme.backgroundColor,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 20),
+            child: _ProfileNameAndBio(
+              profile: profile,
+              userIdHex: userIdHex,
+              nip05: nip05,
+              about: about,
+              displayNameHint: displayNameHint,
+              accentColor: profileColor,
+            ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
+  }
+
+  /// Get the profile color for this user (can be used by parent widgets for app bar)
+  static Color? getProfileColor(UserProfile? profile) {
+    return profile?.profileBackgroundColor;
   }
 }
 
@@ -350,6 +396,7 @@ class _ProfileNameAndBio extends StatelessWidget {
     required this.nip05,
     required this.about,
     this.displayNameHint,
+    this.accentColor,
   });
 
   final UserProfile? profile;
@@ -357,6 +404,9 @@ class _ProfileNameAndBio extends StatelessWidget {
   final String? nip05;
   final String? about;
   final String? displayNameHint;
+
+  /// Optional accent color (from profile color) for links/buttons.
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
@@ -376,7 +426,11 @@ class _ProfileNameAndBio extends StatelessWidget {
               style: VineTheme.titleLargeFont(),
               anonymousName: displayNameHint,
             ),
-          _UniqueIdentifier(userIdHex: userIdHex, nip05: nip05),
+          _UniqueIdentifier(
+            userIdHex: userIdHex,
+            nip05: nip05,
+            accentColor: accentColor,
+          ),
           if (about != null && about!.isNotEmpty) ...[
             const SizedBox(height: 24),
             _AboutText(about: about!),
@@ -388,11 +442,19 @@ class _ProfileNameAndBio extends StatelessWidget {
 }
 
 /// Unique identifier display (NIP-05 or full npub with ellipsis).
+/// Uses profile accent color when available, falls back to vineGreen.
 class _UniqueIdentifier extends StatelessWidget {
-  const _UniqueIdentifier({required this.userIdHex, required this.nip05});
+  const _UniqueIdentifier({
+    required this.userIdHex,
+    required this.nip05,
+    this.accentColor,
+  });
 
   final String userIdHex;
   final String? nip05;
+
+  /// Optional accent color (from profile color) for the link text and icon.
+  final Color? accentColor;
 
   @override
   Widget build(BuildContext context) {
@@ -400,6 +462,7 @@ class _UniqueIdentifier extends StatelessWidget {
         ? nip05!
         : NostrKeyUtils.encodePubKey(userIdHex);
     final npub = NostrKeyUtils.encodePubKey(userIdHex);
+    final linkColor = accentColor ?? VineTheme.vineGreen;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
@@ -407,7 +470,7 @@ class _UniqueIdentifier extends StatelessWidget {
         Flexible(
           child: Text(
             displayText,
-            style: VineTheme.bodyMediumFont(color: VineTheme.vineGreen),
+            style: VineTheme.bodyMediumFont(color: linkColor),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -424,10 +487,7 @@ class _UniqueIdentifier extends StatelessWidget {
               'assets/icon/copy.svg',
               width: 24,
               height: 24,
-              colorFilter: const ColorFilter.mode(
-                VineTheme.vineGreen,
-                BlendMode.srcIn,
-              ),
+              colorFilter: ColorFilter.mode(linkColor, BlendMode.srcIn),
             ),
           ),
         ),
@@ -496,5 +556,22 @@ class _AboutTextState extends State<_AboutText> {
         );
       },
     );
+  }
+}
+
+/// Profile avatar with optional light ring (when profile color is set).
+///
+/// Profile avatar widget for the header.
+class _ProfileAvatarWithColor extends StatelessWidget {
+  const _ProfileAvatarWithColor({required this.imageUrl, this.profileColor});
+
+  final String? imageUrl;
+  // ignore: unused_field
+  final Color? profileColor;
+
+  @override
+  Widget build(BuildContext context) {
+    const avatarSize = 88.0;
+    return UserAvatar(imageUrl: imageUrl, name: null, size: avatarSize);
   }
 }

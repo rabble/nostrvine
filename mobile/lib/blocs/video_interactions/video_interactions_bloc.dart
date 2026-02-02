@@ -121,8 +121,10 @@ class VideoInteractionsBloc
           ? _repostsRepository.getRepostCount(_addressableId)
           : _repostsRepository.getRepostCountByEventId(_eventId);
 
+      // Query like count with addressable ID for better discoverability
+      // on relays that index by a-tag
       final results = await Future.wait([
-        _likesRepository.getLikeCount(_eventId),
+        _likesRepository.getLikeCount(_eventId, addressableId: _addressableId),
         _commentsRepository.getCommentsCount(
           _eventId,
           rootAddressableId: _addressableId,
@@ -174,9 +176,13 @@ class VideoInteractionsBloc
     emit(state.copyWith(isLikeInProgress: true, clearError: true));
 
     try {
+      // Pass addressable ID and target kind for proper a-tag tagging
+      // Kind 34236 is the video kind (NIP-71 addressable short videos)
       final isNowLiked = await _likesRepository.toggleLike(
         eventId: _eventId,
         authorPubkey: _authorPubkey,
+        addressableId: _addressableId,
+        targetKind: _addressableId != null ? 34236 : null,
       );
 
       // Update local state with new like status and adjusted count

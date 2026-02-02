@@ -163,6 +163,22 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
   );
 
   @override
+  _i4.Future<bool> hasSavedKeys() =>
+      (super.noSuchMethod(
+            Invocation.method(#hasSavedKeys, []),
+            returnValue: _i4.Future<bool>.value(false),
+          )
+          as _i4.Future<bool>);
+
+  @override
+  _i4.Future<String?> getSavedNpub() =>
+      (super.noSuchMethod(
+            Invocation.method(#getSavedNpub, []),
+            returnValue: _i4.Future<String?>.value(),
+          )
+          as _i4.Future<String?>);
+
+  @override
   _i4.Future<void> initialize() =>
       (super.noSuchMethod(
             Invocation.method(#initialize, []),
@@ -184,6 +200,16 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
                   #biometricPrompt: biometricPrompt,
                 }),
               ),
+            ),
+          )
+          as _i4.Future<_i2.AuthResult>);
+
+  @override
+  _i4.Future<_i2.AuthResult> connectWithAmber() =>
+      (super.noSuchMethod(
+            Invocation.method(#connectWithAmber, []),
+            returnValue: _i4.Future<_i2.AuthResult>.value(
+              _FakeAuthResult_0(this, Invocation.method(#connectWithAmber, [])),
             ),
           )
           as _i4.Future<_i2.AuthResult>);
@@ -690,6 +716,9 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
   _i4.Future<_i10.Event?> sendLike(
     String? eventId, {
     String? content,
+    String? addressableId,
+    String? targetAuthorPubkey,
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) =>
@@ -699,6 +728,9 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
               [eventId],
               {
                 #content: content,
+                #addressableId: addressableId,
+                #targetAuthorPubkey: targetAuthorPubkey,
+                #targetKind: targetKind,
                 #tempRelays: tempRelays,
                 #targetRelays: targetRelays,
               },
@@ -1115,6 +1147,12 @@ class MockVideoEventService extends _i1.Mock implements _i11.VideoEventService {
             returnValue: <_i12.VideoEvent>[],
           )
           as List<_i12.VideoEvent>);
+
+  @override
+  void removeVideoCompletely(String? videoId) => super.noSuchMethod(
+    Invocation.method(#removeVideoCompletely, [videoId]),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void removeVideoFromAuthorList(String? authorPubkey, String? videoId) =>

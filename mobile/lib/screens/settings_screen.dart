@@ -272,11 +272,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 _buildSettingsTile(
                   context,
-                  icon: Icons.logout,
-                  title: 'Log Out',
+                  icon: Icons.switch_account,
+                  title: 'Switch Account',
                   subtitle:
-                      'Sign out of your account. Your keys stay on this device and you can log back in later. Your content remains on relays.',
-                  onTap: () => _handleLogout(context, ref),
+                      'Go to login screen to use a different account. '
+                      'Your current keys stay saved on this device.',
+                  onTap: () => _handleSwitchAccount(context, ref),
                 ),
                 _buildSettingsTile(
                   context,
@@ -614,8 +615,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
-    // Check for existing drafts before showing logout confirmation
+  Future<void> _handleSwitchAccount(BuildContext context, WidgetRef ref) async {
+    // Check for existing drafts before showing switch account confirmation
     final prefs = await SharedPreferences.getInstance();
     final draftService = DraftStorageService(prefs);
     final drafts = await draftService.getAllDrafts();
@@ -636,8 +637,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           content: Text(
             'You have $draftCount unsaved $draftWord. '
-            'Logging out will keep your $draftWord, but you may want to publish or review ${draftCount == 1 ? 'it' : 'them'} first.\n\n'
-            'Do you want to log out anyway?',
+            'Switching accounts will keep your $draftWord, but you may want to publish or review ${draftCount == 1 ? 'it' : 'them'} first.\n\n'
+            'Do you want to switch accounts anyway?',
             style: const TextStyle(color: Colors.grey),
           ),
           actions: [
@@ -648,7 +649,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             TextButton(
               onPressed: () => context.pop(true),
               child: const Text(
-                'Log Out Anyway',
+                'Switch Anyway',
                 style: TextStyle(color: Colors.red),
               ),
             ),
@@ -667,11 +668,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
         title: const Text(
-          'Log Out?',
+          'Switch Account?',
           style: TextStyle(color: VineTheme.whiteText),
         ),
         content: const Text(
-          'Are you sure you want to log out? Your keys will be saved and you can log back in later.',
+          'You will be taken to the login screen where you can:\n\n'
+          '• Continue with your saved keys\n'
+          '• Import a different account\n'
+          '• Create a new identity\n\n'
+          'Your current keys will stay saved on this device.',
           style: TextStyle(color: Colors.grey),
         ),
         actions: [
@@ -686,7 +691,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               context.pop(true);
             },
             child: const Text(
-              'Log Out',
+              'Switch Account',
               style: TextStyle(color: VineTheme.vineGreen),
             ),
           ),

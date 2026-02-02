@@ -637,19 +637,59 @@ class VideoEventService extends ChangeNotifier {
     return result;
   }
 
-  /// Remove a video from an author's cached list (optimistic deletion)
-  /// This is called after successfully publishing a NIP-09 delete event
-  void removeVideoFromAuthorList(String authorPubkey, String videoId) {
-    // Remove from author bucket
-    final authorBucket = _authorBuckets[authorPubkey];
-    if (authorBucket != null) {
-      final initialCount = authorBucket.length;
-      authorBucket.removeWhere((video) => video.id == videoId);
-      final removedCount = initialCount - authorBucket.length;
+  /// Remove a video from ALL data structures (comprehensive deletion)
+  ///
+  /// This method removes the video from:
+  /// - `_eventLists` (all subscription types: homeFeed, discovery, etc.)
+  /// - `_authorBuckets` (used by profile feeds)
+  /// - `_hashtagBuckets` (used by hashtag feeds)
+  /// - Marks as locally deleted to prevent pagination resurrection
+  /// - Delegates to VideoRepository for canonical tracking
+  ///
+  /// This mirrors the `updateVideoEvent()` pattern for comprehensive state updates.
+  /// Call this after successfully publishing a NIP-09 delete event.
+  void removeVideoCompletely(String videoId) {
+    var removedCount = 0;
 
-      if (removedCount > 0) {
-        Log.info(
-          'Removed video $videoId from author $authorPubkey bucket (${authorBucket.length} remaining)',
+    // Remove from all subscription types (mirrors updateVideoEvent pattern)
+    for (final entry in _eventLists.entries) {
+      final initialLength = entry.value.length;
+      entry.value.removeWhere((video) => video.id == videoId);
+      final removed = initialLength - entry.value.length;
+      if (removed > 0) {
+        removedCount += removed;
+        Log.debug(
+          'Removed video $videoId from ${entry.key} (${entry.value.length} remaining)',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+        );
+      }
+    }
+
+    // Remove from all author buckets
+    for (final entry in _authorBuckets.entries) {
+      final initialLength = entry.value.length;
+      entry.value.removeWhere((video) => video.id == videoId);
+      final removed = initialLength - entry.value.length;
+      if (removed > 0) {
+        removedCount += removed;
+        Log.debug(
+          'Removed video $videoId from author bucket ${entry.key}',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+        );
+      }
+    }
+
+    // Remove from all hashtag buckets
+    for (final entry in _hashtagBuckets.entries) {
+      final initialLength = entry.value.length;
+      entry.value.removeWhere((video) => video.id == videoId);
+      final removed = initialLength - entry.value.length;
+      if (removed > 0) {
+        removedCount += removed;
+        Log.debug(
+          'Removed video $videoId from hashtag bucket ${entry.key}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -658,14 +698,35 @@ class VideoEventService extends ChangeNotifier {
 
     // Mark as locally deleted to prevent pagination resurrection
     _locallyDeletedVideoIds.add(videoId);
-    Log.info(
-      'Marked video $videoId as locally deleted',
-      name: 'VideoEventService',
-      category: LogCategory.video,
-    );
 
-    // Notify listeners to update UI immediately (optimistic update)
-    notifyListeners();
+    // Delegate to VideoRepository for canonical tracking
+    _videoRepository.markVideoAsDeleted(videoId);
+
+    if (removedCount > 0) {
+      Log.info(
+        'Removed video $videoId from $removedCount location(s) across all feeds',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+      // Notify listeners to update UI immediately (optimistic update)
+      notifyListeners();
+    } else {
+      Log.info(
+        'Video $videoId marked as deleted (was not in any active feeds)',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+    }
+  }
+
+  /// Remove a video from an author's cached list (optimistic deletion)
+  ///
+  /// @Deprecated: Use [removeVideoCompletely] instead for comprehensive removal
+  /// from all data structures. This method only removes from author buckets.
+  @Deprecated('Use removeVideoCompletely() instead for comprehensive removal')
+  void removeVideoFromAuthorList(String authorPubkey, String videoId) {
+    // Delegate to comprehensive removal
+    removeVideoCompletely(videoId);
   }
 
   /// Check if a video has been locally deleted

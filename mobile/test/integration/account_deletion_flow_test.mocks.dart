@@ -362,6 +362,9 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
   _i7.Future<_i8.Event?> sendLike(
     String? eventId, {
     String? content,
+    String? addressableId,
+    String? targetAuthorPubkey,
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) =>
@@ -371,6 +374,9 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
               [eventId],
               {
                 #content: content,
+                #addressableId: addressableId,
+                #targetAuthorPubkey: targetAuthorPubkey,
+                #targetKind: targetKind,
                 #tempRelays: tempRelays,
                 #targetRelays: targetRelays,
               },
@@ -655,6 +661,22 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
   );
 
   @override
+  _i7.Future<bool> hasSavedKeys() =>
+      (super.noSuchMethod(
+            Invocation.method(#hasSavedKeys, []),
+            returnValue: _i7.Future<bool>.value(false),
+          )
+          as _i7.Future<bool>);
+
+  @override
+  _i7.Future<String?> getSavedNpub() =>
+      (super.noSuchMethod(
+            Invocation.method(#getSavedNpub, []),
+            returnValue: _i7.Future<String?>.value(),
+          )
+          as _i7.Future<String?>);
+
+  @override
   _i7.Future<void> initialize() =>
       (super.noSuchMethod(
             Invocation.method(#initialize, []),
@@ -676,6 +698,16 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
                   #biometricPrompt: biometricPrompt,
                 }),
               ),
+            ),
+          )
+          as _i7.Future<_i3.AuthResult>);
+
+  @override
+  _i7.Future<_i3.AuthResult> connectWithAmber() =>
+      (super.noSuchMethod(
+            Invocation.method(#connectWithAmber, []),
+            returnValue: _i7.Future<_i3.AuthResult>.value(
+              _FakeAuthResult_1(this, Invocation.method(#connectWithAmber, [])),
             ),
           )
           as _i7.Future<_i3.AuthResult>);
