@@ -1073,19 +1073,20 @@ void main() {
           nostrClient: mockNostrClient,
           localStorage: mockLocalStorage,
           isOnline: () => false,
-          queueOfflineAction: ({
-            required bool isRepost,
-            required String addressableId,
-            required String originalAuthorPubkey,
-            String? eventId,
-          }) async {
-            queuedAction = {
-              'isRepost': isRepost,
-              'addressableId': addressableId,
-              'originalAuthorPubkey': originalAuthorPubkey,
-              'eventId': eventId,
-            };
-          },
+          queueOfflineAction:
+              ({
+                required bool isRepost,
+                required String addressableId,
+                required String originalAuthorPubkey,
+                String? eventId,
+              }) async {
+                queuedAction = {
+                  'isRepost': isRepost,
+                  'addressableId': addressableId,
+                  'originalAuthorPubkey': originalAuthorPubkey,
+                  'eventId': eventId,
+                };
+              },
         );
 
         final eventId = await repository.repostVideo(
@@ -1134,18 +1135,19 @@ void main() {
           nostrClient: mockNostrClient,
           localStorage: mockLocalStorage,
           isOnline: () => false,
-          queueOfflineAction: ({
-            required bool isRepost,
-            required String addressableId,
-            required String originalAuthorPubkey,
-            String? eventId,
-          }) async {
-            queuedAction = {
-              'isRepost': isRepost,
-              'addressableId': addressableId,
-              'originalAuthorPubkey': originalAuthorPubkey,
-            };
-          },
+          queueOfflineAction:
+              ({
+                required bool isRepost,
+                required String addressableId,
+                required String originalAuthorPubkey,
+                String? eventId,
+              }) async {
+                queuedAction = {
+                  'isRepost': isRepost,
+                  'addressableId': addressableId,
+                  'originalAuthorPubkey': originalAuthorPubkey,
+                };
+              },
         );
 
         // Add the existing repost record to the new repository
@@ -1197,12 +1199,13 @@ void main() {
           nostrClient: mockNostrClient,
           localStorage: mockLocalStorage,
           isOnline: () => false,
-          queueOfflineAction: ({
-            required bool isRepost,
-            required String addressableId,
-            required String originalAuthorPubkey,
-            String? eventId,
-          }) async {},
+          queueOfflineAction:
+              ({
+                required bool isRepost,
+                required String addressableId,
+                required String originalAuthorPubkey,
+                String? eventId,
+              }) async {},
         );
 
         final placeholderId = await repository.repostVideo(
@@ -1286,12 +1289,13 @@ void main() {
           nostrClient: mockNostrClient,
           localStorage: mockLocalStorage,
           isOnline: () => false,
-          queueOfflineAction: ({
-            required bool isRepost,
-            required String addressableId,
-            required String originalAuthorPubkey,
-            String? eventId,
-          }) async {},
+          queueOfflineAction:
+              ({
+                required bool isRepost,
+                required String addressableId,
+                required String originalAuthorPubkey,
+                String? eventId,
+              }) async {},
         );
 
         await repository.repostVideo(

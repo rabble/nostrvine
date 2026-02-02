@@ -1200,28 +1200,30 @@ void main() {
       test('likeEvent queues action when offline', () async {
         var queuedAction = <String, dynamic>{};
 
-        when(() => mockLocalStorage.saveLikeRecord(any()))
-            .thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
 
         repository = LikesRepository(
           nostrClient: mockNostrClient,
           localStorage: mockLocalStorage,
           isOnline: () => false,
-          queueOfflineAction: ({
-            required bool isLike,
-            required String eventId,
-            required String authorPubkey,
-            String? addressableId,
-            int? targetKind,
-          }) async {
-            queuedAction = {
-              'isLike': isLike,
-              'eventId': eventId,
-              'authorPubkey': authorPubkey,
-              'addressableId': addressableId,
-              'targetKind': targetKind,
-            };
-          },
+          queueOfflineAction:
+              ({
+                required bool isLike,
+                required String eventId,
+                required String authorPubkey,
+                String? addressableId,
+                int? targetKind,
+              }) async {
+                queuedAction = {
+                  'isLike': isLike,
+                  'eventId': eventId,
+                  'authorPubkey': authorPubkey,
+                  'addressableId': addressableId,
+                  'targetKind': targetKind,
+                };
+              },
         );
 
         final reactionId = await repository.likeEvent(
@@ -1248,28 +1250,31 @@ void main() {
       test('unlikeEvent queues action when offline', () async {
         var queuedAction = <String, dynamic>{};
 
-        when(() => mockLocalStorage.saveLikeRecord(any()))
-            .thenAnswer((_) async {});
-        when(() => mockLocalStorage.deleteLikeRecord(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.deleteLikeRecord(any()),
+        ).thenAnswer((_) async => true);
 
         // Create repository with offline callbacks
         repository = LikesRepository(
           nostrClient: mockNostrClient,
           localStorage: mockLocalStorage,
           isOnline: () => false,
-          queueOfflineAction: ({
-            required bool isLike,
-            required String eventId,
-            required String authorPubkey,
-            String? addressableId,
-            int? targetKind,
-          }) async {
-            queuedAction = {
-              'isLike': isLike,
-              'eventId': eventId,
-            };
-          },
+          queueOfflineAction:
+              ({
+                required bool isLike,
+                required String eventId,
+                required String authorPubkey,
+                String? addressableId,
+                int? targetKind,
+              }) async {
+                queuedAction = {
+                  'isLike': isLike,
+                  'eventId': eventId,
+                };
+              },
         );
 
         // Add a like (will be queued since offline)
@@ -1301,10 +1306,12 @@ void main() {
             targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
           ),
-        ).thenAnswer((_) async => createMockReaction(
-          id: testReactionEventId,
-          targetEventId: testEventId,
-        ));
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+          ),
+        );
 
         repository = createRepository();
 
@@ -1335,25 +1342,29 @@ void main() {
             targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
           ),
-        ).thenAnswer((_) async => createMockReaction(
-          id: testReactionEventId,
-          targetEventId: testEventId,
-        ));
-        when(() => mockLocalStorage.saveLikeRecord(any()))
-            .thenAnswer((_) async {});
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+          ),
+        );
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
 
         // First create a pending like (offline)
         repository = LikesRepository(
           nostrClient: mockNostrClient,
           localStorage: mockLocalStorage,
           isOnline: () => false,
-          queueOfflineAction: ({
-            required bool isLike,
-            required String eventId,
-            required String authorPubkey,
-            String? addressableId,
-            int? targetKind,
-          }) async {},
+          queueOfflineAction:
+              ({
+                required bool isLike,
+                required String eventId,
+                required String authorPubkey,
+                String? addressableId,
+                int? targetKind,
+              }) async {},
         );
 
         final placeholderId = await repository.likeEvent(
@@ -1408,17 +1419,21 @@ void main() {
             targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
           ),
-        ).thenAnswer((_) async => createMockReaction(
-          id: testReactionEventId,
-          targetEventId: testEventId,
-        ));
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+          ),
+        );
         when(
           () => mockNostrClient.deleteEvent(any()),
         ).thenAnswer((_) async => createMockDeletion([testReactionEventId]));
-        when(() => mockLocalStorage.saveLikeRecord(any()))
-            .thenAnswer((_) async {});
-        when(() => mockLocalStorage.deleteLikeRecord(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.deleteLikeRecord(any()),
+        ).thenAnswer((_) async => true);
 
         repository = createRepository();
 
@@ -1430,30 +1445,35 @@ void main() {
         // Now execute unlike directly
         await repository.executeUnlikeAction(testEventId);
 
-        verify(() => mockNostrClient.deleteEvent(testReactionEventId)).called(1);
+        verify(
+          () => mockNostrClient.deleteEvent(testReactionEventId),
+        ).called(1);
         verify(
           () => mockLocalStorage.deleteLikeRecord(testEventId),
         ).called(1);
       });
 
       test('skips deletion for pending likes', () async {
-        when(() => mockLocalStorage.saveLikeRecord(any()))
-            .thenAnswer((_) async {});
-        when(() => mockLocalStorage.deleteLikeRecord(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.deleteLikeRecord(any()),
+        ).thenAnswer((_) async => true);
 
         // Create a pending like (offline)
         repository = LikesRepository(
           nostrClient: mockNostrClient,
           localStorage: mockLocalStorage,
           isOnline: () => false,
-          queueOfflineAction: ({
-            required bool isLike,
-            required String eventId,
-            required String authorPubkey,
-            String? addressableId,
-            int? targetKind,
-          }) async {},
+          queueOfflineAction:
+              ({
+                required bool isLike,
+                required String eventId,
+                required String authorPubkey,
+                String? addressableId,
+                int? targetKind,
+              }) async {},
         );
 
         await repository.likeEvent(
@@ -1471,8 +1491,9 @@ void main() {
       });
 
       test('does nothing when no record exists', () async {
-        when(() => mockLocalStorage.getLikeRecord(any()))
-            .thenAnswer((_) async => null);
+        when(
+          () => mockLocalStorage.getLikeRecord(any()),
+        ).thenAnswer((_) async => null);
 
         repository = createRepository();
 
@@ -1494,15 +1515,18 @@ void main() {
             targetAuthorPubkey: any(named: 'targetAuthorPubkey'),
             targetKind: any(named: 'targetKind'),
           ),
-        ).thenAnswer((_) async => createMockReaction(
-          id: testReactionEventId,
-          targetEventId: testEventId,
-        ));
+        ).thenAnswer(
+          (_) async => createMockReaction(
+            id: testReactionEventId,
+            targetEventId: testEventId,
+          ),
+        );
         when(
           () => mockNostrClient.deleteEvent(any()),
         ).thenAnswer((_) async => null);
-        when(() => mockLocalStorage.saveLikeRecord(any()))
-            .thenAnswer((_) async {});
+        when(
+          () => mockLocalStorage.saveLikeRecord(any()),
+        ).thenAnswer((_) async {});
 
         repository = createRepository();
 
@@ -1526,8 +1550,9 @@ void main() {
         when(
           () => mockNostrClient.deleteEvent(any()),
         ).thenAnswer((_) async => createMockDeletion([testReactionEventId]));
-        when(() => mockLocalStorage.deleteLikeRecord(any()))
-            .thenAnswer((_) async => true);
+        when(
+          () => mockLocalStorage.deleteLikeRecord(any()),
+        ).thenAnswer((_) async => true);
 
         repository = createRepository();
 
@@ -1536,7 +1561,9 @@ void main() {
         verify(
           () => mockLocalStorage.getLikeRecord(testEventId),
         ).called(1);
-        verify(() => mockNostrClient.deleteEvent(testReactionEventId)).called(1);
+        verify(
+          () => mockNostrClient.deleteEvent(testReactionEventId),
+        ).called(1);
       });
     });
   });
