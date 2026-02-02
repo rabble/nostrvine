@@ -17,3 +17,14 @@
 
 /*.ico
   Cache-Control: public, max-age=604800
+
+# Deep Link Verification Files (iOS Universal Links & Android App Links)
+/.well-known/apple-app-site-association
+  Content-Type: application/json
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
+
+/.well-known/assetlinks.json
+  Content-Type: application/json
+  Access-Control-Allow-Origin: *
+  Cache-Control: public, max-age=3600
