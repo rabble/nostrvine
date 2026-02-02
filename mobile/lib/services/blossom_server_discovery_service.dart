@@ -239,17 +239,19 @@ class BlossomServerDiscoveryService {
 
     try {
       // Temporarily add the indexer relay with timeout to prevent hanging
-      final added = await client.addRelay(indexerUrl).timeout(
-        const Duration(seconds: 5),
-        onTimeout: () {
-          Log.warning(
-            'Timeout adding indexer relay: $indexerUrl',
-            name: 'BlossomServerDiscoveryService',
-            category: LogCategory.system,
+      final added = await client
+          .addRelay(indexerUrl)
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              Log.warning(
+                'Timeout adding indexer relay: $indexerUrl',
+                name: 'BlossomServerDiscoveryService',
+                category: LogCategory.system,
+              );
+              return false;
+            },
           );
-          return false;
-        },
-      );
       if (!added) {
         Log.warning(
           'Failed to add indexer relay: $indexerUrl',
