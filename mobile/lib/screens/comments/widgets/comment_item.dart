@@ -2,19 +2,17 @@
 // ABOUTME: Renders a single comment with author info, content, and reply indicator
 
 import 'package:comments_repository/comments_repository.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/screens/comments/widgets/comment_options_modal.dart';
-import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/utils/public_identifier_normalizer.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
@@ -191,12 +189,7 @@ class _CommentHeader extends ConsumerWidget {
                 ],
               ),
               GestureDetector(
-                onTap: () {
-                  final npub = normalizeToNpub(authorPubkey);
-                  if (npub != null) {
-                    context.go(ProfileScreenRouter.pathForNpub(npub));
-                  }
-                },
+                onTap: () => context.pushOtherProfile(authorPubkey),
                 child: profile == null
                     ? Text(
                         NostrKeyUtils.encodePubKey(authorPubkey),
