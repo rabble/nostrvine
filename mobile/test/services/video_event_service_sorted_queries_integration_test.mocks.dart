@@ -311,6 +311,14 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
           as _i7.Future<bool>);
 
   @override
+  _i7.Future<int> addRelays(List<String>? relayUrls) =>
+      (super.noSuchMethod(
+            Invocation.method(#addRelays, [relayUrls]),
+            returnValue: _i7.Future<int>.value(0),
+          )
+          as _i7.Future<int>);
+
+  @override
   _i7.Future<bool> removeRelay(String? relayUrl) =>
       (super.noSuchMethod(
             Invocation.method(#removeRelay, [relayUrl]),
@@ -356,6 +364,9 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
   _i7.Future<_i8.Event?> sendLike(
     String? eventId, {
     String? content,
+    String? addressableId,
+    String? targetAuthorPubkey,
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) =>
@@ -365,6 +376,9 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
               [eventId],
               {
                 #content: content,
+                #addressableId: addressableId,
+                #targetAuthorPubkey: targetAuthorPubkey,
+                #targetKind: targetKind,
                 #tempRelays: tempRelays,
                 #targetRelays: targetRelays,
               },

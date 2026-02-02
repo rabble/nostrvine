@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/error_message.dart';
@@ -39,6 +40,27 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   bool _isOver16 = false;
   bool _agreedToTerms = false;
   bool _isAccepting = false;
+  bool _hasSavedKeys = false;
+  String? _savedNpub;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkForSavedKeys();
+  }
+
+  Future<void> _checkForSavedKeys() async {
+    final authService = ref.read(authServiceProvider);
+    final hasSavedKeys = await authService.hasSavedKeys();
+    final savedNpub = hasSavedKeys ? await authService.getSavedNpub() : null;
+
+    if (mounted) {
+      setState(() {
+        _hasSavedKeys = hasSavedKeys;
+        _savedNpub = savedNpub;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -130,6 +152,8 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                                   lastError: authService.lastError,
                                   canProceed: _canProceed,
                                   isAccepting: _isAccepting,
+                                  hasSavedKeys: _hasSavedKeys,
+                                  savedNpub: _savedNpub,
                                   onContinue: () => _handleContinue(context),
                                 ),
 
@@ -159,6 +183,37 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                                     ),
                                   ),
                                 ),
+
+                                // Start fresh option - only show when saved keys exist
+                                if (_hasSavedKeys) ...[
+                                  const SizedBox(height: 8),
+                                  TextButton(
+                                    onPressed: _canProceed
+                                        ? () => _handleStartFresh(context)
+                                        : null,
+                                    child: Text(
+                                      'Start with a new identity',
+                                      style: TextStyle(
+                                        color: _canProceed
+                                            ? Colors.white.withValues(
+                                                alpha: 0.7,
+                                              )
+                                            : Colors.white.withValues(
+                                                alpha: 0.4,
+                                              ),
+                                        fontSize: 14,
+                                        decoration: TextDecoration.underline,
+                                        decorationColor: _canProceed
+                                            ? Colors.white.withValues(
+                                                alpha: 0.7,
+                                              )
+                                            : Colors.white.withValues(
+                                                alpha: 0.4,
+                                              ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
                           ],
@@ -200,6 +255,74 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       }
     }
   }
+
+  Future<void> _handleStartFresh(BuildContext context) async {
+    // Show warning dialog
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: VineTheme.cardBackground,
+        title: const Text(
+          'Start with New Identity?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: const Text(
+          'This will:\n\n'
+          '• Delete your current keys from this device\n'
+          '• Generate a completely new Nostr identity\n'
+          '• You will NOT be able to access your previous account unless you have a backup of your nsec\n\n'
+          'Are you sure you want to start fresh?',
+          style: TextStyle(color: Colors.grey, height: 1.5),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => context.pop(false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () => context.pop(true),
+            child: const Text(
+              'Start Fresh',
+              style: TextStyle(color: Colors.orange),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _isAccepting = true);
+
+    try {
+      final authService = ref.read(authServiceProvider);
+
+      // Delete existing keys and generate new identity
+      await authService.signOut(deleteKeys: true);
+
+      // Clear local state so UI updates
+      setState(() {
+        _hasSavedKeys = false;
+        _savedNpub = null;
+      });
+
+      // Now sign in with the new auto-generated identity
+      await authService.signInAutomatically();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to start fresh: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isAccepting = false);
+      }
+    }
+  }
 }
 
 class _WelcomeActionSection extends StatelessWidget {
@@ -208,6 +331,8 @@ class _WelcomeActionSection extends StatelessWidget {
     required this.lastError,
     required this.canProceed,
     required this.isAccepting,
+    required this.hasSavedKeys,
+    required this.savedNpub,
     required this.onContinue,
   });
 
@@ -215,6 +340,8 @@ class _WelcomeActionSection extends StatelessWidget {
   final String? lastError;
   final bool canProceed;
   final bool isAccepting;
+  final bool hasSavedKeys;
+  final String? savedNpub;
   final VoidCallback onContinue;
 
   @override
@@ -231,6 +358,8 @@ class _WelcomeActionSection extends StatelessWidget {
     return _ActionButton(
       enabled: canProceed && !isAccepting,
       isLoading: isAccepting,
+      hasSavedKeys: hasSavedKeys,
+      savedNpub: savedNpub,
       onPressed: onContinue,
     );
   }
@@ -249,45 +378,75 @@ class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.enabled,
     required this.isLoading,
+    required this.hasSavedKeys,
+    required this.savedNpub,
     required this.onPressed,
   });
   final bool enabled;
   final bool isLoading;
+  final bool hasSavedKeys;
+  final String? savedNpub;
   final VoidCallback onPressed;
+
+  String _getButtonText() {
+    if (!enabled) return 'Accept Terms to Continue';
+    if (hasSavedKeys) return 'Continue with Saved Keys';
+    return 'Get Started';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton(
-        onPressed: enabled ? onPressed : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: VineTheme.vineGreen,
-          disabledBackgroundColor: Colors.white.withValues(alpha: 0.7),
-          disabledForegroundColor: VineTheme.vineGreen.withValues(alpha: 0.7),
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+    final maskedNpub = savedNpub != null
+        ? NostrKeyUtils.maskKey(savedNpub!)
+        : null;
+
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: enabled ? onPressed : null,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: VineTheme.vineGreen,
+              disabledBackgroundColor: Colors.white.withValues(alpha: 0.7),
+              disabledForegroundColor: VineTheme.vineGreen.withValues(
+                alpha: 0.7,
+              ),
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: isLoading
+                ? const SizedBox(
+                    height: 20,
+                    width: 20,
+                    child: CircularProgressIndicator(
+                      color: VineTheme.vineGreen,
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(
+                    _getButtonText(),
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
           ),
         ),
-        child: isLoading
-            ? const SizedBox(
-                height: 20,
-                width: 20,
-                child: CircularProgressIndicator(
-                  color: VineTheme.vineGreen,
-                  strokeWidth: 2,
-                ),
-              )
-            : Text(
-                enabled ? 'Continue' : 'Accept Terms to Continue',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-      ),
+        if (hasSavedKeys && maskedNpub != null && enabled) ...[
+          const SizedBox(height: 8),
+          Text(
+            'Resume as $maskedNpub',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white.withValues(alpha: 0.7),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

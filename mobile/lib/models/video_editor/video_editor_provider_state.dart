@@ -34,6 +34,8 @@ class VideoEditorProviderState {
     this.expiration = .notExpire,
     this.metadataLimitReached = false,
     this.finalRenderedClip,
+    this.editorStateHistory = const {},
+    this.editorEditingParameters = const {},
     GlobalKey? deleteButtonKey,
   }) : deleteButtonKey = deleteButtonKey ?? GlobalKey();
 
@@ -101,6 +103,12 @@ class VideoEditorProviderState {
   /// This represents the video output ready for publishing.
   final RecordingClip? finalRenderedClip;
 
+  /// Serialized state history from ProImageEditor for undo/redo restoration.
+  final Map<String, dynamic> editorStateHistory;
+
+  /// Serialized editing parameters (filters, drawings, etc.) from ProImageEditor.
+  final Map<String, dynamic> editorEditingParameters;
+
   /// Whether the video is valid and ready to be posted.
   ///
   /// Returns true if:
@@ -134,6 +142,8 @@ class VideoEditorProviderState {
     VideoMetadataExpiration? expiration,
     bool? metadataLimitReached,
     RecordingClip? finalRenderedClip,
+    Map<String, dynamic>? editorStateHistory,
+    Map<String, dynamic>? editorEditingParameters,
   }) {
     return VideoEditorProviderState(
       currentClipIndex: currentClipIndex ?? this.currentClipIndex,
@@ -156,6 +166,9 @@ class VideoEditorProviderState {
       expiration: expiration ?? this.expiration,
       metadataLimitReached: metadataLimitReached ?? this.metadataLimitReached,
       finalRenderedClip: finalRenderedClip ?? this.finalRenderedClip,
+      editorStateHistory: editorStateHistory ?? this.editorStateHistory,
+      editorEditingParameters:
+          editorEditingParameters ?? this.editorEditingParameters,
     );
   }
 }

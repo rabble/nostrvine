@@ -19,24 +19,14 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
   const VideoClipEditorBottomBar({super.key});
 
   void _showSnackBar({required BuildContext context, required String message}) {
-    // TODO(@hm21): Update after new final snackbar-design is implemented.
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        shape: RoundedRectangleBorder(borderRadius: .circular(16)),
-        clipBehavior: .hardEdge,
-        content: Text(
-          message,
-          style: VineTheme.bodyFont(
-            fontSize: 14,
-            fontWeight: .w600,
-            height: 1.43,
-            letterSpacing: 0.1,
-            color: VineTheme.whiteText,
-          ),
-        ),
-        duration: Duration(seconds: 3),
-        backgroundColor: const Color(0xFF000A06),
+        padding: EdgeInsets.zero,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         behavior: .floating,
+        duration: Duration(seconds: 3),
+        content: DivineSnackbarContainer(label: message),
       ),
     );
   }

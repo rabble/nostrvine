@@ -11,6 +11,7 @@ import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -63,10 +64,15 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     return ClipManagerState();
   }
 
-  /// Trigger autosave via VideoEditorProvider.
+  /// Trigger autosave via VideoEditorProvider (debounced).
   void _triggerAutosave() {
     ref.read(videoEditorProvider.notifier).triggerAutosave();
   }
+
+  /// Force immediate autosave without debounce.
+  /// Use this before file cleanup to ensure references are updated.
+  Future<void> _forceAutosave() =>
+      ref.read(videoEditorProvider.notifier).autosaveChanges();
 
   /// Manually trigger a state refresh with current clips.
   ///
@@ -249,7 +255,8 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// Delete a clip by ID.
   ///
   /// Returns true if the clip was successfully deleted, false if not found.
-  bool removeClipById(String clipId) {
+  /// Also deletes associated files if not referenced elsewhere.
+  Future<bool> removeClipById(String clipId) async {
     final index = _clips.indexWhere((c) => c.id == clipId);
     if (index == -1) {
       Log.warning(
@@ -260,6 +267,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       return false;
     }
 
+    final clip = _clips[index];
     _clips.removeAt(index);
     Log.info(
       '🗑️  Deleted clip: $clipId (${_clips.length} remaining)',
@@ -267,7 +275,13 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       category: .video,
     );
     state = state.copyWith(clips: List.unmodifiable(_clips));
-    _triggerAutosave();
+
+    // Force immediate autosave so draft references are updated before cleanup
+    await _forceAutosave();
+
+    // Delete files only if not referenced by drafts or clip library
+    await FileCleanupService.deleteRecordingClipFiles(clip);
+
     return true;
   }
 
@@ -445,7 +459,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   ///
   /// Safely removes only the last clip if any exist, otherwise logs debug
   /// message.
-  void removeLastClip() {
+  Future<void> removeLastClip() async {
     if (_clips.isEmpty) {
       Log.debug(
         '⚠️ Cannot remove last clip - no clips available',
@@ -460,14 +474,16 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       name: 'ClipManagerNotifier',
       category: .video,
     );
-    removeClipById(lastClip.id);
+    await removeClipById(lastClip.id);
   }
 
   /// Remove all clips and reset state.
   ///
   /// Clears all recorded clips and resets to initial state.
-  void clearAll() {
+  /// Also deletes associated files if not referenced elsewhere.
+  Future<void> clearAll() async {
     final clipCount = _clips.length;
+    final clipsToDelete = List<RecordingClip>.from(_clips);
     _clips.clear();
     Log.info(
       '🗑️  Cleared all clips (removed $clipCount clips)',
@@ -475,6 +491,12 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       category: .video,
     );
     state = ClipManagerState();
+
+    // Force immediate autosave so draft references are updated before cleanup
+    await _forceAutosave();
+
+    // Delete files only if not referenced by drafts or clip library
+    await FileCleanupService.deleteRecordingClipsFiles(clipsToDelete);
   }
 
   /// Save clip(s) to library.

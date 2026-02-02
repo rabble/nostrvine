@@ -5,7 +5,7 @@ class VideoEditorMainState extends Equatable {
   const VideoEditorMainState({
     this.canUndo = false,
     this.canRedo = false,
-    this.isSubEditorOpen = false,
+    this.openSubEditor,
     this.isLayerInteractionActive = false,
   });
 
@@ -15,22 +15,31 @@ class VideoEditorMainState extends Equatable {
   /// Whether the redo action is available.
   final bool canRedo;
 
-  /// Whether a sub-editor (text, paint, filter) is currently open.
-  final bool isSubEditorOpen;
+  /// The currently open sub-editor, or `null` if none is open.
+  final SubEditorType? openSubEditor;
+
+  /// Whether a sub-editor is currently open.
+  bool get isSubEditorOpen => openSubEditor != null;
 
   /// Whether the user is currently interacting with a layer (scaling/rotating).
   final bool isLayerInteractionActive;
 
+  /// Creates a copy with the given fields replaced.
+  ///
+  /// Use [clearOpenSubEditor] to explicitly close the sub-editor.
   VideoEditorMainState copyWith({
     bool? canUndo,
     bool? canRedo,
-    bool? isSubEditorOpen,
+    SubEditorType? openSubEditor,
+    bool clearOpenSubEditor = false,
     bool? isLayerInteractionActive,
   }) {
     return VideoEditorMainState(
       canUndo: canUndo ?? this.canUndo,
       canRedo: canRedo ?? this.canRedo,
-      isSubEditorOpen: isSubEditorOpen ?? this.isSubEditorOpen,
+      openSubEditor: clearOpenSubEditor
+          ? null
+          : (openSubEditor ?? this.openSubEditor),
       isLayerInteractionActive:
           isLayerInteractionActive ?? this.isLayerInteractionActive,
     );
@@ -40,7 +49,7 @@ class VideoEditorMainState extends Equatable {
   List<Object?> get props => [
     canUndo,
     canRedo,
-    isSubEditorOpen,
+    openSubEditor,
     isLayerInteractionActive,
   ];
 }

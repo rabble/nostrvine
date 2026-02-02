@@ -480,7 +480,7 @@ final class RelaySetChangeBridgeProvider
 }
 
 String _$relaySetChangeBridgeHash() =>
-    r'd57982bcec97c066fb5db91322facf82744f8e60';
+    r'69fd17051348b968d05f92adbaf87cc6844dea05';
 
 /// Analytics service with opt-out support
 
@@ -650,6 +650,63 @@ final class AudioSharingPreferenceServiceProvider
 
 String _$audioSharingPreferenceServiceHash() =>
     r'6d09af615c19937bc2842079c368161b513dd323';
+
+/// Audio device preference service for managing the preferred input device
+/// for recording on macOS. keepAlive ensures preference persists.
+
+@ProviderFor(audioDevicePreferenceService)
+const audioDevicePreferenceServiceProvider =
+    AudioDevicePreferenceServiceProvider._();
+
+/// Audio device preference service for managing the preferred input device
+/// for recording on macOS. keepAlive ensures preference persists.
+
+final class AudioDevicePreferenceServiceProvider
+    extends
+        $FunctionalProvider<
+          AudioDevicePreferenceService,
+          AudioDevicePreferenceService,
+          AudioDevicePreferenceService
+        >
+    with $Provider<AudioDevicePreferenceService> {
+  /// Audio device preference service for managing the preferred input device
+  /// for recording on macOS. keepAlive ensures preference persists.
+  const AudioDevicePreferenceServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'audioDevicePreferenceServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$audioDevicePreferenceServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<AudioDevicePreferenceService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  AudioDevicePreferenceService create(Ref ref) {
+    return audioDevicePreferenceService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(AudioDevicePreferenceService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<AudioDevicePreferenceService>(value),
+    );
+  }
+}
+
+String _$audioDevicePreferenceServiceHash() =>
+    r'9880cf38a5d5ae812a798e7a5c4fa96ffa3578d6';
 
 /// Geo-blocking service for regional compliance
 
@@ -2022,12 +2079,12 @@ final class SubscriptionManagerProvider
 String _$subscriptionManagerHash() =>
     r'b65a6978927d3004c6f841e0b80075f9db9645d2';
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager services
+/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
 
 @ProviderFor(videoEventService)
 const videoEventServiceProvider = VideoEventServiceProvider._();
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager services
+/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
 
 final class VideoEventServiceProvider
     extends
@@ -2037,7 +2094,7 @@ final class VideoEventServiceProvider
           VideoEventService
         >
     with $Provider<VideoEventService> {
-  /// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager services
+  /// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
   const VideoEventServiceProvider._()
     : super(
         from: null,
@@ -2072,7 +2129,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'2e58eabbb8807979c479042abb7adc1bbb3bfade';
+String _$videoEventServiceHash() => r'912579edfca6f3157a2c1d999b09f17f96358077';
 
 /// Hashtag service depends on Video event service and cache service
 

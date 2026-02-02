@@ -4,21 +4,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 part 'video_editor_main_event.dart';
 part 'video_editor_main_state.dart';
 
-/// BLoC for managing the video editor main screen UI state.
+/// BLoC for managing the video editor main screen state.
 ///
 /// Handles:
-/// - Undo/Redo availability tracking
+/// - Undo/Redo availability and actions
 /// - Layer interaction state (scaling/rotating)
-/// - Sub-editor open state tracking
-///
-/// Note: This BLoC only manages UI state. Editor actions (undo, redo, etc.)
-/// should be called directly on the editor via its GlobalKey.
+/// - Sub-editor open state and navigation
+/// - Close/Done actions
 class VideoEditorMainBloc
     extends Bloc<VideoEditorMainEvent, VideoEditorMainState> {
   VideoEditorMainBloc() : super(const VideoEditorMainState()) {
     on<VideoEditorMainCapabilitiesChanged>(_onCapabilitiesChanged);
     on<VideoEditorLayerInteractionStarted>(_onLayerInteractionStarted);
     on<VideoEditorLayerInteractionEnded>(_onLayerInteractionEnded);
+    on<VideoEditorMainOpenSubEditor>(_onOpenSubEditor);
+    on<VideoEditorMainSubEditorClosed>(_onSubEditorClosed);
   }
 
   /// Updates undo/redo/subEditor state based on editor capabilities.
@@ -26,13 +26,7 @@ class VideoEditorMainBloc
     VideoEditorMainCapabilitiesChanged event,
     Emitter<VideoEditorMainState> emit,
   ) {
-    emit(
-      state.copyWith(
-        canUndo: event.canUndo,
-        canRedo: event.canRedo,
-        isSubEditorOpen: event.isSubEditorOpen,
-      ),
-    );
+    emit(state.copyWith(canUndo: event.canUndo, canRedo: event.canRedo));
   }
 
   void _onLayerInteractionStarted(
@@ -47,5 +41,19 @@ class VideoEditorMainBloc
     Emitter<VideoEditorMainState> emit,
   ) {
     emit(state.copyWith(isLayerInteractionActive: false));
+  }
+
+  void _onOpenSubEditor(
+    VideoEditorMainOpenSubEditor event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(state.copyWith(openSubEditor: event.type));
+  }
+
+  void _onSubEditorClosed(
+    VideoEditorMainSubEditorClosed event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(state.copyWith(clearOpenSubEditor: true));
   }
 }

@@ -29,6 +29,8 @@ void main() {
       when(mockAuthService.authState).thenReturn(AuthState.authenticated);
       when(mockAuthService.isAuthenticated).thenReturn(true);
       when(mockAuthService.lastError).thenReturn(null);
+      // Stub for hasSavedKeys - called in WelcomeScreen.initState
+      when(mockAuthService.hasSavedKeys()).thenAnswer((_) async => false);
     });
 
     testWidgets('Welcome screen layout renders correctly', (tester) async {

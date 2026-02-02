@@ -11,6 +11,7 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/divine_auth_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
+import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
@@ -57,13 +58,6 @@ void resetNavigationState() {
   _hasNavigated = false;
 }
 
-/// Checks if the given location is an auth route.
-bool _isAuthRoute(String location) {
-  return location.startsWith(WelcomeScreen.path) ||
-      location.startsWith(KeyImportScreen.path) ||
-      location.startsWith(EmailVerificationScreen.path);
-}
-
 final goRouterProvider = Provider<GoRouter>((ref) {
   // Use ref.read to avoid recreating the router on auth state changes
   // The refreshListenable handles reacting to auth state changes
@@ -92,6 +86,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       if (authState == AuthState.authenticated &&
           (location == WelcomeScreen.path ||
               location == KeyImportScreen.path ||
+              location == NostrConnectScreen.path ||
               location == WelcomeScreen.loginOptionsPath ||
               location == WelcomeScreen.resetPasswordPath ||
               location == EmailVerificationScreen.path)) {
@@ -108,8 +103,23 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       }
 
       // Auth routes are allowed without TOS - user is in the process of logging in
-      if (!_isAuthRoute(location)) {
+      final isAuthRoute =
+          location.startsWith(WelcomeScreen.path) ||
+          location.startsWith(KeyImportScreen.path) ||
+          location.startsWith(NostrConnectScreen.path) ||
+          location.startsWith(WelcomeScreen.resetPasswordPath) ||
+          location.startsWith(EmailVerificationScreen.path);
+
+      // Check TOS acceptance for non-auth routes
+      if (!isAuthRoute) {
+        Log.debug(
+          'Checking TOS for: $location',
+          name: 'AppRouter',
+          category: LogCategory.ui,
+        );
+
         final hasAcceptedTerms = ref.read(hasTosAcceptedProvider);
+
         Log.debug(
           'TOS accepted: $hasAcceptedTerms',
           name: 'AppRouter',
@@ -472,6 +482,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         builder: (_, __) => const KeyImportScreen(),
       ),
       GoRoute(
+        path: NostrConnectScreen.path,
+        name: NostrConnectScreen.routeName,
+        builder: (_, __) => const NostrConnectScreen(),
+      ),
+      GoRoute(
         path: SecureAccountScreen.path,
         name: SecureAccountScreen.routeName,
         builder: (_, __) => const SecureAccountScreen(),
@@ -758,6 +773,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
       ),
       // Other user's profile screen (no bottom nav, pushed from feeds/search)
+      // Uses router widget to redirect self-visits to own profile tab
       GoRoute(
         path: OtherProfileScreen.pathWithNpub,
         name: OtherProfileScreen.routeName,
@@ -773,7 +789,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           final extra = st.extra as Map<String, String?>?;
           final displayNameHint = extra?['displayName'];
           final avatarUrlHint = extra?['avatarUrl'];
-          return OtherProfileScreen(
+          return OtherProfileScreenRouter(
             npub: npub,
             displayNameHint: displayNameHint,
             avatarUrlHint: avatarUrlHint,
@@ -794,8 +810,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 ///
 /// Returns -1 for non-tab routes (like search, settings, edit-profile)
 /// to hide the bottom navigation bar.
-int tabIndexFromLocation(String location) {
-  final uri = Uri.parse(location);
+int tabIndexFromLocation(String loc) {
+  final uri = Uri.parse(loc);
   final first = uri.pathSegments.isEmpty ? '' : uri.pathSegments.first;
   switch (first) {
     case 'home':
@@ -821,6 +837,7 @@ int tabIndexFromLocation(String location) {
     case 'edit-profile':
     case 'setup-profile':
     case 'import-key':
+    case 'nostr-connect':
     case 'welcome':
     case 'video-recorder':
     case 'video-editor':

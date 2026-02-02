@@ -107,9 +107,10 @@ class PopularVideosFeed extends _$PopularVideosFeed {
             limit: 100,
           );
           // Merge: trending first, then recent (excluding duplicates)
-          final existingIds = apiVideos.map((v) => v.id).toSet();
+          // Use case-insensitive comparison for Nostr IDs
+          final existingIds = apiVideos.map((v) => v.id.toLowerCase()).toSet();
           final additionalVideos = recentVideos
-              .where((v) => !existingIds.contains(v.id))
+              .where((v) => !existingIds.contains(v.id.toLowerCase()))
               .toList();
           apiVideos = [...apiVideos, ...additionalVideos];
         }
@@ -238,9 +239,12 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         if (!ref.mounted) return;
 
         if (apiVideos.isNotEmpty) {
-          final existingIds = currentState.videos.map((v) => v.id).toSet();
+          // Case-insensitive deduplication for Nostr IDs
+          final existingIds = currentState.videos
+              .map((v) => v.id.toLowerCase())
+              .toSet();
           final newVideos = apiVideos
-              .where((v) => !existingIds.contains(v.id))
+              .where((v) => !existingIds.contains(v.id.toLowerCase()))
               .where((v) => v.isSupportedOnCurrentPlatform)
               .toList();
 

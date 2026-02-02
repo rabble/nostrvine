@@ -214,14 +214,23 @@ class _EmailVerificationScreenState
   void _handleTokenModeSuccess() {
     // Clear persisted verification data
     ref.read(pendingVerificationServiceProvider).clear();
+    // Show feedback message before redirecting to login
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Email verified! Please log in to continue.'),
+        backgroundColor: VineTheme.vineGreen,
+        duration: Duration(seconds: 3),
+      ),
+    );
     // Redirect to login screen
     context.go(WelcomeScreen.authNativePath);
   }
 
   void _handleCancel() {
     _cubit.stopPolling();
-    // Clear persisted verification data on cancel
-    ref.read(pendingVerificationServiceProvider).clear();
+    // Don't clear pending verification data - user may still verify via email
+    // link later. Data will be cleared on: successful login, logout, or
+    // expiration (30 minutes).
     // Go back to previous screen (registration form)
     if (context.canPop()) {
       context.pop();

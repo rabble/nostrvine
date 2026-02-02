@@ -69,6 +69,7 @@ class VideoEditorRenderService {
         videoSegments: videoSegments,
         endTime: VideoEditorConstants.maxDuration,
         enableAudio: enableAudio,
+        shouldOptimizeForNetworkUse: true,
         transform: ExportTransform(
           x: cropParams.x,
           y: cropParams.y,

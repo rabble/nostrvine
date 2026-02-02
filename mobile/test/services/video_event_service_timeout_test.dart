@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:openvine/repositories/video_repository.dart';
 
 import 'video_event_service_deduplication_test.mocks.dart';
 
@@ -36,6 +37,7 @@ void main() {
       videoEventService = VideoEventService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
+        videoRepository: VideoRepository(),
       );
     });
 

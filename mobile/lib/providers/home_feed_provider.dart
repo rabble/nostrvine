@@ -586,10 +586,16 @@ class HomeFeed extends _$HomeFeed {
     // This prevents showing "empty" while subscribed list cache is still syncing
     final stillLoadingLists = followingVideos.isEmpty && hasSubscribedLists;
 
+    // Determine if there's more content:
+    // - REST API mode: use the API's hasMore response
+    // - Nostr mode: use threshold heuristic
+    final hasMoreContent = _usingRestApi
+        ? _hasMoreFromApi
+        : followingVideos.length >= AppConstants.hasMoreContentThreshold;
+
     final feedState = VideoFeedState(
       videos: followingVideos,
-      hasMoreContent:
-          followingVideos.length >= AppConstants.hasMoreContentThreshold,
+      hasMoreContent: hasMoreContent,
       isLoadingMore: false,
       isInitialLoad: stillLoadingLists,
       error: null,
@@ -727,10 +733,12 @@ class HomeFeed extends _$HomeFeed {
         if (!ref.mounted) return;
 
         if (feedResult.videos.isNotEmpty) {
-          // Deduplicate and merge
-          final existingIds = currentState.videos.map((v) => v.id).toSet();
+          // Deduplicate and merge (case-insensitive for Nostr IDs)
+          final existingIds = currentState.videos
+              .map((v) => v.id.toLowerCase())
+              .toSet();
           final newVideos = feedResult.videos
-              .where((v) => !existingIds.contains(v.id))
+              .where((v) => !existingIds.contains(v.id.toLowerCase()))
               .where((v) => v.isSupportedOnCurrentPlatform)
               .toList();
 
@@ -891,11 +899,15 @@ class HomeFeed extends _$HomeFeed {
       return a.id.compareTo(b.id);
     });
 
+    // Preserve hasMore from API mode, otherwise use threshold heuristic
+    final hasMoreContent = _usingRestApi
+        ? _hasMoreFromApi
+        : updatedVideos.length >= AppConstants.hasMoreContentThreshold;
+
     state = AsyncData(
       VideoFeedState(
         videos: updatedVideos,
-        hasMoreContent:
-            updatedVideos.length >= AppConstants.hasMoreContentThreshold,
+        hasMoreContent: hasMoreContent,
         isLoadingMore: false,
         lastUpdated: DateTime.now(),
         videoListSources: videoListSources,

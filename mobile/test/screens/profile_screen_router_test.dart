@@ -15,7 +15,6 @@ import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
@@ -249,8 +248,28 @@ void main() {
       scrollController = ScrollController();
 
       mockFollowRepository = _MockFollowRepository();
+      when(
+        () => mockFollowRepository.getMyFollowers(),
+      ).thenAnswer((_) async => <String>[]);
+      when(
+        () => mockFollowRepository.getFollowers(any()),
+      ).thenAnswer((_) async => <String>[]);
       mockLikesRepository = _MockLikesRepository();
+      when(
+        () => mockLikesRepository.watchLikedEventIds(),
+      ).thenAnswer((_) => const Stream<Set<String>>.empty());
+      when(
+        () => mockLikesRepository.fetchUserLikes(any()),
+      ).thenAnswer((_) async => <String>[]);
+
       mockRepostsRepository = _MockRepostsRepository();
+      when(
+        () => mockRepostsRepository.watchRepostedAddressableIds(),
+      ).thenAnswer((_) => const Stream<Set<String>>.empty());
+      when(
+        () => mockRepostsRepository.fetchUserReposts(any()),
+      ).thenAnswer((_) async => <String>[]);
+
       mockVideosRepository = _MockVideosRepository();
       mockNostrClient = _MockNostrClient();
       mockUserProfileService = _MockUserProfileService();
@@ -284,13 +303,14 @@ void main() {
     Widget buildTestWidget(_FakeBackgroundPublishBloc bloc) {
       return ProviderScope(
         overrides: [
-          ...getStandardTestOverrides(),
+          ...getStandardTestOverrides(
+            mockNostrService: mockNostrClient,
+            mockUserProfileService: mockUserProfileService,
+          ),
           followRepositoryProvider.overrideWithValue(mockFollowRepository),
           likesRepositoryProvider.overrideWithValue(mockLikesRepository),
           repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
           videosRepositoryProvider.overrideWithValue(mockVideosRepository),
-          nostrServiceProvider.overrideWithValue(mockNostrClient),
-          userProfileServiceProvider.overrideWithValue(mockUserProfileService),
         ],
         child: MaterialApp(
           theme: VineTheme.theme,

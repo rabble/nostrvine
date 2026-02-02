@@ -3,7 +3,10 @@
 // notification settings
 
 import 'dart:async';
+import 'dart:io';
 
+import 'package:camera_macos_plus/camera_macos.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -145,6 +148,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onTap: () => context.push(SafetySettingsScreen.path),
               ),
               _buildAudioSharingToggle(),
+              // Audio device selector (macOS only - shows when multiple mics)
+              if (!kIsWeb && Platform.isMacOS) _buildAudioDeviceSelector(),
 
               // Network Configuration
               _buildSectionHeader('Network'),
@@ -267,11 +272,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   ),
                 _buildSettingsTile(
                   context,
-                  icon: Icons.logout,
-                  title: 'Log Out',
+                  icon: Icons.switch_account,
+                  title: 'Switch Account',
                   subtitle:
-                      'Sign out of your account. Your keys stay on this device and you can log back in later. Your content remains on relays.',
-                  onTap: () => _handleLogout(context, ref),
+                      'Go to login screen to use a different account. '
+                      'Your current keys stay saved on this device.',
+                  onTap: () => _handleSwitchAccount(context, ref),
                 ),
                 _buildSettingsTile(
                   context,
@@ -381,6 +387,162 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
+  /// Audio input device selector for macOS.
+  /// Shows available microphones and lets user choose one.
+  Widget _buildAudioDeviceSelector() {
+    final audioDevicePref = ref.watch(audioDevicePreferenceServiceProvider);
+
+    return FutureBuilder<List<CameraMacOSDevice>>(
+      future: CameraMacOS.instance.listDevices(
+        deviceType: CameraMacOSDeviceType.audio,
+      ),
+      builder: (context, snapshot) {
+        // Don't show if we can't get devices or only one device
+        if (!snapshot.hasData || snapshot.data!.length <= 1) {
+          return const SizedBox.shrink();
+        }
+
+        final devices = snapshot.data!;
+        final currentDevice = audioDevicePref.preferredDeviceId;
+
+        // Get display name for current selection
+        String currentDisplayName;
+        if (currentDevice == null) {
+          currentDisplayName = 'Auto (recommended)';
+        } else {
+          final device = devices.where((d) => d.deviceId == currentDevice);
+          currentDisplayName = device.isNotEmpty
+              ? _formatAudioDeviceName(device.first.deviceId)
+              : 'Auto (recommended)';
+        }
+
+        return ListTile(
+          leading: const Icon(Icons.mic, color: VineTheme.vineGreen),
+          title: const Text(
+            'Audio Input Device',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          subtitle: Text(
+            currentDisplayName,
+            style: const TextStyle(color: Colors.grey, fontSize: 14),
+          ),
+          trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+          onTap: () => _showAudioDevicePicker(devices, currentDevice),
+        );
+      },
+    );
+  }
+
+  /// Format device ID into a readable name
+  String _formatAudioDeviceName(String deviceId) {
+    // Common device ID patterns on macOS
+    if (deviceId.toLowerCase().contains('builtinmicrophone')) {
+      return 'Built-in Microphone';
+    }
+    if (deviceId.toLowerCase().contains('zoom')) {
+      return 'Zoom Audio Device';
+    }
+    // Clean up other device IDs
+    return deviceId
+        .replaceAll('Device', '')
+        .replaceAll('device', '')
+        .replaceAll(RegExp(r'[0-9a-f]{8}-[0-9a-f]{4}-.*'), '')
+        .trim();
+  }
+
+  /// Show bottom sheet picker for audio devices
+  Future<void> _showAudioDevicePicker(
+    List<CameraMacOSDevice> devices,
+    String? currentDevice,
+  ) async {
+    final audioDevicePref = ref.read(audioDevicePreferenceServiceProvider);
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: VineTheme.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Select Audio Input',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            const Divider(color: Colors.grey, height: 1),
+            // Auto option
+            ListTile(
+              leading: Icon(
+                currentDevice == null
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_off,
+                color: VineTheme.vineGreen,
+              ),
+              title: const Text(
+                'Auto (recommended)',
+                style: TextStyle(color: Colors.white),
+              ),
+              subtitle: const Text(
+                'Automatically selects the best microphone',
+                style: TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+              onTap: () async {
+                await audioDevicePref.setPreferredDeviceId(null);
+                if (mounted) {
+                  setState(() {});
+                  Navigator.pop(context);
+                }
+              },
+            ),
+            const Divider(color: Colors.grey, height: 1),
+            // Device list
+            ...devices.map(
+              (device) => ListTile(
+                leading: Icon(
+                  currentDevice == device.deviceId
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_off,
+                  color: VineTheme.vineGreen,
+                ),
+                title: Text(
+                  _formatAudioDeviceName(device.deviceId),
+                  style: const TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  device.deviceId,
+                  style: const TextStyle(color: Colors.grey, fontSize: 11),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                onTap: () async {
+                  await audioDevicePref.setPreferredDeviceId(device.deviceId);
+                  if (mounted) {
+                    setState(() {});
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+            ),
+            const SizedBox(height: 16),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildVersionTile(BuildContext context, WidgetRef ref) {
     final isDeveloperMode = ref.watch(isDeveloperModeEnabledProvider);
     final environmentService = ref.watch(environmentServiceProvider);
@@ -453,8 +615,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Future<void> _handleLogout(BuildContext context, WidgetRef ref) async {
-    // Check for existing drafts before showing logout confirmation
+  Future<void> _handleSwitchAccount(BuildContext context, WidgetRef ref) async {
+    // Check for existing drafts before showing switch account confirmation
     final prefs = await SharedPreferences.getInstance();
     final draftService = DraftStorageService(prefs);
     final drafts = await draftService.getAllDrafts();
@@ -475,8 +637,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           content: Text(
             'You have $draftCount unsaved $draftWord. '
-            'Logging out will keep your $draftWord, but you may want to publish or review ${draftCount == 1 ? 'it' : 'them'} first.\n\n'
-            'Do you want to log out anyway?',
+            'Switching accounts will keep your $draftWord, but you may want to publish or review ${draftCount == 1 ? 'it' : 'them'} first.\n\n'
+            'Do you want to switch accounts anyway?',
             style: const TextStyle(color: Colors.grey),
           ),
           actions: [
@@ -487,7 +649,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             TextButton(
               onPressed: () => context.pop(true),
               child: const Text(
-                'Log Out Anyway',
+                'Switch Anyway',
                 style: TextStyle(color: Colors.red),
               ),
             ),
@@ -506,11 +668,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
         title: const Text(
-          'Log Out?',
+          'Switch Account?',
           style: TextStyle(color: VineTheme.whiteText),
         ),
         content: const Text(
-          'Are you sure you want to log out? Your keys will be saved and you can log back in later.',
+          'You will be taken to the login screen where you can:\n\n'
+          '• Continue with your saved keys\n'
+          '• Import a different account\n'
+          '• Create a new identity\n\n'
+          'Your current keys will stay saved on this device.',
           style: TextStyle(color: Colors.grey),
         ),
         actions: [
@@ -525,7 +691,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               context.pop(true);
             },
             child: const Text(
-              'Log Out',
+              'Switch Account',
               style: TextStyle(color: VineTheme.vineGreen),
             ),
           ),

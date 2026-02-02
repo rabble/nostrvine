@@ -306,6 +306,7 @@ class UploadManager {
               .map((clip) => VideoSegment(video: clip.video))
               .toList(),
           endTime: VideoEditorConstants.maxDuration,
+          shouldOptimizeForNetworkUse: true,
         ),
       );
     }
@@ -1277,8 +1278,8 @@ class UploadManager {
 
     await _updateUpload(resumedUpload);
 
-    // Start upload process again
-    _performUpload(resumedUpload);
+    // Start upload process again and wait for completion
+    await _performUpload(resumedUpload);
 
     Log.info(
       'Upload resumed: $uploadId',
@@ -1323,8 +1324,8 @@ class UploadManager {
 
     await _updateUpload(resetUpload);
 
-    // Start upload again
-    _performUpload(resetUpload);
+    // Start upload again and wait for completion
+    await _performUpload(resetUpload);
   }
 
   /// Cancel an upload (stops the upload but keeps it for retry)
@@ -1439,7 +1440,17 @@ class UploadManager {
       );
 
       await _updateUpload(resetUpload);
-      _performUpload(resetUpload);
+      // Intentional fire-and-forget for parallel processing of interrupted uploads
+      // Wrap in unawaited to make the intent explicit and add error handling
+      unawaited(
+        _performUpload(resetUpload).catchError((Object e) {
+          Log.error(
+            'Error resuming interrupted upload ${resetUpload.id}: $e',
+            name: 'UploadManager',
+            category: LogCategory.video,
+          );
+        }),
+      );
     }
   }
 

@@ -48,6 +48,11 @@ class CommentsRepository {
   /// Parameters:
   /// - [rootEventId]: The ID of the event to load comments for
   /// - [rootEventKind]: The kind of the root event (e.g., 34236 for videos)
+  /// - [rootAddressableId]: Optional addressable identifier for the root event
+  ///   (format: `kind:pubkey:d-tag`). When provided, queries by both E and A
+  ///   tags to find comments that reference the event by either identifier.
+  ///   This is important for Kind 34236 addressable events where some clients
+  ///   may use E tags and others may use A tags.
   /// - [limit]: Maximum number of comments to fetch (default: 100)
   /// - [before]: Cursor for pagination - fetch comments created
   ///   before this time.
@@ -63,19 +68,57 @@ class CommentsRepository {
   Future<CommentThread> loadComments({
     required String rootEventId,
     required int rootEventKind,
+    String? rootAddressableId,
     int limit = _defaultLimit,
     DateTime? before,
   }) async {
     try {
+      final untilTimestamp = before != null
+          ? before.millisecondsSinceEpoch ~/ 1000
+          : null;
+
       // NIP-22: Filter by Kind 1111 and uppercase E tag for root scope
-      final filter = Filter(
+      final filterByE = Filter(
         kinds: const [_commentKind],
         uppercaseE: [rootEventId],
         limit: limit,
-        until: before != null ? before.millisecondsSinceEpoch ~/ 1000 : null,
+        until: untilTimestamp,
       );
 
-      final events = await _nostrClient.queryEvents([filter]);
+      // If we have an addressable ID, also query by uppercase A tag
+      // Some clients may reference addressable events using A instead of E
+      if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
+        final filterByA = Filter(
+          kinds: const [_commentKind],
+          uppercaseA: [rootAddressableId],
+          limit: limit,
+          until: untilTimestamp,
+        );
+
+        // Run both queries in parallel and merge results
+        final results = await Future.wait([
+          _nostrClient.queryEvents([filterByE]),
+          _nostrClient.queryEvents([filterByA]),
+        ]);
+
+        // Merge and deduplicate by event ID
+        final eventMap = <String, Event>{};
+        for (final event in results[0]) {
+          eventMap[event.id] = event;
+        }
+        for (final event in results[1]) {
+          eventMap[event.id] = event;
+        }
+
+        return _buildThreadFromEvents(
+          eventMap.values.toList(),
+          rootEventId,
+          rootEventKind,
+        );
+      }
+
+      // No addressable ID - just query by E tag
+      final events = await _nostrClient.queryEvents([filterByE]);
       return _buildThreadFromEvents(events, rootEventId, rootEventKind);
     } on Exception catch (e) {
       throw LoadCommentsFailedException('Failed to load comments: $e');
@@ -92,6 +135,9 @@ class CommentsRepository {
   /// - [rootEventId]: The ID of the root event (e.g., video)
   /// - [rootEventKind]: The kind of the root event (e.g., 34236)
   /// - [rootEventAuthorPubkey]: Public key of the root event author
+  /// - [rootAddressableId]: Optional addressable identifier for the root event
+  ///   (format: `kind:pubkey:d-tag`). When provided, includes both E and A tags
+  ///   to ensure the comment can be found by clients querying either way.
   /// - [replyToEventId]: ID of parent comment (for nested replies)
   /// - [replyToAuthorPubkey]: Public key of parent comment author
   ///
@@ -104,6 +150,7 @@ class CommentsRepository {
     required String rootEventId,
     required int rootEventKind,
     required String rootEventAuthorPubkey,
+    String? rootAddressableId,
     String? replyToEventId,
     String? replyToAuthorPubkey,
   }) async {
@@ -117,6 +164,10 @@ class CommentsRepository {
     final tags = <List<String>>[
       // Root scope tags (uppercase) - always point to the original event
       ['E', rootEventId, '', rootEventAuthorPubkey],
+      // Include A tag for addressable events (Kind 30000-39999)
+      // This ensures comments can be found by clients querying by either E or A
+      if (rootAddressableId != null && rootAddressableId.isNotEmpty)
+        ['A', rootAddressableId, '', rootEventAuthorPubkey],
       ['K', rootEventKind.toString()],
       ['P', rootEventAuthorPubkey],
       // Parent item tags (lowercase)
@@ -128,6 +179,9 @@ class CommentsRepository {
       ] else ...[
         // Top-level comment - parent is the same as root
         ['e', rootEventId, '', rootEventAuthorPubkey],
+        // Include lowercase 'a' tag for addressable events too
+        if (rootAddressableId != null && rootAddressableId.isNotEmpty)
+          ['a', rootAddressableId, '', rootEventAuthorPubkey],
         ['k', rootEventKind.toString()],
         ['p', rootEventAuthorPubkey],
       ],
@@ -173,19 +227,48 @@ class CommentsRepository {
   ///
   /// Parameters:
   /// - [rootEventId]: The ID of the event to count comments for
+  /// - [rootAddressableId]: Optional addressable identifier for the root event
+  ///   (format: `kind:pubkey:d-tag`). When provided, counts comments from both
+  ///   E and A tag queries to get an accurate total.
   ///
   /// Returns the number of comments on the event.
   ///
   /// Throws [CountCommentsFailedException] if counting fails.
-  Future<int> getCommentsCount(String rootEventId) async {
+  Future<int> getCommentsCount(
+    String rootEventId, {
+    String? rootAddressableId,
+  }) async {
     try {
       // NIP-22: Filter by Kind 1111 and uppercase E tag
-      final filter = Filter(
+      final filterByE = Filter(
         kinds: const [_commentKind],
         uppercaseE: [rootEventId],
       );
 
-      final result = await _nostrClient.countEvents([filter]);
+      // If we have an addressable ID, also query by uppercase A tag
+      if (rootAddressableId != null && rootAddressableId.isNotEmpty) {
+        final filterByA = Filter(
+          kinds: const [_commentKind],
+          uppercaseA: [rootAddressableId],
+        );
+
+        // Run both COUNT queries in parallel
+        // Note: This may over-count if a comment has both E and A tags,
+        // but that's rare and the count is still useful for UI purposes.
+        // For exact count, use loadComments which deduplicates.
+        final results = await Future.wait([
+          _nostrClient.countEvents([filterByE]),
+          _nostrClient.countEvents([filterByA]),
+        ]);
+
+        // Return the maximum of the two counts
+        // (since comments should have at least one of these tags)
+        final countByE = results[0].count;
+        final countByA = results[1].count;
+        return countByE > countByA ? countByE : countByA;
+      }
+
+      final result = await _nostrClient.countEvents([filterByE]);
       return result.count;
     } on Exception catch (e) {
       throw CountCommentsFailedException('Failed to count comments: $e');

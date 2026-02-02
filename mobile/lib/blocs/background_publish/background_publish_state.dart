@@ -32,6 +32,10 @@ class BackgroundPublishState extends Equatable {
 
   final List<BackgroundUpload> uploads;
 
+  /// Returns true if there is any upload in progress (no result yet).
+  bool get hasUploadInProgress =>
+      uploads.any((upload) => upload.result == null);
+
   BackgroundPublishState copyWith({List<BackgroundUpload>? uploads}) {
     return BackgroundPublishState(uploads: uploads ?? this.uploads);
   }

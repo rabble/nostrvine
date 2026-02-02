@@ -18,31 +18,35 @@ void main() {
       service = ContentBlocklistService();
     });
 
-    test('should initialize with blocked accounts', () {
-      expect(service.totalBlockedCount, greaterThan(0));
+    test('should initialize with no hardcoded blocked accounts', () {
+      // Moderation should happen at relay level, not hardcoded in app
+      expect(service.totalBlockedCount, equals(0));
     });
 
-    test('should block specified npubs', () {
-      // The service should have blocked the specified users (3 npubs)
-      expect(service.totalBlockedCount, equals(3));
+    test('should block users at runtime', () {
+      const testPubkey1 = 'pubkey_to_block_1';
+      const testPubkey2 = 'pubkey_to_block_2';
 
-      // Verify the specific hex keys are blocked (correct values from bech32 decoding)
-      const expectedHex1 =
-          '7444faae22d4d4939c815819dca3c4822c209758bf86afc66365db5f79f67ddb';
-      const expectedHex2 =
-          '2df7fab5ab8eb77572b1a64221b68056cefbccd16fa370d33a5fbeade3debe5f';
-      const expectedHex3 =
-          '5943c88f3c60cd9edb125a668e2911ad419fc04e94549ed96a721901dd958372';
+      // Initially no blocks
+      expect(service.totalBlockedCount, equals(0));
+      expect(service.isBlocked(testPubkey1), isFalse);
+      expect(service.isBlocked(testPubkey2), isFalse);
 
-      expect(service.isBlocked(expectedHex1), isTrue);
-      expect(service.isBlocked(expectedHex2), isTrue);
-      expect(service.isBlocked(expectedHex3), isTrue);
+      // Block users at runtime
+      service.blockUser(testPubkey1);
+      service.blockUser(testPubkey2);
+
+      expect(service.totalBlockedCount, equals(2));
+      expect(service.isBlocked(testPubkey1), isTrue);
+      expect(service.isBlocked(testPubkey2), isTrue);
     });
 
     test('should filter blocked content from feeds', () {
-      const blockedPubkey =
-          '7444faae22d4d4939c815819dca3c4822c209758bf86afc66365db5f79f67ddb';
+      const blockedPubkey = 'blocked_user_pubkey';
       const allowedPubkey = 'allowed_user_pubkey';
+
+      // Block a user first
+      service.blockUser(blockedPubkey);
 
       expect(service.shouldFilterFromFeeds(blockedPubkey), isTrue);
       expect(service.shouldFilterFromFeeds(allowedPubkey), isFalse);
@@ -64,18 +68,17 @@ void main() {
     });
 
     test('should filter content list correctly', () {
+      const blockedPubkey1 = 'blocked_pubkey_1';
+      const blockedPubkey2 = 'blocked_pubkey_2';
+
+      // Block users first
+      service.blockUser(blockedPubkey1);
+      service.blockUser(blockedPubkey2);
+
       final testItems = [
-        {
-          'pubkey':
-              '7444faae22d4d4939c815819dca3c4822c209758bf86afc66365db5f79f67ddb',
-          'content': 'blocked',
-        },
+        {'pubkey': blockedPubkey1, 'content': 'blocked'},
         {'pubkey': 'allowed_user', 'content': 'allowed'},
-        {
-          'pubkey':
-              '2df7fab5ab8eb77572b1a64221b68056cefbccd16fa370d33a5fbeade3debe5f',
-          'content': 'blocked2',
-        },
+        {'pubkey': blockedPubkey2, 'content': 'blocked2'},
       ];
 
       final filtered = service.filterContent(
@@ -93,6 +96,37 @@ void main() {
       expect(stats['total_blocks'], isA<int>());
       expect(stats['runtime_blocks'], isA<int>());
       expect(stats['internal_blocks'], isA<int>());
+    });
+
+    group('self-block prevention', () {
+      test('blockUser() ignores when pubkey matches ourPubkey parameter', () {
+        const ourPubkey = 'test_our_pubkey';
+
+        service.blockUser(ourPubkey, ourPubkey: ourPubkey);
+
+        expect(service.isBlocked(ourPubkey), isFalse);
+        expect(service.totalBlockedCount, equals(0));
+      });
+
+      test('blockUser() allows blocking other users', () {
+        const ourPubkey = 'our_pubkey';
+        const otherPubkey = 'other_pubkey';
+
+        service.blockUser(otherPubkey, ourPubkey: ourPubkey);
+
+        expect(service.isBlocked(otherPubkey), isTrue);
+        expect(service.totalBlockedCount, equals(1));
+      });
+
+      test('blockUser() allows blocking when ourPubkey is null', () {
+        const otherPubkey = 'other_pubkey';
+
+        // No ourPubkey provided - should allow blocking
+        service.blockUser(otherPubkey);
+
+        expect(service.isBlocked(otherPubkey), isTrue);
+        expect(service.totalBlockedCount, equals(1));
+      });
     });
   });
 
@@ -275,5 +309,52 @@ void main() {
       // Random user should not be filtered
       expect(service.shouldFilterFromFeeds(randomPubkey), isFalse);
     });
+
+    test(
+      'hasMutedUs only checks mutual mute blocklist, not runtime blocks',
+      () async {
+        const ourPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000001';
+        const muterPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000002';
+        const blockedByUsPubkey =
+            '0000000000000000000000000000000000000000000000000000000000000003';
+
+        final event = Event(
+          muterPubkey,
+          10000,
+          [
+            ['p', ourPubkey],
+          ],
+          '',
+          createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+        );
+        event.id = 'event-id';
+        event.sig = 'signature';
+
+        when(
+          mockNostrService.subscribe(argThat(anything)),
+        ).thenAnswer((_) => Stream.fromIterable([event]));
+
+        await service.syncMuteListsInBackground(mockNostrService, ourPubkey);
+
+        // Give the stream time to emit
+        await Future.delayed(const Duration(milliseconds: 100));
+
+        // Block a user ourselves
+        service.blockUser(blockedByUsPubkey);
+
+        // hasMutedUs should return true for mutual muter
+        expect(service.hasMutedUs(muterPubkey), isTrue);
+
+        // hasMutedUs should return false for user WE blocked
+        // (this is the key distinction - we can still view their profile)
+        expect(service.hasMutedUs(blockedByUsPubkey), isFalse);
+
+        // But shouldFilterFromFeeds includes both
+        expect(service.shouldFilterFromFeeds(muterPubkey), isTrue);
+        expect(service.shouldFilterFromFeeds(blockedByUsPubkey), isTrue);
+      },
+    );
   });
 }

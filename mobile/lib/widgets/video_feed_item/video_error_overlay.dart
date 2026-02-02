@@ -1,12 +1,16 @@
 // ABOUTME: Error overlay widget for video playback failures
 // ABOUTME: Handles 401 age-restricted content and general playback errors with retry functionality
 
+import 'dart:async' show unawaited;
+
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/active_video_provider.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
+import 'package:openvine/services/video_cache_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 
@@ -154,14 +158,43 @@ class VideoErrorOverlay extends ConsumerWidget {
                             // Video is still active - safe to invalidate and retry
                             if (context.mounted) {
                               Log.info(
-                                '🔐 [AGE-GATE] Invalidating provider to retry video ${video.id}',
+                                '🔐 [AGE-GATE] Marking video for retry and invalidating provider: ${video.id}',
                                 name: 'VideoErrorOverlay',
                                 category: LogCategory.video,
                               );
+
+                              if (!kIsWeb) {
+                                unawaited(
+                                  openVineVideoCache
+                                      .removeCorruptedVideo(
+                                        controllerParams.videoId,
+                                      )
+                                      .catchError((e) {
+                                        Log.debug(
+                                          '🔐 [AGE-GATE] Cache clear failed (non-fatal): $e',
+                                          name: 'VideoErrorOverlay',
+                                          category: LogCategory.video,
+                                        );
+                                      }),
+                                );
+                              }
+
+                              ref
+                                  .read(ageVerificationRetryProvider.notifier)
+                                  .update((state) {
+                                    return {...state, video.id: true};
+                                  });
+
                               ref.invalidate(
                                 individualVideoControllerProvider(
                                   controllerParams,
                                 ),
+                              );
+
+                              _scheduleRetryAutoPlay(
+                                ref,
+                                video,
+                                controllerParams,
                               );
                             }
                           } else {
@@ -225,6 +258,73 @@ String? _extractSha256FromUrl(String url) {
   } catch (e) {
     return null;
   }
+}
+
+/// Schedule a fallback auto-play check after age verification retry
+/// This handles cases where the listener-based auto-play mechanism fails
+void _scheduleRetryAutoPlay(
+  WidgetRef ref,
+  VideoEvent video,
+  VideoControllerParams controllerParams,
+) {
+  Future.delayed(const Duration(milliseconds: 500), () async {
+    final isStillRetrying =
+        ref.read(ageVerificationRetryProvider)[video.id] ?? false;
+
+    if (isStillRetrying) {
+      Log.debug(
+        '🔐 [AGE-RETRY] Still retrying, waiting for initialization: ${video.id}',
+        name: 'VideoErrorOverlay',
+        category: LogCategory.video,
+      );
+      await Future.delayed(const Duration(seconds: 3));
+    }
+
+    try {
+      final controller = ref.read(
+        individualVideoControllerProvider(controllerParams),
+      );
+
+      if (controller.value.isInitialized && !controller.value.isPlaying) {
+        final activeVideoId = ref.read(activeVideoIdProvider);
+        final isThisVideoActive =
+            activeVideoId == video.stableId || activeVideoId == video.id;
+
+        if (isThisVideoActive) {
+          Log.info(
+            '🔐 [AGE-RETRY] Fallback auto-play triggered for ${video.id}',
+            name: 'VideoErrorOverlay',
+            category: LogCategory.video,
+          );
+          await safePlay(controller, video.id);
+        } else {
+          Log.debug(
+            '🔐 [AGE-RETRY] Skipping fallback auto-play - video no longer active: ${video.id}',
+            name: 'VideoErrorOverlay',
+            category: LogCategory.video,
+          );
+        }
+      } else if (controller.value.hasError) {
+        Log.warning(
+          '🔐 [AGE-RETRY] Controller has error after retry: ${video.id} - ${controller.value.errorDescription}',
+          name: 'VideoErrorOverlay',
+          category: LogCategory.video,
+        );
+      } else {
+        Log.debug(
+          '🔐 [AGE-RETRY] Fallback auto-play not needed (initialized=${controller.value.isInitialized}, playing=${controller.value.isPlaying}): ${video.id}',
+          name: 'VideoErrorOverlay',
+          category: LogCategory.video,
+        );
+      }
+    } catch (e) {
+      Log.debug(
+        '🔐 [AGE-RETRY] Fallback auto-play check failed: $e',
+        name: 'VideoErrorOverlay',
+        category: LogCategory.video,
+      );
+    }
+  });
 }
 
 /// Pre-cache authentication headers for a video before retrying

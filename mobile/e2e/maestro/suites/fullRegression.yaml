@@ -1,16 +1,16 @@
 appId: co.openvine.app
 name: Divine regression test
 env:
-  VIDEO_TITLE: "when you jammin to JB" # Setting the video title parameter
+  VIDEO_TITLE: "time to" # Setting the video title parameter
   VIDEO_DATA: "Play video Loading... When you jammin to JB too hard and you grab a hot mic. #funny #fail #failvine #EpicFail Video by Kay 14.5k 46M"
   VIDEO_USER: "FunnyVines"
   VIDEO_DESCRIPTION: "When you jammin to JB too hard and you grab a hot mic. " # Setting the video description parameter
   SEARCH_TAG: "comedy"
-  SEARCH_USER: "lele"
-  SEARCH_USER_DESCRIPTION: "Lele Lele 17, 🌴🌾Kik: lei_lannnni, IG: 813lele"
-  SEARCH_USER_ID: user_profile_tile_7cbbf8d383e0bb7453848b4334841a61dbae768a272ea647a60d21a16e046712
-  SEARCH_USER_BIO: "17, 🌴🌾Kik: lei_lannnni, IG: 813lele"
-  COMMENT: "Boring automated comment"
+  SEARCH_USER: "liz"
+  SEARCH_USER_DESCRIPTION: "liz"
+  SEARCH_USER_ID: user_profile_tile_0edc2f474484769bc9bf6d471d180e4e280b0bcd719b6da791001beb730cff1b
+  SEARCH_USER_BIO: "liz"
+  COMMENT: "Automated comment"
   DISPLAY_NAME: "AutomationUser"
   USER_BIO: "AutomationUser bio"
   USER_NAME: "Automation User"

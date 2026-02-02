@@ -19,6 +19,11 @@ env:
 # 2. Input text SEARCH_TAG: Validate videos, users and a tag is found
 - tapOn: Find something cool...
 - inputText: ${SEARCH_TAG}
+
+- runFlow: ../utils/searchWorkaround.yaml
+- eraseText
+- inputText: ${SEARCH_TAG}
+
 #Assert Videos and Users result
 - assertVisible: |-
     Videos \((?!0)\d+\)
