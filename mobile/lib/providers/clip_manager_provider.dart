@@ -11,7 +11,9 @@ import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -480,10 +482,9 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// Remove all clips and reset state.
   ///
   /// Clears all recorded clips and resets to initial state.
-  /// Also deletes associated files if not referenced elsewhere.
+  /// Also deletes the autosave draft and associated files.
   Future<void> clearAll() async {
     final clipCount = _clips.length;
-    final clipsToDelete = List<RecordingClip>.from(_clips);
     _clips.clear();
     Log.info(
       '🗑️  Cleared all clips (removed $clipCount clips)',
@@ -492,11 +493,10 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     );
     state = ClipManagerState();
 
-    // Force immediate autosave so draft references are updated before cleanup
-    await _forceAutosave();
-
-    // Delete files only if not referenced by drafts or clip library
-    await FileCleanupService.deleteRecordingClipsFiles(clipsToDelete);
+    // Delete autosave draft and its associated files
+    final prefs = await SharedPreferences.getInstance();
+    final draftService = DraftStorageService(prefs);
+    await draftService.deleteDraft(VideoEditorConstants.autoSaveId);
   }
 
   /// Save clip(s) to library.
