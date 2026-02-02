@@ -28,7 +28,7 @@ class VideoEditorMainBottomBar extends StatelessWidget {
             // TODO(l10n): Replace with context.l10n when localization is added.
             label: 'Text',
             iconPath: 'assets/icon/text.svg',
-            onTap: scope.onAddEditTextLayer,
+            onTap: () => scope.editor?.openTextEditor(),
           ),
           _ActionButton(
             // TODO(l10n): Replace with context.l10n when localization is added.
