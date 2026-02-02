@@ -872,13 +872,14 @@ class AuthService implements BackgroundAwareService {
 
       // Run discovery for resumed sessions that haven't discovered relays yet
       // This handles the case where user logs in, closes app, and reopens
+      // Run in background - don't block returning user from accessing the app
       if (isAuthenticated && currentNpub != null && _userRelays.isEmpty) {
         Log.info(
-          '🔄 Running discovery for resumed session (no relays cached)',
+          '🔄 Running discovery in background for resumed session',
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        await _performDiscovery();
+        unawaited(_performDiscovery());
       }
 
       await acceptTerms();
@@ -1430,6 +1431,9 @@ class AuthService implements BackgroundAwareService {
   ///
   /// This consolidates relay discovery (NIP-65) and Blossom server discovery
   /// (kind 10063) into a single temporary client to avoid wasteful reconnections.
+  ///
+  /// Individual operations have their own timeouts (addRelay: 5s, query: 2s).
+  /// For returning users, this runs in background via unawaited().
   Future<void> _performDiscovery() async {
     if (_currentKeyContainer == null) return;
 
@@ -1462,6 +1466,17 @@ class AuthService implements BackgroundAwareService {
       await _discoverUserRelaysWithClient(npub, tempClient);
       await _discoverUserBlossomServersWithClient(npub, tempClient);
       await _checkExistingProfileWithClient(tempClient);
+    } catch (e) {
+      Log.warning(
+        '⚠️ Discovery failed: $e - using default fallbacks',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      // Set empty defaults - will use diVine fallbacks
+      _userRelays = [];
+      _userBlossomServers = [];
+      _hasUserBlossomServers = false;
+      _hasExistingProfile = false;
     } finally {
       // Always clean up the temporary client
       tempClient?.dispose();
