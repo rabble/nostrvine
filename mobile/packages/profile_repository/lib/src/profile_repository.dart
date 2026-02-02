@@ -138,7 +138,7 @@ class ProfileRepository {
   /// Searches for user profiles matching the query.
   ///
   /// Fetches profiles via NIP-50 and filters by bestDisplayName.
-  /// If a [userBlockFilter] was provided, blocked users are excluded.
+  /// If a [UserBlockFilter] was provided, blocked users are excluded.
   /// Returns list of [UserProfile] matching the search query.
   /// Returns empty list if query is empty or no results found.
   Future<List<UserProfile>> searchUsers({
