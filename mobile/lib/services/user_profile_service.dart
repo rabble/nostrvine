@@ -50,6 +50,7 @@ class UserProfileService extends ChangeNotifier {
       {}; // pubkey -> subscription ID
   final Set<String> _pendingRequests = {};
   bool _isInitialized = false;
+  bool _isDisposed = false;
 
   // Batch fetching management
   String? _batchSubscriptionId;
@@ -58,11 +59,13 @@ class UserProfileService extends ChangeNotifier {
   Set<String>? _currentBatchPubkeys;
   final Set<String> _pendingBatchPubkeys = {};
 
-  // Missing profile tracking to avoid relay spam
+  // Confirmed no profile (API said so) - skip for entire app session
   final Set<String> _knownMissingProfiles = {};
-  final Map<String, DateTime> _missingProfileRetryAfter = {};
 
-  // Track failed fetch attempts - only mark as missing after 2+ failures
+  // Gave up after failed fetches - skip this session but might retry on restart
+  final Set<String> _gaveUpProfiles = {};
+
+  // Track failed fetch attempts
   final Map<String, int> _fetchAttempts = {};
 
   // Completers to track when profile fetches complete
@@ -124,35 +127,18 @@ class UserProfileService extends ChangeNotifier {
     return false;
   }
 
-  /// Check if we should skip fetching this profile to avoid relay spam
+  /// Check if we should skip fetching this profile
+  /// Skip if: confirmed no profile OR gave up after failed attempts
   bool shouldSkipProfileFetch(String? pubkey) {
     if (pubkey == null || pubkey.isEmpty) return false;
-    // Don't fetch if we know it's missing and retry time hasn't passed
-    if (_knownMissingProfiles.contains(pubkey)) {
-      final retryAfter = _missingProfileRetryAfter[pubkey];
-      if (retryAfter != null && DateTime.now().isBefore(retryAfter)) {
-        return true; // Still in cooldown period
-      }
-      // Cooldown expired, remove from missing list to allow retry
-      _knownMissingProfiles.remove(pubkey);
-      _missingProfileRetryAfter.remove(pubkey);
-    }
-    return false;
+    return _knownMissingProfiles.contains(pubkey) ||
+        _gaveUpProfiles.contains(pubkey);
   }
 
-  /// Mark a pubkey as having no profile to avoid future requests
+  /// Mark a pubkey as having no profile - skip for entire app session
   void markProfileAsMissing(String? pubkey) {
     if (pubkey == null || pubkey.isEmpty) return;
     _knownMissingProfiles.add(pubkey);
-    // Retry after 10 minutes for missing profiles (reduced from 1 hour)
-    _missingProfileRetryAfter[pubkey] = DateTime.now().add(
-      const Duration(minutes: 10),
-    );
-    Log.debug(
-      'Marked profile as missing: ${pubkey}... (retry after 10 minutes)',
-      name: 'UserProfileService',
-      category: LogCategory.system,
-    );
   }
 
   /// Get all cached profiles
@@ -266,11 +252,6 @@ class UserProfileService extends ChangeNotifier {
         Future.microtask(() => _backgroundRefreshProfile(pubkey));
       }
 
-      Log.verbose(
-        'Returning cached profile for ${pubkey}...',
-        name: 'UserProfileService',
-        category: LogCategory.system,
-      );
       return cachedProfile;
     }
 
@@ -359,6 +340,15 @@ class UserProfileService extends ChangeNotifier {
 
       // Add to batch instead of creating individual subscription
       _pendingBatchPubkeys.add(pubkey);
+
+      // DEBUG: Log stack trace to find caller
+      final stackTrace = StackTrace.current;
+      Log.warning(
+        '🔍 DEBUG: Adding pubkey to batch fetch: $pubkey\n'
+        'Stack trace:\n$stackTrace',
+        name: 'UserProfileService',
+        category: LogCategory.system,
+      );
 
       // Cancel existing debounce timer and create new one
       _batchDebounceTimer?.cancel();
@@ -528,6 +518,95 @@ class UserProfileService extends ChangeNotifier {
     _pendingRequests.addAll(pubkeysToFetch);
 
     try {
+      _prefetchActive = true;
+
+      // Try REST bulk fetch first (much faster than WebSocket)
+      if (_analyticsApiService != null && _funnelcakeAvailable) {
+        try {
+          final bulkProfiles = await _analyticsApiService.getBulkProfiles(
+            pubkeysToFetch,
+          );
+          if (bulkProfiles.isNotEmpty) {
+            var realProfiles = 0;
+            var noProfileUsers = 0;
+
+            // Process profiles from REST
+            for (final entry in bulkProfiles.entries) {
+              final pubkey = entry.key;
+              final profileData = entry.value;
+
+              // Check for sentinel value indicating user exists but has no profile
+              if (profileData['_noProfile'] == true) {
+                // User exists but never created a Kind 0 profile
+                // Mark as missing so we don't waste time trying relays
+                markProfileAsMissing(pubkey);
+                _pendingRequests.remove(pubkey);
+                noProfileUsers++;
+                continue;
+              }
+
+              // Real profile data - cache it
+              final profile = UserProfile(
+                pubkey: pubkey,
+                name: profileData['name'] as String?,
+                displayName: profileData['display_name'] as String?,
+                about: profileData['about'] as String?,
+                picture: profileData['picture'] as String?,
+                banner: profileData['banner'] as String?,
+                nip05: profileData['nip05'] as String?,
+                lud16: profileData['lud16'] as String?,
+                rawData: profileData,
+                createdAt: DateTime.now(),
+                eventId: 'rest-bulk-$pubkey',
+              );
+              _profileCache[pubkey] = profile;
+              if (_persistentCache?.isInitialized == true) {
+                _persistentCache!.cacheProfile(profile);
+              }
+              _pendingRequests.remove(pubkey);
+              realProfiles++;
+            }
+
+            if (realProfiles > 0 || noProfileUsers > 0) {
+              Log.debug(
+                '✅ REST bulk: $realProfiles profiles cached, $noProfileUsers users have no profile',
+                name: 'UserProfileService',
+                category: LogCategory.system,
+              );
+            }
+
+            notifyListeners();
+
+            // Remove all handled pubkeys from list (both real profiles AND no-profile users)
+            final remaining = pubkeysToFetch
+                .where((pk) => !bulkProfiles.containsKey(pk))
+                .toList();
+            if (remaining.isEmpty) {
+              _prefetchActive = false;
+              _lastPrefetchAt = DateTime.now();
+              return;
+            }
+            // Continue with WebSocket for remaining profiles (those not in API at all)
+            pubkeysToFetch
+              ..clear()
+              ..addAll(remaining);
+          }
+        } catch (e) {
+          Log.debug(
+            'REST bulk fetch failed, falling back to WebSocket: $e',
+            name: 'UserProfileService',
+            category: LogCategory.system,
+          );
+        }
+      }
+
+      // Fall back to WebSocket for remaining profiles
+      if (pubkeysToFetch.isEmpty) {
+        _prefetchActive = false;
+        _lastPrefetchAt = DateTime.now();
+        return;
+      }
+
       // Create filter for kind 0 events from these users
       final filter = Filter(
         kinds: [0],
@@ -542,7 +621,6 @@ class UserProfileService extends ChangeNotifier {
       final thisBatchPubkeys = Set<String>.from(pubkeysToFetch);
 
       // Subscribe to profile events using SubscriptionManager with highest priority
-      _prefetchActive = true;
       await _subscriptionManager.createSubscription(
         name: 'profile_prefetch_${DateTime.now().millisecondsSinceEpoch}',
         filters: [filter],
@@ -557,7 +635,7 @@ class UserProfileService extends ChangeNotifier {
       );
 
       Log.debug(
-        '⚡ Sent immediate prefetch request for ${pubkeysToFetch.length} profiles',
+        '⚡ Sent WebSocket prefetch request for ${pubkeysToFetch.length} remaining profiles',
         name: 'UserProfileService',
         category: LogCategory.system,
       );
@@ -583,15 +661,11 @@ class UserProfileService extends ChangeNotifier {
 
     if (unfetchedPubkeys.isNotEmpty) {
       Log.debug(
-        '⚡ Prefetch completed - fetched $fetchedCount/${batchPubkeys.length}, ${unfetchedPubkeys.length} missing',
+        '⚡ Prefetch completed - fetched $fetchedCount/${batchPubkeys.length}, ${unfetchedPubkeys.length} not found (will retry)',
         name: 'UserProfileService',
         category: LogCategory.system,
       );
-
-      // Mark unfetched profiles as missing
-      for (final pubkey in unfetchedPubkeys) {
-        markProfileAsMissing(pubkey);
-      }
+      // Don't mark as missing - could be network issue, allow retry
     } else {
       Log.debug(
         '⚡ Prefetch completed - all ${batchPubkeys.length} profiles fetched',
@@ -614,6 +688,19 @@ class UserProfileService extends ChangeNotifier {
     bool forceRefresh = false,
   }) async {
     if (pubkeys.isEmpty) return;
+
+    // DEBUG: Log incoming batch fetch request with caller
+    final stackLines = StackTrace.current
+        .toString()
+        .split('\n')
+        .take(6)
+        .join('\n');
+    Log.info(
+      '📋 fetchMultipleProfiles called with ${pubkeys.length} pubkeys: '
+      '${pubkeys.take(3).toList()}...\nCaller:\n$stackLines',
+      name: 'UserProfileService',
+      category: LogCategory.system,
+    );
 
     // Filter out already cached profiles unless forcing refresh
     final filteredPubkeys = forceRefresh
@@ -748,6 +835,9 @@ class UserProfileService extends ChangeNotifier {
 
   /// Complete the batch fetch and clean up
   void _completeBatchFetch(Set<String> batchPubkeys) {
+    // Bail out early if disposed (timer callback may fire after disposal)
+    if (_isDisposed) return;
+
     // Cancel timeout timer
     _batchTimeoutTimer?.cancel();
     _batchTimeoutTimer = null;
@@ -796,11 +886,11 @@ class UserProfileService extends ChangeNotifier {
           // Fire and forget - indexer query will complete the completer if found
           unawaited(_queryIndexersForProfile(pubkey));
         } else if (attempts >= 2) {
-          // Second failure (indexers also failed): Mark as missing
-          markProfileAsMissing(pubkey);
+          // Second failure (indexers also failed): stop trying this session
+          _gaveUpProfiles.add(pubkey);
           _fetchAttempts.remove(pubkey);
           Log.debug(
-            '❌ Profile marked as missing after $attempts attempts (including indexers): $pubkey',
+            '⚠️ Gave up on profile after $attempts attempts: $pubkey',
             name: 'UserProfileService',
             category: LogCategory.system,
           );
@@ -838,84 +928,64 @@ class UserProfileService extends ChangeNotifier {
 
   /// Query profile indexer relays for a kind 0 profile.
   /// This is a fallback when the main relay doesn't have the profile.
+  /// Queries all indexers in PARALLEL for speed.
   Future<void> _queryIndexersForProfile(String pubkey) async {
-    for (final indexerUrl in _profileIndexerRelays) {
-      try {
-        Log.debug(
-          '🔍 Querying indexer $indexerUrl for profile: $pubkey',
-          name: 'UserProfileService',
-          category: LogCategory.system,
-        );
+    Log.debug(
+      '🔍 Querying ${_profileIndexerRelays.length} indexers in parallel for profile: $pubkey',
+      name: 'UserProfileService',
+      category: LogCategory.system,
+    );
 
+    // Query all indexers in parallel
+    final futures = _profileIndexerRelays.map((indexerUrl) async {
+      try {
         // Temporarily add the indexer relay
         final added = await _nostrService.addRelay(indexerUrl);
         if (!added) {
-          Log.warning(
-            'Failed to add indexer relay: $indexerUrl',
-            name: 'UserProfileService',
-            category: LogCategory.system,
-          );
-          continue;
+          return null;
         }
 
         // Create filter for kind 0 profile
         final filter = Filter(kinds: [0], authors: [pubkey], limit: 1);
 
-        // Query with timeout
+        // Query with short timeout
         final events = await _nostrService
             .queryEvents([filter])
-            .timeout(
-              const Duration(seconds: 10),
-              onTimeout: () {
-                Log.warning(
-                  'Timeout querying indexer: $indexerUrl for profile',
-                  name: 'UserProfileService',
-                  category: LogCategory.system,
-                );
-                return <Event>[];
-              },
-            );
+            .timeout(const Duration(seconds: 3), onTimeout: () => <Event>[]);
 
         // Remove the indexer relay after querying
         await _nostrService.removeRelay(indexerUrl);
 
         if (events.isNotEmpty) {
-          // Found profile on indexer - handle it
-          final event = events.first;
           Log.info(
             '✅ Found profile on indexer $indexerUrl: $pubkey',
             name: 'UserProfileService',
             category: LogCategory.system,
           );
-
-          // Process the profile event (this will cache it and notify)
-          _handleProfileEvent(event);
-
-          // Clear attempt tracking since we found it
-          _fetchAttempts.remove(pubkey);
-          _pendingRequests.remove(pubkey);
-
-          return; // Success - stop trying other indexers
-        } else {
-          Log.debug(
-            'No kind 0 event found on $indexerUrl for $pubkey',
-            name: 'UserProfileService',
-            category: LogCategory.system,
-          );
+          return events.first;
         }
+        return null;
       } catch (e) {
-        Log.warning(
-          'Error querying indexer $indexerUrl for profile: $e',
-          name: 'UserProfileService',
-          category: LogCategory.system,
-        );
         // Try to clean up relay connection
         try {
           await _nostrService.removeRelay(indexerUrl);
-        } catch (_) {
-          // Ignore cleanup errors
-        }
+        } catch (_) {}
+        return null;
       }
+    });
+
+    // Wait for all indexer queries in parallel, take first non-null result
+    final results = await Future.wait(futures);
+    final foundEvent = results.whereType<Event>().firstOrNull;
+
+    if (foundEvent != null) {
+      // Process the profile event (this will cache it and notify)
+      _handleProfileEvent(foundEvent);
+
+      // Clear attempt tracking since we found it
+      _fetchAttempts.remove(pubkey);
+      _pendingRequests.remove(pubkey);
+      return;
     }
 
     // All indexers failed - increment attempt count and trigger retry logic
@@ -1089,6 +1159,8 @@ class UserProfileService extends ChangeNotifier {
 
   @override
   void dispose() {
+    _isDisposed = true;
+
     // Cancel batch operations
     _batchDebounceTimer?.cancel();
     _batchTimeoutTimer?.cancel();
@@ -1121,7 +1193,7 @@ class UserProfileService extends ChangeNotifier {
     _profileCache.clear();
     _pendingBatchPubkeys.clear();
     _knownMissingProfiles.clear();
-    _missingProfileRetryAfter.clear();
+    _gaveUpProfiles.clear();
     _fetchAttempts.clear();
 
     Log.debug(

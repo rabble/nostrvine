@@ -16,6 +16,7 @@ import 'package:openvine/router/app_shell.dart';
 import 'package:openvine/screens/auth/divine_auth_screen.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
+import 'package:openvine/screens/auth/nostr_connect_screen.dart';
 import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
@@ -175,6 +176,7 @@ int tabIndexFromLocation(String loc) {
     case 'edit-profile':
     case 'setup-profile':
     case 'import-key':
+    case 'nostr-connect':
     case 'welcome':
     case 'video-recorder':
     case 'video-editor':
@@ -328,6 +330,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       if (authState == AuthState.authenticated &&
           (location == WelcomeScreen.path ||
               location == KeyImportScreen.path ||
+              location == NostrConnectScreen.path ||
               location == WelcomeScreen.loginOptionsPath ||
               location == WelcomeScreen.resetPasswordPath ||
               location == EmailVerificationScreen.path)) {
@@ -346,6 +349,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final isAuthRoute =
           location.startsWith(WelcomeScreen.path) ||
           location.startsWith(KeyImportScreen.path) ||
+          location.startsWith(NostrConnectScreen.path) ||
           location.startsWith(WelcomeScreen.resetPasswordPath) ||
           location.startsWith(EmailVerificationScreen.path);
 
@@ -700,6 +704,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: KeyImportScreen.path,
         name: KeyImportScreen.routeName,
         builder: (_, __) => const KeyImportScreen(),
+      ),
+      GoRoute(
+        path: NostrConnectScreen.path,
+        name: NostrConnectScreen.routeName,
+        builder: (_, __) => const NostrConnectScreen(),
       ),
       GoRoute(
         path: SecureAccountScreen.path,
