@@ -1447,70 +1447,17 @@ final class SeenVideosServiceProvider
 
 String _$seenVideosServiceHash() => r'74099bd4d859b446a3fc0cf1a7f416756a104e43';
 
-/// Content blocklist service for filtering unwanted content from feeds
-
-@ProviderFor(contentBlocklistService)
-const contentBlocklistServiceProvider = ContentBlocklistServiceProvider._();
-
-/// Content blocklist service for filtering unwanted content from feeds
-
-final class ContentBlocklistServiceProvider
-    extends
-        $FunctionalProvider<
-          ContentBlocklistService,
-          ContentBlocklistService,
-          ContentBlocklistService
-        >
-    with $Provider<ContentBlocklistService> {
-  /// Content blocklist service for filtering unwanted content from feeds
-  const ContentBlocklistServiceProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'contentBlocklistServiceProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$contentBlocklistServiceHash();
-
-  @$internal
-  @override
-  $ProviderElement<ContentBlocklistService> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  ContentBlocklistService create(Ref ref) {
-    return contentBlocklistService(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(ContentBlocklistService value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<ContentBlocklistService>(value),
-    );
-  }
-}
-
-String _$contentBlocklistServiceHash() =>
-    r'a05020e10b4402686d4630f99b020c4f0e58eab3';
-
-/// Version counter to trigger rebuilds when blocklist changes.
+/// Version counter to trigger rebuilds when mute list changes.
 /// Widgets watching this will rebuild when block/unblock actions occur.
 
 @ProviderFor(BlocklistVersion)
 const blocklistVersionProvider = BlocklistVersionProvider._();
 
-/// Version counter to trigger rebuilds when blocklist changes.
+/// Version counter to trigger rebuilds when mute list changes.
 /// Widgets watching this will rebuild when block/unblock actions occur.
 final class BlocklistVersionProvider
     extends $NotifierProvider<BlocklistVersion, int> {
-  /// Version counter to trigger rebuilds when blocklist changes.
+  /// Version counter to trigger rebuilds when mute list changes.
   /// Widgets watching this will rebuild when block/unblock actions occur.
   const BlocklistVersionProvider._()
     : super(
@@ -1541,7 +1488,7 @@ final class BlocklistVersionProvider
 
 String _$blocklistVersionHash() => r'ae0ea100b12ecea021ad9beded8cfe790665a532';
 
-/// Version counter to trigger rebuilds when blocklist changes.
+/// Version counter to trigger rebuilds when mute list changes.
 /// Widgets watching this will rebuild when block/unblock actions occur.
 
 abstract class _$BlocklistVersion extends $Notifier<int> {
@@ -2079,12 +2026,12 @@ final class SubscriptionManagerProvider
 String _$subscriptionManagerHash() =>
     r'b65a6978927d3004c6f841e0b80075f9db9645d2';
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
+/// Video event service depends on Nostr, SeenVideos, MuteService, AgeVerification, SubscriptionManager, and VideoRepository
 
 @ProviderFor(videoEventService)
 const videoEventServiceProvider = VideoEventServiceProvider._();
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
+/// Video event service depends on Nostr, SeenVideos, MuteService, AgeVerification, SubscriptionManager, and VideoRepository
 
 final class VideoEventServiceProvider
     extends
@@ -2094,7 +2041,7 @@ final class VideoEventServiceProvider
           VideoEventService
         >
     with $Provider<VideoEventService> {
-  /// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
+  /// Video event service depends on Nostr, SeenVideos, MuteService, AgeVerification, SubscriptionManager, and VideoRepository
   const VideoEventServiceProvider._()
     : super(
         from: null,
@@ -2129,7 +2076,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'912579edfca6f3157a2c1d999b09f17f96358077';
+String _$videoEventServiceHash() => r'79882f867dc1f92117f88c1aed0020b2732b7cbe';
 
 /// Hashtag service depends on Video event service and cache service
 
@@ -3621,7 +3568,7 @@ String _$commentsRepositoryHash() =>
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
-/// - ContentBlocklistService for filtering blocked/muted users
+/// - MuteService for filtering blocked/muted users
 /// - AgeVerificationService for filtering NSFW content based on user preference
 
 @ProviderFor(videosRepository)
@@ -3634,7 +3581,7 @@ const videosRepositoryProvider = VideosRepositoryProvider._();
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
-/// - ContentBlocklistService for filtering blocked/muted users
+/// - MuteService for filtering blocked/muted users
 /// - AgeVerificationService for filtering NSFW content based on user preference
 
 final class VideosRepositoryProvider
@@ -3652,7 +3599,7 @@ final class VideosRepositoryProvider
   ///
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
-  /// - ContentBlocklistService for filtering blocked/muted users
+  /// - MuteService for filtering blocked/muted users
   /// - AgeVerificationService for filtering NSFW content based on user preference
   const VideosRepositoryProvider._()
     : super(
@@ -3687,7 +3634,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'3e9ad46c21e9eee2a019898e4048a86871afab53';
+String _$videosRepositoryHash() => r'96f4a34c02ccc6accbea271e77c6ce9edd3cf4a9';
 
 /// Provider for LikesRepository instance
 ///

@@ -353,35 +353,47 @@ class _SafetySettingsScreenState extends ConsumerState<SafetySettingsScreen> {
   Widget _buildBlockedUsersSection() {
     ref.watch(blocklistVersionProvider);
 
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
-    final blockedUsers = blocklistService.runtimeBlockedUsers.toList();
+    final muteServiceAsync = ref.watch(muteServiceProvider);
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        _buildSectionHeader('BLOCKED USERS'),
-        if (blockedUsers.isEmpty)
-          const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: Text(
-              'No blocked users',
-              style: TextStyle(color: Colors.grey, fontStyle: FontStyle.italic),
-            ),
-          )
-        else
-          ...blockedUsers.map(
-            (pubkey) => _BlockedUserTile(
-              pubkey: pubkey,
-              onUnblock: () => _unblockUser(pubkey),
-            ),
-          ),
-      ],
+    return muteServiceAsync.when(
+      data: (muteService) {
+        final blockedUsers = muteService.mutedUsers
+            .map((item) => item.value)
+            .toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader('BLOCKED USERS'),
+            if (blockedUsers.isEmpty)
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  'No blocked users',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              )
+            else
+              ...blockedUsers.map(
+                (pubkey) => _BlockedUserTile(
+                  pubkey: pubkey,
+                  onUnblock: () => _unblockUser(pubkey),
+                ),
+              ),
+          ],
+        );
+      },
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (_, __) => const SizedBox.shrink(),
     );
   }
 
   Future<void> _unblockUser(String pubkey) async {
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
-    blocklistService.unblockUser(pubkey);
+    final muteService = await ref.read(muteServiceProvider.future);
+    await muteService.unmuteUser(pubkey);
     ref.read(blocklistVersionProvider.notifier).increment();
 
     if (mounted) {

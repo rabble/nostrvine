@@ -10,7 +10,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -25,7 +24,6 @@ void main() {
     late NostrClient nostrService;
     late SubscriptionManager subscriptionManager;
     late VideoEventService videoEventService;
-    late ContentBlocklistService blocklistService;
 
     setUp(() async {
       // Enable logging for debugging
@@ -35,9 +33,6 @@ void main() {
         LogCategory.relay,
         LogCategory.video,
       });
-
-      // Initialize services
-      blocklistService = ContentBlocklistService();
 
       // Generate a test key container
       keyContainer = SecureKeyContainer.generate();
@@ -50,7 +45,6 @@ void main() {
         subscriptionManager: subscriptionManager,
         videoRepository: VideoRepository(),
       );
-      videoEventService.setBlocklistService(blocklistService);
 
       // TopHashtagsService loads from static JSON, no need to inject dependencies
     });

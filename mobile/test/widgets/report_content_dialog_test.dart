@@ -10,19 +10,17 @@ import 'package:nostr_sdk/event.dart' as nostr;
 import 'package:models/models.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/services/content_reporting_service.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/providers/app_providers.dart';
 
 import 'report_content_dialog_test.mocks.dart';
 
-@GenerateMocks([ContentReportingService, ContentBlocklistService, MuteService])
+@GenerateMocks([ContentReportingService, MuteService])
 void main() {
   group('ReportContentDialog', () {
     late VideoEvent testVideo;
     late MockContentReportingService mockReportingService;
-    late MockContentBlocklistService mockBlocklistService;
     late MockMuteService mockMuteService;
 
     setUp(() {
@@ -45,7 +43,6 @@ void main() {
 
       testVideo = VideoEvent.fromNostrEvent(testNostrEvent);
       mockReportingService = MockContentReportingService();
-      mockBlocklistService = MockContentBlocklistService();
       mockMuteService = MockMuteService();
 
       // Setup default mock behavior
@@ -167,9 +164,6 @@ void main() {
           overrides: [
             contentReportingServiceProvider.overrideWith(
               (ref) async => mockReportingService,
-            ),
-            contentBlocklistServiceProvider.overrideWith(
-              (ref) => mockBlocklistService,
             ),
             muteServiceProvider.overrideWith((ref) async => mockMuteService),
           ],

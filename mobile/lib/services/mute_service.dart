@@ -1,9 +1,12 @@
 // ABOUTME: Service for managing NIP-51 mute list (kind 10000) for blocking unwanted content
-// ABOUTME: Handles muting users, hashtags, keywords, and threads to improve user experience
+// ABOUTME: Handles muting users, hashtags, keywords, threads, and mutual mute detection
+// ABOUTME: Consolidated service replacing ContentBlocklistService
 
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:nostr_sdk/event.dart';
+import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -131,6 +134,11 @@ class MuteService {
   final List<MuteItem> _mutedItems = [];
   bool _isInitialized = false;
 
+  // Mutual mute blocklist - users who have muted US (not users WE muted)
+  final Set<String> _mutualMuteBlocklist = {};
+  bool _mutualMuteSyncStarted = false;
+  String? _ourPubkey;
+
   // Getters
   List<MuteItem> get mutedItems =>
       List.unmodifiable(_mutedItems.where((item) => !item.isExpired));
@@ -182,6 +190,16 @@ class MuteService {
     String? reason,
     Duration? duration,
   }) async {
+    // Guard: Prevent muting self
+    if (_ourPubkey != null && pubkey == _ourPubkey) {
+      Log.warning(
+        'Attempted to mute self - ignoring',
+        name: 'MuteService',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+
     return muteItem(MuteType.user, pubkey, reason: reason, duration: duration);
   }
 
@@ -624,5 +642,132 @@ class MuteService {
         category: LogCategory.system,
       );
     }
+  }
+
+  // === MUTUAL MUTE DETECTION ===
+
+  /// Check if another user has muted us (mutual mute blocking)
+  ///
+  /// This is different from [isUserMuted] which checks users WE muted.
+  /// Use this for profile viewing - users can view profiles they muted,
+  /// but cannot view profiles of users who muted them.
+  bool hasMutedUs(String pubkey) => _mutualMuteBlocklist.contains(pubkey);
+
+  /// Check if content should be filtered from feeds
+  ///
+  /// Returns true if the pubkey is either:
+  /// - Someone WE muted (via [isUserMuted])
+  /// - Someone who has muted US (via [hasMutedUs])
+  bool shouldFilterFromFeeds(String pubkey) {
+    return isUserMuted(pubkey) || _mutualMuteBlocklist.contains(pubkey);
+  }
+
+  /// Filter a list of content by removing muted/blocking authors
+  List<T> filterContentByAuthor<T>(
+    List<T> content,
+    String Function(T) getPubkey,
+  ) {
+    return content
+        .where((item) => !shouldFilterFromFeeds(getPubkey(item)))
+        .toList();
+  }
+
+  /// Start background sync of mutual mute lists (NIP-51 kind 10000)
+  ///
+  /// Subscribes to kind 10000 events WHERE our pubkey appears in 'p' tags.
+  /// This allows us to detect when other users have muted us.
+  Future<void> syncMuteListsInBackground(String ourPubkey) async {
+    if (_mutualMuteSyncStarted) {
+      Log.debug(
+        'Mutual mute sync already started, skipping',
+        name: 'MuteService',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    _mutualMuteSyncStarted = true;
+    _ourPubkey = ourPubkey;
+
+    Log.info(
+      'Starting mutual mute list sync for pubkey: $ourPubkey',
+      name: 'MuteService',
+      category: LogCategory.system,
+    );
+
+    try {
+      // Subscribe to kind 10000 (mute list) events WHERE our pubkey is in 'p' tags
+      final filter = Filter(kinds: const [10000]);
+      filter.p = [ourPubkey]; // Filter by 'p' tags containing our pubkey
+
+      final subscription = _nostrService.subscribe([filter]);
+
+      // Listen to the stream
+      subscription.listen(_handleMuteListEvent);
+
+      Log.info(
+        'Mutual mute subscription created',
+        name: 'MuteService',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to start mutual mute sync: $e',
+        name: 'MuteService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Handle incoming kind 10000 mute list events
+  ///
+  /// Adds/removes muter based on whether our pubkey is in their 'p' tags.
+  void _handleMuteListEvent(Event event) {
+    if (event.kind != 10000) {
+      Log.warning(
+        'Received non-10000 event in mute list handler: ${event.kind}',
+        name: 'MuteService',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
+    final muterPubkey = event.pubkey;
+
+    // Check if our pubkey is in this user's mute list
+    final stillMuted = event.tags.any(
+      (tag) =>
+          tag.isNotEmpty &&
+          tag[0] == 'p' &&
+          tag.length >= 2 &&
+          tag[1] == _ourPubkey,
+    );
+
+    if (stillMuted) {
+      // They muted us - add to blocklist
+      if (!_mutualMuteBlocklist.contains(muterPubkey)) {
+        _mutualMuteBlocklist.add(muterPubkey);
+        Log.info(
+          'Added mutual mute: $muterPubkey',
+          name: 'MuteService',
+          category: LogCategory.system,
+        );
+      }
+    } else {
+      // They removed us from mute list - remove from blocklist
+      if (_mutualMuteBlocklist.contains(muterPubkey)) {
+        _mutualMuteBlocklist.remove(muterPubkey);
+        Log.info(
+          'Removed mutual mute (unmuted): $muterPubkey',
+          name: 'MuteService',
+          category: LogCategory.system,
+        );
+      }
+    }
+  }
+
+  /// Dispose resources
+  void dispose() {
+    _mutualMuteSyncStarted = false;
   }
 }

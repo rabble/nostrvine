@@ -12,7 +12,7 @@ import 'package:mockito/src/dummies.dart' as _i6;
 import 'package:models/models.dart' as _i5;
 import 'package:nostr_sdk/event.dart' as _i11;
 import 'package:openvine/services/age_verification_service.dart' as _i9;
-import 'package:openvine/services/content_blocklist_service.dart' as _i8;
+import 'package:openvine/services/mute_service.dart' as _i8;
 import 'package:openvine/services/social_service.dart' as _i2;
 import 'package:openvine/services/video_event_service.dart' as _i4;
 import 'package:openvine/services/video_filter_builder.dart' as _i12;
@@ -295,11 +295,10 @@ class MockVideoEventService extends _i1.Mock implements _i4.VideoEventService {
       );
 
   @override
-  void setBlocklistService(_i8.ContentBlocklistService? blocklistService) =>
-      super.noSuchMethod(
-        Invocation.method(#setBlocklistService, [blocklistService]),
-        returnValueForMissingStub: null,
-      );
+  void setMuteService(_i8.MuteService? muteService) => super.noSuchMethod(
+    Invocation.method(#setMuteService, [muteService]),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void setAgeVerificationService(

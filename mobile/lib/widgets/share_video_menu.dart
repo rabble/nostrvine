@@ -740,22 +740,28 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                   const SizedBox(height: 8),
                   Consumer(
                     builder: (context, ref, _) {
-                      final blocklistService = ref.watch(
-                        contentBlocklistServiceProvider,
-                      );
-                      final isBlocked = blocklistService.isBlocked(
-                        widget.video.pubkey,
-                      );
-                      return _buildActionTile(
-                        icon: isBlocked ? Icons.block : Icons.block_outlined,
-                        title: isBlocked
-                            ? 'Unblock User'
-                            : 'Block @${NostrKeyUtils.truncateNpub(widget.video.pubkey)}',
-                        subtitle: isBlocked
-                            ? 'Show content from this user'
-                            : 'Hide content from this user',
-                        iconColor: Colors.orange,
-                        onTap: () => _handleBlockUser(ref, isBlocked),
+                      final muteServiceAsync = ref.watch(muteServiceProvider);
+                      return muteServiceAsync.when(
+                        data: (muteService) {
+                          final isBlocked = muteService.isUserMuted(
+                            widget.video.pubkey,
+                          );
+                          return _buildActionTile(
+                            icon: isBlocked
+                                ? Icons.block
+                                : Icons.block_outlined,
+                            title: isBlocked
+                                ? 'Unblock User'
+                                : 'Block @${NostrKeyUtils.truncateNpub(widget.video.pubkey)}',
+                            subtitle: isBlocked
+                                ? 'Show content from this user'
+                                : 'Hide content from this user',
+                            iconColor: Colors.orange,
+                            onTap: () => _handleBlockUser(ref, isBlocked),
+                          );
+                        },
+                        loading: () => const SizedBox.shrink(),
+                        error: (_, __) => const SizedBox.shrink(),
                       );
                     },
                   ),
@@ -982,13 +988,12 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
     );
   }
 
-  void _handleBlockUser(WidgetRef ref, bool currentlyBlocked) {
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
-    final nostrClient = ref.read(nostrServiceProvider);
+  Future<void> _handleBlockUser(WidgetRef ref, bool currentlyBlocked) async {
+    final muteService = await ref.read(muteServiceProvider.future);
 
     if (currentlyBlocked) {
       // Unblock without confirmation
-      blocklistService.unblockUser(widget.video.pubkey);
+      await muteService.unmuteUser(widget.video.pubkey);
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -1014,11 +1019,8 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
               child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
             ),
             TextButton(
-              onPressed: () {
-                blocklistService.blockUser(
-                  widget.video.pubkey,
-                  ourPubkey: nostrClient.publicKey,
-                );
+              onPressed: () async {
+                await muteService.muteUser(widget.video.pubkey);
                 context.pop();
                 if (mounted) {
                   ScaffoldMessenger.of(
@@ -2067,14 +2069,6 @@ class ReportContentDialogState extends ConsumerState<ReportContentDialog> {
               widget.video.pubkey,
               reason:
                   'Reported and blocked for ${_getReasonDisplayName(_selectedReason!)}',
-            );
-
-            // 3. Also add to local blocklist for immediate filtering
-            final blocklistService = ref.read(contentBlocklistServiceProvider);
-            final nostrClient = ref.read(nostrServiceProvider);
-            blocklistService.blockUser(
-              widget.video.pubkey,
-              ourPubkey: nostrClient.publicKey,
             );
 
             Log.info(

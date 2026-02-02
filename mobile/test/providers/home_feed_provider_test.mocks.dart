@@ -16,7 +16,7 @@ import 'package:nostr_sdk/filter.dart' as _i14;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i15;
 import 'package:openvine/services/age_verification_service.dart' as _i9;
 import 'package:openvine/services/analytics_api_service.dart' as _i3;
-import 'package:openvine/services/content_blocklist_service.dart' as _i8;
+import 'package:openvine/services/mute_service.dart' as _i8;
 import 'package:openvine/services/subscription_manager.dart' as _i16;
 import 'package:openvine/services/video_event_service.dart' as _i4;
 import 'package:openvine/services/video_filter_builder.dart' as _i13;
@@ -196,11 +196,10 @@ class MockVideoEventService extends _i1.Mock implements _i4.VideoEventService {
       );
 
   @override
-  void setBlocklistService(_i8.ContentBlocklistService? blocklistService) =>
-      super.noSuchMethod(
-        Invocation.method(#setBlocklistService, [blocklistService]),
-        returnValueForMissingStub: null,
-      );
+  void setMuteService(_i8.MuteService? muteService) => super.noSuchMethod(
+    Invocation.method(#setMuteService, [muteService]),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void setAgeVerificationService(

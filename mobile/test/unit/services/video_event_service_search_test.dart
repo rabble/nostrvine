@@ -8,13 +8,17 @@ import 'package:nostr_sdk/event.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/repositories/video_repository.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
 import 'video_event_service_search_test.mocks.dart';
 
-@GenerateNiceMocks([MockSpec<NostrClient>(), MockSpec<SubscriptionManager>()])
+@GenerateNiceMocks([
+  MockSpec<NostrClient>(),
+  MockSpec<SubscriptionManager>(),
+  MockSpec<MuteService>(),
+])
 void main() {
   group('VideoEventService Search Tests', () {
     late VideoEventService videoEventService;
@@ -233,12 +237,15 @@ void main() {
           'cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc';
 
       test('should filter blocked user videos from search results', () async {
-        // Create a real blocklist service and block a user
-        final blocklistService = ContentBlocklistService();
-        blocklistService.blockUser(blockedPubkey);
+        // Create a mock mute service and configure it to report user as muted
+        final mockMuteService = MockMuteService();
+        when(mockMuteService.isUserMuted(blockedPubkey)).thenReturn(true);
+        when(
+          mockMuteService.shouldFilterFromFeeds(blockedPubkey),
+        ).thenReturn(true);
 
-        // Set the blocklist service on the video event service
-        videoEventService.setBlocklistService(blocklistService);
+        // Set the mute service on the video event service
+        videoEventService.setMuteService(mockMuteService);
 
         // Create a mock video event from the blocked user (NIP-71 kind 34236)
         // Event constructor: Event(pubkey, kind, tags, content, {createdAt})
@@ -271,14 +278,22 @@ void main() {
       test(
         'should include non-blocked user videos in search results',
         () async {
-          // Create a real blocklist service
-          final blocklistService = ContentBlocklistService();
+          // Create a mock mute service - normalPubkey is NOT blocked
+          final mockMuteService = MockMuteService();
+          when(mockMuteService.isUserMuted(normalPubkey)).thenReturn(false);
+          when(
+            mockMuteService.shouldFilterFromFeeds(normalPubkey),
+          ).thenReturn(false);
+          // otherBlockedPubkey is blocked but not relevant to this test
+          when(
+            mockMuteService.isUserMuted(otherBlockedPubkey),
+          ).thenReturn(true);
+          when(
+            mockMuteService.shouldFilterFromFeeds(otherBlockedPubkey),
+          ).thenReturn(true);
 
-          // Block a different user (not normalPubkey)
-          blocklistService.blockUser(otherBlockedPubkey);
-
-          // Set the blocklist service on the video event service
-          videoEventService.setBlocklistService(blocklistService);
+          // Set the mute service on the video event service
+          videoEventService.setMuteService(mockMuteService);
 
           // Create a mock video event from a non-blocked user
           // Event constructor: Event(pubkey, kind, tags, content, {createdAt})

@@ -10,6 +10,7 @@ import 'package:mockito/src/dummies.dart' as _i4;
 import 'package:nostr_client/nostr_client.dart' as _i3;
 import 'package:nostr_client/src/models/models.dart' as _i2;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i6;
+import 'package:openvine/services/mute_service.dart' as _i8;
 import 'package:openvine/services/subscription_manager.dart' as _i7;
 
 // ignore_for_file: type=lint
@@ -720,4 +721,341 @@ class MockSubscriptionManager extends _i1.Mock
             returnValueForMissingStub: _i5.Future<void>.value(),
           )
           as _i5.Future<void>);
+}
+
+/// A class which mocks [MuteService].
+///
+/// See the documentation for Mockito's code generation for more information.
+class MockMuteService extends _i1.Mock implements _i8.MuteService {
+  @override
+  List<_i8.MuteItem> get mutedItems =>
+      (super.noSuchMethod(
+            Invocation.getter(#mutedItems),
+            returnValue: <_i8.MuteItem>[],
+            returnValueForMissingStub: <_i8.MuteItem>[],
+          )
+          as List<_i8.MuteItem>);
+
+  @override
+  List<_i8.MuteItem> get mutedUsers =>
+      (super.noSuchMethod(
+            Invocation.getter(#mutedUsers),
+            returnValue: <_i8.MuteItem>[],
+            returnValueForMissingStub: <_i8.MuteItem>[],
+          )
+          as List<_i8.MuteItem>);
+
+  @override
+  List<_i8.MuteItem> get mutedHashtags =>
+      (super.noSuchMethod(
+            Invocation.getter(#mutedHashtags),
+            returnValue: <_i8.MuteItem>[],
+            returnValueForMissingStub: <_i8.MuteItem>[],
+          )
+          as List<_i8.MuteItem>);
+
+  @override
+  List<_i8.MuteItem> get mutedKeywords =>
+      (super.noSuchMethod(
+            Invocation.getter(#mutedKeywords),
+            returnValue: <_i8.MuteItem>[],
+            returnValueForMissingStub: <_i8.MuteItem>[],
+          )
+          as List<_i8.MuteItem>);
+
+  @override
+  List<_i8.MuteItem> get mutedThreads =>
+      (super.noSuchMethod(
+            Invocation.getter(#mutedThreads),
+            returnValue: <_i8.MuteItem>[],
+            returnValueForMissingStub: <_i8.MuteItem>[],
+          )
+          as List<_i8.MuteItem>);
+
+  @override
+  bool get isInitialized =>
+      (super.noSuchMethod(
+            Invocation.getter(#isInitialized),
+            returnValue: false,
+            returnValueForMissingStub: false,
+          )
+          as bool);
+
+  @override
+  _i5.Future<void> initialize() =>
+      (super.noSuchMethod(
+            Invocation.method(#initialize, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<bool> muteUser(
+    String? pubkey, {
+    String? reason,
+    Duration? duration,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #muteUser,
+              [pubkey],
+              {#reason: reason, #duration: duration},
+            ),
+            returnValue: _i5.Future<bool>.value(false),
+            returnValueForMissingStub: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> muteHashtag(
+    String? hashtag, {
+    String? reason,
+    Duration? duration,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #muteHashtag,
+              [hashtag],
+              {#reason: reason, #duration: duration},
+            ),
+            returnValue: _i5.Future<bool>.value(false),
+            returnValueForMissingStub: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> muteKeyword(
+    String? keyword, {
+    String? reason,
+    Duration? duration,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #muteKeyword,
+              [keyword],
+              {#reason: reason, #duration: duration},
+            ),
+            returnValue: _i5.Future<bool>.value(false),
+            returnValueForMissingStub: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> muteThread(
+    String? eventId, {
+    String? reason,
+    Duration? duration,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #muteThread,
+              [eventId],
+              {#reason: reason, #duration: duration},
+            ),
+            returnValue: _i5.Future<bool>.value(false),
+            returnValueForMissingStub: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> muteItem(
+    _i8.MuteType? type,
+    String? value, {
+    String? reason,
+    Duration? duration,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #muteItem,
+              [type, value],
+              {#reason: reason, #duration: duration},
+            ),
+            returnValue: _i5.Future<bool>.value(false),
+            returnValueForMissingStub: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> unmuteItem(_i8.MuteType? type, String? value) =>
+      (super.noSuchMethod(
+            Invocation.method(#unmuteItem, [type, value]),
+            returnValue: _i5.Future<bool>.value(false),
+            returnValueForMissingStub: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> unmuteUser(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#unmuteUser, [pubkey]),
+            returnValue: _i5.Future<bool>.value(false),
+            returnValueForMissingStub: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> unmuteHashtag(String? hashtag) =>
+      (super.noSuchMethod(
+            Invocation.method(#unmuteHashtag, [hashtag]),
+            returnValue: _i5.Future<bool>.value(false),
+            returnValueForMissingStub: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> unmuteKeyword(String? keyword) =>
+      (super.noSuchMethod(
+            Invocation.method(#unmuteKeyword, [keyword]),
+            returnValue: _i5.Future<bool>.value(false),
+            returnValueForMissingStub: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> unmuteThread(String? eventId) =>
+      (super.noSuchMethod(
+            Invocation.method(#unmuteThread, [eventId]),
+            returnValue: _i5.Future<bool>.value(false),
+            returnValueForMissingStub: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  bool isUserMuted(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#isUserMuted, [pubkey]),
+            returnValue: false,
+            returnValueForMissingStub: false,
+          )
+          as bool);
+
+  @override
+  bool isHashtagMuted(String? hashtag) =>
+      (super.noSuchMethod(
+            Invocation.method(#isHashtagMuted, [hashtag]),
+            returnValue: false,
+            returnValueForMissingStub: false,
+          )
+          as bool);
+
+  @override
+  bool isKeywordMuted(String? keyword) =>
+      (super.noSuchMethod(
+            Invocation.method(#isKeywordMuted, [keyword]),
+            returnValue: false,
+            returnValueForMissingStub: false,
+          )
+          as bool);
+
+  @override
+  bool isThreadMuted(String? eventId) =>
+      (super.noSuchMethod(
+            Invocation.method(#isThreadMuted, [eventId]),
+            returnValue: false,
+            returnValueForMissingStub: false,
+          )
+          as bool);
+
+  @override
+  bool shouldFilterContent({
+    String? authorPubkey,
+    String? content,
+    List<String>? hashtags,
+    String? eventId,
+    String? rootEventId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#shouldFilterContent, [], {
+              #authorPubkey: authorPubkey,
+              #content: content,
+              #hashtags: hashtags,
+              #eventId: eventId,
+              #rootEventId: rootEventId,
+            }),
+            returnValue: false,
+            returnValueForMissingStub: false,
+          )
+          as bool);
+
+  @override
+  _i5.Future<bool> importMuteList(List<_i8.MuteItem>? items) =>
+      (super.noSuchMethod(
+            Invocation.method(#importMuteList, [items]),
+            returnValue: _i5.Future<bool>.value(false),
+            returnValueForMissingStub: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  List<_i8.MuteItem> exportMuteList() =>
+      (super.noSuchMethod(
+            Invocation.method(#exportMuteList, []),
+            returnValue: <_i8.MuteItem>[],
+            returnValueForMissingStub: <_i8.MuteItem>[],
+          )
+          as List<_i8.MuteItem>);
+
+  @override
+  _i5.Future<bool> clearAllMutes() =>
+      (super.noSuchMethod(
+            Invocation.method(#clearAllMutes, []),
+            returnValue: _i5.Future<bool>.value(false),
+            returnValueForMissingStub: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  Map<String, dynamic> getMuteStats() =>
+      (super.noSuchMethod(
+            Invocation.method(#getMuteStats, []),
+            returnValue: <String, dynamic>{},
+            returnValueForMissingStub: <String, dynamic>{},
+          )
+          as Map<String, dynamic>);
+
+  @override
+  bool hasMutedUs(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#hasMutedUs, [pubkey]),
+            returnValue: false,
+            returnValueForMissingStub: false,
+          )
+          as bool);
+
+  @override
+  bool shouldFilterFromFeeds(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#shouldFilterFromFeeds, [pubkey]),
+            returnValue: false,
+            returnValueForMissingStub: false,
+          )
+          as bool);
+
+  @override
+  List<T> filterContentByAuthor<T>(
+    List<T>? content,
+    String Function(T)? getPubkey,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#filterContentByAuthor, [content, getPubkey]),
+            returnValue: <T>[],
+            returnValueForMissingStub: <T>[],
+          )
+          as List<T>);
+
+  @override
+  _i5.Future<void> syncMuteListsInBackground(String? ourPubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#syncMuteListsInBackground, [ourPubkey]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  void dispose() => super.noSuchMethod(
+    Invocation.method(#dispose, []),
+    returnValueForMissingStub: null,
+  );
 }

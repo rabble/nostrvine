@@ -7,7 +7,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/repositories/video_repository.dart';
 import 'package:openvine/services/subscription_manager.dart';
@@ -24,7 +23,6 @@ void main() {
     late MockNostrClient mockNostrService;
     late MockSubscriptionManager mockSubscriptionManager;
     late VideoEventService videoEventService;
-    late ContentBlocklistService blocklistService;
     late StreamController<Event> mockEventStream;
 
     setUp(() async {
@@ -58,15 +56,11 @@ void main() {
 
       // Initialize services that don't require SharedPreferences
       // Bypass actual initialization to avoid SharedPreferences
-
-      blocklistService = ContentBlocklistService();
-
       videoEventService = VideoEventService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
         videoRepository: VideoRepository(),
       );
-      videoEventService.setBlocklistService(blocklistService);
     });
 
     tearDown(() async {

@@ -33,7 +33,7 @@ import 'package:models/models.dart'
     hide LogCategory, NIP71VideoKinds, UserProfile;
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
@@ -204,7 +204,7 @@ class VideoEventService extends ChangeNotifier {
   static const Duration _retryDelay = Duration(seconds: 10);
 
   // Optional services for enhanced functionality
-  ContentBlocklistService? _blocklistService;
+  MuteService? _muteService;
   AgeVerificationService? _ageVerificationService;
   LikesRepository? _likesRepository;
   final SubscriptionManager _subscriptionManager;
@@ -285,11 +285,11 @@ class VideoEventService extends ChangeNotifier {
     }
   }
 
-  /// Set the blocklist service for content filtering
-  void setBlocklistService(ContentBlocklistService blocklistService) {
-    _blocklistService = blocklistService;
+  /// Set the mute service for content filtering
+  void setMuteService(MuteService muteService) {
+    _muteService = muteService;
     Log.debug(
-      'Blocklist service attached to VideoEventService',
+      'Mute service attached to VideoEventService',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
@@ -1893,7 +1893,7 @@ class VideoEventService extends ChangeNotifier {
       }
 
       // Check if content is blocked
-      if (_blocklistService?.shouldFilterFromFeeds(event.pubkey) == true) {
+      if (_muteService?.shouldFilterFromFeeds(event.pubkey) == true) {
         Log.verbose(
           'Filtering blocked content from ${event.pubkey}...',
           name: 'VideoEventService',
@@ -2185,7 +2185,7 @@ class VideoEventService extends ChangeNotifier {
       }
 
       // Check if content is blocked
-      if (_blocklistService?.shouldFilterFromFeeds(event.pubkey) == true) {
+      if (_muteService?.shouldFilterFromFeeds(event.pubkey) == true) {
         Log.verbose(
           'Filtering blocked historical content from ${event.pubkey}...',
           name: 'VideoEventService',
@@ -3798,7 +3798,7 @@ class VideoEventService extends ChangeNotifier {
     }
 
     // Filter blocked users (centralized check for all subscription types)
-    if (_blocklistService?.shouldFilterFromFeeds(videoEvent.pubkey) == true) {
+    if (_muteService?.shouldFilterFromFeeds(videoEvent.pubkey) == true) {
       Log.verbose(
         'Filtering blocked content from ${videoEvent.pubkey} in $subscriptionType',
         name: 'VideoEventService',

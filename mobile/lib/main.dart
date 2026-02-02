@@ -23,7 +23,6 @@ import 'package:openvine/network/vine_cdn_http_overrides.dart'
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/last_tab_position_provider.dart';
@@ -629,15 +628,11 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     Future.microtask(() async {
       try {
         final keyManager = ref.read(nostrKeyManagerProvider);
-        final nostrService = ref.read(nostrServiceProvider);
-        final blocklistService = ref.read(contentBlocklistServiceProvider);
+        final muteService = await ref.read(muteServiceProvider.future);
 
         // Only sync if user is logged in
         if (keyManager.publicKey != null) {
-          await blocklistService.syncMuteListsInBackground(
-            nostrService,
-            keyManager.publicKey!,
-          );
+          await muteService.syncMuteListsInBackground(keyManager.publicKey!);
           Log.info(
             '[INIT] ✅ Mutual mute list sync started (background)',
             name: 'Main',

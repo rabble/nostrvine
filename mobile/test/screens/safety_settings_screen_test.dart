@@ -6,30 +6,43 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:divine_ui/divine_ui.dart';
 
-class MockContentBlocklistService extends Mock
-    implements ContentBlocklistService {
-  final Set<String> _runtimeBlocklist = {};
+class MockMuteService extends Mock implements MuteService {
+  final List<MuteItem> _mutedUsers = [];
 
   @override
-  Set<String> get runtimeBlockedUsers => Set.unmodifiable(_runtimeBlocklist);
+  List<MuteItem> get mutedUsers => List.unmodifiable(_mutedUsers);
 
   @override
-  void blockUser(String pubkey, {String? ourPubkey}) {
-    _runtimeBlocklist.add(pubkey);
+  Future<bool> muteUser(
+    String pubkey, {
+    String? reason,
+    Duration? duration,
+  }) async {
+    _mutedUsers.add(
+      MuteItem(
+        type: MuteType.user,
+        value: pubkey,
+        createdAt: DateTime.now(),
+        reason: reason,
+      ),
+    );
+    return true;
   }
 
   @override
-  void unblockUser(String pubkey) {
-    _runtimeBlocklist.remove(pubkey);
+  Future<bool> unmuteUser(String pubkey) async {
+    _mutedUsers.removeWhere((item) => item.value == pubkey);
+    return true;
   }
 
   @override
-  bool isBlocked(String pubkey) => _runtimeBlocklist.contains(pubkey);
+  bool isUserMuted(String pubkey) =>
+      _mutedUsers.any((item) => item.value == pubkey);
 }
 
 class MockContentReportingService extends Mock
@@ -37,20 +50,18 @@ class MockContentReportingService extends Mock
 
 void main() {
   group('SafetySettingsScreen Widget Tests', () {
-    late MockContentBlocklistService mockBlocklistService;
+    late MockMuteService mockMuteService;
     late MockContentReportingService mockReportingService;
 
     setUp(() {
-      mockBlocklistService = MockContentBlocklistService();
+      mockMuteService = MockMuteService();
       mockReportingService = MockContentReportingService();
     });
 
     Widget createTestWidget() {
       final container = ProviderContainer(
         overrides: [
-          contentBlocklistServiceProvider.overrideWithValue(
-            mockBlocklistService,
-          ),
+          muteServiceProvider.overrideWith((ref) async => mockMuteService),
           // contentReportingServiceProvider is async, so wrap in AsyncValue
           contentReportingServiceProvider.overrideWith(
             (ref) async => mockReportingService,
@@ -145,41 +156,44 @@ void main() {
   });
 
   group('SafetySettingsScreen Blocked Users Section - Unit Tests', () {
-    test('runtimeBlockedUsers returns blocked users set', () {
-      final service = MockContentBlocklistService();
+    test('mutedUsers returns muted users list', () {
+      final service = MockMuteService();
 
       // Initially empty
-      expect(service.runtimeBlockedUsers, isEmpty);
+      expect(service.mutedUsers, isEmpty);
 
-      // Block a user
-      service.blockUser('blocked_pubkey_1');
-      expect(service.runtimeBlockedUsers.contains('blocked_pubkey_1'), isTrue);
+      // Mute a user
+      service.muteUser('muted_pubkey_1');
+      expect(
+        service.mutedUsers.any((item) => item.value == 'muted_pubkey_1'),
+        isTrue,
+      );
 
-      // Block another
-      service.blockUser('blocked_pubkey_2');
-      expect(service.runtimeBlockedUsers.length, equals(2));
+      // Mute another
+      service.muteUser('muted_pubkey_2');
+      expect(service.mutedUsers.length, equals(2));
     });
 
-    test('unblockUser removes user from blocked list', () {
-      final service = MockContentBlocklistService();
+    test('unmuteUser removes user from muted list', () {
+      final service = MockMuteService();
 
-      service.blockUser('user_to_unblock');
-      expect(service.runtimeBlockedUsers.contains('user_to_unblock'), isTrue);
+      service.muteUser('user_to_unmute');
+      expect(service.isUserMuted('user_to_unmute'), isTrue);
 
-      service.unblockUser('user_to_unblock');
-      expect(service.runtimeBlockedUsers.contains('user_to_unblock'), isFalse);
+      service.unmuteUser('user_to_unmute');
+      expect(service.isUserMuted('user_to_unmute'), isFalse);
     });
 
-    test('isBlocked returns correct status', () {
-      final service = MockContentBlocklistService();
+    test('isUserMuted returns correct status', () {
+      final service = MockMuteService();
 
-      expect(service.isBlocked('some_user'), isFalse);
+      expect(service.isUserMuted('some_user'), isFalse);
 
-      service.blockUser('some_user');
-      expect(service.isBlocked('some_user'), isTrue);
+      service.muteUser('some_user');
+      expect(service.isUserMuted('some_user'), isTrue);
 
-      service.unblockUser('some_user');
-      expect(service.isBlocked('some_user'), isFalse);
+      service.unmuteUser('some_user');
+      expect(service.isUserMuted('some_user'), isFalse);
     });
   });
 }

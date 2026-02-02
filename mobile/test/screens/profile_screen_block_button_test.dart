@@ -7,19 +7,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/mute_service.dart';
 
 import 'profile_screen_block_button_test.mocks.dart';
 
-@GenerateMocks([ContentBlocklistService])
+@GenerateMocks([MuteService])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('ProfileScreen Block Button - TDD', () {
-    late MockContentBlocklistService mockBlocklistService;
+    late MockMuteService mockMuteService;
 
     setUp(() {
-      mockBlocklistService = MockContentBlocklistService();
+      mockMuteService = MockMuteService();
     });
 
     // Helper to create a simple test widget with Block User button
@@ -29,43 +29,47 @@ void main() {
       Function(String, bool)? onBlock,
     }) {
       // Setup mock behavior
-      when(mockBlocklistService.isBlocked(userPubkey)).thenReturn(isBlocked);
+      when(mockMuteService.isUserMuted(userPubkey)).thenReturn(isBlocked);
 
       return ProviderScope(
         overrides: [
-          contentBlocklistServiceProvider.overrideWithValue(
-            mockBlocklistService,
-          ),
+          muteServiceProvider.overrideWith((ref) async => mockMuteService),
         ],
         child: MaterialApp(
           home: Scaffold(
             body: Center(
               child: Consumer(
                 builder: (context, ref, _) {
-                  final blocklistService = ref.watch(
-                    contentBlocklistServiceProvider,
-                  );
-                  final isUserBlocked = blocklistService.isBlocked(userPubkey);
-                  return OutlinedButton(
-                    onPressed: () {
-                      if (onBlock != null) {
-                        onBlock(userPubkey, isUserBlocked);
-                      }
+                  final muteServiceAsync = ref.watch(muteServiceProvider);
+                  return muteServiceAsync.when(
+                    data: (muteService) {
+                      final isUserBlocked = muteService.isUserMuted(userPubkey);
+                      return OutlinedButton(
+                        onPressed: () {
+                          if (onBlock != null) {
+                            onBlock(userPubkey, isUserBlocked);
+                          }
+                        },
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: isUserBlocked
+                              ? Colors.grey
+                              : Colors.red,
+                          side: BorderSide(
+                            color: isUserBlocked ? Colors.grey : Colors.red,
+                          ),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        child: Text(isUserBlocked ? 'Unblock' : 'Block User'),
+                      );
                     },
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: isUserBlocked ? Colors.grey : Colors.red,
-                      side: BorderSide(
-                        color: isUserBlocked ? Colors.grey : Colors.red,
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: Text(isUserBlocked ? 'Unblock' : 'Block User'),
+                    loading: () => const CircularProgressIndicator(),
+                    error: (_, __) => const Text('Error'),
                   );
                 },
               ),
@@ -82,6 +86,7 @@ void main() {
       await tester.pumpWidget(
         createBlockButtonTest(userPubkey: testPubkey, isBlocked: false),
       );
+      await tester.pumpAndSettle();
 
       // RED: Expect to find "Block User" text
       expect(
@@ -98,6 +103,7 @@ void main() {
       await tester.pumpWidget(
         createBlockButtonTest(userPubkey: testPubkey, isBlocked: false),
       );
+      await tester.pumpAndSettle();
 
       final blockButton = find.text('Block User');
       expect(blockButton, findsOneWidget);
@@ -131,6 +137,7 @@ void main() {
           isBlocked: true, // User is blocked
         ),
       );
+      await tester.pumpAndSettle();
 
       // RED: Expect "Unblock" text
       expect(
@@ -175,6 +182,7 @@ void main() {
           },
         ),
       );
+      await tester.pumpAndSettle();
 
       final blockButton = find.text('Block User');
       await tester.tap(blockButton);

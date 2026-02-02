@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -142,8 +141,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   Future<void> _more() async {
     final userIdHex = _userIdHex!;
 
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
-    final isBlocked = blocklistService.isBlocked(userIdHex);
+    final muteService = await ref.read(muteServiceProvider.future);
+    final isBlocked = muteService.isUserMuted(userIdHex);
 
     final followRepository = ref.read(followRepositoryProvider);
     // If NostrClient doesn't have keys yet, treat as not following
@@ -179,16 +178,13 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       case MoreSheetResult.unfollow:
         await _unfollowUser();
       case MoreSheetResult.blockConfirmed:
-        final blocklistService = ref.read(contentBlocklistServiceProvider);
-        final nostrClient = ref.read(nostrServiceProvider);
-        blocklistService.blockUser(userIdHex, ourPubkey: nostrClient.publicKey);
+        await muteService.muteUser(userIdHex);
         ref.read(blocklistVersionProvider.notifier).increment();
         if (mounted) {
           context.pop();
         }
       case MoreSheetResult.unblockConfirmed:
-        final blocklistService = ref.read(contentBlocklistServiceProvider);
-        blocklistService.unblockUser(userIdHex);
+        await muteService.unmuteUser(userIdHex);
         ref.read(blocklistVersionProvider.notifier).increment();
     }
   }
@@ -233,8 +229,8 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     if (!mounted) return;
 
     if (result == MoreSheetResult.unblockConfirmed) {
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
-      blocklistService.unblockUser(userIdHex);
+      final muteService = await ref.read(muteServiceProvider.future);
+      await muteService.unmuteUser(userIdHex);
       ref.read(blocklistVersionProvider.notifier).increment();
     }
   }

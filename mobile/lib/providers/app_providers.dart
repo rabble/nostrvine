@@ -37,7 +37,6 @@ import 'package:openvine/services/broken_video_tracker.dart';
 import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
@@ -467,13 +466,7 @@ SeenVideosService seenVideosService(Ref ref) {
   return SeenVideosService();
 }
 
-/// Content blocklist service for filtering unwanted content from feeds
-@riverpod
-ContentBlocklistService contentBlocklistService(Ref ref) {
-  return ContentBlocklistService();
-}
-
-/// Version counter to trigger rebuilds when blocklist changes.
+/// Version counter to trigger rebuilds when mute list changes.
 /// Widgets watching this will rebuild when block/unblock actions occur.
 @riverpod
 class BlocklistVersion extends _$BlocklistVersion {
@@ -654,12 +647,12 @@ SubscriptionManager subscriptionManager(Ref ref) {
   return SubscriptionManager(nostrService);
 }
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
+/// Video event service depends on Nostr, SeenVideos, MuteService, AgeVerification, SubscriptionManager, and VideoRepository
 @Riverpod(keepAlive: true)
 VideoEventService videoEventService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final subscriptionManager = ref.watch(subscriptionManagerProvider);
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final muteService = ref.watch(muteServiceProvider).value;
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
   final userProfileService = ref.watch(userProfileServiceProvider);
   final videoFilterBuilder = ref.watch(videoFilterBuilderProvider);
@@ -677,7 +670,9 @@ VideoEventService videoEventService(Ref ref) {
     eventRouter: eventRouter,
     videoFilterBuilder: videoFilterBuilder,
   );
-  service.setBlocklistService(blocklistService);
+  if (muteService != null) {
+    service.setMuteService(muteService);
+  }
   service.setAgeVerificationService(ageVerificationService);
   service.setLikesRepository(likesRepository);
   return service;
@@ -1256,17 +1251,19 @@ CommentsRepository commentsRepository(Ref ref) {
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
-/// - ContentBlocklistService for filtering blocked/muted users
+/// - MuteService for filtering blocked/muted users
 /// - AgeVerificationService for filtering NSFW content based on user preference
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final muteService = ref.watch(muteServiceProvider).value;
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
 
   return VideosRepository(
     nostrClient: nostrClient,
-    blockFilter: createBlocklistFilter(blocklistService),
+    blockFilter: muteService != null
+        ? createBlocklistFilter(muteService)
+        : null,
     contentFilter: createNsfwFilter(ageVerificationService),
   );
 }

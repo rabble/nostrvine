@@ -5,20 +5,18 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
 
-import 'package:keycast_flutter/keycast_flutter.dart' as _i13;
+import 'package:keycast_flutter/keycast_flutter.dart' as _i12;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i11;
-import 'package:nostr_client/nostr_client.dart' as _i8;
-import 'package:nostr_sdk/event.dart' as _i14;
+import 'package:mockito/src/dummies.dart' as _i10;
+import 'package:nostr_sdk/event.dart' as _i13;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i4;
 import 'package:openvine/services/auth_service.dart' as _i3;
-import 'package:openvine/services/blossom_server_discovery_service.dart'
-    as _i10;
-import 'package:openvine/services/content_blocklist_service.dart' as _i7;
+import 'package:openvine/services/blossom_server_discovery_service.dart' as _i9;
 import 'package:openvine/services/content_moderation_service.dart' as _i6;
 import 'package:openvine/services/content_reporting_service.dart' as _i2;
-import 'package:openvine/services/relay_discovery_service.dart' as _i9;
-import 'package:openvine/services/user_profile_service.dart' as _i12;
+import 'package:openvine/services/mute_service.dart' as _i7;
+import 'package:openvine/services/relay_discovery_service.dart' as _i8;
+import 'package:openvine/services/user_profile_service.dart' as _i11;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -219,48 +217,277 @@ class MockContentReportingService extends _i1.Mock
   );
 }
 
-/// A class which mocks [ContentBlocklistService].
+/// A class which mocks [MuteService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockContentBlocklistService extends _i1.Mock
-    implements _i7.ContentBlocklistService {
-  MockContentBlocklistService() {
+class MockMuteService extends _i1.Mock implements _i7.MuteService {
+  MockMuteService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  Set<String> get blockedPubkeys =>
+  List<_i7.MuteItem> get mutedItems =>
       (super.noSuchMethod(
-            Invocation.getter(#blockedPubkeys),
-            returnValue: <String>{},
+            Invocation.getter(#mutedItems),
+            returnValue: <_i7.MuteItem>[],
           )
-          as Set<String>);
+          as List<_i7.MuteItem>);
 
   @override
-  int get totalBlockedCount =>
-      (super.noSuchMethod(Invocation.getter(#totalBlockedCount), returnValue: 0)
-          as int);
-
-  @override
-  Set<String> get runtimeBlockedUsers =>
+  List<_i7.MuteItem> get mutedUsers =>
       (super.noSuchMethod(
-            Invocation.getter(#runtimeBlockedUsers),
-            returnValue: <String>{},
+            Invocation.getter(#mutedUsers),
+            returnValue: <_i7.MuteItem>[],
           )
-          as Set<String>);
+          as List<_i7.MuteItem>);
 
   @override
-  Map<String, dynamic> get blockingStats =>
+  List<_i7.MuteItem> get mutedHashtags =>
       (super.noSuchMethod(
-            Invocation.getter(#blockingStats),
+            Invocation.getter(#mutedHashtags),
+            returnValue: <_i7.MuteItem>[],
+          )
+          as List<_i7.MuteItem>);
+
+  @override
+  List<_i7.MuteItem> get mutedKeywords =>
+      (super.noSuchMethod(
+            Invocation.getter(#mutedKeywords),
+            returnValue: <_i7.MuteItem>[],
+          )
+          as List<_i7.MuteItem>);
+
+  @override
+  List<_i7.MuteItem> get mutedThreads =>
+      (super.noSuchMethod(
+            Invocation.getter(#mutedThreads),
+            returnValue: <_i7.MuteItem>[],
+          )
+          as List<_i7.MuteItem>);
+
+  @override
+  bool get isInitialized =>
+      (super.noSuchMethod(Invocation.getter(#isInitialized), returnValue: false)
+          as bool);
+
+  @override
+  _i5.Future<void> initialize() =>
+      (super.noSuchMethod(
+            Invocation.method(#initialize, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<bool> muteUser(
+    String? pubkey, {
+    String? reason,
+    Duration? duration,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #muteUser,
+              [pubkey],
+              {#reason: reason, #duration: duration},
+            ),
+            returnValue: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> muteHashtag(
+    String? hashtag, {
+    String? reason,
+    Duration? duration,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #muteHashtag,
+              [hashtag],
+              {#reason: reason, #duration: duration},
+            ),
+            returnValue: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> muteKeyword(
+    String? keyword, {
+    String? reason,
+    Duration? duration,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #muteKeyword,
+              [keyword],
+              {#reason: reason, #duration: duration},
+            ),
+            returnValue: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> muteThread(
+    String? eventId, {
+    String? reason,
+    Duration? duration,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #muteThread,
+              [eventId],
+              {#reason: reason, #duration: duration},
+            ),
+            returnValue: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> muteItem(
+    _i7.MuteType? type,
+    String? value, {
+    String? reason,
+    Duration? duration,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #muteItem,
+              [type, value],
+              {#reason: reason, #duration: duration},
+            ),
+            returnValue: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> unmuteItem(_i7.MuteType? type, String? value) =>
+      (super.noSuchMethod(
+            Invocation.method(#unmuteItem, [type, value]),
+            returnValue: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> unmuteUser(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#unmuteUser, [pubkey]),
+            returnValue: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> unmuteHashtag(String? hashtag) =>
+      (super.noSuchMethod(
+            Invocation.method(#unmuteHashtag, [hashtag]),
+            returnValue: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> unmuteKeyword(String? keyword) =>
+      (super.noSuchMethod(
+            Invocation.method(#unmuteKeyword, [keyword]),
+            returnValue: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  _i5.Future<bool> unmuteThread(String? eventId) =>
+      (super.noSuchMethod(
+            Invocation.method(#unmuteThread, [eventId]),
+            returnValue: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  bool isUserMuted(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#isUserMuted, [pubkey]),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
+  bool isHashtagMuted(String? hashtag) =>
+      (super.noSuchMethod(
+            Invocation.method(#isHashtagMuted, [hashtag]),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
+  bool isKeywordMuted(String? keyword) =>
+      (super.noSuchMethod(
+            Invocation.method(#isKeywordMuted, [keyword]),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
+  bool isThreadMuted(String? eventId) =>
+      (super.noSuchMethod(
+            Invocation.method(#isThreadMuted, [eventId]),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
+  bool shouldFilterContent({
+    String? authorPubkey,
+    String? content,
+    List<String>? hashtags,
+    String? eventId,
+    String? rootEventId,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#shouldFilterContent, [], {
+              #authorPubkey: authorPubkey,
+              #content: content,
+              #hashtags: hashtags,
+              #eventId: eventId,
+              #rootEventId: rootEventId,
+            }),
+            returnValue: false,
+          )
+          as bool);
+
+  @override
+  _i5.Future<bool> importMuteList(List<_i7.MuteItem>? items) =>
+      (super.noSuchMethod(
+            Invocation.method(#importMuteList, [items]),
+            returnValue: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  List<_i7.MuteItem> exportMuteList() =>
+      (super.noSuchMethod(
+            Invocation.method(#exportMuteList, []),
+            returnValue: <_i7.MuteItem>[],
+          )
+          as List<_i7.MuteItem>);
+
+  @override
+  _i5.Future<bool> clearAllMutes() =>
+      (super.noSuchMethod(
+            Invocation.method(#clearAllMutes, []),
+            returnValue: _i5.Future<bool>.value(false),
+          )
+          as _i5.Future<bool>);
+
+  @override
+  Map<String, dynamic> getMuteStats() =>
+      (super.noSuchMethod(
+            Invocation.method(#getMuteStats, []),
             returnValue: <String, dynamic>{},
           )
           as Map<String, dynamic>);
 
   @override
-  bool isBlocked(String? pubkey) =>
+  bool hasMutedUs(String? pubkey) =>
       (super.noSuchMethod(
-            Invocation.method(#isBlocked, [pubkey]),
+            Invocation.method(#hasMutedUs, [pubkey]),
             returnValue: false,
           )
           as bool);
@@ -274,57 +501,20 @@ class MockContentBlocklistService extends _i1.Mock
           as bool);
 
   @override
-  bool hasMutedUs(String? pubkey) =>
+  List<T> filterContentByAuthor<T>(
+    List<T>? content,
+    String Function(T)? getPubkey,
+  ) =>
       (super.noSuchMethod(
-            Invocation.method(#hasMutedUs, [pubkey]),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  void blockUser(String? pubkey, {String? ourPubkey}) => super.noSuchMethod(
-    Invocation.method(#blockUser, [pubkey], {#ourPubkey: ourPubkey}),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  void unblockUser(String? pubkey) => super.noSuchMethod(
-    Invocation.method(#unblockUser, [pubkey]),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  List<T> filterContent<T>(List<T>? content, String Function(T)? getPubkey) =>
-      (super.noSuchMethod(
-            Invocation.method(#filterContent, [content, getPubkey]),
+            Invocation.method(#filterContentByAuthor, [content, getPubkey]),
             returnValue: <T>[],
           )
           as List<T>);
 
   @override
-  bool isInternallyBlocked(String? pubkey) =>
+  _i5.Future<void> syncMuteListsInBackground(String? ourPubkey) =>
       (super.noSuchMethod(
-            Invocation.method(#isInternallyBlocked, [pubkey]),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
-  void clearRuntimeBlocks() => super.noSuchMethod(
-    Invocation.method(#clearRuntimeBlocks, []),
-    returnValueForMissingStub: null,
-  );
-
-  @override
-  _i5.Future<void> syncMuteListsInBackground(
-    _i8.NostrClient? nostrService,
-    String? ourPubkey,
-  ) =>
-      (super.noSuchMethod(
-            Invocation.method(#syncMuteListsInBackground, [
-              nostrService,
-              ourPubkey,
-            ]),
+            Invocation.method(#syncMuteListsInBackground, [ourPubkey]),
             returnValue: _i5.Future<void>.value(),
             returnValueForMissingStub: _i5.Future<void>.value(),
           )
@@ -396,12 +586,12 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as bool);
 
   @override
-  List<_i9.DiscoveredRelay> get userRelays =>
+  List<_i8.DiscoveredRelay> get userRelays =>
       (super.noSuchMethod(
             Invocation.getter(#userRelays),
-            returnValue: <_i9.DiscoveredRelay>[],
+            returnValue: <_i8.DiscoveredRelay>[],
           )
-          as List<_i9.DiscoveredRelay>);
+          as List<_i8.DiscoveredRelay>);
 
   @override
   bool get hasExistingProfile =>
@@ -412,12 +602,12 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as bool);
 
   @override
-  List<_i10.DiscoveredBlossomServer> get userBlossomServers =>
+  List<_i9.DiscoveredBlossomServer> get userBlossomServers =>
       (super.noSuchMethod(
             Invocation.getter(#userBlossomServers),
-            returnValue: <_i10.DiscoveredBlossomServer>[],
+            returnValue: <_i9.DiscoveredBlossomServer>[],
           )
-          as List<_i10.DiscoveredBlossomServer>);
+          as List<_i9.DiscoveredBlossomServer>);
 
   @override
   bool get hasUserBlossomServers =>
@@ -439,7 +629,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
   String get serviceName =>
       (super.noSuchMethod(
             Invocation.getter(#serviceName),
-            returnValue: _i11.dummyValue<String>(
+            returnValue: _i10.dummyValue<String>(
               this,
               Invocation.getter(#serviceName),
             ),
@@ -611,7 +801,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
 
   @override
   _i5.Future<void> refreshCurrentProfile(
-    _i12.UserProfileService? userProfileService,
+    _i11.UserProfileService? userProfileService,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#refreshCurrentProfile, [userProfileService]),
@@ -630,7 +820,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i5.Future<void>);
 
   @override
-  _i5.Future<void> signInWithDivineOAuth(_i13.KeycastSession? session) =>
+  _i5.Future<void> signInWithDivineOAuth(_i12.KeycastSession? session) =>
       (super.noSuchMethod(
             Invocation.method(#signInWithDivineOAuth, [session]),
             returnValue: _i5.Future<void>.value(),
@@ -676,7 +866,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i5.Future<String?>);
 
   @override
-  _i5.Future<_i14.Event?> createAndSignEvent({
+  _i5.Future<_i13.Event?> createAndSignEvent({
     required int? kind,
     required String? content,
     List<List<String>>? tags,
@@ -689,9 +879,9 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               #tags: tags,
               #biometricPrompt: biometricPrompt,
             }),
-            returnValue: _i5.Future<_i14.Event?>.value(),
+            returnValue: _i5.Future<_i13.Event?>.value(),
           )
-          as _i5.Future<_i14.Event?>);
+          as _i5.Future<_i13.Event?>);
 
   @override
   _i5.Future<void> acceptTerms() =>

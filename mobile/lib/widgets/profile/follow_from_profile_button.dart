@@ -45,9 +45,9 @@ class FollowFromProfileButton extends ConsumerWidget {
     // Watch blocklist version to trigger rebuilds when block/unblock occurs
     ref.watch(blocklistVersionProvider);
 
-    // Watch blocklist to reactively update button state
-    final blocklistService = ref.watch(contentBlocklistServiceProvider);
-    final isBlocked = blocklistService.isBlocked(pubkey);
+    // Watch mute service to reactively update button state
+    final muteService = ref.watch(muteServiceProvider).value;
+    final isBlocked = muteService?.isUserMuted(pubkey) ?? false;
 
     return BlocProvider(
       create: (_) =>

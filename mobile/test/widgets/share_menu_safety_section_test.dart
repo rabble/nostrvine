@@ -9,25 +9,25 @@ import 'package:mockito/mockito.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
+import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 
 import 'share_menu_safety_section_test.mocks.dart';
 
-@GenerateMocks([ContentReportingService, ContentBlocklistService, AuthService])
+@GenerateMocks([ContentReportingService, MuteService, AuthService])
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('Share Menu Safety Section - TDD', () {
     late MockContentReportingService mockReportingService;
-    late MockContentBlocklistService mockBlocklistService;
+    late MockMuteService mockMuteService;
     late MockAuthService mockAuthService;
     late VideoEvent testVideo;
 
     setUp(() {
       mockReportingService = MockContentReportingService();
-      mockBlocklistService = MockContentBlocklistService();
+      mockMuteService = MockMuteService();
       mockAuthService = MockAuthService();
 
       final now = DateTime.now();
@@ -50,7 +50,7 @@ void main() {
         mockAuthService.currentPublicKeyHex,
       ).thenReturn('current_user_pubkey');
       when(mockReportingService.hasBeenReported(any)).thenReturn(false);
-      when(mockBlocklistService.isBlocked(any)).thenReturn(false);
+      when(mockMuteService.isUserMuted(any)).thenReturn(false);
     });
 
     // RED TEST 1: Section title should be "Safety Actions" not "Content Actions"
@@ -61,9 +61,7 @@ void main() {
             contentReportingServiceProvider.overrideWith(
               (ref) async => mockReportingService,
             ),
-            contentBlocklistServiceProvider.overrideWithValue(
-              mockBlocklistService,
-            ),
+            muteServiceProvider.overrideWith((ref) async => mockMuteService),
             authServiceProvider.overrideWithValue(mockAuthService),
           ],
           child: MaterialApp(
@@ -100,9 +98,7 @@ void main() {
             contentReportingServiceProvider.overrideWith(
               (ref) async => mockReportingService,
             ),
-            contentBlocklistServiceProvider.overrideWithValue(
-              mockBlocklistService,
-            ),
+            muteServiceProvider.overrideWith((ref) async => mockMuteService),
             authServiceProvider.overrideWithValue(mockAuthService),
           ],
           child: MaterialApp(
@@ -149,9 +145,7 @@ void main() {
             contentReportingServiceProvider.overrideWith(
               (ref) async => mockReportingService,
             ),
-            contentBlocklistServiceProvider.overrideWithValue(
-              mockBlocklistService,
-            ),
+            muteServiceProvider.overrideWith((ref) async => mockMuteService),
             authServiceProvider.overrideWithValue(mockAuthService),
           ],
           child: MaterialApp(
@@ -178,9 +172,7 @@ void main() {
             contentReportingServiceProvider.overrideWith(
               (ref) async => mockReportingService,
             ),
-            contentBlocklistServiceProvider.overrideWithValue(
-              mockBlocklistService,
-            ),
+            muteServiceProvider.overrideWith((ref) async => mockMuteService),
             authServiceProvider.overrideWithValue(mockAuthService),
           ],
           child: MaterialApp(
@@ -223,9 +215,7 @@ void main() {
             contentReportingServiceProvider.overrideWith(
               (ref) async => mockReportingService,
             ),
-            contentBlocklistServiceProvider.overrideWithValue(
-              mockBlocklistService,
-            ),
+            muteServiceProvider.overrideWith((ref) async => mockMuteService),
             authServiceProvider.overrideWithValue(mockAuthService),
           ],
           child: MaterialApp(

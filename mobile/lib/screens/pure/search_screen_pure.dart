@@ -11,7 +11,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -161,7 +161,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       final videoEventService = ref.read(videoEventServiceProvider);
       final videos = videoEventService.discoveryVideos;
       final profileService = ref.read(userProfileServiceProvider);
-      final blocklistService = ref.read(contentBlocklistServiceProvider);
+      final muteService = ref.read(muteServiceProvider).value;
 
       Log.debug(
         '🔍 SearchScreenPure: Filtering ${videos.length} cached videos',
@@ -174,7 +174,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       final matchingProfiles = SearchUtils.searchProfiles(
         query,
         profileService.allProfiles.values.where(
-          (p) => !blocklistService.shouldFilterFromFeeds(p.pubkey),
+          (p) => muteService?.shouldFilterFromFeeds(p.pubkey) != true,
         ),
         minScore: 0.3,
         limit: 50,
@@ -184,7 +184,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
       final filteredVideos = videos.where((video) {
         // Filter out blocked users first
-        if (blocklistService.shouldFilterFromFeeds(video.pubkey)) {
+        if (muteService?.shouldFilterFromFeeds(video.pubkey) == true) {
           return false;
         }
 
@@ -207,7 +207,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
             hashtags.add(tag);
           }
         }
-        if (!blocklistService.shouldFilterFromFeeds(video.pubkey)) {
+        if (muteService?.shouldFilterFromFeeds(video.pubkey) != true) {
           users.add(video.pubkey);
         }
       }
@@ -262,7 +262,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     });
 
     final querySnapshot = _currentQuery;
-    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    final muteService = ref.read(muteServiceProvider).value;
     final profileService = ref.read(userProfileServiceProvider);
 
     // Helper to check if this search is still valid
@@ -296,7 +296,8 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
         // Filter out blocked users
         final filteredRestResults = restResults
             .where(
-              (video) => !blocklistService.shouldFilterFromFeeds(video.pubkey),
+              (video) =>
+                  muteService?.shouldFilterFromFeeds(video.pubkey) != true,
             )
             .toList();
 
@@ -304,7 +305,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
           // Merge REST results with local results
           _mergeAndUpdateResults(
             newVideos: filteredRestResults,
-            blocklistService: blocklistService,
+            muteService: muteService,
             profileService: profileService,
             querySnapshot: querySnapshot,
             generation: generation,
@@ -344,7 +345,8 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
         final wsResults = videoEventService.searchResults
             .where(
-              (video) => !blocklistService.shouldFilterFromFeeds(video.pubkey),
+              (video) =>
+                  muteService?.shouldFilterFromFeeds(video.pubkey) != true,
             )
             .toList();
 
@@ -355,7 +357,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
         final matchingRemoteUsers = SearchUtils.searchProfiles(
           querySnapshot,
           profileService.allProfiles.values.where(
-            (p) => !blocklistService.shouldFilterFromFeeds(p.pubkey),
+            (p) => muteService?.shouldFilterFromFeeds(p.pubkey) != true,
           ),
           minScore: 0.3,
           limit: 50,
@@ -366,7 +368,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
           _mergeAndUpdateResults(
             newVideos: wsResults,
             newUsers: matchingRemoteUsers,
-            blocklistService: blocklistService,
+            muteService: muteService,
             profileService: profileService,
             querySnapshot: querySnapshot,
             generation: generation,
@@ -409,7 +411,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
   void _mergeAndUpdateResults({
     required List<VideoEvent> newVideos,
     List<String>? newUsers,
-    required ContentBlocklistService blocklistService,
+    MuteService? muteService,
     required UserProfileService profileService,
     required String querySnapshot,
     required int generation,
@@ -450,7 +452,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
           allHashtags.add(tag);
         }
       }
-      if (!blocklistService.shouldFilterFromFeeds(video.pubkey)) {
+      if (muteService?.shouldFilterFromFeeds(video.pubkey) != true) {
         allUsers.add(video.pubkey);
       }
     }

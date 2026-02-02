@@ -7,10 +7,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -18,18 +20,24 @@ void main() {
   group('Block User Flow Integration Tests', () {
     late ProviderContainer container;
     late GoRouter router;
-    late ContentBlocklistService blocklistService;
+    late MuteService muteService;
 
-    setUp(() {
-      // Create provider container for test
-      container = ProviderContainer();
+    setUp(() async {
+      // Initialize SharedPreferences for test
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      // Create provider container with SharedPreferences override
+      container = ProviderContainer(
+        overrides: [sharedPreferencesProvider.overrideWithValue(prefs)],
+      );
       addTearDown(container.dispose);
 
       // Get router from provider
       router = container.read(goRouterProvider);
 
-      // Get blocklist service
-      blocklistService = container.read(contentBlocklistServiceProvider);
+      // Get mute service (async provider)
+      muteService = await container.read(muteServiceProvider.future);
     });
 
     testWidgets('Block and unblock user from profile screen', (tester) async {
@@ -52,7 +60,7 @@ void main() {
 
       // Verify user is NOT blocked initially
       expect(
-        blocklistService.isBlocked(testUserHex),
+        muteService.isUserMuted(testUserHex),
         isFalse,
         reason: 'User should not be blocked initially',
       );
@@ -102,11 +110,11 @@ void main() {
       await tester.tap(confirmButtonFinder);
       await tester.pumpAndSettle();
 
-      // STEP 5: Verify user is added to blocklist
+      // STEP 5: Verify user is added to mute list
       expect(
-        blocklistService.isBlocked(testUserHex),
+        muteService.isUserMuted(testUserHex),
         isTrue,
-        reason: 'User should be blocked after confirmation',
+        reason: 'User should be muted after confirmation',
       );
 
       // STEP 6: Verify button changes to "Unblock"
@@ -142,11 +150,11 @@ void main() {
       await tester.tap(unblockButtonFinder);
       await tester.pumpAndSettle();
 
-      // STEP 8: Verify user is removed from blocklist (no confirmation needed for unblock)
+      // STEP 8: Verify user is removed from mute list (no confirmation needed for unblock)
       expect(
-        blocklistService.isBlocked(testUserHex),
+        muteService.isUserMuted(testUserHex),
         isFalse,
-        reason: 'User should be unblocked after tapping Unblock',
+        reason: 'User should be unmuted after tapping Unblock',
       );
 
       // STEP 9: Verify button changes back to "Block User"
@@ -187,8 +195,8 @@ void main() {
           '3bf0c63fcb93463407af97a5e5ee64fa883d107ef9e558472c4eb9aaaefa459d';
       final testUserNpub = NostrKeyUtils.encodePubKey(testUserHex);
 
-      // Ensure user is not blocked
-      expect(blocklistService.isBlocked(testUserHex), isFalse);
+      // Ensure user is not muted
+      expect(muteService.isUserMuted(testUserHex), isFalse);
 
       // Navigate to test user's profile
       router.go(ProfileScreenRouter.pathForIndex(testUserNpub, 0));
@@ -208,11 +216,11 @@ void main() {
       await tester.tap(cancelButtonFinder);
       await tester.pumpAndSettle();
 
-      // Verify user is still NOT blocked
+      // Verify user is still NOT muted
       expect(
-        blocklistService.isBlocked(testUserHex),
+        muteService.isUserMuted(testUserHex),
         isFalse,
-        reason: 'User should not be blocked after canceling',
+        reason: 'User should not be muted after canceling',
       );
 
       // Verify button is still "Block User"
