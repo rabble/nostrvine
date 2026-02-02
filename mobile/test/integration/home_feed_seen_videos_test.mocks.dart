@@ -1434,9 +1434,36 @@ class MockFollowRepository extends _i1.Mock implements _i15.FollowRepository {
           as _i11.Future<void>);
 
   @override
+  _i11.Future<void> executeFollowAction(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#executeFollowAction, [pubkey]),
+            returnValue: _i11.Future<void>.value(),
+            returnValueForMissingStub: _i11.Future<void>.value(),
+          )
+          as _i11.Future<void>);
+
+  @override
   _i11.Future<void> unfollow(String? pubkey) =>
       (super.noSuchMethod(
             Invocation.method(#unfollow, [pubkey]),
+            returnValue: _i11.Future<void>.value(),
+            returnValueForMissingStub: _i11.Future<void>.value(),
+          )
+          as _i11.Future<void>);
+
+  @override
+  _i11.Future<void> executeUnfollowAction(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#executeUnfollowAction, [pubkey]),
+            returnValue: _i11.Future<void>.value(),
+            returnValueForMissingStub: _i11.Future<void>.value(),
+          )
+          as _i11.Future<void>);
+
+  @override
+  _i11.Future<void> mergeFollows(List<String>? additionalPubkeys) =>
+      (super.noSuchMethod(
+            Invocation.method(#mergeFollows, [additionalPubkeys]),
             returnValue: _i11.Future<void>.value(),
             returnValueForMissingStub: _i11.Future<void>.value(),
           )

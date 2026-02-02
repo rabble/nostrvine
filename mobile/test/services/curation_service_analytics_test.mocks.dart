@@ -1429,9 +1429,46 @@ class MockLikesRepository extends _i1.Mock implements _i3.LikesRepository {
           as _i8.Future<String>);
 
   @override
+  _i8.Future<String> executeLikeAction({
+    required String? eventId,
+    required String? authorPubkey,
+    String? addressableId,
+    int? targetKind,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#executeLikeAction, [], {
+              #eventId: eventId,
+              #authorPubkey: authorPubkey,
+              #addressableId: addressableId,
+              #targetKind: targetKind,
+            }),
+            returnValue: _i8.Future<String>.value(
+              _i7.dummyValue<String>(
+                this,
+                Invocation.method(#executeLikeAction, [], {
+                  #eventId: eventId,
+                  #authorPubkey: authorPubkey,
+                  #addressableId: addressableId,
+                  #targetKind: targetKind,
+                }),
+              ),
+            ),
+          )
+          as _i8.Future<String>);
+
+  @override
   _i8.Future<void> unlikeEvent(String? eventId) =>
       (super.noSuchMethod(
             Invocation.method(#unlikeEvent, [eventId]),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
+  _i8.Future<void> executeUnlikeAction(String? eventId) =>
+      (super.noSuchMethod(
+            Invocation.method(#executeUnlikeAction, [eventId]),
             returnValue: _i8.Future<void>.value(),
             returnValueForMissingStub: _i8.Future<void>.value(),
           )
