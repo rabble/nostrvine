@@ -15,3 +15,9 @@
 
 # Profile pages - Vine-compatible URLs
 /u/* /profile.html 200
+
+# Deep link fallbacks (web view when app not installed)
+/video/* /watch.html 200
+/profile/* /profile.html 200
+/hashtag/* /search.html 200
+/search/* /search.html 200
