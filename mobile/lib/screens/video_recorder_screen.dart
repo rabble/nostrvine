@@ -7,7 +7,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -90,19 +89,18 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     Log.debug(
       '📹 Checking for autosaved changes',
       name: 'VideoRecorderScreen',
-      category: .video,
+      category: LogCategory.video,
     );
 
     final prefs = await SharedPreferences.getInstance();
     final draftService = DraftStorageService(prefs);
-    final draft = await draftService.getDraftById(
-      VideoEditorConstants.autoSaveId,
-    );
-    if (draft != null && draft.clips.isNotEmpty) {
+    final hasAutosave = await draftService.hasValidAutosave();
+
+    if (hasAutosave) {
       Log.info(
-        '📹 Found autosaved draft with ${draft.clips.length} clip(s)',
+        '📹 Found valid autosaved draft',
         name: 'VideoRecorderScreen',
-        category: .video,
+        category: LogCategory.video,
       );
       await VineBottomSheet.show(
         context: context,
@@ -113,9 +111,9 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
       );
     } else {
       Log.debug(
-        '📹 No autosaved draft found',
+        '📹 No valid autosaved draft found',
         name: 'VideoRecorderScreen',
-        category: .video,
+        category: LogCategory.video,
       );
     }
   }
