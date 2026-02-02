@@ -800,11 +800,13 @@ ProfileRepository? profileRepository(Ref ref) {
 
   final nostrClient = ref.watch(nostrServiceProvider);
   final userProfilesDao = ref.watch(databaseProvider).userProfilesDao;
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
 
   return ProfileRepository(
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
     httpClient: Client(),
+    userBlockFilter: blocklistService.shouldFilterFromFeeds,
   );
 }
 

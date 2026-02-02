@@ -13,6 +13,9 @@ import 'package:profile_repository/profile_repository.dart';
 /// API endpoint for claiming usernames via NIP-98 auth.
 const _usernameClaimUrl = 'https://names.divine.video/api/username/claim';
 
+/// Callback to check if a user should be filtered from results.
+typedef UserBlockFilter = bool Function(String pubkey);
+
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
 class ProfileRepository {
   /// Creates a new profile repository.
@@ -20,13 +23,16 @@ class ProfileRepository {
     required NostrClient nostrClient,
     required UserProfilesDao userProfilesDao,
     required Client httpClient,
+    UserBlockFilter? userBlockFilter,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
-       _httpClient = httpClient;
+       _httpClient = httpClient,
+       _userBlockFilter = userBlockFilter;
 
   final NostrClient _nostrClient;
   final UserProfilesDao _userProfilesDao;
   final Client _httpClient;
+  final UserBlockFilter? _userBlockFilter;
 
   /// Fetches a user profile by pubkey using cache-first strategy.
   ///
@@ -132,6 +138,7 @@ class ProfileRepository {
   /// Searches for user profiles matching the query.
   ///
   /// Fetches profiles via NIP-50 and filters by bestDisplayName.
+  /// If a [userBlockFilter] was provided, blocked users are excluded.
   /// Returns list of [UserProfile] matching the search query.
   /// Returns empty list if query is empty or no results found.
   Future<List<UserProfile>> searchUsers({
@@ -145,6 +152,10 @@ class ProfileRepository {
     final queryLower = query.toLowerCase();
 
     return profiles.where((profile) {
+      // Filter blocked users if filter is provided
+      if (_userBlockFilter?.call(profile.pubkey) ?? false) {
+        return false;
+      }
       return profile.bestDisplayName.toLowerCase().contains(queryLower);
     }).toList();
   }

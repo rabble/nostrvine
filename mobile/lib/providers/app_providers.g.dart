@@ -2417,7 +2417,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'0454d90570f71f0bae362a0e84d9d61cce253f93';
+String _$profileRepositoryHash() => r'4a5dcce952ed44b7113b2d2b0265293a86854b15';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
