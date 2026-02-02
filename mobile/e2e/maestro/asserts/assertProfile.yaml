@@ -11,6 +11,7 @@ appId: co.openvine.app
     text: "^npub.*"
 
 - assertVisible: Edit
+- assertVisible: Refresh
 - assertVisible: Library
 
 - assertVisible: Tab 1 of 3

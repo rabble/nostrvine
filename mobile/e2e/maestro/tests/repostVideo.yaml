@@ -24,9 +24,8 @@ env:
 - runFlow: "../asserts/assertVideoReposted.yml"
 
 # 3. Tap on the profile: Validate profile is loaded
-- tapOn: |-
-    Profile
-    Tab 4 of 4
+- tapOn:
+    id: profile_tab
 - runFlow: ../asserts/assertProfile.yml
 # 4. Tap on the Reposts tab: Validate tab is loaded and VIDEO_TITLE listed
 - tapOn: Tab 3 of 3
