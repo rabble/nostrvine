@@ -5596,6 +5596,759 @@ class PersonalRepostsCompanion extends UpdateCompanion<PersonalRepostRow> {
   }
 }
 
+class $PendingActionsTable extends PendingActions
+    with TableInfo<$PendingActionsTable, PendingActionRow> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $PendingActionsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+    'id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _typeMeta = const VerificationMeta('type');
+  @override
+  late final GeneratedColumn<String> type = GeneratedColumn<String>(
+    'type',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _targetIdMeta = const VerificationMeta(
+    'targetId',
+  );
+  @override
+  late final GeneratedColumn<String> targetId = GeneratedColumn<String>(
+    'target_id',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _authorPubkeyMeta = const VerificationMeta(
+    'authorPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> authorPubkey = GeneratedColumn<String>(
+    'author_pubkey',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _addressableIdMeta = const VerificationMeta(
+    'addressableId',
+  );
+  @override
+  late final GeneratedColumn<String> addressableId = GeneratedColumn<String>(
+    'addressable_id',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _targetKindMeta = const VerificationMeta(
+    'targetKind',
+  );
+  @override
+  late final GeneratedColumn<int> targetKind = GeneratedColumn<int>(
+    'target_kind',
+    aliasedName,
+    true,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+    'status',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _userPubkeyMeta = const VerificationMeta(
+    'userPubkey',
+  );
+  @override
+  late final GeneratedColumn<String> userPubkey = GeneratedColumn<String>(
+    'user_pubkey',
+    aliasedName,
+    false,
+    type: DriftSqlType.string,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _createdAtMeta = const VerificationMeta(
+    'createdAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+    'created_at',
+    aliasedName,
+    false,
+    type: DriftSqlType.dateTime,
+    requiredDuringInsert: true,
+  );
+  static const VerificationMeta _retryCountMeta = const VerificationMeta(
+    'retryCount',
+  );
+  @override
+  late final GeneratedColumn<int> retryCount = GeneratedColumn<int>(
+    'retry_count',
+    aliasedName,
+    false,
+    type: DriftSqlType.int,
+    requiredDuringInsert: false,
+    defaultValue: const Constant(0),
+  );
+  static const VerificationMeta _lastErrorMeta = const VerificationMeta(
+    'lastError',
+  );
+  @override
+  late final GeneratedColumn<String> lastError = GeneratedColumn<String>(
+    'last_error',
+    aliasedName,
+    true,
+    type: DriftSqlType.string,
+    requiredDuringInsert: false,
+  );
+  static const VerificationMeta _lastAttemptAtMeta = const VerificationMeta(
+    'lastAttemptAt',
+  );
+  @override
+  late final GeneratedColumn<DateTime> lastAttemptAt =
+      GeneratedColumn<DateTime>(
+        'last_attempt_at',
+        aliasedName,
+        true,
+        type: DriftSqlType.dateTime,
+        requiredDuringInsert: false,
+      );
+  @override
+  List<GeneratedColumn> get $columns => [
+    id,
+    type,
+    targetId,
+    authorPubkey,
+    addressableId,
+    targetKind,
+    status,
+    userPubkey,
+    createdAt,
+    retryCount,
+    lastError,
+    lastAttemptAt,
+  ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'pending_actions';
+  @override
+  VerificationContext validateIntegrity(
+    Insertable<PendingActionRow> instance, {
+    bool isInserting = false,
+  }) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    } else if (isInserting) {
+      context.missing(_idMeta);
+    }
+    if (data.containsKey('type')) {
+      context.handle(
+        _typeMeta,
+        type.isAcceptableOrUnknown(data['type']!, _typeMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_typeMeta);
+    }
+    if (data.containsKey('target_id')) {
+      context.handle(
+        _targetIdMeta,
+        targetId.isAcceptableOrUnknown(data['target_id']!, _targetIdMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_targetIdMeta);
+    }
+    if (data.containsKey('author_pubkey')) {
+      context.handle(
+        _authorPubkeyMeta,
+        authorPubkey.isAcceptableOrUnknown(
+          data['author_pubkey']!,
+          _authorPubkeyMeta,
+        ),
+      );
+    }
+    if (data.containsKey('addressable_id')) {
+      context.handle(
+        _addressableIdMeta,
+        addressableId.isAcceptableOrUnknown(
+          data['addressable_id']!,
+          _addressableIdMeta,
+        ),
+      );
+    }
+    if (data.containsKey('target_kind')) {
+      context.handle(
+        _targetKindMeta,
+        targetKind.isAcceptableOrUnknown(data['target_kind']!, _targetKindMeta),
+      );
+    }
+    if (data.containsKey('status')) {
+      context.handle(
+        _statusMeta,
+        status.isAcceptableOrUnknown(data['status']!, _statusMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_statusMeta);
+    }
+    if (data.containsKey('user_pubkey')) {
+      context.handle(
+        _userPubkeyMeta,
+        userPubkey.isAcceptableOrUnknown(data['user_pubkey']!, _userPubkeyMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_userPubkeyMeta);
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(
+        _createdAtMeta,
+        createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
+      );
+    } else if (isInserting) {
+      context.missing(_createdAtMeta);
+    }
+    if (data.containsKey('retry_count')) {
+      context.handle(
+        _retryCountMeta,
+        retryCount.isAcceptableOrUnknown(data['retry_count']!, _retryCountMeta),
+      );
+    }
+    if (data.containsKey('last_error')) {
+      context.handle(
+        _lastErrorMeta,
+        lastError.isAcceptableOrUnknown(data['last_error']!, _lastErrorMeta),
+      );
+    }
+    if (data.containsKey('last_attempt_at')) {
+      context.handle(
+        _lastAttemptAtMeta,
+        lastAttemptAt.isAcceptableOrUnknown(
+          data['last_attempt_at']!,
+          _lastAttemptAtMeta,
+        ),
+      );
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  PendingActionRow map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return PendingActionRow(
+      id: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}id'],
+      )!,
+      type: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}type'],
+      )!,
+      targetId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}target_id'],
+      )!,
+      authorPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}author_pubkey'],
+      ),
+      addressableId: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}addressable_id'],
+      ),
+      targetKind: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}target_kind'],
+      ),
+      status: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}status'],
+      )!,
+      userPubkey: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}user_pubkey'],
+      )!,
+      createdAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}created_at'],
+      )!,
+      retryCount: attachedDatabase.typeMapping.read(
+        DriftSqlType.int,
+        data['${effectivePrefix}retry_count'],
+      )!,
+      lastError: attachedDatabase.typeMapping.read(
+        DriftSqlType.string,
+        data['${effectivePrefix}last_error'],
+      ),
+      lastAttemptAt: attachedDatabase.typeMapping.read(
+        DriftSqlType.dateTime,
+        data['${effectivePrefix}last_attempt_at'],
+      ),
+    );
+  }
+
+  @override
+  $PendingActionsTable createAlias(String alias) {
+    return $PendingActionsTable(attachedDatabase, alias);
+  }
+}
+
+class PendingActionRow extends DataClass
+    implements Insertable<PendingActionRow> {
+  /// Unique identifier for this action
+  final String id;
+
+  /// Type of action: like, unlike, repost, unrepost, follow, unfollow
+  final String type;
+
+  /// Target event ID (for likes/reposts) or pubkey (for follows)
+  final String targetId;
+
+  /// Pubkey of the original event author (for likes/reposts)
+  final String? authorPubkey;
+
+  /// Addressable ID for reposts (format: "kind:pubkey:d-tag")
+  final String? addressableId;
+
+  /// Kind of the target event (e.g., 34236 for videos)
+  final int? targetKind;
+
+  /// Current sync status: pending, syncing, completed, failed
+  final String status;
+
+  /// The pubkey of the user who queued this action
+  final String userPubkey;
+
+  /// When the action was queued
+  final DateTime createdAt;
+
+  /// Number of sync attempts
+  final int retryCount;
+
+  /// Last error message if sync failed
+  final String? lastError;
+
+  /// Timestamp of last sync attempt
+  final DateTime? lastAttemptAt;
+  const PendingActionRow({
+    required this.id,
+    required this.type,
+    required this.targetId,
+    this.authorPubkey,
+    this.addressableId,
+    this.targetKind,
+    required this.status,
+    required this.userPubkey,
+    required this.createdAt,
+    required this.retryCount,
+    this.lastError,
+    this.lastAttemptAt,
+  });
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<String>(id);
+    map['type'] = Variable<String>(type);
+    map['target_id'] = Variable<String>(targetId);
+    if (!nullToAbsent || authorPubkey != null) {
+      map['author_pubkey'] = Variable<String>(authorPubkey);
+    }
+    if (!nullToAbsent || addressableId != null) {
+      map['addressable_id'] = Variable<String>(addressableId);
+    }
+    if (!nullToAbsent || targetKind != null) {
+      map['target_kind'] = Variable<int>(targetKind);
+    }
+    map['status'] = Variable<String>(status);
+    map['user_pubkey'] = Variable<String>(userPubkey);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['retry_count'] = Variable<int>(retryCount);
+    if (!nullToAbsent || lastError != null) {
+      map['last_error'] = Variable<String>(lastError);
+    }
+    if (!nullToAbsent || lastAttemptAt != null) {
+      map['last_attempt_at'] = Variable<DateTime>(lastAttemptAt);
+    }
+    return map;
+  }
+
+  PendingActionsCompanion toCompanion(bool nullToAbsent) {
+    return PendingActionsCompanion(
+      id: Value(id),
+      type: Value(type),
+      targetId: Value(targetId),
+      authorPubkey: authorPubkey == null && nullToAbsent
+          ? const Value.absent()
+          : Value(authorPubkey),
+      addressableId: addressableId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(addressableId),
+      targetKind: targetKind == null && nullToAbsent
+          ? const Value.absent()
+          : Value(targetKind),
+      status: Value(status),
+      userPubkey: Value(userPubkey),
+      createdAt: Value(createdAt),
+      retryCount: Value(retryCount),
+      lastError: lastError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastError),
+      lastAttemptAt: lastAttemptAt == null && nullToAbsent
+          ? const Value.absent()
+          : Value(lastAttemptAt),
+    );
+  }
+
+  factory PendingActionRow.fromJson(
+    Map<String, dynamic> json, {
+    ValueSerializer? serializer,
+  }) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return PendingActionRow(
+      id: serializer.fromJson<String>(json['id']),
+      type: serializer.fromJson<String>(json['type']),
+      targetId: serializer.fromJson<String>(json['targetId']),
+      authorPubkey: serializer.fromJson<String?>(json['authorPubkey']),
+      addressableId: serializer.fromJson<String?>(json['addressableId']),
+      targetKind: serializer.fromJson<int?>(json['targetKind']),
+      status: serializer.fromJson<String>(json['status']),
+      userPubkey: serializer.fromJson<String>(json['userPubkey']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      retryCount: serializer.fromJson<int>(json['retryCount']),
+      lastError: serializer.fromJson<String?>(json['lastError']),
+      lastAttemptAt: serializer.fromJson<DateTime?>(json['lastAttemptAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String>(id),
+      'type': serializer.toJson<String>(type),
+      'targetId': serializer.toJson<String>(targetId),
+      'authorPubkey': serializer.toJson<String?>(authorPubkey),
+      'addressableId': serializer.toJson<String?>(addressableId),
+      'targetKind': serializer.toJson<int?>(targetKind),
+      'status': serializer.toJson<String>(status),
+      'userPubkey': serializer.toJson<String>(userPubkey),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'retryCount': serializer.toJson<int>(retryCount),
+      'lastError': serializer.toJson<String?>(lastError),
+      'lastAttemptAt': serializer.toJson<DateTime?>(lastAttemptAt),
+    };
+  }
+
+  PendingActionRow copyWith({
+    String? id,
+    String? type,
+    String? targetId,
+    Value<String?> authorPubkey = const Value.absent(),
+    Value<String?> addressableId = const Value.absent(),
+    Value<int?> targetKind = const Value.absent(),
+    String? status,
+    String? userPubkey,
+    DateTime? createdAt,
+    int? retryCount,
+    Value<String?> lastError = const Value.absent(),
+    Value<DateTime?> lastAttemptAt = const Value.absent(),
+  }) => PendingActionRow(
+    id: id ?? this.id,
+    type: type ?? this.type,
+    targetId: targetId ?? this.targetId,
+    authorPubkey: authorPubkey.present ? authorPubkey.value : this.authorPubkey,
+    addressableId: addressableId.present
+        ? addressableId.value
+        : this.addressableId,
+    targetKind: targetKind.present ? targetKind.value : this.targetKind,
+    status: status ?? this.status,
+    userPubkey: userPubkey ?? this.userPubkey,
+    createdAt: createdAt ?? this.createdAt,
+    retryCount: retryCount ?? this.retryCount,
+    lastError: lastError.present ? lastError.value : this.lastError,
+    lastAttemptAt: lastAttemptAt.present
+        ? lastAttemptAt.value
+        : this.lastAttemptAt,
+  );
+  PendingActionRow copyWithCompanion(PendingActionsCompanion data) {
+    return PendingActionRow(
+      id: data.id.present ? data.id.value : this.id,
+      type: data.type.present ? data.type.value : this.type,
+      targetId: data.targetId.present ? data.targetId.value : this.targetId,
+      authorPubkey: data.authorPubkey.present
+          ? data.authorPubkey.value
+          : this.authorPubkey,
+      addressableId: data.addressableId.present
+          ? data.addressableId.value
+          : this.addressableId,
+      targetKind: data.targetKind.present
+          ? data.targetKind.value
+          : this.targetKind,
+      status: data.status.present ? data.status.value : this.status,
+      userPubkey: data.userPubkey.present
+          ? data.userPubkey.value
+          : this.userPubkey,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      retryCount: data.retryCount.present
+          ? data.retryCount.value
+          : this.retryCount,
+      lastError: data.lastError.present ? data.lastError.value : this.lastError,
+      lastAttemptAt: data.lastAttemptAt.present
+          ? data.lastAttemptAt.value
+          : this.lastAttemptAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingActionRow(')
+          ..write('id: $id, ')
+          ..write('type: $type, ')
+          ..write('targetId: $targetId, ')
+          ..write('authorPubkey: $authorPubkey, ')
+          ..write('addressableId: $addressableId, ')
+          ..write('targetKind: $targetKind, ')
+          ..write('status: $status, ')
+          ..write('userPubkey: $userPubkey, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('lastError: $lastError, ')
+          ..write('lastAttemptAt: $lastAttemptAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+    id,
+    type,
+    targetId,
+    authorPubkey,
+    addressableId,
+    targetKind,
+    status,
+    userPubkey,
+    createdAt,
+    retryCount,
+    lastError,
+    lastAttemptAt,
+  );
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is PendingActionRow &&
+          other.id == this.id &&
+          other.type == this.type &&
+          other.targetId == this.targetId &&
+          other.authorPubkey == this.authorPubkey &&
+          other.addressableId == this.addressableId &&
+          other.targetKind == this.targetKind &&
+          other.status == this.status &&
+          other.userPubkey == this.userPubkey &&
+          other.createdAt == this.createdAt &&
+          other.retryCount == this.retryCount &&
+          other.lastError == this.lastError &&
+          other.lastAttemptAt == this.lastAttemptAt);
+}
+
+class PendingActionsCompanion extends UpdateCompanion<PendingActionRow> {
+  final Value<String> id;
+  final Value<String> type;
+  final Value<String> targetId;
+  final Value<String?> authorPubkey;
+  final Value<String?> addressableId;
+  final Value<int?> targetKind;
+  final Value<String> status;
+  final Value<String> userPubkey;
+  final Value<DateTime> createdAt;
+  final Value<int> retryCount;
+  final Value<String?> lastError;
+  final Value<DateTime?> lastAttemptAt;
+  final Value<int> rowid;
+  const PendingActionsCompanion({
+    this.id = const Value.absent(),
+    this.type = const Value.absent(),
+    this.targetId = const Value.absent(),
+    this.authorPubkey = const Value.absent(),
+    this.addressableId = const Value.absent(),
+    this.targetKind = const Value.absent(),
+    this.status = const Value.absent(),
+    this.userPubkey = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.retryCount = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.lastAttemptAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  PendingActionsCompanion.insert({
+    required String id,
+    required String type,
+    required String targetId,
+    this.authorPubkey = const Value.absent(),
+    this.addressableId = const Value.absent(),
+    this.targetKind = const Value.absent(),
+    required String status,
+    required String userPubkey,
+    required DateTime createdAt,
+    this.retryCount = const Value.absent(),
+    this.lastError = const Value.absent(),
+    this.lastAttemptAt = const Value.absent(),
+    this.rowid = const Value.absent(),
+  }) : id = Value(id),
+       type = Value(type),
+       targetId = Value(targetId),
+       status = Value(status),
+       userPubkey = Value(userPubkey),
+       createdAt = Value(createdAt);
+  static Insertable<PendingActionRow> custom({
+    Expression<String>? id,
+    Expression<String>? type,
+    Expression<String>? targetId,
+    Expression<String>? authorPubkey,
+    Expression<String>? addressableId,
+    Expression<int>? targetKind,
+    Expression<String>? status,
+    Expression<String>? userPubkey,
+    Expression<DateTime>? createdAt,
+    Expression<int>? retryCount,
+    Expression<String>? lastError,
+    Expression<DateTime>? lastAttemptAt,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (type != null) 'type': type,
+      if (targetId != null) 'target_id': targetId,
+      if (authorPubkey != null) 'author_pubkey': authorPubkey,
+      if (addressableId != null) 'addressable_id': addressableId,
+      if (targetKind != null) 'target_kind': targetKind,
+      if (status != null) 'status': status,
+      if (userPubkey != null) 'user_pubkey': userPubkey,
+      if (createdAt != null) 'created_at': createdAt,
+      if (retryCount != null) 'retry_count': retryCount,
+      if (lastError != null) 'last_error': lastError,
+      if (lastAttemptAt != null) 'last_attempt_at': lastAttemptAt,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  PendingActionsCompanion copyWith({
+    Value<String>? id,
+    Value<String>? type,
+    Value<String>? targetId,
+    Value<String?>? authorPubkey,
+    Value<String?>? addressableId,
+    Value<int?>? targetKind,
+    Value<String>? status,
+    Value<String>? userPubkey,
+    Value<DateTime>? createdAt,
+    Value<int>? retryCount,
+    Value<String?>? lastError,
+    Value<DateTime?>? lastAttemptAt,
+    Value<int>? rowid,
+  }) {
+    return PendingActionsCompanion(
+      id: id ?? this.id,
+      type: type ?? this.type,
+      targetId: targetId ?? this.targetId,
+      authorPubkey: authorPubkey ?? this.authorPubkey,
+      addressableId: addressableId ?? this.addressableId,
+      targetKind: targetKind ?? this.targetKind,
+      status: status ?? this.status,
+      userPubkey: userPubkey ?? this.userPubkey,
+      createdAt: createdAt ?? this.createdAt,
+      retryCount: retryCount ?? this.retryCount,
+      lastError: lastError ?? this.lastError,
+      lastAttemptAt: lastAttemptAt ?? this.lastAttemptAt,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (type.present) {
+      map['type'] = Variable<String>(type.value);
+    }
+    if (targetId.present) {
+      map['target_id'] = Variable<String>(targetId.value);
+    }
+    if (authorPubkey.present) {
+      map['author_pubkey'] = Variable<String>(authorPubkey.value);
+    }
+    if (addressableId.present) {
+      map['addressable_id'] = Variable<String>(addressableId.value);
+    }
+    if (targetKind.present) {
+      map['target_kind'] = Variable<int>(targetKind.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (userPubkey.present) {
+      map['user_pubkey'] = Variable<String>(userPubkey.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (retryCount.present) {
+      map['retry_count'] = Variable<int>(retryCount.value);
+    }
+    if (lastError.present) {
+      map['last_error'] = Variable<String>(lastError.value);
+    }
+    if (lastAttemptAt.present) {
+      map['last_attempt_at'] = Variable<DateTime>(lastAttemptAt.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('PendingActionsCompanion(')
+          ..write('id: $id, ')
+          ..write('type: $type, ')
+          ..write('targetId: $targetId, ')
+          ..write('authorPubkey: $authorPubkey, ')
+          ..write('addressableId: $addressableId, ')
+          ..write('targetKind: $targetKind, ')
+          ..write('status: $status, ')
+          ..write('userPubkey: $userPubkey, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('retryCount: $retryCount, ')
+          ..write('lastError: $lastError, ')
+          ..write('lastAttemptAt: $lastAttemptAt, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 abstract class _$AppDatabase extends GeneratedDatabase {
   _$AppDatabase(QueryExecutor e) : super(e);
   $AppDatabaseManager get managers => $AppDatabaseManager(this);
@@ -5611,6 +6364,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $PersonalRepostsTable personalReposts = $PersonalRepostsTable(
     this,
   );
+  late final $PendingActionsTable pendingActions = $PendingActionsTable(this);
   late final UserProfilesDao userProfilesDao = UserProfilesDao(
     this as AppDatabase,
   );
@@ -5638,6 +6392,9 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final PersonalRepostsDao personalRepostsDao = PersonalRepostsDao(
     this as AppDatabase,
   );
+  late final PendingActionsDao pendingActionsDao = PendingActionsDao(
+    this as AppDatabase,
+  );
   @override
   Iterable<TableInfo<Table, Object?>> get allTables =>
       allSchemaEntities.whereType<TableInfo<Table, Object?>>();
@@ -5652,6 +6409,7 @@ abstract class _$AppDatabase extends GeneratedDatabase {
     pendingUploads,
     personalReactions,
     personalReposts,
+    pendingActions,
   ];
 }
 
@@ -8360,6 +9118,357 @@ typedef $$PersonalRepostsTableProcessedTableManager =
       PersonalRepostRow,
       PrefetchHooks Function()
     >;
+typedef $$PendingActionsTableCreateCompanionBuilder =
+    PendingActionsCompanion Function({
+      required String id,
+      required String type,
+      required String targetId,
+      Value<String?> authorPubkey,
+      Value<String?> addressableId,
+      Value<int?> targetKind,
+      required String status,
+      required String userPubkey,
+      required DateTime createdAt,
+      Value<int> retryCount,
+      Value<String?> lastError,
+      Value<DateTime?> lastAttemptAt,
+      Value<int> rowid,
+    });
+typedef $$PendingActionsTableUpdateCompanionBuilder =
+    PendingActionsCompanion Function({
+      Value<String> id,
+      Value<String> type,
+      Value<String> targetId,
+      Value<String?> authorPubkey,
+      Value<String?> addressableId,
+      Value<int?> targetKind,
+      Value<String> status,
+      Value<String> userPubkey,
+      Value<DateTime> createdAt,
+      Value<int> retryCount,
+      Value<String?> lastError,
+      Value<DateTime?> lastAttemptAt,
+      Value<int> rowid,
+    });
+
+class $$PendingActionsTableFilterComposer
+    extends Composer<_$AppDatabase, $PendingActionsTable> {
+  $$PendingActionsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get targetId => $composableBuilder(
+    column: $table.targetId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get authorPubkey => $composableBuilder(
+    column: $table.authorPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get addressableId => $composableBuilder(
+    column: $table.addressableId,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get targetKind => $composableBuilder(
+    column: $table.targetKind,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get userPubkey => $composableBuilder(
+    column: $table.userPubkey,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<DateTime> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => ColumnFilters(column),
+  );
+}
+
+class $$PendingActionsTableOrderingComposer
+    extends Composer<_$AppDatabase, $PendingActionsTable> {
+  $$PendingActionsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<String> get id => $composableBuilder(
+    column: $table.id,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get type => $composableBuilder(
+    column: $table.type,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get targetId => $composableBuilder(
+    column: $table.targetId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get authorPubkey => $composableBuilder(
+    column: $table.authorPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get addressableId => $composableBuilder(
+    column: $table.addressableId,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get targetKind => $composableBuilder(
+    column: $table.targetKind,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get status => $composableBuilder(
+    column: $table.status,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get userPubkey => $composableBuilder(
+    column: $table.userPubkey,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+    column: $table.createdAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<String> get lastError => $composableBuilder(
+    column: $table.lastError,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<DateTime> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => ColumnOrderings(column),
+  );
+}
+
+class $$PendingActionsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $PendingActionsTable> {
+  $$PendingActionsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<String> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get type =>
+      $composableBuilder(column: $table.type, builder: (column) => column);
+
+  GeneratedColumn<String> get targetId =>
+      $composableBuilder(column: $table.targetId, builder: (column) => column);
+
+  GeneratedColumn<String> get authorPubkey => $composableBuilder(
+    column: $table.authorPubkey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get addressableId => $composableBuilder(
+    column: $table.addressableId,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<int> get targetKind => $composableBuilder(
+    column: $table.targetKind,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get status =>
+      $composableBuilder(column: $table.status, builder: (column) => column);
+
+  GeneratedColumn<String> get userPubkey => $composableBuilder(
+    column: $table.userPubkey,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<int> get retryCount => $composableBuilder(
+    column: $table.retryCount,
+    builder: (column) => column,
+  );
+
+  GeneratedColumn<String> get lastError =>
+      $composableBuilder(column: $table.lastError, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get lastAttemptAt => $composableBuilder(
+    column: $table.lastAttemptAt,
+    builder: (column) => column,
+  );
+}
+
+class $$PendingActionsTableTableManager
+    extends
+        RootTableManager<
+          _$AppDatabase,
+          $PendingActionsTable,
+          PendingActionRow,
+          $$PendingActionsTableFilterComposer,
+          $$PendingActionsTableOrderingComposer,
+          $$PendingActionsTableAnnotationComposer,
+          $$PendingActionsTableCreateCompanionBuilder,
+          $$PendingActionsTableUpdateCompanionBuilder,
+          (
+            PendingActionRow,
+            BaseReferences<
+              _$AppDatabase,
+              $PendingActionsTable,
+              PendingActionRow
+            >,
+          ),
+          PendingActionRow,
+          PrefetchHooks Function()
+        > {
+  $$PendingActionsTableTableManager(
+    _$AppDatabase db,
+    $PendingActionsTable table,
+  ) : super(
+        TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$PendingActionsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$PendingActionsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$PendingActionsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback:
+              ({
+                Value<String> id = const Value.absent(),
+                Value<String> type = const Value.absent(),
+                Value<String> targetId = const Value.absent(),
+                Value<String?> authorPubkey = const Value.absent(),
+                Value<String?> addressableId = const Value.absent(),
+                Value<int?> targetKind = const Value.absent(),
+                Value<String> status = const Value.absent(),
+                Value<String> userPubkey = const Value.absent(),
+                Value<DateTime> createdAt = const Value.absent(),
+                Value<int> retryCount = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<DateTime?> lastAttemptAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PendingActionsCompanion(
+                id: id,
+                type: type,
+                targetId: targetId,
+                authorPubkey: authorPubkey,
+                addressableId: addressableId,
+                targetKind: targetKind,
+                status: status,
+                userPubkey: userPubkey,
+                createdAt: createdAt,
+                retryCount: retryCount,
+                lastError: lastError,
+                lastAttemptAt: lastAttemptAt,
+                rowid: rowid,
+              ),
+          createCompanionCallback:
+              ({
+                required String id,
+                required String type,
+                required String targetId,
+                Value<String?> authorPubkey = const Value.absent(),
+                Value<String?> addressableId = const Value.absent(),
+                Value<int?> targetKind = const Value.absent(),
+                required String status,
+                required String userPubkey,
+                required DateTime createdAt,
+                Value<int> retryCount = const Value.absent(),
+                Value<String?> lastError = const Value.absent(),
+                Value<DateTime?> lastAttemptAt = const Value.absent(),
+                Value<int> rowid = const Value.absent(),
+              }) => PendingActionsCompanion.insert(
+                id: id,
+                type: type,
+                targetId: targetId,
+                authorPubkey: authorPubkey,
+                addressableId: addressableId,
+                targetKind: targetKind,
+                status: status,
+                userPubkey: userPubkey,
+                createdAt: createdAt,
+                retryCount: retryCount,
+                lastError: lastError,
+                lastAttemptAt: lastAttemptAt,
+                rowid: rowid,
+              ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (e.readTable(table), BaseReferences(db, table, e)))
+              .toList(),
+          prefetchHooksCallback: null,
+        ),
+      );
+}
+
+typedef $$PendingActionsTableProcessedTableManager =
+    ProcessedTableManager<
+      _$AppDatabase,
+      $PendingActionsTable,
+      PendingActionRow,
+      $$PendingActionsTableFilterComposer,
+      $$PendingActionsTableOrderingComposer,
+      $$PendingActionsTableAnnotationComposer,
+      $$PendingActionsTableCreateCompanionBuilder,
+      $$PendingActionsTableUpdateCompanionBuilder,
+      (
+        PendingActionRow,
+        BaseReferences<_$AppDatabase, $PendingActionsTable, PendingActionRow>,
+      ),
+      PendingActionRow,
+      PrefetchHooks Function()
+    >;
 
 class $AppDatabaseManager {
   final _$AppDatabase _db;
@@ -8382,4 +9491,6 @@ class $AppDatabaseManager {
       $$PersonalReactionsTableTableManager(_db, _db.personalReactions);
   $$PersonalRepostsTableTableManager get personalReposts =>
       $$PersonalRepostsTableTableManager(_db, _db.personalReposts);
+  $$PendingActionsTableTableManager get pendingActions =>
+      $$PendingActionsTableTableManager(_db, _db.pendingActions);
 }

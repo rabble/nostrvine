@@ -3,15 +3,11 @@
 // Check in to version control
 
 import 'package:hive_ce/hive.dart';
-import 'package:openvine/models/pending_action.dart';
 import 'package:openvine/models/pending_upload.dart';
 import 'package:openvine/models/user_profile.dart';
 
 extension HiveRegistrar on HiveInterface {
   void registerAdapters() {
-    registerAdapter(PendingActionAdapter());
-    registerAdapter(PendingActionStatusAdapter());
-    registerAdapter(PendingActionTypeAdapter());
     registerAdapter(PendingUploadAdapter());
     registerAdapter(UploadStatusAdapter());
     registerAdapter(UserProfileAdapter());
@@ -20,9 +16,6 @@ extension HiveRegistrar on HiveInterface {
 
 extension IsolatedHiveRegistrar on IsolatedHiveInterface {
   void registerAdapters() {
-    registerAdapter(PendingActionAdapter());
-    registerAdapter(PendingActionStatusAdapter());
-    registerAdapter(PendingActionTypeAdapter());
     registerAdapter(PendingUploadAdapter());
     registerAdapter(UploadStatusAdapter());
     registerAdapter(UserProfileAdapter());

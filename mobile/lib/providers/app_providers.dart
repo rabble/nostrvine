@@ -49,7 +49,6 @@ import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/mute_service.dart';
-import 'package:openvine/models/pending_action.dart';
 import 'package:openvine/services/nip05_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
@@ -101,12 +100,27 @@ ConnectionStatusService connectionStatusService(Ref ref) {
 }
 
 /// Pending action service for offline sync of social actions
+/// Returns null when not authenticated (no userPubkey available)
 @Riverpod(keepAlive: true)
-PendingActionService pendingActionService(Ref ref) {
+PendingActionService? pendingActionService(Ref ref) {
   final connectionStatusService = ref.watch(connectionStatusServiceProvider);
+  final authService = ref.watch(authServiceProvider);
+
+  // Watch auth state to rebuild when authentication changes
+  ref.watch(currentAuthStateProvider);
+
+  // Need authenticated user for DAO operations
+  final userPubkey = authService.currentPublicKeyHex;
+  if (userPubkey == null) {
+    return null;
+  }
+
+  final db = ref.watch(databaseProvider);
 
   final service = PendingActionService(
     connectionStatusService: connectionStatusService,
+    pendingActionsDao: db.pendingActionsDao,
+    userPubkey: userPubkey,
   );
 
   // Initialize asynchronously
@@ -796,26 +810,29 @@ FollowRepository? followRepository(Ref ref) {
     nostrClient: nostrClient,
     personalEventCache: personalEventCache,
     isOnline: () => connectionStatus.isOnline,
-    queueOfflineAction:
-        ({required bool isFollow, required String pubkey}) async {
-          await pendingActionService.queueAction(
-            type: isFollow
-                ? PendingActionType.follow
-                : PendingActionType.unfollow,
-            targetId: pubkey,
-          );
-        },
+    queueOfflineAction: pendingActionService != null
+        ? ({required bool isFollow, required String pubkey}) async {
+            await pendingActionService.queueAction(
+              type: isFollow
+                  ? PendingActionType.follow
+                  : PendingActionType.unfollow,
+              targetId: pubkey,
+            );
+          }
+        : null,
   );
 
   // Register executors with pending action service for sync
-  pendingActionService.registerExecutor(
-    PendingActionType.follow,
-    (action) => repository.executeFollowAction(action.targetId),
-  );
-  pendingActionService.registerExecutor(
-    PendingActionType.unfollow,
-    (action) => repository.executeUnfollowAction(action.targetId),
-  );
+  if (pendingActionService != null) {
+    pendingActionService.registerExecutor(
+      PendingActionType.follow,
+      (action) => repository.executeFollowAction(action.targetId),
+    );
+    pendingActionService.registerExecutor(
+      PendingActionType.unfollow,
+      (action) => repository.executeUnfollowAction(action.targetId),
+    );
+  }
 
   // Initialize asynchronously
   repository.initialize().catchError((e) {
@@ -1372,38 +1389,41 @@ LikesRepository likesRepository(Ref ref) {
     authStateStream: authBoolStream,
     isAuthenticated: isAuthenticated,
     isOnline: () => connectionStatus.isOnline,
-    queueOfflineAction:
-        ({
-          required bool isLike,
-          required String eventId,
-          required String authorPubkey,
-          String? addressableId,
-          int? targetKind,
-        }) async {
-          await pendingActionService.queueAction(
-            type: isLike ? PendingActionType.like : PendingActionType.unlike,
-            targetId: eventId,
-            authorPubkey: authorPubkey,
-            addressableId: addressableId,
-            targetKind: targetKind,
-          );
-        },
+    queueOfflineAction: pendingActionService != null
+        ? ({
+            required bool isLike,
+            required String eventId,
+            required String authorPubkey,
+            String? addressableId,
+            int? targetKind,
+          }) async {
+            await pendingActionService.queueAction(
+              type: isLike ? PendingActionType.like : PendingActionType.unlike,
+              targetId: eventId,
+              authorPubkey: authorPubkey,
+              addressableId: addressableId,
+              targetKind: targetKind,
+            );
+          }
+        : null,
   );
 
   // Register executors with pending action service for sync
-  pendingActionService.registerExecutor(
-    PendingActionType.like,
-    (action) => repository.executeLikeAction(
-      eventId: action.targetId,
-      authorPubkey: action.authorPubkey ?? '',
-      addressableId: action.addressableId,
-      targetKind: action.targetKind,
-    ),
-  );
-  pendingActionService.registerExecutor(
-    PendingActionType.unlike,
-    (action) => repository.executeUnlikeAction(action.targetId),
-  );
+  if (pendingActionService != null) {
+    pendingActionService.registerExecutor(
+      PendingActionType.like,
+      (action) => repository.executeLikeAction(
+        eventId: action.targetId,
+        authorPubkey: action.authorPubkey ?? '',
+        addressableId: action.addressableId,
+        targetKind: action.targetKind,
+      ),
+    );
+    pendingActionService.registerExecutor(
+      PendingActionType.unlike,
+      (action) => repository.executeUnlikeAction(action.targetId),
+    );
+  }
 
   ref.onDispose(repository.dispose);
 
@@ -1456,38 +1476,41 @@ RepostsRepository repostsRepository(Ref ref) {
     authStateStream: authBoolStream,
     isAuthenticated: isAuthenticated,
     isOnline: () => connectionStatus.isOnline,
-    queueOfflineAction:
-        ({
-          required bool isRepost,
-          required String addressableId,
-          required String originalAuthorPubkey,
-          String? eventId,
-        }) async {
-          await pendingActionService.queueAction(
-            type: isRepost
-                ? PendingActionType.repost
-                : PendingActionType.unrepost,
-            targetId: addressableId,
-            authorPubkey: originalAuthorPubkey,
-            addressableId: addressableId,
-          );
-        },
+    queueOfflineAction: pendingActionService != null
+        ? ({
+            required bool isRepost,
+            required String addressableId,
+            required String originalAuthorPubkey,
+            String? eventId,
+          }) async {
+            await pendingActionService.queueAction(
+              type: isRepost
+                  ? PendingActionType.repost
+                  : PendingActionType.unrepost,
+              targetId: addressableId,
+              authorPubkey: originalAuthorPubkey,
+              addressableId: addressableId,
+            );
+          }
+        : null,
   );
 
   // Register executors with pending action service for sync
-  pendingActionService.registerExecutor(
-    PendingActionType.repost,
-    (action) => repository.executeRepostAction(
-      addressableId: action.addressableId ?? action.targetId,
-      originalAuthorPubkey: action.authorPubkey ?? '',
-    ),
-  );
-  pendingActionService.registerExecutor(
-    PendingActionType.unrepost,
-    (action) => repository.executeUnrepostAction(
-      action.addressableId ?? action.targetId,
-    ),
-  );
+  if (pendingActionService != null) {
+    pendingActionService.registerExecutor(
+      PendingActionType.repost,
+      (action) => repository.executeRepostAction(
+        addressableId: action.addressableId ?? action.targetId,
+        originalAuthorPubkey: action.authorPubkey ?? '',
+      ),
+    );
+    pendingActionService.registerExecutor(
+      PendingActionType.unrepost,
+      (action) => repository.executeUnrepostAction(
+        action.addressableId ?? action.targetId,
+      ),
+    );
+  }
 
   ref.onDispose(repository.dispose);
 

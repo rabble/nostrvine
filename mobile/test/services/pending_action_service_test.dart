@@ -1,12 +1,11 @@
 // ABOUTME: Unit tests for PendingActionService
-// ABOUTME: Tests offline action queuing, sync on reconnect, and action cancellation
+// ABOUTME: Tests offline action queuing, sync on reconnect, and action
+// ABOUTME: cancellation using Drift database
 
-import 'dart:io';
-
+import 'package:db_client/db_client.dart';
+import 'package:drift/native.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/models/pending_action.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/pending_action_service.dart';
 
@@ -16,26 +15,23 @@ class MockConnectionStatusService extends Mock
 void main() {
   late PendingActionService service;
   late MockConnectionStatusService mockConnectionService;
-  late Directory tempDir;
+  late AppDatabase database;
+  late PendingActionsDao dao;
 
-  setUpAll(() async {
-    // Initialize Hive for testing
-    tempDir = await Directory.systemTemp.createTemp('pending_action_test_');
-    Hive.init(tempDir.path);
+  const testUserPubkey = 'test_user_pubkey_123';
 
-    // Register adapters
-    if (!Hive.isAdapterRegistered(3)) {
-      Hive.registerAdapter(PendingActionTypeAdapter());
-    }
-    if (!Hive.isAdapterRegistered(4)) {
-      Hive.registerAdapter(PendingActionStatusAdapter());
-    }
-    if (!Hive.isAdapterRegistered(5)) {
-      Hive.registerAdapter(PendingActionAdapter());
-    }
+  setUpAll(() {
+    // Register fallback values for mocktail
+    registerFallbackValue(PendingActionType.like);
   });
 
   setUp(() async {
+    // Create in-memory database for testing
+    database = AppDatabase.test(
+      NativeDatabase.memory(logStatements: false),
+    );
+    dao = database.pendingActionsDao;
+
     mockConnectionService = MockConnectionStatusService();
 
     // Default to online
@@ -43,6 +39,8 @@ void main() {
 
     service = PendingActionService(
       connectionStatusService: mockConnectionService,
+      pendingActionsDao: dao,
+      userPubkey: testUserPubkey,
     );
 
     await service.initialize();
@@ -50,16 +48,7 @@ void main() {
 
   tearDown(() async {
     service.dispose();
-
-    // Clear the box between tests
-    if (Hive.isBoxOpen('pending_actions')) {
-      await Hive.box<PendingAction>('pending_actions').clear();
-    }
-  });
-
-  tearDownAll(() async {
-    await Hive.close();
-    await tempDir.delete(recursive: true);
+    await database.close();
   });
 
   group('PendingActionService', () {
@@ -69,7 +58,7 @@ void main() {
         expect(service.pendingActions, isEmpty);
       });
 
-      test('loads existing actions from Hive on init', () async {
+      test('loads existing actions from database on init', () async {
         // Queue an action
         await service.queueAction(
           type: PendingActionType.like,
@@ -85,6 +74,8 @@ void main() {
         // Create a new service instance to simulate app restart
         final newService = PendingActionService(
           connectionStatusService: mockConnectionService,
+          pendingActionsDao: dao,
+          userPubkey: testUserPubkey,
         );
         await newService.initialize();
 
@@ -304,7 +295,8 @@ void main() {
     group('pendingActionsStream', () {
       test('emits updates when actions are added', () async {
         final emissions = <List<PendingAction>>[];
-        final subscription = service.pendingActionsStream.listen(emissions.add);
+        final subscription =
+            service.pendingActionsStream.listen(emissions.add);
 
         await service.queueAction(
           type: PendingActionType.like,
@@ -313,7 +305,7 @@ void main() {
         );
 
         // Allow stream to emit
-        await Future<void>.delayed(const Duration(milliseconds: 10));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
 
         expect(emissions.isNotEmpty, isTrue);
         expect(emissions.last.length, equals(1));
@@ -349,6 +341,7 @@ void main() {
       final action = PendingAction.create(
         type: PendingActionType.like,
         targetId: 'event123',
+        userPubkey: testUserPubkey,
         authorPubkey: 'author123',
       );
 
@@ -364,6 +357,7 @@ void main() {
         PendingAction.create(
           type: PendingActionType.like,
           targetId: 'test',
+          userPubkey: testUserPubkey,
         ).isPositiveAction,
         isTrue,
       );
@@ -371,6 +365,7 @@ void main() {
         PendingAction.create(
           type: PendingActionType.unlike,
           targetId: 'test',
+          userPubkey: testUserPubkey,
         ).isPositiveAction,
         isFalse,
       );
@@ -378,6 +373,7 @@ void main() {
         PendingAction.create(
           type: PendingActionType.follow,
           targetId: 'test',
+          userPubkey: testUserPubkey,
         ).isPositiveAction,
         isTrue,
       );
@@ -387,12 +383,14 @@ void main() {
       final like = PendingAction.create(
         type: PendingActionType.like,
         targetId: 'test',
+        userPubkey: testUserPubkey,
       );
       expect(like.oppositeType, equals(PendingActionType.unlike));
 
       final follow = PendingAction.create(
         type: PendingActionType.follow,
         targetId: 'test',
+        userPubkey: testUserPubkey,
       );
       expect(follow.oppositeType, equals(PendingActionType.unfollow));
     });
@@ -401,10 +399,12 @@ void main() {
       final like = PendingAction.create(
         type: PendingActionType.like,
         targetId: 'event123',
+        userPubkey: testUserPubkey,
       );
       final unlike = PendingAction.create(
         type: PendingActionType.unlike,
         targetId: 'event123',
+        userPubkey: testUserPubkey,
       );
 
       expect(like.cancels(unlike), isTrue);
@@ -415,10 +415,12 @@ void main() {
       final like1 = PendingAction.create(
         type: PendingActionType.like,
         targetId: 'event123',
+        userPubkey: testUserPubkey,
       );
       final unlike2 = PendingAction.create(
         type: PendingActionType.unlike,
         targetId: 'event456',
+        userPubkey: testUserPubkey,
       );
 
       expect(like1.cancels(unlike2), isFalse);

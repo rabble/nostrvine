@@ -352,6 +352,85 @@ class PersonalReactions extends Table {
   ];
 }
 
+/// Stores pending offline actions (likes, reposts, follows) for sync on
+/// reconnect.
+///
+/// When the user performs a social action while offline, it's queued here
+/// and synced when connectivity is restored.
+@DataClassName('PendingActionRow')
+class PendingActions extends Table {
+  @override
+  String get tableName => 'pending_actions';
+
+  /// Unique identifier for this action
+  TextColumn get id => text()();
+
+  /// Type of action: like, unlike, repost, unrepost, follow, unfollow
+  TextColumn get type => text()();
+
+  /// Target event ID (for likes/reposts) or pubkey (for follows)
+  TextColumn get targetId => text().named('target_id')();
+
+  /// Pubkey of the original event author (for likes/reposts)
+  TextColumn get authorPubkey => text().nullable().named('author_pubkey')();
+
+  /// Addressable ID for reposts (format: "kind:pubkey:d-tag")
+  TextColumn get addressableId => text().nullable().named('addressable_id')();
+
+  /// Kind of the target event (e.g., 34236 for videos)
+  IntColumn get targetKind => integer().nullable().named('target_kind')();
+
+  /// Current sync status: pending, syncing, completed, failed
+  TextColumn get status => text()();
+
+  /// The pubkey of the user who queued this action
+  TextColumn get userPubkey => text().named('user_pubkey')();
+
+  /// When the action was queued
+  DateTimeColumn get createdAt => dateTime().named('created_at')();
+
+  /// Number of sync attempts
+  IntColumn get retryCount =>
+      integer().withDefault(const Constant(0)).named('retry_count')();
+
+  /// Last error message if sync failed
+  TextColumn get lastError => text().nullable().named('last_error')();
+
+  /// Timestamp of last sync attempt
+  DateTimeColumn get lastAttemptAt =>
+      dateTime().nullable().named('last_attempt_at')();
+
+  @override
+  Set<Column> get primaryKey => {id};
+
+  List<Index> get indexes => [
+    // Index on status for fetching pending actions
+    Index(
+      'idx_pending_action_status',
+      'CREATE INDEX IF NOT EXISTS idx_pending_action_status '
+          'ON pending_actions (status)',
+    ),
+    // Index on user_pubkey for user-specific queries
+    Index(
+      'idx_pending_action_user',
+      'CREATE INDEX IF NOT EXISTS idx_pending_action_user '
+          'ON pending_actions (user_pubkey)',
+    ),
+    // Composite index for user + status
+    Index(
+      'idx_pending_action_user_status',
+      'CREATE INDEX IF NOT EXISTS idx_pending_action_user_status '
+          'ON pending_actions (user_pubkey, status)',
+    ),
+    // Index on created_at for ordering
+    Index(
+      'idx_pending_action_created',
+      'CREATE INDEX IF NOT EXISTS idx_pending_action_created '
+          'ON pending_actions (created_at)',
+    ),
+  ];
+}
+
 /// Stores the current user's own repost events (Kind 16 generic reposts).
 ///
 /// This table tracks the mapping between addressable video IDs and the

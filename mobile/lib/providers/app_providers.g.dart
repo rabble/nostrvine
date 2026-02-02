@@ -62,21 +62,24 @@ String _$connectionStatusServiceHash() =>
     r'30fc9602e77f81edd6e26b19f6e36e0c82a02353';
 
 /// Pending action service for offline sync of social actions
+/// Returns null when not authenticated (no userPubkey available)
 
 @ProviderFor(pendingActionService)
 const pendingActionServiceProvider = PendingActionServiceProvider._();
 
 /// Pending action service for offline sync of social actions
+/// Returns null when not authenticated (no userPubkey available)
 
 final class PendingActionServiceProvider
     extends
         $FunctionalProvider<
-          PendingActionService,
-          PendingActionService,
-          PendingActionService
+          PendingActionService?,
+          PendingActionService?,
+          PendingActionService?
         >
-    with $Provider<PendingActionService> {
+    with $Provider<PendingActionService?> {
   /// Pending action service for offline sync of social actions
+  /// Returns null when not authenticated (no userPubkey available)
   const PendingActionServiceProvider._()
     : super(
         from: null,
@@ -93,26 +96,26 @@ final class PendingActionServiceProvider
 
   @$internal
   @override
-  $ProviderElement<PendingActionService> $createElement(
+  $ProviderElement<PendingActionService?> $createElement(
     $ProviderPointer pointer,
   ) => $ProviderElement(pointer);
 
   @override
-  PendingActionService create(Ref ref) {
+  PendingActionService? create(Ref ref) {
     return pendingActionService(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(PendingActionService value) {
+  Override overrideWithValue(PendingActionService? value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<PendingActionService>(value),
+      providerOverride: $SyncValueProvider<PendingActionService?>(value),
     );
   }
 }
 
 String _$pendingActionServiceHash() =>
-    r'7fc09dfd9c630bef83cbae50f2f467d32f97db5a';
+    r'67a3a30b8cc1072263ce47f4e2bb3c34fa876fa1';
 
 /// Relay capability service for detecting NIP-11 divine extensions
 
@@ -2400,7 +2403,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'f137f6f9930d117e87e520ff5b34eb1286310850';
+String _$followRepositoryHash() => r'4da90451c0432828d297f3ba7350cc00873b6e7e';
 
 /// Provider for ProfileRepository instance
 ///
@@ -3808,7 +3811,7 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'972043d9c79864f75f3a52277d46e7e3e728ee9a';
+String _$likesRepositoryHash() => r'9376994f8bb85d89e5356830c093f4b3673a3368';
 
 /// Provider for RepostsRepository instance
 ///
@@ -3881,4 +3884,4 @@ final class RepostsRepositoryProvider
   }
 }
 
-String _$repostsRepositoryHash() => r'ce11525741c4070c979e26f7a0fe08e959282eae';
+String _$repostsRepositoryHash() => r'66177802944101f3bdf06e338e3730047ddda2cd';

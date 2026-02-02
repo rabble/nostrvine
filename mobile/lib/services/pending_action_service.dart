@@ -3,13 +3,16 @@
 
 import 'dart:async';
 
+import 'package:db_client/db_client.dart';
 import 'package:flutter/foundation.dart';
-import 'package:hive_ce_flutter/hive_flutter.dart';
-import 'package:openvine/models/pending_action.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:rxdart/rxdart.dart';
+
+// Re-export types from db_client for convenience
+export 'package:db_client/db_client.dart'
+    show PendingAction, PendingActionType, PendingActionStatus;
 
 /// Callback type for executing a pending action
 typedef ActionExecutor = Future<void> Function(PendingAction action);
@@ -36,30 +39,37 @@ class PendingActionRetryConfig {
 /// - Automatic sync when connectivity is restored
 /// - Cancellation of opposite actions (e.g., like then unlike on same target)
 /// - Exponential backoff retry for failed syncs
-/// - Persistent storage via Hive
+/// - Persistent storage via Drift database
 class PendingActionService extends ChangeNotifier {
   PendingActionService({
     required ConnectionStatusService connectionStatusService,
+    required PendingActionsDao pendingActionsDao,
+    required String userPubkey,
     PendingActionRetryConfig? retryConfig,
-  }) : _connectionStatusService = connectionStatusService,
-       _retryConfig = retryConfig ?? const PendingActionRetryConfig();
-
-  static const String _boxName = 'pending_actions';
+  })  : _connectionStatusService = connectionStatusService,
+        _dao = pendingActionsDao,
+        _userPubkey = userPubkey,
+        _retryConfig = retryConfig ?? const PendingActionRetryConfig();
 
   final ConnectionStatusService _connectionStatusService;
+  final PendingActionsDao _dao;
+  final String _userPubkey;
   final PendingActionRetryConfig _retryConfig;
 
-  Box<PendingAction>? _actionsBox;
   bool _isInitialized = false;
   bool _isSyncing = false;
+  StreamSubscription<List<PendingAction>>? _dbSubscription;
 
   /// Executors for different action types
   final Map<PendingActionType, ActionExecutor> _executors = {};
 
   /// Stream controller for pending actions
-  final _pendingActionsController = BehaviorSubject<List<PendingAction>>.seeded(
-    const [],
-  );
+  final _pendingActionsController =
+      BehaviorSubject<List<PendingAction>>.seeded(const []);
+
+  /// In-memory cache of pending actions
+  List<PendingAction> _cachedPendingActions = [];
+  List<PendingAction> _cachedAllActions = [];
 
   /// Whether the service is initialized
   bool get isInitialized => _isInitialized;
@@ -72,20 +82,10 @@ class PendingActionService extends ChangeNotifier {
       _pendingActionsController.stream;
 
   /// Get current pending actions
-  List<PendingAction> get pendingActions {
-    if (_actionsBox == null) return [];
-    return _actionsBox!.values
-        .where((a) => a.status == PendingActionStatus.pending)
-        .toList()
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-  }
+  List<PendingAction> get pendingActions => _cachedPendingActions;
 
   /// Get all actions (including syncing/failed)
-  List<PendingAction> get allActions {
-    if (_actionsBox == null) return [];
-    return _actionsBox!.values.toList()
-      ..sort((a, b) => a.createdAt.compareTo(b.createdAt));
-  }
+  List<PendingAction> get allActions => _cachedAllActions;
 
   /// Register an executor for a specific action type
   void registerExecutor(PendingActionType type, ActionExecutor executor) {
@@ -108,14 +108,20 @@ class PendingActionService extends ChangeNotifier {
     );
 
     try {
-      // Open Hive box for pending actions
-      _actionsBox = await Hive.openBox<PendingAction>(_boxName);
+      // Resume any actions that were syncing when app closed
+      await _dao.resetSyncingToPending(_userPubkey);
 
-      // Emit current state
+      // Load initial data
+      _cachedPendingActions = await _dao.getPendingActions(_userPubkey);
+      _cachedAllActions = await _dao.getAllActions(_userPubkey);
       _emitPendingActions();
 
-      // Resume any actions that were syncing when app closed
-      await _resumeInterruptedSyncs();
+      // Subscribe to database changes
+      _dbSubscription = _dao.watchPendingActions(_userPubkey).listen((actions) {
+        _cachedPendingActions = actions;
+        _emitPendingActions();
+        notifyListeners();
+      });
 
       // Listen for connectivity changes
       _connectionStatusService.addListener(_onConnectivityChange);
@@ -123,7 +129,8 @@ class PendingActionService extends ChangeNotifier {
       _isInitialized = true;
 
       Log.info(
-        'PendingActionService initialized with ${pendingActions.length} pending actions',
+        'PendingActionService initialized with ${pendingActions.length} '
+        'pending actions',
         name: 'PendingActionService',
         category: LogCategory.system,
       );
@@ -153,15 +160,24 @@ class PendingActionService extends ChangeNotifier {
     String? addressableId,
     int? targetKind,
   }) async {
-    if (_actionsBox == null) {
+    if (!_isInitialized) {
       throw StateError('PendingActionService not initialized');
     }
 
+    // Find opposite action type
+    final oppositeType = _getOppositeType(type);
+
     // Check for cancelling opposite action
-    final existingAction = _findConflictingAction(type, targetId);
+    final existingAction = await _dao.findConflictingAction(
+      _userPubkey,
+      targetId,
+      oppositeType,
+    );
+
     if (existingAction != null) {
       // Actions cancel out - remove the existing one
-      await _removeAction(existingAction.id);
+      await _dao.deleteAction(existingAction.id);
+      await _refreshCache();
       Log.info(
         'Action cancelled out: ${existingAction.type} on $targetId',
         name: 'PendingActionService',
@@ -174,14 +190,14 @@ class PendingActionService extends ChangeNotifier {
     final action = PendingAction.create(
       type: type,
       targetId: targetId,
+      userPubkey: _userPubkey,
       authorPubkey: authorPubkey,
       addressableId: addressableId,
       targetKind: targetKind,
     );
 
-    await _actionsBox!.put(action.id, action);
-    _emitPendingActions();
-    notifyListeners();
+    await _dao.upsertAction(action);
+    await _refreshCache();
 
     Log.info(
       'Queued action: ${action.type} on $targetId',
@@ -192,24 +208,16 @@ class PendingActionService extends ChangeNotifier {
 
   /// Check if there's a pending action for a target
   bool hasPendingAction(String targetId, PendingActionType type) {
-    if (_actionsBox == null) return false;
-    return _actionsBox!.values.any(
-      (a) =>
-          a.targetId == targetId &&
-          a.type == type &&
-          a.status == PendingActionStatus.pending,
+    return _cachedPendingActions.any(
+      (a) => a.targetId == targetId && a.type == type,
     );
   }
 
   /// Get pending action for a target if exists
   PendingAction? getPendingAction(String targetId, PendingActionType type) {
-    if (_actionsBox == null) return null;
     try {
-      return _actionsBox!.values.firstWhere(
-        (a) =>
-            a.targetId == targetId &&
-            a.type == type &&
-            a.status == PendingActionStatus.pending,
+      return _cachedPendingActions.firstWhere(
+        (a) => a.targetId == targetId && a.type == type,
       );
     } catch (_) {
       return null;
@@ -218,7 +226,8 @@ class PendingActionService extends ChangeNotifier {
 
   /// Cancel a pending action
   Future<void> cancelAction(String actionId) async {
-    await _removeAction(actionId);
+    await _dao.deleteAction(actionId);
+    await _refreshCache();
     Log.info(
       'Cancelled action: $actionId',
       name: 'PendingActionService',
@@ -246,7 +255,7 @@ class PendingActionService extends ChangeNotifier {
       return;
     }
 
-    final actions = pendingActions;
+    final actions = await _dao.getPendingActions(_userPubkey);
     if (actions.isEmpty) {
       Log.debug(
         'No pending actions to sync',
@@ -279,10 +288,12 @@ class PendingActionService extends ChangeNotifier {
     }
 
     _isSyncing = false;
+    await _refreshCache();
     notifyListeners();
 
+    final remaining = await _dao.getPendingActions(_userPubkey);
     Log.info(
-      'Sync complete. Remaining pending: ${pendingActions.length}',
+      'Sync complete. Remaining pending: ${remaining.length}',
       name: 'PendingActionService',
       category: LogCategory.system,
     );
@@ -292,26 +303,11 @@ class PendingActionService extends ChangeNotifier {
   Future<void> clearOldCompletedActions({
     Duration olderThan = const Duration(days: 7),
   }) async {
-    if (_actionsBox == null) return;
-
-    final cutoff = DateTime.now().subtract(olderThan);
-    final toRemove = _actionsBox!.values
-        .where(
-          (a) =>
-              a.status == PendingActionStatus.completed &&
-              a.createdAt.isBefore(cutoff),
-        )
-        .map((a) => a.id)
-        .toList();
-
-    for (final id in toRemove) {
-      await _actionsBox!.delete(id);
-    }
-
-    if (toRemove.isNotEmpty) {
-      _emitPendingActions();
+    final deleted = await _dao.deleteOldCompleted(_userPubkey, olderThan);
+    if (deleted > 0) {
+      await _refreshCache();
       Log.debug(
-        'Cleared ${toRemove.length} old completed actions',
+        'Cleared $deleted old completed actions',
         name: 'PendingActionService',
         category: LogCategory.system,
       );
@@ -320,7 +316,9 @@ class PendingActionService extends ChangeNotifier {
 
   /// Clear all data (for logout)
   Future<void> clearAll() async {
-    await _actionsBox?.clear();
+    await _dao.clearAll(_userPubkey);
+    _cachedPendingActions = [];
+    _cachedAllActions = [];
     _emitPendingActions();
     notifyListeners();
     Log.info(
@@ -334,15 +332,39 @@ class PendingActionService extends ChangeNotifier {
   @override
   void dispose() {
     _connectionStatusService.removeListener(_onConnectivityChange);
+    _dbSubscription?.cancel();
     _pendingActionsController.close();
     super.dispose();
   }
 
   // Private methods
 
+  PendingActionType _getOppositeType(PendingActionType type) {
+    switch (type) {
+      case PendingActionType.like:
+        return PendingActionType.unlike;
+      case PendingActionType.unlike:
+        return PendingActionType.like;
+      case PendingActionType.repost:
+        return PendingActionType.unrepost;
+      case PendingActionType.unrepost:
+        return PendingActionType.repost;
+      case PendingActionType.follow:
+        return PendingActionType.unfollow;
+      case PendingActionType.unfollow:
+        return PendingActionType.follow;
+    }
+  }
+
+  Future<void> _refreshCache() async {
+    _cachedPendingActions = await _dao.getPendingActions(_userPubkey);
+    _cachedAllActions = await _dao.getAllActions(_userPubkey);
+    _emitPendingActions();
+  }
+
   void _emitPendingActions() {
     if (!_pendingActionsController.isClosed) {
-      _pendingActionsController.add(pendingActions);
+      _pendingActionsController.add(_cachedPendingActions);
     }
   }
 
@@ -354,71 +376,6 @@ class PendingActionService extends ChangeNotifier {
         category: LogCategory.system,
       );
       unawaited(syncPendingActions());
-    }
-  }
-
-  PendingAction? _findConflictingAction(
-    PendingActionType type,
-    String targetId,
-  ) {
-    if (_actionsBox == null) return null;
-
-    // Find opposite action type
-    PendingActionType oppositeType;
-    switch (type) {
-      case PendingActionType.like:
-        oppositeType = PendingActionType.unlike;
-      case PendingActionType.unlike:
-        oppositeType = PendingActionType.like;
-      case PendingActionType.repost:
-        oppositeType = PendingActionType.unrepost;
-      case PendingActionType.unrepost:
-        oppositeType = PendingActionType.repost;
-      case PendingActionType.follow:
-        oppositeType = PendingActionType.unfollow;
-      case PendingActionType.unfollow:
-        oppositeType = PendingActionType.follow;
-    }
-
-    try {
-      return _actionsBox!.values.firstWhere(
-        (a) =>
-            a.targetId == targetId &&
-            a.type == oppositeType &&
-            a.status == PendingActionStatus.pending,
-      );
-    } catch (_) {
-      return null;
-    }
-  }
-
-  Future<void> _removeAction(String actionId) async {
-    await _actionsBox?.delete(actionId);
-    _emitPendingActions();
-    notifyListeners();
-  }
-
-  Future<void> _resumeInterruptedSyncs() async {
-    if (_actionsBox == null) return;
-
-    // Find actions that were syncing when app closed
-    final interrupted = _actionsBox!.values
-        .where((a) => a.status == PendingActionStatus.syncing)
-        .toList();
-
-    for (final action in interrupted) {
-      // Reset to pending so they get retried
-      final updated = action.copyWith(status: PendingActionStatus.pending);
-      await _actionsBox!.put(action.id, updated);
-    }
-
-    if (interrupted.isNotEmpty) {
-      _emitPendingActions();
-      Log.info(
-        'Reset ${interrupted.length} interrupted syncs to pending',
-        name: 'PendingActionService',
-        category: LogCategory.system,
-      );
     }
   }
 
@@ -434,12 +391,7 @@ class PendingActionService extends ChangeNotifier {
     }
 
     // Mark as syncing
-    var updatedAction = action.copyWith(
-      status: PendingActionStatus.syncing,
-      lastAttemptAt: DateTime.now(),
-    );
-    await _actionsBox!.put(action.id, updatedAction);
-    _emitPendingActions();
+    await _dao.updateStatus(action.id, PendingActionStatus.syncing);
 
     try {
       await AsyncUtils.retryWithBackoff(
@@ -453,11 +405,7 @@ class PendingActionService extends ChangeNotifier {
       );
 
       // Mark as completed
-      updatedAction = action.copyWith(
-        status: PendingActionStatus.completed,
-        lastAttemptAt: DateTime.now(),
-      );
-      await _actionsBox!.put(action.id, updatedAction);
+      await _dao.updateStatus(action.id, PendingActionStatus.completed);
 
       Log.info(
         'Successfully synced action: ${action.type} on ${action.targetId}',
@@ -465,17 +413,18 @@ class PendingActionService extends ChangeNotifier {
         category: LogCategory.system,
       );
     } catch (e) {
-      // Mark as failed
+      // Mark as failed or pending for retry
       final newRetryCount = action.retryCount + 1;
-      updatedAction = action.copyWith(
-        status: newRetryCount >= PendingAction.maxRetries
-            ? PendingActionStatus.failed
-            : PendingActionStatus.pending,
-        retryCount: newRetryCount,
+      final newStatus = newRetryCount >= PendingAction.maxRetries
+          ? PendingActionStatus.failed
+          : PendingActionStatus.pending;
+
+      await _dao.updateStatus(
+        action.id,
+        newStatus,
         lastError: e.toString(),
-        lastAttemptAt: DateTime.now(),
+        retryCount: newRetryCount,
       );
-      await _actionsBox!.put(action.id, updatedAction);
 
       Log.error(
         'Failed to sync action: ${action.type} on ${action.targetId} - $e',
@@ -483,9 +432,6 @@ class PendingActionService extends ChangeNotifier {
         category: LogCategory.system,
       );
     }
-
-    _emitPendingActions();
-    notifyListeners();
   }
 
   bool _isRetriableError(dynamic error) {
