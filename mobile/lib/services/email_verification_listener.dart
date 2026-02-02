@@ -5,7 +5,7 @@ import 'dart:async';
 
 import 'package:app_links/app_links.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 

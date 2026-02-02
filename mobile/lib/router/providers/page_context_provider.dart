@@ -1,7 +1,7 @@
 // ABOUTME: Derived provider that parses router location into structured context
 // ABOUTME: Single source of truth for "what page are we on?" with route types and parsing
 
-import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/divine_auth_screen.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
@@ -34,7 +34,6 @@ import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:riverpod/riverpod.dart';
-import 'package:openvine/router/router_location_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 
@@ -429,10 +428,10 @@ String buildRoute(RouteContext context) {
       return DivineAuthScreen.path;
 
     case RouteType.following:
-      return FollowingRoutes.pathForPubkey(context.npub ?? '');
+      return FollowingScreenRouter.pathForPubkey(context.npub ?? '');
 
     case RouteType.followers:
-      return FollowersRoutes.pathForPubkey(context.npub ?? '');
+      return FollowersScreenRouter.pathForPubkey(context.npub ?? '');
 
     case RouteType.videoFeed:
       return FullscreenVideoFeedScreen.path;

@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';

@@ -30,12 +30,17 @@ class VideoClipEditorScreen extends ConsumerStatefulWidget {
   /// Route name for this screen.
   static const routeName = 'video-clip-editor';
 
+  static const draftRouteName = '$routeName-draft';
+
   /// Path for this route.
   static const path = '/video-clip-editor';
 
+  static const draftPathWithId = '$path/:draftId';
+
   @override
-  ConsumerState<VideoClipEditorScreen> createState() =>
-      _VideoClipEditorScreenState();
+  ConsumerState<VideoClipEditorScreen> createState() {
+    return _VideoClipEditorScreenState();
+  }
 }
 
 class _VideoClipEditorScreenState extends ConsumerState<VideoClipEditorScreen> {

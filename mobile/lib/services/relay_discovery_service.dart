@@ -141,38 +141,41 @@ class RelayDiscoveryService {
       }
 
       Log.debug(
-        'Querying ${_indexerRelays.length} indexers for kind 10002...',
+        'Querying ${_indexerRelays.length} indexers in parallel for kind 10002...',
         name: 'RelayDiscoveryService',
         category: LogCategory.relay,
       );
 
-      // Try each indexer until we find the relay list
-      for (final indexerUrl in _indexerRelays) {
-        try {
-          final relays = await _queryIndexer(
-            indexerUrl,
-            pubkeyHex,
-            nostrClient,
-          );
-          if (relays.isNotEmpty) {
-            Log.info(
-              'Found ${relays.length} relays on indexer: $indexerUrl',
+      // Query all indexers in parallel - first success wins
+      final results = await Future.wait(
+        _indexerRelays.map((indexerUrl) async {
+          try {
+            return await _queryIndexer(indexerUrl, pubkeyHex, nostrClient);
+          } catch (e) {
+            Log.warning(
+              'Failed to query indexer $indexerUrl: $e',
               name: 'RelayDiscoveryService',
               category: LogCategory.relay,
             );
-
-            // Cache the result
-            await _cacheRelays(npub, relays);
-
-            return RelayDiscoveryResult.success(relays, indexerUrl);
+            return <DiscoveredRelay>[];
           }
-        } catch (e) {
-          Log.warning(
-            'Failed to query indexer $indexerUrl: $e',
+        }),
+      );
+
+      // Use first non-empty result (maintains indexer priority order)
+      for (int i = 0; i < results.length; i++) {
+        if (results[i].isNotEmpty) {
+          final indexerUrl = _indexerRelays[i];
+          Log.info(
+            'Found ${results[i].length} relays on indexer: $indexerUrl',
             name: 'RelayDiscoveryService',
             category: LogCategory.relay,
           );
-          continue;
+
+          // Cache the result
+          await _cacheRelays(npub, results[i]);
+
+          return RelayDiscoveryResult.success(results[i], indexerUrl);
         }
       }
 
@@ -244,8 +247,20 @@ class RelayDiscoveryService {
     );
 
     try {
-      // Temporarily add the indexer relay
-      final added = await client.addRelay(indexerUrl);
+      // Temporarily add the indexer relay with timeout to prevent hanging
+      final added = await client
+          .addRelay(indexerUrl)
+          .timeout(
+            const Duration(seconds: 5),
+            onTimeout: () {
+              Log.warning(
+                'Timeout adding indexer relay: $indexerUrl',
+                name: 'RelayDiscoveryService',
+                category: LogCategory.relay,
+              );
+              return false;
+            },
+          );
       if (!added) {
         Log.warning(
           'Failed to add indexer relay: $indexerUrl',
@@ -262,11 +277,11 @@ class RelayDiscoveryService {
         limit: 1, // Only need the most recent
       );
 
-      // Query with timeout
+      // Query with timeout (2s is sufficient - indexers respond in <1s typically)
       final events = await client
           .queryEvents([filter])
           .timeout(
-            const Duration(seconds: 15),
+            const Duration(seconds: 2),
             onTimeout: () {
               Log.warning(
                 'Timeout querying indexer: $indexerUrl',
