@@ -17,10 +17,8 @@ dev_dependencies:
 
 dependencies:
   db_client:
-    path: '../db_client'
   equatable: ^2.0.8
+  funnelcake_api_client:
   http: ^1.2.2
   models:
-    path: '../models'
   nostr_client:
-    path: '../nostr_client'

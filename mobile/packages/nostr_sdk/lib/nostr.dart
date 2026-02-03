@@ -278,11 +278,12 @@ class Nostr {
     List<String>? tempRelays,
     List<int> relayTypes = RelayType.all,
     bool sendAfterAuth = false,
+    Duration timeout = const Duration(seconds: 10),
   }) async {
     var eventBox = EventMemBox(sortAfterAdd: false);
-    var completer = Completer();
+    var completer = Completer<void>();
 
-    query(
+    final subscriptionId = await query(
       filters,
       id: id,
       tempRelays: tempRelays,
@@ -292,11 +293,18 @@ class Nostr {
         eventBox.add(event);
       },
       onComplete: () {
-        completer.complete();
+        if (!completer.isCompleted) {
+          completer.complete();
+        }
       },
     );
 
-    await completer.future;
+    try {
+      await completer.future.timeout(timeout);
+    } on TimeoutException {
+      unsubscribe(subscriptionId);
+    }
+
     return eventBox.all();
   }
 

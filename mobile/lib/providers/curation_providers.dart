@@ -10,6 +10,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/state/curation_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -23,6 +24,13 @@ AnalyticsApiService analyticsApiService(Ref ref) {
   final environmentConfig = ref.watch(currentEnvironmentProvider);
 
   return AnalyticsApiService(baseUrl: environmentConfig.apiBaseUrl);
+}
+
+/// Provider for FunnelcakeApiClient (typed client for Funnelcake REST API)
+@riverpod
+FunnelcakeApiClient funnelcakeApiClient(Ref ref) {
+  final environmentConfig = ref.watch(currentEnvironmentProvider);
+  return FunnelcakeApiClient(baseUrl: environmentConfig.apiBaseUrl ?? '');
 }
 
 /// Single source of truth for Funnelcake REST API availability.

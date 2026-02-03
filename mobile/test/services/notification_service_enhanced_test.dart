@@ -194,4 +194,171 @@ void main() {
       }
     });
   });
+
+  group('NotificationServiceEnhanced Chronological Order Tests', () {
+    late NotificationServiceEnhanced service;
+    late MockNostrClient mockNostrService;
+    late MockUserProfileService mockProfileService;
+    late MockVideoEventService mockVideoService;
+
+    setUp(() {
+      service = NotificationServiceEnhanced();
+      mockNostrService = MockNostrClient();
+      mockProfileService = MockUserProfileService();
+      mockVideoService = MockVideoEventService();
+
+      when(mockNostrService.hasKeys).thenReturn(true);
+      when(mockNostrService.publicKey).thenReturn('test-pubkey-123');
+      when(
+        mockNostrService.subscribe(argThat(anything)),
+      ).thenAnswer((_) => Stream.empty());
+    });
+
+    tearDown(() {
+      service.dispose();
+    });
+
+    test(
+      'notifications are sorted by timestamp (newest first) regardless of insertion order',
+      () async {
+        await service.initialize(
+          nostrService: mockNostrService,
+          profileService: mockProfileService,
+          videoService: mockVideoService,
+        );
+
+        // Add notifications OUT OF ORDER (older first, then newer)
+        final olderNotification = NotificationModel(
+          id: 'older-notification',
+          type: NotificationType.like,
+          actorPubkey: 'actor-1',
+          actorName: 'User 1',
+          message: 'User 1 liked your video',
+          timestamp: DateTime(2024, 1, 1, 10, 0), // Older
+        );
+
+        final newerNotification = NotificationModel(
+          id: 'newer-notification',
+          type: NotificationType.like,
+          actorPubkey: 'actor-2',
+          actorName: 'User 2',
+          message: 'User 2 liked your video',
+          timestamp: DateTime(2024, 1, 2, 10, 0), // Newer
+        );
+
+        // Add older first, then newer (simulating out-of-order Nostr events)
+        await service.addNotificationForTesting(olderNotification);
+        await service.addNotificationForTesting(newerNotification);
+
+        // Should be sorted newest first
+        expect(service.notifications.length, equals(2));
+        expect(
+          service.notifications.first.id,
+          equals('newer-notification'),
+          reason: 'Newest notification should be first',
+        );
+        expect(
+          service.notifications.last.id,
+          equals('older-notification'),
+          reason: 'Older notification should be last',
+        );
+      },
+    );
+
+    test(
+      'getNotificationsByType returns filtered results in chronological order',
+      () async {
+        await service.initialize(
+          nostrService: mockNostrService,
+          profileService: mockProfileService,
+          videoService: mockVideoService,
+        );
+
+        // Add mixed notification types out of order
+        final oldLike = NotificationModel(
+          id: 'old-like',
+          type: NotificationType.like,
+          actorPubkey: 'actor-1',
+          actorName: 'User 1',
+          message: 'User 1 liked your video',
+          timestamp: DateTime(2024, 1, 1),
+        );
+
+        final newComment = NotificationModel(
+          id: 'new-comment',
+          type: NotificationType.comment,
+          actorPubkey: 'actor-2',
+          actorName: 'User 2',
+          message: 'User 2 commented',
+          timestamp: DateTime(2024, 1, 3),
+        );
+
+        final newLike = NotificationModel(
+          id: 'new-like',
+          type: NotificationType.like,
+          actorPubkey: 'actor-3',
+          actorName: 'User 3',
+          message: 'User 3 liked your video',
+          timestamp: DateTime(2024, 1, 2),
+        );
+
+        // Add in scrambled order
+        await service.addNotificationForTesting(oldLike);
+        await service.addNotificationForTesting(newComment);
+        await service.addNotificationForTesting(newLike);
+
+        // Get only likes - should be sorted newest first
+        final likes = service.getNotificationsByType(NotificationType.like);
+
+        expect(likes.length, equals(2));
+        expect(
+          likes.first.id,
+          equals('new-like'),
+          reason: 'Filtered likes should be sorted newest first',
+        );
+        expect(likes.last.id, equals('old-like'));
+      },
+    );
+
+    test('notifications with same timestamp are stable-sorted by ID', () async {
+      await service.initialize(
+        nostrService: mockNostrService,
+        profileService: mockProfileService,
+        videoService: mockVideoService,
+      );
+
+      final sameTime = DateTime(2024, 1, 1, 12, 0);
+
+      // Add notifications with identical timestamps but different IDs
+      final notificationB = NotificationModel(
+        id: 'bbb-notification',
+        type: NotificationType.like,
+        actorPubkey: 'actor-b',
+        actorName: 'User B',
+        message: 'User B liked your video',
+        timestamp: sameTime,
+      );
+
+      final notificationA = NotificationModel(
+        id: 'aaa-notification',
+        type: NotificationType.like,
+        actorPubkey: 'actor-a',
+        actorName: 'User A',
+        message: 'User A liked your video',
+        timestamp: sameTime,
+      );
+
+      await service.addNotificationForTesting(notificationB);
+      await service.addNotificationForTesting(notificationA);
+
+      // With same timestamp, should be stable-sorted by ID (ascending)
+      expect(service.notifications.length, equals(2));
+      expect(
+        service.notifications.first.id,
+        equals('aaa-notification'),
+        reason: 'Same timestamp: should be sorted by ID for stability',
+      );
+      expect(service.notifications.last.id, equals('bbb-notification'));
+    });
+  });
 }

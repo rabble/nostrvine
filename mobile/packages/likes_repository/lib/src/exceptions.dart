@@ -94,3 +94,16 @@ class FetchLikesFailedException extends LikesRepositoryException {
   @override
   String toString() => 'FetchLikesFailedException: $message';
 }
+
+/// Exception thrown when the action was queued for offline sync.
+///
+/// This is not an error - it indicates the action was successfully queued
+/// and will be synced when connectivity is restored.
+class ActionQueuedForOfflineSyncException extends LikesRepositoryException {
+  /// Creates a new action queued exception.
+  const ActionQueuedForOfflineSyncException(String eventId)
+    : super('Action on $eventId queued for offline sync');
+
+  @override
+  String toString() => 'ActionQueuedForOfflineSyncException: $message';
+}
