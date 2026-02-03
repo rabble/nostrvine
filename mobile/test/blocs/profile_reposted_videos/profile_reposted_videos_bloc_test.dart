@@ -6,10 +6,10 @@ import 'dart:async';
 
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:videos_repository/videos_repository.dart';
 
@@ -17,13 +17,13 @@ class _MockRepostsRepository extends Mock implements RepostsRepository {}
 
 class _MockVideosRepository extends Mock implements VideosRepository {}
 
-class _MockAnalyticsApiService extends Mock implements AnalyticsApiService {}
+class _MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 void main() {
   group('ProfileRepostedVideosBloc', () {
     late _MockRepostsRepository mockRepostsRepository;
     late _MockVideosRepository mockVideosRepository;
-    late _MockAnalyticsApiService mockAnalyticsApiService;
+    late _MockFunnelcakeApiClient mockFunnelcakeApiClient;
     late StreamController<Set<String>> repostedIdsController;
 
     // 64-character hex pubkeys for testing
@@ -35,13 +35,16 @@ void main() {
     setUp(() {
       mockRepostsRepository = _MockRepostsRepository();
       mockVideosRepository = _MockVideosRepository();
-      mockAnalyticsApiService = _MockAnalyticsApiService();
+      mockFunnelcakeApiClient = _MockFunnelcakeApiClient();
       repostedIdsController = StreamController<Set<String>>.broadcast();
 
       // Default stub for watchRepostedAddressableIds
       when(
         () => mockRepostsRepository.watchRepostedAddressableIds(),
       ).thenAnswer((_) => repostedIdsController.stream);
+
+      // Default stub for isAvailable
+      when(() => mockFunnelcakeApiClient.isAvailable).thenReturn(true);
     });
 
     tearDown(() {
@@ -50,12 +53,13 @@ void main() {
 
     ProfileRepostedVideosBloc createBloc({
       String? targetUserPubkey,
-      AnalyticsApiService? analyticsApiService,
+      FunnelcakeApiClient? funnelcakeApiClient,
     }) => ProfileRepostedVideosBloc(
       repostsRepository: mockRepostsRepository,
       videosRepository: mockVideosRepository,
       currentUserPubkey: currentUserPubkey,
       targetUserPubkey: targetUserPubkey,
+      funnelcakeApiClient: funnelcakeApiClient,
     );
 
     VideoEvent createTestVideo({
@@ -74,6 +78,27 @@ void main() {
         videoUrl: 'https://example.com/video.mp4',
         thumbnailUrl: 'https://example.com/thumb.jpg',
         vineId: vineId,
+      );
+    }
+
+    VideoStats createTestVideoStats({
+      required String id,
+      required String pubkey,
+      required String dTag,
+    }) {
+      return VideoStats(
+        id: id,
+        pubkey: pubkey,
+        createdAt: DateTime.now(),
+        kind: 34236,
+        dTag: dTag,
+        title: 'Test Video $id',
+        thumbnail: 'https://example.com/thumb.jpg',
+        videoUrl: 'https://example.com/video.mp4',
+        reactions: 0,
+        comments: 0,
+        reposts: 0,
+        engagementScore: 0,
       );
     }
 
@@ -731,10 +756,10 @@ void main() {
         'uses REST API fallback when Nostr returns no videos',
         setUp: () {
           final addressableId1 = createAddressableId(currentUserPubkey, 'd1');
-          final video1 = createTestVideo(
+          final videoStats1 = createTestVideoStats(
             id: 'e1',
             pubkey: currentUserPubkey,
-            vineId: 'd1',
+            dTag: 'd1',
           );
 
           when(() => mockRepostsRepository.syncUserReposts()).thenAnswer(
@@ -753,13 +778,13 @@ void main() {
 
           // REST API fallback returns the video
           when(
-            () => mockAnalyticsApiService.getVideosByAuthor(
+            () => mockFunnelcakeApiClient.getVideosByAuthor(
               pubkey: currentUserPubkey,
               limit: 100,
             ),
-          ).thenAnswer((_) async => [video1]);
+          ).thenAnswer((_) async => [videoStats1]);
         },
-        build: () => createBloc(analyticsApiService: mockAnalyticsApiService),
+        build: () => createBloc(funnelcakeApiClient: mockFunnelcakeApiClient),
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
         expect: () => [
           const ProfileRepostedVideosState(
@@ -781,7 +806,7 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockAnalyticsApiService.getVideosByAuthor(
+            () => mockFunnelcakeApiClient.getVideosByAuthor(
               pubkey: currentUserPubkey,
               limit: 100,
             ),
@@ -799,10 +824,10 @@ void main() {
             pubkey: currentUserPubkey,
             vineId: 'd1',
           );
-          final video2 = createTestVideo(
+          final videoStats2 = createTestVideoStats(
             id: 'e2',
             pubkey: currentUserPubkey,
-            vineId: 'd2',
+            dTag: 'd2',
           );
 
           when(() => mockRepostsRepository.syncUserReposts()).thenAnswer(
@@ -823,15 +848,15 @@ void main() {
             ]),
           ).thenAnswer((_) async => [video1]);
 
-          // REST API fallback returns video2
+          // REST API fallback returns video2 (as VideoStats)
           when(
-            () => mockAnalyticsApiService.getVideosByAuthor(
+            () => mockFunnelcakeApiClient.getVideosByAuthor(
               pubkey: currentUserPubkey,
               limit: 100,
             ),
-          ).thenAnswer((_) async => [video2]);
+          ).thenAnswer((_) async => [videoStats2]);
         },
-        build: () => createBloc(analyticsApiService: mockAnalyticsApiService),
+        build: () => createBloc(funnelcakeApiClient: mockFunnelcakeApiClient),
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
         expect: () => [
           const ProfileRepostedVideosState(
@@ -876,15 +901,15 @@ void main() {
             ]),
           ).thenAnswer((_) async => []);
 
-          // REST API fallback throws an exception
+          // REST API fallback throws a FunnelcakeException
           when(
-            () => mockAnalyticsApiService.getVideosByAuthor(
+            () => mockFunnelcakeApiClient.getVideosByAuthor(
               pubkey: currentUserPubkey,
               limit: 100,
             ),
-          ).thenThrow(Exception('Network error'));
+          ).thenThrow(const FunnelcakeException('Network error'));
         },
-        build: () => createBloc(analyticsApiService: mockAnalyticsApiService),
+        build: () => createBloc(funnelcakeApiClient: mockFunnelcakeApiClient),
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
         expect: () => [
           const ProfileRepostedVideosState(
@@ -907,7 +932,7 @@ void main() {
       );
 
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
-        'does not call REST API when analyticsApiService is null',
+        'does not call REST API when funnelcakeApiClient is null',
         setUp: () {
           final addressableId1 = createAddressableId(currentUserPubkey, 'd1');
 
@@ -947,7 +972,7 @@ void main() {
         ],
         verify: (_) {
           verifyNever(
-            () => mockAnalyticsApiService.getVideosByAuthor(
+            () => mockFunnelcakeApiClient.getVideosByAuthor(
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
             ),
@@ -963,20 +988,20 @@ void main() {
           final addressableId2 = createAddressableId(otherUserPubkey, 'd2');
           final addressableId3 = createAddressableId(currentUserPubkey, 'd3');
 
-          final video1 = createTestVideo(
+          final videoStats1 = createTestVideoStats(
             id: 'e1',
             pubkey: currentUserPubkey,
-            vineId: 'd1',
+            dTag: 'd1',
           );
-          final video2 = createTestVideo(
+          final videoStats2 = createTestVideoStats(
             id: 'e2',
             pubkey: otherUserPubkey,
-            vineId: 'd2',
+            dTag: 'd2',
           );
-          final video3 = createTestVideo(
+          final videoStats3 = createTestVideoStats(
             id: 'e3',
             pubkey: currentUserPubkey,
-            vineId: 'd3',
+            dTag: 'd3',
           );
 
           when(() => mockRepostsRepository.syncUserReposts()).thenAnswer(
@@ -1001,20 +1026,20 @@ void main() {
 
           // REST API fallback returns videos for each author
           when(
-            () => mockAnalyticsApiService.getVideosByAuthor(
+            () => mockFunnelcakeApiClient.getVideosByAuthor(
               pubkey: currentUserPubkey,
               limit: 100,
             ),
-          ).thenAnswer((_) async => [video1, video3]);
+          ).thenAnswer((_) async => [videoStats1, videoStats3]);
 
           when(
-            () => mockAnalyticsApiService.getVideosByAuthor(
+            () => mockFunnelcakeApiClient.getVideosByAuthor(
               pubkey: otherUserPubkey,
               limit: 100,
             ),
-          ).thenAnswer((_) async => [video2]);
+          ).thenAnswer((_) async => [videoStats2]);
         },
-        build: () => createBloc(analyticsApiService: mockAnalyticsApiService),
+        build: () => createBloc(funnelcakeApiClient: mockFunnelcakeApiClient),
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
         expect: () => [
           const ProfileRepostedVideosState(
@@ -1071,7 +1096,7 @@ void main() {
             ]),
           ).thenAnswer((_) async => [video1, video2]);
         },
-        build: () => createBloc(analyticsApiService: mockAnalyticsApiService),
+        build: () => createBloc(funnelcakeApiClient: mockFunnelcakeApiClient),
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
         expect: () => [
           const ProfileRepostedVideosState(
@@ -1093,7 +1118,7 @@ void main() {
         verify: (_) {
           // Should NOT call REST API since all videos found on Nostr
           verifyNever(
-            () => mockAnalyticsApiService.getVideosByAuthor(
+            () => mockFunnelcakeApiClient.getVideosByAuthor(
               pubkey: any(named: 'pubkey'),
               limit: any(named: 'limit'),
             ),
@@ -1105,10 +1130,10 @@ void main() {
         'REST API fallback works for load more',
         setUp: () {
           final addressableId3 = createAddressableId(currentUserPubkey, 'd3');
-          final video3 = createTestVideo(
+          final videoStats3 = createTestVideoStats(
             id: 'e3',
             pubkey: currentUserPubkey,
-            vineId: 'd3',
+            dTag: 'd3',
           );
 
           // Nostr returns no videos for next page
@@ -1120,13 +1145,13 @@ void main() {
 
           // REST API fallback returns the video
           when(
-            () => mockAnalyticsApiService.getVideosByAuthor(
+            () => mockFunnelcakeApiClient.getVideosByAuthor(
               pubkey: currentUserPubkey,
               limit: 100,
             ),
-          ).thenAnswer((_) async => [video3]);
+          ).thenAnswer((_) async => [videoStats3]);
         },
-        build: () => createBloc(analyticsApiService: mockAnalyticsApiService),
+        build: () => createBloc(funnelcakeApiClient: mockFunnelcakeApiClient),
         seed: () => ProfileRepostedVideosState(
           status: ProfileRepostedVideosStatus.success,
           repostedAddressableIds: [
@@ -1154,7 +1179,7 @@ void main() {
         ],
         verify: (_) {
           verify(
-            () => mockAnalyticsApiService.getVideosByAuthor(
+            () => mockFunnelcakeApiClient.getVideosByAuthor(
               pubkey: currentUserPubkey,
               limit: 100,
             ),
