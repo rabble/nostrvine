@@ -13,6 +13,8 @@
 #   - ZENDESK_APP_ID
 #   - ZENDESK_CLIENT_ID
 #   - ZENDESK_URL
+# 6 - Set DEFAULT_ENV in workflow vars or Codemagic UI (PRODUCTION, PRODUCTION_NEW, STAGING, DEV)
+#   - If not set, the app defaults to PRODUCTION at runtime
 
 definitions:
   environment:
@@ -40,7 +42,8 @@ definitions:
         flutter build apk --release --build-number=$PROJECT_BUILD_NUMBER \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
-          --dart-define=ZENDESK_URL=$ZENDESK_URL
+          --dart-define=ZENDESK_URL=$ZENDESK_URL \
+          --dart-define=DEFAULT_ENV=$DEFAULT_ENV
     - &build_aab
       name: Build Android AAB
       script: |
@@ -49,7 +52,8 @@ definitions:
         flutter build appbundle --release --build-number=$BUILD_NUMBER \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
-          --dart-define=ZENDESK_URL=$ZENDESK_URL
+          --dart-define=ZENDESK_URL=$ZENDESK_URL \
+          --dart-define=DEFAULT_ENV=$DEFAULT_ENV
     - &build_ios
       name: Build and sign iOS
       script: |
@@ -59,6 +63,7 @@ definitions:
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
+          --dart-define=DEFAULT_ENV=$DEFAULT_ENV \
           --export-options-plist=/Users/builder/export_options.plist
     - &build_ios_simulator
       name: Build iOS Simulator app
@@ -66,7 +71,8 @@ definitions:
         flutter build ios --simulator \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
-          --dart-define=ZENDESK_URL=$ZENDESK_URL
+          --dart-define=ZENDESK_URL=$ZENDESK_URL \
+          --dart-define=DEFAULT_ENV=$DEFAULT_ENV
 workflows:
   ios-build:
     name: iOS Build
@@ -83,6 +89,7 @@ workflows:
         - zendesk_credentials
       vars:
         BUNDLE_ID: co.openvine.app
+        DEFAULT_ENV: PRODUCTION
       ios_signing:
         distribution_type: app_store
         bundle_identifier: $BUNDLE_ID
@@ -120,6 +127,8 @@ workflows:
       cocoapods: default
       groups:
         - zendesk_credentials
+      vars:
+        DEFAULT_ENV: PRODUCTION
     cache:
       cache_paths:
         - $HOME/Library/Caches/CocoaPods
@@ -146,6 +155,8 @@ workflows:
       groups:
         - zendesk_credentials
         - google_play_credentials
+      vars:
+        DEFAULT_ENV: PRODUCTION
       android_signing:
         - divine_keystore
     cache:
