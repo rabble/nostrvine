@@ -1,0 +1,319 @@
+// ABOUTME: Data model for Funnelcake API video stats response.
+// ABOUTME: Represents video metadata with engagement metrics from the
+// ABOUTME: ClickHouse-backed analytics API.
+
+import 'package:meta/meta.dart';
+import 'package:models/src/video_event.dart';
+
+/// Video with engagement metrics from Funnelcake API.
+///
+/// This model represents the combined event data and stats returned
+/// by the Funnelcake REST API. It includes both the video metadata
+/// (from the Nostr event) and engagement metrics (from ClickHouse).
+@immutable
+class VideoStats {
+  /// Creates a new [VideoStats] instance.
+  const VideoStats({
+    required this.id,
+    required this.pubkey,
+    required this.createdAt,
+    required this.kind,
+    required this.dTag,
+    required this.title,
+    required this.thumbnail,
+    required this.videoUrl,
+    required this.reactions,
+    required this.comments,
+    required this.reposts,
+    required this.engagementScore,
+    this.description,
+    this.sha256,
+    this.authorName,
+    this.authorAvatar,
+    this.blurhash,
+    this.trendingScore,
+    this.loops,
+  });
+
+  /// Creates a [VideoStats] from JSON response.
+  ///
+  /// Handles the nested format returned by Funnelcake API:
+  /// `{ "event": {...}, "stats": {...} }`
+  ///
+  /// Also handles the quirks of the Funnelcake response format:
+  /// - IDs returned as byte arrays (ASCII codes) instead of strings
+  /// - Unix timestamps instead of ISO strings
+  /// - Stats in various field name formats
+  factory VideoStats.fromJson(Map<String, dynamic> json) {
+    // Handle nested format: { "event": {...}, "stats": {...} }
+    final eventData = json['event'] as Map<String, dynamic>? ?? json;
+    final statsData = json['stats'] as Map<String, dynamic>? ?? json;
+
+    // Parse id - funnelcake returns as byte array (ASCII codes), not string
+    String id;
+    final rawId = eventData['id'];
+    if (rawId is List) {
+      id = String.fromCharCodes(rawId.cast<int>());
+    } else {
+      id = rawId?.toString() ?? '';
+    }
+
+    // Parse pubkey - same format as id
+    String pubkey;
+    final rawPubkey = eventData['pubkey'];
+    if (rawPubkey is List) {
+      pubkey = String.fromCharCodes(rawPubkey.cast<int>());
+    } else {
+      pubkey = rawPubkey?.toString() ?? '';
+    }
+
+    // Parse created_at - funnelcake returns Unix timestamp (int), not ISO
+    DateTime createdAt;
+    final rawCreatedAt = eventData['created_at'];
+    if (rawCreatedAt is int) {
+      createdAt = DateTime.fromMillisecondsSinceEpoch(rawCreatedAt * 1000);
+    } else if (rawCreatedAt is String) {
+      createdAt = DateTime.tryParse(rawCreatedAt) ?? DateTime.now();
+    } else {
+      createdAt = DateTime.now();
+    }
+
+    // Parse loops from multiple possible sources
+    int? loops;
+    final directLoops =
+        statsData['loops'] ?? json['loops'] ?? json['original_loops'];
+    if (directLoops is int) {
+      loops = directLoops;
+    } else if (directLoops is String) {
+      loops = int.tryParse(directLoops);
+    }
+
+    // Also check event tags for loops if not found directly
+    if (loops == null && eventData['tags'] is List) {
+      final tags = eventData['tags'] as List<dynamic>;
+      for (final tag in tags) {
+        if (tag is List && tag.length >= 2 && tag[0] == 'loops') {
+          loops = int.tryParse(tag[1].toString());
+          break;
+        }
+      }
+    }
+
+    // Extract title, thumbnail, sha256 from tags if not in root
+    var title = eventData['title']?.toString() ?? '';
+    var thumbnail = eventData['thumbnail']?.toString() ?? '';
+    var videoUrl = eventData['video_url']?.toString() ?? '';
+    var dTag = eventData['d_tag']?.toString() ?? '';
+    var sha256 = eventData['sha256']?.toString() ?? json['sha256']?.toString();
+
+    // Parse description from event content (NIP-71: content = description)
+    var description = eventData['content']?.toString();
+    if (description != null && description.isEmpty) description = null;
+
+    // Also check for blurhash and summary in tags (NIP-71 standard)
+    String? blurhashFromTag;
+    String? summaryFromTag;
+
+    if (eventData['tags'] is List) {
+      final tags = eventData['tags'] as List<dynamic>;
+      for (final tag in tags) {
+        if (tag is List && tag.length >= 2) {
+          final tagName = tag[0].toString();
+          final tagValue = tag[1].toString();
+          if (tagName == 'title' && title.isEmpty) title = tagValue;
+          if ((tagName == 'thumb' || tagName == 'thumbnail') &&
+              thumbnail.isEmpty) {
+            thumbnail = tagValue;
+          }
+          if (tagName == 'url' && videoUrl.isEmpty) videoUrl = tagValue;
+          if (tagName == 'd' && dTag.isEmpty) dTag = tagValue;
+          if (tagName == 'x' && (sha256 == null || sha256.isEmpty)) {
+            sha256 = tagValue; // x tag often contains sha256 hash
+          }
+          if (tagName == 'blurhash' && blurhashFromTag == null) {
+            blurhashFromTag = tagValue;
+          }
+          if (tagName == 'summary' && summaryFromTag == null) {
+            summaryFromTag = tagValue;
+          }
+        }
+      }
+    }
+
+    // Fall back to summary tag if content is empty
+    description ??= summaryFromTag;
+
+    // Normalize empty sha256 to null
+    if (sha256 != null && sha256.isEmpty) sha256 = null;
+
+    // Parse author_name for classic Vines
+    var authorName =
+        eventData['author_name']?.toString() ?? json['author_name']?.toString();
+    if (authorName != null && authorName.isEmpty) authorName = null;
+
+    // Parse author_avatar for profile pictures
+    var authorAvatar =
+        eventData['author_avatar']?.toString() ??
+        json['author_avatar']?.toString();
+    if (authorAvatar != null && authorAvatar.isEmpty) authorAvatar = null;
+
+    // Parse blurhash for thumbnail placeholders
+    var blurhash =
+        eventData['blurhash']?.toString() ??
+        json['blurhash']?.toString() ??
+        blurhashFromTag;
+    if (blurhash != null && blurhash.isEmpty) blurhash = null;
+
+    // Parse reactions/likes - check multiple field names
+    final reactions =
+        statsData['reactions'] ??
+        json['reactions'] ??
+        json['embedded_likes'] ??
+        json['likes'] ??
+        0;
+
+    // Parse comments - check multiple field names
+    final comments =
+        statsData['comments'] ??
+        json['comments'] ??
+        json['embedded_comments'] ??
+        0;
+
+    // Parse reposts - check multiple field names
+    final reposts =
+        statsData['reposts'] ??
+        json['reposts'] ??
+        json['embedded_reposts'] ??
+        0;
+
+    return VideoStats(
+      id: id,
+      pubkey: pubkey,
+      createdAt: createdAt,
+      kind: (eventData['kind'] as int?) ?? 34236,
+      dTag: dTag,
+      title: title,
+      description: description,
+      thumbnail: thumbnail,
+      videoUrl: videoUrl,
+      sha256: sha256,
+      authorName: authorName,
+      authorAvatar: authorAvatar,
+      blurhash: blurhash,
+      reactions: reactions is int ? reactions : 0,
+      comments: comments is int ? comments : 0,
+      reposts: reposts is int ? reposts : 0,
+      engagementScore:
+          (statsData['engagement_score'] ?? json['engagement_score'] ?? 0)
+              as int,
+      trendingScore: _parseDouble(
+        statsData['trending_score'] ?? json['trending_score'],
+      ),
+      loops: loops,
+    );
+  }
+
+  /// Nostr event ID.
+  final String id;
+
+  /// Author's public key (hex format).
+  final String pubkey;
+
+  /// When the video was created.
+  final DateTime createdAt;
+
+  /// Nostr event kind (typically 34236 for vertical videos).
+  final int kind;
+
+  /// The `d` tag value (addressable event identifier).
+  final String dTag;
+
+  /// Video title.
+  final String title;
+
+  /// Video description from event content (NIP-71).
+  final String? description;
+
+  /// Thumbnail URL.
+  final String thumbnail;
+
+  /// Video URL.
+  final String videoUrl;
+
+  /// Content hash for Blossom authentication.
+  final String? sha256;
+
+  /// Display name of classic Vine author.
+  final String? authorName;
+
+  /// Profile picture URL for author.
+  final String? authorAvatar;
+
+  /// Blurhash for placeholder thumbnail.
+  final String? blurhash;
+
+  /// Reaction/like count.
+  final int reactions;
+
+  /// Comment count.
+  final int comments;
+
+  /// Repost count.
+  final int reposts;
+
+  /// Combined engagement score.
+  final int engagementScore;
+
+  /// Trending score (if available).
+  final double? trendingScore;
+
+  /// Original loop count for classic Vines.
+  final int? loops;
+
+  /// Converts this [VideoStats] to a [VideoEvent] for use in the app.
+  ///
+  /// Maps the Funnelcake API response fields to the corresponding
+  /// [VideoEvent] fields used throughout the application.
+  VideoEvent toVideoEvent() {
+    return VideoEvent(
+      id: id,
+      pubkey: pubkey,
+      createdAt: createdAt.millisecondsSinceEpoch ~/ 1000,
+      content: description ?? '',
+      timestamp: createdAt,
+      title: title.isNotEmpty ? title : null,
+      videoUrl: videoUrl.isNotEmpty ? videoUrl : null,
+      thumbnailUrl: thumbnail.isNotEmpty ? thumbnail : null,
+      vineId: dTag.isNotEmpty ? dTag : null,
+      sha256: sha256,
+      authorName: authorName,
+      authorAvatar: authorAvatar,
+      blurhash: blurhash,
+      originalLikes: reactions,
+      originalComments: comments,
+      originalReposts: reposts,
+      originalLoops: loops,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is VideoStats && other.id == id;
+  }
+
+  @override
+  int get hashCode => id.hashCode;
+
+  @override
+  String toString() => 'VideoStats(id: $id, title: $title)';
+}
+
+/// Safely parses a dynamic value to double.
+double? _parseDouble(dynamic value) {
+  if (value == null) return null;
+  if (value is double) return value;
+  if (value is int) return value.toDouble();
+  if (value is String) return double.tryParse(value);
+  return null;
+}

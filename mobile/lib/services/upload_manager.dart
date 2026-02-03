@@ -1420,15 +1420,80 @@ class UploadManager {
     if (completedUploads.isNotEmpty) {}
   }
 
-  /// Resume any uploads that were interrupted
+  /// Resume any uploads that were interrupted or never started
+  ///
+  /// Handles uploads in the following states:
+  /// - `pending` - never started, should be started
+  /// - `uploading` - was uploading when app closed, restart
+  /// - `retrying` - was retrying when app closed, continue
+  /// - `failed` with canRetry - failed but can be retried
   Future<void> _resumeInterruptedUploads() async {
-    final interruptedUploads = pendingUploads
-        .where((upload) => upload.status == UploadStatus.uploading)
-        .toList();
+    final allUploads = pendingUploads;
 
-    for (final upload in interruptedUploads) {
-      Log.debug(
-        'Resuming interrupted upload: ${upload.id}',
+    // Log upload state breakdown for debugging
+    final statusCounts = <UploadStatus, int>{};
+    for (final upload in allUploads) {
+      statusCounts[upload.status] = (statusCounts[upload.status] ?? 0) + 1;
+    }
+    Log.info(
+      '📊 Upload state breakdown on startup: $statusCounts',
+      name: 'UploadManager',
+      category: LogCategory.video,
+    );
+
+    // Find all uploads that should be resumed/retried
+    final uploadsToResume = allUploads.where((upload) {
+      // Resume pending, uploading, or retrying uploads
+      if (upload.status == UploadStatus.pending ||
+          upload.status == UploadStatus.uploading ||
+          upload.status == UploadStatus.retrying) {
+        return true;
+      }
+      // Auto-retry failed uploads that can be retried
+      if (upload.status == UploadStatus.failed && upload.canRetry) {
+        return true;
+      }
+      return false;
+    }).toList();
+
+    if (uploadsToResume.isEmpty) {
+      Log.info(
+        '✅ No uploads to resume on startup',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    Log.info(
+      '🔄 Resuming ${uploadsToResume.length} interrupted/stalled uploads',
+      name: 'UploadManager',
+      category: LogCategory.video,
+    );
+
+    for (final upload in uploadsToResume) {
+      // Verify the video file still exists before attempting retry
+      if (!kIsWeb) {
+        final videoFile = File(upload.localVideoPath);
+        if (!videoFile.existsSync()) {
+          Log.warning(
+            '⚠️ Skipping upload ${upload.id} - video file no longer exists: ${upload.localVideoPath}',
+            name: 'UploadManager',
+            category: LogCategory.video,
+          );
+          // Mark as failed with clear message
+          await _updateUpload(
+            upload.copyWith(
+              status: UploadStatus.failed,
+              errorMessage: 'Video file was deleted. Please record again.',
+            ),
+          );
+          continue;
+        }
+      }
+
+      Log.info(
+        '🔄 Resuming upload: ${upload.id} (was ${upload.status.name})',
         name: 'UploadManager',
         category: LogCategory.video,
       );
@@ -1437,6 +1502,7 @@ class UploadManager {
       final resetUpload = upload.copyWith(
         status: UploadStatus.pending,
         uploadProgress: null,
+        errorMessage: null,
       );
 
       await _updateUpload(resetUpload);

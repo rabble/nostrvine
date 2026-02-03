@@ -1,9 +1,13 @@
 // ABOUTME: Monitors network connectivity and relay connection status
 // ABOUTME: Provides reactive connection state updates for UI components
+// ABOUTME: Supports reconnect callbacks for sync-on-reconnect functionality
 
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+
+/// Callback type for reconnect events
+typedef OnReconnectCallback = void Function();
 
 /// Monitors connection status for relays and network connectivity
 class ConnectionStatusService extends ChangeNotifier {
@@ -17,6 +21,9 @@ class ConnectionStatusService extends ChangeNotifier {
 
   final _statusController = StreamController<bool>.broadcast();
   Timer? _monitoringTimer;
+
+  /// Callbacks to invoke when connection is restored (offline -> online)
+  final List<OnReconnectCallback> _reconnectCallbacks = [];
 
   /// Whether we have any network connectivity
   bool get isConnected => _isConnected;
@@ -56,9 +63,40 @@ class ConnectionStatusService extends ChangeNotifier {
     if (newConnectionStatus != _isConnected) {
       _isConnected = newConnectionStatus;
       _statusController.add(_isConnected);
+
+      // Trigger reconnect callbacks if transitioning from offline to online
+      if (!wasConnected && _isConnected) {
+        _triggerReconnectCallbacks();
+      }
+
       notifyListeners();
     } else if (wasConnected != _isConnected) {
       notifyListeners();
+    }
+  }
+
+  /// Register a callback to be invoked when connection is restored.
+  ///
+  /// Returns a function that can be called to unregister the callback.
+  VoidCallback registerOnReconnectCallback(OnReconnectCallback callback) {
+    _reconnectCallbacks.add(callback);
+    return () => _reconnectCallbacks.remove(callback);
+  }
+
+  /// Unregister a reconnect callback
+  void unregisterOnReconnectCallback(OnReconnectCallback callback) {
+    _reconnectCallbacks.remove(callback);
+  }
+
+  /// Trigger all registered reconnect callbacks
+  void _triggerReconnectCallbacks() {
+    for (final callback in _reconnectCallbacks) {
+      try {
+        callback();
+      } catch (e) {
+        // Don't let one callback failure break others
+        debugPrint('Reconnect callback error: $e');
+      }
     }
   }
 

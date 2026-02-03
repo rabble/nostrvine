@@ -1064,5 +1064,321 @@ void main() {
         expect(repository.dispose, returnsNormally);
       });
     });
+
+    group('offline queuing', () {
+      test('repostVideo queues action when offline', () async {
+        var queuedAction = <String, dynamic>{};
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          isOnline: () => false,
+          queueOfflineAction:
+              ({
+                required bool isRepost,
+                required String addressableId,
+                required String originalAuthorPubkey,
+                String? eventId,
+              }) async {
+                queuedAction = {
+                  'isRepost': isRepost,
+                  'addressableId': addressableId,
+                  'originalAuthorPubkey': originalAuthorPubkey,
+                  'eventId': eventId,
+                };
+              },
+        );
+
+        final eventId = await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        expect(eventId, startsWith('pending_repost_'));
+        expect(queuedAction['isRepost'], isTrue);
+        expect(queuedAction['addressableId'], equals(testAddressableId));
+        expect(queuedAction['originalAuthorPubkey'], equals(testAuthorPubkey));
+
+        // Should still show as reposted locally
+        expect(repository.isRepostedSync(testAddressableId), isTrue);
+
+        // Should save to local storage
+        verify(() => mockLocalStorage.saveRepostRecord(any())).called(1);
+      });
+
+      test('unrepostVideo queues action when offline', () async {
+        var queuedAction = <String, dynamic>{};
+
+        when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
+          (_) async => createMockEvent(
+            id: 'deletion_event_id',
+            kind: 5,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        );
+
+        // First repost while online
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        expect(repository.isRepostedSync(testAddressableId), isTrue);
+
+        // Now create a new repository with offline callbacks
+        final offlineRepository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          isOnline: () => false,
+          queueOfflineAction:
+              ({
+                required bool isRepost,
+                required String addressableId,
+                required String originalAuthorPubkey,
+                String? eventId,
+              }) async {
+                queuedAction = {
+                  'isRepost': isRepost,
+                  'addressableId': addressableId,
+                  'originalAuthorPubkey': originalAuthorPubkey,
+                };
+              },
+        );
+
+        // Add the existing repost record to the new repository
+        await offlineRepository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        // Now unrepost while offline
+        await offlineRepository.unrepostVideo(testAddressableId);
+
+        expect(queuedAction['isRepost'], isFalse);
+        expect(queuedAction['addressableId'], equals(testAddressableId));
+
+        // Should no longer show as reposted locally
+        expect(offlineRepository.isRepostedSync(testAddressableId), isFalse);
+      });
+    });
+
+    group('executeRepostAction', () {
+      test('publishes repost directly to relays', () async {
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        final eventId = await repository.executeRepostAction(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        expect(eventId, equals(testRepostEventId));
+
+        verify(
+          () => mockNostrClient.sendGenericRepost(
+            addressableId: testAddressableId,
+            targetKind: EventKind.videoVertical,
+            authorPubkey: testAuthorPubkey,
+            content: any(named: 'content'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).called(1);
+      });
+
+      test('updates placeholder record with real event ID', () async {
+        // First create a pending repost (simulating offline queue)
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          isOnline: () => false,
+          queueOfflineAction:
+              ({
+                required bool isRepost,
+                required String addressableId,
+                required String originalAuthorPubkey,
+                String? eventId,
+              }) async {},
+        );
+
+        final placeholderId = await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        expect(placeholderId, startsWith('pending_repost_'));
+
+        // Now execute the real action (simulating sync)
+        final realEventId = await repository.executeRepostAction(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        expect(realEventId, equals(testRepostEventId));
+
+        // Verify local storage was updated
+        verify(() => mockLocalStorage.saveRepostRecord(any())).called(2);
+      });
+
+      test('throws RepostFailedException when publish fails', () async {
+        when(
+          () => mockNostrClient.sendGenericRepost(
+            addressableId: any(named: 'addressableId'),
+            targetKind: any(named: 'targetKind'),
+            authorPubkey: any(named: 'authorPubkey'),
+            content: any(named: 'content'),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => null);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+        );
+
+        expect(
+          () => repository.executeRepostAction(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+          ),
+          throwsA(isA<RepostFailedException>()),
+        );
+      });
+    });
+
+    group('executeUnrepostAction', () {
+      test('publishes deletion directly to relays', () async {
+        when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
+          (_) async => createMockEvent(
+            id: 'deletion_event_id',
+            kind: 5,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        );
+
+        // First repost
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        // Now execute unrepost directly
+        await repository.executeUnrepostAction(testAddressableId);
+
+        verify(() => mockNostrClient.deleteEvent(testRepostEventId)).called(1);
+        verify(
+          () => mockLocalStorage.deleteRepostRecord(testAddressableId),
+        ).called(1);
+      });
+
+      test('skips deletion for pending reposts', () async {
+        // Create a pending repost (offline)
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+          isOnline: () => false,
+          queueOfflineAction:
+              ({
+                required bool isRepost,
+                required String addressableId,
+                required String originalAuthorPubkey,
+                String? eventId,
+              }) async {},
+        );
+
+        await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        // Execute unrepost - should not call deleteEvent since never synced
+        await repository.executeUnrepostAction(testAddressableId);
+
+        verifyNever(() => mockNostrClient.deleteEvent(any()));
+        verify(
+          () => mockLocalStorage.deleteRepostRecord(testAddressableId),
+        ).called(1);
+      });
+
+      test('does nothing when no record exists', () async {
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        // Should not throw, just return
+        await repository.executeUnrepostAction(testAddressableId);
+
+        verifyNever(() => mockNostrClient.deleteEvent(any()));
+        verifyNever(
+          () => mockLocalStorage.deleteRepostRecord(testAddressableId),
+        );
+      });
+
+      test('throws UnrepostFailedException when deletion fails', () async {
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenAnswer((_) async => null);
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        expect(
+          () => repository.executeUnrepostAction(testAddressableId),
+          throwsA(isA<UnrepostFailedException>()),
+        );
+      });
+
+      test('falls back to local storage when not in cache', () async {
+        final record = RepostRecord(
+          addressableId: testAddressableId,
+          repostEventId: testRepostEventId,
+          originalAuthorPubkey: testAuthorPubkey,
+          createdAt: DateTime.now(),
+        );
+
+        when(
+          () => mockLocalStorage.getRepostRecord(testAddressableId),
+        ).thenAnswer((_) async => record);
+        when(() => mockNostrClient.deleteEvent(any())).thenAnswer(
+          (_) async => createMockEvent(
+            id: 'deletion_event_id',
+            kind: 5,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+          localStorage: mockLocalStorage,
+        );
+
+        await repository.executeUnrepostAction(testAddressableId);
+
+        verify(
+          () => mockLocalStorage.getRepostRecord(testAddressableId),
+        ).called(1);
+        verify(() => mockNostrClient.deleteEvent(testRepostEventId)).called(1);
+      });
+    });
   });
 }

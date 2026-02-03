@@ -46,6 +46,7 @@ import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
+import 'package:openvine/utils/search_utils.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip05_service.dart';
@@ -55,6 +56,7 @@ import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
 import 'package:openvine/services/email_verification_listener.dart';
 import 'package:openvine/services/password_reset_listener.dart';
+import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';
@@ -90,9 +92,48 @@ part 'app_providers.g.dart';
 // =============================================================================
 
 /// Connection status service for monitoring network connectivity
-@riverpod
+@Riverpod(keepAlive: true)
 ConnectionStatusService connectionStatusService(Ref ref) {
-  return ConnectionStatusService();
+  final service = ConnectionStatusService();
+  ref.onDispose(service.dispose);
+  return service;
+}
+
+/// Pending action service for offline sync of social actions
+/// Returns null when not authenticated (no userPubkey available)
+@Riverpod(keepAlive: true)
+PendingActionService? pendingActionService(Ref ref) {
+  final connectionStatusService = ref.watch(connectionStatusServiceProvider);
+  final authService = ref.watch(authServiceProvider);
+
+  // Watch auth state to rebuild when authentication changes
+  ref.watch(currentAuthStateProvider);
+
+  // Need authenticated user for DAO operations
+  final userPubkey = authService.currentPublicKeyHex;
+  if (userPubkey == null) {
+    return null;
+  }
+
+  final db = ref.watch(databaseProvider);
+
+  final service = PendingActionService(
+    connectionStatusService: connectionStatusService,
+    pendingActionsDao: db.pendingActionsDao,
+    userPubkey: userPubkey,
+  );
+
+  // Initialize asynchronously
+  service.initialize().catchError((e) {
+    Log.error(
+      'Failed to initialize PendingActionService',
+      name: 'AppProviders',
+      error: e,
+    );
+  });
+
+  ref.onDispose(service.dispose);
+  return service;
 }
 
 /// Relay capability service for detecting NIP-11 divine extensions
@@ -757,10 +798,37 @@ FollowRepository? followRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
 
+  // Get connection status and pending action service for offline support
+  final connectionStatus = ref.watch(connectionStatusServiceProvider);
+  final pendingActionService = ref.watch(pendingActionServiceProvider);
+
   final repository = FollowRepository(
     nostrClient: nostrClient,
     personalEventCache: personalEventCache,
+    isOnline: () => connectionStatus.isOnline,
+    queueOfflineAction: pendingActionService != null
+        ? ({required bool isFollow, required String pubkey}) async {
+            await pendingActionService.queueAction(
+              type: isFollow
+                  ? PendingActionType.follow
+                  : PendingActionType.unfollow,
+              targetId: pubkey,
+            );
+          }
+        : null,
   );
+
+  // Register executors with pending action service for sync
+  if (pendingActionService != null) {
+    pendingActionService.registerExecutor(
+      PendingActionType.follow,
+      (action) => repository.executeFollowAction(action.targetId),
+    );
+    pendingActionService.registerExecutor(
+      PendingActionType.unfollow,
+      (action) => repository.executeUnfollowAction(action.targetId),
+    );
+  }
 
   // Initialize asynchronously
   repository.initialize().catchError((e) {
@@ -783,6 +851,7 @@ FollowRepository? followRepository(Ref ref) {
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - FunnelcakeApiClient for fast REST-based profile search
 @Riverpod(keepAlive: true)
 ProfileRepository? profileRepository(Ref ref) {
   // Return null if NostrClient is not ready yet
@@ -795,11 +864,17 @@ ProfileRepository? profileRepository(Ref ref) {
 
   final nostrClient = ref.watch(nostrServiceProvider);
   final userProfilesDao = ref.watch(databaseProvider).userProfilesDao;
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
 
   return ProfileRepository(
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
     httpClient: Client(),
+    funnelcakeApiClient: funnelcakeClient,
+    userBlockFilter: blocklistService.shouldFilterFromFeeds,
+    profileSearchFilter: (query, profiles) =>
+        SearchUtils.searchProfiles(query, profiles, minScore: 0.3, limit: 50),
   );
 }
 
@@ -1309,12 +1384,51 @@ LikesRepository likesRepository(Ref ref) {
     (state) => state == AuthState.authenticated,
   );
 
+  // Get connection status and pending action service for offline support
+  final connectionStatus = ref.watch(connectionStatusServiceProvider);
+  final pendingActionService = ref.watch(pendingActionServiceProvider);
+
   final repository = LikesRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
     authStateStream: authBoolStream,
     isAuthenticated: isAuthenticated,
+    isOnline: () => connectionStatus.isOnline,
+    queueOfflineAction: pendingActionService != null
+        ? ({
+            required bool isLike,
+            required String eventId,
+            required String authorPubkey,
+            String? addressableId,
+            int? targetKind,
+          }) async {
+            await pendingActionService.queueAction(
+              type: isLike ? PendingActionType.like : PendingActionType.unlike,
+              targetId: eventId,
+              authorPubkey: authorPubkey,
+              addressableId: addressableId,
+              targetKind: targetKind,
+            );
+          }
+        : null,
   );
+
+  // Register executors with pending action service for sync
+  if (pendingActionService != null) {
+    pendingActionService.registerExecutor(
+      PendingActionType.like,
+      (action) => repository.executeLikeAction(
+        eventId: action.targetId,
+        authorPubkey: action.authorPubkey ?? '',
+        addressableId: action.addressableId,
+        targetKind: action.targetKind,
+      ),
+    );
+    pendingActionService.registerExecutor(
+      PendingActionType.unlike,
+      (action) => repository.executeUnlikeAction(action.targetId),
+    );
+  }
 
   ref.onDispose(repository.dispose);
 
@@ -1357,12 +1471,51 @@ RepostsRepository repostsRepository(Ref ref) {
     (state) => state == AuthState.authenticated,
   );
 
+  // Get connection status and pending action service for offline support
+  final connectionStatus = ref.watch(connectionStatusServiceProvider);
+  final pendingActionService = ref.watch(pendingActionServiceProvider);
+
   final repository = RepostsRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
     authStateStream: authBoolStream,
     isAuthenticated: isAuthenticated,
+    isOnline: () => connectionStatus.isOnline,
+    queueOfflineAction: pendingActionService != null
+        ? ({
+            required bool isRepost,
+            required String addressableId,
+            required String originalAuthorPubkey,
+            String? eventId,
+          }) async {
+            await pendingActionService.queueAction(
+              type: isRepost
+                  ? PendingActionType.repost
+                  : PendingActionType.unrepost,
+              targetId: addressableId,
+              authorPubkey: originalAuthorPubkey,
+              addressableId: addressableId,
+            );
+          }
+        : null,
   );
+
+  // Register executors with pending action service for sync
+  if (pendingActionService != null) {
+    pendingActionService.registerExecutor(
+      PendingActionType.repost,
+      (action) => repository.executeRepostAction(
+        addressableId: action.addressableId ?? action.targetId,
+        originalAuthorPubkey: action.authorPubkey ?? '',
+      ),
+    );
+    pendingActionService.registerExecutor(
+      PendingActionType.unrepost,
+      (action) => repository.executeUnrepostAction(
+        action.addressableId ?? action.targetId,
+      ),
+    );
+  }
 
   ref.onDispose(repository.dispose);
 

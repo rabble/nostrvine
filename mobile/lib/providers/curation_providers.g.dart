@@ -61,6 +61,59 @@ final class AnalyticsApiServiceProvider
 String _$analyticsApiServiceHash() =>
     r'b47808c5318ce0b2f956bcd4b6f290e4dcf48846';
 
+/// Provider for FunnelcakeApiClient (typed client for Funnelcake REST API)
+
+@ProviderFor(funnelcakeApiClient)
+const funnelcakeApiClientProvider = FunnelcakeApiClientProvider._();
+
+/// Provider for FunnelcakeApiClient (typed client for Funnelcake REST API)
+
+final class FunnelcakeApiClientProvider
+    extends
+        $FunctionalProvider<
+          FunnelcakeApiClient,
+          FunnelcakeApiClient,
+          FunnelcakeApiClient
+        >
+    with $Provider<FunnelcakeApiClient> {
+  /// Provider for FunnelcakeApiClient (typed client for Funnelcake REST API)
+  const FunnelcakeApiClientProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'funnelcakeApiClientProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$funnelcakeApiClientHash();
+
+  @$internal
+  @override
+  $ProviderElement<FunnelcakeApiClient> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  FunnelcakeApiClient create(Ref ref) {
+    return funnelcakeApiClient(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(FunnelcakeApiClient value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<FunnelcakeApiClient>(value),
+    );
+  }
+}
+
+String _$funnelcakeApiClientHash() =>
+    r'1b39a4534572dafce92e693b5d2ed473001ce9d2';
+
 /// Single source of truth for Funnelcake REST API availability.
 ///
 /// Uses capability detection - actually probes the API to verify it works.

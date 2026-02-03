@@ -519,6 +519,14 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
           as _i7.Stream<_i4.Event>);
 
   @override
+  _i7.Future<List<_i4.Event>> queryUsers(String? query, {int? limit}) =>
+      (super.noSuchMethod(
+            Invocation.method(#queryUsers, [query], {#limit: limit}),
+            returnValue: _i7.Future<List<_i4.Event>>.value(<_i4.Event>[]),
+          )
+          as _i7.Future<List<_i4.Event>>);
+
+  @override
   _i7.Future<String?> createNip98AuthHeader({
     required String? url,
     required String? method,
