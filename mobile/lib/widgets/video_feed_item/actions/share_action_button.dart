@@ -12,7 +12,7 @@ import 'package:openvine/widgets/share_video_menu.dart';
 ///
 /// Shows a share icon that opens the share menu bottom sheet.
 /// Video playback is automatically paused while the menu is open via
-/// [showVideoPausingBottomSheet] and the overlay visibility provider.
+/// [showVideoPausingVineBottomSheet] and the overlay visibility provider.
 class ShareActionButton extends StatelessWidget {
   const ShareActionButton({required this.video, super.key});
 
@@ -51,10 +51,7 @@ class ShareActionButton extends StatelessWidget {
 
   Future<void> _showShareMenu(BuildContext context) async {
     // Video pause/resume handled by overlay visibility provider
-    await context.showVideoPausingBottomSheet<void>(
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
+    await context.showVideoPausingVineBottomSheet<void>(
       builder: (context) => ShareVideoMenu(video: video),
     );
   }

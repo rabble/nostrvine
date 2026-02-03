@@ -1651,10 +1651,7 @@ class VideoOverlayActions extends ConsumerWidget {
       }
     }
 
-    await context.showVideoPausingBottomSheet<void>(
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
+    await context.showVideoPausingVineBottomSheet<void>(
       builder: (context) => ShareVideoMenu(video: video),
     );
 

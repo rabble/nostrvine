@@ -9,71 +9,24 @@ import 'package:openvine/providers/overlay_visibility_provider.dart';
 /// Extension methods for showing modals that automatically pause video
 /// playback.
 ///
-/// These methods wrap Flutter's [showModalBottomSheet] and [showDialog] to
-/// integrate with [OverlayVisibility], ensuring videos pause when modals open
-/// and resume when they close.
+/// These methods wrap [VineBottomSheet.show] and [showDialog] to integrate with
+/// [OverlayVisibility], ensuring videos pause when modals open and resume when
+/// they close.
 ///
 /// Example:
 /// ```dart
-/// // Instead of:
-/// showModalBottomSheet(context: context, builder: ...);
+/// // Standard VineBottomSheet with video pause:
+/// context.showVideoPausingVineBottomSheet(
+///   title: Text('Options'),
+///   children: [...],
+/// );
 ///
-/// // Use:
-/// context.showVideoPausingBottomSheet(builder: ...);
+/// // Custom bottom sheet widget with video pause:
+/// context.showVideoPausingVineBottomSheet(
+///   builder: (context) => MyCustomSheet(),
+/// );
 /// ```
 extension PauseAwareModals on BuildContext {
-  /// Shows a bottom sheet that automatically pauses video playback.
-  ///
-  /// Calls [OverlayVisibility.setModalOpen(true)] before showing and
-  /// [setModalOpen(false)] after the sheet is dismissed.
-  Future<T?> showVideoPausingBottomSheet<T>({
-    required WidgetBuilder builder,
-    Color? backgroundColor,
-    String? barrierLabel,
-    double? elevation,
-    ShapeBorder? shape,
-    Clip? clipBehavior,
-    BoxConstraints? constraints,
-    Color? barrierColor,
-    bool isScrollControlled = false,
-    bool useRootNavigator = false,
-    bool isDismissible = true,
-    bool enableDrag = true,
-    bool? showDragHandle,
-    bool useSafeArea = false,
-    RouteSettings? routeSettings,
-    AnimationController? transitionAnimationController,
-    Offset? anchorPoint,
-  }) {
-    final container = ProviderScope.containerOf(this, listen: false);
-    final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
-
-    overlayNotifier.setModalOpen(true);
-
-    return showModalBottomSheet<T>(
-      context: this,
-      builder: builder,
-      backgroundColor: backgroundColor,
-      barrierLabel: barrierLabel,
-      elevation: elevation,
-      shape: shape,
-      clipBehavior: clipBehavior,
-      constraints: constraints,
-      barrierColor: barrierColor,
-      isScrollControlled: isScrollControlled,
-      useRootNavigator: useRootNavigator,
-      isDismissible: isDismissible,
-      enableDrag: enableDrag,
-      showDragHandle: showDragHandle,
-      useSafeArea: useSafeArea,
-      routeSettings: routeSettings,
-      transitionAnimationController: transitionAnimationController,
-      anchorPoint: anchorPoint,
-    ).whenComplete(() {
-      overlayNotifier.setModalOpen(false);
-    });
-  }
-
   /// Shows a dialog that automatically pauses video playback.
   ///
   /// Calls [OverlayVisibility.setModalOpen(true)] before showing and
@@ -114,7 +67,18 @@ extension PauseAwareModals on BuildContext {
   ///
   /// This is a convenience wrapper around [VineBottomSheet.show] that provides
   /// the [onShow] and [onDismiss] callbacks for video pause integration.
+  ///
+  /// For standard bottom sheets, use the [VineBottomSheet] parameters like
+  /// [children], [body], [title], etc.
+  ///
+  /// For fully custom bottom sheet widgets that don't fit the [VineBottomSheet]
+  /// structure (e.g., custom headers), use the [builder] parameter instead.
+  /// When [builder] is provided, a raw [showModalBottomSheet] is used with
+  /// video pause integration, bypassing [VineBottomSheet].
   Future<T?> showVideoPausingVineBottomSheet<T>({
+    /// Builder for fully custom bottom sheet widgets.
+    /// When provided, bypasses [VineBottomSheet] and uses raw modal.
+    WidgetBuilder? builder,
     List<Widget>? children,
     bool scrollable = true,
     Widget? title,
@@ -133,6 +97,21 @@ extension PauseAwareModals on BuildContext {
     final container = ProviderScope.containerOf(this, listen: false);
     final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
 
+    // Custom builder path: raw modal bottom sheet with video pause integration
+    if (builder != null) {
+      overlayNotifier.setModalOpen(true);
+      return showModalBottomSheet<T>(
+        context: this,
+        builder: builder,
+        isScrollControlled: true,
+        useSafeArea: true,
+        backgroundColor: Colors.transparent,
+      ).whenComplete(() {
+        overlayNotifier.setModalOpen(false);
+      });
+    }
+
+    // Standard VineBottomSheet path
     return VineBottomSheet.show<T>(
       context: this,
       children: children,
