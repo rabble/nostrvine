@@ -6,6 +6,7 @@ import 'dart:async';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
+import 'package:path/path.dart' as p;
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -94,8 +95,8 @@ class VideoEditorSplitService {
     );
 
     final documentsPath = await getDocumentsPath();
-    final startClipPath = '$documentsPath/${startClipId}_start.mp4';
-    final endClipPath = '$documentsPath/${endClipId}_end.mp4';
+    final startClipPath = p.join(documentsPath, '${startClipId}_start.mp4');
+    final endClipPath = p.join(documentsPath, '${endClipId}_end.mp4');
 
     Log.debug(
       '📁 Created split clips - Start: ${splitPosition.inSeconds}s, '
