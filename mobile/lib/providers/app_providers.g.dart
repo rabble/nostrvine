@@ -2412,6 +2412,7 @@ String _$followRepositoryHash() => r'4da90451c0432828d297f3ba7350cc00873b6e7e';
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - FunnelcakeApiClient for fast REST-based profile search
 
 @ProviderFor(profileRepository)
 const profileRepositoryProvider = ProfileRepositoryProvider._();
@@ -2423,6 +2424,7 @@ const profileRepositoryProvider = ProfileRepositoryProvider._();
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - FunnelcakeApiClient for fast REST-based profile search
 
 final class ProfileRepositoryProvider
     extends
@@ -2439,6 +2441,7 @@ final class ProfileRepositoryProvider
   ///
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
+  /// - FunnelcakeApiClient for fast REST-based profile search
   const ProfileRepositoryProvider._()
     : super(
         from: null,
@@ -2473,7 +2476,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'0454d90570f71f0bae362a0e84d9d61cce253f93';
+String _$profileRepositoryHash() => r'ce501a057cafb7d267a2f28f45a2e4940017fe57';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 

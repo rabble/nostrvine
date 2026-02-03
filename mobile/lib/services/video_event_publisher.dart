@@ -201,7 +201,6 @@ class VideoEventPublisher {
       }
 
       // Use the existing Nostr service to publish
-      // Explicitly target the primary relay to ensure video is visible to others
       final sentEvent = await _nostrService.publishEvent(event);
 
       // Check if publish was successful
