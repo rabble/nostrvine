@@ -474,9 +474,9 @@ class BlossomUploadService {
     required File videoFile,
     required String nostrPubkey,
     required String title,
-    String? description,
-    List<String>? hashtags,
-    String? proofManifestJson,
+    required String? proofManifestJson,
+    required String? description,
+    required List<String>? hashtags,
     void Function(double)? onProgress,
   }) async {
     // Start performance trace for video upload
