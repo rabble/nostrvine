@@ -13,9 +13,8 @@ import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
-import 'package:openvine/router/providers/page_context_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/services/mute_service.dart';
-import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -175,24 +174,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
         category: LogCategory.video,
       );
 
-      final users = <String>{};
-
-      // Use fuzzy search and filter out blocked users
-      final matchingProfiles = SearchUtils.searchProfiles(
-        query,
-        profileService.allProfiles.values.where(
-          (p) => muteService?.shouldFilterFromFeeds(p.pubkey) != true,
-        ),
-        minScore: 0.3,
-        limit: 50,
-      );
-
-      _userSearchBloc.add(
-        UserSearchResultsReceived(
-          matchingProfiles.map((p) => p.pubkey).toList(),
-        ),
-      );
-
       // Filter local videos based on search query
       final filteredVideos = videos.where((video) {
         // Filter out blocked users first
@@ -219,9 +200,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
           if (tag.toLowerCase().contains(query.toLowerCase())) {
             hashtags.add(tag);
           }
-        }
-        if (muteService?.shouldFilterFromFeeds(video.pubkey) != true) {
-          users.add(video.pubkey);
         }
       }
 
@@ -275,7 +253,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
     final querySnapshot = _currentQuery;
     final muteService = ref.read(muteServiceProvider).value;
-    final profileService = ref.read(userProfileServiceProvider);
 
     // Helper to check if this search is still valid
     bool isSearchStale() => !mounted || _searchGeneration != generation;
@@ -318,7 +295,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
           _mergeAndUpdateResults(
             newVideos: filteredRestResults,
             muteService: muteService,
-            profileService: profileService,
             querySnapshot: querySnapshot,
             generation: generation,
           );
@@ -362,26 +338,11 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
             )
             .toList();
 
-        // Also search for users via WebSocket
-        await profileService.searchUsers(querySnapshot, limit: 100);
-
-        // Use fuzzy search and filter out blocked users
-        final matchingRemoteUsers = SearchUtils.searchProfiles(
-          querySnapshot,
-          profileService.allProfiles.values.where(
-            (p) => muteService?.shouldFilterFromFeeds(p.pubkey) != true,
-          ),
-          minScore: 0.3,
-          limit: 50,
-        ).map((p) => p.pubkey).toList();
-
         if (!isSearchStale()) {
           // Merge WebSocket results
           _mergeAndUpdateResults(
             newVideos: wsResults,
-            newUsers: matchingRemoteUsers,
             muteService: muteService,
-            profileService: profileService,
             querySnapshot: querySnapshot,
             generation: generation,
           );
@@ -422,9 +383,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
   /// from a previous search that completed after the user changed queries.
   void _mergeAndUpdateResults({
     required List<VideoEvent> newVideos,
-    List<String>? newUsers,
     MuteService? muteService,
-    required UserProfileService profileService,
     required String querySnapshot,
     required int generation,
   }) {
@@ -453,7 +412,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
     // Extract all unique hashtags from combined results
     final allHashtags = <String>{};
-    final allUsers = <String>{};
 
     for (final video in uniqueVideos) {
       for (final tag in video.hashtags) {
@@ -461,24 +419,12 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
           allHashtags.add(tag);
         }
       }
-      if (muteService?.shouldFilterFromFeeds(video.pubkey) != true) {
-        allUsers.add(video.pubkey);
-      }
-    }
-
-    // Add new users from WebSocket search
-    if (newUsers != null) {
-      allUsers.addAll(newUsers);
     }
 
     setState(() {
       _videoResults = uniqueVideos;
       _hashtagResults = allHashtags.take(20).toList();
     });
-
-    // Update user search bloc with merged users
-    _userSearchBloc.add(UserSearchResultsReceived(allUsers.toList()));
-
     // Update provider so active video system can access merged search results
     ref.read(searchScreenVideosProvider.notifier).state = uniqueVideos;
   }
