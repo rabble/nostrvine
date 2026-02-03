@@ -42,7 +42,7 @@ Load and apply these standards when assisting with Flutter development. Standard
 
 **Primary Reference:**
 ```
-@/standards/dart_flutter_rules.md
+.claude/dart_flutter_rules.md
 ```
 
 Use these rules as the baseline for all Dart and Flutter development decisions.
@@ -67,7 +67,7 @@ Use these rules as the baseline for all Dart and Flutter development decisions.
 ## 2. Architecture and Coding Practices
 **Primary Reference:**
 ```
-@/standards/very_good_engineering_flutter_rules.md
+.claude/very_good_engineering_flutter_rules.md
 ```
 
 Very Good Ventures consolidates popular coding practices into **Very Good Engineering (VGE)** - a single, opinionated approach for architecture and coding decisions.
@@ -112,7 +112,7 @@ class UserRepository {
 ### State Management with Riverpod
 When working with Riverpod instead of BLoC as the state management framework, either because it is referenced in the current codebase or because precised in the prompt, use the following standard:
 ```
-@/standards/riverpod_rules.md
+.claude/riverpod_rules.md
 ```
 
 ### Nostr Protocol
