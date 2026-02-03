@@ -44,7 +44,7 @@ definitions:
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
-          --dart-define=DEFAULT_ENV=$DEFAULT_ENV
+          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }}
     - &build_aab
       name: Build Android AAB
       script: |
@@ -54,7 +54,7 @@ definitions:
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
-          --dart-define=DEFAULT_ENV=$DEFAULT_ENV
+          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }}
     - &build_ios
       name: Build and sign iOS
       script: |
@@ -64,7 +64,7 @@ definitions:
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
-          --dart-define=DEFAULT_ENV=$DEFAULT_ENV \
+          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
           --export-options-plist=/Users/builder/export_options.plist
     - &build_ios_simulator
       name: Build iOS Simulator app
@@ -73,7 +73,7 @@ definitions:
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
-          --dart-define=DEFAULT_ENV=$DEFAULT_ENV
+          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }}
 workflows:
   ios-build:
     name: iOS Build
