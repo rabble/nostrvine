@@ -817,6 +817,59 @@ final class GeoBlockingServiceProvider
 String _$geoBlockingServiceHash() =>
     r'0475466204746fb8b4c6dd614847e3853d360d12';
 
+/// Gallery save service for saving videos to device camera roll
+
+@ProviderFor(gallerySaveService)
+const gallerySaveServiceProvider = GallerySaveServiceProvider._();
+
+/// Gallery save service for saving videos to device camera roll
+
+final class GallerySaveServiceProvider
+    extends
+        $FunctionalProvider<
+          GallerySaveService,
+          GallerySaveService,
+          GallerySaveService
+        >
+    with $Provider<GallerySaveService> {
+  /// Gallery save service for saving videos to device camera roll
+  const GallerySaveServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'gallerySaveServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$gallerySaveServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<GallerySaveService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GallerySaveService create(Ref ref) {
+    return gallerySaveService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GallerySaveService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GallerySaveService>(value),
+    );
+  }
+}
+
+String _$gallerySaveServiceHash() =>
+    r'4b0658e0f13e5f4adb34c0bb80d8469a9eb30a2f';
+
 /// Secure key storage service (foundational service)
 
 @ProviderFor(secureKeyStorage)

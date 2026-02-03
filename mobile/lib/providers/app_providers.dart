@@ -43,6 +43,7 @@ import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/event_router.dart';
+import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
@@ -370,6 +371,12 @@ AudioDevicePreferenceService audioDevicePreferenceService(Ref ref) {
 @riverpod
 GeoBlockingService geoBlockingService(Ref ref) {
   return GeoBlockingService();
+}
+
+/// Gallery save service for saving videos to device camera roll
+@riverpod
+GallerySaveService gallerySaveService(Ref ref) {
+  return GallerySaveService();
 }
 
 /// Secure key storage service (foundational service)

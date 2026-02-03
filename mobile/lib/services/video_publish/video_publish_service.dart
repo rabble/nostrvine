@@ -10,6 +10,7 @@ import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -48,6 +49,7 @@ class VideoPublishService {
     required this.blossomService,
     required this.draftService,
     required this.onProgressChanged,
+    this.gallerySaveService,
   });
 
   /// Manages background video uploads.
@@ -68,6 +70,9 @@ class VideoPublishService {
   /// Callback when upload progress changes.
   final OnProgressChanged onProgressChanged;
 
+  /// Optional service to save videos to device camera roll.
+  final GallerySaveService? gallerySaveService;
+
   /// Tracks the current background upload ID.
   String? _backgroundUploadId;
 
@@ -86,6 +91,10 @@ class VideoPublishService {
 
       final videoPath = await draft.clips.first.video.safeFilePath();
       Log.info('📝 Publishing video: $videoPath', category: .video);
+
+      // Fire-and-forget: Save video to camera roll as backup
+      // This runs in parallel with the upload and doesn't block publishing
+      _saveVideoToCameraRoll(videoPath);
 
       // Verify user is fully authenticated
       if (!authService.isAuthenticated) {
@@ -314,6 +323,31 @@ class VideoPublishService {
 
     final userMessage = await _getUserFriendlyErrorMessage(e);
     return PublishError(userMessage);
+  }
+
+  /// Saves video to camera roll as a backup (fire-and-forget).
+  ///
+  /// This method runs asynchronously and does not block the publish flow.
+  /// Any errors are logged but do not affect the publishing process.
+  void _saveVideoToCameraRoll(String videoPath) {
+    if (gallerySaveService == null) return;
+
+    // Run async without awaiting - fire and forget
+    Future(() async {
+      final result = await gallerySaveService!.saveVideoToGallery(videoPath);
+      switch (result) {
+        case GallerySaveSuccess():
+          Log.info(
+            '📱 Video backup saved to camera roll',
+            category: LogCategory.video,
+          );
+        case GallerySaveFailure(:final reason):
+          Log.warning(
+            '📱 Camera roll backup skipped: $reason',
+            category: LogCategory.video,
+          );
+      }
+    });
   }
 
   /// Converts technical error messages into user-friendly descriptions.

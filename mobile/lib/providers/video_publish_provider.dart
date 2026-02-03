@@ -48,6 +48,7 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       videoEventPublisher: ref.read(videoEventPublisherProvider),
       blossomService: ref.read(blossomUploadServiceProvider),
       draftService: _draftService,
+      gallerySaveService: ref.read(gallerySaveServiceProvider),
       onProgressChanged: ({required String draftId, required double progress}) {
         setUploadProgress(draftId: draftId, progress: progress);
         onProgressChanged(draftId: draftId, progress: progress);
