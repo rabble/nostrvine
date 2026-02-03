@@ -80,7 +80,6 @@ class SavedClip {
     final rawFilePath = json['filePath'] as String;
     final resolvedFilePath = p.join(documentsPath, p.basename(rawFilePath));
 
-    // Resolve thumbnail path if present
     final rawThumbnailPath = json['thumbnailPath'] as String?;
     final resolvedThumbnailPath = rawThumbnailPath != null
         ? p.join(documentsPath, p.basename(rawThumbnailPath))

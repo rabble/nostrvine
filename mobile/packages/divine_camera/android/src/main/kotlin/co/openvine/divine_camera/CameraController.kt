@@ -843,9 +843,10 @@ class CameraController(
      * Starts video recording.
      * @param maxDurationMs Optional maximum duration in milliseconds. Recording stops automatically when reached.
      * @param useCache If true, saves video to cache directory (temporary). If false, saves to external files directory (permanent).
+     * @param outputDirectory If provided, saves video to this directory (overrides useCache when false). Should be Flutter's getApplicationDocumentsDirectory() path.
      */
     @SuppressLint("MissingPermission")
-    fun startRecording(maxDurationMs: Int?, useCache: Boolean = true, callback: (String?) -> Unit) {
+    fun startRecording(maxDurationMs: Int?, useCache: Boolean = true, outputDirectory: String? = null, callback: (String?) -> Unit) {
         val videoCap = videoCapture ?: run {
             callback("Video capture not initialized")
             return
@@ -870,11 +871,11 @@ class CameraController(
         checkAndEnableAutoFlash()
 
         try {
-            // Create output file - use cache or documents directory based on useCache parameter
-            val outputDir = if (useCache) {
-                context.cacheDir
-            } else {
-                context.filesDir  // Application Documents directory
+            // Create output file - use cache, provided directory, or default to filesDir
+            val outputDir = when {
+                outputDirectory != null -> File(outputDirectory)
+                useCache -> context.cacheDir
+                else -> context.filesDir
             }
             val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
             val outputFile = File(outputDir, "VID_$timestamp.mp4")

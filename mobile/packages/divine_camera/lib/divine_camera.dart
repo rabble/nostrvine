@@ -164,17 +164,20 @@ class DivineCamera {
   /// When the duration is reached, recording stops automatically.
   /// [useCache] if true, saves video to cache directory (temporary),
   /// otherwise saves to documents directory (permanent). Defaults to true.
+  /// [outputDirectory] specifies where to save the video.
   ///
   /// Returns true if recording successfully started (first keyframe recorded),
   /// false if recording failed to start or was stopped before first keyframe.
   Future<bool> startRecording({
     Duration? maxDuration,
     bool useCache = true,
+    String? outputDirectory,
   }) async {
     if (!_state.canRecord) return false;
     final result = await _platform.startRecording(
       maxDuration: maxDuration,
       useCache: useCache,
+      outputDirectory: outputDirectory,
     );
     if (result) {
       _state = _state.copyWith(isRecording: true);

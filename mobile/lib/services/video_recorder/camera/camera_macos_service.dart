@@ -351,7 +351,10 @@ class CameraMacOSService extends CameraService {
   }
 
   @override
-  Future<bool> startRecording({Duration? maxDuration}) async {
+  Future<bool> startRecording({
+    Duration? maxDuration,
+    String? outputDirectory,
+  }) async {
     try {
       Log.info(
         '📷 Starting macOS video recording',
@@ -362,9 +365,7 @@ class CameraMacOSService extends CameraService {
       // Configure audio session for recording BEFORE starting
       await _configureAudioSessionForRecording();
 
-      // Use documents directory for user-accessible persistent storage
-      final documentsDir = await getApplicationDocumentsDirectory();
-      final recordingsDir = Directory('${documentsDir.path}/recordings');
+      final recordingsDir = Directory('${outputDirectory}/recordings');
       if (!recordingsDir.existsSync()) {
         await recordingsDir.create(recursive: true);
       }
