@@ -10,6 +10,8 @@ environment:
 dependencies:
   db_client:
     path: ../db_client
+  funnelcake_api_client:
+    path: ../funnelcake_api_client
   models:
     path: ../models
   nostr_client:
