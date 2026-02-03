@@ -6,6 +6,7 @@ import 'package:models/models.dart' show AspectRatio;
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 enum PublishStatus { draft, publishing, failed, published }
@@ -64,7 +65,7 @@ class VineDraft {
     );
   }
 
-  factory VineDraft.fromJson(Map<String, dynamic> json) {
+  factory VineDraft.fromJson(Map<String, dynamic> json, String documentsPath) {
     final List<RecordingClip> clips = [];
 
     // Backward compatibility: Handle old draft format with single videoFilePath
@@ -76,10 +77,16 @@ class VineDraft {
         orElse: () => .square,
       );
 
+      // Resolve video file path
+      final rawPath = json['videoFilePath'] as String;
+      final resolvedPath = p.isAbsolute(rawPath)
+          ? rawPath
+          : p.join(documentsPath, rawPath);
+
       clips.add(
         RecordingClip(
           id: 'draft_${now.millisecondsSinceEpoch}',
-          video: EditorVideo.file(json['videoFilePath']),
+          video: EditorVideo.file(resolvedPath),
           duration: .zero,
           recordedAt: DateTime.parse(json['createdAt'] as String),
           originalAspectRatio: targetAspectRatio.value,
@@ -90,7 +97,7 @@ class VineDraft {
       clips.addAll(
         List.from(
           json['clips'] ?? [],
-        ).map((jsonClip) => RecordingClip.fromJson(jsonClip)),
+        ).map((jsonClip) => RecordingClip.fromJson(jsonClip, documentsPath)),
       );
     }
 

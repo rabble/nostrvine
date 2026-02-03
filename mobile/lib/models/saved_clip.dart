@@ -1,6 +1,8 @@
 // ABOUTME: Data model for a saved video clip in the clip library
 // ABOUTME: Supports JSON serialization, thumbnails, and display formatting
 
+import 'package:path/path.dart' as p;
+
 class SavedClip {
   const SavedClip({
     required this.id,
@@ -57,10 +59,14 @@ class SavedClip {
   }
 
   Map<String, dynamic> toJson() {
+    // Store only filenames (relative paths) for iOS compatibility
+    // iOS changes the container path on app updates, so absolute paths break
     return {
       'id': id,
-      'filePath': filePath,
-      'thumbnailPath': thumbnailPath,
+      'filePath': p.basename(filePath),
+      'thumbnailPath': thumbnailPath != null
+          ? p.basename(thumbnailPath!)
+          : null,
       'durationMs': duration.inMilliseconds,
       'createdAt': createdAt.toIso8601String(),
       'aspectRatio': aspectRatio,
@@ -68,11 +74,25 @@ class SavedClip {
     };
   }
 
-  factory SavedClip.fromJson(Map<String, dynamic> json) {
+  factory SavedClip.fromJson(Map<String, dynamic> json, String documentsPath) {
+    // Resolve file path - if relative (just filename), prepend documents path
+    final rawFilePath = json['filePath'] as String;
+    final resolvedFilePath = p.isAbsolute(rawFilePath)
+        ? rawFilePath
+        : p.join(documentsPath, rawFilePath);
+
+    // Resolve thumbnail path if present
+    final rawThumbnailPath = json['thumbnailPath'] as String?;
+    final resolvedThumbnailPath = rawThumbnailPath != null
+        ? (p.isAbsolute(rawThumbnailPath)
+              ? rawThumbnailPath
+              : p.join(documentsPath, rawThumbnailPath))
+        : null;
+
     return SavedClip(
       id: json['id'] as String,
-      filePath: json['filePath'] as String,
-      thumbnailPath: json['thumbnailPath'] as String?,
+      filePath: resolvedFilePath,
+      thumbnailPath: resolvedThumbnailPath,
       duration: Duration(milliseconds: json['durationMs'] as int),
       createdAt: DateTime.parse(json['createdAt'] as String),
       aspectRatio: json['aspectRatio'] as String,

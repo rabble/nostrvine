@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DraftStorageService {
@@ -74,9 +75,13 @@ class DraftStorageService {
         return [];
       }
 
+      final documentsPath = (await getApplicationDocumentsDirectory()).path;
       final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
       return jsonList
-          .map((json) => VineDraft.fromJson(json as Map<String, dynamic>))
+          .map(
+            (json) =>
+                VineDraft.fromJson(json as Map<String, dynamic>, documentsPath),
+          )
           .toList();
     } catch (e) {
       // If storage is corrupted, return empty list
