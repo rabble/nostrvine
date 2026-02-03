@@ -312,8 +312,8 @@ class _FittedVideoPlayer extends StatelessWidget {
         : 1.0;
 
     return FittedBox(
-      fit: BoxFit.contain,
-      alignment: Alignment.topCenter,
+      fit: BoxFit.cover,
+      alignment: Alignment.center,
       child: SizedBox(
         width: videoWidth,
         height: videoHeight,
@@ -330,7 +330,8 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
+    return FittedBox(
+      fit: BoxFit.cover,
       child: thumbnailUrl != null
           ? Image.network(
               thumbnailUrl!,
