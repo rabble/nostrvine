@@ -1,13 +1,25 @@
+// ABOUTME: Tests for SingleVideoPlayer widget
+// ABOUTME: Validates loading, ready, error states and video lifecycle
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
-import '../helpers/mocks.dart';
 import '../helpers/test_helpers.dart';
 
+class _MockPooledPlayer extends Mock implements PooledPlayer {}
+
+class _FakeMedia extends Fake implements Media {}
+
+void _setUpFallbacks() {
+  registerFallbackValue(_FakeMedia());
+  registerFallbackValue(Duration.zero);
+  registerFallbackValue(PlaylistMode.single);
+}
+
 void main() {
-  setUpAll(setUpMocktail);
+  setUpAll(_setUpFallbacks);
 
   group('SingleVideoPlayer', () {
     late TestablePlayerPool pool;
@@ -21,7 +33,7 @@ void main() {
           final setup = createMockPlayerSetup();
           playerSetups[url] = setup;
 
-          final mockPooledPlayer = MockPooledPlayer();
+          final mockPooledPlayer = _MockPooledPlayer();
           when(() => mockPooledPlayer.player).thenReturn(setup.player);
           when(
             () => mockPooledPlayer.videoController,
@@ -77,12 +89,11 @@ void main() {
       testWidgets('default autoPlay is true', (tester) async {
         await tester.pumpWidget(buildWidget());
 
-        // Starts in loading state
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
     });
 
-    group('Loading State', () {
+    group('loading state', () {
       testWidgets('starts in loading state', (tester) async {
         await tester.pumpWidget(buildWidget());
 
@@ -108,7 +119,7 @@ void main() {
       });
     });
 
-    group('Video Loading', () {
+    group('video loading', () {
       testWidgets('gets player from pool', (tester) async {
         final video = createTestVideo();
 
@@ -125,9 +136,7 @@ void main() {
         await tester.pump();
 
         final setup = playerSetups['https://example.com/video.mp4']!;
-        verify(
-          () => setup.player.open(any(), play: false),
-        ).called(1);
+        verify(() => setup.player.open(any(), play: false)).called(1);
       });
 
       testWidgets('sets playlist mode to single', (tester) async {
@@ -154,14 +163,13 @@ void main() {
       });
     });
 
-    group('Ready State', () {
+    group('ready state', () {
       testWidgets('transitions to ready when buffered', (tester) async {
         final video = createTestVideo(url: 'https://example.com/video.mp4');
 
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        // Simulate buffer complete
         final setup = playerSetups['https://example.com/video.mp4']!;
         setup.bufferingController.add(false);
         await tester.pump();
@@ -193,7 +201,6 @@ void main() {
         setup.bufferingController.add(false);
         await tester.pump();
 
-        // First setVolume(0) for buffering, then setVolume(100) for playback
         verify(() => setup.player.setVolume(100)).called(1);
       });
 
@@ -211,9 +218,8 @@ void main() {
       });
     });
 
-    group('Error State', () {
+    group('error state', () {
       testWidgets('transitions to error on exception', (tester) async {
-        // Create a pool that throws on getPlayer
         final errorPool = TestablePlayerPool(
           mockPlayerFactory: (url) {
             throw Exception('Failed to load');
@@ -310,7 +316,7 @@ void main() {
       });
     });
 
-    group('Video Change', () {
+    group('video change', () {
       testWidgets('reloads when video URL changes', (tester) async {
         final video1 = createTestVideo(
           id: 'v1',
@@ -326,7 +332,6 @@ void main() {
 
         expect(pool.hasPlayer('https://example.com/video1.mp4'), isTrue);
 
-        // Change video
         await tester.pumpWidget(buildWidget(video: video2));
         await tester.pump();
 
@@ -345,16 +350,14 @@ void main() {
 
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
 
-        // Rebuild with same video
         await tester.pumpWidget(buildWidget(video: video));
         await tester.pump();
 
-        // Should still be ready
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
       });
     });
 
-    group('Lifecycle', () {
+    group('lifecycle', () {
       testWidgets('player stays in pool after dispose', (tester) async {
         final video = createTestVideo(url: 'https://example.com/video.mp4');
 
@@ -363,10 +366,8 @@ void main() {
 
         expect(pool.hasPlayer('https://example.com/video.mp4'), isTrue);
 
-        // Remove widget
         await tester.pumpWidget(const MaterialApp(home: SizedBox()));
 
-        // Player should still be in pool (LRU handles cleanup)
         expect(pool.hasPlayer('https://example.com/video.mp4'), isTrue);
       });
     });
@@ -382,7 +383,6 @@ void main() {
         setup.bufferingController.add(false);
         await tester.pump();
 
-        // Play was called for buffering, setVolume(100) for playback
         verify(setup.player.play).called(1);
         verify(() => setup.player.setVolume(100)).called(1);
       });
@@ -402,7 +402,7 @@ void main() {
       });
     });
 
-    group('Buffer subscription edge cases', () {
+    group('buffer subscription edge cases', () {
       testWidgets('ignores buffering false when already ready', (
         tester,
       ) async {
@@ -413,7 +413,6 @@ void main() {
 
         final setup = playerSetups['https://example.com/video.mp4']!;
 
-        // Transition to ready
         setup.bufferingController.add(false);
         await tester.pump();
 
@@ -423,16 +422,14 @@ void main() {
       testWidgets('buffer subscription callback transitions state', (
         tester,
       ) async {
-        // Create a pool with buffering initially true
         final bufferingSetups = <String, MockPlayerSetup>{};
         final bufferingPool = TestablePlayerPool(
           maxPlayers: 10,
           mockPlayerFactory: (url) {
-            // Create setup with buffering: true initially
             final setup = createMockPlayerSetup(isBuffering: true);
             bufferingSetups[url] = setup;
 
-            final mockPooledPlayer = MockPooledPlayer();
+            final mockPooledPlayer = _MockPooledPlayer();
             when(() => mockPooledPlayer.player).thenReturn(setup.player);
             when(
               () => mockPooledPlayer.videoController,
@@ -464,16 +461,13 @@ void main() {
         );
         await tester.pump();
 
-        // Still in loading since buffering is true
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
         final setup = bufferingSetups['https://example.com/video.mp4']!;
 
-        // Trigger buffer complete via subscription
         setup.bufferingController.add(false);
         await tester.pump();
 
-        // Now should be ready
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
 
         for (final s in bufferingSetups.values) {
@@ -483,7 +477,7 @@ void main() {
       });
     });
 
-    group('Default widgets', () {
+    group('default widgets', () {
       testWidgets('default error state shows retry button', (tester) async {
         final errorPool = TestablePlayerPool(
           mockPlayerFactory: (url) {
@@ -508,7 +502,6 @@ void main() {
         await tester.pump();
         await tester.pump();
 
-        // Verify default error state components
         expect(find.byIcon(Icons.error_outline), findsOneWidget);
         expect(find.text('Failed to load video'), findsOneWidget);
         expect(find.byIcon(Icons.refresh), findsOneWidget);
@@ -522,7 +515,6 @@ void main() {
       ) async {
         await tester.pumpWidget(buildWidget());
 
-        // Default loading shows CircularProgressIndicator
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
     });

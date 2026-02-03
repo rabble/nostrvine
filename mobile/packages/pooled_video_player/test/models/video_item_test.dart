@@ -1,10 +1,13 @@
+// ABOUTME: Tests for VideoItem model
+// ABOUTME: Validates constructor, properties, equality, and edge cases
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 void main() {
   group('VideoItem', () {
     group('constructor', () {
-      test('creates instance with required parameters only', () {
+      test('creates instance with required parameters', () {
         const item = VideoItem(
           id: 'test_id',
           url: 'https://example.com/video.mp4',
@@ -12,25 +15,6 @@ void main() {
 
         expect(item.id, equals('test_id'));
         expect(item.url, equals('https://example.com/video.mp4'));
-        expect(item.title, isNull);
-        expect(item.description, isNull);
-        expect(item.thumbnailUrl, isNull);
-      });
-
-      test('creates instance with all parameters', () {
-        const item = VideoItem(
-          id: 'test_id',
-          url: 'https://example.com/video.mp4',
-          title: 'Test Title',
-          description: 'Test Description',
-          thumbnailUrl: 'https://example.com/thumb.jpg',
-        );
-
-        expect(item.id, equals('test_id'));
-        expect(item.url, equals('https://example.com/video.mp4'));
-        expect(item.title, equals('Test Title'));
-        expect(item.description, equals('Test Description'));
-        expect(item.thumbnailUrl, equals('https://example.com/thumb.jpg'));
       });
 
       test('can be created as const', () {
@@ -48,7 +32,7 @@ void main() {
     });
 
     group('properties', () {
-      test('id property returns correct value', () {
+      test('id returns correct value', () {
         const item = VideoItem(
           id: 'unique_id_123',
           url: 'https://example.com/video.mp4',
@@ -57,7 +41,7 @@ void main() {
         expect(item.id, equals('unique_id_123'));
       });
 
-      test('url property returns correct value', () {
+      test('url returns correct value', () {
         const item = VideoItem(
           id: 'test',
           url: 'https://cdn.example.com/path/to/video.mp4',
@@ -65,73 +49,47 @@ void main() {
 
         expect(item.url, equals('https://cdn.example.com/path/to/video.mp4'));
       });
+    });
 
-      test('title property returns null when not provided', () {
-        const item = VideoItem(
-          id: 'test',
-          url: 'https://example.com/video.mp4',
+    group('equality', () {
+      test('items with same id are equal', () {
+        const item1 = VideoItem(
+          id: 'same_id',
+          url: 'https://example.com/video1.mp4',
+        );
+        const item2 = VideoItem(
+          id: 'same_id',
+          url: 'https://example.com/video2.mp4',
         );
 
-        expect(item.title, isNull);
+        expect(item1, equals(item2));
       });
 
-      test('title property returns value when provided', () {
-        const item = VideoItem(
-          id: 'test',
+      test('items with different ids are not equal', () {
+        const item1 = VideoItem(
+          id: 'id_1',
           url: 'https://example.com/video.mp4',
-          title: 'My Video Title',
+        );
+        const item2 = VideoItem(
+          id: 'id_2',
+          url: 'https://example.com/video.mp4',
         );
 
-        expect(item.title, equals('My Video Title'));
+        expect(item1, isNot(equals(item2)));
       });
 
-      test('description property returns null when not provided', () {
+      test('props contains only id', () {
         const item = VideoItem(
-          id: 'test',
+          id: 'test_id',
           url: 'https://example.com/video.mp4',
         );
 
-        expect(item.description, isNull);
-      });
-
-      test('description property returns value when provided', () {
-        const item = VideoItem(
-          id: 'test',
-          url: 'https://example.com/video.mp4',
-          description: 'A detailed description of the video content.',
-        );
-
-        expect(
-          item.description,
-          equals('A detailed description of the video content.'),
-        );
-      });
-
-      test('thumbnailUrl property returns null when not provided', () {
-        const item = VideoItem(
-          id: 'test',
-          url: 'https://example.com/video.mp4',
-        );
-
-        expect(item.thumbnailUrl, isNull);
-      });
-
-      test('thumbnailUrl property returns value when provided', () {
-        const item = VideoItem(
-          id: 'test',
-          url: 'https://example.com/video.mp4',
-          thumbnailUrl: 'https://example.com/thumbnails/thumb.jpg',
-        );
-
-        expect(
-          item.thumbnailUrl,
-          equals('https://example.com/thumbnails/thumb.jpg'),
-        );
+        expect(item.props, equals(['test_id']));
       });
     });
 
     group('edge cases', () {
-      test('handles empty strings for id and url', () {
+      test('handles empty strings', () {
         const item = VideoItem(id: '', url: '');
 
         expect(item.id, equals(''));
@@ -148,18 +106,14 @@ void main() {
         expect(item.url.contains('video.mp4'), isTrue);
       });
 
-      test('handles special characters in strings', () {
+      test('handles special characters', () {
         const item = VideoItem(
           id: 'id-with-special_chars.123',
           url: 'https://example.com/video?id=123&format=mp4',
-          title: "Title with 'quotes' and \"double quotes\"",
-          description: 'Description with\nnewlines\tand\ttabs',
         );
 
         expect(item.id, contains('-'));
         expect(item.url, contains('?'));
-        expect(item.title, contains("'"));
-        expect(item.description, contains('\n'));
       });
     });
   });

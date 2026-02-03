@@ -1,17 +1,29 @@
+// ABOUTME: Tests for VideoFeedController
+// ABOUTME: Validates state management, page navigation, and playback control
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
-import '../helpers/mocks.dart';
 import '../helpers/test_helpers.dart';
 
+class _MockPooledPlayer extends Mock implements PooledPlayer {}
+
+class _FakeMedia extends Fake implements Media {}
+
+void _setUpFallbacks() {
+  registerFallbackValue(_FakeMedia());
+  registerFallbackValue(Duration.zero);
+  registerFallbackValue(PlaylistMode.single);
+}
+
 void main() {
-  setUpAll(setUpMocktail);
+  setUpAll(_setUpFallbacks);
 
   group('VideoFeedController', () {
     late TestablePlayerPool pool;
-    late List<MockPooledPlayer> createdPlayers;
+    late List<_MockPooledPlayer> createdPlayers;
     late Map<String, MockPlayerSetup> playerSetups;
 
     setUp(() {
@@ -24,7 +36,7 @@ void main() {
           final setup = createMockPlayerSetup();
           playerSetups[url] = setup;
 
-          final mockPooledPlayer = MockPooledPlayer();
+          final mockPooledPlayer = _MockPooledPlayer();
           when(() => mockPooledPlayer.player).thenReturn(setup.player);
           when(
             () => mockPooledPlayer.videoController,
@@ -103,10 +115,7 @@ void main() {
       });
 
       test('initializes with empty video list', () {
-        final controller = VideoFeedController(
-          videos: [],
-          pool: pool,
-        );
+        final controller = VideoFeedController(videos: [], pool: pool);
 
         expect(controller.videoCount, equals(0));
         expect(controller.videos, isEmpty);
@@ -125,7 +134,7 @@ void main() {
       });
     });
 
-    group('State Properties', () {
+    group('state properties', () {
       group('currentIndex', () {
         test('returns 0 initially', () {
           final controller = VideoFeedController(
@@ -189,7 +198,6 @@ void main() {
             ..play();
 
           // Since no video is ready, isPaused remains true
-          // This tests the guard clause in play()
           expect(controller.isPaused, isTrue);
         });
       });
@@ -265,10 +273,7 @@ void main() {
 
       group('videoCount', () {
         test('returns 0 for empty list', () {
-          final controller = VideoFeedController(
-            videos: [],
-            pool: pool,
-          );
+          final controller = VideoFeedController(videos: [], pool: pool);
 
           expect(controller.videoCount, equals(0));
 
@@ -300,7 +305,7 @@ void main() {
       });
     });
 
-    group('Video Access', () {
+    group('video access', () {
       group('getVideoController', () {
         test('returns null for unloaded index', () {
           final controller = VideoFeedController(
@@ -378,7 +383,7 @@ void main() {
       });
     });
 
-    group('Page Navigation', () {
+    group('page navigation', () {
       group('onPageChanged', () {
         test('updates currentIndex', () {
           final controller = VideoFeedController(
@@ -424,7 +429,7 @@ void main() {
       });
     });
 
-    group('Playback Control', () {
+    group('playback control', () {
       group('play', () {
         test('does not change isPaused when video not ready', () {
           final controller = VideoFeedController(
@@ -437,9 +442,7 @@ void main() {
             ..pause()
             ..play();
 
-          // play() has a guard:
-          // if (!_isActive || !isVideoReady(_currentIndex)) return;
-          // Since video isn't ready, isPaused stays true.
+          // play() has a guard - since video isn't ready, isPaused stays true
           expect(controller.isPaused, isTrue);
         });
 
@@ -504,7 +507,6 @@ void main() {
             ..togglePlayPause();
 
           // togglePlayPause calls play(), but play() has guards
-          // Since video isn't ready, isPaused stays true
           expect(controller.isPaused, isTrue);
         });
 
@@ -545,7 +547,6 @@ void main() {
           );
           addTearDown(controller.dispose);
 
-          // Should not throw
           controller.setVolume(0.5);
         });
       });
@@ -558,13 +559,12 @@ void main() {
           );
           addTearDown(controller.dispose);
 
-          // Should not throw
           controller.setPlaybackSpeed(1.5);
         });
       });
     });
 
-    group('Active State', () {
+    group('active state', () {
       group('setActive', () {
         test('notifies listeners', () {
           final controller = VideoFeedController(
@@ -600,7 +600,7 @@ void main() {
       });
     });
 
-    group('Video Management', () {
+    group('video management', () {
       group('addVideos', () {
         test('adds videos to list', () {
           final controller = VideoFeedController(
@@ -660,13 +660,8 @@ void main() {
         final controller = VideoFeedController(
           videos: createTestVideos(),
           pool: pool,
-        );
+        )..dispose();
 
-        // Testing dispose behavior - must call dispose before expect.
-        // ignore: cascade_invocations
-        controller.dispose();
-
-        // Adding listener after dispose should throw
         expect(
           () => controller.addListener(() {}),
           throwsA(isA<FlutterError>()),
@@ -674,23 +669,17 @@ void main() {
       });
 
       test('can be called multiple times', () {
-        final controller = VideoFeedController(
-          videos: createTestVideos(),
-          pool: pool,
-        );
-
-        // Testing multiple dispose calls - intentional cascade of dispose.
-        // ignore: cascade_invocations
-        controller
+        VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+          )
           ..dispose()
           ..dispose()
           ..dispose();
-
-        // Should not throw
       });
     });
 
-    group('Playback with loaded player', () {
+    group('playback with loaded player', () {
       late VideoFeedController controller;
       late MockPlayerSetup playerSetup;
 
@@ -700,14 +689,11 @@ void main() {
           pool: pool,
         );
 
-        // Wait for player to be loaded
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        // Get the setup for the first video
         final url = createTestVideos()[0].url;
         playerSetup = playerSetups[url]!;
 
-        // Simulate buffer ready to mark video as ready
         playerSetup.bufferingController.add(false);
         await Future<void>.delayed(const Duration(milliseconds: 50));
       });
@@ -727,18 +713,15 @@ void main() {
       test('setVolume calls player.setVolume when player is loaded', () async {
         controller.setVolume(0.5);
 
-        // Wait for unawaited call
         await Future<void>.delayed(const Duration(milliseconds: 10));
 
-        // Volume is multiplied by 100
         verify(() => playerSetup.player.setVolume(50)).called(1);
       });
 
       test('setVolume clamps volume to 0-100 range', () async {
-        // Reset mock to track only new calls
         clearInteractions(playerSetup.player);
 
-        controller.setVolume(1.5); // Should clamp to 100
+        controller.setVolume(1.5);
 
         await Future<void>.delayed(const Duration(milliseconds: 10));
 
@@ -754,7 +737,6 @@ void main() {
       });
 
       test('pause calls player.pause when video is playing', () async {
-        // Set player to playing state
         when(() => playerSetup.state.playing).thenReturn(true);
 
         controller.pause();
@@ -765,7 +747,6 @@ void main() {
       });
 
       test('pause does not call player.pause when not playing', () async {
-        // Set player to not playing state
         when(() => playerSetup.state.playing).thenReturn(false);
 
         controller.pause();
@@ -776,9 +757,8 @@ void main() {
       });
     });
 
-    group('Video loading error handling', () {
+    group('video loading error handling', () {
       test('sets LoadState.error when loading fails', () async {
-        // Create a pool that throws on getPlayer
         final errorPool = TestablePlayerPool(
           maxPlayers: 10,
           mockPlayerFactory: (url) {
@@ -791,7 +771,6 @@ void main() {
           pool: errorPool,
         );
 
-        // Wait for load attempt
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
         expect(controller.getLoadState(0), equals(LoadState.error));
@@ -816,10 +795,8 @@ void main() {
         var notifyCount = 0;
         controller.addListener(() => notifyCount++);
 
-        // Wait for load attempt
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
-        // Should have been notified (loading state change, then error state)
         expect(notifyCount, greaterThan(0));
 
         controller.dispose();
@@ -848,12 +825,10 @@ void main() {
         var pageChangeNotifications = 0;
         controller
           ..addListener(() {
-            // Count only, since preloading also notifies
             pageChangeNotifications++;
           })
           ..onPageChanged(1);
 
-        // At least one notification for page change
         expect(pageChangeNotifications, greaterThanOrEqualTo(1));
       });
 
@@ -877,7 +852,6 @@ void main() {
           ..removeListener(listener)
           ..onPageChanged(2);
 
-        // After removing listener, count should not increase
         expect(notifyCount, equals(afterFirstChange));
         expect(afterFirstChange, greaterThan(initialCount));
       });

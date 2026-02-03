@@ -1,20 +1,57 @@
+// ABOUTME: Tests for PooledPlayer controller
+// ABOUTME: Validates player wrapper lifecycle and dispose behavior
+
 import 'package:flutter_test/flutter_test.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
-import '../helpers/mocks.dart';
-import '../helpers/test_helpers.dart';
+class _MockPlayer extends Mock implements Player {}
+
+class _MockVideoController extends Mock implements VideoController {}
+
+class _MockPlayerState extends Mock implements PlayerState {}
+
+class _MockPlayerStream extends Mock implements PlayerStream {}
+
+void _setUpFallbacks() {
+  registerFallbackValue(Duration.zero);
+  registerFallbackValue(PlaylistMode.single);
+}
+
+_MockPlayer _createMockPlayer() {
+  final mockPlayer = _MockPlayer();
+  final mockState = _MockPlayerState();
+  final mockStream = _MockPlayerStream();
+
+  when(() => mockState.playing).thenReturn(false);
+  when(() => mockState.buffering).thenReturn(false);
+  when(() => mockState.position).thenReturn(Duration.zero);
+  when(() => mockPlayer.state).thenReturn(mockState);
+  when(() => mockPlayer.stream).thenReturn(mockStream);
+
+  when(mockPlayer.play).thenAnswer((_) async {});
+  when(mockPlayer.pause).thenAnswer((_) async {});
+  when(mockPlayer.stop).thenAnswer((_) async {});
+  when(() => mockPlayer.seek(any())).thenAnswer((_) async {});
+  when(() => mockPlayer.setVolume(any())).thenAnswer((_) async {});
+  when(() => mockPlayer.setRate(any())).thenAnswer((_) async {});
+  when(() => mockPlayer.setPlaylistMode(any())).thenAnswer((_) async {});
+  when(mockPlayer.dispose).thenAnswer((_) async {});
+
+  return mockPlayer;
+}
 
 void main() {
-  setUpAll(setUpMocktail);
+  setUpAll(_setUpFallbacks);
 
   group('PooledPlayer', () {
-    late MockPlayer mockPlayer;
-    late MockVideoController mockVideoController;
+    late _MockPlayer mockPlayer;
+    late _MockVideoController mockVideoController;
 
     setUp(() {
-      mockPlayer = createMockPlayer();
-      mockVideoController = createMockVideoController();
+      mockPlayer = _createMockPlayer();
+      mockVideoController = _MockVideoController();
     });
 
     group('constructor', () {
@@ -82,7 +119,6 @@ void main() {
         await pooledPlayer.dispose();
         await pooledPlayer.dispose();
 
-        // Should only be called once due to isDisposed check
         verify(() => mockPlayer.stop()).called(1);
         verify(() => mockPlayer.dispose()).called(1);
       });
@@ -95,7 +131,6 @@ void main() {
           videoController: mockVideoController,
         );
 
-        // Should not throw
         await expectLater(pooledPlayer.dispose(), completes);
         expect(pooledPlayer.isDisposed, isTrue);
       });
@@ -108,7 +143,6 @@ void main() {
           videoController: mockVideoController,
         );
 
-        // Should not throw
         await expectLater(pooledPlayer.dispose(), completes);
         expect(pooledPlayer.isDisposed, isTrue);
       });

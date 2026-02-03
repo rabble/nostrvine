@@ -72,13 +72,7 @@ class _VideoFeedViewState extends State<VideoFeedView> {
 
           // Wrap videos for pool compatibility
           final pooledVideos = state.videos
-              .map(
-                (e) => VideoItem(
-                  id: e.id,
-                  url: e.videoUrl!,
-                  thumbnailUrl: e.thumbnailUrl,
-                ),
-              )
+              .map((e) => VideoItem(id: e.id, url: e.videoUrl!))
               .toList();
 
           // Note: RefreshIndicator removed - it conflicts with PageView
@@ -114,7 +108,7 @@ class _VideoFeedViewState extends State<VideoFeedView> {
                   right: 0,
                   child: Center(
                     child: CircularProgressIndicator(
-                      color: Color.fromARGB(255, 69, 83, 79),
+                      color: VineTheme.vineGreen,
                       strokeWidth: 2,
                     ),
                   ),
@@ -260,6 +254,8 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // All videos without dimensions are treated as portrait as its default
+    // usecase (e.g. Reels-style vertical videos).
     final isPortrait = video.dimensions != null ? video.isPortrait : true;
 
     return Container(

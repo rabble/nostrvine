@@ -1,51 +1,61 @@
+// ABOUTME: Test helpers and fixtures for pooled_video_player tests
+// ABOUTME: Provides factories for VideoItem, players, and widget wrappers
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
-import 'mocks.dart';
+// ---------------------------------------------------------------------------
+// Private Mock Classes
+// ---------------------------------------------------------------------------
 
-// ============================================
-// FIXTURES
-// ============================================
+class _MockPlayer extends Mock implements Player {}
 
-/// Creates a list of test VideoItems.
+class _MockVideoController extends Mock implements VideoController {}
+
+class _MockPlayerPool extends Mock implements PlayerPool {}
+
+class _MockVideoFeedController extends Mock implements VideoFeedController {}
+
+class _MockPooledPlayer extends Mock implements PooledPlayer {}
+
+class _MockPlayerState extends Mock implements PlayerState {}
+
+class _MockPlayerStream extends Mock implements PlayerStream {}
+
+// ---------------------------------------------------------------------------
+// Video Item Fixtures
+// ---------------------------------------------------------------------------
+
+/// Creates a list of test [VideoItem]s with sequential IDs.
 List<VideoItem> createTestVideos({int count = 5}) {
   return List.generate(
     count,
     (i) => VideoItem(
       id: 'video_$i',
       url: 'https://example.com/video_$i.mp4',
-      title: 'Video $i',
-      description: 'Description for video $i',
-      thumbnailUrl: 'https://example.com/thumb_$i.jpg',
     ),
   );
 }
 
-/// Creates a single test VideoItem.
+/// Creates a single test [VideoItem] with configurable properties.
 VideoItem createTestVideo({
   String id = 'test_video',
   String url = 'https://example.com/test.mp4',
-  String? title,
-  String? description,
-  String? thumbnailUrl,
 }) {
-  return VideoItem(
-    id: id,
-    url: url,
-    title: title,
-    description: description,
-    thumbnailUrl: thumbnailUrl,
-  );
+  return VideoItem(id: id, url: url);
 }
 
-// ============================================
-// MOCK PLAYER SETUP
-// ============================================
+// ---------------------------------------------------------------------------
+// Mock Player Setup
+// ---------------------------------------------------------------------------
 
-/// Result of creating a mock player with all dependencies.
+/// Container for a fully configured mock player with all dependencies.
+///
+/// Provides access to stream controllers for simulating async behavior.
 class MockPlayerSetup {
   MockPlayerSetup({
     required this.player,
@@ -56,14 +66,14 @@ class MockPlayerSetup {
     required this.positionController,
   });
 
-  final MockPlayer player;
-  final MockPlayerState state;
-  final MockPlayerStream stream;
+  final Player player;
+  final PlayerState state;
+  final PlayerStream stream;
   final StreamController<bool> bufferingController;
   final StreamController<bool> playingController;
   final StreamController<Duration> positionController;
 
-  /// Dispose all stream controllers.
+  /// Disposes all stream controllers.
   Future<void> dispose() async {
     await bufferingController.close();
     await playingController.close();
@@ -71,28 +81,29 @@ class MockPlayerSetup {
   }
 }
 
-/// Creates a fully configured MockPlayer with streams.
+/// Creates a fully configured [MockPlayerSetup] with streams.
+///
+/// Use [isPlaying], [isBuffering], and [position] to set initial state.
 MockPlayerSetup createMockPlayerSetup({
   bool isPlaying = false,
   bool isBuffering = false,
   Duration position = Duration.zero,
 }) {
-  final mockPlayer = MockPlayer();
-  final mockState = MockPlayerState();
-  final mockStream = MockPlayerStream();
+  final mockPlayer = _MockPlayer();
+  final mockState = _MockPlayerState();
+  final mockStream = _MockPlayerStream();
 
-  // Stream controllers for async behavior
   final bufferingController = StreamController<bool>.broadcast();
   final playingController = StreamController<bool>.broadcast();
   final positionController = StreamController<Duration>.broadcast();
 
-  // Set up state
+  // Configure state
   when(() => mockState.playing).thenReturn(isPlaying);
   when(() => mockState.buffering).thenReturn(isBuffering);
   when(() => mockState.position).thenReturn(position);
   when(() => mockPlayer.state).thenReturn(mockState);
 
-  // Set up streams
+  // Configure streams
   when(
     () => mockStream.buffering,
   ).thenAnswer((_) => bufferingController.stream);
@@ -100,7 +111,7 @@ MockPlayerSetup createMockPlayerSetup({
   when(() => mockStream.position).thenAnswer((_) => positionController.stream);
   when(() => mockPlayer.stream).thenReturn(mockStream);
 
-  // Set up common methods
+  // Configure common methods
   when(
     () => mockPlayer.open(any(), play: any(named: 'play')),
   ).thenAnswer((_) async {});
@@ -123,8 +134,11 @@ MockPlayerSetup createMockPlayerSetup({
   );
 }
 
-/// Creates a simple MockPlayer without stream controllers.
-MockPlayer createMockPlayer({
+/// Creates a simple mock [Player] without stream controllers.
+///
+/// For tests that don't need stream simulation, use this instead of
+/// [createMockPlayerSetup].
+Player createMockPlayer({
   bool isPlaying = false,
   bool isBuffering = false,
 }) {
@@ -135,26 +149,23 @@ MockPlayer createMockPlayer({
   return setup.player;
 }
 
-/// Creates a MockVideoController.
-MockVideoController createMockVideoController() {
-  return MockVideoController();
+/// Creates a mock [VideoController].
+VideoController createMockVideoController() {
+  return _MockVideoController();
 }
 
-/// Creates a MockPooledPlayer with configured player and controller.
-MockPooledPlayer createMockPooledPlayer({
+/// Creates a mock [PooledPlayer] with configured player and controller.
+PooledPlayer createMockPooledPlayer({
   bool isDisposed = false,
   bool isPlaying = false,
   bool isBuffering = false,
-  MockPlayer? player,
-  MockVideoController? videoController,
+  Player? player,
+  VideoController? videoController,
 }) {
-  final mockPooledPlayer = MockPooledPlayer();
+  final mockPooledPlayer = _MockPooledPlayer();
   final mockPlayer =
       player ??
-      createMockPlayer(
-        isPlaying: isPlaying,
-        isBuffering: isBuffering,
-      );
+      createMockPlayer(isPlaying: isPlaying, isBuffering: isBuffering);
   final mockController = videoController ?? createMockVideoController();
 
   when(() => mockPooledPlayer.player).thenReturn(mockPlayer);
@@ -165,9 +176,9 @@ MockPooledPlayer createMockPooledPlayer({
   return mockPooledPlayer;
 }
 
-/// Creates a MockPlayerPool.
-MockPlayerPool createMockPlayerPool({int maxPlayers = 5}) {
-  final mockPool = MockPlayerPool();
+/// Creates a mock [PlayerPool] with default stubs.
+PlayerPool createMockPlayerPool({int maxPlayers = 5}) {
+  final mockPool = _MockPlayerPool();
 
   when(() => mockPool.maxPlayers).thenReturn(maxPlayers);
   when(() => mockPool.playerCount).thenReturn(0);
@@ -179,14 +190,14 @@ MockPlayerPool createMockPlayerPool({int maxPlayers = 5}) {
   return mockPool;
 }
 
-/// Creates a MockVideoFeedController.
-MockVideoFeedController createMockVideoFeedController({
+/// Creates a mock [VideoFeedController] with configurable state.
+VideoFeedController createMockVideoFeedController({
   List<VideoItem>? videos,
   int currentIndex = 0,
   bool isPaused = false,
   bool isActive = true,
 }) {
-  final mockController = MockVideoFeedController();
+  final mockController = _MockVideoFeedController();
   final videoList = videos ?? createTestVideos();
 
   when(() => mockController.videos).thenReturn(videoList);
@@ -216,16 +227,16 @@ MockVideoFeedController createMockVideoFeedController({
   return mockController;
 }
 
-// ============================================
-// WIDGET TEST HELPERS
-// ============================================
+// ---------------------------------------------------------------------------
+// Widget Test Helpers
+// ---------------------------------------------------------------------------
 
-/// Wraps a widget with MaterialApp for testing.
+/// Wraps a widget with [MaterialApp] for testing.
 Widget wrapWithMaterialApp(Widget child) {
   return MaterialApp(home: Scaffold(body: child));
 }
 
-/// Wraps a widget with MaterialApp and VideoPoolProvider.
+/// Wraps a widget with [MaterialApp] and [VideoPoolProvider].
 Widget wrapWithProvider({
   required Widget child,
   PlayerPool? pool,
@@ -242,18 +253,20 @@ Widget wrapWithProvider({
   );
 }
 
-// ============================================
-// TESTABLE PLAYER POOL
-// ============================================
+// ---------------------------------------------------------------------------
+// Testable Player Pool
+// ---------------------------------------------------------------------------
 
-/// A testable PlayerPool that uses mock player creation.
+/// A testable [PlayerPool] that uses mock player creation.
+///
+/// Allows tests to inject mock players and observe pool behavior.
 class TestablePlayerPool extends PlayerPool {
   TestablePlayerPool({
     required this.mockPlayerFactory,
     super.maxPlayers,
   });
 
-  /// Factory function to create mock PooledPlayers.
+  /// Factory function to create mock [PooledPlayer]s.
   final PooledPlayer Function(String url) mockPlayerFactory;
 
   final Map<String, PooledPlayer> _testPlayers = {};

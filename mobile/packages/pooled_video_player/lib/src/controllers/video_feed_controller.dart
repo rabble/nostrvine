@@ -195,9 +195,17 @@ class VideoFeedController extends ChangeNotifier {
   }
 
   /// Add videos to the end of the list.
+  ///
+  /// If any of the new videos fall within the preload window (based on the
+  /// current index), they will be preloaded automatically.
   void addVideos(List<VideoItem> newVideos) {
     if (newVideos.isEmpty || _isDisposed) return;
     _videos.addAll(newVideos);
+
+    if (_isActive) {
+      _updatePreloadWindow(_currentIndex);
+    }
+
     notifyListeners();
   }
 

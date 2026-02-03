@@ -15,7 +15,7 @@ part 'video_feed_event.dart';
 part 'video_feed_state.dart';
 
 /// Number of videos to load per page.
-const _pageSize = 25;
+const _pageSize = 5;
 
 /// BLoC for managing the unified video feed.
 ///
@@ -89,7 +89,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      final cursor = state.videos.last.createdAt;
+      // Use cursor - 1 to ensure we don't include the last video again
+      // (until is inclusive on some relays)
+      final lastVideo = state.videos.last;
+      final cursor = lastVideo.createdAt - 1;
+
       final newVideos = await _fetchVideosForMode(state.mode, until: cursor);
 
       // Filter out videos without valid URLs
@@ -97,7 +101,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
           .where((v) => v.videoUrl != null)
           .toList();
 
-      var updatedVideos = [...state.videos, ...validNewVideos];
+      final updatedVideos = [...state.videos, ...validNewVideos]
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       emit(
         state.copyWith(

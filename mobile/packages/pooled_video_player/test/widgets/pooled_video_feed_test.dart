@@ -1,12 +1,23 @@
+// ABOUTME: Tests for PooledVideoFeed widget
+// ABOUTME: Validates PageView, page changes, callbacks, and state management
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
-import '../helpers/mocks.dart';
 import '../helpers/test_helpers.dart';
 
+class _FakeMedia extends Fake implements Media {}
+
+void _setUpFallbacks() {
+  registerFallbackValue(_FakeMedia());
+  registerFallbackValue(Duration.zero);
+  registerFallbackValue(PlaylistMode.single);
+}
+
 void main() {
-  setUpAll(setUpMocktail);
+  setUpAll(_setUpFallbacks);
 
   group('PooledVideoFeed', () {
     late TestablePlayerPool pool;
@@ -95,13 +106,12 @@ void main() {
       });
     });
 
-    group('Controller Management', () {
+    group('controller management', () {
       testWidgets('creates internal controller when not provided', (
         tester,
       ) async {
         await tester.pumpWidget(buildFeed());
 
-        // The feed should be working with an internal controller
         expect(find.text('Video 0 (active)'), findsOneWidget);
       });
 
@@ -135,7 +145,7 @@ void main() {
       });
     });
 
-    group('Page Changes', () {
+    group('page changes', () {
       testWidgets('calls onActiveVideoChanged callback', (tester) async {
         VideoItem? changedVideo;
         int? changedIndex;
@@ -149,7 +159,6 @@ void main() {
           ),
         );
 
-        // Swipe to next page
         await tester.drag(find.byType(PageView), const Offset(0, -500));
         await tester.pumpAndSettle();
 
@@ -172,7 +181,6 @@ void main() {
           ),
         );
 
-        // Swipe through pages
         await tester.drag(find.byType(PageView), const Offset(0, -500));
         await tester.pumpAndSettle();
 
@@ -198,7 +206,6 @@ void main() {
           ),
         );
 
-        // Navigate to index 2 (5-2-1 = 2 from end)
         await tester.drag(find.byType(PageView), const Offset(0, -500));
         await tester.pumpAndSettle();
         await tester.drag(find.byType(PageView), const Offset(0, -500));
@@ -211,14 +218,11 @@ void main() {
       testWidgets('itemBuilder receives isActive correctly', (tester) async {
         await tester.pumpWidget(buildFeed());
 
-        // Initial page is active
         expect(find.text('Video 0 (active)'), findsOneWidget);
 
-        // Swipe to next
         await tester.drag(find.byType(PageView), const Offset(0, -500));
         await tester.pumpAndSettle();
 
-        // New page is active
         expect(find.text('Video 1 (active)'), findsOneWidget);
       });
     });
@@ -235,7 +239,6 @@ void main() {
       testWidgets('receives correct context', (tester) async {
         await tester.pumpWidget(buildFeed());
 
-        // Widget renders correctly with context
         expect(find.byType(ColoredBox), findsWidgets);
       });
 
@@ -257,7 +260,7 @@ void main() {
       });
     });
 
-    group('State Access', () {
+    group('state access', () {
       testWidgets('controller getter returns feed controller', (tester) async {
         await tester.pumpWidget(buildFeed());
 
@@ -270,14 +273,11 @@ void main() {
       });
     });
 
-    group('Lifecycle', () {
+    group('lifecycle', () {
       testWidgets('proper cleanup on dispose', (tester) async {
         await tester.pumpWidget(buildFeed());
 
-        // Dispose by removing the widget
         await tester.pumpWidget(const MaterialApp(home: SizedBox()));
-
-        // Should not throw
       });
 
       testWidgets('handles empty videos list', (tester) async {
@@ -298,15 +298,12 @@ void main() {
           pool: pool,
         );
 
-        // Build with first controller
         await tester.pumpWidget(buildFeed(controller: controller1));
         expect(find.text('Video 0 (active)'), findsOneWidget);
 
-        // Rebuild with second controller
         await tester.pumpWidget(buildFeed(controller: controller2));
         await tester.pump();
 
-        // Should still work with new controller
         expect(find.text('Video 0 (active)'), findsOneWidget);
 
         controller1.dispose();
@@ -316,11 +313,9 @@ void main() {
       testWidgets('disposes owned controller when external provided', (
         tester,
       ) async {
-        // Start with internal controller (owned)
         await tester.pumpWidget(buildFeed(videos: createTestVideos(count: 3)));
         expect(find.text('Video 0 (active)'), findsOneWidget);
 
-        // Now provide external controller
         final externalController = VideoFeedController(
           videos: createTestVideos(),
           pool: pool,
@@ -329,7 +324,6 @@ void main() {
         await tester.pumpWidget(buildFeed(controller: externalController));
         await tester.pump();
 
-        // Widget should use external controller
         final state = tester.state<PooledVideoFeedState>(
           find.byType(PooledVideoFeed),
         );
@@ -349,7 +343,6 @@ void main() {
         );
         expect(state.controller.videoCount, equals(3));
 
-        // Update with more videos
         final updatedVideos = [
           ...initialVideos,
           createTestVideo(id: 'new_1', url: 'https://example.com/new1.mp4'),
@@ -358,7 +351,6 @@ void main() {
         await tester.pumpWidget(buildFeed(videos: updatedVideos));
         await tester.pump();
 
-        // Should have added the new videos
         expect(state.controller.videoCount, equals(5));
       });
 
@@ -371,7 +363,6 @@ void main() {
         );
         expect(state.controller.videoCount, equals(3));
 
-        // Rebuild with same videos
         await tester.pumpWidget(buildFeed(videos: videos));
         await tester.pump();
 
@@ -391,13 +382,11 @@ void main() {
         final pageView = tester.widget<PageView>(find.byType(PageView));
         expect(pageView.childrenDelegate.estimatedChildCount, equals(3));
 
-        // Add videos through controller
         controller.addVideos([
           createTestVideo(id: 'added', url: 'https://example.com/added.mp4'),
         ]);
         await tester.pump();
 
-        // PageView should update
         final updatedPageView = tester.widget<PageView>(find.byType(PageView));
         expect(updatedPageView.childrenDelegate.estimatedChildCount, equals(4));
 

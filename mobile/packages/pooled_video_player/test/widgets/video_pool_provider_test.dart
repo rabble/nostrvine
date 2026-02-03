@@ -1,12 +1,23 @@
+// ABOUTME: Tests for VideoPoolProvider widget
+// ABOUTME: Validates pool and feed controller access via InheritedWidget
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
-import '../helpers/mocks.dart';
 import '../helpers/test_helpers.dart';
 
+class _FakeMedia extends Fake implements Media {}
+
+void _setUpFallbacks() {
+  registerFallbackValue(_FakeMedia());
+  registerFallbackValue(Duration.zero);
+  registerFallbackValue(PlaylistMode.single);
+}
+
 void main() {
-  setUpAll(setUpMocktail);
+  setUpAll(_setUpFallbacks);
 
   group('VideoPoolProvider', () {
     late TestablePlayerPool pool;
@@ -26,9 +37,7 @@ void main() {
       testWidgets('creates with only child', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
-            home: VideoPoolProvider(
-              child: Text('Child'),
-            ),
+            home: VideoPoolProvider(child: Text('Child')),
           ),
         );
 
@@ -533,7 +542,6 @@ void main() {
 
         expect(buildCount, equals(1));
 
-        // Rebuild with same values
         await tester.pumpWidget(
           MaterialApp(
             home: VideoPoolProvider(

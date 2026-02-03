@@ -6,15 +6,19 @@ resolution: workspace
 
 environment:
   sdk: ^3.10.0
-  flutter: ">=3.22.0"
+  flutter: ^3.38.3
 
 dependencies:
   audio_session: ^0.2.2
   device_info_plus: ^10.1.2
+  equatable: ^2.0.7
   flutter:
     sdk: flutter
   media_kit: ^1.2.6
   media_kit_libs_video: ^1.0.7
+  # Temporary override to include texture rotation fix
+  # https://github.com/media-kit/media-kit/issues/627
+  # Will be removed once the fix is merged and released
   media_kit_video:
     git:
       url: https://github.com/divinevideo/media-kit

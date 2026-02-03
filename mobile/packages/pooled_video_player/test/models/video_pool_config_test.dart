@@ -1,3 +1,6 @@
+// ABOUTME: Tests for VideoPoolConfig model
+// ABOUTME: Validates default values, custom config, assertions, and equality
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
@@ -12,7 +15,7 @@ void main() {
         expect(config.preloadBehind, equals(1));
       });
 
-      test('creates with custom maxPlayers', () {
+      test('accepts custom maxPlayers', () {
         const config = VideoPoolConfig(maxPlayers: 10);
 
         expect(config.maxPlayers, equals(10));
@@ -20,7 +23,7 @@ void main() {
         expect(config.preloadBehind, equals(1));
       });
 
-      test('creates with custom preloadAhead', () {
+      test('accepts custom preloadAhead', () {
         const config = VideoPoolConfig(preloadAhead: 5);
 
         expect(config.maxPlayers, equals(5));
@@ -28,7 +31,7 @@ void main() {
         expect(config.preloadBehind, equals(1));
       });
 
-      test('creates with custom preloadBehind', () {
+      test('accepts custom preloadBehind', () {
         const config = VideoPoolConfig(preloadBehind: 3);
 
         expect(config.maxPlayers, equals(5));
@@ -36,7 +39,7 @@ void main() {
         expect(config.preloadBehind, equals(3));
       });
 
-      test('creates with all custom values', () {
+      test('accepts all custom values', () {
         const config = VideoPoolConfig(
           maxPlayers: 8,
           preloadAhead: 4,
@@ -75,28 +78,28 @@ void main() {
     });
 
     group('assertions', () {
-      test('throws assertion error when maxPlayers is 0', () {
+      test('throws when maxPlayers is 0', () {
         expect(
           () => VideoPoolConfig(maxPlayers: 0),
           throwsA(isA<AssertionError>()),
         );
       });
 
-      test('throws assertion error when maxPlayers is negative', () {
+      test('throws when maxPlayers is negative', () {
         expect(
           () => VideoPoolConfig(maxPlayers: -1),
           throwsA(isA<AssertionError>()),
         );
       });
 
-      test('throws assertion error when preloadAhead is negative', () {
+      test('throws when preloadAhead is negative', () {
         expect(
           () => VideoPoolConfig(preloadAhead: -1),
           throwsA(isA<AssertionError>()),
         );
       });
 
-      test('throws assertion error when preloadBehind is negative', () {
+      test('throws when preloadBehind is negative', () {
         expect(
           () => VideoPoolConfig(preloadBehind: -1),
           throwsA(isA<AssertionError>()),
@@ -105,28 +108,28 @@ void main() {
     });
 
     group('equality', () {
-      test('two configs with same values are equal', () {
+      test('configs with same values are equal', () {
         const config1 = VideoPoolConfig();
         const config2 = VideoPoolConfig();
 
         expect(config1, equals(config2));
       });
 
-      test('two configs with different maxPlayers are not equal', () {
+      test('configs with different maxPlayers are not equal', () {
         const config1 = VideoPoolConfig();
         const config2 = VideoPoolConfig(maxPlayers: 10);
 
         expect(config1, isNot(equals(config2)));
       });
 
-      test('two configs with different preloadAhead are not equal', () {
+      test('configs with different preloadAhead are not equal', () {
         const config1 = VideoPoolConfig();
         const config2 = VideoPoolConfig(preloadAhead: 4);
 
         expect(config1, isNot(equals(config2)));
       });
 
-      test('two configs with different preloadBehind are not equal', () {
+      test('configs with different preloadBehind are not equal', () {
         const config1 = VideoPoolConfig();
         const config2 = VideoPoolConfig(preloadBehind: 3);
 
@@ -139,7 +142,7 @@ void main() {
         expect(config, equals(config));
       });
 
-      test('config equality handles Object comparison', () {
+      test('handles Object comparison', () {
         const config = VideoPoolConfig();
         const Object otherObject = 'not a config';
 
@@ -162,7 +165,7 @@ void main() {
         expect(config1.hashCode, isNot(equals(config2.hashCode)));
       });
 
-      test('hashCode is consistent across multiple calls', () {
+      test('hashCode is consistent', () {
         const config = VideoPoolConfig();
 
         final hashCode1 = config.hashCode;
@@ -178,7 +181,6 @@ void main() {
       test('is immutable', () {
         const config = VideoPoolConfig();
 
-        // Properties are final, so this verifies immutability
         expect(config.maxPlayers, equals(5));
         expect(config.preloadAhead, equals(2));
         expect(config.preloadBehind, equals(1));
