@@ -77,11 +77,10 @@ class VineDraft {
         orElse: () => .square,
       );
 
-      // Resolve video file path
+      // Resolve video file path - always use basename to handle both old absolute
+      // and new relative paths (fixes clips broken after iOS app updates)
       final rawPath = json['videoFilePath'] as String;
-      final resolvedPath = p.isAbsolute(rawPath)
-          ? rawPath
-          : p.join(documentsPath, rawPath);
+      final resolvedPath = p.join(documentsPath, p.basename(rawPath));
 
       clips.add(
         RecordingClip(

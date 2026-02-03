@@ -75,18 +75,15 @@ class SavedClip {
   }
 
   factory SavedClip.fromJson(Map<String, dynamic> json, String documentsPath) {
-    // Resolve file path - if relative (just filename), prepend documents path
+    // Always use basename + join to handle both old absolute paths and new
+    // relative paths (fixes clips broken after iOS app updates)
     final rawFilePath = json['filePath'] as String;
-    final resolvedFilePath = p.isAbsolute(rawFilePath)
-        ? rawFilePath
-        : p.join(documentsPath, rawFilePath);
+    final resolvedFilePath = p.join(documentsPath, p.basename(rawFilePath));
 
     // Resolve thumbnail path if present
     final rawThumbnailPath = json['thumbnailPath'] as String?;
     final resolvedThumbnailPath = rawThumbnailPath != null
-        ? (p.isAbsolute(rawThumbnailPath)
-              ? rawThumbnailPath
-              : p.join(documentsPath, rawThumbnailPath))
+        ? p.join(documentsPath, p.basename(rawThumbnailPath))
         : null;
 
     return SavedClip(
