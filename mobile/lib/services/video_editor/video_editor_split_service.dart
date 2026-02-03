@@ -5,8 +5,8 @@ import 'dart:async';
 
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
+import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// Result of a clip split operation containing both resulting clips
@@ -93,9 +93,9 @@ class VideoEditorSplitService {
       processingCompleter: Completer<bool>(),
     );
 
-    final cachedDirectory = await getApplicationDocumentsDirectory();
-    final startClipPath = '${cachedDirectory.path}/${startClipId}_start.mp4';
-    final endClipPath = '${cachedDirectory.path}/${endClipId}_end.mp4';
+    final documentsPath = await getDocumentsPath();
+    final startClipPath = '$documentsPath/${startClipId}_start.mp4';
+    final endClipPath = '$documentsPath/${endClipId}_end.mp4';
 
     Log.debug(
       '📁 Created split clips - Start: ${splitPosition.inSeconds}s, '

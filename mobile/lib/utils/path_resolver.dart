@@ -2,6 +2,15 @@
 // ABOUTME: iOS changes container paths on app updates, so we store only filenames
 
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart' as path_provider;
+
+/// Returns the application documents directory path.
+///
+/// This is abstracted to allow easy changes if the storage location changes.
+Future<String> getDocumentsPath() async {
+  final dir = await path_provider.getApplicationDocumentsDirectory();
+  return dir.path;
+}
 
 /// Resolves a file path for storage/retrieval.
 ///

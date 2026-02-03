@@ -6,8 +6,8 @@ import 'dart:convert';
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/utils/android_path_migration.dart';
+import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ClipLibraryService {
@@ -25,7 +25,7 @@ class ClipLibraryService {
     final String? jsonString = prefs.getString(_storageKey);
     if (jsonString == null || jsonString.isEmpty) return;
 
-    final documentsPath = (await getApplicationDocumentsDirectory()).path;
+    final documentsPath = await getDocumentsPath();
     final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
 
     // Parse with useOriginalPath to get the raw paths from JSON
@@ -86,7 +86,7 @@ class ClipLibraryService {
         return [];
       }
 
-      final documentsPath = (await getApplicationDocumentsDirectory()).path;
+      final documentsPath = await getDocumentsPath();
       final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
 
       final clips = jsonList

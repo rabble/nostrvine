@@ -4,8 +4,8 @@
 import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
+import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:divine_camera/divine_camera.dart';
 
@@ -190,8 +190,8 @@ class CameraMobileService extends CameraService {
   }) async {
     if (!_isInitialized) return false;
     try {
-      final docsDir = await getApplicationDocumentsDirectory();
-      final outputPath = outputDirectory ?? docsDir.path;
+      final docsDir = await getDocumentsPath();
+      final outputPath = outputDirectory ?? docsDir;
 
       Log.info(
         '📷 Starting video recording to: $outputPath',

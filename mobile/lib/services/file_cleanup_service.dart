@@ -8,8 +8,8 @@ import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/platform_io.dart';
+import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Service for safely deleting clip files while respecting references.
@@ -23,7 +23,7 @@ class FileCleanupService {
   /// Gets all file paths currently referenced by drafts and clip library
   static Future<Set<String>> _getAllReferencedPaths() async {
     final prefs = await SharedPreferences.getInstance();
-    final documentsPath = (await getApplicationDocumentsDirectory()).path;
+    final documentsPath = await getDocumentsPath();
     final paths = <String>{};
 
     // Collect paths from drafts
