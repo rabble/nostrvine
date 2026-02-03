@@ -188,7 +188,9 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       );
 
       _userSearchBloc.add(
-        UserSearchResultsReceived(matchingProfiles.map((p) => p.pubkey).toList()),
+        UserSearchResultsReceived(
+          matchingProfiles.map((p) => p.pubkey).toList(),
+        ),
       );
 
       // Filter local videos based on search query
