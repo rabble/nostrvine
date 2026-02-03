@@ -4,10 +4,12 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:openvine/models/notification_model.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/router/nav_extensions.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
 
@@ -360,6 +362,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
       category: LogCategory.ui,
     );
 
-    context.pushOtherProfile(userPubkey);
+    final npub = NostrKeyUtils.encodePubKey(userPubkey);
+    context.push(OtherProfileScreen.pathForNpub(npub));
   }
 }
