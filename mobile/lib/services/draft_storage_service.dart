@@ -5,6 +5,7 @@ import 'dart:convert';
 
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
+import 'package:openvine/utils/android_path_migration.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -67,6 +68,7 @@ class DraftStorageService {
   }
 
   /// Get all drafts from storage
+  /// On Android, migrates any drafts with old /files/ paths to /app_flutter/
   Future<List<VineDraft>> getAllDrafts() async {
     try {
       final String? jsonString = _prefs.getString(_storageKey);
@@ -77,12 +79,31 @@ class DraftStorageService {
 
       final documentsPath = (await getApplicationDocumentsDirectory()).path;
       final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
-      return jsonList
+
+      // Android migration: Check raw JSON for old /files/ paths before parsing
+      final pathsToMigrate = <String?>[
+        for (final item in jsonList)
+          for (final clip in (item as Map<String, dynamic>)['clips'] as List<dynamic>? ?? []) ...[
+            ((clip as Map<String, dynamic>)['video'] as Map<String, dynamic>?)?['file'] as String?,
+            clip['thumbnailPath'] as String?,
+          ],
+      ];
+      final migrated = await migrateAndroidPaths(
+        documentsPath: documentsPath,
+        filePaths: pathsToMigrate,
+      );
+      if (migrated) {
+        Log.info('📂 Migrated drafts from old Android paths', name: 'DraftStorageService');
+      }
+
+      final drafts = jsonList
           .map(
             (json) =>
                 VineDraft.fromJson(json as Map<String, dynamic>, documentsPath),
           )
           .toList();
+
+      return drafts;
     } catch (e) {
       // If storage is corrupted, return empty list
       return [];

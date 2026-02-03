@@ -5,6 +5,8 @@ import 'dart:convert';
 
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
+import 'package:openvine/utils/android_path_migration.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -30,6 +32,7 @@ class ClipLibraryService {
   }
 
   /// Get all clips from the library, sorted by creation date (newest first)
+  /// On Android, migrates any clips with old /files/ paths to /app_flutter/
   Future<List<SavedClip>> getAllClips() async {
     try {
       final String? jsonString = _prefs.getString(_storageKey);
@@ -40,6 +43,25 @@ class ClipLibraryService {
 
       final documentsPath = (await getApplicationDocumentsDirectory()).path;
       final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
+
+      // Android migration: Check raw JSON for old /files/ paths before parsing
+      final pathsToMigrate = <String?>[
+        for (final item in jsonList) ...[
+          (item as Map<String, dynamic>)['filePath'] as String?,
+          item['thumbnailPath'] as String?,
+        ],
+      ];
+      final migrated = await migrateAndroidPaths(
+        documentsPath: documentsPath,
+        filePaths: pathsToMigrate,
+      );
+      if (migrated) {
+        Log.info(
+          '📂 Migrated clips from old Android paths',
+          name: 'ClipLibraryService',
+        );
+      }
+
       final clips = jsonList
           .map(
             (json) =>
