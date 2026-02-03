@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 ///   ),
 /// )
 /// ```
+@immutable
 class DiVineAppBarStyle extends Equatable {
   /// Creates a DiVineAppBar style configuration.
   const DiVineAppBarStyle({

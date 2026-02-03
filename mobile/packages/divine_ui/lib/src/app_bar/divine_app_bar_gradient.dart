@@ -15,6 +15,7 @@ import 'package:flutter/material.dart';
 ///   gradient: DiVineAppBarGradient.videoOverlay,
 /// )
 /// ```
+@immutable
 class DiVineAppBarGradient extends Equatable {
   /// Creates a gradient configuration.
   const DiVineAppBarGradient({
