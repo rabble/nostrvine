@@ -1,948 +1,414 @@
-import 'dart:io';
+// ABOUTME: Tests for PooledVideoPlayer widget
+// ABOUTME: Validates loading, ready, error states and tap handling
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
-import 'package:video_player/video_player.dart';
 
-// Mock classes
-class MockVideoPlayerController extends Mock implements VideoPlayerController {}
+import '../helpers/test_helpers.dart';
 
-class MockVideoPlayerValue extends Mock implements VideoPlayerValue {}
+class _MockVideoFeedController extends Mock implements VideoFeedController {}
 
-class MockPooledVideo extends Mock implements PooledVideo {}
+class _MockVideoController extends Mock implements VideoController {}
 
-// Test helpers
-Future<VideoPlayerController?> createMockController(
-  String videoUrl, {
-  File? cachedFile,
-}) async {
-  final controller = MockVideoPlayerController();
-  final value = MockVideoPlayerValue();
+class _MockPlayer extends Mock implements Player {}
 
-  when(() => value.isInitialized).thenReturn(true);
-  when(() => value.isPlaying).thenReturn(false);
-  when(() => value.duration).thenReturn(const Duration(seconds: 10));
-  when(() => value.position).thenReturn(Duration.zero);
-  when(() => controller.value).thenReturn(value);
-  when(controller.dispose).thenAnswer((_) async {});
-  when(controller.pause).thenAnswer((_) async {});
-  when(controller.play).thenAnswer((_) async {});
-  when(() => controller.setLooping(any())).thenAnswer((_) async {});
+class _MockPlayerState extends Mock implements PlayerState {}
 
-  return controller;
+class _MockPlayerStream extends Mock implements PlayerStream {}
+
+class _FakeVideoItem extends Fake implements VideoItem {}
+
+void _setUpFallbacks() {
+  registerFallbackValue(Duration.zero);
+  registerFallbackValue(_FakeVideoItem());
+}
+
+_MockPlayer _createMockPlayer() {
+  final mockPlayer = _MockPlayer();
+  final mockState = _MockPlayerState();
+  final mockStream = _MockPlayerStream();
+
+  when(() => mockState.playing).thenReturn(false);
+  when(() => mockState.buffering).thenReturn(false);
+  when(() => mockState.position).thenReturn(Duration.zero);
+  when(() => mockPlayer.state).thenReturn(mockState);
+  when(() => mockPlayer.stream).thenReturn(mockStream);
+
+  return mockPlayer;
+}
+
+_MockVideoFeedController _createMockVideoFeedController() {
+  final mockController = _MockVideoFeedController();
+  final videoList = createTestVideos();
+
+  when(() => mockController.videos).thenReturn(videoList);
+  when(() => mockController.videoCount).thenReturn(videoList.length);
+  when(() => mockController.currentIndex).thenReturn(0);
+  when(() => mockController.isPaused).thenReturn(false);
+  when(() => mockController.isActive).thenReturn(true);
+  when(() => mockController.getVideoController(any())).thenReturn(null);
+  when(() => mockController.getPlayer(any())).thenReturn(null);
+  when(() => mockController.getLoadState(any())).thenReturn(LoadState.none);
+  when(() => mockController.isVideoReady(any())).thenReturn(false);
+  when(() => mockController.onPageChanged(any())).thenReturn(null);
+  when(mockController.play).thenReturn(null);
+  when(mockController.pause).thenReturn(null);
+  when(mockController.togglePlayPause).thenReturn(null);
+  when(() => mockController.seek(any())).thenAnswer((_) async {});
+  when(() => mockController.setVolume(any())).thenReturn(null);
+  when(() => mockController.setPlaybackSpeed(any())).thenReturn(null);
+  when(
+    () => mockController.setActive(active: any(named: 'active')),
+  ).thenReturn(null);
+  when(() => mockController.addVideos(any())).thenReturn(null);
+  when(() => mockController.addListener(any())).thenReturn(null);
+  when(() => mockController.removeListener(any())).thenReturn(null);
+  when(mockController.dispose).thenReturn(null);
+
+  return mockController;
 }
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
-  late MockPooledVideo mockVideo;
-
-  setUp(() {
-    mockVideo = MockPooledVideo();
-    when(() => mockVideo.id).thenReturn('test-video-1');
-    when(() => mockVideo.videoUrl).thenReturn('https://example.com/video1.mp4');
-    when(() => mockVideo.thumbnailUrl).thenReturn(null);
-  });
-
-  tearDown(() async {
-    await VideoControllerPoolManager.reset();
-  });
+  setUpAll(_setUpFallbacks);
 
   group('PooledVideoPlayer', () {
-    group('Initialization', () {
-      testWidgets('throws error when pool not initialized', (
-        WidgetTester tester,
-      ) async {
-        var errorCalled = false;
-        Object? capturedError;
+    late _MockVideoFeedController mockController;
+    late _MockVideoController mockVideoController;
+    late _MockPlayer mockPlayer;
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(),
-              onVideoError: (error) {
-                errorCalled = true;
-                capturedError = error;
+    setUp(() {
+      mockController = _createMockVideoFeedController();
+      mockVideoController = _MockVideoController();
+      mockPlayer = _createMockPlayer();
+    });
+
+    Widget buildWidget({
+      int index = 0,
+      VideoFeedController? controller,
+      String? thumbnailUrl,
+      WidgetBuilder? loadingBuilder,
+      ErrorBuilder? errorBuilder,
+      OverlayBuilder? overlayBuilder,
+      bool enableTapToPause = false,
+      VoidCallback? onTap,
+    }) {
+      return MaterialApp(
+        home: Scaffold(
+          body: VideoPoolProvider(
+            feedController: controller ?? mockController,
+            child: PooledVideoPlayer(
+              index: index,
+              controller: controller ?? mockController,
+              thumbnailUrl: thumbnailUrl,
+              loadingBuilder: loadingBuilder,
+              errorBuilder: errorBuilder,
+              overlayBuilder: overlayBuilder,
+              enableTapToPause: enableTapToPause,
+              onTap: onTap,
+              videoBuilder: (context, videoController, player) {
+                return Container(
+                  key: const Key('video_widget'),
+                  color: Colors.blue,
+                );
               },
             ),
           ),
-        );
+        ),
+      );
+    }
 
-        expect(errorCalled, isTrue);
-        expect(capturedError, isA<StateError>());
-        expect(
-          capturedError.toString(),
-          contains('VideoControllerPoolManager not initialized'),
-        );
-      });
-
-      testWidgets('widget initializes successfully with pool', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(),
-            ),
-          ),
-        );
+    group('constructor', () {
+      testWidgets('creates with required parameters', (tester) async {
+        await tester.pumpWidget(buildWidget());
 
         expect(find.byType(PooledVideoPlayer), findsOneWidget);
       });
 
-      testWidgets('uses prewarmed controller if available', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
+      testWidgets('default enableTapToPause is false', (tester) async {
+        await tester.pumpWidget(buildWidget());
 
-        // Prewarm the controller
-        await VideoControllerPoolManager.instance.acquireController(
-          videoId: mockVideo.id,
-          videoUrl: mockVideo.videoUrl,
-        );
-
-        var readyCalled = false;
-        VideoPlayerController? readyController;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(),
-              onVideoReady: (controller) {
-                readyCalled = true;
-                readyController = controller;
-              },
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        expect(readyCalled, isTrue);
-        expect(readyController, isNotNull);
-        expect(readyController!.value.isInitialized, isTrue);
-      });
-
-      testWidgets('requests controller when not prewarmed', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        var loadingCalled = false;
-        var readyCalled = false;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(),
-              onVideoLoading: () => loadingCalled = true,
-              onVideoReady: (_) => readyCalled = true,
-            ),
-          ),
-        );
-
-        expect(loadingCalled, isTrue);
-
-        await tester.pumpAndSettle();
-
-        expect(readyCalled, isTrue);
+        expect(find.byType(GestureDetector), findsNothing);
       });
     });
 
-    group('Auto-Play Behavior', () {
-      testWidgets('plays video when autoPlay=true and ready', (
-        WidgetTester tester,
+    group('loading state', () {
+      testWidgets('shows default loading when LoadState is loading', (
+        tester,
       ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        VideoPlayerController? capturedController;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(),
-              autoPlay: true,
-              onVideoReady: (controller) => capturedController = controller,
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        expect(capturedController, isNotNull);
-        verify(capturedController!.play).called(1);
-      });
-
-      testWidgets('does not play when autoPlay not specified', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        VideoPlayerController? capturedController;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(),
-              onVideoReady: (controller) => capturedController = controller,
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        expect(capturedController, isNotNull);
-        verifyNever(capturedController!.play);
-      });
-
-      testWidgets('plays prewarmed controller immediately when autoPlay=true', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        // Prewarm
-        await VideoControllerPoolManager.instance.acquireController(
-          videoId: mockVideo.id,
-          videoUrl: mockVideo.videoUrl,
-        );
-
-        VideoPlayerController? capturedController;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(),
-              autoPlay: true,
-              onVideoReady: (controller) => capturedController = controller,
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        expect(capturedController, isNotNull);
-        verify(capturedController!.play).called(1);
-      });
-    });
-
-    group('Widget Updates', () {
-      testWidgets('starts playback when autoPlay changes to true', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        // Prewarm controller
-        await VideoControllerPoolManager.instance.acquireController(
-          videoId: mockVideo.id,
-          videoUrl: mockVideo.videoUrl,
-        );
-
-        VideoPlayerController? controller;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, ctrl) => Container(),
-              onVideoReady: (ctrl) => controller = ctrl,
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        expect(controller, isNotNull);
-
-        // Update to autoPlay=true
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, ctrl) => Container(),
-              autoPlay: true,
-              onVideoReady: (ctrl) => controller = ctrl,
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        verify(controller!.play).called(1);
-      });
-
-      testWidgets('pauses when autoPlay changes from true to false', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        // Prewarm controller
-        await VideoControllerPoolManager.instance.acquireController(
-          videoId: mockVideo.id,
-          videoUrl: mockVideo.videoUrl,
-        );
-
-        VideoPlayerController? controller;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, ctrl) => Container(),
-              autoPlay: true,
-              onVideoReady: (ctrl) => controller = ctrl,
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        expect(controller, isNotNull);
-
-        // Simulate playing state
-        final value = controller!.value as MockVideoPlayerValue;
-        when(() => value.isPlaying).thenReturn(true);
-
-        // Update to autoPlay=false
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, ctrl) => Container(),
-              onVideoReady: (ctrl) => controller = ctrl,
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        verify(controller!.pause).called(1);
-      });
-
-      testWidgets('requests new controller when video ID changes', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        var readyCallCount = 0;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(),
-              onVideoReady: (_) => readyCallCount++,
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        expect(readyCallCount, 1);
-
-        // Change video
-        final newVideo = MockPooledVideo();
-        when(() => newVideo.id).thenReturn('test-video-2');
         when(
-          () => newVideo.videoUrl,
-        ).thenReturn('https://example.com/video2.mp4');
-        when(() => newVideo.thumbnailUrl).thenReturn(null);
+          () => mockController.getLoadState(0),
+        ).thenReturn(LoadState.loading);
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: newVideo,
-              videoBuilder: (context, controller) => Container(),
-              onVideoReady: (_) => readyCallCount++,
-            ),
-          ),
-        );
+        await tester.pumpWidget(buildWidget());
 
-        await tester.pumpAndSettle();
-        expect(readyCallCount, 2);
-      });
-
-      testWidgets('uses prewarmed controller on video change if available', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        // Prewarm both videos
-        await VideoControllerPoolManager.instance.acquireController(
-          videoId: mockVideo.id,
-          videoUrl: mockVideo.videoUrl,
-        );
-
-        final newVideo = MockPooledVideo();
-        when(() => newVideo.id).thenReturn('test-video-2');
-        when(
-          () => newVideo.videoUrl,
-        ).thenReturn('https://example.com/video2.mp4');
-        when(() => newVideo.thumbnailUrl).thenReturn(null);
-
-        await VideoControllerPoolManager.instance.acquireController(
-          videoId: newVideo.id,
-          videoUrl: newVideo.videoUrl,
-        );
-
-        var readyCallCount = 0;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(),
-              onVideoReady: (_) => readyCallCount++,
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        expect(readyCallCount, 1);
-
-        // Change to prewarmed video
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: newVideo,
-              videoBuilder: (context, controller) => Container(),
-              onVideoReady: (_) => readyCallCount++,
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        expect(readyCallCount, 2);
-      });
-    });
-
-    group('Builder Functions', () {
-      testWidgets('calls videoBuilder when controller ready', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        // Prewarm
-        await VideoControllerPoolManager.instance.acquireController(
-          videoId: mockVideo.id,
-          videoUrl: mockVideo.videoUrl,
-        );
-
-        var videoBuilderCalled = false;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) {
-                videoBuilderCalled = true;
-                return Container(key: const Key('video-widget'));
-              },
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        expect(videoBuilderCalled, isTrue);
-        expect(find.byKey(const Key('video-widget')), findsOneWidget);
-      });
-
-      testWidgets('calls overlayBuilder when provided and ready', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        // Prewarm
-        await VideoControllerPoolManager.instance.acquireController(
-          videoId: mockVideo.id,
-          videoUrl: mockVideo.videoUrl,
-        );
-
-        var overlayBuilderCalled = false;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(),
-              overlayBuilder: (context, controller) {
-                overlayBuilderCalled = true;
-                return Container(key: const Key('overlay-widget'));
-              },
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        expect(overlayBuilderCalled, isTrue);
-        expect(find.byKey(const Key('overlay-widget')), findsOneWidget);
-      });
-
-      testWidgets('calls loadingBuilder when not ready', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        var loadingBuilderCalled = false;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(),
-              loadingBuilder: (context) {
-                loadingBuilderCalled = true;
-                return Container(key: const Key('loading-widget'));
-              },
-            ),
-          ),
-        );
-
-        // Before controller is ready
-        expect(loadingBuilderCalled, isTrue);
-        expect(find.byKey(const Key('loading-widget')), findsOneWidget);
-      });
-
-      testWidgets('shows default loading state when no loadingBuilder', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(),
-            ),
-          ),
-        );
-
-        // Should show default loading widget (CircularProgressIndicator)
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
-      testWidgets('composes Stack with video and overlay layers', (
-        WidgetTester tester,
+      testWidgets('shows default loading when LoadState is none', (
+        tester,
       ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
+        when(() => mockController.getLoadState(0)).thenReturn(LoadState.none);
 
-        // Prewarm
-        await VideoControllerPoolManager.instance.acquireController(
-          videoId: mockVideo.id,
-          videoUrl: mockVideo.videoUrl,
-        );
+        await tester.pumpWidget(buildWidget());
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(
-                key: const Key('video-layer'),
-              ),
-              overlayBuilder: (context, controller) => Container(
-                key: const Key('overlay-layer'),
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        expect(find.byType(Stack), findsWidgets);
-        expect(find.byKey(const Key('video-layer')), findsOneWidget);
-        expect(find.byKey(const Key('overlay-layer')), findsOneWidget);
-      });
-    });
-
-    group('Tap-to-Pause', () {
-      testWidgets('toggles pause on tap when enableTapToPause is true', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        // Prewarm controller
-        await VideoControllerPoolManager.instance.acquireController(
-          videoId: mockVideo.id,
-          videoUrl: mockVideo.videoUrl,
-        );
-
-        VideoPlayerController? controller;
-        var playPauseCallCount = 0;
-        var lastIsPlaying = false;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, ctrl) => Container(
-                key: const Key('video-container'),
-                color: Colors.black,
-              ),
-              enableTapToPause: true,
-              onVideoReady: (ctrl) => controller = ctrl,
-              onPlayPauseChanged: ({required bool isPlaying}) {
-                playPauseCallCount++;
-                lastIsPlaying = isPlaying;
-              },
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        expect(controller, isNotNull);
-
-        // Simulate playing state
-        final value = controller!.value as MockVideoPlayerValue;
-        when(() => value.isPlaying).thenReturn(true);
-
-        // Tap to pause
-        await tester.tap(find.byKey(const Key('video-container')));
-        await tester.pump();
-
-        verify(controller!.pause).called(1);
-        expect(playPauseCallCount, 1);
-        expect(lastIsPlaying, isFalse);
-
-        // Simulate paused state
-        when(() => value.isPlaying).thenReturn(false);
-
-        // Tap to play
-        await tester.tap(find.byKey(const Key('video-container')));
-        await tester.pump();
-
-        verify(controller!.play).called(1);
-        expect(playPauseCallCount, 2);
-        expect(lastIsPlaying, isTrue);
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
-      testWidgets('does not toggle when enableTapToPause is false', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        // Prewarm controller
-        await VideoControllerPoolManager.instance.acquireController(
-          videoId: mockVideo.id,
-          videoUrl: mockVideo.videoUrl,
-        );
-
-        VideoPlayerController? controller;
+      testWidgets('shows custom loadingBuilder when provided', (tester) async {
+        when(() => mockController.getLoadState(0)).thenReturn(LoadState.none);
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, ctrl) => Container(
-                key: const Key('video-container'),
-                color: Colors.black,
-              ),
-              onVideoReady: (ctrl) => controller = ctrl,
-            ),
+          buildWidget(
+            loadingBuilder: (context) => const Text('Custom Loading'),
           ),
         );
 
-        await tester.pumpAndSettle();
-        expect(controller, isNotNull);
-
-        // Tap - should not affect playback since enableTapToPause is false
-        await tester.tap(find.byKey(const Key('video-container')));
-        await tester.pump();
-
-        // No pause/play calls
-        verifyNever(controller!.pause);
-        // play may have been called during initialization if autoPlay was true
-      });
-    });
-
-    group('Error Handling', () {
-      testWidgets('calls onVideoError when acquisition returns null', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 1,
-          controllerFactory: (_, {cachedFile}) async => null,
-        );
-
-        Object? capturedError;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(),
-              onVideoError: (error) => capturedError = error,
-            ),
-          ),
-        );
-
-        // Use pump with duration instead of pumpAndSettle
-        // since the widget stays in loading state when acquisition fails
-        await tester.pump(const Duration(milliseconds: 100));
-
-        expect(capturedError, isNotNull);
-        expect(capturedError, isA<Exception>());
-        expect(
-          capturedError.toString(),
-          contains('Failed to acquire video controller'),
-        );
+        expect(find.text('Custom Loading'), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
       });
 
-      testWidgets('catches acquisition errors and calls onVideoError', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: (_, {cachedFile}) async =>
-              throw Exception('Network error'),
-        );
-
-        Object? capturedError;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(),
-              onVideoError: (error) => capturedError = error,
-            ),
-          ),
-        );
-
-        // Use pump with duration instead of pumpAndSettle
-        // since the widget stays in loading state when acquisition fails
-        await tester.pump(const Duration(milliseconds: 100));
-
-        expect(capturedError, isNotNull);
-        expect(capturedError.toString(), contains('Network error'));
-      });
-    });
-
-    group('Looping', () {
-      testWidgets('applies looping setting when controller ready', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        // Prewarm
-        await VideoControllerPoolManager.instance.acquireController(
-          videoId: mockVideo.id,
-          videoUrl: mockVideo.videoUrl,
-        );
-
-        VideoPlayerController? controller;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, ctrl) => Container(),
-              looping: false,
-              onVideoReady: (ctrl) => controller = ctrl,
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        expect(controller, isNotNull);
-        verify(() => controller!.setLooping(false)).called(1);
-      });
-
-      testWidgets('updates looping when widget property changes', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        // Prewarm
-        await VideoControllerPoolManager.instance.acquireController(
-          videoId: mockVideo.id,
-          videoUrl: mockVideo.videoUrl,
-        );
-
-        VideoPlayerController? controller;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, ctrl) => Container(),
-              onVideoReady: (ctrl) => controller = ctrl,
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-        expect(controller, isNotNull);
-
-        // Clear previous calls
-        clearInteractions(controller);
-
-        // Update looping to false
-        await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, ctrl) => Container(),
-              looping: false,
-            ),
-          ),
-        );
-
-        verify(() => controller!.setLooping(false)).called(1);
-      });
-    });
-
-    group('Video Change with AutoPlay', () {
-      testWidgets('plays prewarmed video when video ID changes with autoPlay', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        // Prewarm both videos
-        await VideoControllerPoolManager.instance.acquireController(
-          videoId: mockVideo.id,
-          videoUrl: mockVideo.videoUrl,
-        );
-
-        final newVideo = MockPooledVideo();
-        when(() => newVideo.id).thenReturn('test-video-2');
+      testWidgets('shows thumbnail in default loading state', (tester) async {
         when(
-          () => newVideo.videoUrl,
-        ).thenReturn('https://example.com/video2.mp4');
-        when(() => newVideo.thumbnailUrl).thenReturn(null);
-
-        await VideoControllerPoolManager.instance.acquireController(
-          videoId: newVideo.id,
-          videoUrl: newVideo.videoUrl,
-        );
+          () => mockController.getLoadState(0),
+        ).thenReturn(LoadState.loading);
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, ctrl) => Container(),
-              autoPlay: true,
-            ),
-          ),
+          buildWidget(thumbnailUrl: 'https://example.com/thumb.jpg'),
         );
 
-        await tester.pumpAndSettle();
+        expect(find.byType(Image), findsOneWidget);
+      });
 
-        // Get second video's controller
-        final secondController = VideoControllerPoolManager.instance
-            .getController(newVideo.id);
-        expect(secondController, isNotNull);
+      testWidgets('thumbnail errorBuilder returns SizedBox.shrink', (
+        tester,
+      ) async {
+        when(
+          () => mockController.getLoadState(0),
+        ).thenReturn(LoadState.loading);
 
-        // Change to prewarmed video with autoPlay
         await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: newVideo,
-              videoBuilder: (context, ctrl) => Container(),
-              autoPlay: true,
-            ),
-          ),
+          buildWidget(thumbnailUrl: 'https://invalid-url.com/thumb.jpg'),
         );
 
-        await tester.pumpAndSettle();
+        final image = tester.widget<Image>(find.byType(Image));
+        expect(image.errorBuilder, isNotNull);
 
-        // Verify play was called on the second video's controller
-        verify(secondController!.play).called(greaterThan(0));
+        final errorWidget = image.errorBuilder!(
+          tester.element(find.byType(Image)),
+          Exception('Failed to load'),
+          StackTrace.current,
+        );
+
+        expect(errorWidget, isA<SizedBox>());
       });
     });
 
-    group('Disposal', () {
-      testWidgets('disposes without error', (WidgetTester tester) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
+    group('ready state', () {
+      setUp(() {
+        when(() => mockController.getLoadState(0)).thenReturn(LoadState.ready);
+        when(
+          () => mockController.getVideoController(0),
+        ).thenReturn(mockVideoController);
+        when(() => mockController.getPlayer(0)).thenReturn(mockPlayer);
+      });
 
+      testWidgets('shows videoBuilder when LoadState is ready', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget());
+
+        expect(find.byKey(const Key('video_widget')), findsOneWidget);
+      });
+
+      testWidgets('shows overlayBuilder when provided', (tester) async {
         await tester.pumpWidget(
-          MaterialApp(
-            home: PooledVideoPlayer(
-              video: mockVideo,
-              videoBuilder: (context, controller) => Container(),
-            ),
+          buildWidget(
+            overlayBuilder: (context, controller, player) {
+              return Container(
+                key: const Key('overlay_widget'),
+                color: Colors.red.withValues(alpha: 0.5),
+              );
+            },
           ),
         );
 
-        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('overlay_widget')), findsOneWidget);
+        expect(find.byKey(const Key('video_widget')), findsOneWidget);
+      });
 
-        // Dispose widget
-        await tester.pumpWidget(const MaterialApp(home: SizedBox.shrink()));
+      testWidgets('stacks video and overlay correctly', (tester) async {
+        await tester.pumpWidget(
+          buildWidget(
+            overlayBuilder: (context, controller, player) {
+              return Container(key: const Key('overlay_widget'));
+            },
+          ),
+        );
 
-        // Should dispose without errors
-        await tester.pumpAndSettle();
+        expect(find.byKey(const Key('video_widget')), findsOneWidget);
+        expect(find.byKey(const Key('overlay_widget')), findsOneWidget);
+      });
+    });
+
+    group('error state', () {
+      setUp(() {
+        when(() => mockController.getLoadState(0)).thenReturn(LoadState.error);
+      });
+
+      testWidgets('shows default error when LoadState is error', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget());
+
+        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(find.text('Failed to load video'), findsOneWidget);
+      });
+
+      testWidgets('shows custom errorBuilder when provided', (tester) async {
+        await tester.pumpWidget(
+          buildWidget(
+            errorBuilder: (context, onRetry) {
+              return TextButton(
+                key: const Key('retry_button'),
+                onPressed: onRetry,
+                child: const Text('Retry'),
+              );
+            },
+          ),
+        );
+
+        expect(find.byKey(const Key('retry_button')), findsOneWidget);
+        expect(find.text('Retry'), findsOneWidget);
+      });
+
+      testWidgets('errorBuilder receives onRetry callback', (tester) async {
+        var retryPressed = false;
+
+        when(() => mockController.currentIndex).thenReturn(0);
+
+        await tester.pumpWidget(
+          buildWidget(
+            errorBuilder: (context, onRetry) {
+              return TextButton(
+                key: const Key('retry_button'),
+                onPressed: () {
+                  retryPressed = true;
+                  onRetry();
+                },
+                child: const Text('Retry'),
+              );
+            },
+          ),
+        );
+
+        await tester.tap(find.byKey(const Key('retry_button')));
+
+        expect(retryPressed, isTrue);
+        verify(() => mockController.onPageChanged(0)).called(1);
+      });
+    });
+
+    group('tap handling', () {
+      setUp(() {
+        when(() => mockController.getLoadState(0)).thenReturn(LoadState.ready);
+        when(
+          () => mockController.getVideoController(0),
+        ).thenReturn(mockVideoController);
+        when(() => mockController.getPlayer(0)).thenReturn(mockPlayer);
+      });
+
+      testWidgets(
+        'no gesture detector when enableTapToPause is false and no onTap',
+        (tester) async {
+          await tester.pumpWidget(buildWidget());
+
+          expect(find.byType(GestureDetector), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'gesture detector added when enableTapToPause is true',
+        (tester) async {
+          await tester.pumpWidget(buildWidget(enableTapToPause: true));
+
+          expect(find.byType(GestureDetector), findsOneWidget);
+        },
+      );
+
+      testWidgets('gesture detector added when onTap provided', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(onTap: () {}));
+
+        expect(find.byType(GestureDetector), findsOneWidget);
+      });
+
+      testWidgets('tap toggles play/pause when enableTapToPause', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(enableTapToPause: true));
+
+        await tester.tap(find.byType(GestureDetector));
+
+        verify(() => mockController.togglePlayPause()).called(1);
+      });
+
+      testWidgets('tap calls onTap when provided', (tester) async {
+        var tapped = false;
+
+        await tester.pumpWidget(buildWidget(onTap: () => tapped = true));
+
+        await tester.tap(find.byType(GestureDetector));
+
+        expect(tapped, isTrue);
+      });
+
+      testWidgets('onTap takes precedence over enableTapToPause', (
+        tester,
+      ) async {
+        var tapped = false;
+
+        await tester.pumpWidget(
+          buildWidget(
+            enableTapToPause: true,
+            onTap: () => tapped = true,
+          ),
+        );
+
+        await tester.tap(find.byType(GestureDetector));
+
+        expect(tapped, isTrue);
+        verifyNever(() => mockController.togglePlayPause());
+      });
+    });
+
+    group('ListenableBuilder', () {
+      testWidgets('rebuilds when controller notifies', (tester) async {
+        final listeners = <VoidCallback>[];
+
+        when(() => mockController.addListener(any())).thenAnswer((invocation) {
+          listeners.add(invocation.positionalArguments[0] as VoidCallback);
+        });
+
+        await tester.pumpWidget(buildWidget());
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        when(() => mockController.getLoadState(0)).thenReturn(LoadState.ready);
+        when(
+          () => mockController.getVideoController(0),
+        ).thenReturn(mockVideoController);
+        when(() => mockController.getPlayer(0)).thenReturn(mockPlayer);
+
+        for (final listener in listeners) {
+          listener();
+        }
+        await tester.pump();
+
+        expect(find.byKey(const Key('video_widget')), findsOneWidget);
       });
     });
   });

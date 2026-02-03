@@ -89,8 +89,11 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      // Get cursor from oldest video
-      final cursor = state.videos.last.createdAt;
+      // Use cursor - 1 to ensure we don't include the last video again
+      // (until is inclusive on some relays)
+      final lastVideo = state.videos.last;
+      final cursor = lastVideo.createdAt - 1;
+
       final newVideos = await _fetchVideosForMode(state.mode, until: cursor);
 
       // Filter out videos without valid URLs
@@ -98,9 +101,12 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
           .where((v) => v.videoUrl != null)
           .toList();
 
+      final updatedVideos = [...state.videos, ...validNewVideos]
+        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
       emit(
         state.copyWith(
-          videos: [...state.videos, ...validNewVideos],
+          videos: updatedVideos,
           hasMore: newVideos.length == _pageSize,
           isLoadingMore: false,
         ),

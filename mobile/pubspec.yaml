@@ -114,22 +114,17 @@ dependencies:
 
   # Nostr SDK - Local package for comprehensive Nostr support
   nostr_sdk:
-    path: packages/nostr_sdk
 
   # Nostr Key Manager - Secure key management with hardware-backed storage
   nostr_key_manager:
-    path: packages/nostr_key_manager
 
   keycast_flutter:
-    path: packages/keycast_flutter
 
   # Videos Repository - Video feed data layer
   videos_repository:
-    path: packages/videos_repository
 
   # Divine UI - Shared UI components
   divine_ui:
-    path: packages/divine_ui
 
   # Logging
   logging: ^1.2.0
@@ -161,9 +156,22 @@ dependencies:
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7
   sensors_plus: ^7.0.0
+  media_kit: ^1.2.6
+  media_kit_libs_video: ^1.0.7
+  # Temporary override to include texture rotation fix
+  # https://github.com/media-kit/media-kit/issues/627
+  # Will be removed once the fix is merged and released
+  media_kit_video:
+    git:
+      url: https://github.com/divinevideo/media-kit
+      ref: fix/texture-rotation
+      path: media_kit_video
+  bloc_concurrency: ^0.3.0
+  stream_transform: ^2.1.1
   flutter_staggered_grid_view: ^0.7.0
   qr_flutter: ^4.1.0
 
+  
 dependency_overrides:
   device_info_plus: ^10.1.2
   rxdart: ^0.28.0

@@ -16,8 +16,7 @@ void main() {
     setUp(() async {
       // Start with clean slate for each test
       SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      service = DraftStorageService(prefs);
+      service = DraftStorageService();
     });
 
     group('saveDraft', () {

@@ -482,8 +482,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _handleSwitchAccount() async {
     // Check for existing drafts before showing switch account confirmation
-    final prefs = ref.read(sharedPreferencesProvider);
-    final draftService = DraftStorageService(prefs);
+    final draftService = DraftStorageService();
     final drafts = await draftService.getAllDrafts();
     final draftCount = drafts.length;
 

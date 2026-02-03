@@ -12,8 +12,7 @@ void main() {
   group('Auto-draft complete flow integration', () {
     test('record → auto-draft → edit → publish flow', () async {
       SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final draftStorage = DraftStorageService(prefs);
+      final draftStorage = DraftStorageService();
 
       // Simulate recording completion with auto-draft
       // (This test documents the expected flow)
@@ -71,8 +70,7 @@ void main() {
 
     test('record → auto-draft → failed publish → retry flow', () async {
       SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final draftStorage = DraftStorageService(prefs);
+      final draftStorage = DraftStorageService();
 
       // 1. Auto-draft created
       final draft = VineDraft.create(

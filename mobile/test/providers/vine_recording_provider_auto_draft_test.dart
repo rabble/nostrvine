@@ -18,8 +18,7 @@ void main() {
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      draftStorage = DraftStorageService(prefs);
+      draftStorage = DraftStorageService();
 
       // Create a mock controller - this test requires significant setup
       // For now, we'll test the integration indirectly
