@@ -165,6 +165,7 @@ class VineDraft {
 
   VineDraft copyWith({
     List<RecordingClip>? clips,
+    String? id,
     String? title,
     String? description,
     Set<String>? hashtags,
@@ -177,7 +178,7 @@ class VineDraft {
     Map<String, dynamic>? editorStateHistory,
     Map<String, dynamic>? editorEditingParameters,
   }) => VineDraft(
-    id: id,
+    id: id ?? this.id,
     clips: clips ?? this.clips,
     title: title ?? this.title,
     description: description ?? this.description,

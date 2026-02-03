@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
@@ -30,6 +31,12 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
     super.initState();
     _backgroundManager = BackgroundActivityManager();
     WidgetsBinding.instance.addObserver(this);
+
+    // Resume any pending publish drafts after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(videoPublishProvider.notifier).resumePendingPublishes(context);
+    });
   }
 
   @override

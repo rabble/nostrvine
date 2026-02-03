@@ -1053,14 +1053,12 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     Future<VideoPublishService> createPublishService({
       required OnProgressChanged onProgress,
     }) async {
-      final prefs = await SharedPreferences.getInstance();
-
       return VideoPublishService(
         uploadManager: ref.read(uploadManagerProvider),
         authService: ref.read(authServiceProvider),
         videoEventPublisher: ref.read(videoEventPublisherProvider),
         blossomService: ref.read(blossomUploadServiceProvider),
-        draftService: DraftStorageService(prefs),
+        draftService: DraftStorageService(),
         onProgressChanged:
             ({required String draftId, required double progress}) {
               onProgress(draftId: draftId, progress: progress);
