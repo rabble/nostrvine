@@ -1,6 +1,7 @@
 // ABOUTME: BLoC for orchestrating profile save and username claiming
 // ABOUTME: Handles rollback when username claim fails
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
@@ -11,6 +12,15 @@ import 'package:profile_repository/profile_repository.dart';
 
 part 'profile_editor_event.dart';
 part 'profile_editor_state.dart';
+
+/// Minimum username length.
+const kMinUsernameLength = 3;
+
+/// Maximum username length.
+const kMaxUsernameLength = 20;
+
+/// Username format: letters, numbers, hyphens, underscores, periods.
+final _usernamePattern = RegExp(r'^[a-zA-Z0-9._-]+$');
 
 /// BLoC for orchestrating profile publishing and username claiming.
 class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
@@ -24,11 +34,15 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
        super(const ProfileEditorState()) {
     on<ProfileSaved>(_onProfileSaved);
     on<ProfileSaveConfirmed>(_onProfileSaveConfirmed);
+    on<UsernameChanged>(_onUsernameChanged, transformer: restartable());
   }
 
   final ProfileRepository _profileRepository;
   final UserProfileService _userProfileService;
   final bool _hasExistingProfile;
+
+  /// Cache of reserved usernames (403 responses from claim API).
+  final Set<String> _reservedUsernames = {};
 
   Future<void> _onProfileSaved(
     ProfileSaved event,
@@ -70,6 +84,74 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     );
 
     await _saveProfile(state.pendingEvent!, emit);
+  }
+
+  Future<void> _onUsernameChanged(
+    UsernameChanged event,
+    Emitter<ProfileEditorState> emit,
+  ) async {
+    final username = event.username.trim();
+
+    emit(state.copyWith(username: username));
+
+    if (username.isEmpty) {
+      emit(state.copyWith(usernameStatus: UsernameStatus.idle));
+      return;
+    }
+
+    if (!_isValidUsernameFormat(username)) {
+      emit(
+        state.copyWith(
+          usernameStatus: UsernameStatus.error,
+          usernameError:
+              'Username must be $kMinUsernameLength-$kMaxUsernameLength characters (letters, numbers, -, _, .)',
+        ),
+      );
+      return;
+    }
+
+    if (_reservedUsernames.contains(username)) {
+      emit(state.copyWith(usernameStatus: UsernameStatus.reserved));
+      return;
+    }
+
+    emit(state.copyWith(usernameStatus: UsernameStatus.checking));
+    await Future<void>.delayed(const Duration(milliseconds: 500));
+
+    if (emit.isDone) return;
+
+    final result = await _profileRepository.checkUsernameAvailability(
+      username: username,
+    );
+
+    if (emit.isDone) return;
+
+    switch (result) {
+      case UsernameAvailable():
+        emit(state.copyWith(usernameStatus: UsernameStatus.available));
+      case UsernameTaken():
+        emit(state.copyWith(usernameStatus: UsernameStatus.taken));
+      case UsernameCheckError(:final message):
+        Log.error(
+          'Username availability check failed: $message',
+          name: 'ProfileEditorBloc',
+        );
+        emit(
+          state.copyWith(
+            usernameStatus: UsernameStatus.error,
+            usernameError: 'Could not check availability. Please try again.',
+          ),
+        );
+    }
+  }
+
+  /// Validates username format without making API calls.
+  bool _isValidUsernameFormat(String username) {
+    if (username.length < kMinUsernameLength ||
+        username.length > kMaxUsernameLength) {
+      return false;
+    }
+    return _usernamePattern.hasMatch(username);
   }
 
   /// Core profile save logic (extracted for reuse)
@@ -150,7 +232,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     final error = switch (result) {
       UsernameClaimSuccess() => null,
       UsernameClaimTaken() => ProfileEditorError.usernameTaken,
-      UsernameClaimReserved() => ProfileEditorError.usernameReserved,
+      UsernameClaimReserved() => () {
+        _reservedUsernames.add(username);
+        return ProfileEditorError.usernameReserved;
+      }(),
       UsernameClaimError() => ProfileEditorError.publishFailed,
     };
 

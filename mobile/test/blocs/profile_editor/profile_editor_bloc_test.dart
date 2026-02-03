@@ -772,5 +772,250 @@ void main() {
         );
       });
     });
+
+    group('UsernameChanged', () {
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'emits idle status when username is empty',
+        build: createBloc,
+        act: (bloc) => bloc.add(const UsernameChanged('')),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', '')
+              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.idle),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'emits error status for username too short',
+        build: createBloc,
+        act: (bloc) => bloc.add(const UsernameChanged('ab')),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', 'ab')
+              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.error)
+              .having(
+                (s) => s.usernameError,
+                'usernameError',
+                contains('3-20 characters'),
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'emits error status for username too long',
+        build: createBloc,
+        act: (bloc) => bloc.add(const UsernameChanged('aaaaaaaaaaaaaaaaaaaaa')),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', 'aaaaaaaaaaaaaaaaaaaaa')
+              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.error)
+              .having(
+                (s) => s.usernameError,
+                'usernameError',
+                contains('3-20 characters'),
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'emits error status for invalid characters',
+        build: createBloc,
+        act: (bloc) => bloc.add(const UsernameChanged('test@user')),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', 'test@user')
+              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.error)
+              .having(
+                (s) => s.usernameError,
+                'usernameError',
+                contains('letters, numbers, -, _, .'),
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'emits [checking, available] when username is available',
+        setUp: () {
+          when(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: testUsername,
+            ),
+          ).thenAnswer((_) async => const UsernameAvailable());
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const UsernameChanged(testUsername)),
+        wait: const Duration(milliseconds: 600),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername),
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername)
+              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.checking),
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername)
+              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.available),
+        ],
+        verify: (_) {
+          verify(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: testUsername,
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'emits [checking, taken] when username is taken',
+        setUp: () {
+          when(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: testUsername,
+            ),
+          ).thenAnswer((_) async => const UsernameTaken());
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const UsernameChanged(testUsername)),
+        wait: const Duration(milliseconds: 600),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername),
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername)
+              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.checking),
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername)
+              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.taken),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'emits [checking, error] when check fails',
+        setUp: () {
+          when(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: testUsername,
+            ),
+          ).thenAnswer((_) async => const UsernameCheckError('Network error'));
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const UsernameChanged(testUsername)),
+        wait: const Duration(milliseconds: 600),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername),
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername)
+              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.checking),
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername)
+              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.error)
+              .having(
+                (s) => s.usernameError,
+                'usernameError',
+                contains('Could not check availability'),
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'debounces rapid username changes',
+        setUp: () {
+          when(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: any(named: 'username'),
+            ),
+          ).thenAnswer((_) async => const UsernameAvailable());
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const UsernameChanged('test1'));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          bloc.add(const UsernameChanged('test2'));
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          bloc.add(const UsernameChanged('test3'));
+        },
+        wait: const Duration(milliseconds: 700),
+        verify: (_) {
+          // Should only call API once for the final username due to restartable transformer
+          verify(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: 'test3',
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: 'test1',
+            ),
+          );
+          verifyNever(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: 'test2',
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'checks reserved cache before making API call',
+        setUp: () {
+          // First, trigger a ProfileSaved that returns UsernameClaimReserved
+          final existingProfile = createTestProfile(nip05: testOriginalNip05);
+          when(
+            () => mockProfileRepository.getProfile(pubkey: testPubkey),
+          ).thenAnswer((_) async => existingProfile);
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              about: testAbout,
+              nip05: testNip05,
+              picture: testPicture,
+              currentProfile: existingProfile,
+            ),
+          ).thenAnswer((_) async => createTestProfile());
+          when(
+            () => mockProfileRepository.claimUsername(username: testUsername),
+          ).thenAnswer((_) async => const UsernameClaimReserved());
+          when(
+            () => mockProfileRepository.saveProfileEvent(
+              displayName: testDisplayName,
+              about: testAbout,
+              nip05: testOriginalNip05,
+              picture: testPicture,
+              currentProfile: existingProfile,
+            ),
+          ).thenAnswer((_) async => createTestProfile());
+        },
+        build: createBloc,
+        act: (bloc) async {
+          // First save profile with reserved username to populate cache
+          bloc.add(
+            const ProfileSaved(
+              pubkey: testPubkey,
+              displayName: testDisplayName,
+              about: testAbout,
+              picture: testPicture,
+              username: testUsername,
+            ),
+          );
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          // Now check username again - should use cache
+          bloc.add(const UsernameChanged(testUsername));
+        },
+        wait: const Duration(milliseconds: 100),
+        verify: (_) {
+          // Should not call checkUsernameAvailability since it's in reserved cache
+          verifyNever(
+            () => mockProfileRepository.checkUsernameAvailability(
+              username: testUsername,
+            ),
+          );
+        },
+        expect: () => containsAll([
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', testUsername)
+              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.reserved),
+        ]),
+      );
+    });
   });
 }
