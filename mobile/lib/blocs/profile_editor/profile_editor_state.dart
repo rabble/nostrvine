@@ -28,6 +28,9 @@ enum ProfileEditorError {
   /// Failed to publish profile to Nostr relays.
   publishFailed,
 
+  /// Failed to claim username (network error or other issue).
+  claimFailed,
+
   /// Username was already taken by another user.
   usernameTaken,
 
@@ -106,11 +109,11 @@ final class ProfileEditorState extends Equatable {
 
   @override
   List<Object?> get props => [
-        status,
-        error,
-        pendingEvent,
-        username,
-        usernameStatus,
-        usernameError,
-      ];
+    status,
+    error,
+    pendingEvent,
+    username,
+    usernameStatus,
+    usernameError,
+  ];
 }

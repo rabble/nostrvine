@@ -658,7 +658,7 @@ void main() {
 
       group('username claim error', () {
         blocTest<ProfileEditorBloc, ProfileEditorState>(
-          'emits [loading, failure] with publishFailed error',
+          'emits [loading, failure] with claimFailed error',
           setUp: () {
             final existingProfile = createTestProfile(nip05: testOriginalNip05);
             when(
@@ -709,7 +709,7 @@ void main() {
                 .having(
                   (s) => s.error,
                   'error',
-                  ProfileEditorError.publishFailed,
+                  ProfileEditorError.claimFailed,
                 ),
           ],
         );
@@ -792,6 +792,9 @@ void main() {
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', 'ab')
+              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.idle),
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', 'ab')
               .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.error)
               .having(
                 (s) => s.usernameError,
@@ -808,6 +811,9 @@ void main() {
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', 'aaaaaaaaaaaaaaaaaaaaa')
+              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.idle),
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', 'aaaaaaaaaaaaaaaaaaaaa')
               .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.error)
               .having(
                 (s) => s.usernameError,
@@ -822,6 +828,9 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const UsernameChanged('test@user')),
         expect: () => [
+          isA<ProfileEditorState>()
+              .having((s) => s.username, 'username', 'test@user')
+              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.idle),
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', 'test@user')
               .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.error)

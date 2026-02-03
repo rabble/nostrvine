@@ -236,7 +236,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         _reservedUsernames.add(username);
         return ProfileEditorError.usernameReserved;
       }(),
-      UsernameClaimError() => ProfileEditorError.publishFailed,
+      UsernameClaimError() => ProfileEditorError.claimFailed,
     };
 
     if (error == null) {

@@ -330,6 +330,15 @@ class _ProfileSetupScreenViewState
                 context: context,
                 builder: (context) => UsernameReservedDialog(username),
               );
+            case ProfileEditorError.claimFailed:
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text(
+                    'Failed to claim username. Please try again.',
+                  ),
+                  backgroundColor: Colors.red[700],
+                ),
+              );
             case ProfileEditorError.publishFailed:
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -903,11 +912,15 @@ class _ProfileSetupScreenViewState
                                     .add(UsernameChanged(value)),
                               ),
                               // Username status indicators
-                              BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
-                                builder: (context, state) => UsernameStatusIndicator(
-                                  status: state.usernameStatus,
-                                  error: state.usernameError,
-                                ),
+                              BlocBuilder<
+                                ProfileEditorBloc,
+                                ProfileEditorState
+                              >(
+                                builder: (context, state) =>
+                                    UsernameStatusIndicator(
+                                      status: state.usernameStatus,
+                                      error: state.usernameError,
+                                    ),
                               ),
 
                               const SizedBox(height: 24),
@@ -990,12 +1003,15 @@ class _ProfileSetupScreenViewState
                   if (pubkey != null)
                     BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
                       builder: (context, blocState) {
-                        final canSave = _isFormValid &&
-                            (_nip05Controller.text.trim().isEmpty ||
+                        // Presentation logic: enable save button when form is valid
+                        // and username validation state allows it
+                        final username = _nip05Controller.text.trim();
+                        final canSave =
+                            _isFormValid &&
+                            (username.isEmpty ||
                                 blocState.usernameStatus ==
                                     UsernameStatus.available ||
-                                _nip05Controller.text.trim() ==
-                                    _initialUsername) &&
+                                username == _initialUsername) &&
                             blocState.usernameStatus != UsernameStatus.checking;
 
                         return Expanded(
@@ -1428,11 +1444,7 @@ class _ProfileSetupScreenViewState
 
 /// Displays username availability status (checking, available, taken, reserved, error)
 class UsernameStatusIndicator extends StatelessWidget {
-  const UsernameStatusIndicator({
-    required this.status,
-    this.error,
-    super.key,
-  });
+  const UsernameStatusIndicator({required this.status, this.error, super.key});
 
   final UsernameStatus status;
   final String? error;
@@ -1446,8 +1458,8 @@ class UsernameStatusIndicator extends StatelessWidget {
       UsernameStatus.taken => const _UsernameTakenIndicator(),
       UsernameStatus.reserved => _UsernameReservedIndicator(),
       UsernameStatus.error => _UsernameErrorIndicator(
-          message: error ?? 'Failed to check availability',
-        ),
+        message: error ?? 'Failed to check availability',
+      ),
     };
   }
 }

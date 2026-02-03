@@ -18,7 +18,6 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/follow_repository.dart';
-import 'package:openvine/repositories/username_repository.dart';
 import 'package:openvine/providers/video_repository_provider.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
@@ -527,13 +526,6 @@ class BlocklistVersion extends _$BlocklistVersion {
 @riverpod
 Nip05Service nip05Service(Ref ref) {
   return Nip05Service();
-}
-
-/// Username repository for availability checking
-@riverpod
-UsernameRepository usernameRepository(Ref ref) {
-  final nip05Service = ref.watch(nip05ServiceProvider);
-  return UsernameRepository(nip05Service);
 }
 
 /// Draft storage service for persisting vine drafts
