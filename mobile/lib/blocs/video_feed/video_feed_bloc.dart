@@ -15,7 +15,7 @@ part 'video_feed_event.dart';
 part 'video_feed_state.dart';
 
 /// Number of videos to load per page.
-const _pageSize = 5;
+const _pageSize = 25;
 
 /// BLoC for managing the unified video feed.
 ///

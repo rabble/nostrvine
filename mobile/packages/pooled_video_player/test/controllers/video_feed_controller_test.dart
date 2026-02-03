@@ -143,12 +143,11 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           controller.onPageChanged(2);
 
           expect(controller.currentIndex, equals(2));
-
-          controller.dispose();
         });
       });
 
@@ -169,12 +168,11 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           controller.pause();
 
           expect(controller.isPaused, isTrue);
-
-          controller.dispose();
         });
 
         test('returns false after play() when conditions allow', () {
@@ -182,17 +180,17 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
-          controller.pause();
           // play() only sets isPaused to false if video is ready and active
           // Since video isn't ready, isPaused stays true
-          controller.play();
+          controller
+            ..pause()
+            ..play();
 
           // Since no video is ready, isPaused remains true
           // This tests the guard clause in play()
           expect(controller.isPaused, isTrue);
-
-          controller.dispose();
         });
       });
 
@@ -213,12 +211,11 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           controller.setActive(active: false);
 
           expect(controller.isActive, isFalse);
-
-          controller.dispose();
         });
 
         test('returns true after setActive(true)', () {
@@ -226,14 +223,13 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           controller
             ..setActive(active: false)
             ..setActive(active: true);
 
           expect(controller.isActive, isTrue);
-
-          controller.dispose();
         });
       });
 
@@ -295,12 +291,11 @@ void main() {
             videos: createTestVideos(count: 3),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           controller.addVideos(createTestVideos(count: 2));
 
           expect(controller.videoCount, equals(5));
-
-          controller.dispose();
         });
       });
     });
@@ -390,12 +385,11 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           controller.onPageChanged(2);
 
           expect(controller.currentIndex, equals(2));
-
-          controller.dispose();
         });
 
         test('notifies listeners', () {
@@ -403,15 +397,14 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           var notified = false;
-          controller.addListener(() => notified = true);
-
-          controller.onPageChanged(1);
+          controller
+            ..addListener(() => notified = true)
+            ..onPageChanged(1);
 
           expect(notified, isTrue);
-
-          controller.dispose();
         });
 
         test('does nothing when index unchanged', () {
@@ -419,15 +412,14 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           var notifyCount = 0;
-          controller.addListener(() => notifyCount++);
-
-          controller.onPageChanged(0);
+          controller
+            ..addListener(() => notifyCount++)
+            ..onPageChanged(0);
 
           expect(notifyCount, equals(0));
-
-          controller.dispose();
         });
       });
     });
@@ -439,16 +431,16 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           controller
             ..pause()
             ..play();
 
-          // play() has a guard: if (!_isActive || !isVideoReady(_currentIndex)) return;
-          // Since video isn't ready, isPaused stays true
+          // play() has a guard:
+          // if (!_isActive || !isVideoReady(_currentIndex)) return;
+          // Since video isn't ready, isPaused stays true.
           expect(controller.isPaused, isTrue);
-
-          controller.dispose();
         });
 
         test('does not notify listeners when video not ready', () {
@@ -456,18 +448,17 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           controller.pause();
 
           var notified = false;
-          controller.addListener(() => notified = true);
-
-          controller.play();
+          controller
+            ..addListener(() => notified = true)
+            ..play();
 
           // play() returns early when video not ready, so no notification
           expect(notified, isFalse);
-
-          controller.dispose();
         });
       });
 
@@ -477,12 +468,11 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           controller.pause();
 
           expect(controller.isPaused, isTrue);
-
-          controller.dispose();
         });
 
         test('notifies listeners', () {
@@ -490,15 +480,14 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           var notified = false;
-          controller.addListener(() => notified = true);
-
-          controller.pause();
+          controller
+            ..addListener(() => notified = true)
+            ..pause();
 
           expect(notified, isTrue);
-
-          controller.dispose();
         });
       });
 
@@ -508,6 +497,7 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           controller
             ..pause()
@@ -516,8 +506,6 @@ void main() {
           // togglePlayPause calls play(), but play() has guards
           // Since video isn't ready, isPaused stays true
           expect(controller.isPaused, isTrue);
-
-          controller.dispose();
         });
 
         test('pauses when playing', () {
@@ -525,12 +513,11 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           controller.togglePlayPause();
 
           expect(controller.isPaused, isTrue);
-
-          controller.dispose();
         });
       });
 
@@ -556,11 +543,10 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           // Should not throw
           controller.setVolume(0.5);
-
-          controller.dispose();
         });
       });
 
@@ -570,11 +556,10 @@ void main() {
             videos: createTestVideos(),
             pool: pool,
           );
+          addTearDown(controller.dispose);
 
           // Should not throw
           controller.setPlaybackSpeed(1.5);
-
-          controller.dispose();
         });
       });
     });
@@ -588,13 +573,13 @@ void main() {
           );
 
           var notified = false;
-          controller.addListener(() => notified = true);
-
-          controller.setActive(active: false);
+          controller
+            ..addListener(() => notified = true)
+            ..setActive(active: false);
 
           expect(notified, isTrue);
 
-          controller.dispose();
+          addTearDown(controller.dispose);
         });
 
         test('does nothing when value unchanged', () {
@@ -604,13 +589,13 @@ void main() {
           );
 
           var notifyCount = 0;
-          controller.addListener(() => notifyCount++);
-
-          controller.setActive(active: true);
+          controller
+            ..addListener(() => notifyCount++)
+            ..setActive(active: true);
 
           expect(notifyCount, equals(0));
 
-          controller.dispose();
+          addTearDown(controller.dispose);
         });
       });
     });
@@ -642,13 +627,13 @@ void main() {
           );
 
           var notified = false;
-          controller.addListener(() => notified = true);
-
-          controller.addVideos([createTestVideo()]);
+          controller
+            ..addListener(() => notified = true)
+            ..addVideos([createTestVideo()]);
 
           expect(notified, isTrue);
 
-          controller.dispose();
+          addTearDown(controller.dispose);
         });
 
         test('does nothing with empty list', () {
@@ -658,14 +643,14 @@ void main() {
           );
 
           var notifyCount = 0;
-          controller.addListener(() => notifyCount++);
-
-          controller.addVideos([]);
+          controller
+            ..addListener(() => notifyCount++)
+            ..addVideos([]);
 
           expect(notifyCount, equals(0));
           expect(controller.videoCount, equals(3));
 
-          controller.dispose();
+          addTearDown(controller.dispose);
         });
       });
     });
@@ -677,6 +662,8 @@ void main() {
           pool: pool,
         );
 
+        // Testing dispose behavior - must call dispose before expect.
+        // ignore: cascade_invocations
         controller.dispose();
 
         // Adding listener after dispose should throw
@@ -692,6 +679,8 @@ void main() {
           pool: pool,
         );
 
+        // Testing multiple dispose calls - intentional cascade of dispose.
+        // ignore: cascade_invocations
         controller
           ..dispose()
           ..dispose()
@@ -707,10 +696,9 @@ void main() {
           videos: createTestVideos(),
           pool: pool,
         );
+        addTearDown(controller.dispose);
 
         expect(controller, isA<ChangeNotifier>());
-
-        controller.dispose();
       });
 
       test('listeners receive updates on page change', () {
@@ -718,19 +706,18 @@ void main() {
           videos: createTestVideos(),
           pool: pool,
         );
+        addTearDown(controller.dispose);
 
         var pageChangeNotifications = 0;
-        controller.addListener(() {
-          // Count only, since preloading also notifies
-          pageChangeNotifications++;
-        });
-
-        controller.onPageChanged(1);
+        controller
+          ..addListener(() {
+            // Count only, since preloading also notifies
+            pageChangeNotifications++;
+          })
+          ..onPageChanged(1);
 
         // At least one notification for page change
         expect(pageChangeNotifications, greaterThanOrEqualTo(1));
-
-        controller.dispose();
       });
 
       test('removed listeners do not receive page change updates', () {
@@ -738,6 +725,7 @@ void main() {
           videos: createTestVideos(),
           pool: pool,
         );
+        addTearDown(controller.dispose);
 
         var notifyCount = 0;
         void listener() => notifyCount++;
@@ -748,14 +736,13 @@ void main() {
         controller.onPageChanged(1);
         final afterFirstChange = notifyCount;
 
-        controller.removeListener(listener);
-        controller.onPageChanged(2);
+        controller
+          ..removeListener(listener)
+          ..onPageChanged(2);
 
         // After removing listener, count should not increase
         expect(notifyCount, equals(afterFirstChange));
         expect(afterFirstChange, greaterThan(initialCount));
-
-        controller.dispose();
       });
     });
   });

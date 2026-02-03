@@ -15,7 +15,11 @@ dependencies:
     sdk: flutter
   media_kit: ^1.2.6
   media_kit_libs_video: ^1.0.7
-  media_kit_video: ^2.0.1
+  media_kit_video:
+    git:
+      url: https://github.com/divinevideo/media-kit
+      ref: fix/texture-rotation
+      path: media_kit_video
 
 dev_dependencies:
   flutter_test:
