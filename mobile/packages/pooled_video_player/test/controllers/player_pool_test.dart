@@ -516,22 +516,24 @@ void main() {
         });
 
         group('eviction with disposed player', () {
-          test('skips disposing already disposed player during eviction', (
-            ) async {
-            await pool.getPlayer('https://example.com/v1.mp4');
-            await pool.getPlayer('https://example.com/v2.mp4');
-            await pool.getPlayer('https://example.com/v3.mp4');
+          test(
+            'skips disposing already disposed player during eviction',
+            () async {
+              await pool.getPlayer('https://example.com/v1.mp4');
+              await pool.getPlayer('https://example.com/v2.mp4');
+              await pool.getPlayer('https://example.com/v3.mp4');
 
-            // Mark first player as already disposed
-            when(() => createdPlayers[0].isDisposed).thenReturn(true);
+              // Mark first player as already disposed
+              when(() => createdPlayers[0].isDisposed).thenReturn(true);
 
-            // This should evict v1
-            await pool.getPlayer('https://example.com/v4.mp4');
+              // This should evict v1
+              await pool.getPlayer('https://example.com/v4.mp4');
 
-            // Should not call dispose on already disposed player
-            verifyNever(() => createdPlayers[0].dispose());
-            expect(pool.hasPlayer('https://example.com/v1.mp4'), isFalse);
-          });
+              // Should not call dispose on already disposed player
+              verifyNever(() => createdPlayers[0].dispose());
+              expect(pool.hasPlayer('https://example.com/v1.mp4'), isFalse);
+            },
+          );
         });
       });
     });

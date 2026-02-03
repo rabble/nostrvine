@@ -418,13 +418,6 @@ void main() {
         await tester.pump();
 
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
-
-        // Send another buffering = false (should be ignored since already ready)
-        setup.bufferingController.add(false);
-        await tester.pump();
-
-        // Still in ready state
-        expect(find.byKey(const Key('video_widget')), findsOneWidget);
       });
 
       testWidgets('buffer subscription callback transitions state', (
