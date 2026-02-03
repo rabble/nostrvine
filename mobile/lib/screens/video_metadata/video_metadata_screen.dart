@@ -9,7 +9,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/services/gallery_save_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_clip_preview.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
@@ -48,7 +52,44 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
       final editorProvider = ref.read(videoEditorProvider);
       _titleController.text = editorProvider.title;
       _descriptionController.text = editorProvider.description;
+
+      // Auto-save to gallery as safety backup when screen loads
+      unawaited(_saveToGalleryOnLoad());
     });
+  }
+
+  /// Saves the first clip to gallery as a safety backup.
+  /// Runs silently in background - failures are logged but not shown to user.
+  Future<void> _saveToGalleryOnLoad() async {
+    try {
+      final clips = ref.read(clipManagerProvider).clips;
+      if (clips.isEmpty) return;
+
+      final videoPath = await clips.first.video.safeFilePath();
+      final gallerySaveService = ref.read(gallerySaveServiceProvider);
+      final result = await gallerySaveService.saveVideoToGallery(videoPath);
+
+      switch (result) {
+        case GallerySaveSuccess():
+          Log.info(
+            'Auto-saved video to gallery on screen load',
+            name: 'VideoMetadataScreen',
+            category: LogCategory.video,
+          );
+        case GallerySaveFailure(:final reason):
+          Log.warning(
+            'Auto-save to gallery failed: $reason',
+            name: 'VideoMetadataScreen',
+            category: LogCategory.video,
+          );
+      }
+    } catch (e) {
+      Log.warning(
+        'Auto-save to gallery error: $e',
+        name: 'VideoMetadataScreen',
+        category: LogCategory.video,
+      );
+    }
   }
 
   @override
