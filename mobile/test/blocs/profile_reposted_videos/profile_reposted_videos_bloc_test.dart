@@ -56,7 +56,6 @@ void main() {
       videosRepository: mockVideosRepository,
       currentUserPubkey: currentUserPubkey,
       targetUserPubkey: targetUserPubkey,
-      analyticsApiService: analyticsApiService,
     );
 
     VideoEvent createTestVideo({

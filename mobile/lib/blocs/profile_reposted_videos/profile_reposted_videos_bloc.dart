@@ -5,11 +5,11 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/aid.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:videos_repository/videos_repository.dart';
@@ -40,12 +40,12 @@ class ProfileRepostedVideosBloc
     required VideosRepository videosRepository,
     required String currentUserPubkey,
     String? targetUserPubkey,
-    AnalyticsApiService? analyticsApiService,
+    FunnelcakeApiClient? funnelcakeApiClient,
   }) : _repostsRepository = repostsRepository,
        _videosRepository = videosRepository,
        _currentUserPubkey = currentUserPubkey,
        _targetUserPubkey = targetUserPubkey,
-       _analyticsApiService = analyticsApiService,
+       _funnelcakeApiClient = funnelcakeApiClient,
        super(const ProfileRepostedVideosState()) {
     on<ProfileRepostedVideosSyncRequested>(_onSyncRequested);
     on<ProfileRepostedVideosSubscriptionRequested>(_onSubscriptionRequested);
@@ -56,10 +56,10 @@ class ProfileRepostedVideosBloc
   final VideosRepository _videosRepository;
   final String _currentUserPubkey;
 
-  /// Optional REST API service for fallback when videos aren't on Nostr relays.
-  /// This handles videos that came from Funnelcake (Explore page) and may not
-  /// be on the app's configured relays.
-  final AnalyticsApiService? _analyticsApiService;
+  /// Optional Funnelcake API client for fallback when videos aren't on Nostr
+  /// relays. This handles videos that came from Funnelcake (Explore page) and
+  /// may not be on the app's configured relays.
+  final FunnelcakeApiClient? _funnelcakeApiClient;
 
   /// The pubkey of the user whose reposts to display.
   /// If null or same as current user, uses RepostsRepository sync.
@@ -344,11 +344,13 @@ class ProfileRepostedVideosBloc
         .where((id) => !foundVideos.containsKey(id))
         .toList();
 
-    // Try REST API fallback for missing videos
-    if (missingIds.isNotEmpty && _analyticsApiService != null) {
+    // Try Funnelcake API fallback for missing videos
+    if (missingIds.isNotEmpty &&
+        _funnelcakeApiClient != null &&
+        _funnelcakeApiClient.isAvailable) {
       Log.info(
         'ProfileRepostedVideosBloc: ${missingIds.length} videos not found on '
-        'Nostr, trying REST API fallback',
+        'Nostr, trying Funnelcake API fallback',
         name: 'ProfileRepostedVideosBloc',
         category: LogCategory.video,
       );
@@ -362,27 +364,28 @@ class ProfileRepostedVideosBloc
         }
       }
 
-      // Query REST API for each author's videos
+      // Query Funnelcake API for each author's videos
       for (final entry in missingByPubkey.entries) {
         final pubkey = entry.key;
         final dTags = entry.value.toSet();
 
         try {
-          // Fetch videos by author from REST API
-          final authorVideos = await _analyticsApiService.getVideosByAuthor(
+          // Fetch videos by author from Funnelcake API
+          final authorVideoStats = await _funnelcakeApiClient.getVideosByAuthor(
             pubkey: pubkey,
             limit: 100,
           );
 
-          // Find videos matching our d-tags
-          for (final video in authorVideos) {
+          // Find videos matching our d-tags and convert to VideoEvent
+          for (final videoStats in authorVideoStats) {
+            final video = videoStats.toVideoEvent();
             if (video.vineId != null && dTags.contains(video.vineId)) {
               final videoAddressableId = _computeAddressableId(video);
               if (videoAddressableId != null &&
                   video.isSupportedOnCurrentPlatform) {
                 foundVideos[videoAddressableId] = video;
                 Log.info(
-                  'ProfileRepostedVideosBloc: Found video via REST API '
+                  'ProfileRepostedVideosBloc: Found video via Funnelcake API '
                   '(author query)',
                   name: 'ProfileRepostedVideosBloc',
                   category: LogCategory.video,
@@ -390,10 +393,10 @@ class ProfileRepostedVideosBloc
               }
             }
           }
-        } catch (e) {
+        } on FunnelcakeException catch (e) {
           Log.warning(
-            'ProfileRepostedVideosBloc: REST API author query failed for '
-            '$pubkey: $e',
+            'ProfileRepostedVideosBloc: Funnelcake API author query failed for '
+            '$pubkey: ${e.message}',
             name: 'ProfileRepostedVideosBloc',
             category: LogCategory.video,
           );

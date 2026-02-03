@@ -127,6 +127,10 @@ dependencies:
   videos_repository:
     path: packages/videos_repository
 
+  # Funnelcake API Client - HTTP client for Funnelcake REST API
+  funnelcake_api_client:
+    path: packages/funnelcake_api_client
+
   # Divine UI - Shared UI components
   divine_ui:
     path: packages/divine_ui
