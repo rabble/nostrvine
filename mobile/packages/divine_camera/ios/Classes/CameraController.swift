@@ -673,8 +673,8 @@ class CameraController: NSObject {
                 let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
                 outputDir = paths[0]
             }
-            let timestamp = ISO8601DateFormatter().string(from: Date())
-                .replacingOccurrences(of: ":", with: "-")
+            // Use milliseconds timestamp for shorter, sortable, and unique filenames
+            let timestamp = Int64(Date().timeIntervalSince1970 * 1000)
             let outputURL = outputDir.appendingPathComponent("VID_\(timestamp).mp4")
             self.currentRecordingURL = outputURL
             
