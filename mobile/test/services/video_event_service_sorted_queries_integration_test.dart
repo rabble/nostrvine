@@ -51,6 +51,8 @@ void main() {
       // Mock NostrService as initialized
       when(mockNostrService.isInitialized).thenReturn(true);
       when(mockNostrService.connectedRelayCount).thenReturn(1);
+      when(mockNostrService.connectedRelays)
+          .thenReturn([AppConstants.defaultRelayUrl]);
       when(
         mockNostrService.subscribe(
           argThat(anything),
