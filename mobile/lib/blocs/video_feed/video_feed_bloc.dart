@@ -89,9 +89,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      // Get cursor from oldest video, subtract 1 for exclusive boundary
-      // Nostr's `until` is inclusive (createdAt <= until), so -1 makes it exclusive
-      final cursor = state.videos.last.createdAt - 1;
+      final cursor = state.videos.last.createdAt;
       final newVideos = await _fetchVideosForMode(state.mode, until: cursor);
 
       // Filter out videos without valid URLs
