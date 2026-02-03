@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -203,8 +204,13 @@ class _EmailVerificationScreenState
     ref.read(pendingVerificationServiceProvider).clear();
 
     if (!_isTokenMode) {
-      // Polling mode: app_router should detect that we are authenticated
-      // and route us to /home
+      // Polling mode: navigate to explore screen after successful verification
+      Log.info(
+        'Email verification succeeded, navigating to explore',
+        name: 'EmailVerificationScreen',
+        category: LogCategory.auth,
+      );
+      context.go(ExploreScreen.path);
     } else {
       // Token mode: redirect to login screen
       _handleTokenModeSuccess();
