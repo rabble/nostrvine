@@ -59,6 +59,7 @@ dependencies:
   flutter_riverpod: ^3.0.0
   riverpod_annotation: ^3.0.0
   flutter_bloc: ^9.0.0
+  bloc_concurrency: ^0.3.0
   freezed_annotation: ^3.0.0
   json_annotation: ^4.9.0
   rxdart: ^0.28.0
