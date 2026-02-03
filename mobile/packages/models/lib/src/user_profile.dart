@@ -135,6 +135,15 @@ class UserProfile {
     return pubkey;
   }
 
+  /// Get the best available display name
+  String get bestDisplayName {
+    if (displayName?.isNotEmpty ?? false) return displayName!;
+    if (name?.isNotEmpty ?? false) return name!;
+    // Fallback to truncated pubkey
+    if (pubkey.length <= 16) return pubkey;
+    return '${pubkey.substring(0, 8)}...${pubkey.substring(pubkey.length - 6)}';
+  }
+
   /// Check if profile has basic information
   bool get hasBasicInfo =>
       (name?.isNotEmpty ?? false) ||

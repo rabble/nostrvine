@@ -353,18 +353,22 @@ class BlossomUploadService {
           // Extract all URL fields from server response
           final url = responseData['url']?.toString();
           final fallbackUrl = responseData['fallbackUrl']?.toString();
+          String? thumbnailUrl =
+              responseData['thumbnail']?.toString() ?? fallbackUrl;
 
           // Extract streaming info if present
           String? streamingMp4Url;
           String? streamingHlsUrl;
-          String? thumbnailUrl;
           String? streamingStatus;
 
           final streamingData = responseData['streaming'];
           if (streamingData is Map) {
             streamingMp4Url = streamingData['mp4Url']?.toString();
             streamingHlsUrl = streamingData['hlsUrl']?.toString();
-            thumbnailUrl = streamingData['thumbnailUrl']?.toString();
+            thumbnailUrl =
+                streamingData['thumbnailUrl']?.toString() ??
+                streamingData['thumbnail']?.toString() ??
+                thumbnailUrl;
             streamingStatus = streamingData['status']?.toString();
           }
 
@@ -470,9 +474,9 @@ class BlossomUploadService {
     required File videoFile,
     required String nostrPubkey,
     required String title,
-    String? description,
-    List<String>? hashtags,
-    String? proofManifestJson,
+    required String? proofManifestJson,
+    required String? description,
+    required List<String>? hashtags,
     void Function(double)? onProgress,
   }) async {
     // Start performance trace for video upload

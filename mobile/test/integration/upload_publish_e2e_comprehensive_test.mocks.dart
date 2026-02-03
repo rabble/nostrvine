@@ -140,9 +140,9 @@ class MockBlossomUploadService extends _i1.Mock
     required _i8.File? videoFile,
     required String? nostrPubkey,
     required String? title,
-    String? description,
-    List<String>? hashtags,
-    String? proofManifestJson,
+    required String? proofManifestJson,
+    required String? description,
+    required List<String>? hashtags,
     void Function(double)? onProgress,
   }) =>
       (super.noSuchMethod(
@@ -150,9 +150,9 @@ class MockBlossomUploadService extends _i1.Mock
               #videoFile: videoFile,
               #nostrPubkey: nostrPubkey,
               #title: title,
+              #proofManifestJson: proofManifestJson,
               #description: description,
               #hashtags: hashtags,
-              #proofManifestJson: proofManifestJson,
               #onProgress: onProgress,
             }),
             returnValue: _i7.Future<_i4.BlossomUploadResult>.value(
@@ -162,9 +162,9 @@ class MockBlossomUploadService extends _i1.Mock
                   #videoFile: videoFile,
                   #nostrPubkey: nostrPubkey,
                   #title: title,
+                  #proofManifestJson: proofManifestJson,
                   #description: description,
                   #hashtags: hashtags,
-                  #proofManifestJson: proofManifestJson,
                   #onProgress: onProgress,
                 }),
               ),
@@ -1124,6 +1124,14 @@ class MockNostrClient extends _i1.Mock implements _i6.NostrClient {
             returnValue: _i7.Stream<_i14.Event>.empty(),
           )
           as _i7.Stream<_i14.Event>);
+
+  @override
+  _i7.Future<List<_i14.Event>> queryUsers(String? query, {int? limit}) =>
+      (super.noSuchMethod(
+            Invocation.method(#queryUsers, [query], {#limit: limit}),
+            returnValue: _i7.Future<List<_i14.Event>>.value(<_i14.Event>[]),
+          )
+          as _i7.Future<List<_i14.Event>>);
 
   @override
   _i7.Future<String?> createNip98AuthHeader({

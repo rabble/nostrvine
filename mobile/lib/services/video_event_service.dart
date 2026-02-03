@@ -1082,9 +1082,13 @@ class VideoEventService extends ChangeNotifier {
         );
       } else if (sortBy != null && _videoFilterBuilder != null) {
         try {
+          // Use connected relay for capability check, fallback to default
+          final relayUrl = _nostrService.connectedRelays.isNotEmpty
+              ? _nostrService.connectedRelays.first
+              : AppConstants.defaultRelayUrl;
           videoFilter = await _videoFilterBuilder.buildFilter(
             baseFilter: baseVideoFilter,
-            relayUrl: AppConstants.defaultRelayUrl,
+            relayUrl: relayUrl,
             sortBy: sortBy,
           );
           Log.info(

@@ -553,6 +553,14 @@ class MockNostrClient extends _i1.Mock implements _i7.NostrClient {
           as _i9.Stream<_i5.Event>);
 
   @override
+  _i9.Future<List<_i5.Event>> queryUsers(String? query, {int? limit}) =>
+      (super.noSuchMethod(
+            Invocation.method(#queryUsers, [query], {#limit: limit}),
+            returnValue: _i9.Future<List<_i5.Event>>.value(<_i5.Event>[]),
+          )
+          as _i9.Future<List<_i5.Event>>);
+
+  @override
   _i9.Future<String?> createNip98AuthHeader({
     required String? url,
     required String? method,
@@ -2212,6 +2220,22 @@ class MockAnalyticsApiService extends _i1.Mock
             ),
           )
           as _i9.Future<List<_i11.VideoEvent>>);
+
+  @override
+  _i9.Future<List<Map<String, dynamic>>> searchProfiles({
+    required String? query,
+    int? limit = 50,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#searchProfiles, [], {
+              #query: query,
+              #limit: limit,
+            }),
+            returnValue: _i9.Future<List<Map<String, dynamic>>>.value(
+              <Map<String, dynamic>>[],
+            ),
+          )
+          as _i9.Future<List<Map<String, dynamic>>>);
 
   @override
   _i9.Future<_i6.VideoStats?> getVideoStats(String? eventId) =>

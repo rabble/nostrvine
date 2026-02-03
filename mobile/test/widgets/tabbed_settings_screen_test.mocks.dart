@@ -960,6 +960,14 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
           as _i9.Stream<_i3.Event>);
 
   @override
+  _i9.Future<List<_i3.Event>> queryUsers(String? query, {int? limit}) =>
+      (super.noSuchMethod(
+            Invocation.method(#queryUsers, [query], {#limit: limit}),
+            returnValue: _i9.Future<List<_i3.Event>>.value(<_i3.Event>[]),
+          )
+          as _i9.Future<List<_i3.Event>>);
+
+  @override
   _i9.Future<String?> createNip98AuthHeader({
     required String? url,
     required String? method,
@@ -1052,9 +1060,9 @@ class MockBlossomUploadService extends _i1.Mock
     required _i15.File? videoFile,
     required String? nostrPubkey,
     required String? title,
-    String? description,
-    List<String>? hashtags,
-    String? proofManifestJson,
+    required String? proofManifestJson,
+    required String? description,
+    required List<String>? hashtags,
     void Function(double)? onProgress,
   }) =>
       (super.noSuchMethod(
@@ -1062,9 +1070,9 @@ class MockBlossomUploadService extends _i1.Mock
               #videoFile: videoFile,
               #nostrPubkey: nostrPubkey,
               #title: title,
+              #proofManifestJson: proofManifestJson,
               #description: description,
               #hashtags: hashtags,
-              #proofManifestJson: proofManifestJson,
               #onProgress: onProgress,
             }),
             returnValue: _i9.Future<_i6.BlossomUploadResult>.value(
@@ -1074,9 +1082,9 @@ class MockBlossomUploadService extends _i1.Mock
                   #videoFile: videoFile,
                   #nostrPubkey: nostrPubkey,
                   #title: title,
+                  #proofManifestJson: proofManifestJson,
                   #description: description,
                   #hashtags: hashtags,
-                  #proofManifestJson: proofManifestJson,
                   #onProgress: onProgress,
                 }),
               ),

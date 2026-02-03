@@ -23,7 +23,7 @@ void main() {
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
-      draftService = DraftStorageService(prefs);
+      draftService = DraftStorageService();
       clipService = ClipLibraryService(prefs);
       migrationService = DraftMigrationService(
         draftService: draftService,

@@ -22,7 +22,6 @@ import 'package:openvine/services/video_editor/video_editor_render_service.dart'
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 final videoEditorProvider =
     NotifierProvider<VideoEditorNotifier, VideoEditorProviderState>(
@@ -54,6 +53,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Get clips from clip manager.
   List<RecordingClip> get _clips => ref.read(clipManagerProvider).clips;
+
+  final _draftService = DraftStorageService();
 
   // === LIFECYCLE ===
 
@@ -598,11 +599,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final draftService = DraftStorageService(prefs);
-
       final draft = getActiveDraft(isAutosave: true);
-      await draftService.saveDraft(draft);
+      await _draftService.saveDraft(draft);
 
       Log.info(
         '✅ Autosave completed - ${clipCount} clip(s), '
@@ -640,10 +638,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final draftService = DraftStorageService(prefs);
-
-      await draftService.saveDraft(getActiveDraft());
+      await _draftService.saveDraft(getActiveDraft());
 
       // Remove the autosaved draft
       await removeAutosavedDraft();
@@ -683,11 +678,29 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       category: LogCategory.video,
     );
 
-    final prefs = await SharedPreferences.getInstance();
-    final draftService = DraftStorageService(prefs);
-    final draft = await draftService.getValidatedDraftById(draftId);
-
-    if (draft == null || draft.clips.isEmpty) {
+    final draft = await _draftService.getDraftById(draftId);
+    if (draft != null) {
+      state = state.copyWith(
+        title: draft.title,
+        description: draft.description,
+        tags: draft.hashtags,
+        allowAudioReuse: draft.allowAudioReuse,
+        expiration: VideoMetadataExpiration.fromDuration(draft.expireTime),
+        editorStateHistory: draft.editorStateHistory,
+        editorEditingParameters: draft.editorEditingParameters,
+      );
+      _clipManager.addMultipleClips(draft.clips);
+      // We set the aspect ratio in the video recorder to match the clips,
+      // so the user can't mix them up.
+      ref
+          .read(videoRecorderProvider.notifier)
+          .setAspectRatio(draft.clips.first.targetAspectRatio);
+      Log.info(
+        '✅ Draft loaded with ${draft.clips.length} clip(s)',
+        name: 'VideoEditorNotifier',
+        category: .video,
+      );
+    } else {
       Log.warning(
         '⚠️ Draft not found or has no valid clips: $draftId',
         name: 'VideoEditorNotifier',
@@ -760,9 +773,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// after successfully publishing a video.
   Future<void> removeAutosavedDraft() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final draftService = DraftStorageService(prefs);
-      await draftService.deleteDraft(VideoEditorConstants.autoSaveId);
+      await _draftService.deleteDraft(VideoEditorConstants.autoSaveId);
       Log.debug(
         '🗑️ Deleted autosaved draft',
         name: 'VideoEditorNotifier',

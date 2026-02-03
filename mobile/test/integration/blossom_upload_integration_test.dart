@@ -105,6 +105,8 @@ void main() {
         nostrPubkey: testPublicKey,
         title: 'Integration Test',
         description: 'Testing Blossom response structure',
+        hashtags: null,
+        proofManifestJson: null,
         onProgress: (progress) {
           print('Upload progress: ${(progress * 100).toStringAsFixed(1)}%');
         },

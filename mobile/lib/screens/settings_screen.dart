@@ -32,7 +32,6 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/bug_report_dialog.dart';
 import 'package:openvine/widgets/delete_account_dialog.dart';
 import 'package:package_info_plus/package_info_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -617,8 +616,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   Future<void> _handleSwitchAccount(BuildContext context, WidgetRef ref) async {
     // Check for existing drafts before showing switch account confirmation
-    final prefs = await SharedPreferences.getInstance();
-    final draftService = DraftStorageService(prefs);
+    final draftService = DraftStorageService();
     final drafts = await draftService.getAllDrafts();
     final draftCount = drafts.length;
 

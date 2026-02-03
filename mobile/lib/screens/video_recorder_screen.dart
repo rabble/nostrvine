@@ -7,6 +7,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -19,7 +20,6 @@ import 'package:openvine/widgets/video_recorder/video_recorder_countdown_overlay
 import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_segment_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_top_bar.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// Video recorder screen with camera preview and recording controls.
 class VideoRecorderScreen extends ConsumerStatefulWidget {
@@ -92,11 +92,11 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
       category: LogCategory.video,
     );
 
-    final prefs = await SharedPreferences.getInstance();
-    final draftService = DraftStorageService(prefs);
-    final hasAutosave = await draftService.hasValidAutosave();
-
-    if (hasAutosave) {
+    final draftService = DraftStorageService();
+    final draft = await draftService.getDraftById(
+      VideoEditorConstants.autoSaveId,
+    );
+    if (draft != null && draft.clips.isNotEmpty) {
       Log.info(
         '📹 Found valid autosaved draft',
         name: 'VideoRecorderScreen',

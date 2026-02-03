@@ -424,6 +424,15 @@ class NotificationServiceEnhanced {
       // Add to list
       _notifications.insert(0, notification);
 
+      // Re-sort to maintain chronological order
+      // (Nostr events can arrive out of order from relays)
+      _notifications.sort((a, b) {
+        final timeCompare = b.timestamp.compareTo(a.timestamp);
+        if (timeCompare != 0) return timeCompare;
+        // Stable secondary sort by ID to prevent visual jitter
+        return a.id.compareTo(b.id);
+      });
+
       // Update unread count
       _updateUnreadCount();
 
@@ -496,9 +505,17 @@ class NotificationServiceEnhanced {
     _unreadCount = _notifications.where((n) => !n.isRead).length;
   }
 
-  /// Get notifications by type
-  List<NotificationModel> getNotificationsByType(NotificationType type) =>
-      _notifications.where((n) => n.type == type).toList();
+  /// Get notifications by type (sorted by timestamp, newest first)
+  List<NotificationModel> getNotificationsByType(NotificationType type) {
+    final filtered = _notifications.where((n) => n.type == type).toList();
+    // Ensure chronological order for filtered results
+    filtered.sort((a, b) {
+      final timeCompare = b.timestamp.compareTo(a.timestamp);
+      if (timeCompare != 0) return timeCompare;
+      return a.id.compareTo(b.id);
+    });
+    return filtered;
+  }
 
   /// Load cached notifications from Hive
   Future<void> _loadCachedNotifications() async {

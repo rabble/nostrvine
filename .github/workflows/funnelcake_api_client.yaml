@@ -1,0 +1,27 @@
+# ABOUTME: CI workflow for the funnelcake_api_client package.
+# ABOUTME: Runs tests, formatting, and analysis only when funnelcake_api_client files change.
+
+name: FunnelCake API Client CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "mobile/packages/funnelcake_api_client/**"
+      - ".github/workflows/funnelcake_api_client.yaml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "mobile/packages/funnelcake_api_client/**"
+      - ".github/workflows/funnelcake_api_client.yaml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
+    with:
+      working_directory: "mobile/packages/funnelcake_api_client"
+      min_coverage: 44

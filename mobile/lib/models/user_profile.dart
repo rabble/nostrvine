@@ -3,6 +3,7 @@
 
 import 'dart:convert';
 import 'dart:ui';
+
 import 'package:hive_ce/hive.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -142,10 +143,11 @@ class UserProfile {
 
   /// Get the best available display name
   String get bestDisplayName {
-    if (displayName?.isNotEmpty == true) return displayName!;
-    if (name?.isNotEmpty == true) return name!;
-    // Fallback to truncated npub (e.g., "npub1abc...xyz")
-    return truncatedNpub;
+    if (displayName?.isNotEmpty ?? false) return displayName!;
+    if (name?.isNotEmpty ?? false) return name!;
+    // Fallback to truncated pubkey
+    if (pubkey.length <= 16) return pubkey;
+    return '${pubkey.substring(0, 8)}...${pubkey.substring(pubkey.length - 6)}';
   }
 
   /// Similar to bestDisplayName. Use when you have default place holder text
