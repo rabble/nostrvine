@@ -568,10 +568,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
                   padding: const EdgeInsets.only(top: 4),
                   child: Text(
                     '+${_drafts.length - 1} more draft${_drafts.length > 2 ? 's' : ''}',
-                    style: TextStyle(
-                      color: Colors.grey[400],
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey[400], fontSize: 12),
                   ),
                 ),
               const Divider(color: Colors.grey, height: 24),
