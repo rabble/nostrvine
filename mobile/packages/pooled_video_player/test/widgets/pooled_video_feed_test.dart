@@ -286,5 +286,123 @@ void main() {
         expect(find.byType(PageView), findsOneWidget);
       });
     });
+
+    group('didUpdateWidget', () {
+      testWidgets('updates when controller changes', (tester) async {
+        final controller1 = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+        );
+        final controller2 = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+        );
+
+        // Build with first controller
+        await tester.pumpWidget(buildFeed(controller: controller1));
+        expect(find.text('Video 0 (active)'), findsOneWidget);
+
+        // Rebuild with second controller
+        await tester.pumpWidget(buildFeed(controller: controller2));
+        await tester.pump();
+
+        // Should still work with new controller
+        expect(find.text('Video 0 (active)'), findsOneWidget);
+
+        controller1.dispose();
+        controller2.dispose();
+      });
+
+      testWidgets('disposes owned controller when external provided', (
+        tester,
+      ) async {
+        // Start with internal controller (owned)
+        await tester.pumpWidget(buildFeed(videos: createTestVideos(count: 3)));
+        expect(find.text('Video 0 (active)'), findsOneWidget);
+
+        // Now provide external controller
+        final externalController = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+        );
+
+        await tester.pumpWidget(buildFeed(controller: externalController));
+        await tester.pump();
+
+        // Widget should use external controller
+        final state = tester.state<PooledVideoFeedState>(
+          find.byType(PooledVideoFeed),
+        );
+        expect(state.controller, equals(externalController));
+
+        externalController.dispose();
+      });
+
+      testWidgets('adds new videos when list changes with owned controller', (
+        tester,
+      ) async {
+        final initialVideos = createTestVideos(count: 3);
+        await tester.pumpWidget(buildFeed(videos: initialVideos));
+
+        final state = tester.state<PooledVideoFeedState>(
+          find.byType(PooledVideoFeed),
+        );
+        expect(state.controller.videoCount, equals(3));
+
+        // Update with more videos
+        final updatedVideos = [
+          ...initialVideos,
+          createTestVideo(id: 'new_1', url: 'https://example.com/new1.mp4'),
+          createTestVideo(id: 'new_2', url: 'https://example.com/new2.mp4'),
+        ];
+        await tester.pumpWidget(buildFeed(videos: updatedVideos));
+        await tester.pump();
+
+        // Should have added the new videos
+        expect(state.controller.videoCount, equals(5));
+      });
+
+      testWidgets('does not add videos when list unchanged', (tester) async {
+        final videos = createTestVideos(count: 3);
+
+        await tester.pumpWidget(buildFeed(videos: videos));
+        final state = tester.state<PooledVideoFeedState>(
+          find.byType(PooledVideoFeed),
+        );
+        expect(state.controller.videoCount, equals(3));
+
+        // Rebuild with same videos
+        await tester.pumpWidget(buildFeed(videos: videos));
+        await tester.pump();
+
+        expect(state.controller.videoCount, equals(3));
+      });
+
+      testWidgets('updates videoCount when controller notifies', (
+        tester,
+      ) async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+        );
+
+        await tester.pumpWidget(buildFeed(controller: controller));
+
+        final pageView = tester.widget<PageView>(find.byType(PageView));
+        expect(pageView.childrenDelegate.estimatedChildCount, equals(3));
+
+        // Add videos through controller
+        controller.addVideos([
+          createTestVideo(id: 'added', url: 'https://example.com/added.mp4'),
+        ]);
+        await tester.pump();
+
+        // PageView should update
+        final updatedPageView = tester.widget<PageView>(find.byType(PageView));
+        expect(updatedPageView.childrenDelegate.estimatedChildCount, equals(4));
+
+        controller.dispose();
+      });
+    });
   });
 }

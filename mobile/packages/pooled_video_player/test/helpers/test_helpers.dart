@@ -272,7 +272,9 @@ class TestablePlayerPool extends PlayerPool {
     while (_testPlayers.length >= maxPlayers && _testLruOrder.isNotEmpty) {
       final evictUrl = _testLruOrder.removeAt(0);
       final evicted = _testPlayers.remove(evictUrl);
-      await evicted?.dispose();
+      if (evicted != null && !evicted.isDisposed) {
+        await evicted.dispose();
+      }
     }
 
     final player = mockPlayerFactory(url);
@@ -302,13 +304,17 @@ class TestablePlayerPool extends PlayerPool {
   Future<void> release(String url) async {
     final player = _testPlayers.remove(url);
     _testLruOrder.remove(url);
-    await player?.dispose();
+    if (player != null && !player.isDisposed) {
+      await player.dispose();
+    }
   }
 
   @override
   Future<void> dispose() async {
     for (final player in _testPlayers.values) {
-      await player.dispose();
+      if (!player.isDisposed) {
+        await player.dispose();
+      }
     }
     _testPlayers.clear();
     _testLruOrder.clear();

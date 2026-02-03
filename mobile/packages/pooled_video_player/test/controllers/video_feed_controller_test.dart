@@ -690,6 +690,143 @@ void main() {
       });
     });
 
+    group('Playback with loaded player', () {
+      late VideoFeedController controller;
+      late MockPlayerSetup playerSetup;
+
+      setUp(() async {
+        controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+        );
+
+        // Wait for player to be loaded
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Get the setup for the first video
+        final url = createTestVideos()[0].url;
+        playerSetup = playerSetups[url]!;
+
+        // Simulate buffer ready to mark video as ready
+        playerSetup.bufferingController.add(false);
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+      });
+
+      tearDown(() {
+        controller.dispose();
+      });
+
+      test('seek calls player.seek when player is loaded', () async {
+        const seekPosition = Duration(seconds: 10);
+
+        await controller.seek(seekPosition);
+
+        verify(() => playerSetup.player.seek(seekPosition)).called(1);
+      });
+
+      test('setVolume calls player.setVolume when player is loaded', () async {
+        controller.setVolume(0.5);
+
+        // Wait for unawaited call
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        // Volume is multiplied by 100
+        verify(() => playerSetup.player.setVolume(50)).called(1);
+      });
+
+      test('setVolume clamps volume to 0-100 range', () async {
+        // Reset mock to track only new calls
+        clearInteractions(playerSetup.player);
+
+        controller.setVolume(1.5); // Should clamp to 100
+
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        verify(() => playerSetup.player.setVolume(100)).called(1);
+      });
+
+      test('setPlaybackSpeed calls player.setRate when loaded', () async {
+        controller.setPlaybackSpeed(1.5);
+
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        verify(() => playerSetup.player.setRate(1.5)).called(1);
+      });
+
+      test('pause calls player.pause when video is playing', () async {
+        // Set player to playing state
+        when(() => playerSetup.state.playing).thenReturn(true);
+
+        controller.pause();
+
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        verify(playerSetup.player.pause).called(1);
+      });
+
+      test('pause does not call player.pause when not playing', () async {
+        // Set player to not playing state
+        when(() => playerSetup.state.playing).thenReturn(false);
+
+        controller.pause();
+
+        await Future<void>.delayed(const Duration(milliseconds: 10));
+
+        verifyNever(playerSetup.player.pause);
+      });
+    });
+
+    group('Video loading error handling', () {
+      test('sets LoadState.error when loading fails', () async {
+        // Create a pool that throws on getPlayer
+        final errorPool = TestablePlayerPool(
+          maxPlayers: 10,
+          mockPlayerFactory: (url) {
+            throw Exception('Failed to get player');
+          },
+        );
+
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: errorPool,
+        );
+
+        // Wait for load attempt
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        expect(controller.getLoadState(0), equals(LoadState.error));
+
+        controller.dispose();
+        await errorPool.dispose();
+      });
+
+      test('notifies listeners when loading error occurs', () async {
+        final errorPool = TestablePlayerPool(
+          maxPlayers: 10,
+          mockPlayerFactory: (url) {
+            throw Exception('Failed to get player');
+          },
+        );
+
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: errorPool,
+        );
+
+        var notifyCount = 0;
+        controller.addListener(() => notifyCount++);
+
+        // Wait for load attempt
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Should have been notified (loading state change, then error state)
+        expect(notifyCount, greaterThan(0));
+
+        controller.dispose();
+        await errorPool.dispose();
+      });
+    });
+
     group('ChangeNotifier', () {
       test('extends ChangeNotifier', () {
         final controller = VideoFeedController(

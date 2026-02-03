@@ -483,6 +483,55 @@ void main() {
             // Should only dispose each player once
             verify(() => createdPlayers[0].dispose()).called(1);
           });
+
+          test('skips already disposed players', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+
+            // Mark first player as already disposed
+            when(() => createdPlayers[0].isDisposed).thenReturn(true);
+
+            await pool.dispose();
+
+            // First player should not be disposed (already disposed)
+            verifyNever(() => createdPlayers[0].dispose());
+            // Second player should be disposed
+            verify(() => createdPlayers[1].dispose()).called(1);
+          });
+        });
+
+        group('release with disposed player', () {
+          test('skips disposing already disposed player', () async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+
+            // Mark player as already disposed
+            when(() => createdPlayers[0].isDisposed).thenReturn(true);
+
+            await pool.release('https://example.com/v1.mp4');
+
+            // Should not call dispose on already disposed player
+            verifyNever(() => createdPlayers[0].dispose());
+            expect(pool.hasPlayer('https://example.com/v1.mp4'), isFalse);
+          });
+        });
+
+        group('eviction with disposed player', () {
+          test('skips disposing already disposed player during eviction', (
+            ) async {
+            await pool.getPlayer('https://example.com/v1.mp4');
+            await pool.getPlayer('https://example.com/v2.mp4');
+            await pool.getPlayer('https://example.com/v3.mp4');
+
+            // Mark first player as already disposed
+            when(() => createdPlayers[0].isDisposed).thenReturn(true);
+
+            // This should evict v1
+            await pool.getPlayer('https://example.com/v4.mp4');
+
+            // Should not call dispose on already disposed player
+            verifyNever(() => createdPlayers[0].dispose());
+            expect(pool.hasPlayer('https://example.com/v1.mp4'), isFalse);
+          });
         });
       });
     });

@@ -401,5 +401,137 @@ void main() {
         verify(() => setup.player.setVolume(100)).called(1);
       });
     });
+
+    group('Buffer subscription edge cases', () {
+      testWidgets('ignores buffering false when already ready', (
+        tester,
+      ) async {
+        final video = createTestVideo(url: 'https://example.com/video.mp4');
+
+        await tester.pumpWidget(buildWidget(video: video));
+        await tester.pump();
+
+        final setup = playerSetups['https://example.com/video.mp4']!;
+
+        // Transition to ready
+        setup.bufferingController.add(false);
+        await tester.pump();
+
+        expect(find.byKey(const Key('video_widget')), findsOneWidget);
+
+        // Send another buffering = false (should be ignored since already ready)
+        setup.bufferingController.add(false);
+        await tester.pump();
+
+        // Still in ready state
+        expect(find.byKey(const Key('video_widget')), findsOneWidget);
+      });
+
+      testWidgets('buffer subscription callback transitions state', (
+        tester,
+      ) async {
+        // Create a pool with buffering initially true
+        final bufferingSetups = <String, MockPlayerSetup>{};
+        final bufferingPool = TestablePlayerPool(
+          maxPlayers: 10,
+          mockPlayerFactory: (url) {
+            // Create setup with buffering: true initially
+            final setup = createMockPlayerSetup(isBuffering: true);
+            bufferingSetups[url] = setup;
+
+            final mockPooledPlayer = MockPooledPlayer();
+            when(() => mockPooledPlayer.player).thenReturn(setup.player);
+            when(
+              () => mockPooledPlayer.videoController,
+            ).thenReturn(createMockVideoController());
+            when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+            when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+
+            return mockPooledPlayer;
+          },
+        );
+
+        final video = createTestVideo(url: 'https://example.com/video.mp4');
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SingleVideoPlayer(
+                video: video,
+                pool: bufferingPool,
+                videoBuilder: (context, videoController, player) {
+                  return Container(
+                    key: const Key('video_widget'),
+                    color: Colors.blue,
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        // Still in loading since buffering is true
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        final setup = bufferingSetups['https://example.com/video.mp4']!;
+
+        // Trigger buffer complete via subscription
+        setup.bufferingController.add(false);
+        await tester.pump();
+
+        // Now should be ready
+        expect(find.byKey(const Key('video_widget')), findsOneWidget);
+
+        for (final s in bufferingSetups.values) {
+          await s.dispose();
+        }
+        await bufferingPool.dispose();
+      });
+    });
+
+    group('Default widgets', () {
+      testWidgets('default error state shows retry button', (tester) async {
+        final errorPool = TestablePlayerPool(
+          mockPlayerFactory: (url) {
+            throw Exception('Failed');
+          },
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: SingleVideoPlayer(
+                video: createTestVideo(),
+                pool: errorPool,
+                videoBuilder: (context, controller, player) {
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ),
+        );
+
+        await tester.pump();
+        await tester.pump();
+
+        // Verify default error state components
+        expect(find.byIcon(Icons.error_outline), findsOneWidget);
+        expect(find.text('Failed to load video'), findsOneWidget);
+        expect(find.byIcon(Icons.refresh), findsOneWidget);
+        expect(find.text('Tap to retry'), findsOneWidget);
+
+        await errorPool.dispose();
+      });
+
+      testWidgets('default loading state shows progress indicator', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget());
+
+        // Default loading shows CircularProgressIndicator
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
+    });
   });
 }

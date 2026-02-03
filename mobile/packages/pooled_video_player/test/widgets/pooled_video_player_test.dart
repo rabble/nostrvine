@@ -118,6 +118,33 @@ void main() {
 
         expect(find.byType(Image), findsOneWidget);
       });
+
+      testWidgets('thumbnail errorBuilder returns SizedBox.shrink', (
+        tester,
+      ) async {
+        when(
+          () => mockController.getLoadState(0),
+        ).thenReturn(LoadState.loading);
+
+        await tester.pumpWidget(
+          buildWidget(thumbnailUrl: 'https://invalid-url.com/thumb.jpg'),
+        );
+
+        // Find the Image widget
+        final image = tester.widget<Image>(find.byType(Image));
+
+        // Verify errorBuilder is configured (it returns SizedBox.shrink)
+        expect(image.errorBuilder, isNotNull);
+
+        // Call the errorBuilder to ensure it's covered
+        final errorWidget = image.errorBuilder!(
+          tester.element(find.byType(Image)),
+          Exception('Failed to load'),
+          StackTrace.current,
+        );
+
+        expect(errorWidget, isA<SizedBox>());
+      });
     });
 
     group('Ready State', () {
