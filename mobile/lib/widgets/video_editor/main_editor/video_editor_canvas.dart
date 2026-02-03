@@ -168,7 +168,7 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
               ),
               callbacks: ProImageEditorCallbacks(
                 onCloseEditor: (editorMode) {
-                  if (editorMode == .main) context.pop();
+                  if (editorMode != .main) context.pop();
                 },
                 onCompleteWithParameters: (parameters) async {
                   ref
