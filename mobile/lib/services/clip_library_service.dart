@@ -16,6 +16,47 @@ class ClipLibraryService {
   final SharedPreferences _prefs;
   static const String _storageKey = 'clip_library';
 
+  /// Migrate clips from old Android /files/ path to /app_flutter/
+  Future<void> migrateOldClips() async {
+    final String? jsonString = _prefs.getString(_storageKey);
+    if (jsonString == null || jsonString.isEmpty) return;
+
+    final documentsPath = (await getApplicationDocumentsDirectory()).path;
+    final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
+
+    // Parse with useOriginalPath to get the raw paths from JSON
+    final clipsWithOriginalPaths = jsonList
+        .map(
+          (json) => SavedClip.fromJson(
+            json as Map<String, dynamic>,
+            documentsPath,
+            useOriginalPath: true,
+          ),
+        )
+        .toList();
+
+    // Collect all file paths that need migration
+    final pathsToMigrate = <String?>[
+      for (final clip in clipsWithOriginalPaths) ...[
+        clip.filePath,
+        clip.thumbnailPath,
+      ],
+    ];
+
+    // Run the migration
+    final migrated = await migrateAndroidPaths(
+      documentsPath: documentsPath,
+      filePaths: pathsToMigrate,
+    );
+
+    if (migrated) {
+      Log.info(
+        '📂 Migrated clips from old Android paths',
+        name: 'ClipLibraryService',
+      );
+    }
+  }
+
   /// Save a clip to the library. Updates existing clip if ID matches.
   Future<void> saveClip(SavedClip clip) async {
     final clips = await getAllClips();
@@ -32,7 +73,6 @@ class ClipLibraryService {
   }
 
   /// Get all clips from the library, sorted by creation date (newest first)
-  /// On Android, migrates any clips with old /files/ paths to /app_flutter/
   Future<List<SavedClip>> getAllClips() async {
     try {
       final String? jsonString = _prefs.getString(_storageKey);
@@ -43,24 +83,6 @@ class ClipLibraryService {
 
       final documentsPath = (await getApplicationDocumentsDirectory()).path;
       final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
-
-      // Android migration: Check raw JSON for old /files/ paths before parsing
-      final pathsToMigrate = <String?>[
-        for (final item in jsonList) ...[
-          (item as Map<String, dynamic>)['filePath'] as String?,
-          item['thumbnailPath'] as String?,
-        ],
-      ];
-      final migrated = await migrateAndroidPaths(
-        documentsPath: documentsPath,
-        filePaths: pathsToMigrate,
-      );
-      if (migrated) {
-        Log.info(
-          '📂 Migrated clips from old Android paths',
-          name: 'ClipLibraryService',
-        );
-      }
 
       final clips = jsonList
           .map(

@@ -65,7 +65,11 @@ class VineDraft {
     );
   }
 
-  factory VineDraft.fromJson(Map<String, dynamic> json, String documentsPath) {
+  factory VineDraft.fromJson(
+    Map<String, dynamic> json,
+    String documentsPath, {
+    bool useOriginalPath = false,
+  }) {
     final List<RecordingClip> clips = [];
 
     // Backward compatibility: Handle old draft format with single videoFilePath
@@ -74,13 +78,14 @@ class VineDraft {
       final now = DateTime.now();
       final targetAspectRatio = AspectRatio.values.firstWhere(
         (e) => e.name == json['aspectRatio'],
-        orElse: () => .square,
+        orElse: () => AspectRatio.square,
       );
 
-      // Resolve video file path - always use basename to handle both old absolute
-      // and new relative paths (fixes clips broken after iOS app updates)
       final rawPath = json['videoFilePath'] as String;
-      final resolvedPath = p.join(documentsPath, p.basename(rawPath));
+      // useOriginalPath: return raw path from JSON (for migration checks)
+      final resolvedPath = useOriginalPath
+          ? rawPath
+          : p.join(documentsPath, p.basename(rawPath));
 
       clips.add(
         RecordingClip(
@@ -94,9 +99,13 @@ class VineDraft {
       );
     } else {
       clips.addAll(
-        List.from(
-          json['clips'] ?? [],
-        ).map((jsonClip) => RecordingClip.fromJson(jsonClip, documentsPath)),
+        List.from(json['clips'] ?? []).map(
+          (jsonClip) => RecordingClip.fromJson(
+            jsonClip,
+            documentsPath,
+            useOriginalPath: useOriginalPath,
+          ),
+        ),
       );
     }
 

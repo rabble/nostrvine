@@ -8,8 +8,11 @@ import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/services/background_activity_manager.dart';
+import 'package:openvine/services/clip_library_service.dart';
+import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Handles app lifecycle events for video playback
 class AppLifecycleHandler extends ConsumerStatefulWidget {
@@ -33,9 +36,12 @@ class _AppLifecycleHandlerState extends ConsumerState<AppLifecycleHandler>
     WidgetsBinding.instance.addObserver(this);
 
     // Resume any pending publish drafts after first frame
-    WidgetsBinding.instance.addPostFrameCallback((_) {
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
       ref.read(videoPublishProvider.notifier).resumePendingPublishes(context);
+      final prefs = await SharedPreferences.getInstance();
+      await DraftStorageService(prefs).migrateOldDrafts();
+      await ClipLibraryService(prefs).migrateOldClips();
     });
   }
 

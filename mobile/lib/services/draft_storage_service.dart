@@ -11,14 +11,51 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DraftStorageService {
-  DraftStorageService();
+  DraftStorageService(this._prefs);
 
-  SharedPreferences? _prefs;
+  final SharedPreferences _prefs;
   static const String _storageKey = 'vine_drafts';
 
-  /// Lazily loads and caches the SharedPreferences instance.
-  Future<SharedPreferences> get _sharedPrefs async {
-    return _prefs ??= await SharedPreferences.getInstance();
+  /// Migrate drafts from old Android /files/ path to /app_flutter/
+  Future<void> migrateOldDrafts() async {
+    final String? jsonString = _prefs.getString(_storageKey);
+    if (jsonString == null || jsonString.isEmpty) return;
+
+    final documentsPath = (await getApplicationDocumentsDirectory()).path;
+    final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
+
+    // Parse with useOriginalPath to get the raw paths from JSON
+    final draftsWithOriginalPaths = jsonList
+        .map(
+          (json) => VineDraft.fromJson(
+            json as Map<String, dynamic>,
+            documentsPath,
+            useOriginalPath: true,
+          ),
+        )
+        .toList();
+
+    // Collect all file paths that need migration
+    final pathsToMigrate = <String?>[
+      for (final draft in draftsWithOriginalPaths)
+        for (final clip in draft.clips) ...[
+          clip.video.file?.path,
+          clip.thumbnailPath,
+        ],
+    ];
+
+    // Run the migration
+    final migrated = await migrateAndroidPaths(
+      documentsPath: documentsPath,
+      filePaths: pathsToMigrate,
+    );
+
+    if (migrated) {
+      Log.info(
+        '📂 Migrated drafts from old Android paths',
+        name: 'DraftStorageService',
+      );
+    }
   }
 
   /// Save a draft to storage. If a draft with the same ID exists, it will be updated.
@@ -73,11 +110,9 @@ class DraftStorageService {
   }
 
   /// Get all drafts from storage
-  /// On Android, migrates any drafts with old /files/ paths to /app_flutter/
   Future<List<VineDraft>> getAllDrafts() async {
     try {
-      final prefs = await _sharedPrefs;
-      final String? jsonString = prefs.getString(_storageKey);
+      final String? jsonString = _prefs.getString(_storageKey);
 
       if (jsonString == null || jsonString.isEmpty) {
         return [];
@@ -85,22 +120,6 @@ class DraftStorageService {
 
       final documentsPath = (await getApplicationDocumentsDirectory()).path;
       final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
-
-      // Android migration: Check raw JSON for old /files/ paths before parsing
-      final pathsToMigrate = <String?>[
-        for (final item in jsonList)
-          for (final clip in (item as Map<String, dynamic>)['clips'] as List<dynamic>? ?? []) ...[
-            ((clip as Map<String, dynamic>)['video'] as Map<String, dynamic>?)?['file'] as String?,
-            clip['thumbnailPath'] as String?,
-          ],
-      ];
-      final migrated = await migrateAndroidPaths(
-        documentsPath: documentsPath,
-        filePaths: pathsToMigrate,
-      );
-      if (migrated) {
-        Log.info('📂 Migrated drafts from old Android paths', name: 'DraftStorageService');
-      }
 
       final drafts = jsonList
           .map(
@@ -142,8 +161,7 @@ class DraftStorageService {
     final allClips = drafts.expand((draft) => draft.clips).toList();
 
     // Clear storage first, then delete files (so reference check sees updated state)
-    final prefs = await _sharedPrefs;
-    await prefs.remove(_storageKey);
+    await _prefs.remove(_storageKey);
 
     // Delete clip files only if not referenced by clip library
     await FileCleanupService.deleteRecordingClipsFiles(allClips);
@@ -151,9 +169,8 @@ class DraftStorageService {
 
   /// Internal helper to save drafts list to storage
   Future<void> _saveDrafts(List<VineDraft> drafts) async {
-    final prefs = await _sharedPrefs;
     final jsonList = drafts.map((draft) => draft.toJson()).toList();
     final jsonString = json.encode(jsonList);
-    await prefs.setString(_storageKey, jsonString);
+    await _prefs.setString(_storageKey, jsonString);
   }
 }
