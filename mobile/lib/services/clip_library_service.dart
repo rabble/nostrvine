@@ -11,14 +11,18 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ClipLibraryService {
-  ClipLibraryService(this._prefs);
+  ClipLibraryService();
 
-  final SharedPreferences _prefs;
+  SharedPreferences? _prefs;
   static const String _storageKey = 'clip_library';
+
+  Future<SharedPreferences> get _prefsAsync async =>
+      _prefs ??= await SharedPreferences.getInstance();
 
   /// Migrate clips from old Android /files/ path to /app_flutter/
   Future<void> migrateOldClips() async {
-    final String? jsonString = _prefs.getString(_storageKey);
+    final prefs = await _prefsAsync;
+    final String? jsonString = prefs.getString(_storageKey);
     if (jsonString == null || jsonString.isEmpty) return;
 
     final documentsPath = (await getApplicationDocumentsDirectory()).path;
@@ -75,7 +79,8 @@ class ClipLibraryService {
   /// Get all clips from the library, sorted by creation date (newest first)
   Future<List<SavedClip>> getAllClips() async {
     try {
-      final String? jsonString = _prefs.getString(_storageKey);
+      final prefs = await _prefsAsync;
+      final String? jsonString = prefs.getString(_storageKey);
 
       if (jsonString == null || jsonString.isEmpty) {
         return [];
@@ -136,7 +141,8 @@ class ClipLibraryService {
     final clips = await getAllClips();
 
     // Clear storage first, then delete files (so reference check sees updated state)
-    await _prefs.remove(_storageKey);
+    final prefs = await _prefsAsync;
+    await prefs.remove(_storageKey);
 
     // Delete files only if not referenced by drafts
     await FileCleanupService.deleteSavedClipsFiles(clips);
@@ -144,9 +150,10 @@ class ClipLibraryService {
 
   /// Internal helper to save clips list to storage
   Future<void> _saveClips(List<SavedClip> clips) async {
+    final prefs = await _prefsAsync;
     final jsonList = clips.map((clip) => clip.toJson()).toList();
     final jsonString = json.encode(jsonList);
-    await _prefs.setString(_storageKey, jsonString);
+    await prefs.setString(_storageKey, jsonString);
   }
 
   /// Get all clips grouped by session ID

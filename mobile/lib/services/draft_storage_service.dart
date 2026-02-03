@@ -11,14 +11,18 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class DraftStorageService {
-  DraftStorageService(this._prefs);
+  DraftStorageService();
 
-  final SharedPreferences _prefs;
+  SharedPreferences? _prefs;
   static const String _storageKey = 'vine_drafts';
+
+  Future<SharedPreferences> get _prefsAsync async =>
+      _prefs ??= await SharedPreferences.getInstance();
 
   /// Migrate drafts from old Android /files/ path to /app_flutter/
   Future<void> migrateOldDrafts() async {
-    final String? jsonString = _prefs.getString(_storageKey);
+    final prefs = await _prefsAsync;
+    final String? jsonString = prefs.getString(_storageKey);
     if (jsonString == null || jsonString.isEmpty) return;
 
     final documentsPath = (await getApplicationDocumentsDirectory()).path;
@@ -112,7 +116,8 @@ class DraftStorageService {
   /// Get all drafts from storage
   Future<List<VineDraft>> getAllDrafts() async {
     try {
-      final String? jsonString = _prefs.getString(_storageKey);
+      final prefs = await _prefsAsync;
+      final String? jsonString = prefs.getString(_storageKey);
 
       if (jsonString == null || jsonString.isEmpty) {
         return [];
@@ -161,7 +166,8 @@ class DraftStorageService {
     final allClips = drafts.expand((draft) => draft.clips).toList();
 
     // Clear storage first, then delete files (so reference check sees updated state)
-    await _prefs.remove(_storageKey);
+    final prefs = await _prefsAsync;
+    await prefs.remove(_storageKey);
 
     // Delete clip files only if not referenced by clip library
     await FileCleanupService.deleteRecordingClipsFiles(allClips);
@@ -169,8 +175,9 @@ class DraftStorageService {
 
   /// Internal helper to save drafts list to storage
   Future<void> _saveDrafts(List<VineDraft> drafts) async {
+    final prefs = await _prefsAsync;
     final jsonList = drafts.map((draft) => draft.toJson()).toList();
     final jsonString = json.encode(jsonList);
-    await _prefs.setString(_storageKey, jsonString);
+    await prefs.setString(_storageKey, jsonString);
   }
 }

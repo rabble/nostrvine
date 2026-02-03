@@ -20,8 +20,7 @@ void main() {
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      clipService = ClipLibraryService(prefs);
+      clipService = ClipLibraryService();
 
       tempDir = await Directory.systemTemp.createTemp('clip_test_');
       tempFiles = [];
