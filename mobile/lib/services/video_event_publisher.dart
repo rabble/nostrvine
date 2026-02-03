@@ -25,6 +25,7 @@ import 'package:openvine/services/profile_stats_cache_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/proofmode_publishing_helpers.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/constants/app_constants.dart';
 
 /// Service for publishing processed videos to Nostr relays
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
@@ -202,7 +203,10 @@ class VideoEventPublisher {
 
       // Use the existing Nostr service to publish
       // Explicitly target the primary relay to ensure video is visible to others
-      final sentEvent = await _nostrService.publishEvent(event);
+      final sentEvent = await _nostrService.publishEvent(
+        event,
+        targetRelays: [AppConstants.defaultRelayUrl],
+      );
 
       // Check if publish was successful
       if (sentEvent != null) {
