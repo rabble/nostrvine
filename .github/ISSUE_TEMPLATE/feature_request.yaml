@@ -21,7 +21,7 @@ body:
   - type: textarea
     id: why
     attributes:
-      label: Why is this useful?
+      label: How would this be useful for you?
       description: What problem does this solve or what does it make easier?
       placeholder: "I often lose my work when I get interrupted..."
     validations:
