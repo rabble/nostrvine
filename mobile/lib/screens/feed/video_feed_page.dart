@@ -11,7 +11,6 @@ import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
-import 'package:video_player/video_player.dart';
 
 class VideoFeedPage extends ConsumerWidget {
   static const String path = '/new-video-feed';
@@ -73,7 +72,7 @@ class _VideoFeedViewState extends State<VideoFeedView> {
 
           // Wrap videos for pool compatibility
           final pooledVideos = state.videos
-              .map(_PooledVideoEventAdapter.new)
+              .map((e) => VideoItem(id: e.id, url: e.videoUrl!))
               .toList();
 
           // Note: RefreshIndicator removed - it conflicts with PageView
@@ -82,10 +81,10 @@ class _VideoFeedViewState extends State<VideoFeedView> {
             children: [
               PooledVideoFeed(
                 videos: pooledVideos,
-                itemBuilder: (context, video, index, isActive) {
-                  final adapter = video as _PooledVideoEventAdapter;
+                itemBuilder: (context, video, index, {required isActive}) {
+                  final originalEvent = state.videos[index];
                   return _PooledVideoFeedItem(
-                    video: adapter.event,
+                    video: originalEvent,
                     index: index,
                     isActive: isActive,
                     contextTitle: 'BLoC Test (${state.mode.name})',
@@ -192,26 +191,6 @@ class FeedEmptyWidget extends StatelessWidget {
   }
 }
 
-/// Adapter that wraps [VideoEvent] to implement [PooledVideo] interface.
-///
-/// This allows VideoEvent to be used with the pooled_video_player package
-/// without modifying the models package or adding dependencies to it.
-class _PooledVideoEventAdapter implements PooledVideo {
-  const _PooledVideoEventAdapter(this.event);
-
-  /// The wrapped video event.
-  final VideoEvent event;
-
-  @override
-  String get id => event.id;
-
-  @override
-  String get videoUrl => event.videoUrl!; // Safe: filtered before wrapping
-
-  @override
-  String? get thumbnailUrl => event.thumbnailUrl;
-}
-
 /// A video feed item that uses [PooledVideoPlayer] for playback.
 ///
 /// This widget renders video content with automatic controller management
@@ -252,6 +231,7 @@ class _PooledVideoFeedItem extends ConsumerWidget {
             ..add(const VideoInteractionsFetchRequested()),
       child: _PooledVideoFeedItemContent(
         video: video,
+        index: index,
         isActive: isActive,
         contextTitle: contextTitle,
       ),
@@ -262,82 +242,95 @@ class _PooledVideoFeedItem extends ConsumerWidget {
 class _PooledVideoFeedItemContent extends StatelessWidget {
   const _PooledVideoFeedItemContent({
     required this.video,
+    required this.index,
     required this.isActive,
     this.contextTitle,
   });
 
   final VideoEvent video;
+  final int index;
   final bool isActive;
   final String? contextTitle;
 
   @override
   Widget build(BuildContext context) {
+    // All videos without dimensions are treated as portrait as its default
+    // usecase (e.g. Reels-style vertical videos).
+    final isPortrait = video.dimensions != null ? video.isPortrait : true;
+
     return Container(
       color: Colors.black,
       child: PooledVideoPlayer(
-        video: _PooledVideoEventAdapter(video),
-        autoPlay: isActive,
+        index: index,
+        thumbnailUrl: video.thumbnailUrl,
         enableTapToPause: isActive,
-        videoBuilder: (context, controller) =>
-            _FittedVideoPlayer(controller: controller),
-        loadingBuilder: (context) =>
-            _VideoLoadingPlaceholder(thumbnailUrl: video.thumbnailUrl),
-        overlayBuilder: (context, controller) => VideoOverlayActions(
-          video: video,
-          isVisible: isActive,
-          isActive: isActive,
-          hasBottomNavigation: false,
-          contextTitle: contextTitle,
+        videoBuilder: (context, videoController, player) => _FittedVideoPlayer(
+          videoController: videoController,
+          isPortrait: isPortrait,
         ),
-        onVideoError: (error) {
-          debugPrint('Video error for ${video.id}: $error');
-        },
+        loadingBuilder: (context) => _VideoLoadingPlaceholder(
+          thumbnailUrl: video.thumbnailUrl,
+          isPortrait: isPortrait,
+        ),
+        overlayBuilder: (context, videoController, player) =>
+            VideoOverlayActions(
+              video: video,
+              isVisible: isActive,
+              isActive: isActive,
+              hasBottomNavigation: false,
+              contextTitle: contextTitle,
+            ),
       ),
     );
   }
 }
 
 class _FittedVideoPlayer extends StatelessWidget {
-  const _FittedVideoPlayer({required this.controller});
+  const _FittedVideoPlayer({
+    required this.videoController,
+    this.isPortrait = true,
+  });
 
-  final VideoPlayerController controller;
+  final VideoController videoController;
+  final bool isPortrait;
 
   @override
   Widget build(BuildContext context) {
-    final videoWidth = controller.value.size.width > 0
-        ? controller.value.size.width
-        : 1.0;
-    final videoHeight = controller.value.size.height > 0
-        ? controller.value.size.height
-        : 1.0;
+    // Portrait: fill screen (cover), Landscape: fit entirely (contain)
+    final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
 
-    return FittedBox(
-      fit: BoxFit.contain,
-      alignment: Alignment.topCenter,
-      child: SizedBox(
-        width: videoWidth,
-        height: videoHeight,
-        child: VideoPlayer(controller),
-      ),
+    return Video(
+      controller: videoController,
+      fit: boxFit,
+      filterQuality: FilterQuality.high,
+      controls: NoVideoControls,
     );
   }
 }
 
 class _VideoLoadingPlaceholder extends StatelessWidget {
-  const _VideoLoadingPlaceholder({this.thumbnailUrl});
+  const _VideoLoadingPlaceholder({this.thumbnailUrl, this.isPortrait = true});
 
   final String? thumbnailUrl;
+  final bool isPortrait;
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: thumbnailUrl != null
-          ? Image.network(
-              thumbnailUrl!,
-              fit: BoxFit.cover,
-              errorBuilder: (_, __, ___) => const _LoadingIndicator(),
-            )
-          : const _LoadingIndicator(),
+    if (thumbnailUrl == null) {
+      return const _LoadingIndicator();
+    }
+
+    // Portrait: fill height, crop sides (cover)
+    // Landscape: fit entirely, centered (contain)
+    final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
+
+    return SizedBox.expand(
+      child: Image.network(
+        thumbnailUrl!,
+        fit: boxFit,
+        alignment: Alignment.center,
+        errorBuilder: (_, __, ___) => const _LoadingIndicator(),
+      ),
     );
   }
 }

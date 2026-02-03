@@ -540,8 +540,7 @@ UsernameRepository usernameRepository(Ref ref) {
 /// Draft storage service for persisting vine drafts
 @riverpod
 Future<DraftStorageService> draftStorageService(Ref ref) async {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return DraftStorageService(prefs);
+  return DraftStorageService();
 }
 
 /// Clip library service for persisting individual video clips

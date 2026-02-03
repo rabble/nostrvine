@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/video_publish/video_publish_provider_state.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/platform_io.dart';
@@ -21,7 +22,6 @@ import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// Provider for video publish screen state management.
 final videoPublishProvider =
@@ -31,6 +31,8 @@ final videoPublishProvider =
 
 /// Manages video publish screen state including playback and position.
 class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
+  final _draftService = DraftStorageService();
+
   @override
   VideoPublishProviderState build() {
     return const VideoPublishProviderState();
@@ -40,14 +42,12 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   Future<VideoPublishService> _createPublishService({
     required OnProgressChanged onProgressChanged,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
-
     return VideoPublishService(
       uploadManager: ref.read(uploadManagerProvider),
       authService: ref.read(authServiceProvider),
       videoEventPublisher: ref.read(videoEventPublisherProvider),
       blossomService: ref.read(blossomUploadServiceProvider),
-      draftService: DraftStorageService(prefs),
+      draftService: _draftService,
       onProgressChanged: ({required String draftId, required double progress}) {
         setUploadProgress(draftId: draftId, progress: progress);
         onProgressChanged(draftId: draftId, progress: progress);
@@ -55,15 +55,70 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
     );
   }
 
-  /// Resets all video-related providers after a successful publish.
+  /// Resets all video-related providers.
   ///
   /// Clears recorder, editor, clip manager, sound selection, and publish state.
-  void cleanupAfterPublish() {
+  void clearAll() {
     ref.read(videoRecorderProvider.notifier).reset();
     ref.read(videoEditorProvider.notifier).reset();
     ref.read(clipManagerProvider.notifier).clearAll();
     ref.read(selectedSoundProvider.notifier).clear();
     reset();
+  }
+
+  /// Resumes any pending publish drafts that were interrupted.
+  ///
+  /// Called on app startup to check for drafts with [VideoEditorConstants.publishPrefixId]
+  /// prefix and restart their upload process.
+  Future<void> resumePendingPublishes(BuildContext context) async {
+    final drafts = await _draftService.getAllDrafts();
+    final pendingDrafts = drafts.where(
+      (d) => d.id.startsWith(VideoEditorConstants.publishPrefixId),
+    );
+
+    if (pendingDrafts.isEmpty) {
+      Log.debug(
+        '✅ No pending publish drafts found',
+        name: 'VideoPublishNotifier',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    Log.info(
+      '🔄 Found ${pendingDrafts.length} pending publish draft(s), resuming...',
+      name: 'VideoPublishNotifier',
+      category: LogCategory.video,
+    );
+
+    final backgroundPublishBloc = context.read<BackgroundPublishBloc>();
+
+    for (final draft in pendingDrafts) {
+      Log.info(
+        '📤 Resuming upload for draft: ${draft.id}',
+        name: 'VideoPublishNotifier',
+        category: LogCategory.video,
+      );
+
+      final publishService = await _createPublishService(
+        onProgressChanged: ({required draftId, required progress}) {
+          backgroundPublishBloc.add(
+            BackgroundPublishProgressChanged(
+              draftId: draftId,
+              progress: progress,
+            ),
+          );
+        },
+      );
+
+      final publishmentProcess = publishService.publishVideo(draft: draft);
+      backgroundPublishBloc.add(
+        BackgroundPublishRequested(
+          draft: draft,
+          publishmentProcess: publishmentProcess,
+        ),
+      );
+    }
   }
 
   /// Updates upload progress (0.0 to 1.0).
@@ -107,7 +162,11 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       return;
     }
 
-    VineDraft publishDraft = draft.copyWith();
+    VineDraft publishDraft = draft.copyWith(
+      id:
+          '${VideoEditorConstants.publishPrefixId}_'
+          '${DateTime.now().microsecondsSinceEpoch}',
+    );
 
     try {
       Log.info(
@@ -132,6 +191,18 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
         String? proofManifestJson = result == null ? null : jsonEncode(result);
         publishDraft = publishDraft.copyWith(
           proofManifestJson: proofManifestJson,
+        );
+
+        Log.debug(
+          '💾 Saving publish draft: ${publishDraft.id}',
+          name: 'VideoPublishNotifier',
+          category: .video,
+        );
+        await _draftService.saveDraft(publishDraft);
+        Log.debug(
+          '🧹 Clearing all editor state after draft save',
+          name: 'VideoPublishNotifier',
+          category: .video,
         );
 
         if (proofManifestJson != null) {
@@ -182,16 +253,16 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
       final currentNpub = authService.currentNpub;
       if (currentNpub != null) {
         context.go(ProfileScreenRouter.pathForNpub(currentNpub));
+        // Clear editor state after navigation animation completes (~350ms)
+        // Draft is already saved for background upload
+        Future.delayed(const Duration(milliseconds: 600), clearAll);
       }
 
-      // Wait the publishment process to complete
-      // so the data can be properly cleaned up.
       final result = await publishmentProcess;
 
       // Handle result
       switch (result) {
         case PublishSuccess():
-          cleanupAfterPublish();
           Log.info(
             '🎉 Video published successfully',
             name: 'VideoPublishNotifier',

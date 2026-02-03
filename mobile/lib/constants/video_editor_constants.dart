@@ -5,6 +5,9 @@ class VideoEditorConstants {
   /// Key used to identify autosaved drafts in storage.
   static String autoSaveId = 'draft_autosave';
 
+  /// Prefix key used to identify drafts being published in storage.
+  static String publishPrefixId = 'draft_publish';
+
   /// Maximum number of tags allowed per video.
   static int tagLimit = 1 << 30; // ~1 billion
 

@@ -1,6 +1,6 @@
 // ABOUTME: BLoC for managing profile reposted videos grid
 // ABOUTME: Coordinates between RepostsRepository (for IDs) and VideosRepository
-// ABOUTME: (for video data). Falls back to REST API for videos not on Nostr relays.
+// ABOUTME: (for video data).
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -9,7 +9,6 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/aid.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:videos_repository/videos_repository.dart';
@@ -40,12 +39,10 @@ class ProfileRepostedVideosBloc
     required VideosRepository videosRepository,
     required String currentUserPubkey,
     String? targetUserPubkey,
-    AnalyticsApiService? analyticsApiService,
   }) : _repostsRepository = repostsRepository,
        _videosRepository = videosRepository,
        _currentUserPubkey = currentUserPubkey,
        _targetUserPubkey = targetUserPubkey,
-       _analyticsApiService = analyticsApiService,
        super(const ProfileRepostedVideosState()) {
     on<ProfileRepostedVideosSyncRequested>(_onSyncRequested);
     on<ProfileRepostedVideosSubscriptionRequested>(_onSubscriptionRequested);
@@ -55,11 +52,6 @@ class ProfileRepostedVideosBloc
   final RepostsRepository _repostsRepository;
   final VideosRepository _videosRepository;
   final String _currentUserPubkey;
-
-  /// Optional REST API service for fallback when videos aren't on Nostr relays.
-  /// This handles videos that came from Funnelcake (Explore page) and may not
-  /// be on the app's configured relays.
-  final AnalyticsApiService? _analyticsApiService;
 
   /// The pubkey of the user whose reposts to display.
   /// If null or same as current user, uses RepostsRepository sync.
@@ -315,102 +307,18 @@ class ProfileRepostedVideosBloc
 
   /// Fetch videos for the given addressable IDs.
   ///
-  /// Strategy:
-  /// 1. First try Nostr relays via VideosRepository
-  /// 2. For videos not found, try REST API as fallback (for videos from Explore
-  ///    that may not be on the app's configured Nostr relays)
-  ///
   /// The repository handles:
   /// - Fetching from Nostr relays
+  /// - Falling back to Funnelcake API for videos not on relays
   /// - Filtering out invalid/expired videos
   /// - Preserving order based on input IDs
   Future<List<VideoEvent>> _fetchVideos(List<String> addressableIds) async {
-    // First, try Nostr relays
-    final nostrVideos = await _videosRepository.getVideosByAddressableIds(
+    final videos = await _videosRepository.getVideosByAddressableIds(
       addressableIds,
     );
 
-    // Build map of found videos by addressable ID
-    final foundVideos = <String, VideoEvent>{};
-    for (final video in nostrVideos) {
-      final addressableId = _computeAddressableId(video);
-      if (addressableId != null) {
-        foundVideos[addressableId] = video;
-      }
-    }
-
-    // Find which IDs weren't found on Nostr
-    final missingIds = addressableIds
-        .where((id) => !foundVideos.containsKey(id))
-        .toList();
-
-    // Try REST API fallback for missing videos
-    if (missingIds.isNotEmpty && _analyticsApiService != null) {
-      Log.info(
-        'ProfileRepostedVideosBloc: ${missingIds.length} videos not found on '
-        'Nostr, trying REST API fallback',
-        name: 'ProfileRepostedVideosBloc',
-        category: LogCategory.video,
-      );
-
-      // Group missing IDs by pubkey to batch queries
-      final missingByPubkey = <String, List<String>>{};
-      for (final addressableId in missingIds) {
-        final parsed = AId.fromString(addressableId);
-        if (parsed != null) {
-          missingByPubkey.putIfAbsent(parsed.pubkey, () => []).add(parsed.dTag);
-        }
-      }
-
-      // Query REST API for each author's videos
-      for (final entry in missingByPubkey.entries) {
-        final pubkey = entry.key;
-        final dTags = entry.value.toSet();
-
-        try {
-          // Fetch videos by author from REST API
-          final authorVideos = await _analyticsApiService.getVideosByAuthor(
-            pubkey: pubkey,
-            limit: 100,
-          );
-
-          // Find videos matching our d-tags
-          for (final video in authorVideos) {
-            if (video.vineId != null && dTags.contains(video.vineId)) {
-              final videoAddressableId = _computeAddressableId(video);
-              if (videoAddressableId != null &&
-                  video.isSupportedOnCurrentPlatform) {
-                foundVideos[videoAddressableId] = video;
-                Log.info(
-                  'ProfileRepostedVideosBloc: Found video via REST API '
-                  '(author query)',
-                  name: 'ProfileRepostedVideosBloc',
-                  category: LogCategory.video,
-                );
-              }
-            }
-          }
-        } catch (e) {
-          Log.warning(
-            'ProfileRepostedVideosBloc: REST API author query failed for '
-            '$pubkey: $e',
-            name: 'ProfileRepostedVideosBloc',
-            category: LogCategory.video,
-          );
-        }
-      }
-    }
-
-    // Build result list preserving original order
-    final result = <VideoEvent>[];
-    for (final id in addressableIds) {
-      final video = foundVideos[id];
-      if (video != null && video.isSupportedOnCurrentPlatform) {
-        result.add(video);
-      }
-    }
-
-    return result;
+    // Filter for platform-supported videos
+    return videos.where((v) => v.isSupportedOnCurrentPlatform).toList();
   }
 
   /// Compute the addressable ID for a video event.

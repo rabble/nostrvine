@@ -116,6 +116,9 @@ void main() {
           videoFile: mockFile,
           nostrPubkey: 'testpubkey',
           title: 'Test Video',
+          description: null,
+          hashtags: null,
+          proofManifestJson: null,
         );
 
         // Assert - empty server URL yields failure (code adds default server
@@ -141,6 +144,9 @@ void main() {
           videoFile: mockFile,
           nostrPubkey: 'testpubkey',
           title: 'Test Video',
+          description: null,
+          hashtags: null,
+          proofManifestJson: null,
         );
 
         // Assert
@@ -233,6 +239,9 @@ void main() {
           videoFile: mockFile,
           nostrPubkey: testPublicKey,
           title: 'Test Video',
+          description: null,
+          hashtags: null,
+          proofManifestJson: null,
         );
 
         // Assert
@@ -318,6 +327,9 @@ void main() {
             videoFile: mockFile,
             nostrPubkey: testPublicKey,
             title: 'Test Video',
+            description: null,
+            hashtags: null,
+            proofManifestJson: null,
           );
 
           // Assert

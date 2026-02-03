@@ -2,13 +2,11 @@
 // ABOUTME: Provides consistent bottom nav across screens with/without shell
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
@@ -166,44 +164,30 @@ class _CameraButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BackgroundPublishBloc, BackgroundPublishState>(
-      builder: (context, state) {
-        final isDisabled = state.hasUploadInProgress;
-
-        return Semantics(
-          identifier: 'camera_button',
-          button: true,
-          label: isDisabled ? 'Camera disabled during upload' : 'Open camera',
-          child: GestureDetector(
-            onTap: isDisabled ? null : onTap,
-            child: Opacity(
-              opacity: isDisabled ? 0.5 : 1.0,
-              child: Container(
-                width: 72,
-                height: 48,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: isDisabled
-                      ? VineTheme.tabIconInactive
-                      : VineTheme.cameraButtonGreen,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: SvgPicture.asset(
-                  'assets/icon/retro-camera.svg',
-                  width: 32,
-                  height: 32,
-                  colorFilter: isDisabled
-                      ? const ColorFilter.mode(Colors.grey, BlendMode.srcIn)
-                      : null,
-                ),
-              ),
+    return Semantics(
+      identifier: 'camera_button',
+      button: true,
+      label: 'Open camera',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Opacity(
+          opacity: 1.0,
+          child: Container(
+            width: 72,
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            decoration: BoxDecoration(
+              color: VineTheme.cameraButtonGreen,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: SvgPicture.asset(
+              'assets/icon/retro-camera.svg',
+              width: 32,
+              height: 32,
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

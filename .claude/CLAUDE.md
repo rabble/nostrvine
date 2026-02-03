@@ -146,6 +146,59 @@ https://nostrbook.dev/llms.txt
 - Keep functions small and focused
 - Use meaningful variable names
 
+### Widget Composition - No Methods Returning Widgets
+
+**RULE**: Never create methods that return `Widget`. Extract to separate `StatelessWidget` classes instead.
+
+```dart
+// ❌ BAD - Method returning Widget
+class MyWidget extends StatelessWidget {
+  Widget _buildHeader() {
+    return Text('Header');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [_buildHeader()]);
+  }
+}
+
+// ✅ GOOD - Separate widget class
+class MyWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [_Header()]);
+  }
+}
+
+class _Header extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Text('Header');
+  }
+}
+
+// ✅ ALSO GOOD - Inline simple expressions
+class MyWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        switch (type) {
+          TypeA() => const Icon(Icons.a),
+          TypeB() => const Icon(Icons.b),
+        },
+      ],
+    );
+  }
+}
+```
+
+**Rationale**:
+- Widget classes can be `const` and benefit from Flutter's diffing algorithm
+- Methods bypass widget identity checks, causing unnecessary rebuilds
+- Separate widgets are more reusable and testable
+
 ### Performance
 - Minimize widget rebuilds with `const` widgets
 - Use `ListView.builder` for long lists
@@ -238,10 +291,29 @@ OpenVine is a decentralized vine-like video sharing application powered by Nostr
 
 **CRITICAL**: OpenVine is a **DARK MODE ONLY** application.
 
-- **Background**: Always use `Colors.black` or `VineTheme.backgroundColor`
-- **Text**: Always use `Colors.white`, `VineTheme.whiteText`, or `Colors.grey` for secondary text
+### Color Usage - VineTheme Exclusively
+
+**RULE**: Always use `VineTheme` color constants instead of raw `Colors.*` values.
+
+| Instead of | Use |
+|------------|-----|
+| `Colors.white` | `VineTheme.whiteText` or `VineTheme.primaryText` |
+| `Colors.black` | `VineTheme.backgroundColor` |
+| `Colors.grey` | `VineTheme.secondaryText` or `VineTheme.lightText` |
+| `Colors.white.withOpacity(0.7)` | `VineTheme.onSurfaceVariant` (75% white) |
+| `Colors.white.withOpacity(0.5)` | `VineTheme.onSurfaceMuted` (50% white) |
+
+**Exceptions**: `Colors.transparent` is acceptable as it's a universal constant (like `EdgeInsets.zero`).
+
+**Rationale**: Using VineTheme ensures consistency and makes future theme updates easier.
+
+### Theme Colors
+
+- **Background**: Use `VineTheme.backgroundColor`
+- **Text**: Use `VineTheme.whiteText`, `VineTheme.primaryText`, or `VineTheme.secondaryText`
 - **Accent Colors**: Use `VineTheme.vineGreen` for primary accents
 - **Card Backgrounds**: Use `VineTheme.cardBackground` for elevated surfaces
+- **Icon Buttons**: Use `VineTheme.iconButtonBackground` for button containers
 - **NO LIGHT MODE**: Do not implement light mode themes, auto-switching, or light color schemes
 - **Consistency**: All screens must maintain the dark aesthetic
 

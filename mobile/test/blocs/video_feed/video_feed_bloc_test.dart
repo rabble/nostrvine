@@ -57,17 +57,24 @@ void main() {
       );
     }
 
-    List<VideoEvent> createTestVideos(int count, {int? startTimestamp}) {
+    List<VideoEvent> createTestVideos(
+      int count, {
+      int? startTimestamp,
+      String idPrefix = 'video',
+    }) {
       final baseTimestamp =
           startTimestamp ?? DateTime.now().millisecondsSinceEpoch ~/ 1000;
       return List.generate(
         count,
         (i) => createTestVideo(
-          'video-$i',
+          '$idPrefix-$i',
           createdAt: baseTimestamp - i, // Decreasing timestamps
         ),
       );
     }
+
+    /// Page size constant must match the one in video_feed_bloc.dart
+    const pageSize = 5;
 
     test('initial state is correct', () {
       final bloc = createBloc();
@@ -143,7 +150,7 @@ void main() {
       blocTest<VideoFeedBloc, VideoFeedState>(
         'emits [loading, success] when home feed loads successfully',
         setUp: () {
-          final videos = createTestVideos(5);
+          final videos = createTestVideos(pageSize);
           final authors = ['author1', 'author2'];
 
           when(() => mockFollowRepository.followingPubkeys).thenReturn(authors);
@@ -164,7 +171,7 @@ void main() {
           ),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
-              .having((s) => s.videos.length, 'videos count', 5)
+              .having((s) => s.videos.length, 'videos count', pageSize)
               .having((s) => s.mode, 'mode', FeedMode.home)
               .having((s) => s.hasMore, 'hasMore', true),
         ],
@@ -364,7 +371,12 @@ void main() {
       blocTest<VideoFeedBloc, VideoFeedState>(
         'appends new videos to existing list',
         setUp: () {
-          final moreVideos = createTestVideos(5, startTimestamp: 1000);
+          // Use different ID prefix to ensure unique videos
+          final moreVideos = createTestVideos(
+            pageSize,
+            startTimestamp: 1000,
+            idPrefix: 'more',
+          );
 
           when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
           when(
@@ -379,7 +391,7 @@ void main() {
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
           mode: FeedMode.home,
-          videos: createTestVideos(5, startTimestamp: 2000),
+          videos: createTestVideos(pageSize, startTimestamp: 2000),
           hasMore: true,
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
@@ -391,7 +403,7 @@ void main() {
           ),
           isA<VideoFeedState>()
               .having((s) => s.isLoadingMore, 'isLoadingMore', false)
-              .having((s) => s.videos.length, 'videos count', 10)
+              .having((s) => s.videos.length, 'videos count', pageSize * 2)
               .having((s) => s.hasMore, 'hasMore', true),
         ],
         verify: (_) {
@@ -452,7 +464,12 @@ void main() {
       blocTest<VideoFeedBloc, VideoFeedState>(
         'sets hasMore to false when returned videos less than page size',
         setUp: () {
-          final moreVideos = createTestVideos(2, startTimestamp: 1000);
+          // Return fewer videos than page size with unique IDs
+          final moreVideos = createTestVideos(
+            2,
+            startTimestamp: 1000,
+            idPrefix: 'more',
+          );
 
           when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
           when(
@@ -467,7 +484,7 @@ void main() {
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
           mode: FeedMode.home,
-          videos: createTestVideos(5, startTimestamp: 2000),
+          videos: createTestVideos(pageSize, startTimestamp: 2000),
           hasMore: true,
         ),
         act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
@@ -479,7 +496,7 @@ void main() {
           ),
           isA<VideoFeedState>()
               .having((s) => s.isLoadingMore, 'isLoadingMore', false)
-              .having((s) => s.videos.length, 'videos count', 7)
+              .having((s) => s.videos.length, 'videos count', pageSize + 2)
               .having((s) => s.hasMore, 'hasMore', false),
         ],
       );
@@ -521,7 +538,7 @@ void main() {
       blocTest<VideoFeedBloc, VideoFeedState>(
         'clears videos and reloads from beginning',
         setUp: () {
-          final freshVideos = createTestVideos(5);
+          final freshVideos = createTestVideos(pageSize);
 
           when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
           when(
@@ -549,7 +566,7 @@ void main() {
           ),
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
-              .having((s) => s.videos.length, 'videos count', 5)
+              .having((s) => s.videos.length, 'videos count', pageSize)
               .having((s) => s.hasMore, 'hasMore', true),
         ],
         verify: (_) {
