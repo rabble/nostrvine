@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -204,12 +205,15 @@ class _EmailVerificationScreenState
     ref.read(pendingVerificationServiceProvider).clear();
 
     if (!_isTokenMode) {
-      // Polling mode: navigate to explore screen after successful verification
+      // Polling mode: navigate to explore screen (Popular tab) after verification
       Log.info(
-        'Email verification succeeded, navigating to explore',
+        'Email verification succeeded, navigating to explore (Popular tab)',
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,
       );
+      // Set tab by NAME (not index) because indices shift when Classics/ForYou
+      // tabs become available asynchronously
+      ref.read(forceExploreTabNameProvider.notifier).state = 'popular';
       context.go(ExploreScreen.path);
     } else {
       // Token mode: redirect to login screen

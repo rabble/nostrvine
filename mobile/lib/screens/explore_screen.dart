@@ -80,14 +80,54 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     return count;
   }
 
+  /// Get the current tab names in order based on availability
+  List<String> get _tabNames {
+    final names = <String>[];
+    if (_classicsAvailable) names.add('classics');
+    names.addAll(['new', 'popular']);
+    if (_forYouAvailable) names.add('for_you');
+    names.add('lists');
+    return names;
+  }
+
+  /// Convert a tab name to index based on current availability
+  int _tabNameToIndex(String name) {
+    final index = _tabNames.indexOf(name);
+    return index >= 0 ? index : 1; // Default to index 1 if not found
+  }
+
+  /// Convert a tab index to name based on current availability
+  String _tabIndexToName(int index) {
+    final names = _tabNames;
+    if (index >= 0 && index < names.length) {
+      return names[index];
+    }
+    return 'popular'; // Default
+  }
+
   void _initTabController() {
-    final savedTabIndex = ref.read(exploreTabIndexProvider);
-    // Clamp saved index to valid range for current tab count
-    final validIndex = savedTabIndex.clamp(0, _tabCount - 1);
+    // Check for forced tab NAME first (survives tab availability changes)
+    // Don't clear it here - let it persist until user manually changes tabs
+    final forcedTabName = ref.read(forceExploreTabNameProvider);
+    int initialIndex;
+
+    if (forcedTabName != null) {
+      initialIndex = _tabNameToIndex(forcedTabName);
+      Log.info(
+        '🎯 ExploreScreen: Using forced tab "$forcedTabName" -> index $initialIndex',
+        name: 'ExploreScreen',
+        category: LogCategory.ui,
+      );
+    } else {
+      // Fall back to saved index
+      final savedTabIndex = ref.read(exploreTabIndexProvider);
+      initialIndex = savedTabIndex.clamp(0, _tabCount - 1);
+    }
+
     _tabController = TabController(
       length: _tabCount,
       vsync: this,
-      initialIndex: validIndex,
+      initialIndex: initialIndex,
     );
     _tabController!.addListener(_onTabChanged);
   }
@@ -161,22 +201,29 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     if (!mounted || _tabController == null) return;
 
     final index = _tabController!.index;
-
-    // Tab names depend on which optional tabs are visible
-    // Order: [Classics], New Videos, Trending, [For You], Lists
-    final tabNames = <String>[];
-    if (_classicsAvailable) tabNames.add('classics');
-    tabNames.addAll(['new_videos', 'trending']);
-    if (_forYouAvailable) tabNames.add('for_you');
-    tabNames.add('lists');
-    final tabName = tabNames[index];
+    final tabName = _tabIndexToName(index);
 
     Log.debug(
-      '🎯 ExploreScreenPure: Switched to tab $index',
+      '🎯 ExploreScreenPure: Switched to tab $index ($tabName)',
       category: LogCategory.video,
     );
 
-    // Persist tab index to survive widget recreation
+    // Check if there's a forced tab name
+    final forcedName = ref.read(forceExploreTabNameProvider);
+    if (forcedName != null) {
+      // If user switched to a different tab than the forced one, clear the force
+      if (tabName != forcedName) {
+        Log.info(
+          '🎯 ExploreScreen: User changed tab from forced "$forcedName" to "$tabName", clearing force',
+          name: 'ExploreScreen',
+          category: LogCategory.ui,
+        );
+        ref.read(forceExploreTabNameProvider.notifier).state = null;
+      }
+      // If we're on the forced tab, don't clear it yet (might need it for rebuilds)
+    }
+
+    // Always persist the current index
     ref.read(exploreTabIndexProvider.notifier).state = index;
 
     // Track tab change
@@ -281,6 +328,27 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
   Widget build(BuildContext context) {
     ref.watch(exploreTabVideoUpdateListenerProvider);
 
+    // Check for forced tab name (set before navigating to this screen)
+    // This handles the case where ExploreScreen is already mounted in the shell
+    // Don't clear the provider here - let it persist until user manually changes tabs
+    final forcedTabName = ref.watch(forceExploreTabNameProvider);
+    if (forcedTabName != null && _tabController != null) {
+      final targetIndex = _tabNameToIndex(forcedTabName);
+      if (_tabController!.index != targetIndex) {
+        Log.info(
+          '🎯 ExploreScreen: Applying forced tab "$forcedTabName" -> index $targetIndex (from build)',
+          name: 'ExploreScreen',
+          category: LogCategory.ui,
+        );
+        // Schedule tab change for after build (don't clear provider yet)
+        Future(() {
+          if (mounted && _tabController != null) {
+            _tabController!.animateTo(targetIndex);
+          }
+        });
+      }
+    }
+
     // Watch classics availability and rebuild tabs if it changes
     final classicsAvailableAsync = ref.watch(classicVinesAvailableProvider);
     final newClassicsAvailable = classicsAvailableAsync.asData?.value ?? false;
@@ -303,7 +371,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       );
       _classicsAvailable = newClassicsAvailable;
       _forYouAvailable = newForYouAvailable;
+
       // Rebuild tab controller to match the new tab count
+      // _initTabController handles forced tab name -> correct index conversion
       _tabController?.removeListener(_onTabChanged);
       _tabController?.dispose();
       _initTabController();
