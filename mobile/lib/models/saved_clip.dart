@@ -1,6 +1,7 @@
 // ABOUTME: Data model for a saved video clip in the clip library
 // ABOUTME: Supports JSON serialization, thumbnails, and display formatting
 
+import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
 
 class SavedClip {
@@ -79,25 +80,18 @@ class SavedClip {
     String documentsPath, {
     bool useOriginalPath = false,
   }) {
-    final rawFilePath = json['filePath'] as String;
-    final rawThumbnailPath = json['thumbnailPath'] as String?;
-
-    // useOriginalPath: return raw path from JSON (for migration checks)
-    // otherwise: resolve to current documentsPath with basename only
-    final resolvedFilePath = useOriginalPath
-        ? rawFilePath
-        : p.join(documentsPath, p.basename(rawFilePath));
-
-    final resolvedThumbnailPath = rawThumbnailPath != null
-        ? (useOriginalPath
-              ? rawThumbnailPath
-              : p.join(documentsPath, p.basename(rawThumbnailPath)))
-        : null;
-
     return SavedClip(
       id: json['id'] as String,
-      filePath: resolvedFilePath,
-      thumbnailPath: resolvedThumbnailPath,
+      filePath: resolvePath(
+        json['filePath'] as String,
+        documentsPath,
+        useOriginalPath: useOriginalPath,
+      )!,
+      thumbnailPath: resolvePath(
+        json['thumbnailPath'] as String?,
+        documentsPath,
+        useOriginalPath: useOriginalPath,
+      ),
       duration: Duration(milliseconds: json['durationMs'] as int),
       createdAt: DateTime.parse(json['createdAt'] as String),
       aspectRatio: json['aspectRatio'] as String,

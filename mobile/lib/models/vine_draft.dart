@@ -5,8 +5,8 @@ import 'dart:convert';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 enum PublishStatus { draft, publishing, failed, published }
@@ -81,16 +81,16 @@ class VineDraft {
         orElse: () => AspectRatio.square,
       );
 
-      final rawPath = json['videoFilePath'] as String;
-      // useOriginalPath: return raw path from JSON (for migration checks)
-      final resolvedPath = useOriginalPath
-          ? rawPath
-          : p.join(documentsPath, p.basename(rawPath));
-
       clips.add(
         RecordingClip(
           id: 'draft_${now.millisecondsSinceEpoch}',
-          video: EditorVideo.file(resolvedPath),
+          video: EditorVideo.file(
+            resolvePath(
+              json['videoFilePath'] as String,
+              documentsPath,
+              useOriginalPath: useOriginalPath,
+            )!,
+          ),
           duration: .zero,
           recordedAt: DateTime.parse(json['createdAt'] as String),
           originalAspectRatio: targetAspectRatio.value,

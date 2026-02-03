@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -105,27 +106,22 @@ class RecordingClip {
         (json['targetAspectRatio'] ?? json['aspectRatio']) as String?;
     final thumbnailTimestampMs = json['thumbnailTimestampMs'] as int?;
 
-    final rawFilePath = json['filePath'] as String;
-    final rawThumbnailPath = json['thumbnailPath'] as String?;
-
-    // useOriginalPath: return raw path from JSON (for migration checks)
-    // otherwise: resolve to current documentsPath with basename only
-    final resolvedFilePath = useOriginalPath
-        ? rawFilePath
-        : p.join(documentsPath, p.basename(rawFilePath));
-
-    final resolvedThumbnailPath = rawThumbnailPath != null
-        ? (useOriginalPath
-              ? rawThumbnailPath
-              : p.join(documentsPath, p.basename(rawThumbnailPath)))
-        : null;
-
     return RecordingClip(
       id: json['id'] as String,
-      video: EditorVideo.file(resolvedFilePath),
+      video: EditorVideo.file(
+        resolvePath(
+          json['filePath'] as String,
+          documentsPath,
+          useOriginalPath: useOriginalPath,
+        )!,
+      ),
       duration: Duration(milliseconds: json['durationMs'] as int),
       recordedAt: DateTime.parse(json['recordedAt'] as String),
-      thumbnailPath: resolvedThumbnailPath,
+      thumbnailPath: resolvePath(
+        json['thumbnailPath'] as String?,
+        documentsPath,
+        useOriginalPath: useOriginalPath,
+      ),
       thumbnailTimestamp: thumbnailTimestampMs != null
           ? Duration(milliseconds: thumbnailTimestampMs)
           : null,
