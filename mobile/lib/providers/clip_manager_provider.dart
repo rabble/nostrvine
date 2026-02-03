@@ -494,8 +494,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     state = ClipManagerState();
 
     // Delete autosave draft and its associated files
-    final prefs = await SharedPreferences.getInstance();
-    final draftService = DraftStorageService(prefs);
+    final draftService = DraftStorageService();
     await draftService.deleteDraft(VideoEditorConstants.autoSaveId);
   }
 
