@@ -218,14 +218,8 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: VineTheme.surfaceBackground,
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [VineTheme.vineGreen, Color(0xFF2D8B6F)],
-          ),
-        ),
         child: SafeArea(
           child: Column(
             children: [

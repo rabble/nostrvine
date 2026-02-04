@@ -1,9 +1,11 @@
 // ABOUTME: Web authentication screen supporting NIP-07 and nsec bunker login
 // ABOUTME: Provides user-friendly interface for Nostr authentication on web platform
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/web_auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -193,7 +195,7 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    backgroundColor: Colors.black,
+    backgroundColor: VineTheme.surfaceBackground,
     body: Consumer(
       builder: (context, ref, child) {
         final webAuth = ref.watch(webAuthServiceProvider);
@@ -212,11 +214,10 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              // Logo and title
-                              const Icon(
-                                Icons.security,
-                                size: 80,
-                                color: Colors.purple,
+                              // Logo
+                              SvgPicture.asset(
+                                'assets/icon/logo.svg',
+                                height: 50,
                               ),
                               const SizedBox(height: 24),
                               const Text(

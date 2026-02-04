@@ -4,6 +4,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -69,63 +70,37 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     final authService = ref.watch(authServiceProvider);
 
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF00AB82), Color(0xFF009870)],
-          ),
-        ),
-        child: SafeArea(
+      body: SafeArea(
+        child: Container(
+          color: VineTheme.surfaceBackground,
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final isSmallScreen = constraints.maxHeight < 700;
-              final iconSize = isSmallScreen ? 160.0 : 224.0;
-              final wordmarkWidth = isSmallScreen ? 100.0 : 130.0;
-
               return SingleChildScrollView(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Padding(
-                    padding: const EdgeInsets.all(24),
+                    padding: const EdgeInsets.fromLTRB(16, 60, 16, 16),
                     child: Center(
                       child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 600),
+                        constraints: BoxConstraints(
+                          maxWidth: 600,
+                          minHeight: constraints.maxHeight - 76,
+                        ),
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             // Top section with branding
                             Column(
                               children: [
-                                // No top margin on phones, keep margin on tablets
-                                SizedBox(
-                                  height:
-                                      MediaQuery.of(context).size.width < 600
-                                      ? 0
-                                      : 40,
-                                ),
-                                // App branding - Divine icon (responsive sizing)
-                                Image.asset(
-                                  'assets/icon/divine_icon_transparent.png',
-                                  height: iconSize,
-                                  fit: BoxFit.contain,
-                                ),
-                                // Wordmark logo - positioned close to icon above
-                                Image.asset(
-                                  'assets/icon/divine_wordmark.png',
-                                  width: wordmarkWidth,
-                                  fit: BoxFit.contain,
+                                // Logo
+                                SvgPicture.asset(
+                                  'assets/icon/logo.svg',
+                                  height: 50,
                                 ),
                                 const SizedBox(height: 16),
-                                const Text(
-                                  'Create and share short videos\non the decentralized web',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Color(0xFFF5F6EA),
-                                  ),
+                                Text(
+                                  'Authentic moments.\nHuman creativity.',
+                                  style: VineTheme.titleMediumFont(),
                                   textAlign: TextAlign.center,
                                 ),
                               ],
@@ -473,118 +448,114 @@ class _TermsCheckboxSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Age verification checkbox
-          InkWell(
-            onTap: () => onOver16Changed(!isOver16),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
-                    value: isOver16,
-                    onChanged: (value) => onOver16Changed(value ?? false),
-                    fillColor: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return Colors.white;
-                      }
-                      return Colors.transparent;
-                    }),
-                    checkColor: VineTheme.vineGreen,
-                    side: const BorderSide(color: Colors.white, width: 2),
-                  ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Age verification checkbox
+        InkWell(
+          onTap: () => onOver16Changed(!isOver16),
+          child: Row(
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: Checkbox(
+                  value: isOver16,
+                  onChanged: (value) => onOver16Changed(value ?? false),
+                  fillColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return Colors.white;
+                    }
+                    return Colors.transparent;
+                  }),
+                  checkColor: VineTheme.vineGreen,
+                  side: const BorderSide(color: Colors.white, width: 2),
                 ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'I am 16 years or older',
-                    style: TextStyle(color: VineTheme.whiteText, fontSize: 14),
-                  ),
+              ),
+              const SizedBox(width: 12),
+              const Expanded(
+                child: Text(
+                  'I am 16 years or older',
+                  style: TextStyle(color: VineTheme.whiteText, fontSize: 14),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
+        ),
+        const SizedBox(height: 16),
 
-          // TOS acceptance checkbox with links
-          InkWell(
-            onTap: () => onAgreedToTermsChanged(!agreedToTerms),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
-                    value: agreedToTerms,
-                    onChanged: (value) =>
-                        onAgreedToTermsChanged(value ?? false),
-                    fillColor: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return Colors.white;
-                      }
-                      return Colors.transparent;
-                    }),
-                    checkColor: VineTheme.vineGreen,
-                    side: const BorderSide(color: Colors.white, width: 2),
-                  ),
+        // TOS acceptance checkbox with links
+        InkWell(
+          onTap: () => onAgreedToTermsChanged(!agreedToTerms),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 24,
+                height: 24,
+                child: Checkbox(
+                  value: agreedToTerms,
+                  onChanged: (value) => onAgreedToTermsChanged(value ?? false),
+                  fillColor: WidgetStateProperty.resolveWith((states) {
+                    if (states.contains(WidgetState.selected)) {
+                      return Colors.white;
+                    }
+                    return Colors.transparent;
+                  }),
+                  checkColor: VineTheme.vineGreen,
+                  side: const BorderSide(color: Colors.white, width: 2),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: RichText(
-                    text: TextSpan(
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
-                        fontSize: 14,
-                      ),
-                      children: [
-                        const TextSpan(text: 'I agree to the '),
-                        TextSpan(
-                          text: 'Terms of Service',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            decoration: TextDecoration.underline,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () =>
-                                _openUrl('https://divine.video/terms'),
-                        ),
-                        const TextSpan(text: ', '),
-                        TextSpan(
-                          text: 'Privacy Policy',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            decoration: TextDecoration.underline,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () =>
-                                _openUrl('https://divine.video/privacy'),
-                        ),
-                        const TextSpan(text: ', and '),
-                        TextSpan(
-                          text: 'Safety Standards',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            decoration: TextDecoration.underline,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () =>
-                                _openUrl('https://divine.video/safety'),
-                        ),
-                      ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    style: const TextStyle(
+                      color: VineTheme.whiteText,
+                      fontSize: 14,
                     ),
+                    children: [
+                      const TextSpan(text: 'I agree to the '),
+                      TextSpan(
+                        text: 'Terms of Service',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          decoration: TextDecoration.underline,
+                        ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () =>
+                              _openUrl('https://divine.video/terms'),
+                      ),
+                      const TextSpan(text: ', '),
+                      TextSpan(
+                        text: 'Privacy Policy',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          decoration: TextDecoration.underline,
+                        ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () =>
+                              _openUrl('https://divine.video/privacy'),
+                      ),
+                      const TextSpan(text: ', and '),
+                      TextSpan(
+                        text: 'Safety Standards',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          decoration: TextDecoration.underline,
+                        ),
+                        recognizer: TapGestureRecognizer()
+                          ..onTap = () =>
+                              _openUrl('https://divine.video/safety'),
+                      ),
+                    ],
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
