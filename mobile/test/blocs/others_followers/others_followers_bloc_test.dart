@@ -51,20 +51,15 @@ void main() {
         build: createBloc,
         act: (bloc) =>
             bloc.add(OthersFollowersListLoadRequested(validPubkey('target'))),
-        expect: () => [
-          OthersFollowersState(
-            status: OthersFollowersStatus.loading,
-            targetPubkey: validPubkey('target'),
-          ),
-          OthersFollowersState(
-            status: OthersFollowersStatus.success,
-            followersPubkeys: [
-              validPubkey('follower1'),
-              validPubkey('follower2'),
-            ],
-            targetPubkey: validPubkey('target'),
-          ),
-        ],
+        verify: (bloc) {
+          expect(bloc.state.status, OthersFollowersStatus.success);
+          expect(bloc.state.followersPubkeys, [
+            validPubkey('follower1'),
+            validPubkey('follower2'),
+          ]);
+          expect(bloc.state.targetPubkey, validPubkey('target'));
+          expect(bloc.state.lastFetchedAt, isNotNull);
+        },
       );
 
       blocTest<OthersFollowersBloc, OthersFollowersState>(
@@ -77,17 +72,12 @@ void main() {
         build: createBloc,
         act: (bloc) =>
             bloc.add(OthersFollowersListLoadRequested(validPubkey('target'))),
-        expect: () => [
-          OthersFollowersState(
-            status: OthersFollowersStatus.loading,
-            targetPubkey: validPubkey('target'),
-          ),
-          OthersFollowersState(
-            status: OthersFollowersStatus.success,
-            followersPubkeys: const [],
-            targetPubkey: validPubkey('target'),
-          ),
-        ],
+        verify: (bloc) {
+          expect(bloc.state.status, OthersFollowersStatus.success);
+          expect(bloc.state.followersPubkeys, isEmpty);
+          expect(bloc.state.targetPubkey, validPubkey('target'));
+          expect(bloc.state.lastFetchedAt, isNotNull);
+        },
       );
 
       blocTest<OthersFollowersBloc, OthersFollowersState>(
@@ -141,6 +131,54 @@ void main() {
           verify(
             () => mockFollowRepository.getFollowers(validPubkey('target')),
           ).called(1);
+        },
+      );
+
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
+        'skips fetch when data is fresh for same target',
+        setUp: () {
+          when(
+            () => mockFollowRepository.getFollowers(any()),
+          ).thenAnswer((_) async => [validPubkey('follower1')]);
+        },
+        build: createBloc,
+        seed: () => OthersFollowersState(
+          status: OthersFollowersStatus.success,
+          followersPubkeys: [validPubkey('follower1')],
+          targetPubkey: validPubkey('target'),
+          lastFetchedAt: DateTime.now(), // Fresh data
+        ),
+        act: (bloc) =>
+            bloc.add(OthersFollowersListLoadRequested(validPubkey('target'))),
+        expect: () => <OthersFollowersState>[], // No state change
+        verify: (_) {
+          verifyNever(() => mockFollowRepository.getFollowers(any()));
+        },
+      );
+
+      blocTest<OthersFollowersBloc, OthersFollowersState>(
+        'fetches when forceRefresh is true even if data is fresh',
+        setUp: () {
+          when(
+            () => mockFollowRepository.getFollowers(any()),
+          ).thenAnswer((_) async => [validPubkey('follower1')]);
+        },
+        build: createBloc,
+        seed: () => OthersFollowersState(
+          status: OthersFollowersStatus.success,
+          followersPubkeys: [validPubkey('follower1')],
+          targetPubkey: validPubkey('target'),
+          lastFetchedAt: DateTime.now(), // Fresh data
+        ),
+        act: (bloc) => bloc.add(
+          OthersFollowersListLoadRequested(
+            validPubkey('target'),
+            forceRefresh: true,
+          ),
+        ),
+        verify: (bloc) {
+          verify(() => mockFollowRepository.getFollowers(any())).called(1);
+          expect(bloc.state.status, OthersFollowersStatus.success);
         },
       );
     });
@@ -305,17 +343,39 @@ void main() {
     });
 
     test('props includes all fields', () {
-      const state = OthersFollowersState(
+      final testTime = DateTime(2024, 1, 1, 12);
+      final state = OthersFollowersState(
         status: OthersFollowersStatus.success,
-        followersPubkeys: ['pubkey1'],
+        followersPubkeys: const ['pubkey1'],
         targetPubkey: 'target',
+        lastFetchedAt: testTime,
       );
 
       expect(state.props, [
         OthersFollowersStatus.success,
         ['pubkey1'],
         'target',
+        testTime,
       ]);
+    });
+
+    test('isStale returns true when lastFetchedAt is null', () {
+      const state = OthersFollowersState();
+      expect(state.isStale, isTrue);
+    });
+
+    test('isStale returns true when data is older than cacheTtl', () {
+      final oldTime = DateTime.now().subtract(
+        OthersFollowersState.cacheTtl + const Duration(seconds: 1),
+      );
+      final state = OthersFollowersState(lastFetchedAt: oldTime);
+      expect(state.isStale, isTrue);
+    });
+
+    test('isStale returns false when data is fresh', () {
+      final recentTime = DateTime.now().subtract(const Duration(seconds: 10));
+      final state = OthersFollowersState(lastFetchedAt: recentTime);
+      expect(state.isStale, isFalse);
     });
   });
 }
