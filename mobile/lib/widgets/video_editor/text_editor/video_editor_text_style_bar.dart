@@ -24,6 +24,8 @@ class VideoEditorTextStyleBar extends StatelessWidget {
     return BlocBuilder<VideoEditorTextBloc, VideoEditorTextState>(
       buildWhen: (previous, current) =>
           previous.selectedFontIndex != current.selectedFontIndex ||
+          previous.showFontSelector != current.showFontSelector ||
+          previous.showColorPicker != current.showColorPicker ||
           previous.backgroundStyle != current.backgroundStyle ||
           previous.alignment != current.alignment ||
           previous.color != current.color,
@@ -79,7 +81,11 @@ class VideoEditorTextStyleBar extends StatelessWidget {
       textEditor.focusNode.requestFocus();
     } else {
       // Opening font selector - hide keyboard
-      textEditor.focusNode.unfocus();
+      if (textEditor.focusNode.hasFocus) {
+        textEditor.focusNode.unfocus();
+      } else {
+        FocusManager.instance.primaryFocus?.unfocus();
+      }
     }
 
     context.read<VideoEditorTextBloc>().add(
