@@ -300,22 +300,20 @@ void main() {
         ],
       );
 
-      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'calls onLoadMore callback when triggered',
-        build: () {
-          var called = false;
-          return FullscreenFeedBloc(
-            videosStream: videosController.stream,
-            initialIndex: 0,
-            onLoadMore: () => called = true,
-          );
-        },
-        act: (bloc) => bloc.add(const FullscreenFeedLoadMoreRequested()),
-        verify: (bloc) {
-          // onLoadMore was called (verified by callback setting called = true)
-          expect(bloc.state.isLoadingMore, isTrue);
-        },
-      );
+      test('calls onLoadMore callback when triggered', () async {
+        var called = false;
+        final bloc = FullscreenFeedBloc(
+          videosStream: videosController.stream,
+          initialIndex: 0,
+          onLoadMore: () => called = true,
+        );
+
+        bloc.add(const FullscreenFeedLoadMoreRequested());
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(called, isTrue);
+        await bloc.close();
+      });
 
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'does nothing when onLoadMore is null',
