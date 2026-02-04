@@ -20,9 +20,8 @@ tags:
 - runFlow: "../asserts/assertVideounLiked.yaml"
 
 # 3. Tap on the profile: Validate profile is loaded
-- doubleTapOn:
+- tapOn:
     id: profile_tab
-    delay: 100
 - runFlow: ../asserts/assertProfile.yaml
 
 # 4. Tap on the likes tab: Validate tab is loaded and VIDEO_TITLE is not listed

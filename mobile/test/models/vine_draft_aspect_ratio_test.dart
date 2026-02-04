@@ -74,14 +74,14 @@ void main() {
         'publishAttempts': 0,
       };
 
-      final draft = VineDraft.fromJson(json);
+      final draft = VineDraft.fromJson(json, '/test/documents');
       expect(draft.clips.first.targetAspectRatio, equals(AspectRatio.vertical));
     });
 
     test('fromJson defaults to square for legacy drafts', () {
       final json = {
         'id': 'test-id',
-        'videoFilePath': '/path/to/video.mp4',
+        'videoFilePath': 'video.mp4',
         'title': '',
         'description': '',
         'hashtags': <String>[],
@@ -93,7 +93,7 @@ void main() {
         // No aspectRatio field (legacy draft)
       };
 
-      final draft = VineDraft.fromJson(json);
+      final draft = VineDraft.fromJson(json, '/path/to');
       expect(draft.clips.first.targetAspectRatio, equals(AspectRatio.square));
     });
   });

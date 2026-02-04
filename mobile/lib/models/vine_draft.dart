@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:models/models.dart' show NativeProofData;
 import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -64,7 +65,11 @@ class VineDraft {
     );
   }
 
-  factory VineDraft.fromJson(Map<String, dynamic> json) {
+  factory VineDraft.fromJson(
+    Map<String, dynamic> json,
+    String documentsPath, {
+    bool useOriginalPath = false,
+  }) {
     final List<RecordingClip> clips = [];
 
     // Backward compatibility: Handle old draft format with single videoFilePath
@@ -73,13 +78,19 @@ class VineDraft {
       final now = DateTime.now();
       final targetAspectRatio = AspectRatio.values.firstWhere(
         (e) => e.name == json['aspectRatio'],
-        orElse: () => .square,
+        orElse: () => AspectRatio.square,
       );
 
       clips.add(
         RecordingClip(
           id: 'draft_${now.millisecondsSinceEpoch}',
-          video: EditorVideo.file(json['videoFilePath']),
+          video: EditorVideo.file(
+            resolvePath(
+              json['videoFilePath'] as String,
+              documentsPath,
+              useOriginalPath: useOriginalPath,
+            )!,
+          ),
           duration: .zero,
           recordedAt: DateTime.parse(json['createdAt'] as String),
           originalAspectRatio: targetAspectRatio.value,
@@ -88,9 +99,13 @@ class VineDraft {
       );
     } else {
       clips.addAll(
-        List.from(
-          json['clips'] ?? [],
-        ).map((jsonClip) => RecordingClip.fromJson(jsonClip)),
+        List.from(json['clips'] ?? []).map(
+          (jsonClip) => RecordingClip.fromJson(
+            jsonClip,
+            documentsPath,
+            useOriginalPath: useOriginalPath,
+          ),
+        ),
       );
     }
 

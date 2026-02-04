@@ -1,0 +1,17 @@
+appId: co.openvine.app
+---
+# Assert Explore screen with New tab selected
+
+# Top bar - confirms we're on Explore
+- assertVisible: "Explore"
+- assertVisible: Menu
+- assertVisible: Search
+
+# New tab is selected (Tab 2 of 5)
+- assertVisible: |-
+    New
+    Tab 2 of 5
+
+# Bottom navigation - explore tab should be active
+- assertVisible:
+    id: explore_tab

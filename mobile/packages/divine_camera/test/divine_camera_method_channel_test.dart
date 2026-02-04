@@ -197,6 +197,13 @@ void main() {
       );
     });
 
+    test('startRecording with outputDirectory', () async {
+      await expectLater(
+        platform.startRecording(outputDirectory: '/custom/path'),
+        completes,
+      );
+    });
+
     test('startRecording returns false on PlatformException', () async {
       TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
           .setMockMethodCallHandler(

@@ -12,13 +12,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('ClipLibraryScreen', () {
-    late SharedPreferences prefs;
     late ClipLibraryService clipService;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      prefs = await SharedPreferences.getInstance();
-      clipService = ClipLibraryService(prefs);
+      clipService = ClipLibraryService();
     });
 
     Widget buildTestWidget() {

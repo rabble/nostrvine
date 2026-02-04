@@ -1,0 +1,20 @@
+appId: co.openvine.app
+---
+# Assert New Identity confirmation modal
+
+# Dialog title
+- assertVisible: "Start with New Identity?"
+
+# Warning content
+- assertVisible: |-
+    This will:
+
+    • Delete your current keys from this device
+    • Generate a completely new Nostr identity
+    • You will NOT be able to access your previous account unless you have a backup of your nsec
+
+    Are you sure you want to start fresh?
+
+# Action buttons
+- assertVisible: Cancel
+- assertVisible: Start Fresh

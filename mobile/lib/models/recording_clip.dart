@@ -4,6 +4,8 @@
 import 'dart:async';
 
 import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/utils/path_resolver.dart';
+import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 class RecordingClip {
@@ -78,28 +80,48 @@ class RecordingClip {
   }
 
   Map<String, dynamic> toJson() {
+    // Store only filenames (relative paths) for iOS compatibility
+    // iOS changes the container path on app updates, so absolute paths break
+    final videoPath = video.file?.path;
     return {
       'id': id,
-      'filePath': video.file?.path,
+      'filePath': videoPath != null ? p.basename(videoPath) : null,
       'durationMs': duration.inMilliseconds,
       'recordedAt': recordedAt.toIso8601String(),
-      'thumbnailPath': thumbnailPath,
+      'thumbnailPath': thumbnailPath != null
+          ? p.basename(thumbnailPath!)
+          : null,
       'thumbnailTimestampMs': _thumbnailTimestamp?.inMilliseconds,
       'originalAspectRatio': _originalAspectRatio,
       'targetAspectRatio': targetAspectRatio.name,
     };
   }
 
-  factory RecordingClip.fromJson(Map<String, dynamic> json) {
+  factory RecordingClip.fromJson(
+    Map<String, dynamic> json,
+    String documentsPath, {
+    bool useOriginalPath = false,
+  }) {
     final aspectRatioName =
         (json['targetAspectRatio'] ?? json['aspectRatio']) as String?;
     final thumbnailTimestampMs = json['thumbnailTimestampMs'] as int?;
+
     return RecordingClip(
       id: json['id'] as String,
-      video: EditorVideo.file(json['filePath'] as String),
+      video: EditorVideo.file(
+        resolvePath(
+          json['filePath'] as String,
+          documentsPath,
+          useOriginalPath: useOriginalPath,
+        )!,
+      ),
       duration: Duration(milliseconds: json['durationMs'] as int),
       recordedAt: DateTime.parse(json['recordedAt'] as String),
-      thumbnailPath: json['thumbnailPath'] as String?,
+      thumbnailPath: resolvePath(
+        json['thumbnailPath'] as String?,
+        documentsPath,
+        useOriginalPath: useOriginalPath,
+      ),
       thumbnailTimestamp: thumbnailTimestampMs != null
           ? Duration(milliseconds: thumbnailTimestampMs)
           : null,

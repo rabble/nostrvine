@@ -1,6 +1,7 @@
 // ABOUTME: Integration test for complete auto-draft flow from recording to publish
 // ABOUTME: Validates end-to-end behavior: record → auto-draft → edit → publish → retry
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/vine_draft.dart';
@@ -10,6 +11,31 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('Auto-draft complete flow integration', () {
+    setUp(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+
+      // Mock path provider for getApplicationDocumentsDirectory
+      const MethodChannel pathProviderChannel = MethodChannel(
+        'plugins.flutter.io/path_provider',
+      );
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(pathProviderChannel, (
+            MethodCall methodCall,
+          ) async {
+            switch (methodCall.method) {
+              case 'getTemporaryDirectory':
+                return '/tmp';
+              case 'getApplicationDocumentsDirectory':
+                return '/tmp/documents';
+              case 'getApplicationSupportDirectory':
+                return '/tmp/support';
+              default:
+                return null;
+            }
+          });
+    });
+
     test('record → auto-draft → edit → publish flow', () async {
       SharedPreferences.setMockInitialValues({});
       final draftStorage = DraftStorageService();

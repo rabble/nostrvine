@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
 import 'package:openvine/models/vine_draft.dart';
@@ -21,17 +22,41 @@ void main() {
     late Directory tempDir;
 
     setUp(() async {
+      TestWidgetsFlutterBinding.ensureInitialized();
+
+      // Create temp directory first so we can use its path in mock
+      tempDir = await Directory.systemTemp.createTemp('migration_test_');
+
+      // Mock path provider to return our temp directory
+      const MethodChannel pathProviderChannel = MethodChannel(
+        'plugins.flutter.io/path_provider',
+      );
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(pathProviderChannel, (
+            MethodCall methodCall,
+          ) async {
+            switch (methodCall.method) {
+              case 'getTemporaryDirectory':
+                return tempDir.path;
+              case 'getApplicationDocumentsDirectory':
+                return tempDir.path;
+              case 'getApplicationSupportDirectory':
+                return tempDir.path;
+              default:
+                return null;
+            }
+          });
+
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
       draftService = DraftStorageService();
-      clipService = ClipLibraryService(prefs);
+      clipService = ClipLibraryService();
       migrationService = DraftMigrationService(
         draftService: draftService,
         clipService: clipService,
         prefs: prefs,
       );
-
-      tempDir = await Directory.systemTemp.createTemp('migration_test_');
     });
 
     tearDown(() async {
@@ -80,7 +105,8 @@ void main() {
 
       final clips = await clipService.getAllClips();
       expect(clips.length, 1);
-      expect(clips.first.filePath, videoFile.path);
+      // Use endsWith to handle path separator differences between platforms
+      expect(clips.first.filePath, endsWith('draft_video.mp4'));
       expect(clips.first.sessionId, 'migrated_draft_123');
     });
 

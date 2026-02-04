@@ -8,6 +8,7 @@ import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/platform_io.dart';
+import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -22,6 +23,7 @@ class FileCleanupService {
   /// Gets all file paths currently referenced by drafts and clip library
   static Future<Set<String>> _getAllReferencedPaths() async {
     final prefs = await SharedPreferences.getInstance();
+    final documentsPath = await getDocumentsPath();
     final paths = <String>{};
 
     // Collect paths from drafts
@@ -30,7 +32,10 @@ class FileCleanupService {
       try {
         final List<dynamic> jsonList = json.decode(draftsJson) as List<dynamic>;
         for (final draftJson in jsonList) {
-          final draft = VineDraft.fromJson(draftJson as Map<String, dynamic>);
+          final draft = VineDraft.fromJson(
+            draftJson as Map<String, dynamic>,
+            documentsPath,
+          );
           for (final clip in draft.clips) {
             if (clip.video.file?.path != null) {
               paths.add(clip.video.file!.path);
@@ -55,7 +60,10 @@ class FileCleanupService {
       try {
         final List<dynamic> jsonList = json.decode(clipsJson) as List<dynamic>;
         for (final clipJson in jsonList) {
-          final clip = SavedClip.fromJson(clipJson as Map<String, dynamic>);
+          final clip = SavedClip.fromJson(
+            clipJson as Map<String, dynamic>,
+            documentsPath,
+          );
           paths.add(clip.filePath);
           if (clip.thumbnailPath != null) {
             paths.add(clip.thumbnailPath!);

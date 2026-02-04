@@ -5,10 +5,22 @@ appId: co.openvine.app
 - assertVisible: "Explore"
 - assertVisible: "Search"
 
-# Feed bar
-- assertVisible: "New Videos\nTab 1 of 3"
-- assertVisible: "Popular Videos\nTab 2 of 3"
-- assertVisible: "Lists\nTab 3 of 3"
+# Feed bar (5 tabs: Classics, New, Popular, For You, Lists)
+- assertVisible: |-
+    Classics
+    Tab 1 of 5
+- assertVisible: |-
+    New
+    Tab 2 of 5
+- assertVisible: |-
+    Popular
+    Tab 3 of 5
+- assertVisible: |-
+    For You
+    Tab 4 of 5
+- assertVisible: |-
+    Lists
+    Tab 5 of 5
 
 # Hashtags bar
 - assertVisible: "Trending Hashtags"

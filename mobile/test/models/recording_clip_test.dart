@@ -134,10 +134,11 @@ void main() {
       final json = clip.toJson();
 
       expect(json['id'], equals('clip_001'));
-      expect(json['filePath'], equals('/path/to/video.mp4'));
+      // toJson stores only filenames for iOS compatibility
+      expect(json['filePath'], equals('video.mp4'));
       expect(json['durationMs'], equals(2500));
       expect(json['recordedAt'], equals('2025-12-13T10:00:00.000'));
-      expect(json['thumbnailPath'], equals('/path/to/thumb.jpg'));
+      expect(json['thumbnailPath'], equals('thumb.jpg'));
       expect(json['targetAspectRatio'], equals('square'));
       expect(json['originalAspectRatio'], equals(9 / 16));
     });
@@ -164,32 +165,35 @@ void main() {
     test('fromJson deserializes all fields correctly', () async {
       final json = {
         'id': 'clip_001',
-        'filePath': '/path/to/video.mp4',
+        'filePath': 'video.mp4',
         'durationMs': 2500,
         'recordedAt': '2025-12-13T10:00:00.000',
-        'thumbnailPath': '/path/to/thumb.jpg',
+        'thumbnailPath': 'thumb.jpg',
         'aspectRatio': 'square',
       };
 
-      final clip = RecordingClip.fromJson(json);
+      final clip = RecordingClip.fromJson(json, '/path/to');
 
       expect(clip.id, equals('clip_001'));
-      expect(await clip.video.safeFilePath(), equals('/path/to/video.mp4'));
+      // Path resolution uses platform separator, so check it ends with the filename
+      final filePath = await clip.video.safeFilePath();
+      expect(filePath, endsWith('video.mp4'));
+      expect(filePath, contains('path'));
       expect(clip.duration, equals(const Duration(milliseconds: 2500)));
       expect(clip.recordedAt, equals(DateTime(2025, 12, 13, 10, 0, 0)));
-      expect(clip.thumbnailPath, equals('/path/to/thumb.jpg'));
+      expect(clip.thumbnailPath, endsWith('thumb.jpg'));
       expect(clip.targetAspectRatio, equals(model.AspectRatio.square));
     });
 
     test('fromJson handles null optional fields', () {
       final json = {
         'id': 'clip_001',
-        'filePath': '/path/to/video.mp4',
+        'filePath': 'video.mp4',
         'durationMs': 2500,
         'recordedAt': '2025-12-13T10:00:00.000',
       };
 
-      final clip = RecordingClip.fromJson(json);
+      final clip = RecordingClip.fromJson(json, '/path/to');
 
       expect(clip.thumbnailPath, isNull);
       expect(clip.targetAspectRatio, model.AspectRatio.square);
@@ -207,15 +211,18 @@ void main() {
       );
 
       final json = clip.toJson();
-      final restored = RecordingClip.fromJson(json);
+      // Roundtrip: use same base path as original file
+      final restored = RecordingClip.fromJson(json, '/path/to');
 
       expect(restored.id, equals(clip.id));
-      expect(
-        await restored.video.safeFilePath(),
-        await clip.video.safeFilePath(),
-      );
+      // Both should end with same filename
+      final originalPath = await clip.video.safeFilePath();
+      final restoredPath = await restored.video.safeFilePath();
+      expect(restoredPath, endsWith('video.mp4'));
+      expect(originalPath, endsWith('video.mp4'));
       expect(restored.duration, equals(clip.duration));
-      expect(restored.thumbnailPath, equals(clip.thumbnailPath));
+      // Thumbnail paths both end with same filename
+      expect(restored.thumbnailPath, endsWith('thumb.jpg'));
       expect(restored.targetAspectRatio, equals(clip.targetAspectRatio));
     });
 
@@ -238,13 +245,13 @@ void main() {
     test('fromJson with unknown aspectRatio defaults to square', () {
       final json = {
         'id': 'clip_001',
-        'filePath': '/path/to/video.mp4',
+        'filePath': 'video.mp4',
         'durationMs': 2500,
         'recordedAt': '2025-12-13T10:00:00.000',
         'aspectRatio': 'unknown_ratio',
       };
 
-      final clip = RecordingClip.fromJson(json);
+      final clip = RecordingClip.fromJson(json, '/path/to');
 
       expect(clip.targetAspectRatio, equals(model.AspectRatio.square));
     });

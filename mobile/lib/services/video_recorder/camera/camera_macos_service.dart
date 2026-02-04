@@ -11,7 +11,7 @@ import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:path_provider/path_provider.dart';
+import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -351,7 +351,10 @@ class CameraMacOSService extends CameraService {
   }
 
   @override
-  Future<bool> startRecording({Duration? maxDuration}) async {
+  Future<bool> startRecording({
+    Duration? maxDuration,
+    String? outputDirectory,
+  }) async {
     try {
       Log.info(
         '📷 Starting macOS video recording',
@@ -362,16 +365,16 @@ class CameraMacOSService extends CameraService {
       // Configure audio session for recording BEFORE starting
       await _configureAudioSessionForRecording();
 
-      // Use documents directory for user-accessible persistent storage
-      final documentsDir = await getApplicationDocumentsDirectory();
-      final recordingsDir = Directory('${documentsDir.path}/recordings');
+      final recordingsDir = Directory(p.join(outputDirectory!, 'recordings'));
       if (!recordingsDir.existsSync()) {
         await recordingsDir.create(recursive: true);
       }
 
       final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final outputPath =
-          '${recordingsDir.path}/openvine_recording_$timestamp.mp4';
+      final outputPath = p.join(
+        recordingsDir.path,
+        'openvine_recording_$timestamp.mp4',
+      );
 
       await CameraMacOS.instance.startVideoRecording(url: outputPath);
       _isRecording = true;

@@ -5,6 +5,8 @@ import 'dart:convert';
 
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
+import 'package:openvine/utils/android_path_migration.dart';
+import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -14,9 +16,50 @@ class DraftStorageService {
   SharedPreferences? _prefs;
   static const String _storageKey = 'vine_drafts';
 
-  /// Lazily loads and caches the SharedPreferences instance.
-  Future<SharedPreferences> get _sharedPrefs async {
-    return _prefs ??= await SharedPreferences.getInstance();
+  Future<SharedPreferences> get _prefsAsync async =>
+      _prefs ??= await SharedPreferences.getInstance();
+
+  /// Migrate drafts from old Android /files/ path to /app_flutter/
+  Future<void> migrateOldDrafts() async {
+    final prefs = await _prefsAsync;
+    final String? jsonString = prefs.getString(_storageKey);
+    if (jsonString == null || jsonString.isEmpty) return;
+
+    final documentsPath = await getDocumentsPath();
+    final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
+
+    // Parse with useOriginalPath to get the raw paths from JSON
+    final draftsWithOriginalPaths = jsonList
+        .map(
+          (json) => VineDraft.fromJson(
+            json as Map<String, dynamic>,
+            documentsPath,
+            useOriginalPath: true,
+          ),
+        )
+        .toList();
+
+    // Collect all file paths that need migration
+    final pathsToMigrate = <String?>[
+      for (final draft in draftsWithOriginalPaths)
+        for (final clip in draft.clips) ...[
+          clip.video.file?.path,
+          clip.thumbnailPath,
+        ],
+    ];
+
+    // Run the migration
+    final migrated = await migrateAndroidPaths(
+      documentsPath: documentsPath,
+      filePaths: pathsToMigrate,
+    );
+
+    if (migrated) {
+      Log.info(
+        '📂 Migrated drafts from old Android paths',
+        name: 'DraftStorageService',
+      );
+    }
   }
 
   /// Save a draft to storage. If a draft with the same ID exists, it will be updated.
@@ -73,17 +116,24 @@ class DraftStorageService {
   /// Get all drafts from storage
   Future<List<VineDraft>> getAllDrafts() async {
     try {
-      final prefs = await _sharedPrefs;
+      final prefs = await _prefsAsync;
       final String? jsonString = prefs.getString(_storageKey);
 
       if (jsonString == null || jsonString.isEmpty) {
         return [];
       }
 
+      final documentsPath = await getDocumentsPath();
       final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
-      return jsonList
-          .map((json) => VineDraft.fromJson(json as Map<String, dynamic>))
+
+      final drafts = jsonList
+          .map(
+            (json) =>
+                VineDraft.fromJson(json as Map<String, dynamic>, documentsPath),
+          )
           .toList();
+
+      return drafts;
     } catch (e) {
       // If storage is corrupted, return empty list
       return [];
@@ -116,7 +166,7 @@ class DraftStorageService {
     final allClips = drafts.expand((draft) => draft.clips).toList();
 
     // Clear storage first, then delete files (so reference check sees updated state)
-    final prefs = await _sharedPrefs;
+    final prefs = await _prefsAsync;
     await prefs.remove(_storageKey);
 
     // Delete clip files only if not referenced by clip library
@@ -125,7 +175,7 @@ class DraftStorageService {
 
   /// Internal helper to save drafts list to storage
   Future<void> _saveDrafts(List<VineDraft> drafts) async {
-    final prefs = await _sharedPrefs;
+    final prefs = await _prefsAsync;
     final jsonList = drafts.map((draft) => draft.toJson()).toList();
     final jsonString = json.encode(jsonList);
     await prefs.setString(_storageKey, jsonString);
