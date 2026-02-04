@@ -805,6 +805,7 @@ class UploadManager {
             title: upload.title ?? '',
             description: upload.description,
             hashtags: upload.hashtags,
+            proofManifestJson: upload.proofManifestJson,
             onProgress: (value) {
               final progress = value * 0.8; // Reserve 20% for thumbnail
 

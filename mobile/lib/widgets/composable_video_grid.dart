@@ -7,7 +7,6 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -508,28 +507,17 @@ class _VideoItem extends StatelessWidget {
   }
 }
 
-class _VideoInfoSection extends ConsumerWidget {
+class _VideoInfoSection extends StatelessWidget {
   const _VideoInfoSection({required this.video});
 
   final VideoEvent video;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final hasDescription = (video.title ?? video.content).isNotEmpty;
 
-    // Check if user has a real display name (not just truncated npub)
-    final profileAsync = ref.watch(userProfileReactiveProvider(video.pubkey));
-    final profile = profileAsync.value;
-    final hasUsername =
-        profile != null &&
-        ((profile.displayName?.isNotEmpty ?? false) ||
-            (profile.name?.isNotEmpty ?? false));
-
-    // Don't render info section if neither username nor description exist
-    if (!hasUsername && !hasDescription) {
-      return const SizedBox.shrink();
-    }
-
+    // Always show the info section with username (using bestDisplayName fallback)
+    // UserName.fromPubKey handles fallback to truncated npub when no profile name
     return Container(
       padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8, top: 50),
       decoration: const BoxDecoration(
@@ -544,21 +532,22 @@ class _VideoInfoSection extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         spacing: 0,
         children: [
-          if (hasUsername)
-            UserName.fromPubKey(
-              video.pubkey,
-              embeddedName: video.authorName,
-              maxLines: 1,
-              style: VineTheme.titleTinyFont(color: Colors.white).copyWith(
-                shadows: const [
-                  Shadow(
-                    offset: Offset(0, 1),
-                    blurRadius: 2,
-                    color: Color(0x26000000),
-                  ),
-                ],
-              ),
+          // Always show username - UserName.fromPubKey uses bestDisplayName
+          // which falls back to truncated npub when no profile name is set
+          UserName.fromPubKey(
+            video.pubkey,
+            embeddedName: video.authorName,
+            maxLines: 1,
+            style: VineTheme.titleTinyFont(color: Colors.white).copyWith(
+              shadows: const [
+                Shadow(
+                  offset: Offset(0, 1),
+                  blurRadius: 2,
+                  color: Color(0x26000000),
+                ),
+              ],
             ),
+          ),
           if (hasDescription)
             Text(
               video.title ?? video.content,

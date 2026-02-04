@@ -10,8 +10,8 @@ appId: co.openvine.app
     id: explore_tab
     delay: 100
 - tapOn: |-
-    Popular Videos
-    Tab 2 of 3
+    Popular
+    Tab 3 of 5
 
 - doubleTapOn:
     id: explore_tab

@@ -2389,6 +2389,166 @@ void main() {
       });
     });
 
+    group('queryUsers', () {
+      test('returns list of profile events matching query', () async {
+        const query = 'test user';
+        final profileEvent = _createTestEvent(
+          kind: EventKind.metadata,
+          content: '{"name": "Test User"}',
+        );
+
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+          ),
+        ).thenAnswer((_) async => [profileEvent]);
+
+        final result = await client.queryUsers(query);
+
+        expect(result, hasLength(1));
+        expect(result.first.kind, equals(EventKind.metadata));
+      });
+
+      test('uses metadata kind and search filter', () async {
+        const query = 'user';
+
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        await client.queryUsers(query);
+
+        final captured = verify(
+          () => mockNostr.queryEvents(
+            captureAny(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+          ),
+        ).captured;
+
+        final filters = captured.first as List<Map<String, dynamic>>;
+        expect(filters.first['search'], equals(query));
+        expect(filters.first['kinds'], contains(EventKind.metadata));
+      });
+
+      test('uses default limit of 100', () async {
+        const query = 'user';
+
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        await client.queryUsers(query);
+
+        final captured = verify(
+          () => mockNostr.queryEvents(
+            captureAny(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+          ),
+        ).captured;
+
+        final filters = captured.first as List<Map<String, dynamic>>;
+        expect(filters.first['limit'], equals(100));
+      });
+
+      test('uses custom limit when provided', () async {
+        const query = 'user';
+        const customLimit = 50;
+
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        await client.queryUsers(query, limit: customLimit);
+
+        final captured = verify(
+          () => mockNostr.queryEvents(
+            captureAny(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+          ),
+        ).captured;
+
+        final filters = captured.first as List<Map<String, dynamic>>;
+        expect(filters.first['limit'], equals(customLimit));
+      });
+
+      test('returns empty list when no results', () async {
+        const query = 'nonexistent';
+
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        final result = await client.queryUsers(query);
+
+        expect(result, isEmpty);
+      });
+
+      test('returns multiple profile events', () async {
+        const query = 'alice';
+        final profileEvent1 = _createTestEvent(
+          kind: EventKind.metadata,
+          content: '{"name": "Alice Smith"}',
+        );
+        final profileEvent2 = _createTestEvent(
+          kind: EventKind.metadata,
+          content: '{"name": "Alice Wonder"}',
+        );
+
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+          ),
+        ).thenAnswer((_) async => [profileEvent1, profileEvent2]);
+
+        final result = await client.queryUsers(query);
+
+        expect(result, hasLength(2));
+        expect(result[0].kind, equals(EventKind.metadata));
+        expect(result[1].kind, equals(EventKind.metadata));
+      });
+    });
+
     group('countEvents', () {
       test('returns count from relay COUNT response', () async {
         final filters = [

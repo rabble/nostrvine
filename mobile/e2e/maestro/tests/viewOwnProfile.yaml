@@ -7,8 +7,7 @@ appId: co.openvine.app
 # 1. Tap on the profile icon: Validate profile screen is displayed and validate user data
 
 # 1. Tap on the profile icon: Validate profile screen is displayed and validate user data
-- tapOn: |-
-    Profile
-    Tab 4 of 4
+- tapOn:
+    id: profile_tab
 - runFlow: "../asserts/assertProfile.yaml"
 - runFlow: "../asserts/assertUserProfile.yaml"

@@ -79,6 +79,7 @@ class MockDivineCameraPlatform
   Future<bool> startRecording({
     Duration? maxDuration,
     bool useCache = true,
+    String? outputDirectory,
   }) async {
     _isRecording = true;
     return true;

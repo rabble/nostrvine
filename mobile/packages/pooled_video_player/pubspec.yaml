@@ -1,6 +1,6 @@
 name: pooled_video_player
-description: Headless video controller pool for short-form video feeds with smart preloading and memory management
-version: 0.1.0+1
+description: Efficient video playback with object pooling for short-form video feeds.
+version: 0.1.0
 publish_to: none
 resolution: workspace
 
@@ -9,11 +9,21 @@ environment:
   flutter: ^3.38.3
 
 dependencies:
+  audio_session: ^0.2.2
   device_info_plus: ^10.1.2
+  equatable: ^2.0.7
   flutter:
     sdk: flutter
-  meta: ^1.17.0
-  video_player: ^2.9.1
+  media_kit: ^1.2.6
+  media_kit_libs_video: ^1.0.7
+  # Temporary override to include texture rotation fix
+  # https://github.com/media-kit/media-kit/issues/627
+  # Will be removed once the fix is merged and released
+  media_kit_video:
+    git:
+      url: https://github.com/divinevideo/media-kit
+      ref: fix/texture-rotation
+      path: media_kit_video
 
 dev_dependencies:
   flutter_test:

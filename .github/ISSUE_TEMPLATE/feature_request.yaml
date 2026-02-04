@@ -1,0 +1,46 @@
+name: Feature Request
+description: Suggest a new feature or improvement
+title: "feat: "
+labels: ["enhancement"]
+
+assignees:
+  - NotThatKindOfDrLiz
+projects:
+  - divine/2  # diVine Program project number
+
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What would you like?
+      description: Describe the feature or improvement
+      placeholder: "Example: Add ability to save drafts before publishing"
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: How would this be useful for you?
+      description: What problem does this solve or what does it make easier?
+      placeholder: "I often lose my work when I get interrupted..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: when
+    attributes:
+      label: When would you use this?
+      description: Describe a situation where you'd need this feature
+      placeholder: "Example: When I'm recording a video and need to pause to check something..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Anything else?
+      description: Screenshots, mockups, examples from other apps, etc.
+      placeholder: "Optional - add any supporting context"
+    validations:
+      required: false

@@ -2,7 +2,7 @@
 // ABOUTME: Verifies tokenized search works for user profiles and videos
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/user_profile.dart';
+import 'package:models/models.dart';
 import 'package:openvine/utils/search_utils.dart';
 
 void main() {

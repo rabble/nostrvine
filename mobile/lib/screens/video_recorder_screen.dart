@@ -20,7 +20,6 @@ import 'package:openvine/widgets/video_recorder/video_recorder_countdown_overlay
 import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_segment_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_top_bar.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// Video recorder screen with camera preview and recording controls.
 class VideoRecorderScreen extends ConsumerStatefulWidget {
@@ -93,8 +92,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
       category: .video,
     );
 
-    final prefs = await SharedPreferences.getInstance();
-    final draftService = DraftStorageService(prefs);
+    final draftService = DraftStorageService();
     final draft = await draftService.getDraftById(
       VideoEditorConstants.autoSaveId,
     );

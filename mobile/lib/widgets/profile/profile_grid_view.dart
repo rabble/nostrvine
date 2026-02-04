@@ -11,7 +11,6 @@ import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
@@ -140,7 +139,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     final repostsRepository = ref.watch(repostsRepositoryProvider);
     final videosRepository = ref.watch(videosRepositoryProvider);
     final nostrService = ref.watch(nostrServiceProvider);
-    final analyticsApiService = ref.watch(analyticsApiServiceProvider);
     final currentUserPubkey = nostrService.publicKey;
 
     // Show loading state until NostrClient has keys
@@ -170,7 +168,6 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
               videosRepository: videosRepository,
               currentUserPubkey: currentUserPubkey,
               targetUserPubkey: widget.userIdHex,
-              analyticsApiService: analyticsApiService,
             )
             ..add(const ProfileRepostedVideosSubscriptionRequested())
             ..add(const ProfileRepostedVideosSyncRequested());
@@ -252,41 +249,50 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                 dividerColor: Colors.transparent,
                 tabs: [
                   Tab(
-                    icon: SvgPicture.asset(
-                      'assets/icon/play.svg',
-                      width: 28,
-                      height: 28,
-                      colorFilter: ColorFilter.mode(
-                        _tabController.index == 0
-                            ? VineTheme.whiteText
-                            : VineTheme.onSurfaceMuted,
-                        BlendMode.srcIn,
+                    icon: Semantics(
+                      label: 'videos_tab',
+                      child: SvgPicture.asset(
+                        'assets/icon/play.svg',
+                        width: 28,
+                        height: 28,
+                        colorFilter: ColorFilter.mode(
+                          _tabController.index == 0
+                              ? VineTheme.whiteText
+                              : VineTheme.onSurfaceMuted,
+                          BlendMode.srcIn,
+                        ),
                       ),
                     ),
                   ),
                   Tab(
-                    icon: SvgPicture.asset(
-                      'assets/icon/heart.svg',
-                      width: 28,
-                      height: 28,
-                      colorFilter: ColorFilter.mode(
-                        _tabController.index == 1
-                            ? VineTheme.whiteText
-                            : VineTheme.onSurfaceMuted,
-                        BlendMode.srcIn,
+                    icon: Semantics(
+                      label: 'liked_tab',
+                      child: SvgPicture.asset(
+                        'assets/icon/heart.svg',
+                        width: 28,
+                        height: 28,
+                        colorFilter: ColorFilter.mode(
+                          _tabController.index == 1
+                              ? VineTheme.whiteText
+                              : VineTheme.onSurfaceMuted,
+                          BlendMode.srcIn,
+                        ),
                       ),
                     ),
                   ),
                   Tab(
-                    icon: SvgPicture.asset(
-                      'assets/icon/repost.svg',
-                      width: 28,
-                      height: 28,
-                      colorFilter: ColorFilter.mode(
-                        _tabController.index == 2
-                            ? VineTheme.whiteText
-                            : VineTheme.onSurfaceMuted,
-                        BlendMode.srcIn,
+                    icon: Semantics(
+                      label: 'reposted_tab',
+                      child: SvgPicture.asset(
+                        'assets/icon/repost.svg',
+                        width: 28,
+                        height: 28,
+                        colorFilter: ColorFilter.mode(
+                          _tabController.index == 2
+                              ? VineTheme.whiteText
+                              : VineTheme.onSurfaceMuted,
+                          BlendMode.srcIn,
+                        ),
                       ),
                     ),
                   ),

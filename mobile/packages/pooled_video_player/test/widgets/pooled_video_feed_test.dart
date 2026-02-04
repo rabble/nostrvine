@@ -1,686 +1,396 @@
-import 'dart:io';
+// ABOUTME: Tests for PooledVideoFeed widget
+// ABOUTME: Validates PageView, page changes, callbacks, and state management
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
-import 'package:video_player/video_player.dart';
 
-class MockVideoPlayerController extends Mock implements VideoPlayerController {}
+import '../helpers/test_helpers.dart';
 
-class MockVideoPlayerValue extends Mock implements VideoPlayerValue {}
+class _FakeMedia extends Fake implements Media {}
 
-class MockPooledVideo extends Mock implements PooledVideo {}
-
-Future<VideoPlayerController?> createMockController(
-  String videoUrl, {
-  File? cachedFile,
-}) async {
-  final controller = MockVideoPlayerController();
-  final value = MockVideoPlayerValue();
-
-  when(() => value.isInitialized).thenReturn(true);
-  when(() => value.isPlaying).thenReturn(false);
-  when(() => value.duration).thenReturn(const Duration(seconds: 7));
-  when(() => value.position).thenReturn(Duration.zero);
-  when(() => controller.value).thenReturn(value);
-  when(controller.dispose).thenAnswer((_) async {});
-  when(controller.pause).thenAnswer((_) async {});
-  when(controller.play).thenAnswer((_) async {});
-  when(() => controller.setLooping(any())).thenAnswer((_) async {});
-
-  return controller;
-}
-
-List<MockPooledVideo> createMockVideos(int count) {
-  return List.generate(count, (index) {
-    final video = MockPooledVideo();
-    when(() => video.id).thenReturn('video-$index');
-    when(
-      () => video.videoUrl,
-    ).thenReturn('https://example.com/video$index.mp4');
-    when(() => video.thumbnailUrl).thenReturn(null);
-    return video;
-  });
+void _setUpFallbacks() {
+  registerFallbackValue(_FakeMedia());
+  registerFallbackValue(Duration.zero);
+  registerFallbackValue(PlaylistMode.single);
 }
 
 void main() {
-  TestWidgetsFlutterBinding.ensureInitialized();
-
-  late List<MockPooledVideo> mockVideos;
-
-  setUp(() {
-    mockVideos = createMockVideos(10);
-  });
-
-  tearDown(() async {
-    await VideoControllerPoolManager.reset();
-  });
+  setUpAll(_setUpFallbacks);
 
   group('PooledVideoFeed', () {
-    group('Basic Widget Structure', () {
-      testWidgets('renders PageView with correct item count', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
+    late TestablePlayerPool pool;
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: mockVideos,
-                itemBuilder: (context, video, index, isActive) => Container(
-                  key: Key('video-$index'),
+    setUp(() {
+      pool = TestablePlayerPool(
+        maxPlayers: 10,
+        mockPlayerFactory: (_) => createMockPooledPlayer(),
+      );
+    });
+
+    tearDown(() async {
+      await pool.dispose();
+      await PlayerPool.reset();
+    });
+
+    Widget buildFeed({
+      List<VideoItem>? videos,
+      VideoFeedController? controller,
+      int initialIndex = 0,
+      Axis scrollDirection = Axis.vertical,
+      int preloadAhead = 2,
+      int preloadBehind = 1,
+      OnActiveVideoChanged? onActiveVideoChanged,
+      void Function(int)? onNearEnd,
+      int nearEndThreshold = 3,
+    }) {
+      return MaterialApp(
+        home: Scaffold(
+          body: PooledVideoFeed(
+            videos: videos ?? createTestVideos(),
+            pool: pool,
+            controller: controller,
+            initialIndex: initialIndex,
+            scrollDirection: scrollDirection,
+            preloadAhead: preloadAhead,
+            preloadBehind: preloadBehind,
+            onActiveVideoChanged: onActiveVideoChanged,
+            onNearEnd: onNearEnd,
+            nearEndThreshold: nearEndThreshold,
+            itemBuilder: (context, video, index, {required bool isActive}) {
+              return ColoredBox(
+                key: Key('video_item_$index'),
+                color: isActive ? Colors.blue : Colors.grey,
+                child: Center(
+                  child: Text('Video $index${isActive ? ' (active)' : ''}'),
                 ),
-              ),
-            ),
+              );
+            },
           ),
-        );
+        ),
+      );
+    }
 
-        expect(find.byType(PageView), findsOneWidget);
-        expect(find.byKey(const Key('video-0')), findsOneWidget);
+    group('constructor', () {
+      testWidgets('creates with required parameters', (tester) async {
+        await tester.pumpWidget(buildFeed());
+
+        expect(find.byType(PooledVideoFeed), findsOneWidget);
       });
 
-      testWidgets('uses vertical scroll direction by default', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
+      testWidgets('default initialIndex is 0', (tester) async {
+        await tester.pumpWidget(buildFeed());
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: mockVideos,
-                itemBuilder: (context, video, index, isActive) => Container(),
-              ),
-            ),
-          ),
-        );
+        expect(find.text('Video 0 (active)'), findsOneWidget);
+      });
+
+      testWidgets('default scrollDirection is vertical', (tester) async {
+        await tester.pumpWidget(buildFeed());
 
         final pageView = tester.widget<PageView>(find.byType(PageView));
-        expect(pageView.scrollDirection, Axis.vertical);
+        expect(pageView.scrollDirection, equals(Axis.vertical));
       });
 
-      testWidgets('respects custom scroll direction', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
+      testWidgets('respects custom initialIndex', (tester) async {
+        await tester.pumpWidget(buildFeed(initialIndex: 2));
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: mockVideos,
-                scrollDirection: Axis.horizontal,
-                itemBuilder: (context, video, index, isActive) => Container(),
-              ),
-            ),
-          ),
-        );
+        expect(find.text('Video 2 (active)'), findsOneWidget);
+      });
+
+      testWidgets('respects horizontal scrollDirection', (tester) async {
+        await tester.pumpWidget(buildFeed(scrollDirection: Axis.horizontal));
 
         final pageView = tester.widget<PageView>(find.byType(PageView));
-        expect(pageView.scrollDirection, Axis.horizontal);
-      });
-
-      testWidgets('passes initial index to PageController', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: mockVideos,
-                initialIndex: 3,
-                itemBuilder: (context, video, index, isActive) => Container(
-                  key: Key('video-$index'),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // The widget at index 3 should be visible
-        expect(find.byKey(const Key('video-3')), findsOneWidget);
-      });
-
-      testWidgets('itemBuilder receives correct parameters', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        PooledVideo? receivedVideo;
-        int? receivedIndex;
-        bool? receivedIsActive;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: mockVideos,
-                itemBuilder: (context, video, index, isActive) {
-                  if (index == 0) {
-                    receivedVideo = video;
-                    receivedIndex = index;
-                    receivedIsActive = isActive;
-                  }
-                  return Container();
-                },
-              ),
-            ),
-          ),
-        );
-
-        expect(receivedVideo, mockVideos[0]);
-        expect(receivedIndex, 0);
-        expect(receivedIsActive, isTrue);
+        expect(pageView.scrollDirection, equals(Axis.horizontal));
       });
     });
 
-    group('Initial Prewarming', () {
-      testWidgets('acquires controller for initial video on mount', (
-        WidgetTester tester,
+    group('controller management', () {
+      testWidgets('creates internal controller when not provided', (
+        tester,
       ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 4,
-          controllerFactory: createMockController,
-        );
+        await tester.pumpWidget(buildFeed());
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: mockVideos,
-                itemBuilder: (context, video, index, isActive) => Container(),
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        final manager = VideoControllerPoolManager.instance;
-
-        // Initial video should be acquired
-        expect(manager.getController('video-0'), isNotNull);
+        expect(find.text('Video 0 (active)'), findsOneWidget);
       });
 
-      testWidgets('prewarms next videos on mount', (WidgetTester tester) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 5,
-          controllerFactory: createMockController,
+      testWidgets('uses provided controller', (tester) async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
         );
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: mockVideos,
-                itemBuilder: (context, video, index, isActive) => Container(),
-              ),
-            ),
-          ),
-        );
+        await tester.pumpWidget(buildFeed(controller: controller));
 
-        await tester.pumpAndSettle();
+        expect(find.text('Video 0 (active)'), findsOneWidget);
 
-        final manager = VideoControllerPoolManager.instance;
-
-        // Should prewarm current + next 3 videos (indices 0, 1, 2, 3)
-        expect(manager.getController('video-0'), isNotNull);
-        expect(manager.getController('video-1'), isNotNull);
-        expect(manager.getController('video-2'), isNotNull);
-        expect(manager.getController('video-3'), isNotNull);
-      });
-
-      testWidgets('registers video indices for distance-aware eviction', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 4,
-          controllerFactory: createMockController,
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: mockVideos,
-                itemBuilder: (context, video, index, isActive) => Container(),
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        final manager = VideoControllerPoolManager.instance;
-
-        // Video indices are registered internally - we can verify by checking
-        // that controllers exist and distance-aware eviction works
-        expect(manager.assignedControllers.isNotEmpty, isTrue);
+        controller.dispose();
       });
     });
 
-    group('Page Change Handling', () {
-      testWidgets('calls setActiveVideo on page change', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 4,
-          controllerFactory: createMockController,
-        );
+    group('PageView', () {
+      testWidgets('creates PageView with correct itemCount', (tester) async {
+        final videos = createTestVideos(count: 7);
+        await tester.pumpWidget(buildFeed(videos: videos));
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: mockVideos,
-                itemBuilder: (context, video, index, isActive) => Container(),
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        final manager = VideoControllerPoolManager.instance;
-
-        // Initial active video
-        expect(manager.activeVideoId, 'video-0');
-
-        // Swipe to next page
-        await tester.fling(
-          find.byType(PageView),
-          const Offset(0, -500),
-          1000,
-        );
-        await tester.pumpAndSettle();
-
-        // Active video should change
-        expect(manager.activeVideoId, 'video-1');
+        final pageView = tester.widget<PageView>(find.byType(PageView));
+        expect(pageView.childrenDelegate.estimatedChildCount, equals(7));
       });
 
-      testWidgets('invokes onActiveVideoChanged callback', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
+      testWidgets('PageView starts at initialIndex', (tester) async {
+        await tester.pumpWidget(buildFeed(initialIndex: 3));
 
-        PooledVideo? changedVideo;
+        expect(find.text('Video 3 (active)'), findsOneWidget);
+      });
+    });
+
+    group('page changes', () {
+      testWidgets('calls onActiveVideoChanged callback', (tester) async {
+        VideoItem? changedVideo;
         int? changedIndex;
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: mockVideos,
-                onActiveVideoChanged: (video, index) {
-                  changedVideo = video;
-                  changedIndex = index;
-                },
-                itemBuilder: (context, video, index, isActive) => Container(),
-              ),
-            ),
+          buildFeed(
+            onActiveVideoChanged: (video, index) {
+              changedVideo = video;
+              changedIndex = index;
+            },
           ),
         );
 
+        await tester.drag(find.byType(PageView), const Offset(0, -500));
         await tester.pumpAndSettle();
 
-        // Swipe to next page
-        await tester.fling(
-          find.byType(PageView),
-          const Offset(0, -500),
-          1000,
-        );
-        await tester.pumpAndSettle();
-
-        expect(changedVideo, mockVideos[1]);
-        expect(changedIndex, 1);
+        expect(changedIndex, equals(1));
+        expect(changedVideo?.id, equals('video_1'));
       });
 
-      testWidgets('marks correct item as active in itemBuilder', (
-        WidgetTester tester,
+      testWidgets('passes correct video and index to callback', (
+        tester,
       ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        final activeStates = <int, bool>{};
+        final receivedVideos = <VideoItem>[];
+        final receivedIndices = <int>[];
 
         await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: mockVideos,
-                itemBuilder: (context, video, index, isActive) {
-                  activeStates[index] = isActive;
-                  return Container();
-                },
-              ),
-            ),
+          buildFeed(
+            onActiveVideoChanged: (video, index) {
+              receivedVideos.add(video);
+              receivedIndices.add(index);
+            },
           ),
         );
 
+        await tester.drag(find.byType(PageView), const Offset(0, -500));
         await tester.pumpAndSettle();
 
-        // Initially index 0 is active
-        expect(activeStates[0], isTrue);
+        await tester.drag(find.byType(PageView), const Offset(0, -500));
+        await tester.pumpAndSettle();
 
-        // Swipe to next page
-        await tester.fling(
-          find.byType(PageView),
-          const Offset(0, -500),
-          1000,
+        expect(receivedIndices, equals([1, 2]));
+        expect(receivedVideos.map((v) => v.id), equals(['video_1', 'video_2']));
+      });
+
+      testWidgets('calls onNearEnd when near end of list', (tester) async {
+        var nearEndCalled = false;
+        int? nearEndIndex;
+
+        await tester.pumpWidget(
+          buildFeed(
+            videos: createTestVideos(),
+            nearEndThreshold: 2,
+            onNearEnd: (index) {
+              nearEndCalled = true;
+              nearEndIndex = index;
+            },
+          ),
         );
+
+        await tester.drag(find.byType(PageView), const Offset(0, -500));
+        await tester.pumpAndSettle();
+        await tester.drag(find.byType(PageView), const Offset(0, -500));
         await tester.pumpAndSettle();
 
-        // Now index 1 should be active
-        expect(activeStates[1], isTrue);
+        expect(nearEndCalled, isTrue);
+        expect(nearEndIndex, equals(2));
+      });
+
+      testWidgets('itemBuilder receives isActive correctly', (tester) async {
+        await tester.pumpWidget(buildFeed());
+
+        expect(find.text('Video 0 (active)'), findsOneWidget);
+
+        await tester.drag(find.byType(PageView), const Offset(0, -500));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Video 1 (active)'), findsOneWidget);
       });
     });
 
-    group('Debounce Behavior', () {
-      testWidgets('debounces prewarm calls during rapid scrolling', (
-        WidgetTester tester,
-      ) async {
-        var acquireCallCount = 0;
+    group('VideoPoolProvider', () {
+      testWidgets('wraps content with VideoPoolProvider', (tester) async {
+        await tester.pumpWidget(buildFeed());
 
-        await VideoControllerPoolManager.initialize(
-          poolSize: 10,
-          controllerFactory: (videoUrl, {cachedFile}) async {
-            acquireCallCount++;
-            return createMockController(videoUrl, cachedFile: cachedFile);
-          },
-        );
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: mockVideos,
-                itemBuilder: (context, video, index, isActive) => Container(),
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        // Record initial acquire count after mount
-        final initialCount = acquireCallCount;
-
-        // Rapidly swipe multiple times without waiting for settle
-        await tester.fling(
-          find.byType(PageView),
-          const Offset(0, -300),
-          2000,
-        );
-        await tester.pump(const Duration(milliseconds: 50));
-
-        await tester.fling(
-          find.byType(PageView),
-          const Offset(0, -300),
-          2000,
-        );
-        await tester.pump(const Duration(milliseconds: 50));
-
-        // Wait for debounce
-        await tester.pump(const Duration(milliseconds: 200));
-        await tester.pumpAndSettle();
-
-        // Due to debouncing, acquire count should be less than
-        // what it would be without debouncing
-        // The exact count depends on implementation details
-        expect(acquireCallCount, greaterThan(initialCount));
+        expect(find.byType(VideoPoolProvider), findsOneWidget);
       });
     });
 
-    group('Video List Updates', () {
-      testWidgets('re-prewarms when videos list changes length', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 6,
-          controllerFactory: createMockController,
-        );
+    group('itemBuilder', () {
+      testWidgets('receives correct context', (tester) async {
+        await tester.pumpWidget(buildFeed());
 
-        final initialVideos = createMockVideos(5);
+        expect(find.byType(ColoredBox), findsWidgets);
+      });
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: initialVideos,
-                itemBuilder: (context, video, index, isActive) => Container(),
-              ),
-            ),
-          ),
-        );
+      testWidgets('receives correct video', (tester) async {
+        final videos = [
+          createTestVideo(id: 'custom_1', url: 'https://example.com/c1.mp4'),
+          createTestVideo(id: 'custom_2', url: 'https://example.com/c2.mp4'),
+        ];
 
-        await tester.pumpAndSettle();
+        await tester.pumpWidget(buildFeed(videos: videos));
 
-        final manager = VideoControllerPoolManager.instance;
-        final initialControllerCount = manager.assignedControllers.length;
+        expect(find.text('Video 0 (active)'), findsOneWidget);
+      });
 
-        // Add more videos
-        final extendedVideos = createMockVideos(8);
+      testWidgets('receives correct index', (tester) async {
+        await tester.pumpWidget(buildFeed(initialIndex: 2));
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: extendedVideos,
-                itemBuilder: (context, video, index, isActive) => Container(),
-              ),
-            ),
-          ),
-        );
-
-        // Wait for debounced prewarm
-        await tester.pump(const Duration(milliseconds: 200));
-        await tester.pumpAndSettle();
-
-        // Should still have controllers (may be same or more due to re-prewarm)
-        expect(
-          manager.assignedControllers.length,
-          greaterThanOrEqualTo(initialControllerCount),
-        );
+        expect(find.byKey(const Key('video_item_2')), findsOneWidget);
       });
     });
 
-    group('Empty and Edge Cases', () {
-      testWidgets('handles empty video list', (WidgetTester tester) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
+    group('state access', () {
+      testWidgets('controller getter returns feed controller', (tester) async {
+        await tester.pumpWidget(buildFeed());
+
+        final state = tester.state<PooledVideoFeedState>(
+          find.byType(PooledVideoFeed),
         );
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: const [],
-                itemBuilder: (context, video, index, isActive) => Container(),
-              ),
-            ),
-          ),
-        );
+        expect(state.controller, isA<VideoFeedController>());
+        expect(state.controller.videoCount, equals(5));
+      });
+    });
+
+    group('lifecycle', () {
+      testWidgets('proper cleanup on dispose', (tester) async {
+        await tester.pumpWidget(buildFeed());
+
+        await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+      });
+
+      testWidgets('handles empty videos list', (tester) async {
+        await tester.pumpWidget(buildFeed(videos: []));
 
         expect(find.byType(PageView), findsOneWidget);
-        // Should not crash with empty list
-      });
-
-      testWidgets('handles single video', (WidgetTester tester) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
-        );
-
-        final singleVideo = createMockVideos(1);
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: singleVideo,
-                itemBuilder: (context, video, index, isActive) => Container(
-                  key: const Key('single-video'),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.pumpAndSettle();
-
-        expect(find.byKey(const Key('single-video')), findsOneWidget);
-
-        final manager = VideoControllerPoolManager.instance;
-        expect(manager.getController('video-0'), isNotNull);
-      });
-
-      testWidgets('works without pool initialization (graceful degradation)', (
-        WidgetTester tester,
-      ) async {
-        // Do NOT initialize pool
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: mockVideos,
-                itemBuilder: (context, video, index, isActive) => Container(
-                  key: Key('video-$index'),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        // Should render without crashing
-        expect(find.byType(PageView), findsOneWidget);
-        expect(find.byKey(const Key('video-0')), findsOneWidget);
       });
     });
 
-    group('Disposal', () {
-      testWidgets('disposes PageController on widget disposal', (
-        WidgetTester tester,
-      ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
+    group('didUpdateWidget', () {
+      testWidgets('updates when controller changes', (tester) async {
+        final controller1 = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+        );
+        final controller2 = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
         );
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: mockVideos,
-                itemBuilder: (context, video, index, isActive) => Container(),
-              ),
-            ),
-          ),
-        );
+        await tester.pumpWidget(buildFeed(controller: controller1));
+        expect(find.text('Video 0 (active)'), findsOneWidget);
 
-        await tester.pumpAndSettle();
+        await tester.pumpWidget(buildFeed(controller: controller2));
+        await tester.pump();
 
-        // Dispose widget
-        await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: SizedBox.shrink())),
-        );
+        expect(find.text('Video 0 (active)'), findsOneWidget);
 
-        // Should dispose without errors
-        await tester.pumpAndSettle();
+        controller1.dispose();
+        controller2.dispose();
       });
 
-      testWidgets('cancels debounce timer on disposal', (
-        WidgetTester tester,
+      testWidgets('disposes owned controller when external provided', (
+        tester,
       ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
+        await tester.pumpWidget(buildFeed(videos: createTestVideos(count: 3)));
+        expect(find.text('Video 0 (active)'), findsOneWidget);
+
+        final externalController = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
         );
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: PooledVideoFeed(
-                videos: mockVideos,
-                itemBuilder: (context, video, index, isActive) => Container(),
-              ),
-            ),
-          ),
-        );
+        await tester.pumpWidget(buildFeed(controller: externalController));
+        await tester.pump();
 
-        // Start a scroll to trigger debounce timer
-        await tester.fling(
-          find.byType(PageView),
-          const Offset(0, -300),
-          1000,
+        final state = tester.state<PooledVideoFeedState>(
+          find.byType(PooledVideoFeed),
         );
-        await tester.pump(const Duration(milliseconds: 50));
+        expect(state.controller, equals(externalController));
 
-        // Dispose before debounce completes
-        await tester.pumpWidget(
-          const MaterialApp(home: Scaffold(body: SizedBox.shrink())),
-        );
-
-        // Wait past debounce time - should not crash
-        await tester.pump(const Duration(milliseconds: 200));
-        await tester.pumpAndSettle();
+        externalController.dispose();
       });
-    });
 
-    group('VideoPoolProvider Integration', () {
-      testWidgets('uses pool from VideoPoolProvider when available', (
-        WidgetTester tester,
+      testWidgets('adds new videos when list changes with owned controller', (
+        tester,
       ) async {
-        await VideoControllerPoolManager.initialize(
-          poolSize: 3,
-          controllerFactory: createMockController,
+        final initialVideos = createTestVideos(count: 3);
+        await tester.pumpWidget(buildFeed(videos: initialVideos));
+
+        final state = tester.state<PooledVideoFeedState>(
+          find.byType(PooledVideoFeed),
+        );
+        expect(state.controller.videoCount, equals(3));
+
+        final updatedVideos = [
+          ...initialVideos,
+          createTestVideo(id: 'new_1', url: 'https://example.com/new1.mp4'),
+          createTestVideo(id: 'new_2', url: 'https://example.com/new2.mp4'),
+        ];
+        await tester.pumpWidget(buildFeed(videos: updatedVideos));
+        await tester.pump();
+
+        expect(state.controller.videoCount, equals(5));
+      });
+
+      testWidgets('does not add videos when list unchanged', (tester) async {
+        final videos = createTestVideos(count: 3);
+
+        await tester.pumpWidget(buildFeed(videos: videos));
+        final state = tester.state<PooledVideoFeedState>(
+          find.byType(PooledVideoFeed),
+        );
+        expect(state.controller.videoCount, equals(3));
+
+        await tester.pumpWidget(buildFeed(videos: videos));
+        await tester.pump();
+
+        expect(state.controller.videoCount, equals(3));
+      });
+
+      testWidgets('updates videoCount when controller notifies', (
+        tester,
+      ) async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
         );
 
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: VideoPoolProvider(
-                pool: VideoControllerPoolManager.instance,
-                child: PooledVideoFeed(
-                  videos: mockVideos,
-                  itemBuilder: (context, video, index, isActive) => Container(),
-                ),
-              ),
-            ),
-          ),
-        );
+        await tester.pumpWidget(buildFeed(controller: controller));
 
-        await tester.pumpAndSettle();
+        final pageView = tester.widget<PageView>(find.byType(PageView));
+        expect(pageView.childrenDelegate.estimatedChildCount, equals(3));
 
-        final manager = VideoControllerPoolManager.instance;
-        expect(manager.getController('video-0'), isNotNull);
+        controller.addVideos([
+          createTestVideo(id: 'added', url: 'https://example.com/added.mp4'),
+        ]);
+        await tester.pump();
+
+        final updatedPageView = tester.widget<PageView>(find.byType(PageView));
+        expect(updatedPageView.childrenDelegate.estimatedChildCount, equals(4));
+
+        controller.dispose();
       });
     });
   });

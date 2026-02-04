@@ -20,20 +20,23 @@ void main() {
       final json = clip.toJson();
 
       expect(json['sessionId'], 'session_123');
+      // toJson stores only filenames for iOS compatibility
+      expect(json['filePath'], 'video.mp4');
+      expect(json['thumbnailPath'], 'thumb.jpg');
     });
 
     test('should deserialize sessionId from JSON', () {
       final json = {
         'id': 'clip_1',
-        'filePath': '/path/to/video.mp4',
-        'thumbnailPath': '/path/to/thumb.jpg',
+        'filePath': 'video.mp4',
+        'thumbnailPath': 'thumb.jpg',
         'durationMs': 2000,
         'createdAt': '2025-12-18T14:30:00.000',
         'aspectRatio': 'square',
         'sessionId': 'session_456',
       };
 
-      final clip = SavedClip.fromJson(json);
+      final clip = SavedClip.fromJson(json, '/path/to');
 
       expect(clip.sessionId, 'session_456');
     });
@@ -41,14 +44,14 @@ void main() {
     test('should handle null sessionId', () {
       final json = {
         'id': 'clip_1',
-        'filePath': '/path/to/video.mp4',
+        'filePath': 'video.mp4',
         'thumbnailPath': null,
         'durationMs': 2000,
         'createdAt': '2025-12-18T14:30:00.000',
         'aspectRatio': 'square',
       };
 
-      final clip = SavedClip.fromJson(json);
+      final clip = SavedClip.fromJson(json, '/path/to');
 
       expect(clip.sessionId, isNull);
     });

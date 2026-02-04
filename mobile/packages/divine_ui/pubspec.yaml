@@ -9,6 +9,7 @@ environment:
   flutter: ^3.38.0
 
 dependencies:
+  equatable: ^2.0.8
   flutter:
     sdk: flutter
   flutter_svg: ^2.0.10+1

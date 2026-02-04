@@ -13,6 +13,9 @@
 #   - ZENDESK_APP_ID
 #   - ZENDESK_CLIENT_ID
 #   - ZENDESK_URL
+# 6 - DEFAULT_ENV is configured via build inputs (dropdown) when starting a build
+#   - Options: PRODUCTION, PRODUCTION_NEW, STAGING, DEV
+#   - Defaults to PRODUCTION for automatic builds
 
 definitions:
   environment:
@@ -40,7 +43,8 @@ definitions:
         flutter build apk --release --build-number=$PROJECT_BUILD_NUMBER \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
-          --dart-define=ZENDESK_URL=$ZENDESK_URL
+          --dart-define=ZENDESK_URL=$ZENDESK_URL \
+          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }}
     - &build_aab
       name: Build Android AAB
       script: |
@@ -49,7 +53,8 @@ definitions:
         flutter build appbundle --release --build-number=$BUILD_NUMBER \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
-          --dart-define=ZENDESK_URL=$ZENDESK_URL
+          --dart-define=ZENDESK_URL=$ZENDESK_URL \
+          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }}
     - &build_ios
       name: Build and sign iOS
       script: |
@@ -59,6 +64,7 @@ definitions:
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
+          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
           --export-options-plist=/Users/builder/export_options.plist
     - &build_ios_simulator
       name: Build iOS Simulator app
@@ -66,7 +72,8 @@ definitions:
         flutter build ios --simulator \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
-          --dart-define=ZENDESK_URL=$ZENDESK_URL
+          --dart-define=ZENDESK_URL=$ZENDESK_URL \
+          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }}
 workflows:
   ios-build:
     name: iOS Build
@@ -75,6 +82,16 @@ workflows:
     instance_type: mac_mini_m2
     integrations:
       app_store_connect: API key for Codemagic # Setup in Codemagic UI
+    inputs:
+      DEFAULT_ENV:
+        description: Default environment for fresh app installs
+        type: choice
+        default: PRODUCTION
+        options:
+          - PRODUCTION
+          - PRODUCTION_NEW
+          - STAGING
+          - DEV
     environment:
       flutter: 3.38.3
       xcode: latest
@@ -114,6 +131,16 @@ workflows:
     working_directory: mobile
     max_build_duration: 60
     instance_type: mac_mini_m2
+    inputs:
+      DEFAULT_ENV:
+        description: Default environment for fresh app installs
+        type: choice
+        default: PRODUCTION
+        options:
+          - PRODUCTION
+          - PRODUCTION_NEW
+          - STAGING
+          - DEV
     environment:
       flutter: 3.38.3
       xcode: 16.1  # Pinned to avoid FFmpeg Kit linker issues with newer Xcode
@@ -140,6 +167,16 @@ workflows:
     working_directory: mobile
     max_build_duration: 60
     instance_type: mac_mini_m2
+    inputs:
+      DEFAULT_ENV:
+        description: Default environment for fresh app installs
+        type: choice
+        default: PRODUCTION
+        options:
+          - PRODUCTION
+          - PRODUCTION_NEW
+          - STAGING
+          - DEV
     environment:
       flutter: 3.38.3
       java: 17

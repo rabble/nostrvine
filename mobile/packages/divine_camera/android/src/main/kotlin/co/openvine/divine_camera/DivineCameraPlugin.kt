@@ -80,7 +80,8 @@ class DivineCameraPlugin :
             "startRecording" -> {
                 val maxDurationMs = call.argument<Int>("maxDurationMs")
                 val useCache = call.argument<Boolean>("useCache") ?: true
-                startRecording(maxDurationMs, useCache, result)
+                val outputDirectory = call.argument<String>("outputDirectory")
+                startRecording(maxDurationMs, useCache, outputDirectory, result)
             }
 
             "stopRecording" -> {
@@ -222,14 +223,14 @@ class DivineCameraPlugin :
         }
     }
 
-    private fun startRecording(maxDurationMs: Int?, useCache: Boolean, result: Result) {
+    private fun startRecording(maxDurationMs: Int?, useCache: Boolean, outputDirectory: String?, result: Result) {
         val controller = cameraController
         if (controller == null) {
             result.error("NOT_INITIALIZED", "Camera not initialized", null)
             return
         }
         try {
-            controller.startRecording(maxDurationMs, useCache) { error ->
+            controller.startRecording(maxDurationMs, useCache, outputDirectory) { error ->
                 if (error != null) {
                     result.error("RECORD_START_ERROR", error, null)
                 } else {

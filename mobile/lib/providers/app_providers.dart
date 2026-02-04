@@ -46,6 +46,7 @@ import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
+import 'package:openvine/utils/search_utils.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip05_service.dart';
@@ -531,15 +532,13 @@ Nip05Service nip05Service(Ref ref) {
 /// Draft storage service for persisting vine drafts
 @riverpod
 Future<DraftStorageService> draftStorageService(Ref ref) async {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return DraftStorageService(prefs);
+  return DraftStorageService();
 }
 
 /// Clip library service for persisting individual video clips
 @riverpod
 ClipLibraryService clipLibraryService(Ref ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return ClipLibraryService(prefs);
+  return ClipLibraryService();
 }
 
 // (Removed duplicate legacy provider for StreamUploadService)
@@ -847,6 +846,7 @@ FollowRepository? followRepository(Ref ref) {
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - FunnelcakeApiClient for fast REST-based profile search
 @Riverpod(keepAlive: true)
 ProfileRepository? profileRepository(Ref ref) {
   // Return null if NostrClient is not ready yet
@@ -859,11 +859,17 @@ ProfileRepository? profileRepository(Ref ref) {
 
   final nostrClient = ref.watch(nostrServiceProvider);
   final userProfilesDao = ref.watch(databaseProvider).userProfilesDao;
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
 
   return ProfileRepository(
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
     httpClient: Client(),
+    funnelcakeApiClient: funnelcakeClient,
+    userBlockFilter: blocklistService.shouldFilterFromFeeds,
+    profileSearchFilter: (query, profiles) =>
+        SearchUtils.searchProfiles(query, profiles, minScore: 0.3, limit: 50),
   );
 }
 

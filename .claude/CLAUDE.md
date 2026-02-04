@@ -42,7 +42,7 @@ Load and apply these standards when assisting with Flutter development. Standard
 
 **Primary Reference:**
 ```
-@/standards/dart_flutter_rules.md
+.claude/dart_flutter_rules.md
 ```
 
 Use these rules as the baseline for all Dart and Flutter development decisions.
@@ -67,7 +67,7 @@ Use these rules as the baseline for all Dart and Flutter development decisions.
 ## 2. Architecture and Coding Practices
 **Primary Reference:**
 ```
-@/standards/very_good_engineering_flutter_rules.md
+.claude/very_good_engineering_flutter_rules.md
 ```
 
 Very Good Ventures consolidates popular coding practices into **Very Good Engineering (VGE)** - a single, opinionated approach for architecture and coding decisions.
@@ -112,7 +112,7 @@ class UserRepository {
 ### State Management with Riverpod
 When working with Riverpod instead of BLoC as the state management framework, either because it is referenced in the current codebase or because precised in the prompt, use the following standard:
 ```
-@/standards/riverpod_rules.md
+.claude/riverpod_rules.md
 ```
 
 ### Nostr Protocol
@@ -145,6 +145,59 @@ https://nostrbook.dev/llms.txt
 - Prefer composition over inheritance
 - Keep functions small and focused
 - Use meaningful variable names
+
+### Widget Composition - No Methods Returning Widgets
+
+**RULE**: Never create methods that return `Widget`. Extract to separate `StatelessWidget` classes instead.
+
+```dart
+// ❌ BAD - Method returning Widget
+class MyWidget extends StatelessWidget {
+  Widget _buildHeader() {
+    return Text('Header');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [_buildHeader()]);
+  }
+}
+
+// ✅ GOOD - Separate widget class
+class MyWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(children: [_Header()]);
+  }
+}
+
+class _Header extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Text('Header');
+  }
+}
+
+// ✅ ALSO GOOD - Inline simple expressions
+class MyWidget extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        switch (type) {
+          TypeA() => const Icon(Icons.a),
+          TypeB() => const Icon(Icons.b),
+        },
+      ],
+    );
+  }
+}
+```
+
+**Rationale**:
+- Widget classes can be `const` and benefit from Flutter's diffing algorithm
+- Methods bypass widget identity checks, causing unnecessary rebuilds
+- Separate widgets are more reusable and testable
 
 ### Performance
 - Minimize widget rebuilds with `const` widgets
@@ -238,10 +291,29 @@ OpenVine is a decentralized vine-like video sharing application powered by Nostr
 
 **CRITICAL**: OpenVine is a **DARK MODE ONLY** application.
 
-- **Background**: Always use `Colors.black` or `VineTheme.backgroundColor`
-- **Text**: Always use `Colors.white`, `VineTheme.whiteText`, or `Colors.grey` for secondary text
+### Color Usage - VineTheme Exclusively
+
+**RULE**: Always use `VineTheme` color constants instead of raw `Colors.*` values.
+
+| Instead of | Use |
+|------------|-----|
+| `Colors.white` | `VineTheme.whiteText` or `VineTheme.primaryText` |
+| `Colors.black` | `VineTheme.backgroundColor` |
+| `Colors.grey` | `VineTheme.secondaryText` or `VineTheme.lightText` |
+| `Colors.white.withOpacity(0.7)` | `VineTheme.onSurfaceVariant` (75% white) |
+| `Colors.white.withOpacity(0.5)` | `VineTheme.onSurfaceMuted` (50% white) |
+
+**Exceptions**: `Colors.transparent` is acceptable as it's a universal constant (like `EdgeInsets.zero`).
+
+**Rationale**: Using VineTheme ensures consistency and makes future theme updates easier.
+
+### Theme Colors
+
+- **Background**: Use `VineTheme.backgroundColor`
+- **Text**: Use `VineTheme.whiteText`, `VineTheme.primaryText`, or `VineTheme.secondaryText`
 - **Accent Colors**: Use `VineTheme.vineGreen` for primary accents
 - **Card Backgrounds**: Use `VineTheme.cardBackground` for elevated surfaces
+- **Icon Buttons**: Use `VineTheme.iconButtonBackground` for button containers
 - **NO LIGHT MODE**: Do not implement light mode themes, auto-switching, or light color schemes
 - **Consistency**: All screens must maintain the dark aesthetic
 
@@ -364,6 +436,31 @@ OpenVine uses a **Riverpod-based reactive architecture** for managing video feed
 - Searches across all subscription types for videos by pubkey
 - Used for user profile pages to display author's video history
 
+
+## Testing Conventions
+
+### Test File Structure
+**RULE**: Test files MUST mirror the `lib/` folder structure exactly.
+
+```
+lib/screens/pure/search_screen_pure.dart
+→ test/screens/pure/search_screen_pure_test.dart
+
+lib/services/video_event_service.dart
+→ test/services/video_event_service_test.dart
+
+lib/widgets/user_search_view.dart
+→ test/widgets/user_search_view_test.dart
+```
+
+**Naming Convention**: Test files should be named `{original_file_name}_test.dart`
+
+**Rationale**: Mirroring the folder structure makes it easy to find tests for any given file and maintains organizational consistency.
+
+### Test Helpers
+- Use `test/helpers/test_provider_overrides.dart` for common mock setups
+- Use `testMaterialApp()` and `testProviderScope()` helpers for widget tests
+- Use `mocktail` for BLoC mocking, `mockito` for service mocking
 
 ## Pre-Commit Workflow (MANDATORY)
 

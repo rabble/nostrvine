@@ -38,9 +38,16 @@ final exploreTabVideoUpdateListenerProvider = Provider<void>((ref) {
   ref.onDispose(unregister);
 });
 
-/// Provider to persist the current tab index across widget recreation
-/// Default to 1 (Popular Videos) as initial state
+/// Provider to persist the current tab index across widget recreation.
+/// Default to 1. Note: Use forceExploreTabNameProvider for semantic tab
+/// selection that survives tab count changes.
 final exploreTabIndexProvider = StateProvider<int>((ref) => 1);
+
+/// Provider to force a specific tab by NAME on next ExploreScreen init.
+/// Uses tab name instead of index because indices shift when Classics/ForYou
+/// tabs become available asynchronously.
+/// Valid values: 'classics', 'new', 'popular', 'for_you', 'lists'
+final forceExploreTabNameProvider = StateProvider<String?>((ref) => null);
 
 /// Temporary provider to hold the search screen's current video list
 /// This is set by SearchScreenPure when search results are available and consumed

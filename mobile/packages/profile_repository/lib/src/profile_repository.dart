@@ -5,6 +5,7 @@
 import 'dart:convert';
 
 import 'package:db_client/db_client.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:http/http.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -17,6 +18,20 @@ const _usernameClaimUrl = 'https://names.divine.video/api/username/claim';
 const _nip05LookupUrl =
     'https://nostrvine-backend.protestnet.workers.dev/.well-known/nostr.json';
 
+/// Callback to check if a user should be filtered from results.
+typedef UserBlockFilter = bool Function(String pubkey);
+
+// TODO(search): Move ProfileSearchFilter to a shared package
+// (e.g., search_utils) when we need to reuse search logic across
+// multiple repositories.
+/// Callback to filter and sort profiles by search relevance.
+/// Takes a query and list of profiles, returns filtered/sorted profiles.
+typedef ProfileSearchFilter =
+    List<UserProfile> Function(
+      String query,
+      List<UserProfile> profiles,
+    );
+
 /// Repository for fetching and publishing user profiles (Kind 0 metadata).
 class ProfileRepository {
   /// Creates a new profile repository.
@@ -24,13 +39,22 @@ class ProfileRepository {
     required NostrClient nostrClient,
     required UserProfilesDao userProfilesDao,
     required Client httpClient,
+    FunnelcakeApiClient? funnelcakeApiClient,
+    UserBlockFilter? userBlockFilter,
+    ProfileSearchFilter? profileSearchFilter,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
-       _httpClient = httpClient;
+       _httpClient = httpClient,
+       _funnelcakeApiClient = funnelcakeApiClient,
+       _userBlockFilter = userBlockFilter,
+       _profileSearchFilter = profileSearchFilter;
 
   final NostrClient _nostrClient;
   final UserProfilesDao _userProfilesDao;
   final Client _httpClient;
+  final FunnelcakeApiClient? _funnelcakeApiClient;
+  final UserBlockFilter? _userBlockFilter;
+  final ProfileSearchFilter? _profileSearchFilter;
 
   /// Fetches a user profile by pubkey using cache-first strategy.
   ///
@@ -168,5 +192,66 @@ class ProfileRepository {
     } on Exception catch (e) {
       return UsernameCheckError('Network error: $e');
     }
+  }
+
+  /// Searches for user profiles matching the query.
+  ///
+  /// Uses a hybrid search approach:
+  /// 1. First tries Funnelcake REST API (fast, if available)
+  /// 2. Then fetches via NIP-50 WebSocket (comprehensive)
+  /// 3. Merges results (REST results take priority by pubkey)
+  ///
+  /// Filters using [ProfileSearchFilter] if provided, otherwise falls back to
+  /// simple bestDisplayName matching.
+  /// If a [UserBlockFilter] was provided, blocked users are excluded.
+  /// Returns list of [UserProfile] matching the search query.
+  /// Returns empty list if query is empty or no results found.
+  Future<List<UserProfile>> searchUsers({
+    required String query,
+    int limit = 200,
+  }) async {
+    if (query.trim().isEmpty) return [];
+
+    final resultMap = <String, UserProfile>{};
+
+    // Phase 1: Try Funnelcake REST API (fast)
+    if (_funnelcakeApiClient?.isAvailable ?? false) {
+      try {
+        final restResults = await _funnelcakeApiClient!.searchProfiles(
+          query: query,
+          limit: limit,
+        );
+        for (final result in restResults) {
+          resultMap[result.pubkey] = result.toUserProfile();
+        }
+      } on Exception {
+        // Continue to WebSocket search on failure
+      }
+    }
+
+    // Phase 2: NIP-50 WebSocket search (comprehensive)
+    final events = await _nostrClient.queryUsers(query, limit: limit);
+    for (final event in events) {
+      final profile = UserProfile.fromNostrEvent(event);
+      // Don't overwrite REST results - they may have more complete data
+      resultMap.putIfAbsent(profile.pubkey, () => profile);
+    }
+
+    final profiles = resultMap.values.toList();
+
+    // Filter out blocked users
+    final unblockedProfiles = profiles.where((profile) {
+      return !(_userBlockFilter?.call(profile.pubkey) ?? false);
+    }).toList();
+
+    // Use custom search filter if provided, otherwise simple contains match
+    if (_profileSearchFilter != null) {
+      return _profileSearchFilter(query, unblockedProfiles);
+    }
+
+    final queryLower = query.toLowerCase();
+    return unblockedProfiles.where((profile) {
+      return profile.bestDisplayName.toLowerCase().contains(queryLower);
+    }).toList();
   }
 }
