@@ -31,6 +31,7 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
   bool _isInitialized = false;
   bool _isImportingHistory = false;
   bool _hasImportedHistory = false;
+  bool _isLayerBeingTransformed = false;
 
   /// Syncs the main-editor capabilities from the main editor to the bloc.
   void _syncMainCapabilities(VideoEditorScope scope, VideoEditorMainBloc bloc) {
@@ -185,7 +186,6 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                   },
                   onStateHistoryChange: (_, _) =>
                       _onStateHistoryChange(scope, bloc),
-                  onLayerTapUp: (_) => _onStateHistoryChange(scope, bloc),
                   onOpenSubEditor: (editorMode) {
                     final SubEditorType? subEditorType = switch (editorMode) {
                       .paint => .draw,
@@ -200,10 +200,19 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                   },
                   onStartCloseSubEditor: (_) =>
                       bloc.add(const VideoEditorMainSubEditorClosed()),
-                  onScaleStart: (_) =>
-                      bloc.add(const VideoEditorLayerInteractionStarted()),
-                  onScaleEnd: (_) =>
-                      bloc.add(const VideoEditorLayerInteractionEnded()),
+                  onScaleStart: (_) {
+                    _isLayerBeingTransformed =
+                        scope.editor?.hasSelectedLayers == true;
+                    bloc.add(const VideoEditorLayerInteractionStarted());
+                  },
+                  onScaleEnd: (_) {
+                    bloc.add(const VideoEditorLayerInteractionEnded());
+
+                    if (_isLayerBeingTransformed) {
+                      _onStateHistoryChange(scope, bloc);
+                      _isLayerBeingTransformed = false;
+                    }
+                  },
                 ),
                 paintEditorCallbacks: PaintEditorCallbacks(
                   onInit: () {
