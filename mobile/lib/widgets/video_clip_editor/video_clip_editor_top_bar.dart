@@ -94,7 +94,7 @@ class VideoClipEditorTopBar extends ConsumerWidget {
                                 .startRenderVideo(),
                           );
                           // TODO(@hm21): Replace with VideoEditorScreen.path
-                          context.push(VideoEditorScreen.path);
+                          context.push(VideoMetadataScreen.path);
                         },
                       ),
                     ),
