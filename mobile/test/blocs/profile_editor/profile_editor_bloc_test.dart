@@ -792,9 +792,6 @@ void main() {
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', 'ab')
-              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.idle),
-          isA<ProfileEditorState>()
-              .having((s) => s.username, 'username', 'ab')
               .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.error)
               .having(
                 (s) => s.usernameError,
@@ -809,9 +806,6 @@ void main() {
         build: createBloc,
         act: (bloc) => bloc.add(const UsernameChanged('aaaaaaaaaaaaaaaaaaaaa')),
         expect: () => [
-          isA<ProfileEditorState>()
-              .having((s) => s.username, 'username', 'aaaaaaaaaaaaaaaaaaaaa')
-              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.idle),
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', 'aaaaaaaaaaaaaaaaaaaaa')
               .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.error)
@@ -830,14 +824,11 @@ void main() {
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', 'test@user')
-              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.idle),
-          isA<ProfileEditorState>()
-              .having((s) => s.username, 'username', 'test@user')
               .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.error)
               .having(
                 (s) => s.usernameError,
                 'usernameError',
-                contains('letters, numbers, -, _, .'),
+                contains('Only letters, numbers'),
               ),
         ],
       );
@@ -855,8 +846,6 @@ void main() {
         act: (bloc) => bloc.add(const UsernameChanged(testUsername)),
         wait: const Duration(milliseconds: 600),
         expect: () => [
-          isA<ProfileEditorState>()
-              .having((s) => s.username, 'username', testUsername),
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', testUsername)
               .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.checking),
@@ -887,8 +876,6 @@ void main() {
         wait: const Duration(milliseconds: 600),
         expect: () => [
           isA<ProfileEditorState>()
-              .having((s) => s.username, 'username', testUsername),
-          isA<ProfileEditorState>()
               .having((s) => s.username, 'username', testUsername)
               .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.checking),
           isA<ProfileEditorState>()
@@ -910,8 +897,6 @@ void main() {
         act: (bloc) => bloc.add(const UsernameChanged(testUsername)),
         wait: const Duration(milliseconds: 600),
         expect: () => [
-          isA<ProfileEditorState>()
-              .having((s) => s.username, 'username', testUsername),
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', testUsername)
               .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.checking),

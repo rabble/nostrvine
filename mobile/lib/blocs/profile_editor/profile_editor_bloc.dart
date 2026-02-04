@@ -90,32 +90,65 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     UsernameChanged event,
     Emitter<ProfileEditorState> emit,
   ) async {
-    final username = event.username.trim();
-
-    emit(state.copyWith(username: username));
+    final rawUsername = event.username;
+    final username = rawUsername.trim();
 
     if (username.isEmpty) {
-      emit(state.copyWith(usernameStatus: UsernameStatus.idle));
+      emit(
+        state.copyWith(
+          username: username,
+          usernameStatus: UsernameStatus.idle,
+          usernameError: null,
+        ),
+      );
       return;
     }
 
-    if (!_isValidUsernameFormat(username)) {
+    // Check format first (includes spaces check via regex)
+    // Use raw input to catch leading/trailing spaces
+    if (!_usernamePattern.hasMatch(rawUsername)) {
       emit(
         state.copyWith(
+          username: username,
+          usernameStatus: UsernameStatus.error,
+          usernameError: 'Only letters, numbers, -, _, and . are allowed',
+        ),
+      );
+      return;
+    }
+
+    // Then check length
+    if (username.length < kMinUsernameLength ||
+        username.length > kMaxUsernameLength) {
+      emit(
+        state.copyWith(
+          username: username,
           usernameStatus: UsernameStatus.error,
           usernameError:
-              'Username must be $kMinUsernameLength-$kMaxUsernameLength characters (letters, numbers, -, _, .)',
+              'Username must be $kMinUsernameLength-$kMaxUsernameLength characters',
         ),
       );
       return;
     }
 
     if (_reservedUsernames.contains(username)) {
-      emit(state.copyWith(usernameStatus: UsernameStatus.reserved));
+      emit(
+        state.copyWith(
+          username: username,
+          usernameStatus: UsernameStatus.reserved,
+          usernameError: null,
+        ),
+      );
       return;
     }
 
-    emit(state.copyWith(usernameStatus: UsernameStatus.checking));
+    emit(
+      state.copyWith(
+        username: username,
+        usernameStatus: UsernameStatus.checking,
+        usernameError: null,
+      ),
+    );
     await Future<void>.delayed(const Duration(milliseconds: 500));
 
     if (emit.isDone) return;
@@ -128,9 +161,19 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
 
     switch (result) {
       case UsernameAvailable():
-        emit(state.copyWith(usernameStatus: UsernameStatus.available));
+        emit(
+          state.copyWith(
+            usernameStatus: UsernameStatus.available,
+            usernameError: null,
+          ),
+        );
       case UsernameTaken():
-        emit(state.copyWith(usernameStatus: UsernameStatus.taken));
+        emit(
+          state.copyWith(
+            usernameStatus: UsernameStatus.taken,
+            usernameError: null,
+          ),
+        );
       case UsernameCheckError(:final message):
         Log.error(
           'Username availability check failed: $message',
@@ -143,15 +186,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
           ),
         );
     }
-  }
-
-  /// Validates username format without making API calls.
-  bool _isValidUsernameFormat(String username) {
-    if (username.length < kMinUsernameLength ||
-        username.length > kMaxUsernameLength) {
-      return false;
-    }
-    return _usernamePattern.hasMatch(username);
   }
 
   /// Core profile save logic (extracted for reuse)
@@ -266,7 +300,19 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       Log.error('Rollback failed: $e', name: 'ProfileEditorBloc');
     }
 
-    emit(state.copyWith(status: ProfileEditorStatus.failure, error: error));
+    final usernameStatus = switch (error) {
+      ProfileEditorError.usernameReserved => UsernameStatus.reserved,
+      ProfileEditorError.usernameTaken => UsernameStatus.taken,
+      _ => null,
+    };
+
+    emit(
+      state.copyWith(
+        status: ProfileEditorStatus.failure,
+        error: error,
+        usernameStatus: usernameStatus,
+      ),
+    );
   }
 }
 
