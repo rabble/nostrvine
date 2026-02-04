@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -6,6 +7,8 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:videos_repository/videos_repository.dart';
 
 class MockNostrClient extends Mock implements NostrClient {}
+
+class MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
 /// Test helper that tracks content filter calls.
 class TestContentFilter {
@@ -1421,6 +1424,423 @@ void main() {
         expect(result, hasLength(1));
         expect(result.first.vineId, equals('safe-dtag'));
       });
+
+      group('Funnelcake API fallback', () {
+        late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+        setUp(() {
+          mockFunnelcakeClient = MockFunnelcakeApiClient();
+        });
+
+        test('does not call Funnelcake API when client is null', () async {
+          // Repository without Funnelcake client
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => <Event>[],
+          );
+
+          final result = await repository.getVideosByAddressableIds([
+            '${EventKind.videoVertical}:pubkey1:dtag1',
+          ]);
+
+          expect(result, isEmpty);
+          // No FunnelcakeApiClient calls since none was provided
+        });
+
+        test(
+          'does not call Funnelcake API when isAvailable is false',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
+
+            final repositoryWithFunnelcake = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+              (_) async => <Event>[],
+            );
+
+            final result = await repositoryWithFunnelcake
+                .getVideosByAddressableIds(
+                  ['${EventKind.videoVertical}:pubkey1:dtag1'],
+                );
+
+            expect(result, isEmpty);
+            verifyNever(
+              () => mockFunnelcakeClient.getVideosByAuthor(
+                pubkey: any(named: 'pubkey'),
+                limit: any(named: 'limit'),
+              ),
+            );
+          },
+        );
+
+        test(
+          'does not call Funnelcake API when all videos found on Nostr',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+
+            final repositoryWithFunnelcake = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            final event = _createVideoEvent(
+              id: 'dtag1',
+              pubkey: 'pubkey1',
+              videoUrl: 'https://example.com/video.mp4',
+              createdAt: 1704067200,
+            );
+
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+              (_) async => [event],
+            );
+
+            final result = await repositoryWithFunnelcake
+                .getVideosByAddressableIds(
+                  ['${EventKind.videoVertical}:pubkey1:dtag1'],
+                );
+
+            expect(result, hasLength(1));
+            verifyNever(
+              () => mockFunnelcakeClient.getVideosByAuthor(
+                pubkey: any(named: 'pubkey'),
+                limit: any(named: 'limit'),
+              ),
+            );
+          },
+        );
+
+        test(
+          'uses Funnelcake API fallback when Nostr returns no videos',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+
+            final repositoryWithFunnelcake = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            // Nostr returns nothing
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+              (_) async => <Event>[],
+            );
+
+            // Funnelcake returns the video
+            final videoStats = _createVideoStats(
+              id: 'event-id-1',
+              pubkey: 'pubkey1',
+              dTag: 'dtag1',
+              videoUrl: 'https://example.com/video.mp4',
+            );
+
+            when(
+              () => mockFunnelcakeClient.getVideosByAuthor(
+                pubkey: 'pubkey1',
+                limit: 100,
+              ),
+            ).thenAnswer((_) async => [videoStats]);
+
+            final result = await repositoryWithFunnelcake
+                .getVideosByAddressableIds(
+                  ['${EventKind.videoVertical}:pubkey1:dtag1'],
+                );
+
+            expect(result, hasLength(1));
+            expect(result.first.vineId, equals('dtag1'));
+            verify(
+              () => mockFunnelcakeClient.getVideosByAuthor(
+                pubkey: 'pubkey1',
+                limit: 100,
+              ),
+            ).called(1);
+          },
+        );
+
+        test(
+          'combines Nostr results with Funnelcake fallback results',
+          () async {
+            when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+
+            final repositoryWithFunnelcake = VideosRepository(
+              nostrClient: mockNostrClient,
+              funnelcakeApiClient: mockFunnelcakeClient,
+            );
+
+            // Nostr returns only one video
+            final nostrEvent = _createVideoEvent(
+              id: 'dtag1',
+              pubkey: 'pubkey1',
+              videoUrl: 'https://example.com/video1.mp4',
+              createdAt: 1704067200,
+            );
+
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+              (_) async => [nostrEvent],
+            );
+
+            // Funnelcake returns the second video
+            final videoStats = _createVideoStats(
+              id: 'event-id-2',
+              pubkey: 'pubkey2',
+              dTag: 'dtag2',
+              videoUrl: 'https://example.com/video2.mp4',
+            );
+
+            when(
+              () => mockFunnelcakeClient.getVideosByAuthor(
+                pubkey: 'pubkey2',
+                limit: 100,
+              ),
+            ).thenAnswer((_) async => [videoStats]);
+
+            final result = await repositoryWithFunnelcake
+                .getVideosByAddressableIds(
+                  [
+                    '${EventKind.videoVertical}:pubkey1:dtag1',
+                    '${EventKind.videoVertical}:pubkey2:dtag2',
+                  ],
+                );
+
+            expect(result, hasLength(2));
+            expect(result[0].vineId, equals('dtag1'));
+            expect(result[1].vineId, equals('dtag2'));
+          },
+        );
+
+        test('preserves original addressable ID order with fallback', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+
+          final repositoryWithFunnelcake = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          // Nostr returns video 2 (not video 1 or 3)
+          final nostrEvent = _createVideoEvent(
+            id: 'dtag2',
+            pubkey: 'pubkey2',
+            videoUrl: 'https://example.com/video2.mp4',
+            createdAt: 1704067200,
+          );
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [nostrEvent],
+          );
+
+          // Funnelcake returns videos 1 and 3
+          final videoStats1 = _createVideoStats(
+            id: 'event-id-1',
+            pubkey: 'pubkey1',
+            dTag: 'dtag1',
+            videoUrl: 'https://example.com/video1.mp4',
+          );
+          final videoStats3 = _createVideoStats(
+            id: 'event-id-3',
+            pubkey: 'pubkey3',
+            dTag: 'dtag3',
+            videoUrl: 'https://example.com/video3.mp4',
+          );
+
+          when(
+            () => mockFunnelcakeClient.getVideosByAuthor(
+              pubkey: 'pubkey1',
+              limit: 100,
+            ),
+          ).thenAnswer((_) async => [videoStats1]);
+
+          when(
+            () => mockFunnelcakeClient.getVideosByAuthor(
+              pubkey: 'pubkey3',
+              limit: 100,
+            ),
+          ).thenAnswer((_) async => [videoStats3]);
+
+          final result = await repositoryWithFunnelcake
+              .getVideosByAddressableIds(
+                [
+                  '${EventKind.videoVertical}:pubkey1:dtag1',
+                  '${EventKind.videoVertical}:pubkey2:dtag2',
+                  '${EventKind.videoVertical}:pubkey3:dtag3',
+                ],
+              );
+
+          expect(result, hasLength(3));
+          // Order should match input addressable IDs
+          expect(result[0].vineId, equals('dtag1'));
+          expect(result[1].vineId, equals('dtag2'));
+          expect(result[2].vineId, equals('dtag3'));
+        });
+
+        test('handles Funnelcake API failure gracefully', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+
+          final repositoryWithFunnelcake = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          // Nostr returns one video
+          final nostrEvent = _createVideoEvent(
+            id: 'dtag1',
+            pubkey: 'pubkey1',
+            videoUrl: 'https://example.com/video1.mp4',
+            createdAt: 1704067200,
+          );
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [nostrEvent],
+          );
+
+          // Funnelcake throws an exception
+          when(
+            () => mockFunnelcakeClient.getVideosByAuthor(
+              pubkey: 'pubkey2',
+              limit: 100,
+            ),
+          ).thenThrow(const FunnelcakeException('Network error'));
+
+          // Should not throw, just return what Nostr found
+          final result = await repositoryWithFunnelcake
+              .getVideosByAddressableIds(
+                [
+                  '${EventKind.videoVertical}:pubkey1:dtag1',
+                  '${EventKind.videoVertical}:pubkey2:dtag2',
+                ],
+              );
+
+          expect(result, hasLength(1));
+          expect(result.first.vineId, equals('dtag1'));
+        });
+
+        test('applies block filter to Funnelcake API results', () async {
+          const blockedPubkey = 'blocked-pubkey';
+
+          final filter = TestContentFilter(blockedPubkeys: {blockedPubkey});
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+
+          final repositoryWithFilter = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            blockFilter: filter.call,
+          );
+
+          // Nostr returns nothing
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => <Event>[],
+          );
+
+          // Funnelcake returns a video from blocked pubkey
+          final videoStats = _createVideoStats(
+            id: 'event-id-1',
+            pubkey: blockedPubkey,
+            dTag: 'dtag1',
+            videoUrl: 'https://example.com/video.mp4',
+          );
+
+          when(
+            () => mockFunnelcakeClient.getVideosByAuthor(
+              pubkey: blockedPubkey,
+              limit: 100,
+            ),
+          ).thenAnswer((_) async => [videoStats]);
+
+          final result = await repositoryWithFilter.getVideosByAddressableIds([
+            '${EventKind.videoVertical}:$blockedPubkey:dtag1',
+          ]);
+
+          // Should be filtered out
+          expect(result, isEmpty);
+        });
+
+        test('filters out Funnelcake results without video URL', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+
+          final repositoryWithFunnelcake = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          // Nostr returns nothing
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => <Event>[],
+          );
+
+          // Funnelcake returns a video without URL
+          final videoStats = _createVideoStats(
+            id: 'event-id-1',
+            pubkey: 'pubkey1',
+            dTag: 'dtag1',
+            videoUrl: '', // No video URL
+          );
+
+          when(
+            () => mockFunnelcakeClient.getVideosByAuthor(
+              pubkey: 'pubkey1',
+              limit: 100,
+            ),
+          ).thenAnswer((_) async => [videoStats]);
+
+          final result = await repositoryWithFunnelcake
+              .getVideosByAddressableIds(
+                ['${EventKind.videoVertical}:pubkey1:dtag1'],
+              );
+
+          expect(result, isEmpty);
+        });
+
+        test('batches Funnelcake requests by pubkey', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+
+          final repositoryWithFunnelcake = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          // Nostr returns nothing
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => <Event>[],
+          );
+
+          // Funnelcake returns both videos from the same author
+          final videoStats1 = _createVideoStats(
+            id: 'event-id-1',
+            pubkey: 'same-pubkey',
+            dTag: 'dtag1',
+            videoUrl: 'https://example.com/video1.mp4',
+          );
+          final videoStats2 = _createVideoStats(
+            id: 'event-id-2',
+            pubkey: 'same-pubkey',
+            dTag: 'dtag2',
+            videoUrl: 'https://example.com/video2.mp4',
+          );
+
+          when(
+            () => mockFunnelcakeClient.getVideosByAuthor(
+              pubkey: 'same-pubkey',
+              limit: 100,
+            ),
+          ).thenAnswer((_) async => [videoStats1, videoStats2]);
+
+          final result = await repositoryWithFunnelcake
+              .getVideosByAddressableIds(
+                [
+                  '${EventKind.videoVertical}:same-pubkey:dtag1',
+                  '${EventKind.videoVertical}:same-pubkey:dtag2',
+                ],
+              );
+
+          expect(result, hasLength(2));
+          // Should only make one API call for the same pubkey
+          verify(
+            () => mockFunnelcakeClient.getVideosByAuthor(
+              pubkey: 'same-pubkey',
+              limit: 100,
+            ),
+          ).called(1);
+        });
+      });
     });
 
     group('video event filtering (stage 2)', () {
@@ -1688,4 +2108,31 @@ Event _createVideoEventWithDTag({
     'content': '',
     'sig': '',
   });
+}
+
+/// Creates a mock VideoStats for testing Funnelcake API fallback.
+VideoStats _createVideoStats({
+  required String id,
+  required String pubkey,
+  required String dTag,
+  required String videoUrl,
+  String title = 'Test Video',
+  String thumbnail = 'https://example.com/thumb.jpg',
+  int? loops,
+}) {
+  return VideoStats(
+    id: id,
+    pubkey: pubkey,
+    createdAt: DateTime.fromMillisecondsSinceEpoch(1704067200 * 1000),
+    kind: EventKind.videoVertical,
+    dTag: dTag,
+    title: title,
+    thumbnail: thumbnail,
+    videoUrl: videoUrl,
+    reactions: 0,
+    comments: 0,
+    reposts: 0,
+    engagementScore: 0,
+    loops: loops,
+  );
 }

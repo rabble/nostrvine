@@ -650,8 +650,9 @@ class CameraController: NSObject {
     /// - Parameters:
     ///   - maxDurationMs: Optional maximum duration in milliseconds. Recording stops automatically when reached.
     ///   - useCache: If true, saves video to temporary directory. If false, saves to documents directory (permanent).
+    ///   - outputDirectory: If provided, saves video to this directory (overrides useCache when false).
     ///   - completion: Callback with error message if failed, nil if successful.
-    func startRecording(maxDurationMs: Int?, useCache: Bool = true, completion: @escaping (String?) -> Void) {
+    func startRecording(maxDurationMs: Int?, useCache: Bool = true, outputDirectory: String? = nil, completion: @escaping (String?) -> Void) {
         if isRecording {
             completion("Already recording")
             return
@@ -662,16 +663,18 @@ class CameraController: NSObject {
         videoOutputQueue.async { [weak self] in
             guard let self = self else { return }
             
-            // Create output file - use temporary or documents directory based on useCache parameter
+            // Create output file - use cache, provided directory, or default to documents directory
             let outputDir: URL
-            if useCache {
+            if let customDir = outputDirectory {
+                outputDir = URL(fileURLWithPath: customDir)
+            } else if useCache {
                 outputDir = FileManager.default.temporaryDirectory
             } else {
                 let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
                 outputDir = paths[0]
             }
-            let timestamp = ISO8601DateFormatter().string(from: Date())
-                .replacingOccurrences(of: ":", with: "-")
+            // Use milliseconds timestamp for shorter, sortable, and unique filenames
+            let timestamp = Int64(Date().timeIntervalSince1970 * 1000)
             let outputURL = outputDir.appendingPathComponent("VID_\(timestamp).mp4")
             self.currentRecordingURL = outputURL
             

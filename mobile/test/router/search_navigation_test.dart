@@ -9,23 +9,29 @@ import 'package:mockito/mockito.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_event_service.dart';
+import 'package:profile_repository/profile_repository.dart';
 
 import 'search_navigation_test.mocks.dart';
+
+/// Manual mock for ProfileRepository (no code generation needed)
+class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 @GenerateMocks([AuthService, NostrClient, VideoEventService])
 void main() {
   late MockAuthService mockAuthService;
   late MockNostrClient mockNostrService;
   late MockVideoEventService mockVideoEventService;
+  late _MockProfileRepository mockProfileRepository;
 
   setUp(() {
     mockAuthService = MockAuthService();
     mockNostrService = MockNostrClient();
     mockVideoEventService = MockVideoEventService();
+    mockProfileRepository = _MockProfileRepository();
 
     // Setup basic stubs
     when(mockAuthService.isAuthenticated).thenReturn(false);
@@ -68,7 +74,12 @@ void main() {
 
     testWidgets('Search screen has search bar and tabs', (tester) async {
       await tester.pumpWidget(
-        const ProviderScope(child: MaterialApp(home: SearchScreenPure())),
+        ProviderScope(
+          overrides: [
+            profileRepositoryProvider.overrideWithValue(mockProfileRepository),
+          ],
+          child: const MaterialApp(home: SearchScreenPure()),
+        ),
       );
 
       await tester.pumpAndSettle();
@@ -77,9 +88,9 @@ void main() {
       expect(find.byType(TextField), findsOneWidget);
       expect(find.text('Find something cool...'), findsOneWidget);
 
-      // Verify tabs exist
+      // Verify tabs exist (Users shows no count when 0)
       expect(find.text('Videos (0)'), findsOneWidget);
-      expect(find.text('Users (0)'), findsOneWidget);
+      expect(find.text('Users'), findsOneWidget);
       expect(find.text('Hashtags (0)'), findsOneWidget);
     });
 

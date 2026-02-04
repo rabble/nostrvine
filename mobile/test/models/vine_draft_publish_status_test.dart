@@ -35,7 +35,7 @@ void main() {
       );
 
       final json = draft.toJson();
-      final deserialized = VineDraft.fromJson(json);
+      final deserialized = VineDraft.fromJson(json, '/path/to');
 
       expect(deserialized.publishStatus, PublishStatus.draft);
       expect(deserialized.publishError, null);
@@ -70,7 +70,7 @@ void main() {
         );
 
         final json = draft.toJson();
-        final deserialized = VineDraft.fromJson(json);
+        final deserialized = VineDraft.fromJson(json, '/path/to');
 
         expect(deserialized.publishStatus, status);
       }
@@ -79,7 +79,7 @@ void main() {
     test('should migrate old drafts without publishStatus to draft status', () {
       final json = {
         'id': 'old_draft',
-        'videoFilePath': '/path/to/video.mp4',
+        'videoFilePath': 'video.mp4',
         'title': 'Old Draft',
         'description': 'From before publish status existed',
         'hashtags': ['old'],
@@ -90,7 +90,7 @@ void main() {
         // publishStatus, publishError, publishAttempts missing
       };
 
-      final draft = VineDraft.fromJson(json);
+      final draft = VineDraft.fromJson(json, '/path/to');
 
       expect(draft.publishStatus, PublishStatus.draft);
       expect(draft.publishError, null);
@@ -126,7 +126,7 @@ void main() {
       expect(json['publishError'], 'Network error');
       expect(json['publishAttempts'], 2);
 
-      final deserialized = VineDraft.fromJson(json);
+      final deserialized = VineDraft.fromJson(json, '/path/to');
       expect(deserialized.publishError, 'Network error');
       expect(deserialized.publishAttempts, 2);
     });

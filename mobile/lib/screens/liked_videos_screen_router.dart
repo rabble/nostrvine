@@ -9,7 +9,7 @@ import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.da
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/liked_videos_state_bridge.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';

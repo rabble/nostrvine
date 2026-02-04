@@ -30,7 +30,7 @@ final class ConnectionStatusServiceProvider
         argument: null,
         retry: null,
         name: r'connectionStatusServiceProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -59,7 +59,63 @@ final class ConnectionStatusServiceProvider
 }
 
 String _$connectionStatusServiceHash() =>
-    r'996c945a4e09628f52d45da659e79a2529d58bcb';
+    r'30fc9602e77f81edd6e26b19f6e36e0c82a02353';
+
+/// Pending action service for offline sync of social actions
+/// Returns null when not authenticated (no userPubkey available)
+
+@ProviderFor(pendingActionService)
+const pendingActionServiceProvider = PendingActionServiceProvider._();
+
+/// Pending action service for offline sync of social actions
+/// Returns null when not authenticated (no userPubkey available)
+
+final class PendingActionServiceProvider
+    extends
+        $FunctionalProvider<
+          PendingActionService?,
+          PendingActionService?,
+          PendingActionService?
+        >
+    with $Provider<PendingActionService?> {
+  /// Pending action service for offline sync of social actions
+  /// Returns null when not authenticated (no userPubkey available)
+  const PendingActionServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'pendingActionServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$pendingActionServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<PendingActionService?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  PendingActionService? create(Ref ref) {
+    return pendingActionService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(PendingActionService? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<PendingActionService?>(value),
+    );
+  }
+}
+
+String _$pendingActionServiceHash() =>
+    r'67a3a30b8cc1072263ce47f4e2bb3c34fa876fa1';
 
 /// Relay capability service for detecting NIP-11 divine extensions
 
@@ -1707,7 +1763,7 @@ final class DraftStorageServiceProvider
 }
 
 String _$draftStorageServiceHash() =>
-    r'33f3e00de2b933fffa49823e6eef306ed15f04cb';
+    r'7261c841e01e1a1792419ccc2600e52a417ac927';
 
 /// Clip library service for persisting individual video clips
 
@@ -1760,7 +1816,7 @@ final class ClipLibraryServiceProvider
 }
 
 String _$clipLibraryServiceHash() =>
-    r'b979f5ba3eb3437f096e14abbe5492905a3cd82d';
+    r'71785151c732f9cb8a095b2a80466fb28ee7b575';
 
 /// Authentication service
 
@@ -2347,7 +2403,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'97f26591526d0afb776def48904f4562a5338d42';
+String _$followRepositoryHash() => r'4da90451c0432828d297f3ba7350cc00873b6e7e';
 
 /// Provider for ProfileRepository instance
 ///
@@ -2356,6 +2412,7 @@ String _$followRepositoryHash() => r'97f26591526d0afb776def48904f4562a5338d42';
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - FunnelcakeApiClient for fast REST-based profile search
 
 @ProviderFor(profileRepository)
 const profileRepositoryProvider = ProfileRepositoryProvider._();
@@ -2367,6 +2424,7 @@ const profileRepositoryProvider = ProfileRepositoryProvider._();
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - FunnelcakeApiClient for fast REST-based profile search
 
 final class ProfileRepositoryProvider
     extends
@@ -2383,6 +2441,7 @@ final class ProfileRepositoryProvider
   ///
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
+  /// - FunnelcakeApiClient for fast REST-based profile search
   const ProfileRepositoryProvider._()
     : super(
         from: null,
@@ -2417,7 +2476,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'0454d90570f71f0bae362a0e84d9d61cce253f93';
+String _$profileRepositoryHash() => r'ce501a057cafb7d267a2f28f45a2e4940017fe57';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
@@ -3755,7 +3814,7 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'22888a04bfa6cff194c104b5be555fdf22062e40';
+String _$likesRepositoryHash() => r'9376994f8bb85d89e5356830c093f4b3673a3368';
 
 /// Provider for RepostsRepository instance
 ///
@@ -3828,4 +3887,4 @@ final class RepostsRepositoryProvider
   }
 }
 
-String _$repostsRepositoryHash() => r'5676fc10ff4d2bb059f3348f3f3d8a77a14826f4';
+String _$repostsRepositoryHash() => r'66177802944101f3bdf06e338e3730047ddda2cd';

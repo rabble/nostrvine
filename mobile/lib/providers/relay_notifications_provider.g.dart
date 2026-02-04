@@ -263,12 +263,16 @@ final class RelayNotificationsLoadingProvider
 String _$relayNotificationsLoadingHash() =>
     r'6dbafbb77abca10ee0e84310a5a97641c321fa69';
 
-/// Provider to get notifications filtered by type
+/// Provider to get notifications filtered by type.
+///
+/// Results are sorted by timestamp (newest first).
 
 @ProviderFor(relayNotificationsByType)
 const relayNotificationsByTypeProvider = RelayNotificationsByTypeFamily._();
 
-/// Provider to get notifications filtered by type
+/// Provider to get notifications filtered by type.
+///
+/// Results are sorted by timestamp (newest first).
 
 final class RelayNotificationsByTypeProvider
     extends
@@ -278,7 +282,9 @@ final class RelayNotificationsByTypeProvider
           List<NotificationModel>
         >
     with $Provider<List<NotificationModel>> {
-  /// Provider to get notifications filtered by type
+  /// Provider to get notifications filtered by type.
+  ///
+  /// Results are sorted by timestamp (newest first).
   const RelayNotificationsByTypeProvider._({
     required RelayNotificationsByTypeFamily super.from,
     required NotificationType? super.argument,
@@ -333,9 +339,11 @@ final class RelayNotificationsByTypeProvider
 }
 
 String _$relayNotificationsByTypeHash() =>
-    r'faa52ccaefc04204d6f9a4b698a82a6e664cdfed';
+    r'13c8dced839d456ca845419081916dcd46c059bc';
 
-/// Provider to get notifications filtered by type
+/// Provider to get notifications filtered by type.
+///
+/// Results are sorted by timestamp (newest first).
 
 final class RelayNotificationsByTypeFamily extends $Family
     with $FunctionalFamilyOverride<List<NotificationModel>, NotificationType?> {
@@ -348,7 +356,9 @@ final class RelayNotificationsByTypeFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Provider to get notifications filtered by type
+  /// Provider to get notifications filtered by type.
+  ///
+  /// Results are sorted by timestamp (newest first).
 
   RelayNotificationsByTypeProvider call(NotificationType? type) =>
       RelayNotificationsByTypeProvider._(argument: type, from: this);

@@ -8,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -23,13 +24,10 @@ import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
-import 'package:openvine/router/page_context_provider.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'last_tab_position_provider.dart';
-import 'tab_history_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 
 class AppShell extends ConsumerWidget {

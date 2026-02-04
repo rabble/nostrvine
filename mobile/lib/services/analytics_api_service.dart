@@ -870,6 +870,68 @@ class AnalyticsApiService {
     }
   }
 
+  /// Search user profiles by text query
+  ///
+  /// Uses funnelcake's /api/search/profiles?q= endpoint for profile search.
+  /// Returns a list of JSON maps that can be converted to UserProfile.
+  Future<List<Map<String, dynamic>>> searchProfiles({
+    required String query,
+    int limit = 50,
+  }) async {
+    if (!isAvailable || query.trim().isEmpty) return [];
+
+    try {
+      final encodedQuery = Uri.encodeQueryComponent(query.trim());
+      final url = '$_baseUrl/api/search/profiles?q=$encodedQuery&limit=$limit';
+      Log.info(
+        'Searching profiles from Funnelcake: $url',
+        name: 'AnalyticsApiService',
+        category: LogCategory.system,
+      );
+
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+
+        final profiles = data
+            .whereType<Map<String, dynamic>>()
+            .where((p) => p['pubkey'] != null)
+            .toList();
+
+        Log.info(
+          'Found ${profiles.length} profiles for query "$query"',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+
+        return profiles;
+      } else {
+        Log.warning(
+          'Profile search failed: ${response.statusCode}',
+          name: 'AnalyticsApiService',
+          category: LogCategory.system,
+        );
+        return [];
+      }
+    } catch (e) {
+      Log.error(
+        'Error searching profiles: $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.system,
+      );
+      return [];
+    }
+  }
+
   /// Get stats for a specific video
   Future<VideoStats?> getVideoStats(String eventId) async {
     if (!isAvailable || eventId.isEmpty) return null;

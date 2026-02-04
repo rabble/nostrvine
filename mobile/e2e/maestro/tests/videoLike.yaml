@@ -25,13 +25,13 @@ tags:
     env.video_description = maestro.copiedText;  # Assign copied text to the variable
 
 # 3. Tap on the profile: Validate profile is loaded
-- doubleTapOn:
+- tapOn:
     id: profile_tab
-    delay: 100
 - runFlow: ../asserts/assertProfile.yaml
 
 # 4. Tap on the likes tab: Validate tab is loaded and VIDEO_TITLE listed
 - tapOn: Tab 2 of 3
 - tapOn:
-    point: 20%,74%
+    point: 1%,78%
 - assertVisible: ${VIDEO_DESCRIPTION}
+- 

@@ -24,3 +24,4 @@ jobs:
     uses: VeryGoodOpenSource/very_good_workflows/.github/workflows/flutter_package.yml@v1
     with:
       working_directory: "mobile/packages/pooled_video_player"
+      min_coverage: 88

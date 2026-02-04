@@ -9,7 +9,7 @@ import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/others_following/others_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/router/app_router.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
 
 /// Page widget that creates the appropriate following BLoC based on pubkey.
@@ -81,7 +81,7 @@ class _MyFollowingStatView extends StatelessWidget {
           label: 'Following',
           isLoading: isLoading,
           onTap: () => context.push(
-            FollowingRoutes.pathForPubkey(pubkey),
+            FollowingScreenRouter.pathForPubkey(pubkey),
             extra: displayName,
           ),
         );
@@ -113,7 +113,7 @@ class _OthersFollowingStatView extends StatelessWidget {
           label: 'Following',
           isLoading: isLoading,
           onTap: () => context.push(
-            FollowingRoutes.pathForPubkey(pubkey),
+            FollowingScreenRouter.pathForPubkey(pubkey),
             extra: displayName,
           ),
         );

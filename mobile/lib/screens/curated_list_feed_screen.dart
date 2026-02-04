@@ -1,6 +1,7 @@
 // ABOUTME: Screen for displaying videos from a curated NIP-51 kind 30005 list
 // ABOUTME: Shows videos in a grid with tap-to-play navigation
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -8,11 +9,10 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
-import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/services/curated_list_service.dart';
-import 'package:openvine/utils/public_identifier_normalizer.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -290,14 +290,13 @@ class _CuratedListFeedScreenState extends ConsumerState<CuratedListFeedScreen> {
   Widget _buildSubheading() {
     final videoCount = widget.videoIds?.length ?? 0;
     final videoText = '$videoCount ${videoCount == 1 ? 'video' : 'videos'}';
+    final authorPubkey = widget.authorPubkey;
 
-    if (widget.authorPubkey != null) {
+    if (authorPubkey != null) {
       return GestureDetector(
         onTap: () {
-          final npub = normalizeToNpub(widget.authorPubkey!);
-          if (npub != null) {
-            context.push(ProfileScreenRouter.pathForNpub(npub));
-          }
+          final npub = NostrKeyUtils.encodePubKey(authorPubkey);
+          context.push(OtherProfileScreen.pathForNpub(npub));
         },
         child: Row(
           mainAxisSize: MainAxisSize.min,

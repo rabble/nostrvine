@@ -1,0 +1,20 @@
+appId: co.openvine.app
+---
+# Assert Explore screen with For You tab selected
+
+# Top bar - confirms we're on Explore
+- assertVisible: "Explore"
+- assertVisible: Menu
+- assertVisible: Search
+
+# For You tab is selected (Tab 4 of 5)
+- assertVisible: |-
+    For You
+    Tab 4 of 5
+
+# For You tab content
+- assertVisible: "The Divine Algorithm"
+
+# Bottom navigation - explore tab should be active
+- assertVisible:
+    id: explore_tab

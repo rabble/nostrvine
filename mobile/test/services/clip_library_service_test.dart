@@ -12,8 +12,7 @@ void main() {
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      service = ClipLibraryService(prefs);
+      service = ClipLibraryService();
     });
 
     group('saveClip', () {
@@ -32,7 +31,8 @@ void main() {
 
         expect(clips.length, 1);
         expect(clips.first.id, 'clip_123');
-        expect(clips.first.filePath, '/tmp/test_video.mp4');
+        // Path uses platform separator, so check filename
+        expect(clips.first.filePath, endsWith('test_video.mp4'));
       });
 
       test('updates existing clip with same ID', () async {
@@ -59,7 +59,8 @@ void main() {
         final clips = await service.getAllClips();
 
         expect(clips.length, 1);
-        expect(clips.first.thumbnailPath, '/tmp/updated_thumb.jpg');
+        // Path uses platform separator, so check filename
+        expect(clips.first.thumbnailPath, endsWith('updated_thumb.jpg'));
       });
     });
 
@@ -192,11 +193,17 @@ void main() {
       );
 
       final json = original.toJson();
-      final restored = SavedClip.fromJson(json);
+      // toJson stores only filenames for iOS compatibility
+      expect(json['filePath'], 'video.mp4');
+      expect(json['thumbnailPath'], 'thumb.jpg');
+
+      // Roundtrip with same base path restores paths
+      final restored = SavedClip.fromJson(json, '/path/to');
 
       expect(restored.id, original.id);
-      expect(restored.filePath, original.filePath);
-      expect(restored.thumbnailPath, original.thumbnailPath);
+      // Path uses platform separator, check it ends with filename
+      expect(restored.filePath, endsWith('video.mp4'));
+      expect(restored.thumbnailPath, endsWith('thumb.jpg'));
       expect(restored.duration, original.duration);
       expect(restored.createdAt, original.createdAt);
       expect(restored.aspectRatio, original.aspectRatio);
@@ -213,7 +220,7 @@ void main() {
       );
 
       final json = clip.toJson();
-      final restored = SavedClip.fromJson(json);
+      final restored = SavedClip.fromJson(json, '/path/to');
 
       expect(restored.thumbnailPath, isNull);
     });

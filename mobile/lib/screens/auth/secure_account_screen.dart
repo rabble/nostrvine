@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/validators.dart';
 import 'package:openvine/widgets/error_message.dart';
@@ -157,15 +158,9 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
           _continueToApp();
         },
         onSuccess: () {
-          // Navigate to profile - this closes dialog and replaces screen
+          // Navigate to explore screen after successful verification
           if (mounted) {
-            final authService = ref.read(authServiceProvider);
-            final npub = authService.currentNpub;
-            if (npub != null) {
-              context.go('/profile/$npub');
-            } else {
-              context.go('/home/0');
-            }
+            context.go(ExploreScreen.path);
           }
         },
       ),
@@ -175,9 +170,9 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
   void _continueToApp() {
     // User can use the app while waiting for verification
     // The polling continues in the background
-    // Navigate to home
+    // Navigate to explore screen
     if (mounted) {
-      context.go('/home/0');
+      context.go(ExploreScreen.path);
     }
   }
 

@@ -87,6 +87,7 @@ void main() {
         title: 'Blossom Integration Test',
         description: 'Test upload from Flutter integration test',
         hashtags: ['test', 'integration'],
+        proofManifestJson: null,
         onProgress: (progress) {
           print('📊 Upload progress: ${(progress * 100).toStringAsFixed(1)}%');
         },
@@ -130,6 +131,9 @@ void main() {
           videoFile: testVideoFile,
           nostrPubkey: authService.currentPublicKeyHex!,
           title: 'Auth Test',
+          description: null,
+          hashtags: null,
+          proofManifestJson: null,
         );
 
         // Should not get "unauthorized" error anymore
@@ -165,6 +169,9 @@ void main() {
         videoFile: testVideoFile,
         nostrPubkey: authService.currentPublicKeyHex!,
         title: 'Production Fallback Test',
+        description: null,
+        hashtags: null,
+        proofManifestJson: null,
       );
 
       if (result.success) {

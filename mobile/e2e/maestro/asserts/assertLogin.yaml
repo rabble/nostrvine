@@ -7,8 +7,7 @@ appId: co.openvine.app
 - assertVisible: "I am 16 years or older"
 - assertVisible: "I agree to the "
 - assertVisible: "Terms of Service"
-- assertVisible: "Privacy
-    Policy"
+- assertVisible: "Privacy Policy"
 - assertVisible: "Safety Standards"
 - assertVisible: Accept Terms to Continue
 - assertVisible: Have an account? Log In

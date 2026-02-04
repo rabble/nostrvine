@@ -10,12 +10,11 @@ appId: co.openvine.app
 # 5. Scroll to the very bottom:
 
 # 1. Tap on Popular Videos: Validate the screen
+- tapOn:
+    id: explore_tab
 - tapOn: |-
-    Explore
-    Tab 2 of 4
-- tapOn: |-
-    Popular Videos
-    Tab 2 of 3
+    Popular
+    Tab 3 of 5
 - runFlow: ../asserts/assertExplore.yaml
 # 2. Tap on the 1st video: Validate playback
 - tapOn:

@@ -40,6 +40,7 @@ class TestDivineCameraPlatform extends DivineCameraPlatform
   Future<bool> startRecording({
     Duration? maxDuration,
     bool useCache = true,
+    String? outputDirectory,
   }) async {
     return true;
   }

@@ -1,23 +1,22 @@
 // ABOUTME: Screen for displaying people from a NIP-51 kind 30000 user list with their videos
 // ABOUTME: Shows horizontal carousel of people at top, video grid below
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
-import 'package:openvine/screens/profile_screen_router.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/user_list_service.dart';
-import 'package:openvine/utils/public_identifier_normalizer.dart';
-import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/composable_video_grid.dart';
-import 'package:openvine/widgets/user_avatar.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
+import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
+import 'package:openvine/widgets/user_avatar.dart';
 
 class UserListPeopleScreen extends ConsumerStatefulWidget {
   const UserListPeopleScreen({required this.userList, super.key});
@@ -415,10 +414,8 @@ class _PeopleCarousel extends ConsumerWidget {
                   button: true,
                   child: GestureDetector(
                     onTap: () {
-                      final npub = normalizeToNpub(pubkey);
-                      if (npub != null) {
-                        context.push(ProfileScreenRouter.pathForIndex(npub, 0));
-                      }
+                      final npub = NostrKeyUtils.encodePubKey(pubkey);
+                      context.push(OtherProfileScreen.pathForNpub(npub));
                     },
                     child: Padding(
                       padding: const EdgeInsets.only(right: 12),

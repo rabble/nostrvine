@@ -19,15 +19,14 @@ appId: co.openvine.app
 - tapOn: Find something cool...
 - inputText: ${VIDEO_TITLE}
 #TO-DO: once search is fixed remove this workaround
-- runFlow: ../utils/searchWorkaround.yaml
-#Assert Videos and Users result
-- assertVisible: |-
-    Videos \((?!0)\d+\)
-    Tab 1 of 3
+#- runFlow: ../utils/searchWorkaround.yaml
+#Assert Videos result
+- assertVisible:
+    text: "Videos \\((?!0)\\d+\\)\\nTab 1 of 3"
 
 # 3. Tap on the 1st video returned: Validate playback screen
 - tapOn:
-    id: play_button
+    text: ".* ${VIDEO_TITLE} .*"
 - waitForAnimationToEnd:
     timeout: 3000
 - tapOn:

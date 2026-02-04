@@ -495,6 +495,7 @@ void _configureMockBlossomService(MockBlossomUploadService mock) {
       title: anyNamed('title'),
       description: anyNamed('description'),
       hashtags: anyNamed('hashtags'),
+      proofManifestJson: anyNamed('proofManifestJson'),
       onProgress: anyNamed('onProgress'),
     ),
   ).thenAnswer((invocation) async {

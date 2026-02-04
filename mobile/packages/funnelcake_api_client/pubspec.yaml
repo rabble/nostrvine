@@ -1,0 +1,20 @@
+name: funnelcake_api_client
+description: HTTP client for Funnelcake REST API
+version: 0.1.0+1
+publish_to: none
+
+environment:
+  sdk: ^3.10.0
+
+resolution: workspace
+
+dependencies:
+  http: ^1.4.0
+  meta: ^1.17.0
+  models:
+    path: ../models
+
+dev_dependencies:
+  mocktail: ^1.0.4
+  test: ^1.26.3
+  very_good_analysis: ^10.0.0
