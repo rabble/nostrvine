@@ -98,10 +98,10 @@ class _TopBar extends StatelessWidget {
           ],
         ),
       ),
-      child: SafeArea(
+      child: const SafeArea(
         bottom: false,
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(12, 0, 4, 0),
+          padding: EdgeInsets.fromLTRB(12, 0, 4, 0),
           child: SizedBox(
             height: 60,
             child: Row(
@@ -186,7 +186,7 @@ class _DoneButton extends StatelessWidget {
               'assets/icon/Check.svg',
               width: 24,
               height: 24,
-              colorFilter: ColorFilter.mode(
+              colorFilter: const ColorFilter.mode(
                 VineTheme.navGreen,
                 BlendMode.srcIn,
               ),

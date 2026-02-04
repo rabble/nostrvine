@@ -100,11 +100,22 @@ class VideoEditorTextInitFromLayer extends VideoEditorTextEvent {
     required this.selectedFontIndex,
   });
 
+  /// The text content of the layer.
   final String text;
+
+  /// The text alignment.
   final TextAlign alignment;
+
+  /// The primary color (text or background depending on mode).
   final Color color;
+
+  /// The background style mode.
   final LayerBackgroundMode backgroundStyle;
+
+  /// The font size as a normalized value (0.0 - 1.0).
   final double fontSize;
+
+  /// The index of the selected font in [VideoEditorConstants.textFonts].
   final int selectedFontIndex;
 
   @override

@@ -20,7 +20,7 @@ class VideoEditorBlurredPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ClipRRect(
-      borderRadius: .vertical(top: .circular(28)),
+      borderRadius: const .vertical(top: .circular(28)),
       child: GestureDetector(
         onTap: () {}, // Important to absorb events here.
         behavior: .opaque,

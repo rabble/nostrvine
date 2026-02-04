@@ -66,7 +66,7 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
 
     _syncMainCapabilities(scope, bloc);
     final result = await scope.editor!.exportStateHistory(
-      configs: ExportEditorConfigs(historySpan: .currentAndBackward),
+      configs: const ExportEditorConfigs(historySpan: .currentAndBackward),
     );
     final history = await result.toMap();
 
@@ -156,13 +156,13 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                     layerAlignColor: VideoEditorConstants.primaryColor,
                   ),
                 ),
-                layerInteraction: LayerInteractionConfigs(
+                layerInteraction: const LayerInteractionConfigs(
                   selectable: .disabled,
-                  initialSelected: false,
                 ),
                 dialogConfigs: DialogConfigs(
                   widgets: DialogWidgets(
-                    loadingDialog: (message, configs) => SizedBox.shrink(),
+                    loadingDialog: (message, configs) =>
+                        const SizedBox.shrink(),
                   ),
                 ),
               ),
@@ -228,8 +228,8 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                 ),
                 filterEditorCallbacks: FilterEditorCallbacks(
                   onInit: () {
-                    final filterBloc = context.read<VideoEditorFilterBloc>();
-                    filterBloc.add(const VideoEditorFilterEditorInitialized());
+                    final filterBloc = context.read<VideoEditorFilterBloc>()
+                      ..add(const VideoEditorFilterEditorInitialized());
                     final filterState = filterBloc.state;
 
                     // Sync editor with current BLoC state

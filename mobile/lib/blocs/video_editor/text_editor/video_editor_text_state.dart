@@ -16,7 +16,7 @@ class VideoEditorTextState extends Equatable {
   /// The current text content.
   final String text;
 
-  /// The index of the selected font in [textFonts].
+  /// The index of the selected font in [VideoEditorConstants.textFonts].
   final int selectedFontIndex;
 
   /// Returns the selected font getter.
@@ -57,7 +57,7 @@ class VideoEditorTextState extends Equatable {
     String? text,
     int? selectedFontIndex,
     TextAlign? alignment,
-    Color? textColor,
+    Color? color,
     LayerBackgroundMode? backgroundStyle,
     double? fontSize,
     bool? showFontSelector,
@@ -67,7 +67,7 @@ class VideoEditorTextState extends Equatable {
       text: text ?? this.text,
       selectedFontIndex: selectedFontIndex ?? this.selectedFontIndex,
       alignment: alignment ?? this.alignment,
-      color: textColor ?? this.color,
+      color: color ?? this.color,
       backgroundStyle: backgroundStyle ?? this.backgroundStyle,
       fontSize: fontSize ?? this.fontSize,
       showFontSelector: showFontSelector ?? this.showFontSelector,

@@ -68,7 +68,7 @@ class VideoEditorTextBloc
     VideoEditorTextColorSelected event,
     Emitter<VideoEditorTextState> emit,
   ) {
-    emit(state.copyWith(textColor: event.color));
+    emit(state.copyWith(color: event.color));
   }
 
   /// Updates the background style.

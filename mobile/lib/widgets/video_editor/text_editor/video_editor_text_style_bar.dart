@@ -17,6 +17,86 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 class VideoEditorTextStyleBar extends StatelessWidget {
   const VideoEditorTextStyleBar({super.key});
 
+  /// Returns the appropriate icon for the current text alignment.
+  String _getAlignmentIcon(TextAlign alignment) {
+    return switch (alignment) {
+      .left || .start => 'assets/icon/text_align_left.svg',
+      .right || .end => 'assets/icon/text_align_right.svg',
+      _ => 'assets/icon/text_align_center.svg',
+    };
+  }
+
+  /// Returns the accessibility name for the current text alignment.
+  String _getAlignmentName(TextAlign alignment) {
+    // TODO(l10n): Replace with context.l10n when localization is added.
+    return switch (alignment) {
+      .left || .start => 'Left',
+      .right || .end => 'Right',
+      _ => 'Center',
+    };
+  }
+
+  /// Returns the appropriate icon for the current background mode.
+  String _getBackgroundModeIcon(LayerBackgroundMode mode) {
+    return switch (mode) {
+      .onlyColor => 'assets/icon/square.svg',
+      .backgroundAndColor => 'assets/icon/square_fill.svg',
+      .background => 'assets/icon/square_fill.svg',
+      .backgroundAndColorWithOpacity => 'assets/icon/square_duo.svg',
+    };
+  }
+
+  /// Returns the accessibility name for the current background mode.
+  String _getBackgroundModeName(LayerBackgroundMode mode) {
+    // TODO(l10n): Replace with context.l10n when localization is added.
+    return switch (mode) {
+      .onlyColor => 'None',
+      .backgroundAndColor => 'Solid',
+      .background => 'Highlight',
+      .backgroundAndColorWithOpacity => 'Transparent',
+    };
+  }
+
+  void _toggleFontSelector(BuildContext context, VideoEditorTextState state) {
+    _togglePanel(
+      context: context,
+      isOpen: state.showFontSelector,
+      event: const VideoEditorTextFontSelectorToggled(),
+    );
+  }
+
+  void _toggleColorPicker(BuildContext context, VideoEditorTextState state) {
+    _togglePanel(
+      context: context,
+      isOpen: state.showColorPicker,
+      event: const VideoEditorTextColorPickerToggled(),
+    );
+  }
+
+  /// Toggles a panel (font selector or color picker) and manages
+  /// keyboard focus.
+  void _togglePanel({
+    required BuildContext context,
+    required bool isOpen,
+    required VideoEditorTextEvent event,
+  }) {
+    final textEditor = VideoTextEditorScope.of(context).editor;
+
+    if (isOpen) {
+      // Closing panel - show keyboard again
+      textEditor.focusNode.requestFocus();
+    } else {
+      // Opening panel - hide keyboard
+      if (textEditor.focusNode.hasFocus) {
+        textEditor.focusNode.unfocus();
+      } else {
+        FocusManager.instance.primaryFocus?.unfocus();
+      }
+    }
+
+    context.read<VideoEditorTextBloc>().add(event);
+  }
+
   @override
   Widget build(BuildContext context) {
     final textEditor = VideoTextEditorScope.of(context).editor;
@@ -48,12 +128,16 @@ class VideoEditorTextStyleBar extends StatelessWidget {
                   _StyleIconButton(
                     // TODO(l10n): Replace with context.l10n when localization is added.
                     semanticsLabel: 'Text alignment',
+                    semanticsValue: _getAlignmentName(state.alignment),
                     iconPath: _getAlignmentIcon(state.alignment),
                     onTap: textEditor.toggleTextAlign,
                   ),
                   _StyleIconButton(
                     // TODO(l10n): Replace with context.l10n when localization is added.
                     semanticsLabel: 'Text background',
+                    semanticsValue: _getBackgroundModeName(
+                      state.backgroundStyle,
+                    ),
                     iconPath: _getBackgroundModeIcon(state.backgroundStyle),
                     onTap: textEditor.toggleBackgroundMode,
                   ),
@@ -71,61 +155,6 @@ class VideoEditorTextStyleBar extends StatelessWidget {
         );
       },
     );
-  }
-
-  void _toggleFontSelector(BuildContext context, VideoEditorTextState state) {
-    final textEditor = VideoTextEditorScope.of(context).editor;
-
-    if (state.showFontSelector) {
-      // Closing font selector - show keyboard again
-      textEditor.focusNode.requestFocus();
-    } else {
-      // Opening font selector - hide keyboard
-      if (textEditor.focusNode.hasFocus) {
-        textEditor.focusNode.unfocus();
-      } else {
-        FocusManager.instance.primaryFocus?.unfocus();
-      }
-    }
-
-    context.read<VideoEditorTextBloc>().add(
-      const VideoEditorTextFontSelectorToggled(),
-    );
-  }
-
-  void _toggleColorPicker(BuildContext context, VideoEditorTextState state) {
-    final textEditor = VideoTextEditorScope.of(context).editor;
-
-    if (state.showColorPicker) {
-      // Closing color picker - show keyboard again
-      textEditor.focusNode.requestFocus();
-    } else {
-      // Opening color picker - hide keyboard
-      textEditor.focusNode.unfocus();
-    }
-
-    context.read<VideoEditorTextBloc>().add(
-      const VideoEditorTextColorPickerToggled(),
-    );
-  }
-
-  /// Returns the appropriate icon for the current text alignment.
-  String _getAlignmentIcon(TextAlign alignment) {
-    return switch (alignment) {
-      .left || .start => 'assets/icon/text_align_left.svg',
-      .right || .end => 'assets/icon/text_align_right.svg',
-      _ => 'assets/icon/text_align_center.svg',
-    };
-  }
-
-  /// Returns the appropriate icon for the current background mode.
-  String _getBackgroundModeIcon(LayerBackgroundMode mode) {
-    return switch (mode) {
-      .onlyColor => 'assets/icon/square.svg',
-      .backgroundAndColor => 'assets/icon/square_fill.svg',
-      .background => 'assets/icon/square_fill.svg',
-      .backgroundAndColorWithOpacity => 'assets/icon/square_duo.svg',
-    };
   }
 }
 
@@ -173,11 +202,13 @@ class _ColorSwatchButton extends StatelessWidget {
 class _StyleIconButton extends StatelessWidget {
   const _StyleIconButton({
     required this.semanticsLabel,
+    required this.semanticsValue,
     required this.iconPath,
     this.onTap,
   });
 
   final String semanticsLabel;
+  final String semanticsValue;
   final String iconPath;
   final VoidCallback? onTap;
 
@@ -185,6 +216,7 @@ class _StyleIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       label: semanticsLabel,
+      value: semanticsValue,
       button: true,
       child: GestureDetector(
         onTap: onTap,
@@ -217,7 +249,8 @@ class _FontSelectorButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Select font: $fontName',
+      label: 'Select font',
+      value: fontName,
       button: true,
       child: GestureDetector(
         onTap: onTap,
@@ -257,7 +290,7 @@ class _FontSelectorButton extends StatelessWidget {
                   'assets/icon/CaretDown.svg',
                   width: 24,
                   height: 24,
-                  colorFilter: .mode(VineTheme.onSurface, .srcIn),
+                  colorFilter: const .mode(VineTheme.onSurface, .srcIn),
                 ),
               ),
             ],

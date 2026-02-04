@@ -120,7 +120,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   ]) async {
     final bloc = context.read<VideoEditorMainBloc>();
     final textBloc = context.read<VideoEditorTextBloc>();
-    bloc.add(VideoEditorMainOpenSubEditor(.text));
+    bloc.add(const VideoEditorMainOpenSubEditor(.text));
 
     final result = await Navigator.push<TextLayer>(
       context,
@@ -132,14 +132,14 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
           value: textBloc,
           child: VideoTextEditorScreen(layer: layer),
         ),
-        transitionsBuilder: (_, animation, __, child) {
+        transitionsBuilder: (_, animation, _, child) {
           return FadeTransition(opacity: animation, child: child);
         },
       ),
     );
 
     textBloc.add(const VideoEditorTextClosePanels());
-    if (mounted) bloc.add(VideoEditorMainSubEditorClosed());
+    if (mounted) bloc.add(const VideoEditorMainSubEditorClosed());
     return result;
   }
 
