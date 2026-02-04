@@ -15,8 +15,7 @@ import 'package:profile_repository/profile_repository.dart';
 const _usernameClaimUrl = 'https://names.divine.video/api/username/claim';
 
 /// API endpoint for NIP-05 username availability lookup.
-const _nip05LookupUrl =
-    'https://nostrvine-backend.protestnet.workers.dev/.well-known/nostr.json';
+const _nip05LookupUrl = 'https://divine.video/.well-known/nostr.json';
 
 /// Callback to check if a user should be filtered from results.
 typedef UserBlockFilter = bool Function(String pubkey);

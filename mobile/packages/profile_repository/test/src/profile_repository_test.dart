@@ -986,7 +986,7 @@ void main() {
         verify(
           () => mockHttpClient.get(
             Uri.parse(
-              'https://nostrvine-backend.protestnet.workers.dev/.well-known/nostr.json?name=newuser',
+              'https://divine.video/.well-known/nostr.json?name=newuser',
             ),
           ),
         ).called(1);
@@ -1011,7 +1011,7 @@ void main() {
         verify(
           () => mockHttpClient.get(
             Uri.parse(
-              'https://nostrvine-backend.protestnet.workers.dev/.well-known/nostr.json?name=testuser',
+              'https://divine.video/.well-known/nostr.json?name=testuser',
             ),
           ),
         ).called(1);
@@ -1036,7 +1036,7 @@ void main() {
         verify(
           () => mockHttpClient.get(
             Uri.parse(
-              'https://nostrvine-backend.protestnet.workers.dev/.well-known/nostr.json?name=testuser',
+              'https://divine.video/.well-known/nostr.json?name=testuser',
             ),
           ),
         ).called(1);
@@ -1067,7 +1067,7 @@ void main() {
         verify(
           () => mockHttpClient.get(
             Uri.parse(
-              'https://nostrvine-backend.protestnet.workers.dev/.well-known/nostr.json?name=takenuser',
+              'https://divine.video/.well-known/nostr.json?name=takenuser',
             ),
           ),
         ).called(1);
@@ -1096,7 +1096,7 @@ void main() {
         verify(
           () => mockHttpClient.get(
             Uri.parse(
-              'https://nostrvine-backend.protestnet.workers.dev/.well-known/nostr.json?name=testuser',
+              'https://divine.video/.well-known/nostr.json?name=testuser',
             ),
           ),
         ).called(1);
@@ -1123,7 +1123,7 @@ void main() {
         verify(
           () => mockHttpClient.get(
             Uri.parse(
-              'https://nostrvine-backend.protestnet.workers.dev/.well-known/nostr.json?name=testuser',
+              'https://divine.video/.well-known/nostr.json?name=testuser',
             ),
           ),
         ).called(1);
@@ -1152,7 +1152,7 @@ void main() {
         verify(
           () => mockHttpClient.get(
             Uri.parse(
-              'https://nostrvine-backend.protestnet.workers.dev/.well-known/nostr.json?name=testuser',
+              'https://divine.video/.well-known/nostr.json?name=testuser',
             ),
           ),
         ).called(1);
