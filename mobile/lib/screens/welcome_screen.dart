@@ -70,136 +70,126 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     final authService = ref.watch(authServiceProvider);
 
     return Scaffold(
+      backgroundColor: VineTheme.surfaceBackground,
       body: SafeArea(
-        child: Container(
-          color: VineTheme.surfaceBackground,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 60, 16, 16),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: 600,
-                          minHeight: constraints.maxHeight - 76,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Top section with branding
-                            Column(
-                              children: [
-                                // Logo
-                                SvgPicture.asset(
-                                  'assets/icon/logo.svg',
-                                  height: 50,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 60, 16, 16),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: 600,
+                        minHeight: constraints.maxHeight - 76,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Top section with branding
+                          Column(
+                            children: [
+                              // Logo
+                              SvgPicture.asset(
+                                'assets/icon/logo.svg',
+                                height: 50,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'Authentic moments.\nHuman creativity.',
+                                style: VineTheme.titleMediumFont(),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
+
+                          // Bottom section with TOS and buttons
+                          Column(
+                            children: [
+                              // Age verification and TOS acceptance
+                              _TermsCheckboxSection(
+                                isOver16: _isOver16,
+                                agreedToTerms: _agreedToTerms,
+                                onOver16Changed: (value) =>
+                                    setState(() => _isOver16 = value),
+                                onAgreedToTermsChanged: (value) =>
+                                    setState(() => _agreedToTerms = value),
+                              ),
+
+                              const SizedBox(height: 32),
+
+                              // Main action buttons - show based on auth state
+                              _WelcomeActionSection(
+                                authState: authState,
+                                lastError: authService.lastError,
+                                canProceed: _canProceed,
+                                isAccepting: _isAccepting,
+                                hasSavedKeys: _hasSavedKeys,
+                                savedNpub: _savedNpub,
+                                onContinue: () => _handleContinue(context),
+                              ),
+
+                              const SizedBox(height: 24),
+
+                              // Login option for existing users
+                              TextButton(
+                                onPressed: _canProceed
+                                    ? () {
+                                        authService.acceptTerms();
+                                        context.push(
+                                          WelcomeScreen.loginOptionsPath,
+                                        );
+                                      }
+                                    : null,
+                                child: Text(
+                                  'Have an account? Log In',
+                                  style: TextStyle(
+                                    color: _canProceed
+                                        ? Colors.white
+                                        : Colors.white.withValues(alpha: 0.5),
+                                    fontSize: 16,
+                                    decoration: TextDecoration.underline,
+                                    decorationColor: _canProceed
+                                        ? Colors.white
+                                        : Colors.white.withValues(alpha: 0.5),
+                                  ),
                                 ),
-                                const SizedBox(height: 16),
-                                Text(
-                                  'Authentic moments.\nHuman creativity.',
-                                  style: VineTheme.titleMediumFont(),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
+                              ),
 
-                            // Bottom section with TOS and buttons
-                            Column(
-                              children: [
-                                // Age verification and TOS acceptance
-                                _TermsCheckboxSection(
-                                  isOver16: _isOver16,
-                                  agreedToTerms: _agreedToTerms,
-                                  onOver16Changed: (value) =>
-                                      setState(() => _isOver16 = value),
-                                  onAgreedToTermsChanged: (value) =>
-                                      setState(() => _agreedToTerms = value),
-                                ),
-
-                                const SizedBox(height: 32),
-
-                                // Main action buttons - show based on auth state
-                                _WelcomeActionSection(
-                                  authState: authState,
-                                  lastError: authService.lastError,
-                                  canProceed: _canProceed,
-                                  isAccepting: _isAccepting,
-                                  hasSavedKeys: _hasSavedKeys,
-                                  savedNpub: _savedNpub,
-                                  onContinue: () => _handleContinue(context),
-                                ),
-
-                                const SizedBox(height: 24),
-
-                                // Login option for existing users
+                              // Start fresh option - only show when saved keys exist
+                              if (_hasSavedKeys) ...[
+                                const SizedBox(height: 8),
                                 TextButton(
                                   onPressed: _canProceed
-                                      ? () {
-                                          authService.acceptTerms();
-                                          context.push(
-                                            WelcomeScreen.loginOptionsPath,
-                                          );
-                                        }
+                                      ? () => _handleStartFresh(context)
                                       : null,
                                   child: Text(
-                                    'Have an account? Log In',
+                                    'Start with a new identity',
                                     style: TextStyle(
                                       color: _canProceed
-                                          ? Colors.white
-                                          : Colors.white.withValues(alpha: 0.5),
-                                      fontSize: 16,
+                                          ? Colors.white.withValues(alpha: 0.7)
+                                          : Colors.white.withValues(alpha: 0.4),
+                                      fontSize: 14,
                                       decoration: TextDecoration.underline,
                                       decorationColor: _canProceed
-                                          ? Colors.white
-                                          : Colors.white.withValues(alpha: 0.5),
+                                          ? Colors.white.withValues(alpha: 0.7)
+                                          : Colors.white.withValues(alpha: 0.4),
                                     ),
                                   ),
                                 ),
-
-                                // Start fresh option - only show when saved keys exist
-                                if (_hasSavedKeys) ...[
-                                  const SizedBox(height: 8),
-                                  TextButton(
-                                    onPressed: _canProceed
-                                        ? () => _handleStartFresh(context)
-                                        : null,
-                                    child: Text(
-                                      'Start with a new identity',
-                                      style: TextStyle(
-                                        color: _canProceed
-                                            ? Colors.white.withValues(
-                                                alpha: 0.7,
-                                              )
-                                            : Colors.white.withValues(
-                                                alpha: 0.4,
-                                              ),
-                                        fontSize: 14,
-                                        decoration: TextDecoration.underline,
-                                        decorationColor: _canProceed
-                                            ? Colors.white.withValues(
-                                                alpha: 0.7,
-                                              )
-                                            : Colors.white.withValues(
-                                                alpha: 0.4,
-                                              ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
                               ],
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -452,110 +442,142 @@ class _TermsCheckboxSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Age verification checkbox
-        InkWell(
-          onTap: () => onOver16Changed(!isOver16),
-          child: Row(
-            children: [
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: Checkbox(
-                  value: isOver16,
-                  onChanged: (value) => onOver16Changed(value ?? false),
-                  fillColor: WidgetStateProperty.resolveWith((states) {
-                    if (states.contains(WidgetState.selected)) {
-                      return Colors.white;
-                    }
-                    return Colors.transparent;
-                  }),
-                  checkColor: VineTheme.vineGreen,
-                  side: const BorderSide(color: Colors.white, width: 2),
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'I am 16 years or older',
-                  style: TextStyle(color: VineTheme.whiteText, fontSize: 14),
-                ),
-              ),
-            ],
+        _buildCheckboxRow(
+          value: isOver16,
+          onChanged: onOver16Changed,
+          label: Text(
+            'I am 16 years or older',
+            style: VineTheme.bodyLargeFont(),
           ),
         ),
         const SizedBox(height: 16),
 
         // TOS acceptance checkbox with links
-        InkWell(
-          onTap: () => onAgreedToTermsChanged(!agreedToTerms),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              SizedBox(
-                width: 24,
-                height: 24,
-                child: Checkbox(
-                  value: agreedToTerms,
-                  onChanged: (value) => onAgreedToTermsChanged(value ?? false),
-                  fillColor: WidgetStateProperty.resolveWith((states) {
-                    if (states.contains(WidgetState.selected)) {
-                      return Colors.white;
-                    }
-                    return Colors.transparent;
-                  }),
-                  checkColor: VineTheme.vineGreen,
-                  side: const BorderSide(color: Colors.white, width: 2),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: RichText(
-                  text: TextSpan(
-                    style: const TextStyle(
-                      color: VineTheme.whiteText,
-                      fontSize: 14,
-                    ),
-                    children: [
-                      const TextSpan(text: 'I agree to the '),
-                      TextSpan(
-                        text: 'Terms of Service',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          decoration: TextDecoration.underline,
-                        ),
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () =>
-                              _openUrl('https://divine.video/terms'),
-                      ),
-                      const TextSpan(text: ', '),
-                      TextSpan(
-                        text: 'Privacy Policy',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          decoration: TextDecoration.underline,
-                        ),
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () =>
-                              _openUrl('https://divine.video/privacy'),
-                      ),
-                      const TextSpan(text: ', and '),
-                      TextSpan(
-                        text: 'Safety Standards',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          decoration: TextDecoration.underline,
-                        ),
-                        recognizer: TapGestureRecognizer()
-                          ..onTap = () =>
-                              _openUrl('https://divine.video/safety'),
-                      ),
-                    ],
+        _buildCheckboxRow(
+          value: agreedToTerms,
+          onChanged: onAgreedToTermsChanged,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          label: RichText(
+            text: TextSpan(
+              style: VineTheme.bodyLargeFont(),
+              children: [
+                const TextSpan(text: 'I agree to the '),
+                TextSpan(
+                  text: 'Terms of Service',
+                  style: VineTheme.bodyLargeFont().copyWith(
+                    decoration: TextDecoration.underline,
                   ),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () => _openUrl('https://divine.video/terms'),
                 ),
-              ),
-            ],
+                const TextSpan(text: ', '),
+                TextSpan(
+                  text: 'Privacy Policy',
+                  style: VineTheme.bodyLargeFont().copyWith(
+                    decoration: TextDecoration.underline,
+                  ),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () => _openUrl('https://divine.video/privacy'),
+                ),
+                const TextSpan(text: ', and '),
+                TextSpan(
+                  text: 'Safety Standards',
+                  style: VineTheme.bodyLargeFont().copyWith(
+                    decoration: TextDecoration.underline,
+                  ),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () => _openUrl('https://divine.video/safety'),
+                ),
+              ],
+            ),
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCheckboxRow({
+    required bool value,
+    required ValueChanged<bool> onChanged,
+    required Widget label,
+    CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.center,
+  }) {
+    return InkWell(
+      onTap: () => onChanged(!value),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(
+            color: value ? VineTheme.primary : VineTheme.outlineMuted,
+            width: 1,
+          ),
+          borderRadius: BorderRadius.circular(20),
+        ),
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          crossAxisAlignment: crossAxisAlignment,
+          children: [
+            GestureDetector(
+              onTap: () => onChanged(!value),
+              child: _SpriteCheckbox(
+                state: value
+                    ? _CheckboxState.selected
+                    : _CheckboxState.unselected,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(child: label),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+enum _CheckboxState {
+  unselected,
+  selected,
+  intermediate,
+  disabled,
+}
+
+class _SpriteCheckbox extends StatelessWidget {
+  const _SpriteCheckbox({required this.state});
+
+  final _CheckboxState state;
+
+  @override
+  Widget build(BuildContext context) {
+    // Sprite is 24x72 with three 24x24 sections stacked vertically
+    // Top (0-24): unselected, Middle (24-48): selected, Bottom (48-72): intermediate
+    final yOffset = switch (state) {
+      _CheckboxState.unselected || _CheckboxState.disabled => 0.0,
+      _CheckboxState.selected => -24.0,
+      _CheckboxState.intermediate => -48.0,
+    };
+
+    final opacity = state == _CheckboxState.disabled ? 0.5 : 1.0;
+
+    return Opacity(
+      opacity: opacity,
+      child: SizedBox(
+        width: 24,
+        height: 24,
+        child: Stack(
+          clipBehavior: Clip.hardEdge,
+          children: [
+            Positioned(
+              top: yOffset,
+              left: 0,
+              child: SvgPicture.asset(
+                'assets/icon/checkbox-sprite.svg',
+                width: 24,
+                height: 72,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
