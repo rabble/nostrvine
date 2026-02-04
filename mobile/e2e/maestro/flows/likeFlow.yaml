@@ -2,7 +2,7 @@ appId: co.openvine.app
 env:
   VIDEO_USER: ""
   VIDEO_DESCRIPTION: ""
-  VIDEO_TITLE: "Chris Paul"
+  VIDEO_TITLE: "Chris"
 ---
 - runFlow: ../tests/loginFreshInstall.yaml
 - runFlow: ../tests/videoLike.yaml

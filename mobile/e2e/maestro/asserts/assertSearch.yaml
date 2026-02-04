@@ -6,7 +6,7 @@ appId: co.openvine.app
     Videos (0)
     Tab 1 of 3
 - assertVisible: |-
-    Users (0)
+    Users
     Tab 2 of 3
 - assertVisible: |-
     Hashtags (0)

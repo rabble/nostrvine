@@ -17,6 +17,14 @@ appId: co.openvine.app
 
 # 2. Input text ${VIDEO_TITLE}: Validate video is found
 - tapOn: Find something cool...
+
+# Dismiss Android stylus modal if it appears
+- runFlow:
+    when:
+      visible: Try out your stylus
+    commands:
+      - tapOn: Cancel
+
 - inputText: ${VIDEO_TITLE}
 #TO-DO: once search is fixed remove this workaround
 #- runFlow: ../utils/searchWorkaround.yaml
