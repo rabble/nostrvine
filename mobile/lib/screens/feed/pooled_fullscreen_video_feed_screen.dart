@@ -1,35 +1,47 @@
 // ABOUTME: Fullscreen video feed using pooled_video_player package
 // ABOUTME: Displays videos with swipe navigation using managed player pool
+// ABOUTME: Uses FullscreenFeedBloc for state management
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
+import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/profile_feed_provider.dart';
-import 'package:openvine/providers/profile_reposts_provider.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
-/// Arguments for navigating to PooledFullscreenVideoFeedScreen
+/// Arguments for navigating to PooledFullscreenVideoFeedScreen.
+///
+/// Uses a stream-based approach where the source BLoC/provider remains
+/// the single source of truth. The fullscreen screen receives:
+/// - A stream of videos for reactive updates
+/// - A callback to trigger load more on the source
 class PooledFullscreenVideoFeedArgs {
   const PooledFullscreenVideoFeedArgs({
-    required this.source,
+    required this.videosStream,
     required this.initialIndex,
+    this.onLoadMore,
     this.contextTitle,
   });
 
-  final VideoFeedSource source;
+  /// Stream of videos from the source (BLoC or provider).
+  final Stream<List<VideoEvent>> videosStream;
+
+  /// Initial video index to start playback.
   final int initialIndex;
+
+  /// Callback to trigger pagination on the source.
+  final VoidCallback? onLoadMore;
+
+  /// Optional title for context display.
   final String? contextTitle;
 }
 
@@ -38,7 +50,10 @@ class PooledFullscreenVideoFeedArgs {
 /// This screen is pushed outside the shell route so it doesn't show
 /// the bottom navigation bar. It provides a fullscreen video viewing
 /// experience with swipe up/down navigation using the managed player pool.
-class PooledFullscreenVideoFeedScreen extends ConsumerStatefulWidget {
+///
+/// Uses [FullscreenFeedBloc] for state management, receiving videos from
+/// the source via a stream and delegating pagination back to the source.
+class PooledFullscreenVideoFeedScreen extends StatelessWidget {
   /// Route name for this screen.
   static const routeName = 'pooled-video-feed';
 
@@ -46,121 +61,97 @@ class PooledFullscreenVideoFeedScreen extends ConsumerStatefulWidget {
   static const path = '/pooled-video-feed';
 
   const PooledFullscreenVideoFeedScreen({
-    required this.source,
+    required this.videosStream,
     required this.initialIndex,
+    this.onLoadMore,
     this.contextTitle,
     super.key,
   });
 
-  final VideoFeedSource source;
+  final Stream<List<VideoEvent>> videosStream;
   final int initialIndex;
+  final VoidCallback? onLoadMore;
   final String? contextTitle;
 
   @override
-  ConsumerState<PooledFullscreenVideoFeedScreen> createState() =>
-      _PooledFullscreenVideoFeedScreenState();
+  Widget build(BuildContext context) {
+    return BlocProvider(
+      create: (_) => FullscreenFeedBloc(
+        videosStream: videosStream,
+        initialIndex: initialIndex,
+        onLoadMore: onLoadMore,
+      )..add(const FullscreenFeedStarted()),
+      child: _FullscreenFeedContent(contextTitle: contextTitle),
+    );
+  }
 }
 
-class _PooledFullscreenVideoFeedScreenState
-    extends ConsumerState<PooledFullscreenVideoFeedScreen> {
-  int _currentIndex = 0;
+class _FullscreenFeedContent extends StatelessWidget {
+  const _FullscreenFeedContent({this.contextTitle});
 
-  @override
-  void initState() {
-    super.initState();
-    _currentIndex = widget.initialIndex;
-  }
-
-  List<VideoEvent> _getVideos() {
-    final source = widget.source;
-    switch (source) {
-      case ProfileFeedSource(:final userId):
-        final feedState = ref.watch(profileFeedProvider(userId));
-        return feedState.asData?.value.videos ?? [];
-      case ProfileRepostsFeedSource(:final userId):
-        final repostsState = ref.watch(profileRepostsProvider(userId));
-        return repostsState.asData?.value ?? [];
-      case LikedVideosFeedSource(:final videos):
-        return videos;
-      case StaticFeedSource(:final videos):
-        return videos;
-    }
-  }
-
-  void _loadMore() {
-    final source = widget.source;
-    switch (source) {
-      case ProfileFeedSource(:final userId):
-        ref.read(profileFeedProvider(userId).notifier).loadMore();
-      case ProfileRepostsFeedSource(:final userId):
-        ref.read(profileFeedProvider(userId).notifier).loadMore();
-      case LikedVideosFeedSource():
-        break;
-      case StaticFeedSource(:final onLoadMore):
-        onLoadMore?.call();
-    }
-  }
+  final String? contextTitle;
 
   @override
   Widget build(BuildContext context) {
-    final videos = _getVideos();
-
-    if (videos.isEmpty) {
-      return Scaffold(
-        backgroundColor: Colors.black,
-        appBar: const _FullscreenAppBar(),
-        body: const Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        ),
-      );
-    }
-
-    final initialIndex = widget.initialIndex.clamp(0, videos.length - 1);
-
-    final pooledVideos = videos
-        .where((v) => v.videoUrl != null)
-        .map((e) => VideoItem(id: e.id, url: e.videoUrl!))
-        .toList();
-
-    if (pooledVideos.isEmpty) {
-      return Scaffold(
-        backgroundColor: Colors.black,
-        appBar: const _FullscreenAppBar(),
-        body: const Center(
-          child: Text(
-            'No videos available',
-            style: TextStyle(color: Colors.white),
-          ),
-        ),
-      );
-    }
-
-    final currentVideo = _currentIndex >= 0 && _currentIndex < videos.length
-        ? videos[_currentIndex]
-        : null;
-
-    return Scaffold(
-      backgroundColor: Colors.black,
-      extendBodyBehindAppBar: true,
-      appBar: _FullscreenAppBar(currentVideo: currentVideo),
-      body: PooledVideoFeed(
-        videos: pooledVideos,
-        initialIndex: initialIndex,
-        onActiveVideoChanged: (video, index) {
-          setState(() => _currentIndex = index);
-        },
-        onNearEnd: (_) => _loadMore(),
-        nearEndThreshold: 2,
-        itemBuilder: (context, video, index, {required isActive}) {
-          final originalEvent = videos[index];
-          return _PooledFullscreenItem(
-            video: originalEvent,
-            index: index,
-            isActive: isActive,
-            contextTitle: widget.contextTitle,
+    return BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
+      builder: (context, state) {
+        if (state.status == FullscreenFeedStatus.initial || !state.hasVideos) {
+          return Scaffold(
+            backgroundColor: Colors.black,
+            appBar: const _FullscreenAppBar(),
+            body: const Center(child: BrandedLoadingIndicator(size: 60)),
           );
-        },
-      ),
+        }
+
+        final videos = state.videos;
+        final pooledVideos = videos
+            .where((v) => v.videoUrl != null)
+            .map((e) => VideoItem(id: e.id, url: e.videoUrl!))
+            .toList();
+
+        if (pooledVideos.isEmpty) {
+          return Scaffold(
+            backgroundColor: Colors.black,
+            appBar: const _FullscreenAppBar(),
+            body: const Center(
+              child: Text(
+                'No videos available',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          );
+        }
+
+        return Scaffold(
+          backgroundColor: Colors.black,
+          extendBodyBehindAppBar: true,
+          appBar: _FullscreenAppBar(currentVideo: state.currentVideo),
+          body: PooledVideoFeed(
+            videos: pooledVideos,
+            initialIndex: state.currentIndex,
+            onActiveVideoChanged: (video, index) {
+              context.read<FullscreenFeedBloc>().add(
+                FullscreenFeedIndexChanged(index),
+              );
+            },
+            onNearEnd: (_) {
+              context.read<FullscreenFeedBloc>().add(
+                const FullscreenFeedLoadMoreRequested(),
+              );
+            },
+            nearEndThreshold: 2,
+            itemBuilder: (context, video, index, {required isActive}) {
+              final originalEvent = videos[index];
+              return _PooledFullscreenItem(
+                video: originalEvent,
+                index: index,
+                isActive: isActive,
+                contextTitle: contextTitle,
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }
@@ -170,108 +161,53 @@ class _FullscreenAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   final VideoEvent? currentVideo;
 
+  static const _style = DiVineAppBarStyle(
+    iconButtonBackgroundColor: Color(0x4D000000), // black with 0.3 alpha
+  );
+
   @override
   Size get preferredSize => const Size.fromHeight(72);
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return AppBar(
-      backgroundColor: Colors.transparent,
-      surfaceTintColor: Colors.transparent,
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      toolbarHeight: 72,
-      leadingWidth: 80,
-      forceMaterialTransparency: true,
-      systemOverlayStyle: SystemUiOverlayStyle.light,
-      leading: _BackButton(onPressed: context.pop),
-      actions: currentVideo != null
-          ? [_EditButton(video: currentVideo!)]
-          : null,
+    return DiVineAppBar(
+      titleWidget: const SizedBox.shrink(),
+      showBackButton: true,
+      onBackPressed: context.pop,
+      backgroundMode: DiVineAppBarBackgroundMode.transparent,
+      style: _style,
+      actions: _buildEditAction(context, ref),
     );
   }
-}
 
-class _BackButton extends StatelessWidget {
-  const _BackButton({required this.onPressed});
+  // TODO(any) : update to use bloc instead of riverpod
+  List<DiVineAppBarAction> _buildEditAction(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+    final video = currentVideo;
+    if (video == null) return const [];
 
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return IconButton(
-      padding: EdgeInsets.zero,
-      constraints: const BoxConstraints(),
-      icon: Container(
-        width: 48,
-        height: 48,
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.black.withValues(alpha: 0.3),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: SvgPicture.asset(
-          'assets/icon/CaretLeft.svg',
-          width: 32,
-          height: 32,
-          colorFilter: const ColorFilter.mode(Colors.blue, BlendMode.srcIn),
-          semanticsLabel: 'Close video player',
-        ),
-      ),
-      onPressed: onPressed,
-    );
-  }
-}
-
-class _EditButton extends ConsumerWidget {
-  const _EditButton({required this.video});
-
-  final VideoEvent video;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
     final featureFlagService = ref.watch(featureFlagServiceProvider);
     final isEditorEnabled = featureFlagService.isEnabled(
       FeatureFlag.enableVideoEditorV1,
     );
-
-    if (!isEditorEnabled) {
-      return const SizedBox.shrink();
-    }
+    if (!isEditorEnabled) return const [];
 
     final authService = ref.watch(authServiceProvider);
     final currentUserPubkey = authService.currentPublicKeyHex;
     final isOwnVideo =
         currentUserPubkey != null && currentUserPubkey == video.pubkey;
+    if (!isOwnVideo) return const [];
 
-    if (!isOwnVideo) {
-      return const SizedBox.shrink();
-    }
-
-    return Padding(
-      padding: const EdgeInsets.only(right: 16),
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        constraints: const BoxConstraints(),
-        icon: Container(
-          width: 48,
-          height: 48,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: Colors.black.withValues(alpha: 0.3),
-            borderRadius: BorderRadius.circular(20),
-          ),
-          child: SvgPicture.asset(
-            'assets/icon/content-controls/pencil.svg',
-            width: 32,
-            height: 32,
-            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
-          ),
-        ),
+    return [
+      DiVineAppBarAction(
+        icon: const SvgIconSource('assets/icon/content-controls/pencil.svg'),
         onPressed: () => showEditDialogForVideo(context, video),
         tooltip: 'Edit video',
+        semanticLabel: 'Edit video',
       ),
-    );
+    ];
   }
 }
 
@@ -393,19 +329,25 @@ class _VideoLoadingPlaceholder extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (thumbnailUrl == null) {
-      return const _LoadingIndicator();
-    }
-
     final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
+    final url = thumbnailUrl;
 
-    return SizedBox.expand(
-      child: Image.network(
-        thumbnailUrl!,
-        fit: boxFit,
-        alignment: Alignment.center,
-        errorBuilder: (_, __, ___) => const _LoadingIndicator(),
-      ),
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        // Thumbnail background (if available)
+        if (url != null && url.isNotEmpty)
+          Image.network(
+            url,
+            fit: boxFit,
+            alignment: Alignment.center,
+            errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black),
+          )
+        else
+          const ColoredBox(color: Colors.black),
+        // Loading indicator overlay
+        const _LoadingIndicator(),
+      ],
     );
   }
 }
@@ -415,8 +357,6 @@ class _LoadingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(color: VineTheme.vineGreen),
-    );
+    return const Center(child: BrandedLoadingIndicator(size: 60));
   }
 }

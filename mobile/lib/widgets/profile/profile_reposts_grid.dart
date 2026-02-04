@@ -8,8 +8,6 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart'
-    show StaticFeedSource;
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -86,7 +84,6 @@ class ProfileRepostsGrid extends StatelessWidget {
                     return _RepostGridTile(
                       videoEvent: videoEvent,
                       index: index,
-                      allVideos: repostedVideos,
                     );
                   }, childCount: repostedVideos.length),
                 ),
@@ -155,15 +152,10 @@ class _RepostsEmptyState extends StatelessWidget {
 
 /// Individual repost tile in the grid with repost badge
 class _RepostGridTile extends StatelessWidget {
-  const _RepostGridTile({
-    required this.videoEvent,
-    required this.index,
-    required this.allVideos,
-  });
+  const _RepostGridTile({required this.videoEvent, required this.index});
 
   final VideoEvent videoEvent;
   final int index;
-  final List<VideoEvent> allVideos;
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -173,17 +165,30 @@ class _RepostGridTile extends StatelessWidget {
         'videoId=${videoEvent.id}',
         category: LogCategory.video,
       );
-      // Use StaticFeedSource for fullscreen playback with the current list
+
+      // Get the BLoC and create a stream that starts with current videos
+      final bloc = context.read<ProfileRepostedVideosBloc>();
+      // Use Stream.value to emit current state first, then concat future updates
+      final videosStream = Stream.value(bloc.state.videos).asyncExpand((
+        initial,
+      ) async* {
+        yield initial;
+        yield* bloc.stream.map((state) => state.videos);
+      });
+
       context.push(
         PooledFullscreenVideoFeedScreen.path,
         extra: PooledFullscreenVideoFeedArgs(
-          source: StaticFeedSource(allVideos),
+          videosStream: videosStream,
           initialIndex: index,
+          onLoadMore: () =>
+              bloc.add(const ProfileRepostedVideosLoadMoreRequested()),
         ),
       );
+
       Log.info(
-        '✅ ProfileRepostsGrid: Pushed PooledFullscreenVideoFeedScreen with '
-        'StaticFeedSource at index $index',
+        '✅ ProfileRepostsGrid: Pushed PooledFullscreenVideoFeedScreen at '
+        'index $index',
         category: LogCategory.video,
       );
     },

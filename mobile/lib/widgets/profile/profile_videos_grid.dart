@@ -10,7 +10,6 @@ import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -212,11 +211,13 @@ class _VideoGridTile extends StatelessWidget {
         'videoId=${videoEvent.id}',
         category: LogCategory.video,
       );
-      // Use PooledFullscreenVideoFeedScreen with ProfileFeedSource for
+      // Use FullscreenVideoFeedScreen with ProfileFeedSource for
       // reactive updates when loadMore fetches new videos
+      // TODO(migration): Migrate to PooledFullscreenVideoFeedScreen once
+      // ProfileVideosBloc is created
       context.push(
-        PooledFullscreenVideoFeedScreen.path,
-        extra: PooledFullscreenVideoFeedArgs(
+        FullscreenVideoFeedScreen.path,
+        extra: FullscreenVideoFeedArgs(
           source: ProfileFeedSource(userIdHex),
           initialIndex: index,
         ),
