@@ -964,7 +964,8 @@ void main() {
     });
 
     group('checkUsernameAvailability', () {
-      test('returns UsernameAvailable when username not in names map', () async {
+      test('returns UsernameAvailable when username not in '
+          'names map', () async {
         when(
           () => mockHttpClient.get(any()),
         ).thenAnswer(
