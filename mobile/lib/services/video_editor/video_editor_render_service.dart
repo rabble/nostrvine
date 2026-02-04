@@ -2,11 +2,13 @@
 // ABOUTME: Handles aspect ratio cropping, clip concatenation, and export transformation
 
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/widgets.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -110,13 +112,39 @@ class VideoEditorRenderService {
     required ValueChanged<bool> onComplete,
   }) async {
     try {
+      final inputPath = await clip.video.safeFilePath();
+
+      // Write to a new temporary file to avoid file locking issues
+      final tempDir = await getTemporaryDirectory();
+      final outputPath =
+          '${tempDir.path}/trimmed_${DateTime.now().microsecondsSinceEpoch}.mp4';
+
       await ProVideoEditor.instance.renderVideoToFile(
-        await clip.video.safeFilePath(),
+        outputPath,
         VideoRenderData(video: clip.video, endTime: duration),
       );
 
+      // Replace original file with trimmed version
+      final inputFile = File(inputPath);
+      final outputFile = File(outputPath);
+
+      if (await outputFile.exists()) {
+        await inputFile.delete();
+        await outputFile.rename(inputPath);
+      }
+
       onComplete(true);
-    } catch (e) {
+    } catch (e, stack) {
+      Log.error(
+        '❌ Failed to limit clip duration: $e',
+        name: 'VideoEditorRenderService',
+        category: .video,
+      );
+      CrashReportingService.instance.recordError(
+        e,
+        stack,
+        reason: 'limitClipDuration failed',
+      );
       onComplete(false);
     }
   }

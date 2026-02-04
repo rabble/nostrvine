@@ -20,6 +20,7 @@ import 'package:openvine/services/upload_initialization_helper.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -298,7 +299,9 @@ class UploadManager {
     if (draft.clips.length == 1) {
       videoFilePath = await draft.clips.first.video.safeFilePath();
     } else {
-      videoFilePath = '';
+      final tempDir = await getTemporaryDirectory();
+      videoFilePath =
+          '${tempDir.path}/merged_${DateTime.now().microsecondsSinceEpoch}.mp4';
       await ProVideoEditor.instance.renderVideoToFile(
         videoFilePath,
         VideoRenderData(
