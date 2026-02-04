@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
@@ -106,7 +105,7 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
       child: Navigator(
         onGenerateRoute: (_) {
           return PageRouteBuilder(
-            pageBuilder: (_, _, _) => ProImageEditor.file(
+            pageBuilder: (context, _, _) => ProImageEditor.file(
               clip.thumbnailPath,
               key: scope.editorKey,
 
@@ -135,6 +134,7 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                 ),
                 paintEditor: PaintEditorConfigs(
                   safeArea: const EditorSafeArea.none(),
+
                   widgets: PaintEditorWidgets(
                     appBar: (_, _) => null,
                     bottomBar: (_, _) => null,
@@ -167,9 +167,6 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                 ),
               ),
               callbacks: ProImageEditorCallbacks(
-                onCloseEditor: (editorMode) {
-                  if (editorMode != .main) context.pop();
-                },
                 onCompleteWithParameters: (parameters) async {
                   ref
                       .read(videoEditorProvider.notifier)

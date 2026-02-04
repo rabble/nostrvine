@@ -127,22 +127,20 @@ class _CloseButton extends StatelessWidget {
       child: GestureDetector(
         onTap: () => VideoTextEditorScope.of(context).editor.close(),
         child: Container(
-          padding: const .all(4),
-          child: Container(
-            padding: const .all(8),
-            decoration: BoxDecoration(
-              color: const Color(0xA6000000), // 65% black (scrim-65)
-              borderRadius: .circular(16),
-            ),
-            child: SizedBox(
+          margin: const .all(4),
+          padding: const .all(8),
+          decoration: BoxDecoration(
+            color: VineTheme.scrim65,
+            borderRadius: .circular(16),
+          ),
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: SvgPicture.asset(
+              'assets/icon/close.svg',
               width: 24,
               height: 24,
-              child: SvgPicture.asset(
-                'assets/icon/close.svg',
-                width: 24,
-                height: 24,
-                colorFilter: const .mode(Colors.white, .srcIn),
-              ),
+              colorFilter: const .mode(Colors.white, .srcIn),
             ),
           ),
         ),
@@ -163,36 +161,34 @@ class _DoneButton extends StatelessWidget {
       child: GestureDetector(
         onTap: () => VideoTextEditorScope.of(context).editor.done(),
         child: Container(
-          padding: const EdgeInsets.all(4),
-          child: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(
-                  color: Color(0x1A000000),
-                  offset: Offset(1, 1),
-                  blurRadius: 1,
-                ),
-                BoxShadow(
-                  color: Color(0x1A000000),
-                  offset: Offset(0.4, 0.4),
-                  blurRadius: 0.6,
-                ),
-              ],
-            ),
-            child: SizedBox(
+          margin: const .all(4),
+          padding: const .all(8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: .circular(16),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x1A000000),
+                offset: Offset(1, 1),
+                blurRadius: 1,
+              ),
+              BoxShadow(
+                color: Color(0x1A000000),
+                offset: Offset(0.4, 0.4),
+                blurRadius: 0.6,
+              ),
+            ],
+          ),
+          child: SizedBox(
+            width: 24,
+            height: 24,
+            child: SvgPicture.asset(
+              'assets/icon/Check.svg',
               width: 24,
               height: 24,
-              child: SvgPicture.asset(
-                'assets/icon/Check.svg',
-                width: 24,
-                height: 24,
-                colorFilter: ColorFilter.mode(
-                  VineTheme.navGreen,
-                  BlendMode.srcIn,
-                ),
+              colorFilter: ColorFilter.mode(
+                VineTheme.navGreen,
+                BlendMode.srcIn,
               ),
             ),
           ),
