@@ -41,7 +41,7 @@ void main() {
 
     group('UserSearchQueryChanged', () {
       // Debounce duration used in the BLoC
-      const debounceDuration = Duration(milliseconds: 300);
+      const debounceDuration = Duration(milliseconds: 400);
 
       blocTest<UserSearchBloc, UserSearchState>(
         'emits [loading, success] when search succeeds',
