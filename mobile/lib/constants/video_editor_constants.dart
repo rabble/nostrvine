@@ -61,13 +61,22 @@ class VideoEditorConstants {
 
   /// Available text fonts for text overlays.
   static const List<TextFont> textFonts = [
+    GoogleFonts.inter,
+    GoogleFonts.bricolageGrotesque,
+    GoogleFonts.montserrat,
     GoogleFonts.anonymousPro,
     GoogleFonts.caveat,
     GoogleFonts.crimsonText,
     GoogleFonts.ibmPlexMono,
-    GoogleFonts.inter,
     GoogleFonts.pacifico,
     GoogleFonts.playfairDisplay,
+    GoogleFonts.bebasNeue,
+    GoogleFonts.poppins,
+    GoogleFonts.lobster,
+    GoogleFonts.oswald,
+    GoogleFonts.dancingScript,
+    GoogleFonts.permanentMarker,
+    GoogleFonts.comfortaa,
   ];
 }
 

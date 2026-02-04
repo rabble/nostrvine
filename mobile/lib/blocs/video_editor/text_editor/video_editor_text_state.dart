@@ -4,10 +4,10 @@ part of 'video_editor_text_bloc.dart';
 class VideoEditorTextState extends Equatable {
   const VideoEditorTextState({
     this.text = '',
-    this.selectedFontIndex = 3, // IBM Plex Mono
-    this.alignment = TextAlign.center,
-    this.textColor = Colors.white,
-    this.backgroundStyle = LayerBackgroundMode.backgroundAndColor,
+    this.selectedFontIndex = 0,
+    this.alignment = .center,
+    this.color = Colors.black,
+    this.backgroundStyle = .backgroundAndColor,
     this.fontSize = 0.5,
     this.showFontSelector = false,
     this.showColorPicker = false,
@@ -36,8 +36,8 @@ class VideoEditorTextState extends Equatable {
   /// The text alignment.
   final TextAlign alignment;
 
-  /// The text color.
-  final Color textColor;
+  /// The primary color.
+  final Color color;
 
   /// The background style.
   final LayerBackgroundMode backgroundStyle;
@@ -67,7 +67,7 @@ class VideoEditorTextState extends Equatable {
       text: text ?? this.text,
       selectedFontIndex: selectedFontIndex ?? this.selectedFontIndex,
       alignment: alignment ?? this.alignment,
-      textColor: textColor ?? this.textColor,
+      color: textColor ?? this.color,
       backgroundStyle: backgroundStyle ?? this.backgroundStyle,
       fontSize: fontSize ?? this.fontSize,
       showFontSelector: showFontSelector ?? this.showFontSelector,
@@ -80,7 +80,7 @@ class VideoEditorTextState extends Equatable {
     text,
     selectedFontIndex,
     alignment,
-    textColor,
+    color,
     backgroundStyle,
     fontSize,
     showFontSelector,

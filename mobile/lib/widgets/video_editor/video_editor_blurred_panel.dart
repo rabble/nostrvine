@@ -36,7 +36,10 @@ class VideoEditorBlurredPanel extends StatelessWidget {
                 color: Color.fromARGB(228, 20, 20, 20),
                 backgroundBlendMode: BlendMode.luminosity,
               ),
-              child: SizedBox(height: height, child: child),
+              child: SafeArea(
+                top: false,
+                child: SizedBox(height: height, child: child),
+              ),
             ),
           ),
         ),

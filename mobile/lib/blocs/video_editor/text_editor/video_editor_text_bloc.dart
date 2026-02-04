@@ -21,7 +21,11 @@ part 'video_editor_text_state.dart';
 class VideoEditorTextBloc
     extends Bloc<VideoEditorTextEvent, VideoEditorTextState> {
   /// Creates a [VideoEditorTextBloc].
-  VideoEditorTextBloc() : super(const VideoEditorTextState()) {
+  ///
+  /// [initialState] can be provided to pre-populate the state when editing
+  /// an existing text layer.
+  VideoEditorTextBloc({VideoEditorTextState? initialState})
+    : super(initialState ?? const VideoEditorTextState()) {
     on<VideoEditorTextContentChanged>(_onContentChanged);
     on<VideoEditorTextFontSelected>(_onFontSelected);
     on<VideoEditorTextAlignmentChanged>(_onAlignmentChanged);
@@ -32,6 +36,7 @@ class VideoEditorTextBloc
     on<VideoEditorTextFontSelectorToggled>(_onFontSelectorToggled);
     on<VideoEditorTextColorPickerToggled>(_onColorPickerToggled);
     on<VideoEditorTextClosePanels>(_onClosePanels);
+    on<VideoEditorTextInitFromLayer>(_onInitFromLayer);
   }
 
   /// Updates the text content.
@@ -123,5 +128,22 @@ class VideoEditorTextBloc
     Emitter<VideoEditorTextState> emit,
   ) {
     emit(state.copyWith(showFontSelector: false, showColorPicker: false));
+  }
+
+  /// Initializes state from an existing text layer.
+  void _onInitFromLayer(
+    VideoEditorTextInitFromLayer event,
+    Emitter<VideoEditorTextState> emit,
+  ) {
+    emit(
+      VideoEditorTextState(
+        text: event.text,
+        alignment: event.alignment,
+        color: event.color,
+        backgroundStyle: event.backgroundStyle,
+        fontSize: event.fontSize,
+        selectedFontIndex: event.selectedFontIndex,
+      ),
+    );
   }
 }

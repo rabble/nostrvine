@@ -29,32 +29,34 @@ class VideoEditorColorPickerSheet extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     Widget content = VideoEditorBlurredPanel(
-      child: GridView.builder(
-        padding: const EdgeInsets.fromLTRB(20, 25, 20, 32),
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 44,
-          mainAxisSpacing: 22,
-          crossAxisSpacing: 14,
-          childAspectRatio: 1,
-        ),
-        itemBuilder: (context, index) {
-          final isColorPicker = index == 0;
-          final color = isColorPicker
-              ? Colors.white
-              : VideoEditorConstants.colors[index - 1];
-          final isSelected = color == selectedColor;
+      child: SingleChildScrollView(
+        child: GridView.builder(
+          padding: const EdgeInsets.fromLTRB(20, 25, 20, 32),
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: 44,
+            mainAxisSpacing: 22,
+            crossAxisSpacing: 14,
+            childAspectRatio: 1,
+          ),
+          itemBuilder: (context, index) {
+            final isColorPicker = index == 0;
+            final color = isColorPicker
+                ? Colors.white
+                : VideoEditorConstants.colors[index - 1];
+            final isSelected = color == selectedColor;
 
-          return _ColorButton(
-            color: color,
-            isSelected: isSelected,
-            isColorPicker: isColorPicker,
-            onTap: () =>
-                isColorPicker ? _openColorPicker() : onColorSelected(color),
-          );
-        },
-        itemCount: VideoEditorConstants.colors.length + 1,
+            return _ColorButton(
+              color: color,
+              isSelected: isSelected,
+              isColorPicker: isColorPicker,
+              onTap: () =>
+                  isColorPicker ? _openColorPicker() : onColorSelected(color),
+            );
+          },
+          itemCount: VideoEditorConstants.colors.length + 1,
+        ),
       ),
     );
 

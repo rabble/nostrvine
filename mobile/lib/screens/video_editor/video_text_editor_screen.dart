@@ -1,8 +1,11 @@
+import 'dart:math';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_inline_font_selector.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_overlay_controls.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_text_editor_scope.dart';
@@ -20,7 +23,6 @@ class VideoTextEditorScreen extends StatefulWidget {
 
 class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
   final _textEditorKey = GlobalKey<TextEditorState>();
-  late final VideoEditorTextBloc _textBloc;
 
   /// Base font size in pixels.
   static const double _baseFontSize = 24;
@@ -37,13 +39,43 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
   @override
   void initState() {
     super.initState();
-    _textBloc = VideoEditorTextBloc();
+    _initFromLayer();
   }
 
-  @override
-  void dispose() {
-    _textBloc.close();
-    super.dispose();
+  /// Initialize the bloc from layer if editing an existing text layer.
+  void _initFromLayer() {
+    final layer = widget.layer;
+    final bloc = context.read<VideoEditorTextBloc>();
+
+    if (layer == null) {
+      return;
+    }
+
+    // Get the primary color based on the layer's color mode.
+    final primaryColor = layer.colorMode == .background
+        ? layer.background
+        : layer.color;
+
+    final fontIndex = VideoEditorConstants.textFonts.indexWhere(
+      (el) => el() == layer.textStyle,
+    );
+
+    bloc.add(
+      VideoEditorTextInitFromLayer(
+        text: layer.text,
+        alignment: layer.align,
+        color: primaryColor,
+        backgroundStyle: layer.colorMode,
+        fontSize: _normalizeFontScale(layer.fontScale),
+        selectedFontIndex: max(0, fontIndex),
+      ),
+    );
+  }
+
+  /// Converts font scale (0.5-4.0) to normalized value (0.0-1.0).
+  double _normalizeFontScale(double fontScale) {
+    return ((fontScale - _minFontScale) / (_maxFontScale - _minFontScale))
+        .clamp(0.0, 1.0);
   }
 
   /// Maps [TextAlign] to [Alignment] for the input text field position.
@@ -74,7 +106,7 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
       buildWhen: (previous, current) =>
           previous.showFontSelector != current.showFontSelector ||
           previous.showColorPicker != current.showColorPicker ||
-          previous.textColor != current.textColor,
+          previous.color != current.color,
       builder: (context, state) {
         final showBottomPanel = state.showFontSelector || state.showColorPicker;
 
@@ -116,6 +148,9 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
                     initFontScale: _getFontScale(fontSize),
                     initialBackgroundColorMode: backgroundStyle,
                     initialTextAlign: alignment,
+                    initialPrimaryColor: state.color,
+                    defaultTextStyle: VideoEditorConstants
+                        .textFonts[state.selectedFontIndex](),
                     inputTextFieldAlign: _getInputAlignment(alignment),
                     enableAutoOverflow: false,
                     widgets: TextEditorWidgets(
@@ -152,7 +187,7 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
                     )
                   : VideoEditorColorPickerSheet(
                       height: height,
-                      selectedColor: state.textColor,
+                      selectedColor: state.color,
                       onColorSelected: (color) {
                         _textEditorKey.currentState?.primaryColor = color;
                         context.read<VideoEditorTextBloc>().add(

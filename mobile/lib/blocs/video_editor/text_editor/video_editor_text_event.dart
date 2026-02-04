@@ -88,3 +88,32 @@ class VideoEditorTextColorPickerToggled extends VideoEditorTextEvent {
 class VideoEditorTextClosePanels extends VideoEditorTextEvent {
   const VideoEditorTextClosePanels();
 }
+
+/// Triggered to initialize state from an existing text layer.
+class VideoEditorTextInitFromLayer extends VideoEditorTextEvent {
+  const VideoEditorTextInitFromLayer({
+    required this.text,
+    required this.alignment,
+    required this.color,
+    required this.backgroundStyle,
+    required this.fontSize,
+    required this.selectedFontIndex,
+  });
+
+  final String text;
+  final TextAlign alignment;
+  final Color color;
+  final LayerBackgroundMode backgroundStyle;
+  final double fontSize;
+  final int selectedFontIndex;
+
+  @override
+  List<Object?> get props => [
+    text,
+    alignment,
+    color,
+    backgroundStyle,
+    fontSize,
+    selectedFontIndex,
+  ];
+}

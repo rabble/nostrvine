@@ -186,6 +186,7 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                   },
                   onStateHistoryChange: (_, _) =>
                       _onStateHistoryChange(scope, bloc),
+                  // TODO: create better callback for that...
                   onLayerTapUp: (_) => _onStateHistoryChange(scope, bloc),
                   onOpenSubEditor: (editorMode) {
                     final SubEditorType? subEditorType = switch (editorMode) {

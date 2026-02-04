@@ -24,11 +24,9 @@ class VideoEditorTextStyleBar extends StatelessWidget {
     return BlocBuilder<VideoEditorTextBloc, VideoEditorTextState>(
       buildWhen: (previous, current) =>
           previous.selectedFontIndex != current.selectedFontIndex ||
-          previous.showFontSelector != current.showFontSelector ||
-          previous.showColorPicker != current.showColorPicker ||
           previous.backgroundStyle != current.backgroundStyle ||
           previous.alignment != current.alignment ||
-          previous.textColor != current.textColor,
+          previous.color != current.color,
       builder: (context, state) {
         return Padding(
           padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -42,7 +40,7 @@ class VideoEditorTextStyleBar extends StatelessWidget {
                   _ColorSwatchButton(
                     // TODO(l10n): Replace with context.l10n when localization is added.
                     semanticsLabel: 'Text color',
-                    color: state.textColor,
+                    color: state.color,
                     onTap: () => _toggleColorPicker(context, state),
                   ),
                   _StyleIconButton(
