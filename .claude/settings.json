@@ -2,8 +2,7 @@
   "permissions": {
     "allow": [
       "mcp__dart__*",
-      "mcp__nostr__*",
-      "mcp__figma-desktop__*"
+      "mcp__nostr__*"
     ],
     "deny": [],
     "ask": []
