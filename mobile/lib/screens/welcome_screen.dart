@@ -442,9 +442,9 @@ class _TermsCheckboxSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Age verification checkbox
-        _buildCheckboxRow(
-          value: isOver16,
-          onChanged: onOver16Changed,
+        DivineRowCheckbox(
+          state: isOver16 ? DivineCheckboxState.selected : DivineCheckboxState.unselected,
+          onChanged: (value) => onOver16Changed(value),
           label: Text(
             'I am 16 years or older',
             style: VineTheme.bodyLargeFont(),
@@ -453,9 +453,10 @@ class _TermsCheckboxSection extends StatelessWidget {
         const SizedBox(height: 16),
 
         // TOS acceptance checkbox with links
-        _buildCheckboxRow(
-          value: agreedToTerms,
-          onChanged: onAgreedToTermsChanged,
+        DivineRowCheckbox(
+          state:
+              agreedToTerms ? DivineCheckboxState.selected : DivineCheckboxState.unselected,
+          onChanged: (value) => onAgreedToTermsChanged(value),
           crossAxisAlignment: CrossAxisAlignment.start,
           label: RichText(
             text: TextSpan(
@@ -496,88 +497,4 @@ class _TermsCheckboxSection extends StatelessWidget {
     );
   }
 
-  Widget _buildCheckboxRow({
-    required bool value,
-    required ValueChanged<bool> onChanged,
-    required Widget label,
-    CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.center,
-  }) {
-    return InkWell(
-      onTap: () => onChanged(!value),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: value ? VineTheme.primary : VineTheme.outlineMuted,
-            width: 1,
-          ),
-          borderRadius: BorderRadius.circular(20),
-        ),
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          crossAxisAlignment: crossAxisAlignment,
-          children: [
-            GestureDetector(
-              onTap: () => onChanged(!value),
-              child: _SpriteCheckbox(
-                state: value
-                    ? _CheckboxState.selected
-                    : _CheckboxState.unselected,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(child: label),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-enum _CheckboxState {
-  unselected,
-  selected,
-  intermediate,
-  disabled,
-}
-
-class _SpriteCheckbox extends StatelessWidget {
-  const _SpriteCheckbox({required this.state});
-
-  final _CheckboxState state;
-
-  @override
-  Widget build(BuildContext context) {
-    // Sprite is 24x72 with three 24x24 sections stacked vertically
-    // Top (0-24): unselected, Middle (24-48): selected, Bottom (48-72): intermediate
-    final yOffset = switch (state) {
-      _CheckboxState.unselected || _CheckboxState.disabled => 0.0,
-      _CheckboxState.selected => -24.0,
-      _CheckboxState.intermediate => -48.0,
-    };
-
-    final opacity = state == _CheckboxState.disabled ? 0.5 : 1.0;
-
-    return Opacity(
-      opacity: opacity,
-      child: SizedBox(
-        width: 24,
-        height: 24,
-        child: Stack(
-          clipBehavior: Clip.hardEdge,
-          children: [
-            Positioned(
-              top: yOffset,
-              left: 0,
-              child: SvgPicture.asset(
-                'assets/icon/checkbox-sprite.svg',
-                width: 24,
-                height: 72,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
