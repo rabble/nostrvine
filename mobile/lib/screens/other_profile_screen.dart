@@ -19,7 +19,6 @@ import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
-import 'package:openvine/widgets/vine_bottom_nav.dart';
 
 /// Fullscreen profile screen for viewing other users' profiles.
 ///
@@ -401,7 +400,6 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           refreshNotifier: _refreshNotifier,
         ),
       },
-      bottomNavigationBar: const VineBottomNav(currentIndex: 3),
     );
   }
 }
@@ -457,7 +455,6 @@ class _ProfileErrorScreen extends StatelessWidget {
       body: Center(
         child: Text(message, style: const TextStyle(color: Colors.white)),
       ),
-      bottomNavigationBar: const VineBottomNav(currentIndex: 3),
     );
   }
 }
