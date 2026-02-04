@@ -125,13 +125,12 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   ///
   /// Returns the resulting [TextLayer] if the user confirms, or `null` if
   /// cancelled.
-  Future<TextLayer?> _addEditTextLayer(
-    BuildContext context, [
+  Future<TextLayer?> _addEditTextLayer({
+    required VideoEditorMainBloc mainBloc,
+    required VideoEditorTextBloc textBloc,
     TextLayer? layer,
-  ]) async {
-    final bloc = context.read<VideoEditorMainBloc>();
-    final textBloc = context.read<VideoEditorTextBloc>();
-    bloc.add(const VideoEditorMainOpenSubEditor(.text));
+  }) async {
+    mainBloc.add(const VideoEditorMainOpenSubEditor(.text));
 
     final result = await Navigator.push<TextLayer>(
       context,
@@ -150,7 +149,8 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     );
 
     textBloc.add(const VideoEditorTextClosePanels());
-    if (mounted) bloc.add(const VideoEditorMainSubEditorClosed());
+    mainBloc.add(const VideoEditorMainSubEditorClosed());
+
     return result;
   }
 
@@ -169,7 +169,16 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
           return VideoEditorScope(
             editorKey: _editorKey,
             onAddStickers: _addStickers,
-            onAddEditTextLayer: ([layer]) => _addEditTextLayer(context, layer),
+            onAddEditTextLayer: ([layer]) {
+              final mainBloc = context.read<VideoEditorMainBloc>();
+              final textBloc = context.read<VideoEditorTextBloc>();
+
+              return _addEditTextLayer(
+                mainBloc: mainBloc,
+                textBloc: textBloc,
+                layer: layer,
+              );
+            },
             child: const VideoEditorScaffold(),
           );
         },
