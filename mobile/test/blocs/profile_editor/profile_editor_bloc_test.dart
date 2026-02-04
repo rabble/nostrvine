@@ -781,7 +781,11 @@ void main() {
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', '')
-              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.idle),
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.idle,
+              ),
         ],
       );
 
@@ -792,11 +796,15 @@ void main() {
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', 'ab')
-              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.error)
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.error,
+              )
               .having(
                 (s) => s.usernameError,
                 'usernameError',
-                contains('3-20 characters'),
+                equals(UsernameValidationError.invalidLength),
               ),
         ],
       );
@@ -808,11 +816,15 @@ void main() {
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', 'aaaaaaaaaaaaaaaaaaaaa')
-              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.error)
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.error,
+              )
               .having(
                 (s) => s.usernameError,
                 'usernameError',
-                contains('3-20 characters'),
+                equals(UsernameValidationError.invalidLength),
               ),
         ],
       );
@@ -824,11 +836,15 @@ void main() {
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', 'test@user')
-              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.error)
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.error,
+              )
               .having(
                 (s) => s.usernameError,
                 'usernameError',
-                contains('Only letters, numbers'),
+                equals(UsernameValidationError.invalidFormat),
               ),
         ],
       );
@@ -848,10 +864,18 @@ void main() {
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', testUsername)
-              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.checking),
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.checking,
+              ),
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', testUsername)
-              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.available),
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.available,
+              ),
         ],
         verify: (_) {
           verify(
@@ -877,10 +901,18 @@ void main() {
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', testUsername)
-              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.checking),
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.checking,
+              ),
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', testUsername)
-              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.taken),
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.taken,
+              ),
         ],
       );
 
@@ -899,14 +931,22 @@ void main() {
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', testUsername)
-              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.checking),
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.checking,
+              ),
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', testUsername)
-              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.error)
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.error,
+              )
               .having(
                 (s) => s.usernameError,
                 'usernameError',
-                contains('Could not check availability'),
+                equals(UsernameValidationError.networkError),
               ),
         ],
       );
@@ -1007,7 +1047,11 @@ void main() {
         expect: () => containsAll([
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', testUsername)
-              .having((s) => s.usernameStatus, 'usernameStatus', UsernameStatus.reserved),
+              .having(
+                (s) => s.usernameStatus,
+                'usernameStatus',
+                UsernameStatus.reserved,
+              ),
         ]),
       );
     });

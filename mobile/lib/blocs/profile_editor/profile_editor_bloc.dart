@@ -14,10 +14,13 @@ part 'profile_editor_event.dart';
 part 'profile_editor_state.dart';
 
 /// Minimum username length.
-const kMinUsernameLength = 3;
+const _minUsernameLength = 3;
 
 /// Maximum username length.
-const kMaxUsernameLength = 20;
+const _maxUsernameLength = 20;
+
+/// Debounce duration when user stops typing username.
+const _usernameDebounceDuration = Duration(milliseconds: 500);
 
 /// Username format: letters, numbers, hyphens, underscores, periods.
 final _usernamePattern = RegExp(r'^[a-zA-Z0-9._-]+$');
@@ -40,9 +43,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   final ProfileRepository _profileRepository;
   final UserProfileService _userProfileService;
   final bool _hasExistingProfile;
-
-  /// Cache of reserved usernames (403 responses from claim API).
-  final Set<String> _reservedUsernames = {};
 
   Future<void> _onProfileSaved(
     ProfileSaved event,
@@ -104,34 +104,31 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       return;
     }
 
-    // Check format first (includes spaces check via regex)
-    // Use raw input to catch leading/trailing spaces
     if (!_usernamePattern.hasMatch(rawUsername)) {
       emit(
         state.copyWith(
           username: username,
           usernameStatus: UsernameStatus.error,
-          usernameError: 'Only letters, numbers, -, _, and . are allowed',
+          usernameError: UsernameValidationError.invalidFormat,
         ),
       );
       return;
     }
 
     // Then check length
-    if (username.length < kMinUsernameLength ||
-        username.length > kMaxUsernameLength) {
+    if (username.length < _minUsernameLength ||
+        username.length > _maxUsernameLength) {
       emit(
         state.copyWith(
           username: username,
           usernameStatus: UsernameStatus.error,
-          usernameError:
-              'Username must be $kMinUsernameLength-$kMaxUsernameLength characters',
+          usernameError: UsernameValidationError.invalidLength,
         ),
       );
       return;
     }
 
-    if (_reservedUsernames.contains(username)) {
+    if (state.reservedUsernames.contains(username)) {
       emit(
         state.copyWith(
           username: username,
@@ -149,7 +146,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         usernameError: null,
       ),
     );
-    await Future<void>.delayed(const Duration(milliseconds: 500));
+    await Future<void>.delayed(_usernameDebounceDuration);
 
     if (emit.isDone) return;
 
@@ -182,7 +179,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         emit(
           state.copyWith(
             usernameStatus: UsernameStatus.error,
-            usernameError: 'Could not check availability. Please try again.',
+            usernameError: UsernameValidationError.networkError,
           ),
         );
     }
@@ -266,10 +263,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     final error = switch (result) {
       UsernameClaimSuccess() => null,
       UsernameClaimTaken() => ProfileEditorError.usernameTaken,
-      UsernameClaimReserved() => () {
-        _reservedUsernames.add(username);
-        return ProfileEditorError.usernameReserved;
-      }(),
+      UsernameClaimReserved() => ProfileEditorError.usernameReserved,
       UsernameClaimError() => ProfileEditorError.claimFailed,
     };
 
@@ -306,11 +300,16 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       _ => null,
     };
 
+    final reservedUsernames = usernameStatus == UsernameStatus.reserved
+        ? {...state.reservedUsernames, username}
+        : null;
+
     emit(
       state.copyWith(
         status: ProfileEditorStatus.failure,
         error: error,
         usernameStatus: usernameStatus,
+        reservedUsernames: reservedUsernames,
       ),
     );
   }

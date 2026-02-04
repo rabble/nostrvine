@@ -1,12 +1,12 @@
 // ABOUTME: Widget tests for username field in ProfileSetupScreen
 // ABOUTME: Tests status indicators, pre-population, and validation behavior
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -22,7 +22,10 @@ void main() {
   });
 
   group('UsernameStatusIndicator', () {
-    Widget buildIndicator(UsernameStatus status, {String? error}) {
+    Widget buildIndicator(
+      UsernameStatus status, {
+      UsernameValidationError? error,
+    }) {
       return MaterialApp(
         theme: VineTheme.theme,
         home: Scaffold(
@@ -70,12 +73,18 @@ void main() {
       expect(find.byIcon(Icons.lock), findsOneWidget);
     });
 
-    testWidgets('shows error message when error', (tester) async {
+    testWidgets('shows error message when network error', (tester) async {
       await tester.pumpWidget(
-        buildIndicator(UsernameStatus.error, error: 'Network error'),
+        buildIndicator(
+          UsernameStatus.error,
+          error: UsernameValidationError.networkError,
+        ),
       );
 
-      expect(find.text('Network error'), findsOneWidget);
+      expect(
+        find.text('Could not check availability. Please try again.'),
+        findsOneWidget,
+      );
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
     });
 
@@ -86,6 +95,31 @@ void main() {
 
       expect(find.text('Failed to check availability'), findsOneWidget);
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
+    });
+
+    testWidgets('shows format error message', (tester) async {
+      await tester.pumpWidget(
+        buildIndicator(
+          UsernameStatus.error,
+          error: UsernameValidationError.invalidFormat,
+        ),
+      );
+
+      expect(
+        find.text('Only letters, numbers, -, _, and . are allowed'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('shows length error message', (tester) async {
+      await tester.pumpWidget(
+        buildIndicator(
+          UsernameStatus.error,
+          error: UsernameValidationError.invalidLength,
+        ),
+      );
+
+      expect(find.text('Username must be 3-20 characters'), findsOneWidget);
     });
   });
 

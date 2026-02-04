@@ -325,7 +325,7 @@ class _ProfileSetupScreenViewState
                 ),
               );
             case ProfileEditorError.usernameReserved:
-              final username = _nip05Controller.text.trim();
+              final username = state.username;
               showDialog<void>(
                 context: context,
                 builder: (context) => UsernameReservedDialog(username),
@@ -1447,10 +1447,22 @@ class UsernameStatusIndicator extends StatelessWidget {
   const UsernameStatusIndicator({required this.status, this.error, super.key});
 
   final UsernameStatus status;
-  final String? error;
+  final UsernameValidationError? error;
 
   @override
   Widget build(BuildContext context) {
+    String? errorText;
+    if (error != null) {
+      errorText = switch (error) {
+        UsernameValidationError.invalidFormat =>
+          'Only letters, numbers, -, _, and . are allowed',
+        UsernameValidationError.invalidLength =>
+          'Username must be 3-20 characters',
+        UsernameValidationError.networkError =>
+          'Could not check availability. Please try again.',
+        null => null,
+      };
+    }
     return switch (status) {
       UsernameStatus.idle => const SizedBox.shrink(),
       UsernameStatus.checking => const _UsernameCheckingIndicator(),
@@ -1458,7 +1470,7 @@ class UsernameStatusIndicator extends StatelessWidget {
       UsernameStatus.taken => const _UsernameTakenIndicator(),
       UsernameStatus.reserved => _UsernameReservedIndicator(),
       UsernameStatus.error => _UsernameErrorIndicator(
-        message: error ?? 'Failed to check availability',
+        message: errorText ?? 'Failed to check availability',
       ),
     };
   }

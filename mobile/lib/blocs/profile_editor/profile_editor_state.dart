@@ -59,6 +59,22 @@ enum UsernameStatus {
   error,
 }
 
+/// Validation errors for username input.
+///
+/// The UI layer should map these to localized strings.
+enum UsernameValidationError {
+  /// Username contains invalid characters.
+  ///
+  /// Valid characters: letters, numbers, hyphens, underscores, periods.
+  invalidFormat,
+
+  /// Username length is outside allowed range (3-20 characters).
+  invalidLength,
+
+  /// Failed to check username availability due to network error.
+  networkError,
+}
+
 /// State for the ProfileEditorBloc.
 final class ProfileEditorState extends Equatable {
   const ProfileEditorState({
@@ -68,6 +84,7 @@ final class ProfileEditorState extends Equatable {
     this.username = '',
     this.usernameStatus = UsernameStatus.idle,
     this.usernameError,
+    this.reservedUsernames = const {},
   });
 
   /// Current status of the operation.
@@ -86,7 +103,10 @@ final class ProfileEditorState extends Equatable {
   final UsernameStatus usernameStatus;
 
   /// Error message for username validation (when status is error).
-  final String? usernameError;
+  final UsernameValidationError? usernameError;
+
+  /// Cache of reserved usernames (403 responses from claim API).
+  final Set<String> reservedUsernames;
 
   /// Creates a copy with updated values.
   ProfileEditorState copyWith({
@@ -95,7 +115,8 @@ final class ProfileEditorState extends Equatable {
     ProfileSaved? pendingEvent,
     String? username,
     UsernameStatus? usernameStatus,
-    String? usernameError,
+    UsernameValidationError? usernameError,
+    Set<String>? reservedUsernames,
   }) {
     return ProfileEditorState(
       status: status ?? this.status,
@@ -104,6 +125,7 @@ final class ProfileEditorState extends Equatable {
       username: username ?? this.username,
       usernameStatus: usernameStatus ?? this.usernameStatus,
       usernameError: usernameError,
+      reservedUsernames: reservedUsernames ?? this.reservedUsernames,
     );
   }
 
