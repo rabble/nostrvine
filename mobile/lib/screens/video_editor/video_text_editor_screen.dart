@@ -234,6 +234,11 @@ class _KeyboardHeightPanelState extends State<_KeyboardHeightPanel> {
     if (_hasPopped) return;
     _hasPopped = true;
 
+    /// The 150ms delay prevents double-pop issues: when close is triggered
+    /// elsewhere (e.g., a button), the keyboard also closes and could trigger
+    /// this callback. The delay combined with the `mounted` check ensures we
+    /// don't pop twice. Using `WidgetsBinding.instance.addPostFrameCallback`
+    /// was not reliable enough for this timing issue.
     Future.delayed(const Duration(milliseconds: 150), () {
       if (mounted) {
         widget.onKeyboardClosedWithoutPanel?.call();
