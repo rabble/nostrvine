@@ -6,7 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_inline_font_selector.dart';
+import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_font_selector.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_overlay_controls.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_text_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_color_picker_sheet.dart';
@@ -180,7 +180,7 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
                 if (mounted) context.pop();
               },
               builder: (height) => state.showFontSelector
-                  ? VideoEditorTextInlineFontSelector(
+                  ? VideoEditorTextInlineFontSelector.VideoEditorTextFontSelector(
                       onFontSelected: (textStyle) {
                         _textEditorKey.currentState?.setTextStyle(textStyle);
                       },

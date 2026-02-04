@@ -23,26 +23,23 @@ class VideoEditorTextOverlayControls extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<VideoEditorTextBloc, VideoEditorTextState>(
-      buildWhen: (previous, current) => previous.fontSize != current.fontSize,
-      builder: (context, state) {
-        return Stack(
-          children: [
-            // Main column with top bar and style controls
-            const Column(
-              children: [_TopBar(), Spacer(), VideoEditorTextStyleBar()],
-            ),
-            // Vertical slider on the right side
-            Align(
-              alignment: .centerRight,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(0, 96, 16, 96),
-                child: _FontSizeSlider(value: state.fontSize),
-              ),
-            ),
-          ],
-        );
-      },
+    return Stack(
+      children: [
+        // Close/Done buttons at the top
+        Align(alignment: .topCenter, child: _TopBar()),
+
+        // Style controls (color, alignment, background, font) at the bottom
+        Align(alignment: .bottomCenter, child: VideoEditorTextStyleBar()),
+
+        // Vertical slider for font size on the right side
+        Align(
+          alignment: .centerRight,
+          child: Padding(
+            padding: const .fromLTRB(0, 96, 16, 96),
+            child: _FontSizeSlider(),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -51,14 +48,16 @@ class VideoEditorTextOverlayControls extends StatelessWidget {
 ///
 /// Syncs the font scale with both the BLoC and the TextEditorState.
 class _FontSizeSlider extends StatelessWidget {
-  const _FontSizeSlider({required this.value});
-
-  final double value;
+  const _FontSizeSlider();
 
   @override
   Widget build(BuildContext context) {
+    final fontSize = context.select<VideoEditorTextBloc, double>(
+      (bloc) => bloc.state.fontSize,
+    );
+
     return VideoEditorVerticalSlider(
-      value: value,
+      value: fontSize,
       onChanged: (normalizedValue) {
         final textEditor = VideoTextEditorScope.of(context).editor;
         final textEditorConfigs = textEditor.configs.textEditor;
@@ -87,33 +86,21 @@ class _TopBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0x3D000000), // 24% black
-            Color(0x00000000), // transparent
-          ],
-        ),
-      ),
-      child: const SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(12, 0, 4, 0),
-          child: SizedBox(
-            height: 60,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [_CloseButton(), _DoneButton()],
-            ),
-          ),
+    return const SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: .fromLTRB(12, 12, 12, 0),
+        child: Row(
+          mainAxisAlignment: .spaceBetween,
+          children: [_CloseButton(), _DoneButton()],
         ),
       ),
     );
   }
 }
+
+// TODO(@hm21): Once the design decision has been made regarding what the
+// buttons will look like, create them in the divine_ui package and reuse them.
 
 /// Close button with dark scrim background.
 class _CloseButton extends StatelessWidget {
@@ -122,6 +109,7 @@ class _CloseButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      // TODO(l10n): Replace with context.l10n when localization is added.
       label: 'Close',
       button: true,
       child: GestureDetector(
@@ -156,6 +144,7 @@ class _DoneButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Semantics(
+      // TODO(l10n): Replace with context.l10n when localization is added.
       label: 'Done',
       button: true,
       child: GestureDetector(
@@ -166,18 +155,6 @@ class _DoneButton extends StatelessWidget {
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: .circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x1A000000),
-                offset: Offset(1, 1),
-                blurRadius: 1,
-              ),
-              BoxShadow(
-                color: Color(0x1A000000),
-                offset: Offset(0.4, 0.4),
-                blurRadius: 0.6,
-              ),
-            ],
           ),
           child: SizedBox(
             width: 24,

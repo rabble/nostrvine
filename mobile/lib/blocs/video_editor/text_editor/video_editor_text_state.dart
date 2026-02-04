@@ -24,14 +24,7 @@ class VideoEditorTextState extends Equatable {
       VideoEditorConstants.textFonts[selectedFontIndex];
 
   /// Returns the display name of the selected font.
-  String get selectedFontName {
-    final fontFamily = selectedFont().fontFamily;
-    if (fontFamily == null) return 'Unknown';
-    // Remove common suffixes and convert underscores to spaces
-    return fontFamily
-        .replaceAll(RegExp(r'_regular$', caseSensitive: false), '')
-        .replaceAll('_', ' ');
-  }
+  String get selectedFontName => selectedFont.displayName;
 
   /// The text alignment.
   final TextAlign alignment;

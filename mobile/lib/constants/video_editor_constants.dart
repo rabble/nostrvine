@@ -24,8 +24,10 @@ class VideoEditorConstants {
   /// Default time offset for extracting video thumbnails.
   static const defaultThumbnailExtractTime = Duration(milliseconds: 200);
 
+  /// Primary accent color used in the video editor UI.
   static const primaryColor = Color(0xFFFFF140);
 
+  /// Available colors for text overlays.
   static const colors = [
     Color(0xFFF9F7F6),
     Color(0xFF000000),
@@ -78,10 +80,9 @@ class VideoEditorConstants {
     GoogleFonts.permanentMarker,
     GoogleFonts.comfortaa,
   ];
-}
 
-class VideoEditorDrawConstants {
-  static double itemWidth = 48.0;
+  /// Width of drawing tool items in the draw editor toolbar.
+  static double drawItemWidth = 48.0;
 }
 
 /// Constants for the video editor clip gallery layout and animations.

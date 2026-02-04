@@ -72,7 +72,7 @@ class VideoEditorTextStyleBar extends StatelessWidget {
           previous.color != current.color,
       builder: (context, state) {
         return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+          padding: const .fromLTRB(16, 0, 16, 16),
           child: Row(
             spacing: 16,
             mainAxisAlignment: .spaceBetween,
@@ -137,7 +137,7 @@ class _ColorSwatchButton extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const .all(14),
           decoration: BoxDecoration(
             color: VineTheme.scrim65,
             borderRadius: .circular(20),
@@ -180,7 +180,7 @@ class _StyleIconButton extends StatelessWidget {
       child: GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.all(12),
+          padding: const .all(12),
           decoration: BoxDecoration(
             color: const Color(0xA6000000),
             borderRadius: BorderRadius.circular(20),

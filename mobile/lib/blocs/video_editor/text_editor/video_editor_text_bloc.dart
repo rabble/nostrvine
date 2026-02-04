@@ -2,22 +2,13 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_extensions.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 part 'video_editor_text_event.dart';
 part 'video_editor_text_state.dart';
 
 /// BLoC for managing the video editor text overlay state.
-///
-/// This BLoC manages the text styling state. Editor interactions (close,
-/// done) should be done through [VideoEditorScope] in the UI.
-///
-/// Handles:
-/// - Text content state
-/// - Font selection state
-/// - Text alignment state
-/// - Text color state
-/// - Background style state
 class VideoEditorTextBloc
     extends Bloc<VideoEditorTextEvent, VideoEditorTextState> {
   /// Creates a [VideoEditorTextBloc].

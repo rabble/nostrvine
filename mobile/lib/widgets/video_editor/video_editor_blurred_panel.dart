@@ -1,8 +1,6 @@
 // ABOUTME: Reusable blurred panel with iOS-style frosted glass effect.
 // ABOUTME: Used for font selector, color picker, and other overlay panels.
 
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 
 /// A reusable panel with iOS-style frosted glass blur effect.
@@ -25,16 +23,16 @@ class VideoEditorBlurredPanel extends StatelessWidget {
         onTap: () {}, // Important to absorb events here.
         behavior: .opaque,
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+          filter: .blur(sigmaX: 30, sigmaY: 30),
           child: DecoratedBox(
             decoration: const BoxDecoration(
               color: Color(0xFF0D0D0D),
-              backgroundBlendMode: BlendMode.lighten,
+              backgroundBlendMode: .lighten,
             ),
             child: DecoratedBox(
               decoration: const BoxDecoration(
                 color: Color.fromARGB(228, 20, 20, 20),
-                backgroundBlendMode: BlendMode.luminosity,
+                backgroundBlendMode: .luminosity,
               ),
               child: SafeArea(
                 top: false,

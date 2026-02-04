@@ -35,12 +35,14 @@ class VideoEditorDrawOverlayControls extends StatelessWidget {
                   spacing: 8,
                   children: [
                     _IconButton(
+                      // TODO(l10n): Replace with context.l10n when localization is added.
                       semanticsLabel: 'Close',
                       iconPath: 'assets/icon/CaretLeft.svg',
                       onTap: () => scope.editor?.closeSubEditor(),
                     ),
                     const Spacer(),
                     _IconButton(
+                      // TODO(l10n): Replace with context.l10n when localization is added.
                       semanticsLabel: 'Undo',
                       iconPath: 'assets/icon/arrow_arc_left.svg',
                       onTap: state.canUndo
@@ -48,6 +50,7 @@ class VideoEditorDrawOverlayControls extends StatelessWidget {
                           : null,
                     ),
                     _IconButton(
+                      // TODO(l10n): Replace with context.l10n when localization is added.
                       semanticsLabel: 'Redo',
                       iconPath: 'assets/icon/arrow_arc_right.svg',
                       onTap: state.canRedo

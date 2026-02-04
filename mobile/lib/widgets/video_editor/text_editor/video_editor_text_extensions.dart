@@ -2,7 +2,22 @@
 // ABOUTME: Used by the text editor style bar and potentially other text editor widgets.
 
 import 'package:flutter/painting.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
+
+/// Extension on [TextFont] for text editor UI purposes.
+extension TextEditorFont on TextFont {
+  /// Returns the cleaned display name of this font.
+  ///
+  /// Removes common suffixes like "_regular" and converts underscores to spaces.
+  String get displayName {
+    final fontFamily = this().fontFamily;
+    if (fontFamily == null) return 'Unknown';
+    return fontFamily
+        .replaceAll(RegExp(r'_regular$', caseSensitive: false), '')
+        .replaceAll('_', ' ');
+  }
+}
 
 /// Extension on [TextAlign] for text editor UI purposes.
 extension TextEditorTextAlign on TextAlign {

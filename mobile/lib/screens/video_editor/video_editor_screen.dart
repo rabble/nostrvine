@@ -78,6 +78,10 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     }
   }
 
+  /// Opens the sticker picker sheet and adds the selected sticker as a layer.
+  ///
+  /// Resets the search query before opening and adds a [WidgetLayer] to the
+  /// editor canvas if a sticker is selected.
   Future<void> _addStickers() async {
     // Reset search when opening the sheet
     _stickerBloc.add(const VideoEditorStickerSearch(''));
@@ -114,6 +118,13 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     }
   }
 
+  /// Opens the text editor screen to add or edit a text layer.
+  ///
+  /// If [layer] is provided, the editor is initialized with its values for
+  /// editing. Otherwise, a new text layer is created.
+  ///
+  /// Returns the resulting [TextLayer] if the user confirms, or `null` if
+  /// cancelled.
   Future<TextLayer?> _addEditTextLayer(
     BuildContext context, [
     TextLayer? layer,
