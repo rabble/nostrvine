@@ -2,6 +2,7 @@
 // ABOUTME: Provides reactive state updates for recording UI without ChangeNotifier
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -476,7 +477,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       // shorter than remaining time (clip was trimmed), otherwise use default
       // 210ms which is typically the first keyframe in most MP4 videos
       milliseconds: remainingMs <= metadata.duration.inMilliseconds
-          ? remainingMs ~/ 2
+          ? min(210, remainingMs ~/ 2)
           : 210,
     );
     final thumbnailResult = await VideoThumbnailService.extractThumbnail(
