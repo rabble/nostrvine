@@ -83,6 +83,18 @@ class VideoEditorConstants {
 
   /// Width of drawing tool items in the draw editor toolbar.
   static double drawItemWidth = 48.0;
+
+  /// Base font size in pixels for text overlays.
+  static const double baseFontSize = 24.0;
+
+  /// Minimum font scale multiplier for text overlays.
+  static const double minFontScale = 0.5;
+
+  /// Maximum font scale multiplier for text overlays.
+  static const double maxFontScale = 4.0;
+
+  /// Background color for the text editor overlay.
+  static const Color textEditorBackground = Color(0x9B000000);
 }
 
 /// Constants for the video editor clip gallery layout and animations.

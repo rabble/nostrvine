@@ -24,18 +24,6 @@ class VideoTextEditorScreen extends StatefulWidget {
 class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
   final _textEditorKey = GlobalKey<TextEditorState>();
 
-  /// Base font size in pixels.
-  static const double _baseFontSize = 24;
-
-  /// Minimum font scale multiplier.
-  static const double _minFontScale = 0.5;
-
-  /// Maximum font scale multiplier.
-  static const double _maxFontScale = 4.0;
-
-  /// Background color for the text editor.
-  static const Color _backgroundColor = Color(0x9B000000);
-
   @override
   void initState() {
     super.initState();
@@ -74,7 +62,9 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
 
   /// Converts font scale (0.5-4.0) to normalized value (0.0-1.0).
   double _normalizeFontScale(double fontScale) {
-    return ((fontScale - _minFontScale) / (_maxFontScale - _minFontScale))
+    return ((fontScale - VideoEditorConstants.minFontScale) /
+            (VideoEditorConstants.maxFontScale -
+                VideoEditorConstants.minFontScale))
         .clamp(0.0, 1.0);
   }
 
@@ -89,7 +79,10 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
 
   /// Converts normalized font size (0.0-1.0) to font scale (0.3-3.0).
   double _getFontScale(double normalizedValue) {
-    return _minFontScale + (normalizedValue * (_maxFontScale - _minFontScale));
+    return VideoEditorConstants.minFontScale +
+        (normalizedValue *
+            (VideoEditorConstants.maxFontScale -
+                VideoEditorConstants.minFontScale));
   }
 
   @override
@@ -136,15 +129,15 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
                 configs: ProImageEditorConfigs(
                   i18n: I18n(textEditor: I18nTextEditor(inputHintText: '')),
                   textEditor: TextEditorConfigs(
-                    style: const TextEditorStyle(
+                    style: TextEditorStyle(
                       inputCursorColor: VineTheme.whiteText,
                       inputTextFieldPadding: .only(left: 16, right: 48),
-                      background: _backgroundColor,
+                      background: VideoEditorConstants.textEditorBackground,
                     ),
                     resizeToAvoidBottomInset: false,
-                    minFontScale: _minFontScale,
-                    maxFontScale: _maxFontScale,
-                    initFontSize: _baseFontSize,
+                    minFontScale: VideoEditorConstants.minFontScale,
+                    maxFontScale: VideoEditorConstants.maxFontScale,
+                    initFontSize: VideoEditorConstants.baseFontSize,
                     initFontScale: _getFontScale(fontSize),
                     initialBackgroundColorMode: backgroundStyle,
                     initialTextAlign: alignment,
@@ -175,7 +168,7 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
             // Bottom panels (font selector / color picker)
             _KeyboardHeightPanel(
               showBottomPanel: showBottomPanel,
-              backgroundColor: _backgroundColor,
+              backgroundColor: VideoEditorConstants.textEditorBackground,
               onKeyboardClosedWithoutPanel: () {
                 if (mounted) context.pop();
               },
