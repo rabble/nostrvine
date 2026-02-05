@@ -4,7 +4,7 @@ tags:
 ---
 #TC to unlike a video,
 # given the user is logged in in the app and only has 1 video liked,
-# validate the like is on for the video VIDEO_TITLE unlike it, and empty likes tab on the profile
+# validate the like is on for the video on the liked tab unlike it, and empty likes tab on the profile
 #Steps:
 # 1. Open the profile and navigate to the liked_tab: Tab is displayed
 # 2. Tap on 1st video of the liked tab and unlike the video: Validate video is unliked
@@ -24,7 +24,6 @@ tags:
 - tapOn:
     id: like_button
 - runFlow: "../asserts/assertVideounLiked.yaml"
-
 
 # 3. Close the video and Tap on profile, liked tab: Validate tab is loaded and video is not listed
 - tapOn: Close video player
