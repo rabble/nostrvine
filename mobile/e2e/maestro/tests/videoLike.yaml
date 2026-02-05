@@ -32,6 +32,6 @@ tags:
 # 4. Tap on the likes tab: Validate tab is loaded and VIDEO_TITLE listed
 - tapOn: Tab 2 of 3
 - tapOn:
-    point: 1%,78%
+    point: 1%,74%
 - assertVisible: ${VIDEO_DESCRIPTION}
-- 
+- tapOn: Close video player

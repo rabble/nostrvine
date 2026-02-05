@@ -5,7 +5,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
@@ -68,7 +67,7 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
 
     _syncMainCapabilities(scope, bloc);
     final result = await scope.editor!.exportStateHistory(
-      configs: ExportEditorConfigs(historySpan: .currentAndBackward),
+      configs: const ExportEditorConfigs(historySpan: .currentAndBackward),
     );
     final history = await result.toMap();
 
@@ -107,7 +106,7 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
       child: Navigator(
         onGenerateRoute: (_) {
           return PageRouteBuilder(
-            pageBuilder: (_, _, _) => ProImageEditor.file(
+            pageBuilder: (context, _, _) => ProImageEditor.file(
               clip.thumbnailPath,
               key: scope.editorKey,
 
@@ -136,6 +135,7 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                 ),
                 paintEditor: PaintEditorConfigs(
                   safeArea: const EditorSafeArea.none(),
+
                   widgets: PaintEditorWidgets(
                     appBar: (_, _) => null,
                     bottomBar: (_, _) => null,
@@ -157,16 +157,17 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                     layerAlignColor: VideoEditorConstants.primaryColor,
                   ),
                 ),
+                layerInteraction: const LayerInteractionConfigs(
+                  selectable: .disabled,
+                ),
                 dialogConfigs: DialogConfigs(
                   widgets: DialogWidgets(
-                    loadingDialog: (message, configs) => SizedBox.shrink(),
+                    loadingDialog: (message, configs) =>
+                        const SizedBox.shrink(),
                   ),
                 ),
               ),
               callbacks: ProImageEditorCallbacks(
-                onCloseEditor: (editorMode) {
-                  if (editorMode == .main) context.pop();
-                },
                 onCompleteWithParameters: (parameters) async {
                   ref
                       .read(videoEditorProvider.notifier)
@@ -213,6 +214,8 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                       _isLayerBeingTransformed = false;
                     }
                   },
+                  onCreateTextLayer: scope.onAddEditTextLayer,
+                  onEditTextLayer: scope.onAddEditTextLayer,
                 ),
                 paintEditorCallbacks: PaintEditorCallbacks(
                   onInit: () {
@@ -233,8 +236,8 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                 ),
                 filterEditorCallbacks: FilterEditorCallbacks(
                   onInit: () {
-                    final filterBloc = context.read<VideoEditorFilterBloc>();
-                    filterBloc.add(const VideoEditorFilterEditorInitialized());
+                    final filterBloc = context.read<VideoEditorFilterBloc>()
+                      ..add(const VideoEditorFilterEditorInitialized());
                     final filterState = filterBloc.state;
 
                     // Sync editor with current BLoC state

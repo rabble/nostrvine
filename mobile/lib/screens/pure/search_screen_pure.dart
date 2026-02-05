@@ -530,7 +530,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
           ),
           tabs: [
             Tab(text: 'Videos (${_videoResults.length})'),
-            Tab(text: 'Users${userCount > 0 ? ' ($userCount)' : ''}'),
+            Tab(text: 'Users ($userCount)'),
             Tab(text: 'Hashtags (${_hashtagResults.length})'),
           ],
         );

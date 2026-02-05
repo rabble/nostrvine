@@ -68,6 +68,7 @@ void main() {
             child: VideoEditorScope(
               editorKey: editorKey,
               onAddStickers: () {},
+              onAddEditTextLayer: ([layer]) async => null,
               child: const SizedBox(
                 width: 400,
                 height: 600,
