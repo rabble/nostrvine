@@ -361,7 +361,7 @@ class BlossomUploadService {
         );
 
         if (responseData is Map) {
-          // Extract all URL fields from server response
+          // Extract all URL fields from server response.
           final url = responseData['url']?.toString();
           final fallbackUrl = responseData['fallbackUrl']?.toString();
 
