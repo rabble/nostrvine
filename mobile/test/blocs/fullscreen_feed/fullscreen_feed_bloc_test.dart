@@ -222,7 +222,7 @@ void main() {
 
     group('FullscreenFeedLoadMoreRequested', () {
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'sets isLoadingMore and calls onLoadMor callback',
+        'sets isLoadingMore and calls onLoadMore callback',
         build: () {
           var callCount = 0;
           return createBloc(onLoadMore: () => callCount++);
