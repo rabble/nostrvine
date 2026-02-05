@@ -84,6 +84,10 @@ if [ -f .env ]; then
     if [ -n "$ZENDESK_API_TOKEN" ]; then
         DART_DEFINES="$DART_DEFINES --dart-define=ZENDESK_API_TOKEN=$ZENDESK_API_TOKEN"
     fi
+
+    if [ -n "$DEFAULT_ENV" ]; then
+        DART_DEFINES="$DART_DEFINES --dart-define=DEFAULT_ENV=$DEFAULT_ENV"
+    fi
 fi
 
 flutter run -d "$DEVICE" --$BUILD_MODE $DART_DEFINES

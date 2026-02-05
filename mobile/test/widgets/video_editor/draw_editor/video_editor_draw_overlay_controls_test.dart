@@ -35,6 +35,7 @@ void main() {
           body: VideoEditorScope(
             editorKey: GlobalKey(),
             onAddStickers: () {},
+            onAddEditTextLayer: ([layer]) async => null,
             child: BlocProvider<VideoEditorDrawBloc>.value(
               value: mockBloc,
               child: const SizedBox(

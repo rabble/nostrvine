@@ -4,6 +4,8 @@ appId: co.openvine.app
 #Steps:
 # 1. Open the app in clear state: Login screen is displayed
 # 2. Tap on I am 16 and I agree, tap on Get Started: User is directed to the empty Home screen
+# Fresh install shows "Get Started", returning user shows "Start with a new identity"
+
 
 # 1. Open the app in clear state: Login screen is displayed
 - launchApp:
@@ -11,21 +13,26 @@ appId: co.openvine.app
 - runFlow: "../asserts/assertSplash.yaml"
 - runFlow: "../asserts/assertLogin.yaml"
 
+
 # 2. Tap on I am 16 and I agree, tap on Get Started: User is directed to the empty Home screen
 - tapOn: I am 16 years or older
 - tapOn: "I agree to the "
 
 # Handle fresh install vs returning user
 # Fresh install shows "Get Started", returning user shows "Start with a new identity"
+# Use a variable to prevent both branches from executing
+- evalScript: ${output.isFreshInstall = false}
+
 - runFlow:
     when:
       visible: Get Started
     commands:
+      - evalScript: ${output.isFreshInstall = true}
       - tapOn: Get Started
 
 - runFlow:
     when:
-      notVisible: Get Started
+      true: ${!output.isFreshInstall}
     commands:
       - assertVisible: Start with a new identity
       - tapOn: Start with a new identity

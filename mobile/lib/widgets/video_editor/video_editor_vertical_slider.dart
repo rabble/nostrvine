@@ -37,8 +37,6 @@ class VideoEditorVerticalSlider extends StatefulWidget {
 }
 
 class _VideoEditorVerticalSliderState extends State<VideoEditorVerticalSlider> {
-  static const _trackWidth = 2.0;
-
   double _dragValue = 0;
   bool _isDragging = false;
 
@@ -46,11 +44,11 @@ class _VideoEditorVerticalSliderState extends State<VideoEditorVerticalSlider> {
 
   void _handleDragStart(DragStartDetails details) {
     _isDragging = true;
-    _updateValue(details.localPosition);
+    _updateValue(details.localPosition, _getSliderHeight());
   }
 
   void _handleDragUpdate(DragUpdateDetails details) {
-    _updateValue(details.localPosition);
+    _updateValue(details.localPosition, _getSliderHeight());
   }
 
   void _handleDragEnd(DragEndDetails details) {
@@ -58,9 +56,14 @@ class _VideoEditorVerticalSliderState extends State<VideoEditorVerticalSlider> {
     setState(() => _isDragging = false);
   }
 
-  void _updateValue(Offset localPosition) {
+  double _getSliderHeight() {
+    final renderBox = context.findRenderObject() as RenderBox?;
+    return renderBox?.size.height ?? widget.height;
+  }
+
+  void _updateValue(Offset localPosition, double height) {
     // Invert because 0 is at bottom, 1 is at top
-    final normalizedY = 1 - (localPosition.dy / widget.height).clamp(0.0, 1.0);
+    final normalizedY = 1 - (localPosition.dy / height).clamp(0.0, 1.0);
     setState(() => _dragValue = normalizedY);
     widget.onChanged(normalizedY);
   }
@@ -68,32 +71,66 @@ class _VideoEditorVerticalSliderState extends State<VideoEditorVerticalSlider> {
   @override
   Widget build(BuildContext context) {
     return RepaintBoundary(
-      child: GestureDetector(
-        onVerticalDragStart: _handleDragStart,
-        onVerticalDragUpdate: _handleDragUpdate,
-        onVerticalDragEnd: _handleDragEnd,
-        behavior: .opaque,
-        child: SizedBox(
-          height: widget.height,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(
-              // Extra padding for touch target
-              minWidth: kMinInteractiveDimension,
-            ),
-            child: Stack(
-              alignment: .centerRight,
-              clipBehavior: .none,
-              children: [
-                // Track
-                _Track(
-                  height: widget.height,
-                  trackWidth: _trackWidth,
-                  value: _currentValue,
-                ),
-                // Thumb
-                _Thumb(value: _currentValue, height: widget.height),
-              ],
-            ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Use actual available height, constrained by widget.height
+          final actualHeight = constraints.maxHeight.isFinite
+              ? constraints.maxHeight.clamp(0.0, widget.height)
+              : widget.height;
+
+          return _SliderBody(
+            height: actualHeight,
+            value: _currentValue,
+            onDragStart: _handleDragStart,
+            onDragUpdate: _handleDragUpdate,
+            onDragEnd: _handleDragEnd,
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _SliderBody extends StatelessWidget {
+  const _SliderBody({
+    required this.height,
+    required this.value,
+    required this.onDragStart,
+    required this.onDragUpdate,
+    required this.onDragEnd,
+  });
+
+  final double height;
+  final double value;
+  final GestureDragStartCallback onDragStart;
+  final GestureDragUpdateCallback onDragUpdate;
+  final GestureDragEndCallback onDragEnd;
+
+  static const _trackWidth = 2.0;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onVerticalDragStart: onDragStart,
+      onVerticalDragUpdate: onDragUpdate,
+      onVerticalDragEnd: onDragEnd,
+      behavior: .opaque,
+      child: SizedBox(
+        height: height,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            // Extra padding for touch target
+            minWidth: kMinInteractiveDimension,
+          ),
+          child: Stack(
+            alignment: .centerRight,
+            clipBehavior: .none,
+            children: [
+              // Track
+              _Track(height: height, trackWidth: _trackWidth, value: value),
+              // Thumb
+              _Thumb(value: value, height: height),
+            ],
           ),
         ),
       ),

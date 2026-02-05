@@ -31,6 +31,10 @@ if [ -f .env ]; then
     if [ -n "$ZENDESK_URL" ]; then
         DART_DEFINES="$DART_DEFINES --dart-define=ZENDESK_URL=$ZENDESK_URL"
     fi
+
+    if [ -n "$DEFAULT_ENV" ]; then
+        DART_DEFINES="$DART_DEFINES --dart-define=DEFAULT_ENV=$DEFAULT_ENV"
+    fi
 fi
 
 # Ensure Flutter dependencies are up to date

@@ -437,6 +437,31 @@ OpenVine uses a **Riverpod-based reactive architecture** for managing video feed
 - Used for user profile pages to display author's video history
 
 
+## Testing Conventions
+
+### Test File Structure
+**RULE**: Test files MUST mirror the `lib/` folder structure exactly.
+
+```
+lib/screens/pure/search_screen_pure.dart
+→ test/screens/pure/search_screen_pure_test.dart
+
+lib/services/video_event_service.dart
+→ test/services/video_event_service_test.dart
+
+lib/widgets/user_search_view.dart
+→ test/widgets/user_search_view_test.dart
+```
+
+**Naming Convention**: Test files should be named `{original_file_name}_test.dart`
+
+**Rationale**: Mirroring the folder structure makes it easy to find tests for any given file and maintains organizational consistency.
+
+### Test Helpers
+- Use `test/helpers/test_provider_overrides.dart` for common mock setups
+- Use `testMaterialApp()` and `testProviderScope()` helpers for widget tests
+- Use `mocktail` for BLoC mocking, `mockito` for service mocking
+
 ## Pre-Commit Workflow (MANDATORY)
 
 This project uses code generation (Riverpod, Freezed, JSON serializable, Mockito). **ALWAYS** run these steps before committing:

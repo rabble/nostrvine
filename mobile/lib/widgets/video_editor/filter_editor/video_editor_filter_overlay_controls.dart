@@ -114,7 +114,7 @@ class _TopBarContent extends StatelessWidget {
             _CloseButton(
               onTap: () {
                 bloc.add(const VideoEditorFilterCancelled());
-                scope.editor?.closeSubEditor();
+                scope.filterEditor?.close();
               },
             ),
             // Done button
@@ -146,7 +146,7 @@ class _CloseButton extends StatelessWidget {
         child: Container(
           padding: const .all(8),
           decoration: BoxDecoration(
-            color: const Color(0x26000000), // scrim-15
+            color: VineTheme.scrim15,
             borderRadius: .circular(16),
           ),
           child: SvgPicture.asset(
