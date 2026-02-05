@@ -54,7 +54,7 @@ class CameraController: NSObject {
     private var minZoom: CGFloat = 1.0
     private var maxZoom: CGFloat = 1.0
     private var currentZoom: CGFloat = 1.0
-    // Portrait-Modus: 9:16, 1080x1920
+    // Portrait-Modus: 9:16, e.g: 1080x1920
     private var aspectRatio: CGFloat = 9.0 / 16.0
     
     private var hasFrontCamera: Bool = false
