@@ -1,6 +1,8 @@
 // ABOUTME: Canvas widget wrapping ProImageEditor for the video editor.
 // ABOUTME: Handles layer manipulation callbacks and editor configuration.
 
+import 'dart:ui';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,15 +12,15 @@ import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.d
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
-import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
-import 'package:video_player/video_player.dart';
 
 /// The main canvas area for the video editor.
 ///
@@ -33,7 +35,8 @@ class VideoEditorCanvas extends ConsumerStatefulWidget {
 }
 
 class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
-  late final VideoPlayerController _videoPlayer;
+  late final Player _player;
+  late final VideoController _videoController;
   ProVideoController? _proVideoController;
 
   bool _isInitialized = false;
@@ -49,23 +52,24 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
 
   @override
   void dispose() {
-    _videoPlayer.dispose();
+    _player.dispose();
     super.dispose();
   }
 
   Future<void> _initializePlayer() async {
-    final clip = ref.read(clipManagerProvider).clips.first;
+    final clips = ref.read(clipManagerProvider).clips;
 
-    _videoPlayer = VideoPlayerController.file(File(clip.video.file!.path));
+    _player = Player();
+    _videoController = VideoController(_player);
 
-    await _videoPlayer.initialize();
-    await _videoPlayer.seekTo(clip.thumbnailTimestamp);
-    await Future.delayed(Duration(milliseconds: 200)); // TODO(@hm21): fix
-    await _videoPlayer.setLooping(true);
+    // Create playlist from all clips
+    final playlist = Playlist(
+      clips.map((clip) => Media(clip.video.file!.path)).toList(),
+    );
 
-    if (mounted) {
-      setState(() => _isInitialized = true);
-    }
+    await _player.open(playlist);
+    await _player.seek(clips.first.thumbnailTimestamp);
+    await _player.setPlaylistMode(.loop);
   }
 
   /// Syncs the main-editor capabilities from the main editor to the bloc.
@@ -145,7 +149,10 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
           final size = constraints.biggest;
 
           _proVideoController ??= ProVideoController(
-            videoPlayer: VideoEditorPlayer(controller: _videoPlayer),
+            videoPlayer: VideoEditorPlayer(
+              player: _player,
+              videoController: _videoController,
+            ),
             initialResolution: size,
 
             /// These values are not used since we provide a custom-UI.
@@ -178,10 +185,9 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                               )
                             : const StateHistoryConfigs(),
                         imageGeneration: ImageGenerationConfigs(
+                          captureImageByteFormat:
+                              ImageByteFormat.rawStraightRgba,
                           customPixelRatio: devicePixelRatio,
-                          outputFormat: .png,
-                          pngFilter: .none,
-                          pngLevel: 9,
                         ),
                         mainEditor: MainEditorConfigs(
                           safeArea: const EditorSafeArea.none(),
@@ -244,30 +250,6 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                       ),
                       callbacks: ProImageEditorCallbacks(
                         onCompleteWithParameters: (parameters) async {
-                          /* FIXME(@hm21): remove debug stuff below  
-                          Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (context) {
-                                return Scaffold(
-                                  appBar: AppBar(),
-                                  body: Container(
-                                    color: Colors.white,
-                                    child: Image.memory(parameters.image),
-                                  ),
-                                );
-                              },
-                            ),
-                          );
-                          return;
-
-                          final r = await decodeImageFromList(parameters.image);
-                          print([
-                            r,
-                            MediaQuery.sizeOf(context),
-                            MediaQuery.sizeOf(context) * devicePixelRatio,
-                            MediaQuery.sizeOf(this.context),
-                            MediaQuery.sizeOf(this.context) * devicePixelRatio,
-                          ]); */
                           final notifier = ref.read(
                             videoEditorProvider.notifier,
                           );

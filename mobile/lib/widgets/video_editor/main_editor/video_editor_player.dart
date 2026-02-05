@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
-import 'package:video_player/video_player.dart';
 
 class VideoEditorPlayer extends ConsumerStatefulWidget {
-  const VideoEditorPlayer({super.key, required this.controller});
+  const VideoEditorPlayer({
+    super.key,
+    required this.player,
+    required this.videoController,
+  });
 
-  final VideoPlayerController controller;
+  final Player player;
+  final VideoController videoController;
 
   @override
   ConsumerState<VideoEditorPlayer> createState() => _VideoEditorPlayerState();
@@ -28,7 +34,7 @@ class _VideoEditorPlayerState extends ConsumerState<VideoEditorPlayer> {
               if (_isInitialized)
                 FittedBox(
                   fit: BoxFit.cover,
-                  child: _VideoContent(controller: widget.controller),
+                  child: Video(controller: widget.videoController),
                 ),
 
               // Thumbnail layer with fade out
@@ -40,22 +46,6 @@ class _VideoEditorPlayerState extends ConsumerState<VideoEditorPlayer> {
           ),
         );
       },
-    );
-  }
-}
-
-class _VideoContent extends StatelessWidget {
-  const _VideoContent({required this.controller});
-
-  final VideoPlayerController controller;
-
-  @override
-  Widget build(BuildContext context) {
-    final size = controller.value.size;
-    return SizedBox(
-      width: size.width,
-      height: size.height,
-      child: VideoPlayer(controller),
     );
   }
 }
