@@ -469,38 +469,43 @@ class _VideoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => onVideoTap(displayedVideos, index),
-      onLongPress: onLongPress,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: Stack(
-          children: [
-            _VideoThumbnail(video: video),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _VideoInfoSection(video: video),
-            ),
-            if (isInSubscribedList)
+    return Semantics(
+      identifier: 'video_thumbnail_$index',
+      button: true,
+      label: 'Video thumbnail',
+      child: GestureDetector(
+        onTap: () => onVideoTap(displayedVideos, index),
+        onLongPress: onLongPress,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Stack(
+            children: [
+              _VideoThumbnail(video: video),
               Positioned(
-                top: 6,
-                left: 6,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: VineTheme.vineGreen.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Icon(
-                    Icons.collections,
-                    size: 14,
-                    color: Colors.white,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _VideoInfoSection(video: video),
+              ),
+              if (isInSubscribedList)
+                Positioned(
+                  top: 6,
+                  left: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: VineTheme.vineGreen.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Icon(
+                      Icons.collections,
+                      size: 14,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
