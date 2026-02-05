@@ -1,6 +1,28 @@
 // ABOUTME: Environment configuration model for dev/staging/production switching
 // ABOUTME: Each environment maps to exactly one relay URL and optional API base URL
 
+/// Build-time default environment
+/// Set via: --dart-define=DEFAULT_ENV=STAGING
+const String _defaultEnvString = String.fromEnvironment(
+  'DEFAULT_ENV',
+  defaultValue: 'PRODUCTION',
+);
+
+/// Parse build-time default to AppEnvironment
+AppEnvironment get buildTimeDefaultEnvironment {
+  switch (_defaultEnvString.toUpperCase()) {
+    case 'PRODUCTION_NEW':
+      return AppEnvironment.productionNew;
+    case 'STAGING':
+      return AppEnvironment.staging;
+    case 'DEV':
+      return AppEnvironment.dev;
+    case 'PRODUCTION':
+    default:
+      return AppEnvironment.production;
+  }
+}
+
 /// Available app environments
 enum AppEnvironment { production, productionNew, staging, dev }
 

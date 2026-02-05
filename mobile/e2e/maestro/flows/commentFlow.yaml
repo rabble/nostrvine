@@ -2,7 +2,7 @@ appId: co.openvine.app
 env:
   VIDEO_USER: ""
   VIDEO_DESCRIPTION: ""
-  VIDEO_TITLE: "time to"
+  VIDEO_TITLE: "Chris"
   FULL_COMMENT: ""
 ---
 - runFlow: ../tests/loginFreshInstall.yaml
