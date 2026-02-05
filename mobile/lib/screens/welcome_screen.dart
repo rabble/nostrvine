@@ -134,50 +134,40 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                               const SizedBox(height: 24),
 
                               // Login option for existing users
-                              TextButton(
-                                onPressed: _canProceed
-                                    ? () {
-                                        authService.acceptTerms();
-                                        context.push(
-                                          WelcomeScreen.loginOptionsPath,
-                                        );
-                                      }
-                                    : null,
-                                child: Text(
-                                  'Have an account? Log In',
-                                  style: TextStyle(
+                              Text.rich(
+                                TextSpan(
+                                  style: VineTheme.bodyLargeFont(
                                     color: _canProceed
-                                        ? Colors.white
-                                        : Colors.white.withValues(alpha: 0.5),
-                                    fontSize: 16,
-                                    decoration: TextDecoration.underline,
-                                    decorationColor: _canProceed
-                                        ? Colors.white
-                                        : Colors.white.withValues(alpha: 0.5),
+                                        ? VineTheme.onSurfaceVariant
+                                        : VineTheme.onSurfaceDisabled,
                                   ),
+                                  children: [
+                                    const TextSpan(text: 'Have an account? '),
+                                    DivineTextLink.span(
+                                      text: 'Sign in',
+                                      onTap: _canProceed
+                                          ? () {
+                                              authService.acceptTerms();
+                                              context.push(
+                                                WelcomeScreen.loginOptionsPath,
+                                              );
+                                            }
+                                          : null,
+                                    ),
+                                  ],
                                 ),
                               ),
 
                               // Start fresh option - only show when saved keys exist
                               if (_hasSavedKeys) ...[
                                 const SizedBox(height: 8),
-                                TextButton(
+                                DivineButton(
+                                  label: 'Start with a new identity',
+                                  type: DivineButtonType.link,
+                                  size: DivineButtonSize.small,
                                   onPressed: _canProceed
                                       ? () => _handleStartFresh(context)
                                       : null,
-                                  child: Text(
-                                    'Start with a new identity',
-                                    style: TextStyle(
-                                      color: _canProceed
-                                          ? Colors.white.withValues(alpha: 0.7)
-                                          : Colors.white.withValues(alpha: 0.4),
-                                      fontSize: 14,
-                                      decoration: TextDecoration.underline,
-                                      decorationColor: _canProceed
-                                          ? Colors.white.withValues(alpha: 0.7)
-                                          : Colors.white.withValues(alpha: 0.4),
-                                    ),
-                                  ),
                                 ),
                               ],
                             ],
@@ -354,9 +344,8 @@ class _ActionButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   String _getButtonText() {
-    if (!enabled) return 'Accept Terms to Continue';
-    if (hasSavedKeys) return 'Continue with Saved Keys';
-    return 'Get Started';
+    if (enabled) return 'Continue';
+    return 'Accept terms & continue';
   }
 
   @override
@@ -367,48 +356,26 @@ class _ActionButton extends StatelessWidget {
 
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: enabled ? onPressed : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: VineTheme.vineGreen,
-              disabledBackgroundColor: Colors.white.withValues(alpha: 0.7),
-              disabledForegroundColor: VineTheme.vineGreen.withValues(
-                alpha: 0.7,
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+        if (isLoading)
+          const SizedBox(
+            height: 48,
+            width: 48,
+            child: CircularProgressIndicator(
+              color: VineTheme.primary,
+              strokeWidth: 2,
             ),
-            child: isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: VineTheme.vineGreen,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : Text(
-                    _getButtonText(),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+          )
+        else
+          DivineButton(
+            label: _getButtonText(),
+            expanded: true,
+            onPressed: enabled ? onPressed : null,
           ),
-        ),
         if (hasSavedKeys && maskedNpub != null && enabled) ...[
           const SizedBox(height: 8),
           Text(
             'Resume as $maskedNpub',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.7),
-            ),
+            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
           ),
         ],
       ],
@@ -443,7 +410,9 @@ class _TermsCheckboxSection extends StatelessWidget {
       children: [
         // Age verification checkbox
         DivineRowCheckbox(
-          state: isOver16 ? DivineCheckboxState.selected : DivineCheckboxState.unselected,
+          state: isOver16
+              ? DivineCheckboxState.selected
+              : DivineCheckboxState.unselected,
           onChanged: (value) => onOver16Changed(value),
           label: Text(
             'I am 16 years or older',
@@ -454,8 +423,9 @@ class _TermsCheckboxSection extends StatelessWidget {
 
         // TOS acceptance checkbox with links
         DivineRowCheckbox(
-          state:
-              agreedToTerms ? DivineCheckboxState.selected : DivineCheckboxState.unselected,
+          state: agreedToTerms
+              ? DivineCheckboxState.selected
+              : DivineCheckboxState.unselected,
           onChanged: (value) => onAgreedToTermsChanged(value),
           crossAxisAlignment: CrossAxisAlignment.start,
           label: RichText(
@@ -496,5 +466,4 @@ class _TermsCheckboxSection extends StatelessWidget {
       ],
     );
   }
-
 }
