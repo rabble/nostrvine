@@ -6,5 +6,26 @@
     ],
     "deny": [],
     "ask": []
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-format.sh",
+            "timeout": 30,
+            "statusMessage": "Formatting code..."
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-analyze.sh",
+            "timeout": 60,
+            "statusMessage": "Analyzing code..."
+          }
+        ]
+      }
+    ]
   }
 }
