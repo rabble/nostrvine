@@ -28,7 +28,7 @@ final class ProfileSaved extends ProfileEditorEvent {
   /// Bio/about text (optional).
   final String? about;
 
-  /// Username to claim as `username@divine.video` (optional).
+  /// Username to claim as `_@username.divine.video` (optional).
   final String? username;
 
   /// Profile picture URL (optional).

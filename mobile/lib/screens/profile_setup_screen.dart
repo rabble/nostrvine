@@ -146,12 +146,25 @@ class _ProfileSetupScreenViewState
               _pictureController.text = profile.picture ?? '';
 
               // Extract username from NIP-05 if present
-              if (profile.nip05 != null &&
-                  (profile.nip05!.endsWith('@divine.video') ||
-                      profile.nip05!.endsWith('@openvine.co'))) {
-                final username = profile.nip05!.split('@')[0];
-                _nip05Controller.text = username;
-                _initialUsername = username;
+              // Support both new subdomain format and legacy formats
+              if (profile.nip05 != null) {
+                String? username;
+                // New subdomain format: _@username.divine.video
+                final subdomainMatch = RegExp(
+                  r'^_@([a-z0-9\-_.]+)\.divine\.video$',
+                ).firstMatch(profile.nip05!);
+                if (subdomainMatch != null) {
+                  username = subdomainMatch.group(1);
+                }
+                // Old format: username@divine.video or username@openvine.co
+                else if (profile.nip05!.endsWith('@divine.video') ||
+                    profile.nip05!.endsWith('@openvine.co')) {
+                  username = profile.nip05!.split('@')[0];
+                }
+                if (username != null) {
+                  _nip05Controller.text = username;
+                  _initialUsername = username;
+                }
               }
 
               // Load profile color from banner field
@@ -898,7 +911,7 @@ class _ProfileSetupScreenViewState
                                   prefixStyle: VineTheme.bodyLargeFont(
                                     color: VineTheme.onSurfaceMuted,
                                   ),
-                                  suffixText: '@divine.video',
+                                  suffixText: '.divine.video',
                                   suffixStyle: VineTheme.bodyLargeFont(
                                     color: VineTheme.onSurfaceMuted,
                                   ),

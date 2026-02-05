@@ -26,7 +26,7 @@ void main() {
     const testAbout = 'Test bio';
     const testUsername = 'testuser';
     const testPicture = 'https://example.com/avatar.png';
-    const testNip05 = '$testUsername@divine.video';
+    const testNip05 = '_@$testUsername.divine.video';
     const testOriginalNip05 = 'original@example.com';
 
     /// Helper to create a test UserProfile
