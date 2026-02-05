@@ -700,9 +700,16 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Future<void> _handleRemoveKeys(BuildContext context, WidgetRef ref) async {
     final authService = ref.read(authServiceProvider);
 
+    // Only show export keys option if user has locally stored keys (nsec)
+    // This is true for 'automatic' (generated) or 'importedKeys' auth sources
+    final hasExportableKeys =
+        authService.authenticationSource == AuthenticationSource.automatic ||
+        authService.authenticationSource == AuthenticationSource.importedKeys;
+
     // Show warning dialog
     await showRemoveKeysWarningDialog(
       context: context,
+      hasExportableKeys: hasExportableKeys,
       onExportKeys: () => context.push(KeyManagementScreen.path),
       onConfirm: () async {
         // Show loading indicator

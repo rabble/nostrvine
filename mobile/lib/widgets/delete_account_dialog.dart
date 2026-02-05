@@ -13,10 +13,15 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Show warning dialog for removing keys from device only
+///
+/// [hasExportableKeys] - If true, shows the nsec backup warning and export
+/// button. Should be true only when authenticationSource is `automatic` or
+/// `importedKeys` (i.e., the app has the user's nsec stored locally).
 Future<void> showRemoveKeysWarningDialog({
   required BuildContext context,
   required VoidCallback onConfirm,
   VoidCallback? onExportKeys,
+  bool hasExportableKeys = false,
 }) {
   return showDialog(
     context: context,
@@ -31,12 +36,16 @@ Future<void> showRemoveKeysWarningDialog({
           fontWeight: FontWeight.bold,
         ),
       ),
-      content: const Text(
-        'This will remove your keys from this device. '
-        'Your content will remain on Nostr relays.\n\n'
-        'To sign back in, you\'ll need your nsec backup. '
-        'If you haven\'t saved it, export your keys first.',
-        style: TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
+      content: Text(
+        hasExportableKeys
+            ? 'This will remove your keys from this device. '
+                  'Your content will remain on Nostr relays.\n\n'
+                  'To sign back in, you\'ll need your nsec backup. '
+                  'If you haven\'t saved it, export your keys first.'
+            : 'This will remove your keys from this device. '
+                  'Your content will remain on Nostr relays.\n\n'
+                  'To sign back in, use your signer app or nsec backup.',
+        style: const TextStyle(color: Colors.white, fontSize: 16, height: 1.5),
       ),
       actionsAlignment: MainAxisAlignment.spaceBetween,
       actions: [
@@ -50,7 +59,7 @@ Future<void> showRemoveKeysWarningDialog({
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            if (onExportKeys != null)
+            if (hasExportableKeys && onExportKeys != null)
               TextButton(
                 onPressed: () {
                   context.pop();
