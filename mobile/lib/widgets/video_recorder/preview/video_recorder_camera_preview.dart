@@ -111,7 +111,7 @@ class _CameraPreview extends ConsumerWidget {
     return FittedBox(
       fit: .cover,
       child: SizedBox(
-        width: 1000 / sensorAspectRatio,
+        width: 1000 * sensorAspectRatio,
         height: 1000,
         child: Stack(
           children: [
