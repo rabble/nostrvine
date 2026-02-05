@@ -1,6 +1,6 @@
 // ABOUTME: Unit tests for VideoEventService.resetAndResubscribeAll()
-// ABOUTME: Verifies that relay set changes trigger proper unsubscribe, clear,
-// and resubscribe of persistent feeds (homeFeed, discovery).
+// ABOUTME: Verifies that relay set changes trigger proper unsubscribe and
+// ABOUTME: resubscribe of persistent feeds while PRESERVING existing events.
 
 import 'dart:async';
 
@@ -94,7 +94,7 @@ void main() {
       videoEventService.dispose();
     });
 
-    test('clears all event lists when called', () async {
+    test('preserves existing events when called', () async {
       // Subscribe to discovery first
       await videoEventService.subscribeToVideoFeed(
         subscriptionType: SubscriptionType.discovery,
@@ -128,13 +128,19 @@ void main() {
 
       // Verify we have videos before reset
       expect(videoEventService.discoveryVideos, isNotEmpty);
+      final videoCountBefore = videoEventService.discoveryVideos.length;
 
       // Reset and resubscribe
       await videoEventService.resetAndResubscribeAll();
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
-      // After reset, old events should be gone (new events haven't arrived yet)
-      // The service resubscribed to discovery which created a new subscription
+      // After reset, existing events should be PRESERVED (not cleared)
+      // This avoids jarring UX when relay set changes during normal operation
+      expect(
+        videoEventService.discoveryVideos.length,
+        equals(videoCountBefore),
+        reason: 'Should preserve existing videos after reset',
+      );
       expect(
         subscribeCallCount,
         greaterThan(1),
@@ -142,7 +148,7 @@ void main() {
       );
     });
 
-    test('notifies listeners during reset', () async {
+    test('resubscribes without unnecessary notifications', () async {
       await videoEventService.subscribeToVideoFeed(
         subscriptionType: SubscriptionType.discovery,
         limit: 50,
@@ -155,10 +161,14 @@ void main() {
       await videoEventService.resetAndResubscribeAll();
       await Future<void>.delayed(const Duration(milliseconds: 50));
 
+      // With the new behavior that preserves events, there's no need
+      // for a "clearing" notification. Notifications happen when new
+      // events arrive from the resubscription, not during reset itself.
+      // This avoids jarring UX where the feed briefly shows as empty.
       expect(
-        notificationCount,
-        greaterThan(0),
-        reason: 'Should have notified listeners after clearing events',
+        subscribeCallCount,
+        greaterThan(1),
+        reason: 'Should have resubscribed after reset',
       );
     });
 

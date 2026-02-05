@@ -51,18 +51,16 @@ class EnvironmentConfig {
     }
   }
 
-  /// Get REST API base URL
+  /// Get REST API base URL (FunnelCake REST API is served from the relay)
+  /// Derives from relayUrl to ensure they stay in sync
   String get apiBaseUrl {
-    switch (environment) {
-      case AppEnvironment.poc:
-        return 'https://api.poc.dvines.org';
-      case AppEnvironment.staging:
-        return 'https://api.staging.dvines.org';
-      case AppEnvironment.test:
-        return 'https://api.test.dvines.org';
-      case AppEnvironment.production:
-        return 'https://api.divine.video';
+    final url = relayUrl;
+    if (url.startsWith('wss://')) {
+      return url.replaceFirst('wss://', 'https://');
+    } else if (url.startsWith('ws://')) {
+      return url.replaceFirst('ws://', 'http://');
     }
+    return url;
   }
 
   /// Get blossom media server URL (same for all environments currently)

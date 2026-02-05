@@ -2847,17 +2847,23 @@ class VideoEventService extends ChangeNotifier {
     );
   }
 
-  /// Reset all persistent subscriptions and resubscribe.
+  /// Resubscribe to persistent feeds when relay set changes.
   ///
-  /// Used when the relay set changes (relays added/removed) to ensure feeds
-  /// reflect data from the new relay configuration. Ephemeral subscriptions
-  /// (search, hashtag, profile) are cancelled but not auto-resubscribed;
-  /// user navigation will trigger fresh ones.
+  /// Used when the relay set changes (relays added/removed). This method
+  /// cancels existing subscriptions and resubscribes, but PRESERVES existing
+  /// events in memory. New events from the updated relay set will be merged
+  /// in via normal deduplication.
+  ///
+  /// This avoids jarring UX where temporary relay changes (e.g., indexer
+  /// queries for profile fallback) would wipe the user's feed.
+  ///
+  /// Ephemeral subscriptions (search, hashtag, profile) are cancelled but
+  /// not auto-resubscribed; user navigation will trigger fresh ones.
   Future<void> resetAndResubscribeAll() async {
     if (_isDisposed) return;
 
     Log.info(
-      'Relay set changed - resetting and resubscribing all persistent feeds',
+      'Relay set changed - resubscribing to persistent feeds (preserving existing events)',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
@@ -2879,22 +2885,12 @@ class VideoEventService extends ChangeNotifier {
     // Cancel all subscriptions
     await unsubscribeFromVideoFeed();
 
-    // Clear all event lists
-    clearVideoEvents();
+    // IMPORTANT: Do NOT clear existing event lists - existing events are still
+    // valid and should be preserved. New events from the updated relay set will
+    // be merged in via normal deduplication. Clearing events causes jarring UX
+    // when temporary relay changes (e.g., indexer queries) trigger this method.
 
-    // Reset pagination states
-    for (final state in _paginationStates.values) {
-      state.reset();
-    }
-
-    // Clear bucket caches
-    _hashtagBuckets.clear();
-    _authorBuckets.clear();
-
-    // Notify listeners so providers react (emit empty → loading transition)
-    notifyListeners();
-
-    // Re-subscribe to discovery feed
+    // Re-subscribe to discovery feed (will merge new events with existing)
     if (discoveryParams != null) {
       await subscribeToVideoFeed(
         subscriptionType: SubscriptionType.discovery,

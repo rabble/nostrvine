@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:http/io_client.dart';
 import 'package:openvine/services/safe_json_cache_repository.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 class ImageCacheManager extends CacheManager {
   static const key = 'openvine_image_cache';
@@ -57,3 +58,26 @@ class ImageCacheManager extends CacheManager {
 
 // Singleton instance for easy access across the app
 final openVineImageCache = ImageCacheManager();
+
+/// Clear all cached images - useful for debugging cache-related issues
+Future<void> clearImageCache() async {
+  Log.info(
+    '🗑️ Clearing entire image cache...',
+    name: 'ImageCacheManager',
+    category: LogCategory.system,
+  );
+  try {
+    await openVineImageCache.emptyCache();
+    Log.info(
+      '✅ Image cache cleared successfully',
+      name: 'ImageCacheManager',
+      category: LogCategory.system,
+    );
+  } catch (e) {
+    Log.error(
+      '❌ Failed to clear image cache: $e',
+      name: 'ImageCacheManager',
+      category: LogCategory.system,
+    );
+  }
+}
