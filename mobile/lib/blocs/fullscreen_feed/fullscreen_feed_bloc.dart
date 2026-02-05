@@ -117,5 +117,4 @@ class FullscreenFeedBloc
 
     emit(state.copyWith(currentIndex: clampedIndex));
   }
-
 }

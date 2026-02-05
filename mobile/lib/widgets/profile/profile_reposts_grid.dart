@@ -181,7 +181,7 @@ class _RepostGridTile extends StatelessWidget {
       );
 
       Log.info(
-        '✅ ProfileRepostsGrid: Pushed PooledFullscreenVideoFeedScreen at '
+        '✅ ProfileRepostsGrid: Called pushVideoFeed with StaticFeedSource at '
         'index $index',
         category: LogCategory.video,
       );
