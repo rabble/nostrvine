@@ -302,6 +302,12 @@ class UploadManager {
       final tempDir = await getTemporaryDirectory();
       videoFilePath =
           '${tempDir.path}/merged_${DateTime.now().microsecondsSinceEpoch}.mp4';
+      Log.info(
+        '🎬 Merging ${draft.clips.length} clips into single video '
+        '(unexpected: clips should be pre-merged at this point)...',
+        name: 'UploadManager',
+        category: .video,
+      );
       await ProVideoEditor.instance.renderVideoToFile(
         videoFilePath,
         VideoRenderData(
@@ -311,6 +317,11 @@ class UploadManager {
           endTime: VideoEditorConstants.maxDuration,
           shouldOptimizeForNetworkUse: true,
         ),
+      );
+      Log.info(
+        '✅ Video merge completed: $videoFilePath',
+        name: 'UploadManager',
+        category: .video,
       );
     }
 
