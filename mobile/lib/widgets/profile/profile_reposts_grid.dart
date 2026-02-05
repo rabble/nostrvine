@@ -2,13 +2,13 @@
 // ABOUTME: Shows 3-column grid with thumbnails and repost badge indicator
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
-import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Grid widget displaying user's reposted videos
@@ -84,6 +84,7 @@ class ProfileRepostsGrid extends StatelessWidget {
                     return _RepostGridTile(
                       videoEvent: videoEvent,
                       index: index,
+                      allVideos: repostedVideos,
                     );
                   }, childCount: repostedVideos.length),
                 ),
@@ -152,10 +153,15 @@ class _RepostsEmptyState extends StatelessWidget {
 
 /// Individual repost tile in the grid with repost badge
 class _RepostGridTile extends StatelessWidget {
-  const _RepostGridTile({required this.videoEvent, required this.index});
+  const _RepostGridTile({
+    required this.videoEvent,
+    required this.index,
+    required this.allVideos,
+  });
 
   final VideoEvent videoEvent;
   final int index;
+  final List<VideoEvent> allVideos;
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -166,23 +172,11 @@ class _RepostGridTile extends StatelessWidget {
         category: LogCategory.video,
       );
 
-      // Get the BLoC and create a stream that starts with current videos
-      final bloc = context.read<ProfileRepostedVideosBloc>();
-      // Use Stream.value to emit current state first, then concat future updates
-      final videosStream = Stream.value(bloc.state.videos).asyncExpand((
-        initial,
-      ) async* {
-        yield initial;
-        yield* bloc.stream.map((state) => state.videos);
-      });
-
       context.push(
-        PooledFullscreenVideoFeedScreen.path,
-        extra: PooledFullscreenVideoFeedArgs(
-          videosStream: videosStream,
+        FullscreenVideoFeedScreen.path,
+        extra: FullscreenVideoFeedArgs(
+          source: StaticFeedSource(allVideos),
           initialIndex: index,
-          onLoadMore: () =>
-              bloc.add(const ProfileRepostedVideosLoadMoreRequested()),
         ),
       );
 
