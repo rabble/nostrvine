@@ -96,9 +96,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                                 'assets/icon/logo.svg',
                                 height: 50,
                               ),
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 24),
                               Text(
-                                'Authentic moments.\nHuman creativity.',
+                                'Create and share short videos\non the decentralized web',
                                 style: VineTheme.titleMediumFont(),
                                 textAlign: TextAlign.center,
                               ),
