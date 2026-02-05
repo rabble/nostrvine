@@ -14,7 +14,7 @@
 #   - ZENDESK_CLIENT_ID
 #   - ZENDESK_URL
 # 6 - DEFAULT_ENV is configured via build inputs (dropdown) when starting a build
-#   - Options: PRODUCTION, PRODUCTION_NEW, STAGING, DEV
+#   - Options: PRODUCTION, STAGING, TEST, POC
 #   - Defaults to PRODUCTION for automatic builds
 
 definitions:
@@ -89,9 +89,9 @@ workflows:
         default: PRODUCTION
         options:
           - PRODUCTION
-          - PRODUCTION_NEW
           - STAGING
-          - DEV
+          - TEST
+          - POC
     environment:
       flutter: 3.38.3
       xcode: latest
@@ -138,9 +138,9 @@ workflows:
         default: PRODUCTION
         options:
           - PRODUCTION
-          - PRODUCTION_NEW
           - STAGING
-          - DEV
+          - TEST
+          - POC
     environment:
       flutter: 3.38.3
       xcode: 16.1  # Pinned to avoid FFmpeg Kit linker issues with newer Xcode
@@ -174,9 +174,9 @@ workflows:
         default: PRODUCTION
         options:
           - PRODUCTION
-          - PRODUCTION_NEW
           - STAGING
-          - DEV
+          - TEST
+          - POC
     environment:
       flutter: 3.38.3
       java: 17

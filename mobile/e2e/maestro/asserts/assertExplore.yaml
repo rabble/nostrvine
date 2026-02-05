@@ -2,8 +2,10 @@ appId: co.openvine.app
 ---
 # Top bar
 - assertVisible: Menu
-- assertVisible: "Explore"
-- assertVisible: "Search"
+- assertVisible:
+    text: "Explore.*"
+- assertVisible:
+    text: "Search.*"
 
 # Feed bar (5 tabs: Classics, New, Popular, For You, Lists)
 - assertVisible: |-

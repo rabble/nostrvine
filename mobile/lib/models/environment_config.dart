@@ -1,5 +1,5 @@
-// ABOUTME: Environment configuration model for dev/staging/production switching
-// ABOUTME: Each environment maps to exactly one relay URL and optional API base URL
+// ABOUTME: Environment configuration model for poc/staging/test/production
+// ABOUTME: Each environment maps to exactly one relay URL and API base URL
 
 /// Build-time default environment
 /// Set via: --dart-define=DEFAULT_ENV=STAGING
@@ -11,12 +11,12 @@ const String _defaultEnvString = String.fromEnvironment(
 /// Parse build-time default to AppEnvironment
 AppEnvironment get buildTimeDefaultEnvironment {
   switch (_defaultEnvString.toUpperCase()) {
-    case 'PRODUCTION_NEW':
-      return AppEnvironment.productionNew;
+    case 'POC':
+      return AppEnvironment.poc;
     case 'STAGING':
       return AppEnvironment.staging;
-    case 'DEV':
-      return AppEnvironment.dev;
+    case 'TEST':
+      return AppEnvironment.test;
     case 'PRODUCTION':
     default:
       return AppEnvironment.production;
@@ -24,69 +24,44 @@ AppEnvironment get buildTimeDefaultEnvironment {
 }
 
 /// Available app environments
-enum AppEnvironment { production, productionNew, staging, dev }
-
-/// Dev environment relay options
-enum DevRelay { umbra, shugur, funnelcakeProd, localhost }
+enum AppEnvironment { poc, staging, test, production }
 
 /// Configuration for the current app environment
 class EnvironmentConfig {
-  const EnvironmentConfig({required this.environment, this.devRelay});
+  const EnvironmentConfig({required this.environment});
 
   final AppEnvironment environment;
-  final DevRelay? devRelay;
 
   /// Default production configuration
   static const production = EnvironmentConfig(
     environment: AppEnvironment.production,
   );
 
-  /// Get relay URL for current environment (always exactly one)
-  /// Staging uses Divine Funnelcake relay (cake service)
+  /// Get relay URL for current environment
   String get relayUrl {
     switch (environment) {
-      case AppEnvironment.production:
-        return 'wss://relay.divine.video';
-      case AppEnvironment.productionNew:
-        return 'wss://relay.dvines.org';
+      case AppEnvironment.poc:
+        return 'wss://relay.poc.dvines.org';
       case AppEnvironment.staging:
         return 'wss://relay.staging.dvines.org';
-      case AppEnvironment.dev:
-        switch (devRelay) {
-          case DevRelay.umbra:
-          case null:
-            return 'wss://relay.poc.dvines.org';
-          case DevRelay.shugur:
-            return 'wss://shugur.poc.dvines.org';
-          case DevRelay.funnelcakeProd:
-            return 'wss://relay.dvines.org';
-          case DevRelay.localhost:
-            return 'ws://localhost:8080';
-        }
+      case AppEnvironment.test:
+        return 'wss://relay.test.dvines.org';
+      case AppEnvironment.production:
+        return 'wss://relay.divine.video';
     }
   }
 
-  /// Get REST API base URL for video analytics (funnel service)
-  /// Production uses relay.dvines.org, staging uses funnelcake.staging
-  String? get apiBaseUrl {
+  /// Get REST API base URL
+  String get apiBaseUrl {
     switch (environment) {
-      case AppEnvironment.production:
-        return 'https://relay.dvines.org';
-      case AppEnvironment.productionNew:
-        return 'https://relay.dvines.org';
+      case AppEnvironment.poc:
+        return 'https://api.poc.dvines.org';
       case AppEnvironment.staging:
-        return 'https://relay.staging.dvines.org';
-      case AppEnvironment.dev:
-        switch (devRelay) {
-          case DevRelay.funnelcakeProd:
-            return 'https://relay.dvines.org';
-          case DevRelay.localhost:
-            return 'http://localhost:8080';
-          case DevRelay.umbra:
-          case DevRelay.shugur:
-          case null:
-            return null;
-        }
+        return 'https://api.staging.dvines.org';
+      case AppEnvironment.test:
+        return 'https://api.test.dvines.org';
+      case AppEnvironment.production:
+        return 'https://api.divine.video';
     }
   }
 
@@ -94,55 +69,41 @@ class EnvironmentConfig {
   String get blossomUrl => 'https://media.divine.video';
 
   /// Whether this is production environment
-  bool get isProduction =>
-      environment == AppEnvironment.production ||
-      environment == AppEnvironment.productionNew;
+  bool get isProduction => environment == AppEnvironment.production;
 
   /// Human readable display name
   String get displayName {
     switch (environment) {
+      case AppEnvironment.poc:
+        return 'POC';
+      case AppEnvironment.staging:
+        return 'Staging';
+      case AppEnvironment.test:
+        return 'Test';
       case AppEnvironment.production:
         return 'Production';
-      case AppEnvironment.productionNew:
-        return 'Production (Funnelcake)';
-      case AppEnvironment.staging:
-        return 'Staging (Funnelcake)';
-      case AppEnvironment.dev:
-        switch (devRelay) {
-          case DevRelay.umbra:
-          case null:
-            return 'Dev - Umbra';
-          case DevRelay.shugur:
-            return 'Dev - Shugur';
-          case DevRelay.funnelcakeProd:
-            return 'Dev - Funnelcake Prod';
-          case DevRelay.localhost:
-            return 'Dev - Localhost';
-        }
     }
   }
 
   /// Color for environment indicator (as int for const constructor)
   int get indicatorColorValue {
     switch (environment) {
-      case AppEnvironment.production:
-        return 0xFF27C58B; // primaryGreen
-      case AppEnvironment.productionNew:
-        return 0xFF34BBF1; // accentBlue
+      case AppEnvironment.poc:
+        return 0xFFFF7640; // accentOrange
       case AppEnvironment.staging:
         return 0xFFFFF140; // accentYellow
-      case AppEnvironment.dev:
-        return 0xFFFF7640; // accentOrange
+      case AppEnvironment.test:
+        return 0xFF34BBF1; // accentBlue
+      case AppEnvironment.production:
+        return 0xFF27C58B; // primaryGreen
     }
   }
 
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is EnvironmentConfig &&
-          environment == other.environment &&
-          devRelay == other.devRelay;
+      other is EnvironmentConfig && environment == other.environment;
 
   @override
-  int get hashCode => Object.hash(environment, devRelay);
+  int get hashCode => environment.hashCode;
 }

@@ -85,7 +85,7 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
     final availableHeight = constraints.maxHeight;
 
     // For portrait mode, aspectRatio is inverted (e.g., 3/4 instead of 4/3)
-    final previewAspectRatio = 1 / aspectRatio;
+    final previewAspectRatio = aspectRatio;
 
     double previewWidth;
     double previewHeight;
@@ -208,7 +208,7 @@ class _CameraPreview extends StatelessWidget {
         ),
       );
     } else {
-      preview = AspectRatio(aspectRatio: 1 / aspectRatio, child: preview);
+      preview = AspectRatio(aspectRatio: aspectRatio, child: preview);
     }
 
     return preview;

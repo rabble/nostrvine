@@ -35,18 +35,28 @@ void main() {
       expect(service.currentConfig.environment, AppEnvironment.staging);
     });
 
-    test('loads dev environment with relay selection', () async {
+    test('loads poc environment from SharedPreferences', () async {
       SharedPreferences.setMockInitialValues({
         'developer_mode_enabled': true,
-        'app_environment': 'dev',
-        'dev_relay_selection': 'shugur',
+        'app_environment': 'poc',
       });
 
       service = EnvironmentService();
       await service.initialize();
 
-      expect(service.currentConfig.environment, AppEnvironment.dev);
-      expect(service.currentConfig.devRelay, DevRelay.shugur);
+      expect(service.currentConfig.environment, AppEnvironment.poc);
+    });
+
+    test('loads test environment from SharedPreferences', () async {
+      SharedPreferences.setMockInitialValues({
+        'developer_mode_enabled': true,
+        'app_environment': 'test',
+      });
+
+      service = EnvironmentService();
+      await service.initialize();
+
+      expect(service.currentConfig.environment, AppEnvironment.test);
     });
 
     test('enableDeveloperMode persists state', () async {
@@ -78,17 +88,42 @@ void main() {
       expect(prefs.getString('app_environment'), 'staging');
     });
 
-    test('setDevRelay persists selection', () async {
+    test('setEnvironment to poc persists correctly', () async {
       service = EnvironmentService();
       await service.initialize();
-      await service.setEnvironment(AppEnvironment.dev);
 
-      await service.setDevRelay(DevRelay.shugur);
+      await service.setEnvironment(AppEnvironment.poc);
 
-      expect(service.currentConfig.devRelay, DevRelay.shugur);
+      expect(service.currentConfig.environment, AppEnvironment.poc);
 
       final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('dev_relay_selection'), 'shugur');
+      expect(prefs.getString('app_environment'), 'poc');
+    });
+
+    test('setEnvironment to test persists correctly', () async {
+      service = EnvironmentService();
+      await service.initialize();
+
+      await service.setEnvironment(AppEnvironment.test);
+
+      expect(service.currentConfig.environment, AppEnvironment.test);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('app_environment'), 'test');
+    });
+
+    test('setEnvironment clears configured_relays', () async {
+      SharedPreferences.setMockInitialValues({
+        'configured_relays': 'some_relay_value',
+      });
+
+      service = EnvironmentService();
+      await service.initialize();
+
+      await service.setEnvironment(AppEnvironment.staging);
+
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.getString('configured_relays'), isNull);
     });
   });
 }

@@ -113,31 +113,57 @@ class FollowRepository {
     return _fetchFollowers(pubkey);
   }
 
+  /// Timeout for fetching followers from relays
+  static const _fetchFollowersTimeout = Duration(seconds: 5);
+
   /// Fetch followers for a given pubkey from Nostr relays.
   ///
   /// Queries for Kind 3 (contact list) events that mention the target pubkey
   /// in their 'p' tags - these are users who follow the target.
+  ///
+  /// Returns empty list on timeout to prevent infinite loading.
   Future<List<String>> _fetchFollowers(String pubkey) async {
     if (pubkey.isEmpty) {
       return [];
     }
 
-    final events = await _nostrClient.queryEvents([
-      Filter(
-        kinds: const [3], // Contact lists
-        p: [pubkey], // Events that mention this pubkey
-      ),
-    ]);
+    try {
+      final events = await _nostrClient
+          .queryEvents([
+            Filter(
+              kinds: const [3], // Contact lists
+              p: [pubkey], // Events that mention this pubkey
+            ),
+          ])
+          .timeout(
+            _fetchFollowersTimeout,
+            onTimeout: () {
+              Log.warning(
+                'Followers query timed out for $pubkey',
+                name: 'FollowRepository',
+                category: LogCategory.system,
+              );
+              return <Event>[];
+            },
+          );
 
-    // Extract unique follower pubkeys (authors of events that follow target)
-    final followers = <String>[];
-    for (final event in events) {
-      if (!followers.contains(event.pubkey)) {
-        followers.add(event.pubkey);
+      // Extract unique follower pubkeys (authors of events that follow target)
+      final followers = <String>[];
+      for (final event in events) {
+        if (!followers.contains(event.pubkey)) {
+          followers.add(event.pubkey);
+        }
       }
-    }
 
-    return followers;
+      return followers;
+    } on TimeoutException {
+      Log.warning(
+        'Followers query timed out for $pubkey',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return [];
+    }
   }
 
   /// Toggle follow status for a user.

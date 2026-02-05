@@ -2,21 +2,18 @@
 // ABOUTME: Verifies that upcoming videos are cached before user scrolls to them
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:media_cache/media_cache.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:models/models.dart';
-import 'package:openvine/services/video_cache_manager.dart';
 
-import 'video_feed_prefetch_test.mocks.dart';
+class MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
-// Generate mocks for VideoCacheManager
-@GenerateMocks([VideoCacheManager])
 void main() {
-  late MockVideoCacheManager mockCacheManager;
+  late MockMediaCacheManager mockCacheManager;
 
   setUp(() {
-    mockCacheManager = MockVideoCacheManager();
+    mockCacheManager = MockMediaCacheManager();
   });
 
   group('Video Feed Prefetching', () {
@@ -39,17 +36,28 @@ void main() {
           videos[6].id,
         ];
 
-        // Mock preCache to verify it's called with correct params
-        when(mockCacheManager.preCache(any, any)).thenAnswer((_) async {});
+        // Mock preCacheFiles to verify it's called with correct params
+        when(
+          () => mockCacheManager.preCacheFiles(
+            any(),
+            batchSize: any(named: 'batchSize'),
+            authHeadersProvider: any(named: 'authHeadersProvider'),
+          ),
+        ).thenAnswer((_) async {});
 
         // Act
         await _triggerPrefetch(mockCacheManager, videos, currentIndex);
 
         // Assert
         final captured = verify(
-          mockCacheManager.preCache(captureAny, captureAny),
+          () => mockCacheManager.preCacheFiles(
+            captureAny(),
+            batchSize: any(named: 'batchSize'),
+            authHeadersProvider: any(named: 'authHeadersProvider'),
+          ),
         ).captured;
-        final actualVideoIds = captured[1] as List<String>;
+        final items = captured[0] as List<({String url, String key})>;
+        final actualVideoIds = items.map((item) => item.key).toList();
 
         expect(actualVideoIds, containsAll(expectedVideoIds));
         expect(actualVideoIds.length, equals(expectedVideoIds.length));
@@ -66,21 +74,30 @@ void main() {
         // Expected: With preloadBefore = 2, should prefetch videos at index 3, 4
         final expectedVideoIds = [videos[3].id, videos[4].id];
 
-        final expectedVideoUrls = [videos[3].videoUrl!, videos[4].videoUrl!];
-
-        // Mock preCache
-        when(mockCacheManager.preCache(any, any)).thenAnswer((_) async {});
+        // Mock preCacheFiles
+        when(
+          () => mockCacheManager.preCacheFiles(
+            any(),
+            batchSize: any(named: 'batchSize'),
+            authHeadersProvider: any(named: 'authHeadersProvider'),
+          ),
+        ).thenAnswer((_) async {});
 
         // Act
         await _triggerPrefetch(mockCacheManager, videos, currentIndex);
 
         // Assert
-        verify(
-          mockCacheManager.preCache(
-            argThat(containsAll(expectedVideoUrls)),
-            argThat(containsAll(expectedVideoIds)),
+        final captured = verify(
+          () => mockCacheManager.preCacheFiles(
+            captureAny(),
+            batchSize: any(named: 'batchSize'),
+            authHeadersProvider: any(named: 'authHeadersProvider'),
           ),
-        ).called(1);
+        ).captured;
+        final items = captured[0] as List<({String url, String key})>;
+        final actualVideoIds = items.map((item) => item.key).toList();
+
+        expect(actualVideoIds, containsAll(expectedVideoIds));
       },
     );
 
@@ -92,16 +109,27 @@ void main() {
       // Expected: Can't prefetch beyond index 4, so only prefetch before
       final expectedVideoIds = [videos[2].id, videos[3].id];
 
-      when(mockCacheManager.preCache(any, any)).thenAnswer((_) async {});
+      when(
+        () => mockCacheManager.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      ).thenAnswer((_) async {});
 
       // Act
       await _triggerPrefetch(mockCacheManager, videos, currentIndex);
 
       // Assert
       final captured = verify(
-        mockCacheManager.preCache(captureAny, captureAny),
+        () => mockCacheManager.preCacheFiles(
+          captureAny(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
       ).captured;
-      final actualVideoIds = captured[1] as List<String>;
+      final items = captured[0] as List<({String url, String key})>;
+      final actualVideoIds = items.map((item) => item.key).toList();
 
       // Should only contain videos 2 and 3 (before current)
       expect(actualVideoIds, containsAll(expectedVideoIds));
@@ -119,16 +147,27 @@ void main() {
       // Expected: Only prefetch after (1, 2, 3), not before
       final expectedVideoIds = [videos[1].id, videos[2].id, videos[3].id];
 
-      when(mockCacheManager.preCache(any, any)).thenAnswer((_) async {});
+      when(
+        () => mockCacheManager.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      ).thenAnswer((_) async {});
 
       // Act
       await _triggerPrefetch(mockCacheManager, videos, currentIndex);
 
       // Assert
       final captured = verify(
-        mockCacheManager.preCache(captureAny, captureAny),
+        () => mockCacheManager.preCacheFiles(
+          captureAny(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
       ).captured;
-      final actualVideoIds = captured[1] as List<String>;
+      final items = captured[0] as List<({String url, String key})>;
+      final actualVideoIds = items.map((item) => item.key).toList();
 
       expect(actualVideoIds, containsAll(expectedVideoIds));
       expect(actualVideoIds.length, equals(AppConstants.preloadAfter));
@@ -142,10 +181,16 @@ void main() {
       // Mock: Video at index 5 is already cached, others are not
       for (int i = 0; i < videos.length; i++) {
         when(
-          mockCacheManager.isVideoCached(videos[i].id),
+          () => mockCacheManager.isFileCached(videos[i].id),
         ).thenAnswer((_) async => i == 5);
       }
-      when(mockCacheManager.preCache(any, any)).thenAnswer((_) async {});
+      when(
+        () => mockCacheManager.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      ).thenAnswer((_) async {});
 
       // Act
       await _triggerPrefetchWithCacheCheck(
@@ -156,9 +201,14 @@ void main() {
 
       // Assert
       final captured = verify(
-        mockCacheManager.preCache(captureAny, captureAny),
+        () => mockCacheManager.preCacheFiles(
+          captureAny(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
       ).captured;
-      final actualVideoIds = captured[1] as List<String>;
+      final items = captured[0] as List<({String url, String key})>;
+      final actualVideoIds = items.map((item) => item.key).toList();
 
       // Should NOT contain video[5].id since it's already cached
       expect(actualVideoIds, isNot(contains(videos[5].id)));
@@ -175,9 +225,13 @@ void main() {
       final videos = _createMockVideoEvents(10);
       const currentIndex = 3;
 
-      // Mock preCache to throw error
+      // Mock preCacheFiles to throw error
       when(
-        mockCacheManager.preCache(any, any),
+        () => mockCacheManager.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
       ).thenThrow(Exception('Network error'));
 
       // Act & Assert - should not throw
@@ -193,16 +247,27 @@ void main() {
       final videos = _createMockVideoEvents(20);
       const currentIndex = 10;
 
-      when(mockCacheManager.preCache(any, any)).thenAnswer((_) async {});
+      when(
+        () => mockCacheManager.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      ).thenAnswer((_) async {});
 
       // Act
       await _triggerPrefetch(mockCacheManager, videos, currentIndex);
 
       // Assert
       final captured = verify(
-        mockCacheManager.preCache(captureAny, captureAny),
+        () => mockCacheManager.preCacheFiles(
+          captureAny(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
       ).captured;
-      final actualVideoIds = captured[1] as List<String>;
+      final items = captured[0] as List<({String url, String key})>;
+      final actualVideoIds = items.map((item) => item.key).toList();
 
       // Total videos to prefetch should be preloadBefore + preloadAfter
       final expectedCount =
@@ -234,7 +299,7 @@ List<VideoEvent> _createMockVideoEvents(int count) {
 /// Simulates triggering prefetch logic after page change
 /// This will be the actual implementation in VideoFeedScreen._onPageChanged
 Future<void> _triggerPrefetch(
-  VideoCacheManager cacheManager,
+  MediaCacheManager cacheManager,
   List<VideoEvent> videos,
   int currentIndex,
 ) async {
@@ -257,11 +322,12 @@ Future<void> _triggerPrefetch(
 
   if (videosToPreFetch.isEmpty) return;
 
-  final videoUrls = videosToPreFetch.map((v) => v.videoUrl!).toList();
-  final videoIds = videosToPreFetch.map((v) => v.id).toList();
+  final items = videosToPreFetch
+      .map((v) => (url: v.videoUrl!, key: v.id))
+      .toList();
 
   try {
-    await cacheManager.preCache(videoUrls, videoIds);
+    await cacheManager.preCacheFiles(items);
   } catch (e) {
     // Gracefully handle errors
   }
@@ -269,7 +335,7 @@ Future<void> _triggerPrefetch(
 
 /// Simulates prefetch with cache checking
 Future<void> _triggerPrefetchWithCacheCheck(
-  VideoCacheManager cacheManager,
+  MediaCacheManager cacheManager,
   List<VideoEvent> videos,
   int currentIndex,
 ) async {
@@ -286,7 +352,7 @@ Future<void> _triggerPrefetchWithCacheCheck(
   for (int i = startIndex; i < endIndex; i++) {
     if (i != currentIndex && i >= 0 && i < videos.length) {
       // Check if already cached before adding
-      final isCached = await cacheManager.isVideoCached(videos[i].id);
+      final isCached = await cacheManager.isFileCached(videos[i].id);
       if (!isCached) {
         videosToPreFetch.add(videos[i]);
       }
@@ -295,11 +361,12 @@ Future<void> _triggerPrefetchWithCacheCheck(
 
   if (videosToPreFetch.isEmpty) return;
 
-  final videoUrls = videosToPreFetch.map((v) => v.videoUrl!).toList();
-  final videoIds = videosToPreFetch.map((v) => v.id).toList();
+  final items = videosToPreFetch
+      .map((v) => (url: v.videoUrl!, key: v.id))
+      .toList();
 
   try {
-    await cacheManager.preCache(videoUrls, videoIds);
+    await cacheManager.preCacheFiles(items);
   } catch (e) {
     // Gracefully handle errors
   }

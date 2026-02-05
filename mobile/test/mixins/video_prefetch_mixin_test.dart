@@ -2,22 +2,25 @@
 // ABOUTME: Verifies video prefetching behavior in PageView-based feeds
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mockito/annotations.dart';
-import 'package:mockito/mockito.dart';
+import 'package:media_cache/media_cache.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:models/models.dart';
-import 'package:openvine/services/video_cache_manager.dart';
 
-import 'video_prefetch_mixin_test.mocks.dart';
+class MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
-// Generate mocks
-@GenerateMocks([VideoCacheManager])
 void main() {
-  late MockVideoCacheManager mockCache;
+  late MockMediaCacheManager mockCache;
 
   setUp(() {
-    mockCache = MockVideoCacheManager();
-    when(mockCache.preCache(any, any)).thenAnswer((_) async {});
+    mockCache = MockMediaCacheManager();
+    when(
+      () => mockCache.preCacheFiles(
+        any(),
+        batchSize: any(named: 'batchSize'),
+        authHeadersProvider: any(named: 'authHeadersProvider'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
   group('VideoPrefetchMixin', () {
@@ -30,11 +33,16 @@ void main() {
       final mixin = TestVideoPrefetchMixin(mockCache);
       mixin.checkForPrefetch(currentIndex: currentIndex, videos: videos);
 
-      // Then it should call preCache with correct videos
+      // Then it should call preCacheFiles with correct videos
       final captured = verify(
-        mockCache.preCache(captureAny, captureAny),
+        () => mockCache.preCacheFiles(
+          captureAny(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
       ).captured;
-      final cachedIds = captured[1] as List<String>;
+      final items = captured[0] as List<({String url, String key})>;
+      final cachedIds = items.map((item) => item.key).toList();
 
       // Should prefetch videos 3, 4, 6, 7, 8 (before=2, after=3)
       expect(
@@ -52,9 +60,14 @@ void main() {
       mixin.checkForPrefetch(currentIndex: currentIndex, videos: videos);
 
       final captured = verify(
-        mockCache.preCache(captureAny, captureAny),
+        () => mockCache.preCacheFiles(
+          captureAny(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
       ).captured;
-      final cachedIds = captured[1] as List<String>;
+      final items = captured[0] as List<({String url, String key})>;
+      final cachedIds = items.map((item) => item.key).toList();
 
       // Should only prefetch after (1, 2, 3), no videos before
       expect(cachedIds, containsAll(['video-1', 'video-2', 'video-3']));
@@ -69,9 +82,14 @@ void main() {
       mixin.checkForPrefetch(currentIndex: currentIndex, videos: videos);
 
       final captured = verify(
-        mockCache.preCache(captureAny, captureAny),
+        () => mockCache.preCacheFiles(
+          captureAny(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
       ).captured;
-      final cachedIds = captured[1] as List<String>;
+      final items = captured[0] as List<({String url, String key})>;
+      final cachedIds = items.map((item) => item.key).toList();
 
       // Should only prefetch before (2, 3), no videos after
       expect(cachedIds, containsAll(['video-2', 'video-3']));
@@ -82,7 +100,13 @@ void main() {
       final mixin = TestVideoPrefetchMixin(mockCache);
       mixin.checkForPrefetch(currentIndex: 0, videos: []);
 
-      verifyNever(mockCache.preCache(any, any));
+      verifyNever(
+        () => mockCache.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      );
     });
 
     test('SPEC: should skip videos without URLs', () {
@@ -96,9 +120,14 @@ void main() {
       mixin.checkForPrefetch(currentIndex: 1, videos: videos);
 
       final captured = verify(
-        mockCache.preCache(captureAny, captureAny),
+        () => mockCache.preCacheFiles(
+          captureAny(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
       ).captured;
-      final cachedIds = captured[1] as List<String>;
+      final items = captured[0] as List<({String url, String key})>;
+      final cachedIds = items.map((item) => item.key).toList();
 
       // Should skip video-2 (no URL)
       expect(cachedIds, isNot(contains('video-2')));
@@ -111,14 +140,32 @@ void main() {
 
       // First call should work
       mixin.checkForPrefetch(currentIndex: 3, videos: videos);
-      verify(mockCache.preCache(any, any)).called(1);
+      verify(
+        () => mockCache.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      ).called(1);
 
       reset(mockCache);
-      when(mockCache.preCache(any, any)).thenAnswer((_) async {});
+      when(
+        () => mockCache.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      ).thenAnswer((_) async {});
 
       // Second call immediately after should be throttled
       mixin.checkForPrefetch(currentIndex: 4, videos: videos);
-      verifyNever(mockCache.preCache(any, any));
+      verifyNever(
+        () => mockCache.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      );
     });
 
     test('SPEC: should allow prefetch after throttle period', () async {
@@ -128,23 +175,47 @@ void main() {
 
       // First call
       mixin.checkForPrefetch(currentIndex: 3, videos: videos);
-      verify(mockCache.preCache(any, any)).called(1);
+      verify(
+        () => mockCache.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      ).called(1);
 
       reset(mockCache);
-      when(mockCache.preCache(any, any)).thenAnswer((_) async {});
+      when(
+        () => mockCache.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      ).thenAnswer((_) async {});
 
       // Wait for throttle period (default 1 second in test)
       await Future.delayed(const Duration(milliseconds: 1100));
 
       // Second call should work now
       mixin.checkForPrefetch(currentIndex: 4, videos: videos);
-      verify(mockCache.preCache(any, any)).called(1);
+      verify(
+        () => mockCache.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      ).called(1);
     });
 
     test('SPEC: should handle prefetch errors gracefully', () {
       final videos = _createMockVideos(5);
 
-      when(mockCache.preCache(any, any)).thenThrow(Exception('Network error'));
+      when(
+        () => mockCache.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      ).thenThrow(Exception('Network error'));
 
       final mixin = TestVideoPrefetchMixin(mockCache);
 
@@ -162,17 +233,35 @@ void main() {
 
       // First call
       mixin.checkForPrefetch(currentIndex: 3, videos: videos);
-      verify(mockCache.preCache(any, any)).called(1);
+      verify(
+        () => mockCache.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      ).called(1);
 
       reset(mockCache);
-      when(mockCache.preCache(any, any)).thenAnswer((_) async {});
+      when(
+        () => mockCache.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      ).thenAnswer((_) async {});
 
       // Reset throttle
       mixin.resetPrefetch();
 
       // Next call should work immediately (not throttled)
       mixin.checkForPrefetch(currentIndex: 4, videos: videos);
-      verify(mockCache.preCache(any, any)).called(1);
+      verify(
+        () => mockCache.preCacheFiles(
+          any(),
+          batchSize: any(named: 'batchSize'),
+          authHeadersProvider: any(named: 'authHeadersProvider'),
+        ),
+      ).called(1);
     });
   });
 }
@@ -212,10 +301,10 @@ VideoEvent _createVideo(String id, {required bool hasUrl}) {
 class TestVideoPrefetchMixin with VideoPrefetchMixin {
   TestVideoPrefetchMixin(this._cache);
 
-  final VideoCacheManager _cache;
+  final MediaCacheManager _cache;
 
   @override
-  VideoCacheManager get videoCacheManager => _cache;
+  MediaCacheManager get videoCacheManager => _cache;
 
   @override
   int get prefetchThrottleSeconds => 1; // Shorter for testing

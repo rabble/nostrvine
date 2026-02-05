@@ -157,7 +157,7 @@ class _FollowersListBody extends StatelessWidget {
       backgroundColor: VineTheme.vineGreen,
       onRefresh: () async {
         context.read<OthersFollowersBloc>().add(
-          OthersFollowersListLoadRequested(targetPubkey),
+          OthersFollowersListLoadRequested(targetPubkey, forceRefresh: true),
         );
       },
       child: ListView.builder(

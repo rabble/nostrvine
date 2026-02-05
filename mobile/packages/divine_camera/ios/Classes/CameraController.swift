@@ -54,7 +54,8 @@ class CameraController: NSObject {
     private var minZoom: CGFloat = 1.0
     private var maxZoom: CGFloat = 1.0
     private var currentZoom: CGFloat = 1.0
-    private var aspectRatio: CGFloat = 16.0 / 9.0
+    // Portrait-Modus: 9:16, e.g: 1080x1920
+    private var aspectRatio: CGFloat = 9.0 / 16.0
     
     private var hasFrontCamera: Bool = false
     private var hasBackCamera: Bool = false
@@ -328,9 +329,9 @@ class CameraController: NSObject {
         // This is the actual camera sensor output size
         let dimensions = CMVideoFormatDescriptionGetDimensions(device.activeFormat.formatDescription)
         // dimensions.width is the longer side (landscape), height is shorter
-        // We return width/height which gives us the landscape aspect ratio (e.g., 1.78 for 16:9)
-        aspectRatio = CGFloat(dimensions.width) / CGFloat(dimensions.height)
-        print("Camera aspect ratio: \(aspectRatio) from dimensions: \(dimensions.width)x\(dimensions.height)")
+        // For portrait mode, we swap to get 9:16 ratio
+        aspectRatio = CGFloat(dimensions.height) / CGFloat(dimensions.width)
+        print("Camera aspect ratio (portrait): \(aspectRatio) from dimensions: \(dimensions.height)x\(dimensions.width)")
     }
     
     /// Switches to a different camera lens.
