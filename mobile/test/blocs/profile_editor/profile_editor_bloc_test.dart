@@ -774,10 +774,14 @@ void main() {
     });
 
     group('UsernameChanged', () {
+      // Debounce duration used in the BLoC (500ms) + buffer
+      const debounceDuration = Duration(milliseconds: 600);
+
       blocTest<ProfileEditorBloc, ProfileEditorState>(
         'emits idle status when username is empty',
         build: createBloc,
         act: (bloc) => bloc.add(const UsernameChanged('')),
+        wait: debounceDuration,
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', '')
@@ -793,6 +797,7 @@ void main() {
         'emits error status for username too short',
         build: createBloc,
         act: (bloc) => bloc.add(const UsernameChanged('ab')),
+        wait: debounceDuration,
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', 'ab')
@@ -813,6 +818,7 @@ void main() {
         'emits error status for username too long',
         build: createBloc,
         act: (bloc) => bloc.add(const UsernameChanged('aaaaaaaaaaaaaaaaaaaaa')),
+        wait: debounceDuration,
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', 'aaaaaaaaaaaaaaaaaaaaa')
@@ -833,6 +839,7 @@ void main() {
         'emits error status for invalid characters',
         build: createBloc,
         act: (bloc) => bloc.add(const UsernameChanged('test@user')),
+        wait: debounceDuration,
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', 'test@user')
@@ -860,7 +867,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UsernameChanged(testUsername)),
-        wait: const Duration(milliseconds: 600),
+        wait: debounceDuration,
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', testUsername)
@@ -897,7 +904,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UsernameChanged(testUsername)),
-        wait: const Duration(milliseconds: 600),
+        wait: debounceDuration,
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', testUsername)
@@ -927,7 +934,7 @@ void main() {
         },
         build: createBloc,
         act: (bloc) => bloc.add(const UsernameChanged(testUsername)),
-        wait: const Duration(milliseconds: 600),
+        wait: debounceDuration,
         expect: () => [
           isA<ProfileEditorState>()
               .having((s) => s.username, 'username', testUsername)
@@ -968,7 +975,7 @@ void main() {
           await Future<void>.delayed(const Duration(milliseconds: 100));
           bloc.add(const UsernameChanged('test3'));
         },
-        wait: const Duration(milliseconds: 700),
+        wait: debounceDuration,
         verify: (_) {
           // Should only call API once for the final username due to restartable transformer
           verify(
@@ -1035,7 +1042,7 @@ void main() {
           // Now check username again - should use cache
           bloc.add(const UsernameChanged(testUsername));
         },
-        wait: const Duration(milliseconds: 100),
+        wait: debounceDuration,
         verify: (_) {
           // Should not call checkUsernameAvailability since it's in reserved cache
           verifyNever(

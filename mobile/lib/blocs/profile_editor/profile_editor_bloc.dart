@@ -9,6 +9,7 @@ import 'package:openvine/models/user_profile.dart' as app_models;
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:stream_transform/stream_transform.dart';
 
 part 'profile_editor_event.dart';
 part 'profile_editor_state.dart';
@@ -19,11 +20,18 @@ const _minUsernameLength = 3;
 /// Maximum username length.
 const _maxUsernameLength = 20;
 
-/// Debounce duration when user stops typing username.
-const _usernameDebounceDuration = Duration(milliseconds: 500);
-
 /// Username format: letters, numbers, hyphens, underscores, periods.
 final _usernamePattern = RegExp(r'^[a-zA-Z0-9._-]+$');
+
+/// Debounce duration for username validation
+const _debounceDuration = Duration(milliseconds: 500);
+
+/// Event transformer that debounces and restarts on new events
+EventTransformer<E> _debounceRestartable<E>() {
+  return (events, mapper) {
+    return restartable<E>().call(events.debounce(_debounceDuration), mapper);
+  };
+}
 
 /// BLoC for orchestrating profile publishing and username claiming.
 class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
@@ -37,7 +45,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
        super(const ProfileEditorState()) {
     on<ProfileSaved>(_onProfileSaved);
     on<ProfileSaveConfirmed>(_onProfileSaveConfirmed);
-    on<UsernameChanged>(_onUsernameChanged, transformer: restartable());
+    on<UsernameChanged>(
+      _onUsernameChanged,
+      transformer: _debounceRestartable(),
+    );
   }
 
   final ProfileRepository _profileRepository;
@@ -146,15 +157,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         usernameError: null,
       ),
     );
-    await Future<void>.delayed(_usernameDebounceDuration);
-
-    if (emit.isDone) return;
 
     final result = await _profileRepository.checkUsernameAvailability(
       username: username,
     );
-
-    if (emit.isDone) return;
 
     switch (result) {
       case UsernameAvailable():
