@@ -2,7 +2,10 @@
 // ABOUTME: Handles save, load, delete, and clear operations with JSON serialization
 
 import 'dart:convert';
+import 'dart:io';
 
+import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/utils/android_path_migration.dart';
@@ -111,6 +114,55 @@ class DraftStorageService {
 
     Log.error('📝 Draft not found: $id', category: LogCategory.video);
     return null;
+  }
+
+  /// Get draft by ID with validation - filters out clips with missing video files.
+  ///
+  /// Returns null if draft not found or all clips are invalid.
+  Future<VineDraft?> getValidatedDraftById(String id) async {
+    final draft = await getDraftById(id);
+    if (draft == null) return null;
+
+    final validClips = _filterValidClips(draft.clips);
+    if (validClips.isEmpty) {
+      Log.warning(
+        '📝 Draft $id has no valid clips - all video files missing',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+
+    if (validClips.length < draft.clips.length) {
+      Log.info(
+        '📝 Draft $id: ${validClips.length} valid clips '
+        '(${draft.clips.length - validClips.length} removed)',
+        category: LogCategory.video,
+      );
+    }
+
+    return draft.copyWith(clips: validClips);
+  }
+
+  /// Get the autosaved draft with validation.
+  ///
+  /// Returns null if no autosave exists or all clips are invalid.
+  Future<VineDraft?> getAutosaveDraft() async {
+    return getValidatedDraftById(VideoEditorConstants.autoSaveId);
+  }
+
+  /// Check if a valid autosave draft exists (with at least one valid clip).
+  Future<bool> hasValidAutosave() async {
+    final draft = await getAutosaveDraft();
+    return draft != null && draft.clips.isNotEmpty;
+  }
+
+  /// Filter clips to only include those with existing video files.
+  List<RecordingClip> _filterValidClips(List<RecordingClip> clips) {
+    return clips.where((clip) {
+      final videoPath = clip.video.file?.path;
+      if (videoPath == null) return false;
+      return File(videoPath).existsSync();
+    }).toList();
   }
 
   /// Get all drafts from storage

@@ -35,60 +35,53 @@ class FullscreenFeedBloc
        _onLoadMore = onLoadMore,
        super(FullscreenFeedState(currentIndex: initialIndex)) {
     on<FullscreenFeedStarted>(_onStarted);
-    on<FullscreenFeedVideosUpdated>(_onVideosUpdated);
     on<FullscreenFeedLoadMoreRequested>(_onLoadMoreRequested);
     on<FullscreenFeedIndexChanged>(_onIndexChanged);
   }
 
   final Stream<List<VideoEvent>> _videosStream;
   final VoidCallback? _onLoadMore;
-  StreamSubscription<List<VideoEvent>>? _videosSubscription;
 
-  /// Handle feed started - subscribe to the videos stream.
+  /// Handle feed started - subscribe to the videos stream using emit.forEach.
+  ///
+  /// emit.forEach automatically:
+  /// - Subscribes to the stream
+  /// - Emits states for each data event
+  /// - Cancels the subscription when the bloc is closed
   Future<void> _onStarted(
     FullscreenFeedStarted event,
     Emitter<FullscreenFeedState> emit,
   ) async {
-    await _videosSubscription?.cancel();
+    await emit.forEach<List<VideoEvent>>(
+      _videosStream,
+      onData: (videos) {
+        Log.debug(
+          'FullscreenFeedBloc: Videos updated, count=${videos.length}',
+          name: 'FullscreenFeedBloc',
+          category: LogCategory.video,
+        );
 
-    _videosSubscription = _videosStream.listen(
-      (videos) => add(FullscreenFeedVideosUpdated(videos)),
-      onError: (Object error) {
+        // Clamp current index to valid range
+        final clampedIndex = videos.isEmpty
+            ? 0
+            : state.currentIndex.clamp(0, videos.length - 1);
+
+        return state.copyWith(
+          status: FullscreenFeedStatus.ready,
+          videos: videos,
+          currentIndex: clampedIndex,
+          isLoadingMore: false,
+        );
+      },
+      onError: (error, stackTrace) {
         Log.error(
           'FullscreenFeedBloc: Stream error - $error',
           name: 'FullscreenFeedBloc',
           category: LogCategory.video,
         );
-        // Don't emit failure state here - keep showing existing videos
+        // Return current state to keep showing existing videos
+        return state;
       },
-    );
-  }
-
-  /// Handle videos updated from the source stream.
-  void _onVideosUpdated(
-    FullscreenFeedVideosUpdated event,
-    Emitter<FullscreenFeedState> emit,
-  ) {
-    final videos = event.videos;
-
-    Log.debug(
-      'FullscreenFeedBloc: Videos updated, count=${videos.length}',
-      name: 'FullscreenFeedBloc',
-      category: LogCategory.video,
-    );
-
-    // Clamp current index to valid range
-    final clampedIndex = videos.isEmpty
-        ? 0
-        : state.currentIndex.clamp(0, videos.length - 1);
-
-    emit(
-      state.copyWith(
-        status: FullscreenFeedStatus.ready,
-        videos: videos,
-        currentIndex: clampedIndex,
-        isLoadingMore: false,
-      ),
     );
   }
 
@@ -123,11 +116,5 @@ class FullscreenFeedBloc
         : event.index.clamp(0, state.videos.length - 1);
 
     emit(state.copyWith(currentIndex: clampedIndex));
-  }
-
-  @override
-  Future<void> close() {
-    _videosSubscription?.cancel();
-    return super.close();
   }
 }

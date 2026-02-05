@@ -2,13 +2,13 @@
 // ABOUTME: Shows 3-column grid with thumbnails and heart badge indicator
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:go_router/go_router.dart';
-import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Grid widget displaying user's liked videos
@@ -81,7 +81,11 @@ class ProfileLikedGrid extends StatelessWidget {
                     }
 
                     final videoEvent = likedVideos[index];
-                    return _LikedGridTile(videoEvent: videoEvent, index: index);
+                    return _LikedGridTile(
+                      videoEvent: videoEvent,
+                      index: index,
+                      allVideos: likedVideos,
+                    );
                   }, childCount: likedVideos.length),
                 ),
               ),
@@ -149,51 +153,46 @@ class _LikedEmptyState extends StatelessWidget {
 
 /// Individual liked video tile in the grid with heart badge
 class _LikedGridTile extends StatelessWidget {
-  const _LikedGridTile({required this.videoEvent, required this.index});
+  const _LikedGridTile({
+    required this.videoEvent,
+    required this.index,
+    required this.allVideos,
+  });
 
   final VideoEvent videoEvent;
   final int index;
+  final List<VideoEvent> allVideos;
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
-    onTap: () {
-      Log.info(
-        '🎯 ProfileLikedGrid TAP: gridIndex=$index, '
-        'videoId=${videoEvent.id}',
-        category: LogCategory.video,
-      );
-
-      // Get the BLoC and create a stream that starts with current videos
-      final bloc = context.read<ProfileLikedVideosBloc>();
-      // Use Stream.value to emit current state first, then concat future updates
-      final videosStream = Stream.value(bloc.state.videos).asyncExpand((
-        initial,
-      ) async* {
-        yield initial;
-        yield* bloc.stream.map((state) => state.videos);
-      });
-
-      context.push(
-        PooledFullscreenVideoFeedScreen.path,
-        extra: PooledFullscreenVideoFeedArgs(
-          videosStream: videosStream,
-          initialIndex: index,
-          onLoadMore: () =>
-              bloc.add(const ProfileLikedVideosLoadMoreRequested()),
+  Widget build(BuildContext context) => Semantics(
+    label: 'liked_video_thumbnail_$index',
+    child: GestureDetector(
+      onTap: () {
+        Log.info(
+          '🎯 ProfileLikedGrid TAP: gridIndex=$index, '
+          'videoId=${videoEvent.id}',
+          category: LogCategory.video,
+        );
+        // Use LikedVideosFeedSource for fullscreen playback
+        context.push(
+          FullscreenVideoFeedScreen.path,
+          extra: FullscreenVideoFeedArgs(
+            source: LikedVideosFeedSource(allVideos),
+            initialIndex: index,
+          ),
+        );
+        Log.info(
+          '✅ ProfileLikedGrid: Called pushVideoFeed with '
+          'LikedVideosFeedSource at index $index',
+          category: LogCategory.video,
+        );
+      },
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(4),
+        child: DecoratedBox(
+          decoration: BoxDecoration(color: VineTheme.cardBackground),
+          child: _LikedThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
         ),
-      );
-
-      Log.info(
-        '✅ ProfileLikedGrid: Pushed PooledFullscreenVideoFeedScreen at '
-        'index $index',
-        category: LogCategory.video,
-      );
-    },
-    child: ClipRRect(
-      borderRadius: BorderRadius.circular(4),
-      child: DecoratedBox(
-        decoration: BoxDecoration(color: VineTheme.cardBackground),
-        child: _LikedThumbnail(thumbnailUrl: videoEvent.thumbnailUrl),
       ),
     ),
   );

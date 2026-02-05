@@ -34,6 +34,7 @@ class VideoEditorScaffold extends ConsumerWidget {
       ),
       child: Scaffold(
         backgroundColor: VineTheme.surfaceContainerHigh,
+        resizeToAvoidBottomInset: false,
         body: Column(
           children: [
             Expanded(
@@ -84,13 +85,16 @@ class _OverlayControls extends StatelessWidget {
         builder: (context, state) {
           final child = switch (state) {
             _ when state.isLayerInteractionActive => const SizedBox(),
+            // Text-Editor
+            VideoEditorMainState(openSubEditor: SubEditorType.text) =>
+              const SizedBox.shrink(),
             // Draw-Editor
-            VideoEditorMainState(openSubEditor: .draw) =>
+            VideoEditorMainState(openSubEditor: SubEditorType.draw) =>
               const VideoEditorDrawOverlayControls(
                 key: ValueKey('Draw-Overlay-Controls'),
               ),
             // Filter-Editor
-            VideoEditorMainState(openSubEditor: .filter) =>
+            VideoEditorMainState(openSubEditor: SubEditorType.filter) =>
               const VideoEditorFilterOverlayControls(
                 key: ValueKey('Filter-Overlay-Controls'),
               ),
@@ -135,6 +139,8 @@ class _BottomActions extends StatelessWidget {
             final child = switch (state) {
               // TODO(@hm21) Implement Remove-Area
               _ when state.isLayerInteractionActive => const SizedBox(),
+              // Text-Bar (no bottom bar for text editor)
+              VideoEditorMainState(openSubEditor: .text) => const SizedBox(),
               // Draw-Bar
               VideoEditorMainState(openSubEditor: .draw) =>
                 const VideoEditorDrawBottomBar(

@@ -17,6 +17,7 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -667,12 +668,14 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   ///
   /// Loads clips and metadata from the specified draft. If [draftId] is null,
   /// restores from [autoSaveId] to recover an autosaved session.
+  /// Invalid clips (missing video files) are automatically filtered out,
+  /// and missing thumbnails are regenerated.
   Future<void> restoreDraft([String? draftId]) async {
     draftId ??= VideoEditorConstants.autoSaveId;
     Log.info(
-      '🎬 Initializing video editor with draft ID: $draftId',
+      '🎬 Restoring draft: $draftId',
       name: 'VideoEditorNotifier',
-      category: .video,
+      category: LogCategory.video,
     );
 
     final draft = await _draftService.getDraftById(draftId);
@@ -699,11 +702,69 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       );
     } else {
       Log.warning(
-        '⚠️ Draft not found: $draftId',
+        '⚠️ Draft not found or has no valid clips: $draftId',
         name: 'VideoEditorNotifier',
-        category: .video,
+        category: LogCategory.video,
       );
+      return;
     }
+
+    // Regenerate missing thumbnails
+    final clipsWithThumbnails = <RecordingClip>[];
+    for (final clip in draft.clips) {
+      final thumbnailPath = clip.thumbnailPath;
+      final thumbnailExists =
+          thumbnailPath != null && File(thumbnailPath).existsSync();
+
+      if (thumbnailExists) {
+        clipsWithThumbnails.add(clip);
+        continue;
+      }
+
+      Log.info(
+        '🖼️ Regenerating thumbnail for clip ${clip.id}',
+        name: 'VideoEditorNotifier',
+        category: LogCategory.video,
+      );
+
+      final videoPath = clip.video.file!.path;
+      final result = await VideoThumbnailService.extractThumbnail(
+        videoPath: videoPath,
+        targetTimestamp: clip.thumbnailTimestamp,
+      );
+      if (result != null) {
+        clipsWithThumbnails.add(clip.copyWith(thumbnailPath: result.path));
+      } else {
+        Log.warning(
+          '⚠️ Failed to regenerate thumbnail for clip ${clip.id}',
+          name: 'VideoEditorNotifier',
+          category: LogCategory.video,
+        );
+        // Keep clip even without thumbnail
+        clipsWithThumbnails.add(clip);
+      }
+    }
+
+    state = state.copyWith(
+      title: draft.title,
+      description: draft.description,
+      tags: draft.hashtags,
+      allowAudioReuse: draft.allowAudioReuse,
+      expiration: VideoMetadataExpiration.fromDuration(draft.expireTime),
+      editorStateHistory: draft.editorStateHistory,
+      editorEditingParameters: draft.editorEditingParameters,
+    );
+    _clipManager.addMultipleClips(clipsWithThumbnails);
+    // We set the aspect ratio in the video recorder to match the clips,
+    // so the user can't mix them up.
+    ref
+        .read(videoRecorderProvider.notifier)
+        .setAspectRatio(clipsWithThumbnails.first.targetAspectRatio);
+    Log.info(
+      '✅ Draft loaded with ${clipsWithThumbnails.length} clip(s)',
+      name: 'VideoEditorNotifier',
+      category: LogCategory.video,
+    );
   }
 
   /// Delete the autosaved draft from local storage.

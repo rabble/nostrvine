@@ -94,10 +94,10 @@ class EnvironmentService extends ChangeNotifier {
   }
 
   AppEnvironment _parseEnvironment(String? value) {
-    if (value == null) return AppEnvironment.production;
+    if (value == null) return buildTimeDefaultEnvironment;
     return AppEnvironment.values.firstWhere(
       (e) => e.name == value,
-      orElse: () => AppEnvironment.production,
+      orElse: () => buildTimeDefaultEnvironment,
     );
   }
 

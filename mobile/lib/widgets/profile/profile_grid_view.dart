@@ -249,41 +249,50 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                 dividerColor: Colors.transparent,
                 tabs: [
                   Tab(
-                    icon: SvgPicture.asset(
-                      'assets/icon/play.svg',
-                      width: 28,
-                      height: 28,
-                      colorFilter: ColorFilter.mode(
-                        _tabController.index == 0
-                            ? VineTheme.whiteText
-                            : VineTheme.onSurfaceMuted,
-                        BlendMode.srcIn,
+                    icon: Semantics(
+                      label: 'videos_tab',
+                      child: SvgPicture.asset(
+                        'assets/icon/play.svg',
+                        width: 28,
+                        height: 28,
+                        colorFilter: ColorFilter.mode(
+                          _tabController.index == 0
+                              ? VineTheme.whiteText
+                              : VineTheme.onSurfaceMuted,
+                          BlendMode.srcIn,
+                        ),
                       ),
                     ),
                   ),
                   Tab(
-                    icon: SvgPicture.asset(
-                      'assets/icon/heart.svg',
-                      width: 28,
-                      height: 28,
-                      colorFilter: ColorFilter.mode(
-                        _tabController.index == 1
-                            ? VineTheme.whiteText
-                            : VineTheme.onSurfaceMuted,
-                        BlendMode.srcIn,
+                    icon: Semantics(
+                      label: 'liked_tab',
+                      child: SvgPicture.asset(
+                        'assets/icon/heart.svg',
+                        width: 28,
+                        height: 28,
+                        colorFilter: ColorFilter.mode(
+                          _tabController.index == 1
+                              ? VineTheme.whiteText
+                              : VineTheme.onSurfaceMuted,
+                          BlendMode.srcIn,
+                        ),
                       ),
                     ),
                   ),
                   Tab(
-                    icon: SvgPicture.asset(
-                      'assets/icon/repost.svg',
-                      width: 28,
-                      height: 28,
-                      colorFilter: ColorFilter.mode(
-                        _tabController.index == 2
-                            ? VineTheme.whiteText
-                            : VineTheme.onSurfaceMuted,
-                        BlendMode.srcIn,
+                    icon: Semantics(
+                      label: 'reposted_tab',
+                      child: SvgPicture.asset(
+                        'assets/icon/repost.svg',
+                        width: 28,
+                        height: 28,
+                        colorFilter: ColorFilter.mode(
+                          _tabController.index == 2
+                              ? VineTheme.whiteText
+                              : VineTheme.onSurfaceMuted,
+                          BlendMode.srcIn,
+                        ),
                       ),
                     ),
                   ),

@@ -18,19 +18,6 @@ final class FullscreenFeedStarted extends FullscreenFeedEvent {
   List<Object?> get props => [];
 }
 
-/// Videos list was updated from the source stream.
-///
-/// Dispatched internally when the videos stream emits new data.
-final class FullscreenFeedVideosUpdated extends FullscreenFeedEvent {
-  const FullscreenFeedVideosUpdated(this.videos);
-
-  /// The updated list of videos.
-  final List<VideoEvent> videos;
-
-  @override
-  List<Object?> get props => [videos];
-}
-
 /// Request to load more videos.
 ///
 /// Triggers the onLoadMore callback provided by the source.

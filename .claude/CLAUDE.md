@@ -42,7 +42,7 @@ Load and apply these standards when assisting with Flutter development. Standard
 
 **Primary Reference:**
 ```
-@/standards/dart_flutter_rules.md
+.claude/dart_flutter_rules.md
 ```
 
 Use these rules as the baseline for all Dart and Flutter development decisions.
@@ -67,7 +67,7 @@ Use these rules as the baseline for all Dart and Flutter development decisions.
 ## 2. Architecture and Coding Practices
 **Primary Reference:**
 ```
-@/standards/very_good_engineering_flutter_rules.md
+.claude/very_good_engineering_flutter_rules.md
 ```
 
 Very Good Ventures consolidates popular coding practices into **Very Good Engineering (VGE)** - a single, opinionated approach for architecture and coding decisions.
@@ -112,7 +112,7 @@ class UserRepository {
 ### State Management with Riverpod
 When working with Riverpod instead of BLoC as the state management framework, either because it is referenced in the current codebase or because precised in the prompt, use the following standard:
 ```
-@/standards/riverpod_rules.md
+.claude/riverpod_rules.md
 ```
 
 ### Nostr Protocol
@@ -436,6 +436,31 @@ OpenVine uses a **Riverpod-based reactive architecture** for managing video feed
 - Searches across all subscription types for videos by pubkey
 - Used for user profile pages to display author's video history
 
+
+## Testing Conventions
+
+### Test File Structure
+**RULE**: Test files MUST mirror the `lib/` folder structure exactly.
+
+```
+lib/screens/pure/search_screen_pure.dart
+→ test/screens/pure/search_screen_pure_test.dart
+
+lib/services/video_event_service.dart
+→ test/services/video_event_service_test.dart
+
+lib/widgets/user_search_view.dart
+→ test/widgets/user_search_view_test.dart
+```
+
+**Naming Convention**: Test files should be named `{original_file_name}_test.dart`
+
+**Rationale**: Mirroring the folder structure makes it easy to find tests for any given file and maintains organizational consistency.
+
+### Test Helpers
+- Use `test/helpers/test_provider_overrides.dart` for common mock setups
+- Use `testMaterialApp()` and `testProviderScope()` helpers for widget tests
+- Use `mocktail` for BLoC mocking, `mockito` for service mocking
 
 ## Pre-Commit Workflow (MANDATORY)
 

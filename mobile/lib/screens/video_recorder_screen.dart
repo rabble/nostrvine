@@ -89,7 +89,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     Log.debug(
       '📹 Checking for autosaved changes',
       name: 'VideoRecorderScreen',
-      category: .video,
+      category: LogCategory.video,
     );
 
     final draftService = DraftStorageService();
@@ -98,9 +98,9 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     );
     if (draft != null && draft.clips.isNotEmpty) {
       Log.info(
-        '📹 Found autosaved draft with ${draft.clips.length} clip(s)',
+        '📹 Found valid autosaved draft',
         name: 'VideoRecorderScreen',
-        category: .video,
+        category: LogCategory.video,
       );
       await VineBottomSheet.show(
         context: context,
@@ -111,9 +111,9 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
       );
     } else {
       Log.debug(
-        '📹 No autosaved draft found',
+        '📹 No valid autosaved draft found',
         name: 'VideoRecorderScreen',
-        category: .video,
+        category: LogCategory.video,
       );
     }
   }

@@ -33,6 +33,7 @@ import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/ui/overlay_policy.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/pause_aware_modals.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
@@ -1509,8 +1510,7 @@ class VideoOverlayActions extends ConsumerWidget {
                           name: 'VideoFeedItem',
                           category: LogCategory.ui,
                         );
-                        showDialog(
-                          context: context,
+                        context.showVideoPausingDialog(
                           builder: (context) =>
                               ReportContentDialog(video: video),
                         );
@@ -1651,16 +1651,11 @@ class VideoOverlayActions extends ConsumerWidget {
       }
     }
 
-    await showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      useSafeArea: true,
-      backgroundColor: Colors.transparent,
+    await context.showVideoPausingVineBottomSheet<void>(
       builder: (context) => ShareVideoMenu(video: video),
     );
 
-    // Video stays paused after dialog closes - user must explicitly play
-    // or navigate to a new video to trigger auto-play
+    // Video resumes when modal closes via overlay visibility provider
   }
 
   Future<void> _showBadgeExplanationModal(
@@ -1705,14 +1700,12 @@ class VideoOverlayActions extends ConsumerWidget {
       }
     }
 
-    await showDialog<void>(
-      context: context,
+    await context.showVideoPausingDialog<void>(
       barrierDismissible: true,
       builder: (context) => BadgeExplanationModal(video: video),
     );
 
-    // Video stays paused after dialog closes - user must explicitly play
-    // or navigate to a new video to trigger auto-play
+    // Video resumes when modal closes via overlay visibility provider
   }
 }
 
