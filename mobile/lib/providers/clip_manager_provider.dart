@@ -497,6 +497,20 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     await removeClipById(lastClip.id);
   }
 
+  /// Clear all clips without deleting files or autosave.
+  ///
+  /// Used when restoring a draft to prevent clip duplication.
+  void clearClips() {
+    final clipCount = _clips.length;
+    _clips.clear();
+    Log.debug(
+      '🔄 Cleared $clipCount clips (files preserved)',
+      name: 'ClipManagerNotifier',
+      category: .video,
+    );
+    state = ClipManagerState();
+  }
+
   /// Remove all clips and reset state.
   ///
   /// Clears all recorded clips and resets to initial state.
