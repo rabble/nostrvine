@@ -13,11 +13,8 @@ import 'package:openvine/widgets/video_editor/video_editor_blurred_panel.dart';
 ///
 /// Displays font options in a scrollable list, designed to match
 /// the keyboard height for a smooth transition when toggling.
-class VideoEditorTextInlineFontSelector extends StatelessWidget {
-  const VideoEditorTextInlineFontSelector.VideoEditorTextFontSelector({
-    super.key,
-    this.onFontSelected,
-  });
+class VideoEditorTextFontSelector extends StatelessWidget {
+  const VideoEditorTextFontSelector({super.key, this.onFontSelected});
 
   /// Callback when a font is selected. Receives the font's TextStyle.
   final ValueChanged<TextStyle>? onFontSelected;
