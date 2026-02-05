@@ -1,121 +1,46 @@
-# AI Assistant Interaction Guidelines
+# divine-mobile - AI Assistant Guidelines
 
-You are an AI coding assistant working with expert Flutter developers at **Very Good Ventures** (VGV). Your role is to help develop and maintain high-quality Flutter applications following VGV's engineering standards and best practices.
-
-## Your Mission
-
-Write clean, testable, and maintainable Flutter/Dart code that:
-- Follows industry best practices
-- Prioritizes test-driven development (TDD)
-- Uses modern, scalable architectures
-- Emphasizes comprehensive testing coverage
-- Leverages open-source solutions
-- Structures projects for team collaboration
+You are an AI coding assistant working on **divine-mobile**, a decentralized vine-like video sharing application powered by Nostr.
 
 ## Core Principles
 
-### Quality First
-- **Test-Driven Development** - Write tests before implementation
-- **Code Coverage** - Maintain at least >80% test coverage
-- **Code Review** - All code should be reviewable and understandable
-- **Documentation** - Write clear, helpful documentation
-
-### Very Good Engineering (VGE)
+- **Quality First** - Write tests before implementation
 - **Consistency** - Follow established patterns across the codebase
 - **Simplicity** - Choose the simplest solution that works
 - **Maintainability** - Write code that's easy to change
-- **Team Collaboration** - Structure code for multiple developers
-
-### Flutter Excellence
-- **Platform Best Practices** - Follow Flutter and Dart guidelines
-- **Performance** - Write efficient, performant code
-- **Accessibility** - Build inclusive applications
-- **User Experience** - Create delightful interfaces
 
 ---
 
-# Standards: System Instructions and Behavioral Guidelines
+# Standards Reference
 
-Load and apply these standards when assisting with Flutter development. Standards are organized by domain and should be applied in order of specificity.
+All generic Flutter/Dart standards are organized in `.claude/rules/`:
 
-## 1. Flutter and Dart Foundation
+| Topic | File | Key Content |
+|-------|------|-------------|
+| Architecture | `rules/architecture.md` | Layered architecture (UI→BLOC→REPOSITORY→CLIENT), barrel files |
+| State Management | `rules/state_management.md` | BLoC (new features) + Riverpod (legacy), event transformers |
+| Code Style | `rules/code_style.md` | Naming, widgets over methods, Dart best practices |
+| Testing | `rules/testing.md` | Test organization, isolation, golden files, BLoC testing |
+| Routing | `rules/routing.md` | GoRouter patterns, type-safe routes, redirects |
+| UI/Theming | `rules/ui_theming.md` | ThemeData, typography, spacing, accessibility |
+| Error Handling | `rules/error_handling.md` | Exceptions, documentation, security basics |
 
-**Primary Reference:**
-```
-.claude/dart_flutter_rules.md
-```
+---
 
-Use these rules as the baseline for all Dart and Flutter development decisions.
+# Tool Preferences
 
-**Tool Preferences:**
-- **ALWAYS** use the **Dart MCP Server** (`mcp__dart__*`) for all Flutter/Dart operations including:
-  - Running tests (`mcp__dart__run_tests`)
-  - Analyzing code (`mcp__dart__analyze_files`)
-  - Formatting code (`mcp__dart__dart_format`)
-  - Running pub commands (`mcp__dart__pub`)
-  - Launching/debugging apps (`mcp__dart__launch_app`, `mcp__dart__hot_reload`)
-  - Searching pub.dev (`mcp__dart__pub_dev_search`)
-- **As MCP backup** use shell commands (`flutter test`, `dart analyze`, etc.).
+## Dart MCP Server
+**ALWAYS** use the **Dart MCP Server** (`mcp__dart__*`) for all Flutter/Dart operations:
+- Running tests (`mcp__dart__run_tests`)
+- Analyzing code (`mcp__dart__analyze_files`)
+- Formatting code (`mcp__dart__dart_format`)
+- Running pub commands (`mcp__dart__pub`)
+- Launching/debugging apps (`mcp__dart__launch_app`, `mcp__dart__hot_reload`)
+- Searching pub.dev (`mcp__dart__pub_dev_search`)
 
-**Key Areas Covered:**
-- Dart language features and idioms
-- Flutter widget composition
-- State management patterns
-- Performance optimization
-- Platform-specific code
+**Fallback**: Use shell commands (`flutter test`, `dart analyze`, etc.) only if MCP unavailable.
 
-## 2. Architecture and Coding Practices
-**Primary Reference:**
-```
-.claude/very_good_engineering_flutter_rules.md
-```
-
-Very Good Ventures consolidates popular coding practices into **Very Good Engineering (VGE)** - a single, opinionated approach for architecture and coding decisions.
-
-**Key Areas Covered:**
-- Project structure and organization
-- BLoC pattern implementation
-- Clean architecture layers
-- Error handling strategies
-- Code organization patterns
-
-**Priority:**
-VGE standards take precedence over general best practices when there's a conflict.
-
-
-## 3. Additional Standards
-
-Use the following standards for additional context and guidelines, or to override the standards defined by the Dart and Flutter baseline or VGE when explicity stated.
-
-### Dependency Injection
-**Primary Method:** Constructor injection
-- Enhances testability and clarity
-- Makes dependencies explicit
-- Facilitates mocking in tests
-
-```dart
-// Good
-class UserRepository {
-  UserRepository(this._apiClient, this._database);
-  
-  final ApiClient _apiClient;
-  final Database _database;
-}
-
-// Avoid
-class UserRepository {
-  final apiClient = ApiClient(); // Hard to test
-  final database = Database();   // Hidden dependencies
-}
-```
-
-### State Management with Riverpod
-When working with Riverpod instead of BLoC as the state management framework, either because it is referenced in the current codebase or because precised in the prompt, use the following standard:
-```
-.claude/riverpod_rules.md
-```
-
-### Nostr Protocol
+## Nostr MCP Server
 **ALWAYS** use the **Nostr MCP Server** (`mcp__nostr__*`) for all Nostr-related lookups:
 - Reading NIPs (`mcp__nostr__read_nip`)
 - Looking up event kinds (`mcp__nostr__read_kind`)
@@ -123,12 +48,16 @@ When working with Riverpod instead of BLoC as the state management framework, ei
 - Reading protocol basics (`mcp__nostr__read_protocol`)
 - Browsing NIPs index (`mcp__nostr__read_nips_index`)
 
-Fallback documentation (only if MCP unavailable):
-```
-https://nostrbook.dev/llms.txt
-```
+**Fallback**: `https://nostrbook.dev/llms.txt` (only if MCP unavailable)
 
-**CRITICAL - NOSTR ID RULE**: YOU MUST NEVER TRUNCATE NOSTR IDS. This applies EVERYWHERE:
+---
+
+# Project-Specific Rules
+
+## CRITICAL - Nostr ID Rule
+
+**YOU MUST NEVER TRUNCATE NOSTR IDS.** This applies EVERYWHERE:
+
 - ❌ FORBIDDEN: `eventId.substring(0, 8)`, `pubkey.substring(0, 8)`, `id.take(8)`, etc.
 - ❌ FORBIDDEN in logging: `Log.info('Video: ${video.id.substring(0, 8)}')`
 - ❌ FORBIDDEN in production code: displaying shortened IDs in UI
@@ -136,82 +65,141 @@ https://nostrbook.dev/llms.txt
 - ❌ FORBIDDEN in tests: test descriptions, assertions, mock data
 - ✅ REQUIRED: ALWAYS use full Nostr IDs (64-character hex event IDs, npub/nsec formats)
 - ✅ If display space is limited, use UI truncation (ellipsis in middle) NOT string manipulation
-- **Rationale**: Truncated IDs are useless for debugging, searching logs, and correlating events across systems
 
+**Rationale**: Truncated IDs are useless for debugging, searching logs, and correlating events across systems.
 
-### Code Style
-- Follow `very_good_analysis` lint rules
-- Use `const` constructors where possible
-- Prefer composition over inheritance
-- Keep functions small and focused
-- Use meaningful variable names
+---
 
-### Widget Composition - No Methods Returning Widgets
+## UI/UX Requirements
 
-**RULE**: Never create methods that return `Widget`. Extract to separate `StatelessWidget` classes instead.
+**CRITICAL**: divine-mobile is a **DARK MODE ONLY** application.
 
-```dart
-// ❌ BAD - Method returning Widget
-class MyWidget extends StatelessWidget {
-  Widget _buildHeader() {
-    return Text('Header');
-  }
+### VineTheme Color Usage
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(children: [_buildHeader()]);
-  }
-}
+**RULE**: Always use `VineTheme` color constants instead of raw `Colors.*` values.
 
-// ✅ GOOD - Separate widget class
-class MyWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Column(children: [_Header()]);
-  }
-}
+| Instead of | Use |
+|------------|-----|
+| `Colors.white` | `VineTheme.whiteText` or `VineTheme.primaryText` |
+| `Colors.black` | `VineTheme.backgroundColor` |
+| `Colors.grey` | `VineTheme.secondaryText` or `VineTheme.lightText` |
+| `Colors.white.withOpacity(0.7)` | `VineTheme.onSurfaceVariant` (75% white) |
+| `Colors.white.withOpacity(0.5)` | `VineTheme.onSurfaceMuted` (50% white) |
 
-class _Header extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Text('Header');
-  }
-}
+**Exception**: `Colors.transparent` is acceptable (universal constant like `EdgeInsets.zero`).
 
-// ✅ ALSO GOOD - Inline simple expressions
-class MyWidget extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        switch (type) {
-          TypeA() => const Icon(Icons.a),
-          TypeB() => const Icon(Icons.b),
-        },
-      ],
-    );
-  }
-}
+### Theme Colors
+
+- **Background**: `VineTheme.backgroundColor`
+- **Text**: `VineTheme.whiteText`, `VineTheme.primaryText`, `VineTheme.secondaryText`
+- **Accent**: `VineTheme.vineGreen` for primary accents
+- **Cards**: `VineTheme.cardBackground` for elevated surfaces
+- **Icons**: `VineTheme.iconButtonBackground` for button containers
+- **NO LIGHT MODE**: Do not implement light mode themes, auto-switching, or light color schemes
+
+**Rationale**: The dark mode aesthetic is core to the app's visual identity.
+
+---
+
+## Nostr Event Requirements
+
+divine-mobile requires specific Nostr event types:
+- **Kind 0**: User profiles (NIP-01) - display names and avatars
+- **Kind 3**: Contact lists (NIP-02) - follow/following relationships
+- **Kind 6**: Reposts (NIP-18) - video repost/reshare functionality
+- **Kind 7**: Reactions (NIP-25) - like/heart interactions
+- **Kind 34236**: Addressable short looping videos (NIP-71) - primary video content
+
+See `mobile/docs/NOSTR_EVENT_TYPES.md` for complete documentation.
+
+---
+
+## Project Architecture
+
+### Technology Stack
+- **Frontend**: Flutter (Dart) with Camera plugin
+- **Backend**: Cloudflare Workers + R2 Storage
+- **Protocol**: Nostr (decentralized social network)
+- **Media Processing**: Real-time frame capture → GIF creation
+
+### Upload Architecture
+```
+Flutter App → Blossom Server → Nostr Event
 ```
 
-**Rationale**:
-- Widget classes can be `const` and benefit from Flutter's diffing algorithm
-- Methods bypass widget identity checks, causing unnecessary rebuilds
-- Separate widgets are more reusable and testable
+Benefits:
+- User-configurable Blossom media servers
+- Fully decentralized media hosting
+- No centralized backend dependencies
 
-### Performance
-- Minimize widget rebuilds with `const` widgets
-- Use `ListView.builder` for long lists
-- Implement proper asset caching
-- Profile before optimizing
-- Use `const` constructors liberally
+### Share URL Formats
+- Profile URLs: `https://divine.video/profile/{npub}`
+- Video URLs: `https://divine.video/video/{videoId}`
 
-### Accessibility
-- Provide semantic labels for all interactive elements
-- Support screen readers
-- Ensure sufficient color contrast
-- Test with accessibility tools
-- Support dynamic font sizes
+---
+
+## Video Feed Architecture
+
+divine-mobile uses a **Riverpod-based reactive architecture** for managing video feeds.
+
+### Core Components
+
+**VideoEventService** (`lib/services/video_event_service.dart`):
+- Manages Nostr video event subscriptions by type
+- Maintains separate event lists per `SubscriptionType`
+- Provides type-safe getters: `homeFeedVideos`, `discoveryVideos`, `getVideos(subscriptionType)`
+- Handles pagination, deduplication, and real-time streaming
+
+**Feed Providers**:
+
+| Provider | File | Purpose |
+|----------|------|---------|
+| `videoEventsProvider` | `lib/providers/video_events_providers.dart` | Discovery/explore feed (all public videos) |
+| `homeFeedProvider` | `lib/providers/home_feed_provider.dart` | Personalized feed (followed users only) |
+
+### Feed Types
+
+- **Home Feed**: Videos from followed users, auto-refreshes every 10 minutes
+- **Discovery/Explore**: All public videos, Popular Now and Trending tabs
+- **Hashtag Feeds**: Videos filtered by specific hashtag
+- **Profile Feeds**: Videos from a specific user
+
+---
+
+## Pre-Commit Workflow (MANDATORY)
+
+This project uses code generation (Riverpod, Freezed, JSON serializable, Mockito).
+
+**ALWAYS** run these steps before committing:
+
+1. **Regenerate code** (if modified `@riverpod`, `@freezed`, `@JsonSerializable`, or `@GenerateMocks`):
+   ```bash
+   dart run build_runner build --delete-conflicting-outputs
+   ```
+
+2. **Format code**:
+   ```bash
+   dart format --output=none --set-exit-if-changed lib test
+   ```
+
+3. **Analyze code**:
+   ```bash
+   flutter analyze
+   ```
+
+4. **Stage specific files** (NEVER use `git add -A` or `git add .`):
+   ```bash
+   git add lib/path/to/file.dart lib/path/to/file.g.dart
+   ```
+
+**Why build_runner is critical**: Riverpod providers generate `.g.dart` files. If you don't regenerate, CI will fail with "Generated files are out of date".
+
+---
+
+## API Documentation
+
+- **Backend Reference**: `docs/BACKEND_API_REFERENCE.md`
+- **Nostr Events**: `mobile/docs/NOSTR_EVENT_TYPES.md`
 
 ---
 
@@ -245,254 +233,11 @@ class MyWidget extends StatelessWidget {
 
 # Quality Checklist
 
-Before considering any task complete, verify:
-
-- [ ] Code follows VGE patterns
-- [ ] Tests are written and passing
-- [ ] Coverage is >80%
-- [ ] Lint rules pass
-- [ ] Error handling is proper
-- [ ] Code is documented
-- [ ] Performance is acceptable
-- [ ] Accessibility is considered
-- [ ] Breaking changes are noted
-
----
-
-# Remember
-
-You are part of the Very Good Ventures engineering team. Your assistance should:
-- ✅ Uphold VGV's high standards
-- ✅ Promote best practices
-- ✅ Enable developer productivity
-- ✅ Foster code quality
-- ✅ Support team collaboration
-
-Every line of code you help write represents VGV's commitment to excellence.
-
-
----
-
-# Project Overview
-OpenVine is a decentralized vine-like video sharing application powered by Nostr with:
-- **Flutter Mobile App**: Cross-platform client for capturing and sharing short videos
-- **Cloudflare Workers Backend**: Serverless backend for GIF creation and media processing
-
-## Current Focus
-**Upload System** - Using Blossom server upload (decentralized media hosting)
-
-## Technology Stack
-- **Frontend**: Flutter (Dart) with Camera plugin
-- **Backend**: Cloudflare Workers + R2 Storage
-- **Protocol**: Nostr (decentralized social network)
-- **Media Processing**: Real-time frame capture → GIF creation
-
-## UI/UX Requirements
-
-**CRITICAL**: OpenVine is a **DARK MODE ONLY** application.
-
-### Color Usage - VineTheme Exclusively
-
-**RULE**: Always use `VineTheme` color constants instead of raw `Colors.*` values.
-
-| Instead of | Use |
-|------------|-----|
-| `Colors.white` | `VineTheme.whiteText` or `VineTheme.primaryText` |
-| `Colors.black` | `VineTheme.backgroundColor` |
-| `Colors.grey` | `VineTheme.secondaryText` or `VineTheme.lightText` |
-| `Colors.white.withOpacity(0.7)` | `VineTheme.onSurfaceVariant` (75% white) |
-| `Colors.white.withOpacity(0.5)` | `VineTheme.onSurfaceMuted` (50% white) |
-
-**Exceptions**: `Colors.transparent` is acceptable as it's a universal constant (like `EdgeInsets.zero`).
-
-**Rationale**: Using VineTheme ensures consistency and makes future theme updates easier.
-
-### Theme Colors
-
-- **Background**: Use `VineTheme.backgroundColor`
-- **Text**: Use `VineTheme.whiteText`, `VineTheme.primaryText`, or `VineTheme.secondaryText`
-- **Accent Colors**: Use `VineTheme.vineGreen` for primary accents
-- **Card Backgrounds**: Use `VineTheme.cardBackground` for elevated surfaces
-- **Icon Buttons**: Use `VineTheme.iconButtonBackground` for button containers
-- **NO LIGHT MODE**: Do not implement light mode themes, auto-switching, or light color schemes
-- **Consistency**: All screens must maintain the dark aesthetic
-
-**Rationale**: The dark mode aesthetic is core to the app's visual identity and user experience.
-
-
-## Nostr Event Requirements
-OpenVine requires specific Nostr event types for proper functionality:
-- **Kind 0**: User profiles (NIP-01) - Required for user display names and avatars
-- **Kind 6**: Reposts (NIP-18) - Required for video repost/reshare functionality
-- **Kind 34236**: Addressable short looping videos (NIP-71) - Primary video content with editable metadata
-- **Kind 7**: Reactions (NIP-25) - Like/heart interactions
-- **Kind 3**: Contact lists (NIP-02) - Follow/following relationships
-
-See `mobile/docs/NOSTR_EVENT_TYPES.md` for complete event type documentation.
-
-
-## Upload Architecture
-
-**Current**:
-```
-Flutter App → Blossom Server → Nostr Event
-```
-
-**Architecture Benefits**:
-- User-configurable Blossom media servers
-- Fully decentralized media hosting
-- No centralized backend dependencies
-
-## API Documentation
-
-**Backend API Reference**: See `docs/BACKEND_API_REFERENCE.md` for complete documentation of all backend endpoints.
-
-**Domain Architecture**:
-- User-configured Blossom servers - Decentralized media hosting (primary)
-
-**Share URL Formats**:
-- Profile URLs: `https://divine.video/profile/{npub}`
-- Video URLs: `https://divine.video/video/{videoId}`
-
-
-## Video Feed Architecture
-
-OpenVine uses a **Riverpod-based reactive architecture** for managing video feeds with multiple subscription types:
-
-### Core Components
-
-**VideoEventService** (`mobile/lib/services/video_event_service.dart`):
-- Central service managing Nostr video event subscriptions by type
-- Maintains separate event lists per subscription type via `_eventLists` map
-- Supports multiple feed types: `SubscriptionType.homeFeed`, `SubscriptionType.discovery`, `SubscriptionType.hashtag`, etc.
-- Provides type-safe getters: `homeFeedVideos`, `discoveryVideos`, `getVideos(subscriptionType)`
-- Handles pagination, deduplication, and real-time event streaming
-- Automatically filters and sorts events per subscription type
-
-**Feed Providers** (Riverpod Stream/AsyncNotifier providers):
-
-`videoEventsProvider` (`mobile/lib/providers/video_events_providers.dart`):
-- Stream provider for discovery/explore feed (all public videos)
-- Watches `VideoEventService.discoveryVideos` reactively
-- Reorders videos to show unseen content first
-- Debounces rapid updates (500ms) for performance
-- Used by `ExploreScreen` for Popular Now and Trending tabs
-
-`homeFeedProvider` (`mobile/lib/providers/home_feed_provider.dart`):
-- AsyncNotifier provider for personalized home feed
-- Shows videos ONLY from users you follow
-- Watches `VideoEventService.homeFeedVideos` reactively
-- Reorders videos to prioritize unseen content
-- Auto-refreshes every 10 minutes
-- Invalidates when following list changes
-- Used by `VideoFeedScreen` for main home feed
-
-### Video Feed Flow
-
-1. **Subscription Request**
-    - UI screen requests videos via provider (`homeFeedProvider` or `videoEventsProvider`)
-    - Provider calls `VideoEventService.subscribeToHomeFeed()` or `subscribeToDiscovery()`
-
-2. **Nostr Event Streaming**
-    - VideoEventService subscribes to Nostr relay via `NostrService`
-    - Events arrive in real-time and are categorized by `SubscriptionType`
-    - Service maintains separate `_eventLists[SubscriptionType.homeFeed]`, `_eventLists[SubscriptionType.discovery]`, etc.
-
-3. **Provider Reactivity**
-    - Providers listen to `VideoEventService` via `ChangeNotifier`
-    - When events arrive, service calls `notifyListeners()`
-    - Providers react and emit updated video lists to UI
-
-4. **UI Display**
-    - Screens consume providers: `ref.watch(homeFeedProvider)` or `ref.watch(videoEventsProvider)`
-    - Video widgets render with reactive updates
-    - Individual video players handle their own playback state
-
-5. **Pagination**
-    - User scrolls to bottom → calls `provider.loadMore()`
-    - Provider requests more events: `videoEventService.loadMoreEvents(subscriptionType)`
-    - Service fetches older events and appends to appropriate `_eventLists` entry
-    - Providers automatically emit updated lists
-
-### Feed Types and Screens
-
-**Home Feed** (`VideoFeedScreen` with `homeFeedProvider`):
-- Personalized feed showing videos ONLY from followed users
-- Server-side filtered by `authors` filter in Nostr REQ
-- Reorders to show unseen videos first
-- Auto-fetches author profiles for display
-
-**Discovery/Explore Feed** (`ExploreScreen` with `videoEventsProvider`):
-- Public feed showing all videos (no author filter)
-- Multiple tabs: Popular Now (recent), Trending (by loop count)
-- Uses same underlying `discoveryVideos` list with different sorting
-
-**Hashtag Feeds** (via `VideoEventService.subscribeToHashtagVideos()`):
-- Filter videos by specific hashtag
-- Uses `SubscriptionType.hashtag` with separate event list
-
-**Profile Feeds** (via `VideoEventService.getVideosByAuthor()`):
-- Shows videos from a specific user
-- Searches across all subscription types for videos by pubkey
-- Used for user profile pages to display author's video history
-
-
-## Testing Conventions
-
-### Test File Structure
-**RULE**: Test files MUST mirror the `lib/` folder structure exactly.
-
-```
-lib/screens/pure/search_screen_pure.dart
-→ test/screens/pure/search_screen_pure_test.dart
-
-lib/services/video_event_service.dart
-→ test/services/video_event_service_test.dart
-
-lib/widgets/user_search_view.dart
-→ test/widgets/user_search_view_test.dart
-```
-
-**Naming Convention**: Test files should be named `{original_file_name}_test.dart`
-
-**Rationale**: Mirroring the folder structure makes it easy to find tests for any given file and maintains organizational consistency.
-
-### Test Helpers
-- Use `test/helpers/test_provider_overrides.dart` for common mock setups
-- Use `testMaterialApp()` and `testProviderScope()` helpers for widget tests
-- Use `mocktail` for BLoC mocking, `mockito` for service mocking
-
-## Pre-Commit Workflow (MANDATORY)
-
-This project uses code generation (Riverpod, Freezed, JSON serializable, Mockito). **ALWAYS** run these steps before committing:
-
-1. **Regenerate code** (if you modified files with `@riverpod`, `@freezed`, `@JsonSerializable`, or `@GenerateMocks` annotations):
-   ```bash
-   dart run build_runner build --delete-conflicting-outputs
-   ```
-
-2. **Format code**:
-   ```bash
-   dart format --output=none --set-exit-if-changed lib test
-   ```
-
-3. **Analyze code**:
-   ```bash
-   flutter analyze
-   ```
-
-4. **Review changes**:
-   ```bash
-   git status
-   ```
-
-5. **Stage specific files** (NEVER use `git add -A` or `git add .`):
-   ```bash
-   git add lib/path/to/file.dart lib/path/to/file.g.dart
-   ```
-
-6. **Commit**
-
-**Why build_runner is critical**: Riverpod providers generate `.g.dart` files from annotations. If you modify a provider and don't regenerate, CI will fail with "Generated files are out of date".
-
-
+Before considering any task complete:
+
+- [ ] Code follows VGE patterns (see `rules/architecture.md`)
+- [ ] New code is 100% tested (see `rules/testing.md`)
+- [ ] Lint rules pass (`very_good_analysis`)
+- [ ] Uses VineTheme colors (no raw `Colors.*`)
+- [ ] Full Nostr IDs (never truncated)
+- [ ] Pre-commit workflow completed
