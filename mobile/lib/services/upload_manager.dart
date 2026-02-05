@@ -20,6 +20,7 @@ import 'package:openvine/services/upload_initialization_helper.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -300,8 +301,10 @@ class UploadManager {
       videoFilePath = await draft.clips.first.video.safeFilePath();
     } else {
       final tempDir = await getTemporaryDirectory();
-      videoFilePath =
-          '${tempDir.path}/merged_${DateTime.now().microsecondsSinceEpoch}.mp4';
+      videoFilePath = path.join(
+        tempDir.path,
+        'merged_${DateTime.now().microsecondsSinceEpoch}.mp4',
+      );
       Log.info(
         '🎬 Merging ${draft.clips.length} clips into single video '
         '(unexpected: clips should be pre-merged at this point)...',

@@ -10,6 +10,7 @@ import 'package:openvine/models/recording_clip.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -29,8 +30,10 @@ class VideoEditorRenderService {
   }) async {
     try {
       final tempDir = await getTemporaryDirectory();
-      final outputPath =
-          '${tempDir.path}/divine_${DateTime.now().microsecondsSinceEpoch}.mp4';
+      final outputPath = path.join(
+        tempDir.path,
+        'divine_${DateTime.now().microsecondsSinceEpoch}.mp4',
+      );
 
       Log.debug(
         '🎞️ Rendering ${clips.length} clip(s) to final video',
@@ -116,8 +119,10 @@ class VideoEditorRenderService {
 
       // Write to a new temporary file to avoid file locking issues
       final tempDir = await getTemporaryDirectory();
-      final outputPath =
-          '${tempDir.path}/trimmed_${DateTime.now().microsecondsSinceEpoch}.mp4';
+      final outputPath = path.join(
+        tempDir.path,
+        'trimmed_${DateTime.now().microsecondsSinceEpoch}.mp4',
+      );
 
       await ProVideoEditor.instance.renderVideoToFile(
         outputPath,
@@ -128,7 +133,7 @@ class VideoEditorRenderService {
       final inputFile = File(inputPath);
       final outputFile = File(outputPath);
 
-      if (await outputFile.exists()) {
+      if (outputFile.existsSync()) {
         await inputFile.delete();
         await outputFile.rename(inputPath);
       }
