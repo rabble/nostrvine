@@ -67,4 +67,4 @@ final class MediaCacheProvider
   }
 }
 
-String _$mediaCacheHash() => r'd940906dd29478ab7f1ace557ca87a203c9c0928';
+String _$mediaCacheHash() => r'bccfc594cbc77f2a8282367e1c46f974c023dc60';
