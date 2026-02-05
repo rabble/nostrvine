@@ -220,69 +220,6 @@ void main() {
       );
     });
 
-    group('FullscreenFeedVideosUpdated', () {
-      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'emits ready state with videos',
-        build: createBloc,
-        act: (bloc) => bloc.add(
-          FullscreenFeedVideosUpdated([
-            createTestVideo('video1'),
-            createTestVideo('video2'),
-          ]),
-        ),
-        expect: () => [
-          isA<FullscreenFeedState>()
-              .having((s) => s.status, 'status', FullscreenFeedStatus.ready)
-              .having((s) => s.videos.length, 'videos count', 2)
-              .having((s) => s.isLoadingMore, 'isLoadingMore', false),
-        ],
-      );
-
-      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'clamps currentIndex to valid range when videos shrink',
-        build: () => createBloc(initialIndex: 5),
-        act: (bloc) => bloc.add(
-          FullscreenFeedVideosUpdated([
-            createTestVideo('video1'),
-            createTestVideo('video2'),
-          ]),
-        ),
-        expect: () => [
-          isA<FullscreenFeedState>().having(
-            (s) => s.currentIndex,
-            'currentIndex',
-            1,
-          ),
-        ],
-      );
-
-      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'sets currentIndex to 0 when videos become empty',
-        build: () => createBloc(initialIndex: 5),
-        act: (bloc) => bloc.add(const FullscreenFeedVideosUpdated([])),
-        expect: () => [
-          isA<FullscreenFeedState>()
-              .having((s) => s.currentIndex, 'currentIndex', 0)
-              .having((s) => s.videos, 'videos', isEmpty),
-        ],
-      );
-
-      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
-        'resets isLoadingMore to false',
-        build: createBloc,
-        seed: () => const FullscreenFeedState(isLoadingMore: true),
-        act: (bloc) =>
-            bloc.add(FullscreenFeedVideosUpdated([createTestVideo('video1')])),
-        expect: () => [
-          isA<FullscreenFeedState>().having(
-            (s) => s.isLoadingMore,
-            'isLoadingMore',
-            false,
-          ),
-        ],
-      );
-    });
-
     group('FullscreenFeedLoadMoreRequested', () {
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'sets isLoadingMore and calls onLoadMore callback',
@@ -432,12 +369,6 @@ void main() {
       test('FullscreenFeedStarted props is empty', () {
         const event = FullscreenFeedStarted();
         expect(event.props, isEmpty);
-      });
-
-      test('FullscreenFeedVideosUpdated props contains videos', () {
-        final videos = [createTestVideo('video1')];
-        final event = FullscreenFeedVideosUpdated(videos);
-        expect(event.props, [videos]);
       });
 
       test('FullscreenFeedLoadMoreRequested props is empty', () {
