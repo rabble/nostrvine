@@ -216,7 +216,7 @@ class _SaveForLaterButton extends ConsumerWidget {
       // during the transition
       router.go(HomeScreenRouter.pathForIndex(0));
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(videoPublishProvider.notifier).cleanupAfterPublish();
+        ref.read(videoPublishProvider.notifier).clearAll();
       });
     }
   }

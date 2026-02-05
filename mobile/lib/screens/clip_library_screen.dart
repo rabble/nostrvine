@@ -25,7 +25,6 @@ import 'package:openvine/widgets/masonary_grid.dart';
 import 'package:openvine/widgets/video_clip/video_clip_preview_sheet.dart';
 import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 class ClipLibraryScreen extends ConsumerStatefulWidget {
   /// Route name for drafts path.
@@ -103,8 +102,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
 
   Future<void> _loadDrafts() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final draftService = DraftStorageService(prefs);
+      final draftService = DraftStorageService();
       final drafts = await draftService.getAllDrafts();
 
       // Filter out autosave and already published drafts
@@ -364,8 +362,7 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     );
 
     if (confirmed == true) {
-      final prefs = await SharedPreferences.getInstance();
-      final draftService = DraftStorageService(prefs);
+      final draftService = DraftStorageService();
       await draftService.deleteDraft(draft.id);
       await _loadDrafts();
 
