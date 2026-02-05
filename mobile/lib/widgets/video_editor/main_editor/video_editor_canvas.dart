@@ -132,37 +132,29 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
       // Wraps sub-editors in a nested Navigator so they open within the fitted
       // aspect-ratio area instead of full-screen, since cropping hasn't been
       // applied yet.
-      child: Navigator(
-        clipBehavior: .none,
-        onGenerateRoute: (_) {
-          return PageRouteBuilder(
-            pageBuilder: (_, _, _) => LayoutBuilder(
-              builder: (_, constraints) {
-                final size =
-                    constraints.biggest *
-                    MediaQuery.devicePixelRatioOf(context) /
-                    clip.targetAspectRatio.value;
-                print([
-                  'DEBUGX',
-                  size,
-                  constraints.biggest,
-                  MediaQuery.devicePixelRatioOf(context),
-                  clip.targetAspectRatio.value,
-                ]);
-                _proVideoController ??= ProVideoController(
-                  videoPlayer: VideoEditorPlayer(controller: _videoPlayer),
-                  initialResolution: size,
+      child: LayoutBuilder(
+        builder: (_, constraints) {
+          final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
+          final size = constraints.biggest * devicePixelRatio;
 
-                  /// These values are not used since we provide a custom-UI.
-                  fileSize: 0,
-                  videoDuration: .zero,
-                );
-                return FittedBox(
-                  fit: .cover,
-                  child: SizedBox(
-                    width: size.height / clip.targetAspectRatio.value,
-                    height: size.height,
-                    child: ProImageEditor.video(
+          _proVideoController ??= ProVideoController(
+            videoPlayer: VideoEditorPlayer(controller: _videoPlayer),
+            initialResolution: size,
+
+            /// These values are not used since we provide a custom-UI.
+            fileSize: 0,
+            videoDuration: .zero,
+          );
+          return FittedBox(
+            fit: .cover,
+            child: SizedBox(
+              width: size.height / clip.targetAspectRatio.value,
+              height: size.height,
+              child: Navigator(
+                clipBehavior: .none,
+                onGenerateRoute: (_) {
+                  return PageRouteBuilder(
+                    pageBuilder: (_, _, _) => ProImageEditor.video(
                       _proVideoController!,
                       key: scope.editorKey,
 
@@ -222,9 +214,6 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                         videoEditor: VideoEditorConfigs(showControls: false),
                       ),
                       callbacks: ProImageEditorCallbacks(
-                        onCloseEditor: (editorMode) {
-                          // if (editorMode == .main) context.pop();
-                        },
                         onCompleteWithParameters: (parameters) async {
                           final notifier = ref.read(
                             videoEditorProvider.notifier,
@@ -293,7 +282,9 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                             // Sync editor with current BLoC state
                             paintEditor
                               ?..setColor(drawState.selectedColor)
-                              ..setStrokeWidth(drawState.strokeWidth)
+                              ..setStrokeWidth(
+                                drawState.strokeWidth * devicePixelRatio,
+                              )
                               ..setOpacity(drawState.opacity)
                               ..setMode(drawState.mode);
                           },
@@ -323,9 +314,9 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                         ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
           );
         },

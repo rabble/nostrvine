@@ -99,8 +99,12 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     );
 
     if (sticker != null) {
+      final screenWidth = MediaQuery.sizeOf(context).width;
+      final pixelRatio = MediaQuery.devicePixelRatioOf(context);
+      final stickerWidth = screenWidth * pixelRatio / 3;
+
       final layer = WidgetLayer(
-        width: 120,
+        width: stickerWidth,
         widget: Semantics(
           label: sticker.description,
           child: VideoEditorSticker(
@@ -151,7 +155,9 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     textBloc.add(const VideoEditorTextClosePanels());
     mainBloc.add(const VideoEditorMainSubEditorClosed());
 
-    return result;
+    return result?.copyWith(
+      scale: layer == null ? MediaQuery.devicePixelRatioOf(context) : null,
+    );
   }
 
   @override
