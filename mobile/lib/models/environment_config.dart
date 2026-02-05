@@ -55,13 +55,13 @@ class EnvironmentConfig {
   String get apiBaseUrl {
     switch (environment) {
       case AppEnvironment.poc:
-        return 'https://api.poc.dvines.org';
+        return 'https://relay.poc.dvines.org';
       case AppEnvironment.staging:
-        return 'https://api.staging.dvines.org';
+        return 'https://relay.staging.dvines.org';
       case AppEnvironment.test:
         return 'https://api.test.dvines.org';
       case AppEnvironment.production:
-        return 'https://api.divine.video';
+        return 'https://relay.divine.video';
     }
   }
 
