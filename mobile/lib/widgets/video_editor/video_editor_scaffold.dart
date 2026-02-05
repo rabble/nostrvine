@@ -4,7 +4,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_bottom_bar.dart';
 import 'package:openvine/widgets/video_editor/draw_editor/video_editor_draw_overlay_controls.dart';
 import 'package:openvine/widgets/video_editor/filter_editor/video_editor_filter_bottom_bar.dart';
@@ -25,8 +24,6 @@ class VideoEditorScaffold extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final clip = ref.watch(clipManagerProvider.select((s) => s.clips.first));
-
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         systemNavigationBarColor: Colors.transparent,
@@ -38,29 +35,10 @@ class VideoEditorScaffold extends ConsumerWidget {
         body: Column(
           children: [
             Expanded(
-              child: LayoutBuilder(
-                builder: (_, constraints) {
-                  return ClipRRect(
-                    borderRadius: const .vertical(bottom: .circular(32)),
-                    child: Stack(
-                      clipBehavior: .none,
-                      fit: .expand,
-                      children: [
-                        FittedBox(
-                          fit: .cover,
-                          child: SizedBox(
-                            width:
-                                constraints.maxHeight /
-                                clip.targetAspectRatio.value,
-                            height: constraints.maxHeight,
-                            child: const VideoEditorCanvas(),
-                          ),
-                        ),
-                        const _OverlayControls(),
-                      ],
-                    ),
-                  );
-                },
+              child: Stack(
+                clipBehavior: .none,
+                fit: .expand,
+                children: [const VideoEditorCanvas(), const _OverlayControls()],
               ),
             ),
             const _BottomActions(),
