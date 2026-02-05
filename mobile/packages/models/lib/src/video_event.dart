@@ -423,6 +423,9 @@ class VideoEvent {
         ? (event.createdAt as DateTime).millisecondsSinceEpoch ~/ 1000
         : int.tryParse(event.createdAt.toString()) ?? 0;
 
+    final publishedAtTimestamp = int.tryParse(publishedAt ?? '');
+    final effectiveTimestamp = publishedAtTimestamp ?? createdAtTimestamp;
+
     developer.log('🔍 DEBUG: Final parsing results:', name: 'VideoEvent');
     developer.log('🔍 DEBUG: videoUrl = $videoUrl', name: 'VideoEvent');
     developer.log('🔍 DEBUG: thumbnailUrl = $thumbnailUrl', name: 'VideoEvent');
@@ -537,9 +540,9 @@ class VideoEvent {
     return VideoEvent(
       id: event.id,
       pubkey: event.pubkey,
-      createdAt: createdAtTimestamp,
+      createdAt: effectiveTimestamp,
       content: event.content,
-      timestamp: DateTime.fromMillisecondsSinceEpoch(createdAtTimestamp * 1000),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(effectiveTimestamp * 1000),
       title: title,
       videoUrl: videoUrl,
       thumbnailUrl: thumbnailUrl,
@@ -852,7 +855,11 @@ class VideoEvent {
   /// Get relative time string (e.g., "2 hours ago")
   String get relativeTime {
     final now = DateTime.now();
-    final difference = now.difference(timestamp);
+    final publishedAtSeconds = int.tryParse(publishedAt ?? '');
+    final baseTimestamp = publishedAtSeconds != null
+        ? DateTime.fromMillisecondsSinceEpoch(publishedAtSeconds * 1000)
+        : timestamp;
+    final difference = now.difference(baseTimestamp);
 
     if (difference.inMinutes < 1) {
       return 'now';
