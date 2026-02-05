@@ -1,8 +1,6 @@
-import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/platform_io.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
 import 'package:video_player/video_player.dart';
 
 class VideoEditorPlayer extends ConsumerStatefulWidget {
@@ -15,14 +13,14 @@ class VideoEditorPlayer extends ConsumerStatefulWidget {
 }
 
 class _VideoEditorPlayerState extends ConsumerState<VideoEditorPlayer> {
-  bool _isInitialized = true;
+  bool _isInitialized = false;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (_, constraints) {
         return ClipRRect(
-          borderRadius: const .all(.circular(32)),
+          borderRadius: .all(.circular(32)),
           child: Stack(
             fit: .expand,
             children: [
@@ -34,13 +32,9 @@ class _VideoEditorPlayerState extends ConsumerState<VideoEditorPlayer> {
                 ),
 
               // Thumbnail layer with fade out
-              AnimatedOpacity(
-                duration: const Duration(milliseconds: 100),
-                opacity: _isInitialized ? 0.0 : 1.0,
-                child: FittedBox(
-                  fit: .cover,
-                  child: _ThumbnailContent(constraints: constraints),
-                ),
+              VideoEditorThumbnail(
+                isInitialized: _isInitialized,
+                constraints: constraints,
               ),
             ],
           ),
@@ -62,29 +56,6 @@ class _VideoContent extends StatelessWidget {
       width: size.width,
       height: size.height,
       child: VideoPlayer(controller),
-    );
-  }
-}
-
-class _ThumbnailContent extends ConsumerWidget {
-  const _ThumbnailContent({required this.constraints});
-
-  final BoxConstraints constraints;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final clip = ref.watch(clipManagerProvider.select((s) => s.clips.first));
-
-    if (clip.thumbnailPath != null) {
-      return Image.file(File(clip.thumbnailPath!));
-    }
-
-    // Fallback loader
-    return SizedBox.fromSize(
-      size: constraints.biggest,
-      child: const Center(
-        child: CircularProgressIndicator(color: VineTheme.primary),
-      ),
     );
   }
 }

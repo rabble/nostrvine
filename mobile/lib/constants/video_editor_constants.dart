@@ -1,4 +1,5 @@
-import 'package:flutter/painting.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 /// A text font with its style getter.
@@ -95,6 +96,14 @@ class VideoEditorConstants {
 
   /// Background color for the text editor overlay.
   static const Color textEditorBackground = Color(0x9B000000);
+
+  static const uiOverlayStyle = SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarIconBrightness: Brightness.light,
+    statusBarBrightness: Brightness.dark,
+    systemNavigationBarColor: Color(0xFF000000),
+  );
 }
 
 /// Constants for the video editor clip gallery layout and animations.

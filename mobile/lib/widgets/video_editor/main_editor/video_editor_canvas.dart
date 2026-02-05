@@ -16,6 +16,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:video_player/video_player.dart';
 
@@ -44,6 +45,12 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
   void initState() {
     super.initState();
     _initializePlayer();
+  }
+
+  @override
+  void dispose() {
+    _videoPlayer.dispose();
+    super.dispose();
   }
 
   Future<void> _initializePlayer() async {
@@ -135,7 +142,7 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
       child: LayoutBuilder(
         builder: (_, constraints) {
           final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
-          final size = constraints.biggest * devicePixelRatio;
+          final size = constraints.biggest;
 
           _proVideoController ??= ProVideoController(
             videoPlayer: VideoEditorPlayer(controller: _videoPlayer),
@@ -170,9 +177,16 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                                 ),
                               )
                             : const StateHistoryConfigs(),
+                        imageGeneration: ImageGenerationConfigs(
+                          customPixelRatio: devicePixelRatio,
+                          outputFormat: .png,
+                          pngFilter: .none,
+                          pngLevel: 9,
+                        ),
                         mainEditor: MainEditorConfigs(
                           safeArea: const EditorSafeArea.none(),
                           style: const MainEditorStyle(
+                            uiOverlayStyle: VideoEditorConstants.uiOverlayStyle,
                             background: VineTheme.surfaceContainerHigh,
                           ),
                           widgets: MainEditorWidgets(
@@ -211,10 +225,49 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                                 SizedBox.shrink(),
                           ),
                         ),
-                        videoEditor: VideoEditorConfigs(showControls: false),
+                        videoEditor: VideoEditorConfigs(
+                          showControls: false,
+                          widgets: VideoEditorWidgets(
+                            videoSetupLoadingIndicator: Center(
+                              child: ClipRRect(
+                                borderRadius: .all(.circular(32)),
+                                child: SizedBox.fromSize(
+                                  size: size,
+                                  child: VideoEditorThumbnail(
+                                    constraints: constraints,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
                       ),
                       callbacks: ProImageEditorCallbacks(
                         onCompleteWithParameters: (parameters) async {
+                          /* FIXME(@hm21): remove debug stuff below  
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) {
+                                return Scaffold(
+                                  appBar: AppBar(),
+                                  body: Container(
+                                    color: Colors.white,
+                                    child: Image.memory(parameters.image),
+                                  ),
+                                );
+                              },
+                            ),
+                          );
+                          return;
+
+                          final r = await decodeImageFromList(parameters.image);
+                          print([
+                            r,
+                            MediaQuery.sizeOf(context),
+                            MediaQuery.sizeOf(context) * devicePixelRatio,
+                            MediaQuery.sizeOf(this.context),
+                            MediaQuery.sizeOf(this.context) * devicePixelRatio,
+                          ]); */
                           final notifier = ref.read(
                             videoEditorProvider.notifier,
                           );
@@ -282,9 +335,7 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                             // Sync editor with current BLoC state
                             paintEditor
                               ?..setColor(drawState.selectedColor)
-                              ..setStrokeWidth(
-                                drawState.strokeWidth * devicePixelRatio,
-                              )
+                              ..setStrokeWidth(drawState.strokeWidth)
                               ..setOpacity(drawState.opacity)
                               ..setMode(drawState.mode);
                           },
