@@ -56,10 +56,10 @@ void main() {
         await tester.pumpWidget(buildWidget());
 
         // Each color should have a GestureDetector
-        // Total: 1 color picker + all colors
+        // Total: 1 color picker + 1 bottom-sheet-absorber + all colors
         expect(
           find.byType(GestureDetector),
-          findsNWidgets(VideoEditorConstants.colors.length + 1),
+          findsNWidgets(VideoEditorConstants.colors.length + 2),
         );
       });
     });

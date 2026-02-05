@@ -10,6 +10,7 @@ import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -73,6 +74,7 @@ enum RouteType {
   sound, // Sound detail screen for audio reuse
   secureAccount,
   newVideoFeed,
+  pooledVideoFeed, // Pooled fullscreen video feed (uses pooled_video_player)
 }
 
 /// Structured representation of a route
@@ -298,6 +300,9 @@ RouteContext parseRoute(String path) {
     case 'new-video-feed':
       return const RouteContext(type: RouteType.newVideoFeed);
 
+    case 'pooled-video-feed':
+      return const RouteContext(type: RouteType.pooledVideoFeed);
+
     default:
       return const RouteContext(type: RouteType.home, videoIndex: 0);
   }
@@ -454,6 +459,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.newVideoFeed:
       return VideoFeedPage.path;
+
+    case RouteType.pooledVideoFeed:
+      return PooledFullscreenVideoFeedScreen.path;
   }
 }
 

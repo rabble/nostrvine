@@ -18,6 +18,7 @@ class VideoEditorScope extends InheritedWidget {
   const VideoEditorScope({
     required this.editorKey,
     required this.onAddStickers,
+    required this.onAddEditTextLayer,
     required super.child,
     super.key,
   });
@@ -27,6 +28,9 @@ class VideoEditorScope extends InheritedWidget {
 
   /// Callback to open the sticker picker.
   final VoidCallback onAddStickers;
+
+  /// Callback to open the text editor.
+  final Future<TextLayer?> Function([TextLayer? layer]) onAddEditTextLayer;
 
   /// Returns the [ProImageEditorState] if available.
   ProImageEditorState? get editor => editorKey.currentState;

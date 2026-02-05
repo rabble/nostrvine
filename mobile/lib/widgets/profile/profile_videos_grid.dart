@@ -211,17 +211,16 @@ class _VideoGridTile extends StatelessWidget {
         'videoId=${videoEvent.id}',
         category: LogCategory.video,
       );
-      // Use ProfileFeedSource for reactive updates when loadMore fetches new videos
+      // Use FullscreenVideoFeedScreen with ProfileFeedSource for
+      // reactive updates when loadMore fetches new videos
+      // TODO(migration): Migrate to PooledFullscreenVideoFeedScreen once
+      // ProfileVideosBloc is created
       context.push(
         FullscreenVideoFeedScreen.path,
         extra: FullscreenVideoFeedArgs(
           source: ProfileFeedSource(userIdHex),
           initialIndex: index,
         ),
-      );
-      Log.info(
-        '✅ ProfileVideosGrid: Called pushVideoFeed with ProfileFeedSource($userIdHex) at index $index',
-        category: LogCategory.video,
       );
     },
     child: ClipRRect(

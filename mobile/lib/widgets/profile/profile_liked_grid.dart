@@ -2,13 +2,13 @@
 // ABOUTME: Shows 3-column grid with thumbnails and heart badge indicator
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
-import 'package:models/models.dart' hide LogCategory;
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Grid widget displaying user's liked videos
