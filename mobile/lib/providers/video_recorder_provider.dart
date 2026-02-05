@@ -2,7 +2,6 @@
 // ABOUTME: Provides reactive state updates for recording UI without ChangeNotifier
 
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -433,7 +432,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
     final clipProvider = ref.read(clipManagerProvider.notifier)
       ..stopRecording();
-    final remainingMs = clipProvider.remainingDuration.inMilliseconds;
+    final remainingDuration = clipProvider.remainingDuration;
 
     state = state.copyWith(recordingState: .idle);
     _isStoppingRecording = false;
@@ -473,9 +472,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     );
 
     // Generate and attach thumbnail.
-    // Use default time (200ms, typically first keyframe) or half the video
-    // duration for very short clips to avoid seeking past the end.
-    final halfDuration = metadata.duration ~/ 2;
+    // Take the smaller of remaining duration or actual video duration.
+    final effectiveDuration = remainingDuration < metadata.duration
+        ? remainingDuration
+        : metadata.duration;
+    final halfDuration = effectiveDuration ~/ 2;
     final targetTimestamp =
         halfDuration < VideoEditorConstants.defaultThumbnailExtractTime
         ? halfDuration
