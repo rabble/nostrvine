@@ -207,7 +207,9 @@ class VideoEditorRenderService {
         globalTransform: result.globalTransform,
       );
 
-      await _cleanupTempFiles(tempFilePaths);
+      // Fire-and-forget: temp cleanup is non-critical and handles
+      // errors internally
+      unawaited(_cleanupTempFiles(tempFilePaths));
 
       Log.info(
         '✅ Video file rendered to: $outputPath',
@@ -222,11 +224,11 @@ class VideoEditorRenderService {
         name: _logName,
         category: .video,
       );
-      await _cleanupTempFiles(tempFilePaths);
+      unawaited(_cleanupTempFiles(tempFilePaths));
       return null;
     } catch (e) {
       Log.error('❌ Video render failed: $e', name: _logName, category: .video);
-      await _cleanupTempFiles(tempFilePaths);
+      unawaited(_cleanupTempFiles(tempFilePaths));
       return null;
     }
   }
