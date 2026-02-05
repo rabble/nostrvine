@@ -21,6 +21,7 @@ import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 final videoEditorProvider =
@@ -518,7 +519,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       expireTime: state.expiration.value,
       selectedApproach: 'video',
       editorStateHistory: state.editorStateHistory,
-      editorEditingParameters: state.editorEditingParameters,
+      editorEditingParameters: state.editorEditingParameters?.toMap(),
     );
   }
 
@@ -542,7 +543,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   ///
   /// This stores the serialized editing parameters from ProImageEditor,
   /// enabling restoration of all applied effects when reopening a draft.
-  void updateEditorEditingParameters(Map<String, dynamic> editingParameters) {
+  void updateEditorEditingParameters(CompleteParameters editingParameters) {
     Log.debug(
       '🎨 Updated editor editing parameters',
       name: 'VideoEditorNotifier',
@@ -687,7 +688,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         allowAudioReuse: draft.allowAudioReuse,
         expiration: VideoMetadataExpiration.fromDuration(draft.expireTime),
         editorStateHistory: draft.editorStateHistory,
-        editorEditingParameters: draft.editorEditingParameters,
+        editorEditingParameters: CompleteParameters.fromMap(
+          draft.editorEditingParameters,
+        ),
       );
       _clipManager.addMultipleClips(draft.clips);
       // We set the aspect ratio in the video recorder to match the clips,
@@ -752,7 +755,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       allowAudioReuse: draft.allowAudioReuse,
       expiration: VideoMetadataExpiration.fromDuration(draft.expireTime),
       editorStateHistory: draft.editorStateHistory,
-      editorEditingParameters: draft.editorEditingParameters,
+      editorEditingParameters: CompleteParameters.fromMap(
+        draft.editorEditingParameters,
+      ),
     );
     _clipManager.addMultipleClips(clipsWithThumbnails);
     // We set the aspect ratio in the video recorder to match the clips,
@@ -843,12 +848,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       thumbnailPath: _clips.first.thumbnailPath,
     );
 
-    Log.info(
-      '📤 Navigating to publish screen',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
-
     state = state.copyWith(
       isProcessing: false,
       finalRenderedClip: finalRenderedClip,
@@ -932,6 +931,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         clips: _clips,
         aspectRatio: _clips.first.targetAspectRatio,
         enableAudio: !state.isMuted,
+        parameters: state.editorEditingParameters,
       );
       String? proofManifestJson;
 

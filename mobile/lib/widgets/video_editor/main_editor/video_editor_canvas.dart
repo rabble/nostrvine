@@ -13,6 +13,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -137,9 +138,20 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
           return PageRouteBuilder(
             pageBuilder: (_, _, _) => LayoutBuilder(
               builder: (_, constraints) {
+                final size =
+                    constraints.biggest *
+                    MediaQuery.devicePixelRatioOf(context) /
+                    clip.targetAspectRatio.value;
+                print([
+                  'DEBUGX',
+                  size,
+                  constraints.biggest,
+                  MediaQuery.devicePixelRatioOf(context),
+                  clip.targetAspectRatio.value,
+                ]);
                 _proVideoController ??= ProVideoController(
                   videoPlayer: VideoEditorPlayer(controller: _videoPlayer),
-                  initialResolution: constraints.biggest,
+                  initialResolution: size,
 
                   /// These values are not used since we provide a custom-UI.
                   fileSize: 0,
@@ -148,8 +160,8 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                 return FittedBox(
                   fit: .cover,
                   child: SizedBox(
-                    width: constraints.maxHeight / clip.targetAspectRatio.value,
-                    height: constraints.maxHeight,
+                    width: size.height / clip.targetAspectRatio.value,
+                    height: size.height,
                     child: ProImageEditor.video(
                       _proVideoController!,
                       key: scope.editorKey,
@@ -211,14 +223,15 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                       ),
                       callbacks: ProImageEditorCallbacks(
                         onCloseEditor: (editorMode) {
-                          if (editorMode == .main) context.pop();
+                          // if (editorMode == .main) context.pop();
                         },
                         onCompleteWithParameters: (parameters) async {
-                          ref
-                              .read(videoEditorProvider.notifier)
-                              .updateEditorEditingParameters(
-                                parameters.toMap(),
-                              );
+                          final notifier = ref.read(
+                            videoEditorProvider.notifier,
+                          );
+                          notifier.updateEditorEditingParameters(parameters);
+                          notifier.startRenderVideo();
+                          context.push(VideoMetadataScreen.path);
                         },
                         mainEditorCallbacks: MainEditorCallbacks(
                           onAfterViewInit: () {
@@ -266,6 +279,8 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                               _isLayerBeingTransformed = false;
                             }
                           },
+                          onCreateTextLayer: scope.onAddEditTextLayer,
+                          onEditTextLayer: scope.onAddEditTextLayer,
                         ),
                         paintEditorCallbacks: PaintEditorCallbacks(
                           onInit: () {

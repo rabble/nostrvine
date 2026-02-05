@@ -9,6 +9,7 @@ import 'package:openvine/models/recording_clip.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// Service for rendering final video from multiple clips.
@@ -24,6 +25,7 @@ class VideoEditorRenderService {
     required List<RecordingClip> clips,
     required model.AspectRatio aspectRatio,
     required bool enableAudio,
+    required CompleteParameters? parameters,
   }) async {
     try {
       final tempDir = await getTemporaryDirectory();
@@ -70,11 +72,19 @@ class VideoEditorRenderService {
         endTime: VideoEditorConstants.maxDuration,
         enableAudio: enableAudio,
         shouldOptimizeForNetworkUse: true,
+        imageBytes: parameters?.layers.isNotEmpty == true
+            ? parameters?.image
+            : null,
+        blur: parameters?.blur,
+        colorMatrixList: parameters?.colorFilters ?? [],
         transform: ExportTransform(
           x: cropParams.x,
           y: cropParams.y,
           width: cropParams.width,
           height: cropParams.height,
+          flipX: parameters?.flipX ?? false,
+          flipY: parameters?.flipY ?? false,
+          rotateTurns: parameters?.rotateTurns ?? 0,
         ),
       );
 
