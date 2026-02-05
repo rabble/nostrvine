@@ -70,25 +70,31 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
               // Back button
               Align(
                 alignment: Alignment.topLeft,
-                child: IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () => context.pop(),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                  child: DivineIconButton(
+                    icon: DivineIconName.caretLeft,
+                    type: DivineIconButtonType.secondary,
+                    size: DivineIconButtonSize.small,
+                    onPressed: () => context.pop(),
+                  ),
                 ),
               ),
 
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 32),
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisAlignment: MainAxisAlignment.start,
                     children: [
                       // Header
-                      const Text(
-                        'Welcome Back',
-                        style: TextStyle(
-                          fontSize: 32,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
+                      Align(
+                        alignment: Alignment.topLeft,
+                        child: Text(
+                          'Sign in',
+                          style: VineTheme.headlineLargeFont(
+                            color: VineTheme.onSurface,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 8),
