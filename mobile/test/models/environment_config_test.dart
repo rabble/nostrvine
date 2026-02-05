@@ -43,12 +43,12 @@ void main() {
     group('apiBaseUrl', () {
       test('poc returns poc API', () {
         final config = EnvironmentConfig(environment: AppEnvironment.poc);
-        expect(config.apiBaseUrl, 'https://api.poc.dvines.org');
+        expect(config.apiBaseUrl, 'https://relay.poc.dvines.org');
       });
 
       test('staging returns staging API', () {
         final config = EnvironmentConfig(environment: AppEnvironment.staging);
-        expect(config.apiBaseUrl, 'https://api.staging.dvines.org');
+        expect(config.apiBaseUrl, 'https://relay.staging.dvines.org');
       });
 
       test('test returns test API', () {
@@ -60,7 +60,7 @@ void main() {
         final config = EnvironmentConfig(
           environment: AppEnvironment.production,
         );
-        expect(config.apiBaseUrl, 'https://api.divine.video');
+        expect(config.apiBaseUrl, 'https://relay.divine.video');
       });
     });
 
