@@ -3,9 +3,11 @@ appId: co.openvine.app
 # Assert Explore screen with For You tab selected
 
 # Top bar - confirms we're on Explore
-- assertVisible: "Explore"
+- assertVisible:
+    text: "Explore.*"
 - assertVisible: Menu
-- assertVisible: Search
+- assertVisible:
+    text: "Search.*"
 
 # For You tab is selected (Tab 4 of 5)
 - assertVisible: |-

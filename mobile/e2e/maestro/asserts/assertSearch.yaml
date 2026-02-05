@@ -1,6 +1,7 @@
 appId: co.openvine.app
 ---
-- assertVisible: Search
+- assertVisible:
+    text: "Search.*"
 - assertVisible: Find something cool...
 - assertVisible: |-
     Videos (0)

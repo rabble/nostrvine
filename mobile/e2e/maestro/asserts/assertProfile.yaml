@@ -14,9 +14,16 @@ appId: co.openvine.app
 - assertVisible: Refresh
 - assertVisible: Library
 
-- assertVisible: Tab 1 of 3
-- assertVisible: Tab 2 of 3
-- assertVisible: Tab 3 of 3
+- assertVisible: |-
+    videos_tab
+    Tab 1 of 3
+- assertVisible: |-
+    liked_tab
+    Tab 2 of 3
+- assertVisible: |-
+    reposted_tab
+    Tab 3 of 3
+
 - assertNotVisible:
     text: Loading...
     optional: true
