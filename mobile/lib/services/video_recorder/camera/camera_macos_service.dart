@@ -10,6 +10,7 @@ import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
+import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -365,7 +366,8 @@ class CameraMacOSService extends CameraService {
       // Configure audio session for recording BEFORE starting
       await _configureAudioSessionForRecording();
 
-      final recordingsDir = Directory(p.join(outputDirectory!, 'recordings'));
+      final baseDir = await getDocumentsPath();
+      final recordingsDir = Directory(p.join(baseDir, 'recordings'));
       if (!recordingsDir.existsSync()) {
         await recordingsDir.create(recursive: true);
       }
@@ -628,7 +630,7 @@ class CameraMacOSService extends CameraService {
   }
 
   @override
-  double get cameraAspectRatio => 1 / _cameraSensorSize.aspectRatio;
+  double get cameraAspectRatio => _cameraSensorSize.aspectRatio;
 
   @override
   double get minZoomLevel => _minZoomLevel;

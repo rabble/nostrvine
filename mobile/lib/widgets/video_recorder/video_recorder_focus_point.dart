@@ -29,9 +29,9 @@ class _VideoRecorderFocusPointState
     required double sensorAspectRatio,
     required Offset cameraPoint,
   }) {
-    // SizedBox aspect ratio = (100/sensorAR) / 100 = 1/sensorAR
+    // SizedBox aspect ratio = (1000 * sensorAR) / 1000 = sensorAR
     // arRatio compares display to sizedbox aspect ratios
-    final arRatio = cropAspectRatio * sensorAspectRatio;
+    final arRatio = cropAspectRatio / sensorAspectRatio;
 
     double displayX;
     double displayY;

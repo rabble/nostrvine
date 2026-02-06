@@ -14,6 +14,9 @@ import 'package:profile_repository/profile_repository.dart';
 /// API endpoint for claiming usernames via NIP-98 auth.
 const _usernameClaimUrl = 'https://names.divine.video/api/username/claim';
 
+/// API endpoint for NIP-05 username availability lookup.
+const _nip05LookupUrl = 'https://divine.video/.well-known/nostr.json';
+
 /// Callback to check if a user should be filtered from results.
 typedef UserBlockFilter = bool Function(String pubkey);
 
@@ -150,6 +153,43 @@ class ProfileRepository {
       };
     } on Exception catch (e) {
       return UsernameClaimError('Network error: $e');
+    }
+  }
+
+  /// Checks if a username is available for registration.
+  ///
+  /// Queries the NIP-05 endpoint to check if the username is already registered
+  /// on the server. This method does NOT validate username format - format
+  /// validation is the responsibility of the BLoC layer.
+  ///
+  /// Returns a [UsernameAvailabilityResult] indicating:
+  /// - [UsernameAvailable] if the username is not registered on the server
+  /// - [UsernameTaken] if the username is already registered
+  /// - [UsernameCheckError] if a network error occurs or the server returns
+  ///   an unexpected response
+  Future<UsernameAvailabilityResult> checkUsernameAvailability({
+    required String username,
+  }) async {
+    try {
+      final response = await _httpClient.get(
+        Uri.parse('$_nip05LookupUrl?name=$username'),
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        final names = data['names'] as Map<String, dynamic>?;
+
+        // Username is available if not in the names map
+        final isAvailable = names == null || !names.containsKey(username);
+
+        return isAvailable ? const UsernameAvailable() : const UsernameTaken();
+      } else {
+        return UsernameCheckError(
+          'Server returned status ${response.statusCode}',
+        );
+      }
+    } on Exception catch (e) {
+      return UsernameCheckError('Network error: $e');
     }
   }
 

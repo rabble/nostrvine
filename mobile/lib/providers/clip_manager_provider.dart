@@ -160,7 +160,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     // Create a completer to track async trimming progress
     final processingCompleter = isClipToLong ? Completer<bool>() : null;
 
-    final clip = RecordingClip(
+    var clip = RecordingClip(
       id: 'clip_${DateTime.now().millisecondsSinceEpoch}_${_clipCounter++}',
       video: video,
       duration: isClipToLong ? remainingDuration : clipDuration,
@@ -180,6 +180,17 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
           onComplete: (success) async {
             if (!ref.mounted) return;
             processingCompleter!.complete(success);
+
+            /// If the clip exists already we use the newest thumbnail
+            /// from that clip.
+            final existingClip = getClipById(clip.id);
+            if (existingClip != null) {
+              clip = clip.copyWith(
+                thumbnailPath: existingClip.thumbnailPath,
+                thumbnailTimestamp: existingClip.thumbnailTimestamp,
+              );
+            }
+
             refreshClip(clip);
           },
         ),
@@ -456,6 +467,14 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     );
   }
 
+  /// Get a clip by its ID.
+  ///
+  /// Returns the clip with [clipId], or null if not found.
+  RecordingClip? getClipById(String clipId) {
+    final index = _clips.indexWhere((c) => c.id == clipId);
+    return index >= 0 ? _clips[index] : null;
+  }
+
   /// Remove the most recent clip (undo last recording).
   ///
   /// Safely removes only the last clip if any exist, otherwise logs debug
@@ -476,6 +495,20 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       category: .video,
     );
     await removeClipById(lastClip.id);
+  }
+
+  /// Clear all clips without deleting files or autosave.
+  ///
+  /// Used when restoring a draft to prevent clip duplication.
+  void clearClips() {
+    final clipCount = _clips.length;
+    _clips.clear();
+    Log.debug(
+      '🔄 Cleared $clipCount clips (files preserved)',
+      name: 'ClipManagerNotifier',
+      category: .video,
+    );
+    state = ClipManagerState();
   }
 
   /// Remove all clips and reset state.

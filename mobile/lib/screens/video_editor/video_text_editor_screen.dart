@@ -213,7 +213,8 @@ class _KeyboardHeightPanel extends StatefulWidget {
   State<_KeyboardHeightPanel> createState() => _KeyboardHeightPanelState();
 }
 
-class _KeyboardHeightPanelState extends State<_KeyboardHeightPanel> {
+class _KeyboardHeightPanelState extends State<_KeyboardHeightPanel>
+    with WidgetsBindingObserver {
   /// Minimum fallback height for the panel.
   static const double _minPanelHeight = 200.0;
 
@@ -223,42 +224,58 @@ class _KeyboardHeightPanelState extends State<_KeyboardHeightPanel> {
   /// Stores the last known keyboard height for smooth transitions.
   double _lastKeyboardHeight = 0.0;
 
-  /// Previous keyboard height to detect closing.
-  double _previousKeyboardHeight = 0.0;
+  /// Previous bottom inset to detect keyboard state changes.
+  double _lastInset = 0.0;
 
   /// Tracks if we already triggered the pop callback.
   bool _hasPopped = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    final bottomInset = WidgetsBinding
+        .instance
+        .platformDispatcher
+        .views
+        .first
+        .viewInsets
+        .bottom;
+
+    if (_lastInset > _keyboardThreshold &&
+        bottomInset < _keyboardThreshold &&
+        !widget.showBottomPanel) {
+      _schedulePopIfNeeded();
+    }
+
+    _lastInset = bottomInset;
+  }
 
   /// Schedules a pop callback with delay if not already popped.
   void _schedulePopIfNeeded() {
     if (_hasPopped) return;
     _hasPopped = true;
-
-    /// The 150ms delay prevents double-pop issues: when close is triggered
-    /// elsewhere (e.g., a button), the keyboard also closes and could trigger
-    /// this callback. The delay combined with the `mounted` check ensures we
-    /// don't pop twice. Using `WidgetsBinding.instance.addPostFrameCallback`
-    /// was not reliable enough for this timing issue.
-    Future.delayed(const Duration(milliseconds: 150), () {
-      if (mounted) {
-        widget.onKeyboardClosedWithoutPanel?.call();
-      }
-    });
+    // Only pop if this screen is still the current route (prevents double-pop
+    // when pop() was already called elsewhere, e.g., by a button)
+    final route = ModalRoute.of(context);
+    if (route?.isCurrent == true) {
+      widget.onKeyboardClosedWithoutPanel?.call();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
-
-    // Detect keyboard closing (was open, now closed) without a open panel.
-    // That handle the case when android users press the hardware back-button.
-    if (_previousKeyboardHeight > _keyboardThreshold &&
-        keyboardHeight < _keyboardThreshold &&
-        !widget.showBottomPanel) {
-      _schedulePopIfNeeded();
-    }
-
-    _previousKeyboardHeight = keyboardHeight;
 
     // Update last known keyboard height when keyboard is visible
     if (keyboardHeight > _lastKeyboardHeight) {
@@ -276,7 +293,8 @@ class _KeyboardHeightPanelState extends State<_KeyboardHeightPanel> {
       color: widget.backgroundColor,
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
-        switchInCurve: Curves.easeInOut,
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
         transitionBuilder: (child, animation) => SlideTransition(
           position: Tween<Offset>(
             begin: const Offset(0, 1),
