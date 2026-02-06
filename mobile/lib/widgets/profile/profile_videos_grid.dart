@@ -1,6 +1,8 @@
 // ABOUTME: Grid widget displaying user's videos on profile page
 // ABOUTME: Shows 3-column grid with thumbnails, handles empty state and navigation
 
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -75,10 +77,6 @@ class ProfileVideosGrid extends ConsumerWidget {
               childAspectRatio: 1,
             ),
             delegate: SliverChildBuilderDelegate((context, index) {
-              if (index >= videos.length) {
-                return const _VideoGridLoadingTile();
-              }
-
               final videoEntry = allVideos[index];
               return switch (videoEntry) {
                 _GridUploadingVideoEntry uploadEntry => _VideoGridUploadingTile(
@@ -155,40 +153,37 @@ class _ProfileVideosEmptyState extends StatelessWidget {
   );
 }
 
-/// Loading tile shown while more videos are being fetched
-class _VideoGridLoadingTile extends StatelessWidget {
-  const _VideoGridLoadingTile();
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      color: VineTheme.cardBackground,
-      borderRadius: BorderRadius.circular(4),
-    ),
-    child: const Center(
-      child: CircularProgressIndicator(
-        color: VineTheme.vineGreen,
-        strokeWidth: 2,
-      ),
-    ),
-  );
-}
-
 class _VideoGridUploadingTile extends StatelessWidget {
   const _VideoGridUploadingTile({required this.backgroundUpload});
 
   final BackgroundUpload backgroundUpload;
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      color: VineTheme.cardBackground,
+  Widget build(BuildContext context) {
+    final thumbnailPath =
+        backgroundUpload.draft.clips.firstOrNull?.thumbnailPath;
+
+    return ClipRRect(
       borderRadius: BorderRadius.circular(4),
-    ),
-    child: Center(
-      child: PartialCircleSpinner(progress: backgroundUpload.progress),
-    ),
-  );
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (thumbnailPath != null)
+            Image.file(
+              File(thumbnailPath),
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const _ThumbnailPlaceholder(),
+            )
+          else
+            const _ThumbnailPlaceholder(),
+          const ColoredBox(color: Color(0x66000000)),
+          Center(
+            child: PartialCircleSpinner(progress: backgroundUpload.progress),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Individual video tile in the grid
