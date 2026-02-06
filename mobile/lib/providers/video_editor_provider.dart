@@ -775,19 +775,27 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   // === RENDERING & PUBLISHING ===
 
+  /// Set the processing state.
+  ///
+  /// Use this to mark that video processing has started before calling
+  /// [startRenderVideo], or to reset the state after processing completes.
+  void setProcessing(bool isProcessing) {
+    if (state.isProcessing == isProcessing) return;
+    state = state.copyWith(isProcessing: isProcessing);
+  }
+
   /// Render all clips into final video and prepare for publishing.
   ///
   /// Combines all clips, applies audio settings, generates proofmode
   /// attestation, and creates the final rendered clip for publishing.
   Future<void> startRenderVideo() async {
-    if (state.isProcessing) return;
+    setProcessing(true);
 
     Log.info(
       '🎬 Starting final video render',
       name: 'VideoEditorNotifier',
       category: .video,
     );
-    state = state.copyWith(isProcessing: true);
 
     // Render video and get proofmode data
     final (outputPath, proofManifestJson) = await _renderVideo();
