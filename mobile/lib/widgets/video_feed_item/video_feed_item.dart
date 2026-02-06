@@ -1431,12 +1431,12 @@ class VideoOverlayActions extends ConsumerWidget {
                     identifier: 'video_description',
                     container: true,
                     explicitChildNodes: true,
-                    label: 'Video description: ${(video.content.isNotEmpty ? video.content : video.title!).trim()}',
+                    label: 'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
                     child: ClickableHashtagText(
                       text:
                           (video.content.isNotEmpty
                                   ? video.content
-                                  : video.title!)
+                                  : video.title ?? '')
                               .trim(),
                       style: const TextStyle(
                         fontFamily: 'Inter',

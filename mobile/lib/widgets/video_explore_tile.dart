@@ -104,7 +104,7 @@ class VideoExploreTile extends ConsumerWidget {
                       const SizedBox(height: 4),
                       if (video.title != null) ...[
                         Text(
-                          video.title!,
+                          video.title ?? '',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
