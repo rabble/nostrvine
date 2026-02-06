@@ -41,10 +41,12 @@ class VideoEditorMainBloc
     VideoEditorLayerInteractionEnded event,
     Emitter<VideoEditorMainState> emit,
   ) {
-    emit(state.copyWith(
-      isLayerInteractionActive: false,
-      isLayerOverRemoveArea: false,
-    ));
+    emit(
+      state.copyWith(
+        isLayerInteractionActive: false,
+        isLayerOverRemoveArea: false,
+      ),
+    );
   }
 
   void _onLayerOverRemoveAreaChanged(
