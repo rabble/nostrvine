@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:equatable/equatable.dart';
 import 'package:media_kit/media_kit.dart';
 
 import 'package:pooled_video_player/src/models/video_item.dart';
@@ -15,8 +15,7 @@ typedef VideoReadyCallback = void Function(int index, Player player);
 typedef PositionCallback = void Function(int index, Duration position);
 
 /// Configuration for video pool and preloading.
-@immutable
-class VideoPoolConfig {
+class VideoPoolConfig extends Equatable {
   /// Creates a video pool configuration.
   const VideoPoolConfig({
     this.maxPlayers = 5,
@@ -62,19 +61,7 @@ class VideoPoolConfig {
   final Duration positionCallbackInterval;
 
   @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is VideoPoolConfig &&
-          other.maxPlayers == maxPlayers &&
-          other.preloadAhead == preloadAhead &&
-          other.preloadBehind == preloadBehind &&
-          other.mediaSourceResolver == mediaSourceResolver &&
-          other.onVideoReady == onVideoReady &&
-          other.positionCallback == positionCallback &&
-          other.positionCallbackInterval == positionCallbackInterval);
-
-  @override
-  int get hashCode => Object.hash(
+  List<Object?> get props => [
     maxPlayers,
     preloadAhead,
     preloadBehind,
@@ -82,5 +69,5 @@ class VideoPoolConfig {
     onVideoReady,
     positionCallback,
     positionCallbackInterval,
-  );
+  ];
 }
