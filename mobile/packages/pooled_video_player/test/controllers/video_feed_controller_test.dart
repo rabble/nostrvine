@@ -804,6 +804,378 @@ void main() {
       });
     });
 
+    group('hooks', () {
+      group('mediaSourceResolver', () {
+        test('uses resolved source when provided', () async {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+            mediaSourceResolver: (video) => '/cached/${video.id}.mp4',
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // The pool gets the original URL for keying
+          final url = createTestVideos(count: 1)[0].url;
+          final setup = playerSetups[url]!;
+
+          // But the player opens with the resolved source
+          verify(
+            () => setup.player.open(
+              any(
+                that: isA<Media>().having(
+                  (m) => m.uri,
+                  'uri',
+                  '/cached/video_0.mp4',
+                ),
+              ),
+              play: false,
+            ),
+          ).called(1);
+
+          controller.dispose();
+        });
+
+        test('falls back to original URL when resolver returns null', () async {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+            mediaSourceResolver: (video) => null,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final url = createTestVideos(count: 1)[0].url;
+          final setup = playerSetups[url]!;
+
+          verify(
+            () => setup.player.open(
+              any(
+                that: isA<Media>().having(
+                  (m) => m.uri,
+                  'uri',
+                  url,
+                ),
+              ),
+              play: false,
+            ),
+          ).called(1);
+
+          controller.dispose();
+        });
+
+        test('falls back to original URL when resolver is null', () async {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final url = createTestVideos(count: 1)[0].url;
+          final setup = playerSetups[url]!;
+
+          verify(
+            () => setup.player.open(
+              any(
+                that: isA<Media>().having(
+                  (m) => m.uri,
+                  'uri',
+                  url,
+                ),
+              ),
+              play: false,
+            ),
+          ).called(1);
+
+          controller.dispose();
+        });
+      });
+
+      group('onVideoReady', () {
+        test('is called when buffer becomes ready', () async {
+          final readyCalls = <(int, Player)>[];
+
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+            onVideoReady: (index, player) {
+              readyCalls.add((index, player));
+            },
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final url = createTestVideos(count: 1)[0].url;
+          final setup = playerSetups[url]!;
+
+          // Simulate buffer ready
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(readyCalls, hasLength(1));
+          expect(readyCalls.first.$1, equals(0));
+          expect(readyCalls.first.$2, equals(setup.player));
+
+          controller.dispose();
+        });
+
+        test('is not called when onVideoReady is null', () async {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final url = createTestVideos(count: 1)[0].url;
+          final setup = playerSetups[url]!;
+
+          // Simulate buffer ready - should not throw
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(controller.isVideoReady(0), isTrue);
+
+          controller.dispose();
+        });
+
+        test('is called for preloaded videos', () async {
+          final readyCalls = <int>[];
+
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 3),
+            pool: pool,
+            onVideoReady: (index, player) {
+              readyCalls.add(index);
+            },
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Simulate buffer ready for all preloaded videos
+          for (final entry in playerSetups.entries) {
+            entry.value.bufferingController.add(false);
+          }
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          expect(readyCalls, containsAll([0, 1, 2]));
+
+          controller.dispose();
+        });
+      });
+
+      group('positionCallback', () {
+        test('is called periodically for active video', () async {
+          final positionCalls = <(int, Duration)>[];
+          const testPosition = Duration(seconds: 3);
+
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+            positionCallbackInterval: const Duration(milliseconds: 50),
+            positionCallback: (index, position) {
+              positionCalls.add((index, position));
+            },
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final url = createTestVideos(count: 1)[0].url;
+          final setup = playerSetups[url]!;
+
+          // Configure player as playing with a position
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.position).thenReturn(testPosition);
+
+          // Simulate buffer ready (starts playback + position timer)
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Wait for position callbacks to fire
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+
+          expect(positionCalls, isNotEmpty);
+          expect(positionCalls.first.$1, equals(0));
+          expect(positionCalls.first.$2, equals(testPosition));
+
+          controller.dispose();
+        });
+
+        test('is not called when player is not playing', () async {
+          final positionCalls = <(int, Duration)>[];
+
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+            positionCallbackInterval: const Duration(milliseconds: 50),
+            positionCallback: (index, position) {
+              positionCalls.add((index, position));
+            },
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final url = createTestVideos(count: 1)[0].url;
+          final setup = playerSetups[url]!;
+
+          // Player is not playing
+          when(() => setup.state.playing).thenReturn(false);
+
+          // Simulate buffer ready
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Wait for potential callbacks
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+
+          expect(positionCalls, isEmpty);
+
+          controller.dispose();
+        });
+
+        test('stops when video is paused', () async {
+          final positionCalls = <(int, Duration)>[];
+
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+            positionCallbackInterval: const Duration(milliseconds: 50),
+            positionCallback: (index, position) {
+              positionCalls.add((index, position));
+            },
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final url = createTestVideos(count: 1)[0].url;
+          final setup = playerSetups[url]!;
+
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.position).thenReturn(Duration.zero);
+
+          // Simulate buffer ready
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Wait for some callbacks
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          final callsBeforePause = positionCalls.length;
+
+          // Pause the video
+          controller.pause();
+
+          // Reset to track new calls only
+          positionCalls.clear();
+
+          // Wait and verify no more callbacks
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+
+          expect(callsBeforePause, greaterThan(0));
+          expect(positionCalls, isEmpty);
+
+          controller.dispose();
+        });
+
+        test('is not started when positionCallback is null', () async {
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+            positionCallbackInterval: const Duration(milliseconds: 50),
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final url = createTestVideos(count: 1)[0].url;
+          final setup = playerSetups[url]!;
+
+          when(() => setup.state.playing).thenReturn(true);
+
+          // Simulate buffer ready - should not throw
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+
+          // No error means position timer was not started
+          expect(controller.isVideoReady(0), isTrue);
+
+          controller.dispose();
+        });
+
+        test('uses custom positionCallbackInterval', () async {
+          final positionCalls = <(int, Duration)>[];
+
+          final controller = VideoFeedController(
+            videos: createTestVideos(count: 1),
+            pool: pool,
+            positionCallbackInterval: const Duration(milliseconds: 100),
+            positionCallback: (index, position) {
+              positionCalls.add((index, position));
+            },
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final url = createTestVideos(count: 1)[0].url;
+          final setup = playerSetups[url]!;
+
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.position).thenReturn(Duration.zero);
+
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Wait ~250ms. With 100ms interval, expect ~2-3 calls
+          await Future<void>.delayed(const Duration(milliseconds: 250));
+
+          // With 100ms interval over ~250ms, should have 2-3 calls
+          expect(positionCalls.length, lessThanOrEqualTo(4));
+          expect(positionCalls.length, greaterThanOrEqualTo(1));
+
+          controller.dispose();
+        });
+
+        test('stops timer when player is released', () async {
+          final positionCalls = <(int, Duration)>[];
+
+          final controller = VideoFeedController(
+            videos: createTestVideos(),
+            pool: pool,
+            preloadAhead: 1,
+            preloadBehind: 0,
+            positionCallbackInterval: const Duration(milliseconds: 50),
+            positionCallback: (index, position) {
+              positionCalls.add((index, position));
+            },
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          final url = createTestVideos()[0].url;
+          final setup = playerSetups[url]!;
+
+          when(() => setup.state.playing).thenReturn(true);
+          when(() => setup.state.position).thenReturn(Duration.zero);
+
+          setup.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          final callsBeforeSwipe = positionCalls.length;
+          expect(callsBeforeSwipe, greaterThan(0));
+
+          // Move far enough away to release index 0
+          positionCalls.clear();
+          controller.onPageChanged(3);
+          await Future<void>.delayed(const Duration(milliseconds: 150));
+
+          // Timer for index 0 should be stopped after release
+          final callsForIndex0 = positionCalls.where((c) => c.$1 == 0).length;
+          expect(callsForIndex0, equals(0));
+
+          controller.dispose();
+        });
+      });
+    });
+
     group('ChangeNotifier', () {
       test('extends ChangeNotifier', () {
         final controller = VideoFeedController(
