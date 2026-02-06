@@ -15,7 +15,7 @@ appId: co.openvine.app
 - tapOn: Search
 - runFlow: ../asserts/assertSearch.yaml
 
-# 2. Input text ${VIDEO_TITLE}: Validate video is found
+# 2. Input text ${VIDEO_SEARCH_TERM}: Validate video is found
 - tapOn: Find something cool...
 
 # Dismiss Android stylus modal if it appears
@@ -25,7 +25,17 @@ appId: co.openvine.app
     commands:
       - tapOn: Cancel
 
-- inputText: ${VIDEO_TITLE}
+- inputText: ${VIDEO_SEARCH_TERM}
+# Retry loop: if VIDEO_DESCRIPTION not visible, erase and re-type
+- repeat:
+    while:
+      notVisible: ${VIDEO_DESCRIPTION}
+    commands:
+      - eraseText
+      - waitForAnimationToEnd:
+          timeout: 10000
+      - inputText: ${VIDEO_SEARCH_TERM}
+
 #TO-DO: once search is fixed remove this workaround
 #- runFlow: ../utils/searchWorkaround.yaml
 #Assert Videos result
@@ -34,7 +44,7 @@ appId: co.openvine.app
 
 # 3. Tap on the 1st video returned: Validate playback screen
 - tapOn:
-    text: ".* ${VIDEO_TITLE} .*"
+    text: ".* ${VIDEO_DESCRIPTION} .*"
 - waitForAnimationToEnd:
     timeout: 3000
 - tapOn:

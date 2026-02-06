@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as model show AspectRatio;
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
@@ -431,7 +432,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
     final clipProvider = ref.read(clipManagerProvider.notifier)
       ..stopRecording();
-    final remainingMs = clipProvider.remainingDuration.inMilliseconds;
+    final remainingDuration = clipProvider.remainingDuration;
 
     state = state.copyWith(recordingState: .idle);
     _isStoppingRecording = false;
@@ -470,15 +471,16 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
 
-    // Generate and attach thumbnail
-    final targetTimestamp = Duration(
-      // Use the middle of remaining duration if video is
-      // shorter than remaining time (clip was trimmed), otherwise use default
-      // 210ms which is typically the first keyframe in most MP4 videos
-      milliseconds: remainingMs <= metadata.duration.inMilliseconds
-          ? remainingMs ~/ 2
-          : 210,
-    );
+    // Generate and attach thumbnail.
+    // Take the smaller of remaining duration or actual video duration.
+    final effectiveDuration = remainingDuration < metadata.duration
+        ? remainingDuration
+        : metadata.duration;
+    final halfDuration = effectiveDuration ~/ 2;
+    final targetTimestamp =
+        halfDuration < VideoEditorConstants.defaultThumbnailExtractTime
+        ? halfDuration
+        : VideoEditorConstants.defaultThumbnailExtractTime;
     final thumbnailResult = await VideoThumbnailService.extractThumbnail(
       videoPath: await videoResult.safeFilePath(),
       targetTimestamp: targetTimestamp,

@@ -18,6 +18,8 @@ import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/profile/profile_followers_stat.dart';
 import 'package:openvine/widgets/profile/profile_following_stat.dart';
 import 'package:openvine/widgets/profile/profile_stats_row_widget.dart';
+import 'package:openvine/providers/nip05_verification_provider.dart';
+import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_name.dart';
 
@@ -173,6 +175,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
               about: about,
               displayNameHint: displayNameHint,
               accentColor: profileColor,
+              isOwnProfile: isOwnProfile,
             ),
           ),
         ),
@@ -395,6 +398,7 @@ class _ProfileNameAndBio extends StatelessWidget {
     required this.userIdHex,
     required this.nip05,
     required this.about,
+    required this.isOwnProfile,
     this.displayNameHint,
     this.accentColor,
   });
@@ -403,6 +407,7 @@ class _ProfileNameAndBio extends StatelessWidget {
   final String userIdHex;
   final String? nip05;
   final String? about;
+  final bool isOwnProfile;
   final String? displayNameHint;
 
   /// Optional accent color (from profile color) for links/buttons.
@@ -429,6 +434,7 @@ class _ProfileNameAndBio extends StatelessWidget {
           _UniqueIdentifier(
             userIdHex: userIdHex,
             nip05: nip05,
+            isOwnProfile: isOwnProfile,
             accentColor: accentColor,
           ),
           if (about != null && about!.isNotEmpty) ...[
@@ -443,54 +449,105 @@ class _ProfileNameAndBio extends StatelessWidget {
 
 /// Unique identifier display (NIP-05 or full npub with ellipsis).
 /// Uses profile accent color when available, falls back to vineGreen.
-class _UniqueIdentifier extends StatelessWidget {
+/// Shows warning for failed NIP-05 verification on own profile.
+/// Hides unverified NIP-05s for other profiles (potential impersonation).
+class _UniqueIdentifier extends ConsumerWidget {
   const _UniqueIdentifier({
     required this.userIdHex,
     required this.nip05,
+    required this.isOwnProfile,
     this.accentColor,
   });
 
   final String userIdHex;
   final String? nip05;
+  final bool isOwnProfile;
 
   /// Optional accent color (from profile color) for the link text and icon.
   final Color? accentColor;
 
   @override
-  Widget build(BuildContext context) {
-    final displayText = (nip05 != null && nip05!.isNotEmpty)
-        ? nip05!
-        : NostrKeyUtils.encodePubKey(userIdHex);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final hasNip05 = nip05 != null && nip05!.isNotEmpty;
     final npub = NostrKeyUtils.encodePubKey(userIdHex);
     final linkColor = accentColor ?? VineTheme.vineGreen;
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
+    // Watch NIP-05 verification status
+    final verificationStatus = hasNip05
+        ? ref
+              .watch(nip05VerificationProvider(userIdHex))
+              .whenOrNull(data: (status) => status)
+        : null;
+
+    final verificationFailed =
+        verificationStatus == Nip05VerificationStatus.failed;
+
+    // For other profiles: hide unverified NIP-05s (show npub instead)
+    // For own profile: show with warning so user knows there's an issue
+    final String displayText;
+    if (hasNip05) {
+      if (verificationFailed && !isOwnProfile) {
+        // Don't show unverified NIP-05s for other users - potential impersonation
+        displayText = npub;
+      } else {
+        displayText = nip05!;
+      }
+    } else {
+      displayText = npub;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Flexible(
-          child: Text(
-            displayText,
-            style: VineTheme.bodyMediumFont(color: linkColor),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.only(left: 8),
-          child: GestureDetector(
-            onTap: () => ClipboardUtils.copy(
-              context,
-              npub,
-              message: 'Unique ID copied to clipboard',
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                displayText,
+                style: VineTheme.bodyMediumFont(color: linkColor),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
-            child: SvgPicture.asset(
-              'assets/icon/copy.svg',
-              width: 24,
-              height: 24,
-              colorFilter: ColorFilter.mode(linkColor, BlendMode.srcIn),
+            Padding(
+              padding: const EdgeInsets.only(left: 8),
+              child: GestureDetector(
+                onTap: () => ClipboardUtils.copy(
+                  context,
+                  npub,
+                  message: 'Unique ID copied to clipboard',
+                ),
+                child: SvgPicture.asset(
+                  'assets/icon/copy.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: ColorFilter.mode(linkColor, BlendMode.srcIn),
+                ),
+              ),
+            ),
+          ],
+        ),
+        // Show warning for own profile when NIP-05 verification fails
+        if (isOwnProfile && hasNip05 && verificationFailed)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 14,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Username not verifying - contact support',
+                  style: VineTheme.bodySmallFont(color: Colors.orange),
+                ),
+              ],
             ),
           ),
-        ),
       ],
     );
   }

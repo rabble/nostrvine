@@ -7,7 +7,6 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/repositories/video_repository.dart';
 
 // Simple mock for testing basic functionality
 class MinimalMockNostrService implements NostrClient {
@@ -90,7 +89,6 @@ void main() {
       final videoService = VideoEventService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
-        videoRepository: VideoRepository(),
       );
 
       // Quick test without causing disposal issues

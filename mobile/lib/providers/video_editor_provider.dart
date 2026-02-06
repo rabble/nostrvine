@@ -680,30 +680,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
 
     final draft = await _draftService.getDraftById(draftId);
-    if (draft != null) {
-      state = state.copyWith(
-        title: draft.title,
-        description: draft.description,
-        tags: draft.hashtags,
-        allowAudioReuse: draft.allowAudioReuse,
-        expiration: VideoMetadataExpiration.fromDuration(draft.expireTime),
-        editorStateHistory: draft.editorStateHistory,
-        editorEditingParameters: CompleteParameters.fromMap(
-          draft.editorEditingParameters,
-        ),
-      );
-      _clipManager.addMultipleClips(draft.clips);
-      // We set the aspect ratio in the video recorder to match the clips,
-      // so the user can't mix them up.
-      ref
-          .read(videoRecorderProvider.notifier)
-          .setAspectRatio(draft.clips.first.targetAspectRatio);
-      Log.info(
-        '✅ Draft loaded with ${draft.clips.length} clip(s)',
-        name: 'VideoEditorNotifier',
-        category: .video,
-      );
-    } else {
+    if (draft == null) {
       Log.warning(
         '⚠️ Draft not found or has no valid clips: $draftId',
         name: 'VideoEditorNotifier',
@@ -747,6 +724,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         clipsWithThumbnails.add(clip);
       }
     }
+
+    // Clear existing clips before restoring to prevent duplication
+    _clipManager.clearClips();
 
     state = state.copyWith(
       title: draft.title,

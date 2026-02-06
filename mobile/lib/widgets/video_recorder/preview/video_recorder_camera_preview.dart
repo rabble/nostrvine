@@ -41,7 +41,9 @@ class _VideoRecorderCameraPreviewState
             // In vertical mode, we use the full available screen size,
             // even if it's not exactly 16:9.
             final aspectRatioValue = aspectRatio == .vertical
-                ? constraints.biggest.aspectRatio
+                ? !kIsWeb && Platform.isMacOS
+                      ? 9 / 16
+                      : constraints.biggest.aspectRatio
                 : 1.0;
 
             return Center(
@@ -111,7 +113,7 @@ class _CameraPreview extends ConsumerWidget {
     return FittedBox(
       fit: .cover,
       child: SizedBox(
-        width: 1000 / sensorAspectRatio,
+        width: 1000 * sensorAspectRatio,
         height: 1000,
         child: Stack(
           children: [

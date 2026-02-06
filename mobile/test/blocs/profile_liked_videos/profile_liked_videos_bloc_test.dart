@@ -36,6 +36,12 @@ void main() {
       when(
         () => mockLikesRepository.watchLikedEventIds(),
       ).thenAnswer((_) => likedIdsController.stream);
+
+      // Default stub for getOrderedLikedEventIds (returns empty = no cache)
+      // This forces the "no cache" flow which syncs from relay
+      when(
+        () => mockLikesRepository.getOrderedLikedEventIds(),
+      ).thenAnswer((_) async => []);
     });
 
     tearDown(() {
@@ -173,7 +179,10 @@ void main() {
             ),
           );
           when(
-            () => mockVideosRepository.getVideosByIds(['event1', 'event2']),
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
           ).thenAnswer((_) async => [video1, video2]);
         },
         build: createBloc,
@@ -255,11 +264,10 @@ void main() {
           );
           // VideosRepository preserves order from input
           when(
-            () => mockVideosRepository.getVideosByIds([
-              'event3',
-              'event1',
-              'event2',
-            ]),
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
           ).thenAnswer((_) async => [video3, video1, video2]);
         },
         build: createBloc,
@@ -445,7 +453,10 @@ void main() {
         setUp: () {
           final video3 = createTestVideo('event3');
           when(
-            () => mockVideosRepository.getVideosByIds(['event3']),
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
           ).thenAnswer((_) async => [video3]);
         },
         build: createBloc,

@@ -9,7 +9,8 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:video_player/video_player.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/services/video_cache_manager.dart';
+import 'package:media_cache/media_cache.dart';
+import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/broken_video_tracker.dart'
     show BrokenVideoTracker;
 import 'package:openvine/services/bandwidth_tracker_service.dart';
@@ -335,12 +336,12 @@ VideoPlayerController individualVideoController(
     );
   } else {
     // On native platforms, use file caching
-    final videoCache = openVineVideoCache;
+    final videoCache = ref.read(mediaCacheProvider);
 
-    // Synchronous cache check - use getCachedVideoSync() which checks file existence without async
+    // Synchronous cache check - use getCachedFileSync() which checks file existence without async
     final cachedFile = isAgeVerificationRetry
         ? null
-        : videoCache.getCachedVideoSync(params.videoId);
+        : videoCache.getCachedFileSync(params.videoId);
 
     if (cachedFile != null && cachedFile.existsSync()) {
       // Use cached file!
@@ -731,8 +732,9 @@ VideoPlayerController individualVideoController(
           // when the keepAlive timer fired during disposal. Just remove the cache;
           // user can retry manually or the provider will be recreated on next access.
           unawaited(
-            openVineVideoCache
-                .removeCorruptedVideo(params.videoId)
+            ref
+                .read(mediaCacheProvider)
+                .removeCachedFile(params.videoId)
                 .then((_) {
                   Log.info(
                     '🗑️ Removed corrupted cache for video $videoIdDisplay',
@@ -1061,10 +1063,10 @@ Future<void> _generateAuthHeadersAsync(
 /// Cache video with authentication if needed for NSFW content
 Future<dynamic> _cacheVideoWithAuth(
   Ref ref,
-  VideoCacheManager videoCache,
+  MediaCacheManager videoCache,
   VideoControllerParams params,
 ) async {
-  // Get tracker for broken video handling
+  // Get tracker for broken video handling (used at call site for error reporting)
   BrokenVideoTracker? tracker;
   try {
     tracker = await ref.read(brokenVideoTrackerProvider.future);
@@ -1146,12 +1148,19 @@ Future<dynamic> _cacheVideoWithAuth(
   // Cache video with optional auth headers
   // Use effectiveCacheUrl (original MP4) not videoUrl (may be HLS on Android)
   // HLS manifests can't be cached as single files
-  return videoCache.cacheVideo(
-    params.effectiveCacheUrl,
-    params.videoId,
-    brokenVideoTracker: tracker,
-    authHeaders: authHeaders,
-  );
+  try {
+    return await videoCache.cacheFile(
+      params.effectiveCacheUrl,
+      key: params.videoId,
+      authHeaders: authHeaders,
+    );
+  } catch (e) {
+    // If caching fails, mark video as broken for future reference
+    if (tracker != null) {
+      tracker.markVideoBroken(params.videoId, 'Cache download failed: $e');
+    }
+    rethrow;
+  }
 }
 
 /// Check if error indicates a 401 Unauthorized (likely NSFW content)

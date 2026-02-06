@@ -149,6 +149,11 @@ class UserProfileService extends ChangeNotifier {
     // Update in-memory cache
     _profileCache[profile.pubkey] = profile;
 
+    // Clear "missing" state since the profile clearly exists now
+    _knownMissingProfiles.remove(profile.pubkey);
+    _gaveUpProfiles.remove(profile.pubkey);
+    _fetchAttempts.remove(profile.pubkey);
+
     // Update persistent cache
     if (_persistentCache?.isInitialized == true) {
       await _persistentCache!.updateCachedProfile(profile);

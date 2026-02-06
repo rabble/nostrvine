@@ -92,8 +92,8 @@ class MockDivineCameraPlatform
     return const VideoRecordingResult(
       filePath: '/test/video.mp4',
       durationMs: 5000,
-      width: 1920,
-      height: 1080,
+      width: 1080,
+      height: 1920,
     );
   }
 
@@ -320,8 +320,8 @@ void main() {
         expect(result, isNotNull);
         expect(result!.filePath, '/test/video.mp4');
         expect(result.durationMs, 5000);
-        expect(result.width, 1920);
-        expect(result.height, 1080);
+        expect(result.width, 1080);
+        expect(result.height, 1920);
         expect(DivineCamera.instance.isRecording, isFalse);
       });
 
@@ -684,7 +684,7 @@ void main() {
       expect(state.flashMode, DivineCameraFlashMode.off);
       expect(state.lens, DivineCameraLens.back);
       expect(state.zoomLevel, 1.0);
-      expect(state.aspectRatio, closeTo(16 / 9, 0.01));
+      expect(state.aspectRatio, closeTo(9 / 16, 0.01));
       expect(state.textureId, isNull);
     });
 

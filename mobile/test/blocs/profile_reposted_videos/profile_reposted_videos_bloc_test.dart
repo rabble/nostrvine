@@ -37,6 +37,12 @@ void main() {
       when(
         () => mockRepostsRepository.watchRepostedAddressableIds(),
       ).thenAnswer((_) => repostedIdsController.stream);
+
+      // Default stub for getOrderedRepostedAddressableIds (returns empty = no cache)
+      // This forces the "no cache" flow which syncs from relay
+      when(
+        () => mockRepostsRepository.getOrderedRepostedAddressableIds(),
+      ).thenAnswer((_) async => []);
     });
 
     tearDown(() {
@@ -214,10 +220,10 @@ void main() {
             ),
           );
           when(
-            () => mockVideosRepository.getVideosByAddressableIds([
-              addressableId1,
-              addressableId2,
-            ]),
+            () => mockVideosRepository.getVideosByAddressableIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
           ).thenAnswer((_) async => [video1, video2]);
         },
         build: createBloc,
@@ -268,11 +274,12 @@ void main() {
       );
 
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
-        'emits [syncing, failure] when fetch reposts fails',
+        'emits [syncing, failure] when sync reposts fails',
         setUp: () {
+          // syncUserReposts throws SyncFailedException, not FetchRepostsFailedException
           when(
             () => mockRepostsRepository.syncUserReposts(),
-          ).thenThrow(const FetchRepostsFailedException('Network error'));
+          ).thenThrow(const SyncFailedException('Network error'));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const ProfileRepostedVideosSyncRequested()),
@@ -340,11 +347,10 @@ void main() {
           );
           // VideosRepository preserves order from input
           when(
-            () => mockVideosRepository.getVideosByAddressableIds([
-              addressableId3,
-              addressableId1,
-              addressableId2,
-            ]),
+            () => mockVideosRepository.getVideosByAddressableIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
           ).thenAnswer((_) async => [video3, video1, video2]);
         },
         build: createBloc,
@@ -532,16 +538,16 @@ void main() {
       blocTest<ProfileRepostedVideosBloc, ProfileRepostedVideosState>(
         'loads next page of videos',
         setUp: () {
-          final addressableId3 = createAddressableId(currentUserPubkey, 'd3');
           final video3 = createTestVideo(
             id: 'e3',
             pubkey: currentUserPubkey,
             vineId: 'd3',
           );
           when(
-            () => mockVideosRepository.getVideosByAddressableIds([
-              addressableId3,
-            ]),
+            () => mockVideosRepository.getVideosByAddressableIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
           ).thenAnswer((_) async => [video3]);
         },
         build: createBloc,
@@ -681,9 +687,10 @@ void main() {
           ).thenAnswer((_) async => [addressableId1]);
 
           when(
-            () => mockVideosRepository.getVideosByAddressableIds([
-              addressableId1,
-            ]),
+            () => mockVideosRepository.getVideosByAddressableIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
           ).thenAnswer((_) async => [video1]);
         },
         build: () => createBloc(targetUserPubkey: otherUserPubkey),

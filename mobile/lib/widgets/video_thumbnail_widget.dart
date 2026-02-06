@@ -59,14 +59,6 @@ class _VideoThumbnailWidgetState extends State<VideoThumbnailWidget> {
   }
 
   Future<void> _loadThumbnail() async {
-    Log.debug(
-      '🖼️ VideoThumbnailWidget loading: id=${widget.video.id}, '
-      'thumbnailUrl=${widget.video.thumbnailUrl}, '
-      'blurhash=${widget.video.blurhash != null ? '${widget.video.blurhash!.length} chars' : 'null'}',
-      name: 'VideoThumbnailWidget',
-      category: LogCategory.video,
-    );
-
     // Check if we have an existing thumbnail URL
     if (widget.video.thumbnailUrl != null &&
         widget.video.thumbnailUrl!.isNotEmpty) {
@@ -307,8 +299,39 @@ class _SafeNetworkImage extends StatelessWidget {
   final bool showPlayIcon;
   final BorderRadius? borderRadius;
 
+  // Toggle to test with plain Image.network instead of CachedNetworkImage
+  // Set to true to debug if the issue is with flutter_cache_manager
+  static const bool _useSimpleImageNetwork = false;
+
   @override
   Widget build(BuildContext context) {
+    // Debug mode: test with plain Image.network to isolate cache issues
+    if (_useSimpleImageNetwork) {
+      return Image.network(
+        url,
+        width: width,
+        height: height,
+        fit: fit,
+        alignment: Alignment.topCenter,
+        errorBuilder: (context, error, stackTrace) {
+          Log.warning(
+            '🖼️ [Image.network] Thumbnail load failed for video $videoId:\n'
+            '  URL: $url\n'
+            '  Error type: ${error.runtimeType}\n'
+            '  Error: $error\n'
+            '  Stack: ${stackTrace?.toString().split('\n').take(5).join('\n')}',
+            name: 'VideoThumbnailWidget',
+            category: LogCategory.video,
+          );
+          return Container(
+            width: width,
+            height: height,
+            color: Colors.transparent,
+          );
+        },
+      );
+    }
+
     return CachedNetworkImage(
       imageUrl: url,
       width: width,
@@ -327,9 +350,12 @@ class _SafeNetworkImage extends StatelessWidget {
             (errorStr.contains('statusCode') && errorStr.contains('Invalid'));
 
         if (!is404) {
-          // Only log unexpected errors (not 404s)
+          // Log full error details for debugging
           Log.warning(
-            '🖼️ Thumbnail load failed for video $videoId: ${error.runtimeType}',
+            '🖼️ Thumbnail load failed for video $videoId:\n'
+            '  URL: $url\n'
+            '  Error type: ${error.runtimeType}\n'
+            '  Error: $errorStr',
             name: 'VideoThumbnailWidget',
             category: LogCategory.video,
           );

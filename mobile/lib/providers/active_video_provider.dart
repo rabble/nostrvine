@@ -84,8 +84,9 @@ final activeVideoIdProvider = Provider<String?>((ref) {
       videosAsync = ref.watch(likedVideosFeedProvider);
       break;
     case RouteType.videoFeed:
-      // videoFeed route manages its own playback via passed videos
-      // Return null to let FullscreenVideoFeedScreen handle it internally
+    case RouteType.pooledVideoFeed:
+      // videoFeed routes manage their own playback via passed videos
+      // Return null to let the screen handle it internally
       Log.debug(
         '[ACTIVE] ❌ videoFeed route (self-managed)',
         name: 'ActiveVideoProvider',

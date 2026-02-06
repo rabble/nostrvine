@@ -5,7 +5,6 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart' hide LogCategory, LogLevel;
-import 'package:openvine/repositories/video_repository.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
@@ -167,7 +166,6 @@ void main() {
       final videoEventService = VideoEventService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
-        videoRepository: VideoRepository(),
       );
 
       // Initially reposts should be disabled

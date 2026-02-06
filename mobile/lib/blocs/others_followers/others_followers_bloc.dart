@@ -30,6 +30,19 @@ class OthersFollowersBloc
     OthersFollowersListLoadRequested event,
     Emitter<OthersFollowersState> emit,
   ) async {
+    // Skip fetch if data is fresh and for the same target (unless force refresh)
+    if (!event.forceRefresh &&
+        state.status == OthersFollowersStatus.success &&
+        state.targetPubkey == event.targetPubkey &&
+        !state.isStale) {
+      Log.debug(
+        'Followers list is fresh (${state.lastFetchedAt}), skipping fetch',
+        name: 'OthersFollowersBloc',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
     emit(
       state.copyWith(
         status: OthersFollowersStatus.loading,
@@ -46,6 +59,7 @@ class OthersFollowersBloc
         state.copyWith(
           status: OthersFollowersStatus.success,
           followersPubkeys: followers,
+          lastFetchedAt: DateTime.now(),
         ),
       );
     } catch (e) {

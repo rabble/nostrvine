@@ -6,13 +6,11 @@ appId: co.openvine.app
 # 2. Tap on I am 16 and I agree, tap on Get Started: User is directed to the empty Home screen
 # Fresh install shows "Get Started", returning user shows "Start with a new identity"
 
-
 # 1. Open the app in clear state: Login screen is displayed
 - launchApp:
     clearState: true
 - runFlow: "../asserts/assertSplash.yaml"
 - runFlow: "../asserts/assertLogin.yaml"
-
 
 # 2. Tap on I am 16 and I agree, tap on Get Started: User is directed to the empty Home screen
 - tapOn: I am 16 years or older
@@ -32,7 +30,7 @@ appId: co.openvine.app
 
 - runFlow:
     when:
-      true: ${!output.isFreshInstall}
+      true: ${output.isFreshInstall == false} # Use == for comparison
     commands:
       - assertVisible: Start with a new identity
       - tapOn: Start with a new identity

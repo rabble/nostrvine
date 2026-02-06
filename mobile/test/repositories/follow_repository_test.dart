@@ -702,6 +702,22 @@ void main() {
         expect(filters.first.kinds, equals([3]));
         expect(filters.first.p, contains(testTargetPubkey));
       });
+
+      test(
+        'returns empty list on timeout',
+        () async {
+          // Simulate a slow query that takes longer than the 5 second timeout
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+            await Future<void>.delayed(const Duration(seconds: 10));
+            return [];
+          });
+
+          final followers = await repository.getFollowers(testTargetPubkey);
+
+          expect(followers, isEmpty);
+        },
+        timeout: const Timeout(Duration(seconds: 8)),
+      );
     });
 
     group('getMyFollowers', () {

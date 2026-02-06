@@ -105,29 +105,22 @@ class UserName extends ConsumerWidget {
     final verificationAsync = ref.watch(
       nip05VerificationProvider(effectivePubkey),
     );
-    final (showCheckmark, showStrikethrough) = switch (verificationAsync) {
-      AsyncData(:final value) => (
-        value == Nip05VerificationStatus.verified,
-        value == Nip05VerificationStatus.failed,
-      ),
-      _ => (false, false),
+    final showCheckmark = switch (verificationAsync) {
+      AsyncData(:final value) => value == Nip05VerificationStatus.verified,
+      _ => false,
     };
 
-    final baseTextStyle =
+    // Note: Strikethrough for failed NIP-05 verification is now shown on the
+    // NIP-05 identifier itself (in _UniqueIdentifier), not on the display name.
+    // The display name is the user's chosen name and should not be crossed out.
+
+    final textStyle =
         style ??
         TextStyle(
           color: VineTheme.secondaryText,
           fontSize: 10,
           fontWeight: FontWeight.w400,
         );
-
-    // Apply strikethrough for failed NIP-05 verification (impersonation risk)
-    final textStyle = showStrikethrough
-        ? baseTextStyle.copyWith(
-            decoration: TextDecoration.lineThrough,
-            decorationColor: Colors.red,
-          )
-        : baseTextStyle;
 
     return Row(
       mainAxisSize: MainAxisSize.min,

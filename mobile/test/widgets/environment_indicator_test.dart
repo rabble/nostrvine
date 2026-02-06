@@ -11,7 +11,9 @@ import 'package:openvine/widgets/environment_indicator.dart';
 void main() {
   const stagingConfig = EnvironmentConfig(environment: AppEnvironment.staging);
 
-  const devConfig = EnvironmentConfig(environment: AppEnvironment.dev);
+  const pocConfig = EnvironmentConfig(environment: AppEnvironment.poc);
+
+  const testConfig = EnvironmentConfig(environment: AppEnvironment.test);
 
   group('EnvironmentBadge', () {
     testWidgets('shows STG badge for staging environment', (
@@ -33,13 +35,13 @@ void main() {
       expect(find.byType(Container), findsOneWidget);
     });
 
-    testWidgets('shows DEV badge for development environment', (
+    testWidgets('shows POC badge for POC environment', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            currentEnvironmentProvider.overrideWith((ref) => devConfig),
+            currentEnvironmentProvider.overrideWith((ref) => pocConfig),
             showEnvironmentIndicatorProvider.overrideWith((ref) => true),
           ],
           child: const MaterialApp(
@@ -48,7 +50,26 @@ void main() {
         ),
       );
 
-      expect(find.text('DEV'), findsOneWidget);
+      expect(find.text('POC'), findsOneWidget);
+      expect(find.byType(Container), findsOneWidget);
+    });
+
+    testWidgets('shows TEST badge for test environment', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentEnvironmentProvider.overrideWith((ref) => testConfig),
+            showEnvironmentIndicatorProvider.overrideWith((ref) => true),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: Stack(children: [EnvironmentBadge()])),
+          ),
+        ),
+      );
+
+      expect(find.text('TEST'), findsOneWidget);
       expect(find.byType(Container), findsOneWidget);
     });
 
@@ -70,7 +91,8 @@ void main() {
       );
 
       expect(find.text('STG'), findsNothing);
-      expect(find.text('DEV'), findsNothing);
+      expect(find.text('POC'), findsNothing);
+      expect(find.text('TEST'), findsNothing);
       expect(find.byType(SizedBox), findsOneWidget);
     });
 
@@ -120,13 +142,13 @@ void main() {
       expect(decoration.borderRadius, isA<BorderRadius>());
     });
 
-    testWidgets('badge has correct styling for development', (
+    testWidgets('badge has correct styling for POC', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            currentEnvironmentProvider.overrideWith((ref) => devConfig),
+            currentEnvironmentProvider.overrideWith((ref) => pocConfig),
             showEnvironmentIndicatorProvider.overrideWith((ref) => true),
           ],
           child: const MaterialApp(
@@ -143,7 +165,33 @@ void main() {
       );
 
       final decoration = container.decoration as BoxDecoration;
-      expect(decoration.color, Color(devConfig.indicatorColorValue));
+      expect(decoration.color, Color(pocConfig.indicatorColorValue));
+    });
+
+    testWidgets('badge has correct styling for test', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentEnvironmentProvider.overrideWith((ref) => testConfig),
+            showEnvironmentIndicatorProvider.overrideWith((ref) => true),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(body: Stack(children: [EnvironmentBadge()])),
+          ),
+        ),
+      );
+
+      final container = tester.widget<Container>(
+        find.descendant(
+          of: find.byType(EnvironmentBadge),
+          matching: find.byType(Container),
+        ),
+      );
+
+      final decoration = container.decoration as BoxDecoration;
+      expect(decoration.color, Color(testConfig.indicatorColorValue));
     });
   });
 
@@ -166,19 +214,19 @@ void main() {
       );
 
       expect(
-        find.text('Environment: Staging (Funnelcake) - Tap for options'),
+        find.text('Environment: Staging - Tap for options'),
         findsOneWidget,
       );
       expect(find.byType(GestureDetector), findsOneWidget);
     });
 
-    testWidgets('shows development banner with correct text', (
+    testWidgets('shows POC banner with correct text', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            currentEnvironmentProvider.overrideWith((ref) => devConfig),
+            currentEnvironmentProvider.overrideWith((ref) => pocConfig),
             showEnvironmentIndicatorProvider.overrideWith((ref) => true),
           ],
           child: MaterialApp(
@@ -189,10 +237,27 @@ void main() {
         ),
       );
 
-      expect(
-        find.textContaining('Environment: Dev'),
-        findsOneWidget,
-      ); // Matches "Dev - Umbra"
+      expect(find.text('Environment: POC - Tap for options'), findsOneWidget);
+    });
+
+    testWidgets('shows test banner with correct text', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentEnvironmentProvider.overrideWith((ref) => testConfig),
+            showEnvironmentIndicatorProvider.overrideWith((ref) => true),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Stack(children: [EnvironmentBanner(onTap: () {})]),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Environment: Test - Tap for options'), findsOneWidget);
     });
 
     testWidgets('hides banner for production environment', (
@@ -215,7 +280,8 @@ void main() {
       );
 
       expect(find.textContaining('Environment: Staging'), findsNothing);
-      expect(find.textContaining('Environment: Dev'), findsNothing);
+      expect(find.textContaining('Environment: POC'), findsNothing);
+      expect(find.textContaining('Environment: Test'), findsNothing);
       expect(find.byType(SizedBox), findsOneWidget);
     });
 
@@ -300,13 +366,13 @@ void main() {
       expect(container.color, Color(stagingConfig.indicatorColorValue));
     });
 
-    testWidgets('banner has correct styling for development', (
+    testWidgets('banner has correct styling for POC', (
       WidgetTester tester,
     ) async {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            currentEnvironmentProvider.overrideWith((ref) => devConfig),
+            currentEnvironmentProvider.overrideWith((ref) => pocConfig),
             showEnvironmentIndicatorProvider.overrideWith((ref) => true),
           ],
           child: MaterialApp(
@@ -324,7 +390,34 @@ void main() {
         ),
       );
 
-      expect(container.color, Color(devConfig.indicatorColorValue));
+      expect(container.color, Color(pocConfig.indicatorColorValue));
+    });
+
+    testWidgets('banner has correct styling for test', (
+      WidgetTester tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            currentEnvironmentProvider.overrideWith((ref) => testConfig),
+            showEnvironmentIndicatorProvider.overrideWith((ref) => true),
+          ],
+          child: MaterialApp(
+            home: Scaffold(
+              body: Stack(children: [EnvironmentBanner(onTap: () {})]),
+            ),
+          ),
+        ),
+      );
+
+      final container = tester.widget<Container>(
+        find.descendant(
+          of: find.byType(GestureDetector),
+          matching: find.byType(Container),
+        ),
+      );
+
+      expect(container.color, Color(testConfig.indicatorColorValue));
     });
   });
 
@@ -334,8 +427,13 @@ void main() {
       expect(color, VineTheme.navGreen);
     });
 
-    test('returns navGreen for development environment', () {
-      final color = getEnvironmentAppBarColor(devConfig);
+    test('returns navGreen for POC environment', () {
+      final color = getEnvironmentAppBarColor(pocConfig);
+      expect(color, VineTheme.navGreen);
+    });
+
+    test('returns navGreen for test environment', () {
+      final color = getEnvironmentAppBarColor(testConfig);
       expect(color, VineTheme.navGreen);
     });
 

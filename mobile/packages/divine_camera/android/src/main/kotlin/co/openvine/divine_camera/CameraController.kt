@@ -286,9 +286,9 @@ class CameraController(
                     "Surface provider called with resolution: ${videoWidth}x${videoHeight}"
                 )
 
-                // Update aspect ratio and video dimensions based on actual camera resolution
-                aspectRatio = videoWidth.toFloat() / videoHeight.toFloat()
-                Log.d(TAG, "Aspect ratio set to: $aspectRatio, video dimensions: ${videoWidth}x${videoHeight}")
+                // Update aspect ratio for portrait mode (height/width gives 9:16 ratio)
+                aspectRatio = videoHeight.toFloat() / videoWidth.toFloat()
+                Log.d(TAG, "Aspect ratio set to: $aspectRatio (portrait), video dimensions: ${videoWidth}x${videoHeight}")
 
                 // Set the buffer size to match camera resolution
                 flutterSurfaceTexture?.setDefaultBufferSize(videoWidth, videoHeight)
@@ -435,7 +435,8 @@ class CameraController(
                     "Switch: Surface provider called with resolution: ${videoWidth}x${videoHeight}"
                 )
 
-                aspectRatio = videoWidth.toFloat() / videoHeight.toFloat()
+                // Update aspect ratio for portrait mode (height/width gives 9:16 ratio)
+                aspectRatio = videoHeight.toFloat() / videoWidth.toFloat()
 
                 // Update buffer size for new camera resolution
                 flutterSurfaceTexture?.setDefaultBufferSize(videoWidth, videoHeight)

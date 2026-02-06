@@ -3,7 +3,8 @@ appId: co.openvine.app
 # Top bar
 - assertVisible: "Menu"
 - assertVisible: "Home"
-- assertVisible: "Search"
+- assertVisible:
+    text: "Search.*"
 - assertVisible: "Open camera"
 
 # Feed bar

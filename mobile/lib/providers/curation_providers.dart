@@ -30,7 +30,7 @@ AnalyticsApiService analyticsApiService(Ref ref) {
 @riverpod
 FunnelcakeApiClient funnelcakeApiClient(Ref ref) {
   final environmentConfig = ref.watch(currentEnvironmentProvider);
-  return FunnelcakeApiClient(baseUrl: environmentConfig.apiBaseUrl ?? '');
+  return FunnelcakeApiClient(baseUrl: environmentConfig.apiBaseUrl);
 }
 
 /// Single source of truth for Funnelcake REST API availability.

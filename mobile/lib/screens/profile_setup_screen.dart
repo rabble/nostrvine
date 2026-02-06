@@ -18,8 +18,6 @@ import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/providers/username_notifier.dart';
-import 'package:openvine/state/username_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
@@ -219,9 +217,6 @@ class _ProfileSetupScreenViewState
 
   @override
   Widget build(BuildContext context) {
-    // TODO(refactor): Migrate usernameProvider to ProfileEditorBloc with
-    // debounced username validation
-    final usernameState = ref.watch(usernameProvider);
     final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
 
     return BlocConsumer<ProfileEditorBloc, ProfileEditorState>(
@@ -318,11 +313,6 @@ class _ProfileSetupScreenViewState
             ref.invalidate(fetchUserProfileProvider(currentPubkey));
             ref.invalidate(userProfileReactiveProvider(currentPubkey));
           }
-          // Re-check username so indicator shows current state (e.g., "taken")
-          final username = _nip05Controller.text.trim();
-          if (username.isNotEmpty) {
-            ref.read(usernameProvider.notifier).checkAvailability(username);
-          }
           switch (state.error) {
             case ProfileEditorError.usernameTaken:
               ScaffoldMessenger.of(context).showSnackBar(
@@ -335,13 +325,20 @@ class _ProfileSetupScreenViewState
                 ),
               );
             case ProfileEditorError.usernameReserved:
-              final username = usernameState.username;
+              final username = state.username;
               showDialog<void>(
                 context: context,
                 builder: (context) => UsernameReservedDialog(username),
-              ).then((_) {
-                ref.read(usernameProvider.notifier).setReserved(username);
-              });
+              );
+            case ProfileEditorError.claimFailed:
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text(
+                    'Failed to claim username. Please try again.',
+                  ),
+                  backgroundColor: Colors.red[700],
+                ),
+              );
             case ProfileEditorError.publishFailed:
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -910,32 +907,21 @@ class _ProfileSetupScreenViewState
                                 textInputAction: TextInputAction.next,
                                 onFieldSubmitted: (_) =>
                                     FocusScope.of(context).nextFocus(),
-                                onChanged: (value) => ref
-                                    .read(usernameProvider.notifier)
-                                    .onUsernameChanged(value),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return null; // Optional field
-                                  }
-
-                                  final regex = RegExp(
-                                    r'^[a-z0-9\-_.]+$',
-                                    caseSensitive: false,
-                                  );
-                                  if (!regex.hasMatch(value)) {
-                                    return 'Username can only contain letters, numbers, dash, underscore, and dot';
-                                  }
-                                  if (value.length < kMinUsernameLength) {
-                                    return 'Username must be at least $kMinUsernameLength characters';
-                                  }
-                                  if (value.length > kMaxUsernameLength) {
-                                    return 'Username must be $kMaxUsernameLength characters or less';
-                                  }
-                                  return null;
-                                },
+                                onChanged: (value) => context
+                                    .read<ProfileEditorBloc>()
+                                    .add(UsernameChanged(value)),
                               ),
                               // Username status indicators
-                              UsernameStatusIndicator(state: usernameState),
+                              BlocBuilder<
+                                ProfileEditorBloc,
+                                ProfileEditorState
+                              >(
+                                builder: (context, state) =>
+                                    UsernameStatusIndicator(
+                                      status: state.usernameStatus,
+                                      error: state.usernameError,
+                                    ),
+                              ),
 
                               const SizedBox(height: 24),
 
@@ -1015,28 +1001,37 @@ class _ProfileSetupScreenViewState
                   ),
                   const SizedBox(width: 16),
                   if (pubkey != null)
-                    Expanded(
-                      child: _SaveButton(
-                        canSave:
+                    BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
+                      builder: (context, blocState) {
+                        // Presentation logic: enable save button when form is valid
+                        // and username validation state allows it
+                        final username = _nip05Controller.text.trim();
+                        final canSave =
                             _isFormValid &&
-                            (_nip05Controller.text.trim().isEmpty ||
-                                usernameState.isAvailable ||
-                                _nip05Controller.text.trim() ==
-                                    _initialUsername) &&
-                            !usernameState.isChecking,
-                        onSave: () => context.read<ProfileEditorBloc>().add(
-                          ProfileSaved(
-                            pubkey: pubkey,
-                            displayName: _nameController.text,
-                            about: _bioController.text,
-                            username: _nip05Controller.text,
-                            picture: _pictureController.text,
-                            banner: _selectedProfileColor != null
-                                ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
-                                : null,
+                            (username.isEmpty ||
+                                blocState.usernameStatus ==
+                                    UsernameStatus.available ||
+                                username == _initialUsername) &&
+                            blocState.usernameStatus != UsernameStatus.checking;
+
+                        return Expanded(
+                          child: _SaveButton(
+                            canSave: canSave,
+                            onSave: () => context.read<ProfileEditorBloc>().add(
+                              ProfileSaved(
+                                pubkey: pubkey,
+                                displayName: _nameController.text,
+                                about: _bioController.text,
+                                username: _nip05Controller.text,
+                                picture: _pictureController.text,
+                                banner: _selectedProfileColor != null
+                                    ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
+                                    : null,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
                 ],
               ),
@@ -1449,39 +1444,35 @@ class _ProfileSetupScreenViewState
 
 /// Displays username availability status (checking, available, taken, reserved, error)
 class UsernameStatusIndicator extends StatelessWidget {
-  const UsernameStatusIndicator({required this.state, super.key});
+  const UsernameStatusIndicator({required this.status, this.error, super.key});
 
-  final UsernameState state;
+  final UsernameStatus status;
+  final UsernameValidationError? error;
 
   @override
   Widget build(BuildContext context) {
-    if (state.status == UsernameCheckStatus.idle || state.username.isEmpty) {
-      return const SizedBox.shrink();
+    String? errorText;
+    if (error != null) {
+      errorText = switch (error) {
+        UsernameValidationError.invalidFormat =>
+          'Only letters, numbers, -, _, and . are allowed',
+        UsernameValidationError.invalidLength =>
+          'Username must be 3-20 characters',
+        UsernameValidationError.networkError =>
+          'Could not check availability. Please try again.',
+        null => null,
+      };
     }
-
-    if (state.isChecking) {
-      return const _UsernameCheckingIndicator();
-    }
-
-    if (state.isAvailable) {
-      return const _UsernameAvailableIndicator();
-    }
-
-    if (state.isTaken) {
-      return const _UsernameTakenIndicator();
-    }
-
-    if (state.isReserved) {
-      return _UsernameReservedIndicator();
-    }
-
-    if (state.hasError) {
-      return _UsernameErrorIndicator(
-        message: state.errorMessage ?? 'Failed to check availability',
-      );
-    }
-
-    return const SizedBox.shrink();
+    return switch (status) {
+      UsernameStatus.idle => const SizedBox.shrink(),
+      UsernameStatus.checking => const _UsernameCheckingIndicator(),
+      UsernameStatus.available => const _UsernameAvailableIndicator(),
+      UsernameStatus.taken => const _UsernameTakenIndicator(),
+      UsernameStatus.reserved => _UsernameReservedIndicator(),
+      UsernameStatus.error => _UsernameErrorIndicator(
+        message: errorText ?? 'Failed to check availability',
+      ),
+    };
   }
 }
 
