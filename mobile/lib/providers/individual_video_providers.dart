@@ -251,10 +251,14 @@ VideoPlayerController individualVideoController(
 
   // Riverpod lifecycle hooks for idiomatic cache behavior
   ref.onCancel(() {
-    // Last listener removed - start 15-second cache timeout
+    // Last listener removed - start cache timeout before disposal
+    // Android uses shorter timeout (3s) to prevent MediaCodec accumulation crash
+    // iOS/desktop use longer timeout (15s) for smoother scroll-back experience
     // Short timeout prevents OOM with high-resolution videos (4K = ~25MB/frame)
-    // 15 seconds is enough for quick scroll-back; re-init from cache is fast
-    cacheTimer = Timer(const Duration(seconds: 15), () {
+    final timeout = !kIsWeb && Platform.isAndroid
+        ? const Duration(seconds: 3)
+        : const Duration(seconds: 15);
+    cacheTimer = Timer(timeout, () {
       link.close(); // Allow autoDispose after timeout
     });
   });
