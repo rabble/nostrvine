@@ -281,7 +281,11 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                             _hasImportedHistory = true;
                             _syncMainCapabilities(scope, bloc);
                           },
-                          onDone: () => context.push(VideoMetadataScreen.path),
+                          onDone: () async {
+                            _videoPlayer?.pause();
+                            await context.push(VideoMetadataScreen.path);
+                            if (mounted) _videoPlayer?.play();
+                          },
                           onImportHistoryStart: (state, import) =>
                               _isImportingHistory = true,
                           onImportHistoryEnd: (state, import) {

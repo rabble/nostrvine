@@ -88,11 +88,12 @@ class VideoClipEditorTopBar extends ConsumerWidget {
                       alignment: .centerRight,
                       child: _NextButton(
                         onTap: () {
-                          unawaited(
-                            ref
-                                .read(videoEditorProvider.notifier)
-                                .startRenderVideo(),
+                          final notifier = ref.read(
+                            videoEditorProvider.notifier,
                           );
+
+                          notifier.pauseVideo();
+                          unawaited(notifier.startRenderVideo());
                           // TODO(@hm21): Replace with VideoEditorScreen.path
                           context.push(VideoEditorScreen.path);
                         },
