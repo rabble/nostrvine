@@ -4,10 +4,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
-/// Rounded icon button.
-class DivineIconButton extends StatelessWidget {
+/// Rounded icon button for video editor controls.
+///
+/// Note: For design system buttons, use [DivineIconButton] from divine_ui.
+class VideoEditorIconButton extends StatelessWidget {
   /// Creates a video editor icon button.
-  const DivineIconButton({
+  const VideoEditorIconButton({
     this.icon,
     this.iconPath,
     super.key,
@@ -56,7 +58,7 @@ class DivineIconButton extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             color: backgroundColor,
-            borderRadius: .circular(20),
+            borderRadius: BorderRadius.circular(20),
           ),
           child: icon != null
               ? Icon(icon, color: iconColor, size: iconSize)
@@ -66,7 +68,7 @@ class DivineIconButton extends StatelessWidget {
                     width: iconSize,
                     child: SvgPicture.asset(
                       iconPath!,
-                      colorFilter: .mode(iconColor, .srcIn),
+                      colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
                     ),
                   ),
                 ),

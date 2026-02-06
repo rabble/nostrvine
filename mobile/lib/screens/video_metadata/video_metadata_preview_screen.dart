@@ -8,7 +8,7 @@ import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
-import 'package:openvine/widgets/divine_icon_button.dart';
+import 'package:openvine/widgets/video_editor_icon_button.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_upload_status.dart';
@@ -283,7 +283,7 @@ class _CloseButton extends StatelessWidget {
       top: 6,
       left: 6,
       child: SafeArea(
-        child: DivineIconButton(
+        child: VideoEditorIconButton(
           backgroundColor: Color(0x26000000),
           // TODO(l10n): Replace with context.l10n when localization is added.
           semanticLabel: 'Close video recorder',
