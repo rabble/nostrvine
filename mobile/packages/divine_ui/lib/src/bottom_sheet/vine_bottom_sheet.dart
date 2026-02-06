@@ -90,10 +90,6 @@ class VineBottomSheet extends StatelessWidget {
   ///
   /// Set [scrollable] to false for fixed-height sheets (e.g., action menus).
   /// The size parameters are only used when [scrollable] is true.
-  ///
-  /// Optional [onShow] callback is invoked immediately before displaying the
-  /// sheet. Optional [onDismiss] callback is invoked after the sheet closes.
-  /// These can be used for side effects like pausing video playback.
   static Future<T?> show<T>({
     required BuildContext context,
     List<Widget>? children,
@@ -110,8 +106,6 @@ class VineBottomSheet extends StatelessWidget {
     double initialChildSize = 0.6,
     double minChildSize = 0.3,
     double maxChildSize = 0.9,
-    VoidCallback? onShow,
-    VoidCallback? onDismiss,
   }) {
     assert(
       children != null || body != null || buildScrollBody != null,
@@ -122,9 +116,6 @@ class VineBottomSheet extends StatelessWidget {
       scrollable || buildScrollBody == null,
       'buildScrollBody can only be used when scrollable is true',
     );
-
-    // Invoke onShow callback before displaying the sheet
-    onShow?.call();
 
     if (scrollable) {
       // Draggable/scrollable mode
@@ -150,7 +141,7 @@ class VineBottomSheet extends StatelessWidget {
             children: children,
           ),
         ),
-      ).whenComplete(() => onDismiss?.call());
+      );
     } else {
       // Fixed mode
       return showModalBottomSheet<T>(
@@ -169,7 +160,7 @@ class VineBottomSheet extends StatelessWidget {
           body: body,
           children: children,
         ),
-      ).whenComplete(() => onDismiss?.call());
+      );
     }
   }
 
