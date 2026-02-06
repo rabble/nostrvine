@@ -64,7 +64,9 @@ class ProfileRepository {
   ///
   /// **Note:** For viewing other users' profiles, prefer using [getCachedProfile]
   /// and [fetchFreshProfile] separately to implement the cache+fresh pattern.
-  @Deprecated('Use getCachedProfile and fetchFreshProfile for cache+fresh pattern')
+  @Deprecated(
+    'Use getCachedProfile and fetchFreshProfile for cache+fresh pattern',
+  )
   Future<UserProfile?> getProfile({required String pubkey}) async {
     final cachedProfile = await _userProfilesDao.getProfile(pubkey);
     if (cachedProfile != null) return cachedProfile;

@@ -73,7 +73,6 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     OtherProfileRefreshRequested event,
     Emitter<OtherProfileState> emit,
   ) async {
-    // TODO: Implement refresh logic
     final currentProfile = switch (state) {
       OtherProfileInitial() => null,
       OtherProfileLoading(:final profile) => profile,
@@ -81,7 +80,31 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
       OtherProfileError(:final profile) => profile,
     };
     emit(OtherProfileLoading(profile: currentProfile));
-    // 2. Fetch fresh from relay
-    // 3. Emit result (Loaded or Error, preserving profile if available)
+
+    try {
+      final freshProfile = await _profileRepository.fetchFreshProfile(
+        pubkey: pubkey,
+      );
+      if (freshProfile != null) {
+        emit(OtherProfileLoaded(profile: freshProfile, isFresh: true));
+      } else {
+        emit(
+          OtherProfileError(
+            errorType: OtherProfileErrorType.notFound,
+            profile: currentProfile,
+          ),
+        );
+      }
+    } catch (e) {
+      if (currentProfile != null) {
+        emit(OtherProfileLoaded(profile: currentProfile, isFresh: false));
+      } else {
+        emit(
+          const OtherProfileError(
+            errorType: OtherProfileErrorType.networkError,
+          ),
+        );
+      }
+    }
   }
 }
