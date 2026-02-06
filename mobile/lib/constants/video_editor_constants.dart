@@ -104,6 +104,9 @@ class VideoEditorConstants {
     statusBarBrightness: Brightness.dark,
     systemNavigationBarColor: Color(0xFF000000),
   );
+
+  /// Height of the bottom action bar in the video editor.
+  static const double bottomBarHeight = 90;
 }
 
 /// Constants for the video editor clip gallery layout and animations.

@@ -7,6 +7,7 @@ class VideoEditorMainState extends Equatable {
     this.canRedo = false,
     this.openSubEditor,
     this.isLayerInteractionActive = false,
+    this.isLayerOverRemoveArea = false,
   });
 
   /// Whether the undo action is available.
@@ -24,6 +25,9 @@ class VideoEditorMainState extends Equatable {
   /// Whether the user is currently interacting with a layer (scaling/rotating).
   final bool isLayerInteractionActive;
 
+  /// Whether the layer is currently positioned over the remove area.
+  final bool isLayerOverRemoveArea;
+
   /// Creates a copy with the given fields replaced.
   ///
   /// Use [clearOpenSubEditor] to explicitly close the sub-editor.
@@ -33,6 +37,7 @@ class VideoEditorMainState extends Equatable {
     SubEditorType? openSubEditor,
     bool clearOpenSubEditor = false,
     bool? isLayerInteractionActive,
+    bool? isLayerOverRemoveArea,
   }) {
     return VideoEditorMainState(
       canUndo: canUndo ?? this.canUndo,
@@ -42,6 +47,8 @@ class VideoEditorMainState extends Equatable {
           : (openSubEditor ?? this.openSubEditor),
       isLayerInteractionActive:
           isLayerInteractionActive ?? this.isLayerInteractionActive,
+      isLayerOverRemoveArea:
+          isLayerOverRemoveArea ?? this.isLayerOverRemoveArea,
     );
   }
 
@@ -51,5 +58,6 @@ class VideoEditorMainState extends Equatable {
     canRedo,
     openSubEditor,
     isLayerInteractionActive,
+    isLayerOverRemoveArea,
   ];
 }

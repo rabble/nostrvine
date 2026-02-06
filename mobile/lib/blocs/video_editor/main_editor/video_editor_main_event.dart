@@ -35,6 +35,16 @@ class VideoEditorLayerInteractionEnded extends VideoEditorMainEvent {
   const VideoEditorLayerInteractionEnded();
 }
 
+/// Triggered when the layer position relative to the remove area changes.
+class VideoEditorLayerOverRemoveAreaChanged extends VideoEditorMainEvent {
+  const VideoEditorLayerOverRemoveAreaChanged({required this.isOver});
+
+  final bool isOver;
+
+  @override
+  List<Object?> get props => [isOver];
+}
+
 /// Triggered when a sub-editor (text, paint, filter) should be opened.
 class VideoEditorMainOpenSubEditor extends VideoEditorMainEvent {
   const VideoEditorMainOpenSubEditor(this.type);
