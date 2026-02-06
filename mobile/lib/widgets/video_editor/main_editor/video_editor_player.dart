@@ -1,25 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
+import 'package:video_player/video_player.dart';
 
-class VideoEditorPlayer extends ConsumerStatefulWidget {
+class VideoEditorPlayer extends StatelessWidget {
   const VideoEditorPlayer({
     super.key,
-    required this.player,
-    required this.videoController,
+    required this.controller,
+    required this.isPlayerReady,
   });
 
-  final Player player;
-  final VideoController videoController;
-
-  @override
-  ConsumerState<VideoEditorPlayer> createState() => _VideoEditorPlayerState();
-}
-
-class _VideoEditorPlayerState extends ConsumerState<VideoEditorPlayer> {
-  bool _isInitialized = false;
+  final bool isPlayerReady;
+  final VideoPlayerController? controller;
 
   @override
   Widget build(BuildContext context) {
@@ -31,15 +22,19 @@ class _VideoEditorPlayerState extends ConsumerState<VideoEditorPlayer> {
             fit: .expand,
             children: [
               // Video layer
-              if (_isInitialized)
+              if (isPlayerReady)
                 FittedBox(
-                  fit: BoxFit.cover,
-                  child: Video(controller: widget.videoController),
+                  fit: .cover,
+                  child: SizedBox(
+                    width: controller!.value.size.width,
+                    height: controller!.value.size.height,
+                    child: VideoPlayer(controller!),
+                  ),
                 ),
 
               // Thumbnail layer with fade out
               VideoEditorThumbnail(
-                isInitialized: _isInitialized,
+                isInitialized: isPlayerReady,
                 constraints: constraints,
               ),
             ],

@@ -15,9 +15,11 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
+import 'package:openvine/platform_io.dart';
+import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_player.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
+import 'package:video_player/video_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -35,14 +37,17 @@ class VideoEditorCanvas extends ConsumerStatefulWidget {
 }
 
 class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
-  late final Player _player;
-  late final VideoController _videoController;
+  VideoPlayerController? _videoPlayer;
   ProVideoController? _proVideoController;
 
   bool _isInitialized = false;
   bool _isImportingHistory = false;
   bool _hasImportedHistory = false;
   bool _isLayerBeingTransformed = false;
+
+  final _isPlayerReadyNotifier = ValueNotifier<bool>(false);
+
+  static const _renderTaskId = 'diVine_Editor_Merger';
 
   @override
   void initState() {
@@ -52,24 +57,30 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
 
   @override
   void dispose() {
-    _player.dispose();
+    _videoPlayer?.dispose();
+    _isPlayerReadyNotifier.dispose();
+    ProVideoEditor.instance.cancel(_renderTaskId);
     super.dispose();
   }
 
   Future<void> _initializePlayer() async {
     final clips = ref.read(clipManagerProvider).clips;
-
-    _player = Player();
-    _videoController = VideoController(_player);
-
-    // Create playlist from all clips
-    final playlist = Playlist(
-      clips.map((clip) => Media(clip.video.file!.path)).toList(),
+    final outputPath = await VideoEditorRenderService.renderVideo(
+      taskId: _renderTaskId,
+      clips: clips,
     );
 
-    await _player.open(playlist);
-    await _player.seek(clips.first.thumbnailTimestamp);
-    await _player.setPlaylistMode(.loop);
+    _videoPlayer = VideoPlayerController.file(File(outputPath!));
+
+    await _videoPlayer!.initialize();
+    if (!mounted) return;
+    await _videoPlayer!.seekTo(clips.first.thumbnailTimestamp);
+    if (!mounted) return;
+    await _videoPlayer!.setLooping(true);
+    if (!mounted) return;
+    await _videoPlayer!.play();
+    if (!mounted) return;
+    _isPlayerReadyNotifier.value = true;
   }
 
   /// Syncs the main-editor capabilities from the main editor to the bloc.
@@ -149,9 +160,14 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
           final size = constraints.biggest;
 
           _proVideoController ??= ProVideoController(
-            videoPlayer: VideoEditorPlayer(
-              player: _player,
-              videoController: _videoController,
+            videoPlayer: ValueListenableBuilder(
+              valueListenable: _isPlayerReadyNotifier,
+              builder: (_, isPlayerReady, _) {
+                return VideoEditorPlayer(
+                  isPlayerReady: isPlayerReady,
+                  controller: _videoPlayer,
+                );
+              },
             ),
             initialResolution: size,
 
@@ -250,12 +266,14 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                       ),
                       callbacks: ProImageEditorCallbacks(
                         onCompleteWithParameters: (parameters) async {
+                          final r = await decodeImageFromList(parameters.image);
+                          print(r);
+
                           final notifier = ref.read(
                             videoEditorProvider.notifier,
                           );
                           notifier.updateEditorEditingParameters(parameters);
                           notifier.startRenderVideo();
-                          context.push(VideoMetadataScreen.path);
                         },
                         mainEditorCallbacks: MainEditorCallbacks(
                           onAfterViewInit: () {
@@ -263,6 +281,7 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
                             _hasImportedHistory = true;
                             _syncMainCapabilities(scope, bloc);
                           },
+                          onDone: () => context.push(VideoMetadataScreen.path),
                           onImportHistoryStart: (state, import) =>
                               _isImportingHistory = true,
                           onImportHistoryEnd: (state, import) {
