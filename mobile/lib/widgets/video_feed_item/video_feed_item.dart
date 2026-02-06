@@ -1341,15 +1341,21 @@ class VideoOverlayActions extends ConsumerWidget {
                                 Row(
                                   children: [
                                     Flexible(
-                                      child: Text(
-                                        displayName,
-                                        style: VineTheme.titleFont(
-                                          fontSize: 14,
-                                          height: 20 / 14,
-                                          color: Colors.white,
+                                      child: Semantics(
+                                        identifier: 'video_author_name',
+                                        container: true,
+                                        explicitChildNodes: true,
+                                        label: 'Video author: $displayName',
+                                        child: Text(
+                                          displayName,
+                                          style: VineTheme.titleFont(
+                                            fontSize: 14,
+                                            height: 20 / 14,
+                                            color: Colors.white,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                     // Use actual NIP-05 verification —
@@ -1425,7 +1431,7 @@ class VideoOverlayActions extends ConsumerWidget {
                     identifier: 'video_description',
                     container: true,
                     explicitChildNodes: true,
-                    label: 'Video description',
+                    label: 'Video description: ${(video.content.isNotEmpty ? video.content : video.title!).trim()}',
                     child: ClickableHashtagText(
                       text:
                           (video.content.isNotEmpty
