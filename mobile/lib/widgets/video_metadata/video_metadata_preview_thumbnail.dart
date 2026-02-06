@@ -16,24 +16,32 @@ class VideoMetadataPreviewThumbnail extends ConsumerWidget {
     final editingParameters = ref.watch(
       videoEditorProvider.select((s) => s.editorEditingParameters),
     );
-    final child = Image.file(File(clip.thumbnailPath!), fit: .cover);
 
-    if (editingParameters != null) {
-      return Stack(
-        alignment: .center,
-        fit: .expand,
-        children: [
-          ColorFilterGenerator(
-            filters: editingParameters.colorFilters,
-            tuneAdjustments: [],
-            child: child,
-          ),
-          if (editingParameters.image.isNotEmpty)
-            Image.memory(editingParameters.image, fit: .cover),
-        ],
+    if (clip.thumbnailPath == null) {
+      return const Center(
+        child: Icon(Icons.broken_image, size: 32, color: Colors.grey),
       );
     }
 
-    return child;
+    final thumbnail = Image.file(File(clip.thumbnailPath!), fit: .cover);
+
+    if (editingParameters == null) {
+      return thumbnail;
+    }
+
+    return Stack(
+      alignment: .center,
+      fit: .expand,
+      children: [
+        ColorFilterGenerator(
+          filters: editingParameters.colorFilters,
+          tuneAdjustments: const [],
+          child: thumbnail,
+        ),
+        // Overlay the layers
+        if (editingParameters.image.isNotEmpty)
+          Image.memory(editingParameters.image, fit: .cover),
+      ],
+    );
   }
 }
