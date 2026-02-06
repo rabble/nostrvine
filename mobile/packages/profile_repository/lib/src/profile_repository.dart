@@ -61,10 +61,40 @@ class ProfileRepository {
   /// On cache miss, fetches from Nostr relays, caches the result, and returns.
   ///
   /// Returns `null` if no profile exists for the given pubkey.
+  ///
+  /// **Note:** For viewing other users' profiles, prefer using [getCachedProfile]
+  /// and [fetchFreshProfile] separately to implement the cache+fresh pattern.
+  @Deprecated('Use getCachedProfile and fetchFreshProfile for cache+fresh pattern')
   Future<UserProfile?> getProfile({required String pubkey}) async {
     final cachedProfile = await _userProfilesDao.getProfile(pubkey);
     if (cachedProfile != null) return cachedProfile;
 
+    final profileEvent = await _nostrClient.fetchProfile(pubkey);
+    if (profileEvent == null) return null;
+
+    final profile = UserProfile.fromNostrEvent(profileEvent);
+    await _userProfilesDao.upsertProfile(profile);
+    return profile;
+  }
+
+  /// Returns the cached profile from local storage (SQLite) only.
+  ///
+  /// Does NOT fetch from Nostr relays. Use this for immediate UI display
+  /// while [fetchFreshProfile] runs in parallel.
+  ///
+  /// Returns `null` if no cached profile exists for the given pubkey.
+  Future<UserProfile?> getCachedProfile({required String pubkey}) async {
+    return _userProfilesDao.getProfile(pubkey);
+  }
+
+  /// Fetches a fresh profile from Nostr relays and updates the local cache.
+  ///
+  /// Always fetches from relay, ignoring any cached data. Use this to ensure
+  /// the user sees the latest profile data.
+  ///
+  /// Returns `null` if no profile exists on relays for the given pubkey.
+  /// On success, the profile is automatically cached locally.
+  Future<UserProfile?> fetchFreshProfile({required String pubkey}) async {
     final profileEvent = await _nostrClient.fetchProfile(pubkey);
     if (profileEvent == null) return null;
 
