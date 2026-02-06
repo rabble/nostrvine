@@ -59,44 +59,47 @@ class VideoMetadataClipPreview extends ConsumerWidget {
               aspectRatio: clip.targetAspectRatio.value,
               child: ClipRRect(
                 borderRadius: .circular(16),
-                child: Stack(
-                  children: [
-                    // Video thumbnail or placeholder
-                    AnimatedSwitcher(
-                      layoutBuilder: (currentChild, previousChildren) => Stack(
-                        fit: .expand,
-                        alignment: .center,
-                        children: [...previousChildren, ?currentChild],
-                      ),
-                      duration: const Duration(milliseconds: 150),
-                      child: clip.thumbnailPath != null
-                          ? // Video thumbnail image
-                            VideoMetadataPreviewThumbnail(clip: clip)
-                          : // Fallback placeholder
-                            ColoredBox(
-                              color: Colors.grey.shade400,
-                              child: const Icon(
-                                Icons.play_circle_outline,
-                                size: 64,
-                                color: Colors.white,
+                child: Semantics(
+                  button: true,
+                  // TODO(l10n): Replace with context.l10n when localization is added.
+                  label: 'Open post preview screen',
+                  child: GestureDetector(
+                    onTap: state.finalRenderedClip != null
+                        ? () => _openPreview(context, state.finalRenderedClip!)
+                        : null,
+                    child: Stack(
+                      children: [
+                        // Video thumbnail or placeholder
+                        AnimatedSwitcher(
+                          layoutBuilder: (currentChild, previousChildren) =>
+                              Stack(
+                                fit: .expand,
+                                alignment: .center,
+                                children: [...previousChildren, ?currentChild],
                               ),
-                            ),
+                          duration: const Duration(milliseconds: 150),
+                          child: clip.thumbnailPath != null
+                              ? // Video thumbnail image
+                                VideoMetadataPreviewThumbnail(clip: clip)
+                              : // Fallback placeholder
+                                ColoredBox(
+                                  color: Colors.grey.shade400,
+                                  child: const Icon(
+                                    Icons.play_circle_outline,
+                                    size: 64,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                        ),
+                        // Processing overlay with play button
+                        VideoClipEditorProcessingOverlay(
+                          clip: clip,
+                          isProcessing: state.isProcessing,
+                          inactivePlaceholder: _PlayIndicator(clip: clip),
+                        ),
+                      ],
                     ),
-                    // Processing overlay with play button
-                    VideoClipEditorProcessingOverlay(
-                      clip: clip,
-                      isProcessing: state.isProcessing,
-                      inactivePlaceholder: _PlayIndicator(
-                        clip: clip,
-                        onTap: state.finalRenderedClip != null
-                            ? () => _openPreview(
-                                context,
-                                state.finalRenderedClip!,
-                              )
-                            : null,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -110,35 +113,25 @@ class VideoMetadataClipPreview extends ConsumerWidget {
 /// Play button indicator overlay for opening the preview screen.
 class _PlayIndicator extends StatelessWidget {
   /// Creates a play indicator.
-  const _PlayIndicator({required this.clip, required this.onTap});
+  const _PlayIndicator({required this.clip});
 
   final RecordingClip clip;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Semantics(
-        button: true,
-        // TODO(l10n): Replace with context.l10n when localization is added.
-        label: 'Open post preview screen',
-        child: GestureDetector(
-          onTap: onTap,
-          // Semi-transparent dark button with play icon
-          child: Container(
-            padding: const .all(12),
-            decoration: ShapeDecoration(
-              color: Colors.black.withValues(alpha: 0.65),
-              shape: RoundedRectangleBorder(borderRadius: .circular(20)),
-            ),
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: SvgPicture.asset(
-                'assets/icon/play.svg',
-                colorFilter: const .mode(Colors.white, .srcIn),
-              ),
-            ),
+      child: Container(
+        padding: const .all(12),
+        decoration: ShapeDecoration(
+          color: Colors.black.withValues(alpha: 0.65),
+          shape: RoundedRectangleBorder(borderRadius: .circular(20)),
+        ),
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: SvgPicture.asset(
+            'assets/icon/play.svg',
+            colorFilter: const .mode(Colors.white, .srcIn),
           ),
         ),
       ),
