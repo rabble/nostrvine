@@ -120,7 +120,7 @@ void main() {
             },
           ],
         );
-        when(() => mockDb.close()).thenAnswer((_) async {});
+        when(mockDb.close).thenAnswer((_) async {});
 
         final dbCache = MediaCacheManager(
           config: MediaCacheConfig(
@@ -165,7 +165,7 @@ void main() {
             },
           ],
         );
-        when(() => mockDb.close()).thenAnswer((_) async {});
+        when(mockDb.close).thenAnswer((_) async {});
 
         final dbCache = MediaCacheManager(
           config: MediaCacheConfig(
@@ -204,7 +204,7 @@ void main() {
             <String, Object?>{}, // Empty map
           ],
         );
-        when(() => mockDb.close()).thenAnswer((_) async {});
+        when(mockDb.close).thenAnswer((_) async {});
 
         final dbCache = MediaCacheManager(
           config: MediaCacheConfig(
@@ -236,7 +236,7 @@ void main() {
         when(() => mockDb.query('cacheObject')).thenThrow(
           Exception('Database corrupted'),
         );
-        when(() => mockDb.close()).thenAnswer((_) async {});
+        when(mockDb.close).thenAnswer((_) async {});
 
         final dbCache = MediaCacheManager(
           config: MediaCacheConfig(
@@ -275,7 +275,8 @@ void main() {
         expect(file, isNull);
       });
 
-      test('returns null when file exists on disk but not in database', () async {
+      test('returns null when file exists on disk but'
+          ' not in database', () async {
         // With sqflite-based manifest, files must be registered in the database
         // to appear in the manifest. Files on disk alone are not discovered.
         final cacheDir = Directory(
@@ -309,7 +310,7 @@ void main() {
             {'key': 'stale_key', 'relativePath': 'will_be_deleted.mp4'},
           ],
         );
-        when(() => mockDb.close()).thenAnswer((_) async {});
+        when(mockDb.close).thenAnswer((_) async {});
 
         final staleCache = MediaCacheManager(
           config: MediaCacheConfig(
