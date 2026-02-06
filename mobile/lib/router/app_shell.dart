@@ -564,58 +564,37 @@ class AppShell extends ConsumerWidget {
                 'explore_tab',
               ),
               // Camera button in center of bottom nav
-              BlocBuilder<BackgroundPublishBloc, BackgroundPublishState>(
-                builder: (context, state) {
-                  final isDisabled = state.hasUploadInProgress;
-
-                  return Semantics(
-                    identifier: 'camera_button',
-                    button: true,
-                    label: isDisabled
-                        ? 'Camera disabled during upload'
-                        : 'Open camera',
-                    child: GestureDetector(
-                      onTap: isDisabled
-                          ? null
-                          : () {
-                              Log.info(
-                                '👆 User tapped camera button',
-                                name: 'Navigation',
-                                category: LogCategory.ui,
-                              );
-                              context.push(VideoRecorderScreen.path);
-                            },
-                      child: Opacity(
-                        opacity: isDisabled ? 0.5 : 1.0,
-                        child: Container(
-                          width: 72,
-                          height: 48,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDisabled
-                                ? VineTheme.tabIconInactive
-                                : VineTheme.cameraButtonGreen,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: SvgPicture.asset(
-                            'assets/icon/retro-camera.svg',
-                            width: 32,
-                            height: 32,
-                            colorFilter: isDisabled
-                                ? const ColorFilter.mode(
-                                    Colors.grey,
-                                    BlendMode.srcIn,
-                                  )
-                                : null,
-                          ),
-                        ),
-                      ),
+              Semantics(
+                identifier: 'camera_button',
+                button: true,
+                label: 'Open camera',
+                child: GestureDetector(
+                  onTap: () {
+                    Log.info(
+                      '👆 User tapped camera button',
+                      name: 'Navigation',
+                      category: LogCategory.ui,
+                    );
+                    context.push(VideoRecorderScreen.path);
+                  },
+                  child: Container(
+                    width: 72,
+                    height: 48,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
                     ),
-                  );
-                },
+                    decoration: BoxDecoration(
+                      color: VineTheme.cameraButtonGreen,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: SvgPicture.asset(
+                      'assets/icon/retro-camera.svg',
+                      width: 32,
+                      height: 32,
+                    ),
+                  ),
+                ),
               ),
               _buildTabButton(
                 context,
