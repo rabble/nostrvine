@@ -43,7 +43,6 @@ import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/utils/log_batcher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/services/repost_resolver.dart';
-import 'package:openvine/repositories/video_repository.dart';
 
 /// Pagination state for tracking cursor position and loading status per subscription
 class PaginationState {
@@ -121,12 +120,10 @@ class VideoEventService extends ChangeNotifier {
   VideoEventService(
     this._nostrService, {
     required SubscriptionManager subscriptionManager,
-    required VideoRepository videoRepository,
     UserProfileService? userProfileService,
     EventRouter? eventRouter,
     VideoFilterBuilder? videoFilterBuilder,
   }) : _subscriptionManager = subscriptionManager,
-       _videoRepository = videoRepository,
        _userProfileService = userProfileService,
        _eventRouter = eventRouter,
        _videoFilterBuilder = videoFilterBuilder {
@@ -134,7 +131,6 @@ class VideoEventService extends ChangeNotifier {
     _initializeRepostResolver();
   }
   final NostrClient _nostrService;
-  final VideoRepository _videoRepository;
   late final RepostResolver _repostResolver;
   final UserProfileService? _userProfileService;
   final EventRouter? _eventRouter;
@@ -443,11 +439,6 @@ class VideoEventService extends ChangeNotifier {
   /// Find cached video by event ID across all subscription lists
   /// Uses case-insensitive matching for consistency with normalized IDs
   VideoEvent? _findCachedVideoById(String eventId) {
-    // First try VideoRepository for centralized lookup
-    final repoMatch = _videoRepository.getVideoById(eventId);
-    if (repoMatch != null) return repoMatch;
-
-    // Fall back to event lists for backward compatibility
     final normalizedId = eventId.toLowerCase();
     for (final events in _eventLists.values) {
       final match = events
@@ -644,7 +635,6 @@ class VideoEventService extends ChangeNotifier {
   /// - `_authorBuckets` (used by profile feeds)
   /// - `_hashtagBuckets` (used by hashtag feeds)
   /// - Marks as locally deleted to prevent pagination resurrection
-  /// - Delegates to VideoRepository for canonical tracking
   ///
   /// This mirrors the `updateVideoEvent()` pattern for comprehensive state updates.
   /// Call this after successfully publishing a NIP-09 delete event.
@@ -699,9 +689,6 @@ class VideoEventService extends ChangeNotifier {
     // Mark as locally deleted to prevent pagination resurrection
     _locallyDeletedVideoIds.add(videoId);
 
-    // Delegate to VideoRepository for canonical tracking
-    _videoRepository.markVideoAsDeleted(videoId);
-
     if (removedCount > 0) {
       Log.info(
         'Removed video $videoId from $removedCount location(s) across all feeds',
@@ -732,9 +719,7 @@ class VideoEventService extends ChangeNotifier {
   /// Check if a video has been locally deleted
   /// Used to filter out deleted videos from pagination results
   bool isVideoLocallyDeleted(String videoId) {
-    // Delegate to VideoRepository for centralized tracking
-    return _videoRepository.isVideoLocallyDeleted(videoId) ||
-        _locallyDeletedVideoIds.contains(videoId);
+    return _locallyDeletedVideoIds.contains(videoId);
   }
 
   /// Query for all users who have reposted a specific video
@@ -3895,7 +3880,6 @@ class VideoEventService extends ChangeNotifier {
     }
 
     // Check for duplicates within this subscription type using case-insensitive comparison
-    // Use VideoRepository for centralized deduplication with normalized IDs
     final normalizedId = videoEvent.id.toLowerCase();
     final existingIndex = eventList.indexWhere(
       (existing) => existing.id.toLowerCase() == normalizedId,
@@ -3905,14 +3889,6 @@ class VideoEventService extends ChangeNotifier {
       _logDuplicateVideoEventsAggregated();
       return; // Don't add duplicate events
     }
-
-    // Add to VideoRepository for centralized storage with normalized IDs
-    // This enables write-time deduplication and case-insensitive lookups
-    _videoRepository.addVideo(
-      videoEvent,
-      subscriptionType: subscriptionType,
-      isHistorical: isHistorical,
-    );
 
     // Fetch profile for video author if not already cached
     // This uses existing WebSocket connection with REQ command

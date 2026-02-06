@@ -93,6 +93,10 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   /// Track the userIdHex the BLoCs were created for.
   String? _blocsUserIdHex;
 
+  /// Track which tabs have been synced (lazy loading).
+  bool _likedTabSynced = false;
+  bool _repostsTabSynced = false;
+
   @override
   void initState() {
     super.initState();
@@ -113,12 +117,30 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   void _onTabChanged() {
     // Trigger rebuild to update SVG icon colors
     if (mounted) setState(() {});
+
+    // Lazy load: Trigger sync only when user first views the tab
+    if (_tabController.index == 1 &&
+        !_likedTabSynced &&
+        _likedVideosBloc != null) {
+      _likedTabSynced = true;
+      _likedVideosBloc!.add(const ProfileLikedVideosSyncRequested());
+    } else if (_tabController.index == 2 &&
+        !_repostsTabSynced &&
+        _repostedVideosBloc != null) {
+      _repostsTabSynced = true;
+      _repostedVideosBloc!.add(const ProfileRepostedVideosSyncRequested());
+    }
   }
 
   void _onRefreshRequested() {
     // Dispatch sync events to BLoCs to refresh likes/reposts
-    _likedVideosBloc?.add(const ProfileLikedVideosSyncRequested());
-    _repostedVideosBloc?.add(const ProfileRepostedVideosSyncRequested());
+    // Only sync tabs that have been viewed (lazy load still applies)
+    if (_likedTabSynced) {
+      _likedVideosBloc?.add(const ProfileLikedVideosSyncRequested());
+    }
+    if (_repostsTabSynced) {
+      _repostedVideosBloc?.add(const ProfileRepostedVideosSyncRequested());
+    }
   }
 
   @override
@@ -152,25 +174,27 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       _likedVideosBloc?.close();
       _repostedVideosBloc?.close();
 
-      _likedVideosBloc =
-          ProfileLikedVideosBloc(
-              likesRepository: likesRepository,
-              videosRepository: videosRepository,
-              currentUserPubkey: currentUserPubkey,
-              targetUserPubkey: widget.userIdHex,
-            )
-            ..add(const ProfileLikedVideosSubscriptionRequested())
-            ..add(const ProfileLikedVideosSyncRequested());
+      // Reset lazy load flags when switching profiles
+      _likedTabSynced = false;
+      _repostsTabSynced = false;
 
-      _repostedVideosBloc =
-          ProfileRepostedVideosBloc(
-              repostsRepository: repostsRepository,
-              videosRepository: videosRepository,
-              currentUserPubkey: currentUserPubkey,
-              targetUserPubkey: widget.userIdHex,
-            )
-            ..add(const ProfileRepostedVideosSubscriptionRequested())
-            ..add(const ProfileRepostedVideosSyncRequested());
+      // Create BLoCs but DON'T sync yet - lazy load when tab is viewed
+      // VideosRepository handles cache-first lookups via SQLite localStorage
+      _likedVideosBloc = ProfileLikedVideosBloc(
+        likesRepository: likesRepository,
+        videosRepository: videosRepository,
+        currentUserPubkey: currentUserPubkey,
+        targetUserPubkey: widget.userIdHex,
+      )..add(const ProfileLikedVideosSubscriptionRequested());
+      // Sync deferred until user views Liked tab
+
+      _repostedVideosBloc = ProfileRepostedVideosBloc(
+        repostsRepository: repostsRepository,
+        videosRepository: videosRepository,
+        currentUserPubkey: currentUserPubkey,
+        targetUserPubkey: widget.userIdHex,
+      )..add(const ProfileRepostedVideosSubscriptionRequested());
+      // Sync deferred until user views Reposts tab
 
       _blocsUserIdHex = widget.userIdHex;
     }

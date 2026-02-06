@@ -19,7 +19,6 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/repositories/username_repository.dart';
-import 'package:openvine/providers/video_repository_provider.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/analytics_service.dart';
@@ -693,7 +692,7 @@ SubscriptionManager subscriptionManager(Ref ref) {
   return SubscriptionManager(nostrService);
 }
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
+/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager
 @Riverpod(keepAlive: true)
 VideoEventService videoEventService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
@@ -702,7 +701,6 @@ VideoEventService videoEventService(Ref ref) {
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
   final userProfileService = ref.watch(userProfileServiceProvider);
   final videoFilterBuilder = ref.watch(videoFilterBuilderProvider);
-  final videoRepository = ref.watch(videoRepositoryProvider);
   final db = ref.watch(databaseProvider);
   final eventRouter = EventRouter(db);
 
@@ -711,7 +709,6 @@ VideoEventService videoEventService(Ref ref) {
   final service = VideoEventService(
     nostrService,
     subscriptionManager: subscriptionManager,
-    videoRepository: videoRepository,
     userProfileService: userProfileService,
     eventRouter: eventRouter,
     videoFilterBuilder: videoFilterBuilder,
@@ -1322,6 +1319,19 @@ CommentsRepository commentsRepository(Ref ref) {
 // VIDEOS REPOSITORY
 // =============================================================================
 
+/// Provider for VideoLocalStorage instance (SQLite-backed)
+///
+/// Creates a DbVideoLocalStorage for caching video events locally.
+/// Used by VideosRepository for cache-first lookups.
+///
+/// Uses:
+/// - NostrEventsDao from databaseProvider (for SQLite storage)
+@Riverpod(keepAlive: true)
+VideoLocalStorage videoLocalStorage(Ref ref) {
+  final db = ref.watch(databaseProvider);
+  return DbVideoLocalStorage(dao: db.nostrEventsDao);
+}
+
 /// Provider for VideosRepository instance
 ///
 /// Creates a VideosRepository for loading video feeds with pagination.
@@ -1329,16 +1339,19 @@ CommentsRepository commentsRepository(Ref ref) {
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - VideoLocalStorage for cache-first lookups and caching results
 /// - ContentBlocklistService for filtering blocked/muted users
 /// - AgeVerificationService for filtering NSFW content based on user preference
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
+  final localStorage = ref.watch(videoLocalStorageProvider);
   final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
 
   return VideosRepository(
     nostrClient: nostrClient,
+    localStorage: localStorage,
     blockFilter: createBlocklistFilter(blocklistService),
     contentFilter: createNsfwFilter(ageVerificationService),
   );
