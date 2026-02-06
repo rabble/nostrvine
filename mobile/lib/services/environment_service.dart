@@ -1,4 +1,4 @@
-// ABOUTME: Manages app environment (prod/staging/dev) with persistence
+// ABOUTME: Manages app environment (poc/staging/test/production) with persistence
 // ABOUTME: Handles developer mode unlock and environment switching
 
 import 'package:flutter/foundation.dart';
@@ -9,7 +9,6 @@ import 'package:openvine/models/environment_config.dart';
 class EnvironmentService extends ChangeNotifier {
   static const _keyDeveloperMode = 'developer_mode_enabled';
   static const _keyEnvironment = 'app_environment';
-  static const _keyDevRelay = 'dev_relay_selection';
 
   SharedPreferences? _prefs;
   bool _developerModeEnabled = false;
@@ -33,15 +32,9 @@ class EnvironmentService extends ChangeNotifier {
     _developerModeEnabled = _prefs!.getBool(_keyDeveloperMode) ?? false;
 
     final envString = _prefs!.getString(_keyEnvironment);
-    final devRelayString = _prefs!.getString(_keyDevRelay);
-
     final environment = _parseEnvironment(envString);
-    final devRelay = _parseDevRelay(devRelayString);
 
-    _currentConfig = EnvironmentConfig(
-      environment: environment,
-      devRelay: devRelay,
-    );
+    _currentConfig = EnvironmentConfig(environment: environment);
 
     _initialized = true;
     notifyListeners();
@@ -59,31 +52,13 @@ class EnvironmentService extends ChangeNotifier {
   Future<void> setEnvironment(AppEnvironment environment) async {
     _ensureInitialized();
 
-    _currentConfig = EnvironmentConfig(
-      environment: environment,
-      devRelay: environment == AppEnvironment.dev
-          ? (_currentConfig.devRelay ?? DevRelay.umbra)
-          : null,
-    );
+    _currentConfig = EnvironmentConfig(environment: environment);
 
     await _prefs!.setString(_keyEnvironment, environment.name);
 
     // Clear persisted relay list so new environment starts fresh with its default
     await _prefs!.remove('configured_relays');
 
-    notifyListeners();
-  }
-
-  /// Set the dev relay selection (only applies when in dev environment)
-  Future<void> setDevRelay(DevRelay relay) async {
-    _ensureInitialized();
-
-    _currentConfig = EnvironmentConfig(
-      environment: _currentConfig.environment,
-      devRelay: relay,
-    );
-
-    await _prefs!.setString(_keyDevRelay, relay.name);
     notifyListeners();
   }
 
@@ -98,14 +73,6 @@ class EnvironmentService extends ChangeNotifier {
     return AppEnvironment.values.firstWhere(
       (e) => e.name == value,
       orElse: () => buildTimeDefaultEnvironment,
-    );
-  }
-
-  DevRelay? _parseDevRelay(String? value) {
-    if (value == null) return null;
-    return DevRelay.values.cast<DevRelay?>().firstWhere(
-      (e) => e?.name == value,
-      orElse: () => null,
     );
   }
 }

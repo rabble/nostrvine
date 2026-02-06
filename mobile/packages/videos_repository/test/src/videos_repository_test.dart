@@ -10,6 +10,8 @@ class MockNostrClient extends Mock implements NostrClient {}
 
 class MockFunnelcakeApiClient extends Mock implements FunnelcakeApiClient {}
 
+class MockVideoLocalStorage extends Mock implements VideoLocalStorage {}
+
 /// Test helper that tracks content filter calls.
 class TestContentFilter {
   TestContentFilter({this.blockedPubkeys = const {}});
@@ -2044,6 +2046,239 @@ void main() {
         expect(filter.calls, hasLength(1));
         expect(filter.calls.first.id, equals('video-1'));
         expect(filter.calls.first.pubkey, equals('user-1'));
+      });
+    });
+
+    group('local storage caching', () {
+      late MockVideoLocalStorage mockLocalStorage;
+
+      setUp(() {
+        mockLocalStorage = MockVideoLocalStorage();
+      });
+
+      setUpAll(() {
+        registerFallbackValue(<Event>[]);
+      });
+
+      group('getVideosByIds with localStorage', () {
+        test('returns cached events from localStorage', () async {
+          final cachedEvent = _createVideoEvent(
+            id: 'cached-id',
+            pubkey: 'test-pubkey',
+            videoUrl: 'https://example.com/cached.mp4',
+            createdAt: 1704067200,
+          );
+
+          when(() => mockLocalStorage.getEventsByIds(any())).thenAnswer(
+            (_) async => [cachedEvent],
+          );
+
+          final repositoryWithCache = VideosRepository(
+            nostrClient: mockNostrClient,
+            localStorage: mockLocalStorage,
+          );
+
+          final result = await repositoryWithCache.getVideosByIds([
+            'cached-id',
+          ]);
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('cached-id'));
+          // Should not query relay since all events were cached
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        });
+
+        test(
+          'queries relay for missing events when cache partial hit',
+          () async {
+            final cachedEvent = _createVideoEvent(
+              id: 'cached-id',
+              pubkey: 'test-pubkey',
+              videoUrl: 'https://example.com/cached.mp4',
+              createdAt: 1704067200,
+            );
+            final relayEvent = _createVideoEvent(
+              id: 'relay-id',
+              pubkey: 'test-pubkey',
+              videoUrl: 'https://example.com/relay.mp4',
+              createdAt: 1704067201,
+            );
+
+            when(() => mockLocalStorage.getEventsByIds(any())).thenAnswer(
+              (_) async => [cachedEvent],
+            );
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+              (_) async => [relayEvent],
+            );
+            when(() => mockLocalStorage.saveEventsBatch(any())).thenAnswer(
+              (_) async {},
+            );
+
+            final repositoryWithCache = VideosRepository(
+              nostrClient: mockNostrClient,
+              localStorage: mockLocalStorage,
+            );
+
+            final result = await repositoryWithCache.getVideosByIds(
+              ['cached-id', 'relay-id'],
+              cacheResults: true,
+            );
+
+            expect(result, hasLength(2));
+            // Preserves input order
+            expect(result[0].id, equals('cached-id'));
+            expect(result[1].id, equals('relay-id'));
+            // Should query relay for missing event
+            verify(() => mockNostrClient.queryEvents(any())).called(1);
+          },
+        );
+
+        test(
+          'saves fetched events to cache when cacheResults is true',
+          () async {
+            final relayEvent = _createVideoEvent(
+              id: 'relay-id',
+              pubkey: 'test-pubkey',
+              videoUrl: 'https://example.com/relay.mp4',
+              createdAt: 1704067200,
+            );
+
+            when(() => mockLocalStorage.getEventsByIds(any())).thenAnswer(
+              (_) async => <Event>[],
+            );
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+              (_) async => [relayEvent],
+            );
+            when(() => mockLocalStorage.saveEventsBatch(any())).thenAnswer(
+              (_) async {},
+            );
+
+            final repositoryWithCache = VideosRepository(
+              nostrClient: mockNostrClient,
+              localStorage: mockLocalStorage,
+            );
+
+            await repositoryWithCache.getVideosByIds(
+              ['relay-id'],
+              cacheResults: true,
+            );
+
+            verify(
+              () => mockLocalStorage.saveEventsBatch([relayEvent]),
+            ).called(1);
+          },
+        );
+
+        test(
+          'does not save to cache when cacheResults is false',
+          () async {
+            final relayEvent = _createVideoEvent(
+              id: 'relay-id',
+              pubkey: 'test-pubkey',
+              videoUrl: 'https://example.com/relay.mp4',
+              createdAt: 1704067200,
+            );
+
+            when(() => mockLocalStorage.getEventsByIds(any())).thenAnswer(
+              (_) async => <Event>[],
+            );
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+              (_) async => [relayEvent],
+            );
+
+            final repositoryWithCache = VideosRepository(
+              nostrClient: mockNostrClient,
+              localStorage: mockLocalStorage,
+            );
+
+            await repositoryWithCache.getVideosByIds(['relay-id']);
+
+            verifyNever(() => mockLocalStorage.saveEventsBatch(any()));
+          },
+        );
+      });
+
+      group('getVideosByAddressableIds with localStorage', () {
+        test(
+          'saves fetched events to cache when cacheResults is true',
+          () async {
+            final relayEvent = _createVideoEvent(
+              id: 'dtag1',
+              pubkey: 'pubkey1',
+              videoUrl: 'https://example.com/video.mp4',
+              createdAt: 1704067200,
+            );
+
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+              (_) async => [relayEvent],
+            );
+            when(() => mockLocalStorage.saveEventsBatch(any())).thenAnswer(
+              (_) async {},
+            );
+
+            final repositoryWithCache = VideosRepository(
+              nostrClient: mockNostrClient,
+              localStorage: mockLocalStorage,
+            );
+
+            await repositoryWithCache.getVideosByAddressableIds(
+              ['${EventKind.videoVertical}:pubkey1:dtag1'],
+              cacheResults: true,
+            );
+
+            verify(
+              () => mockLocalStorage.saveEventsBatch([relayEvent]),
+            ).called(1);
+          },
+        );
+
+        test(
+          'does not save to cache when cacheResults is false',
+          () async {
+            final relayEvent = _createVideoEvent(
+              id: 'dtag1',
+              pubkey: 'pubkey1',
+              videoUrl: 'https://example.com/video.mp4',
+              createdAt: 1704067200,
+            );
+
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+              (_) async => [relayEvent],
+            );
+
+            final repositoryWithCache = VideosRepository(
+              nostrClient: mockNostrClient,
+              localStorage: mockLocalStorage,
+            );
+
+            await repositoryWithCache.getVideosByAddressableIds(
+              ['${EventKind.videoVertical}:pubkey1:dtag1'],
+            );
+
+            verifyNever(() => mockLocalStorage.saveEventsBatch(any()));
+          },
+        );
+
+        test(
+          'does not save to cache when no events are fetched',
+          () async {
+            when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+              (_) async => <Event>[],
+            );
+
+            final repositoryWithCache = VideosRepository(
+              nostrClient: mockNostrClient,
+              localStorage: mockLocalStorage,
+            );
+
+            await repositoryWithCache.getVideosByAddressableIds(
+              ['${EventKind.videoVertical}:pubkey1:dtag1'],
+              cacheResults: true,
+            );
+
+            verifyNever(() => mockLocalStorage.saveEventsBatch(any()));
+          },
+        );
       });
     });
   });

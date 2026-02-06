@@ -42,3 +42,11 @@ final class ProfileSaved extends ProfileEditorEvent {
 final class ProfileSaveConfirmed extends ProfileEditorEvent {
   const ProfileSaveConfirmed();
 }
+
+/// Event triggered when username text changes.
+final class UsernameChanged extends ProfileEditorEvent {
+  const UsernameChanged(this.username);
+
+  /// The new username value from the text field.
+  final String username;
+}

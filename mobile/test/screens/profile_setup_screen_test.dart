@@ -1,13 +1,12 @@
 // ABOUTME: Widget tests for username field in ProfileSetupScreen
 // ABOUTME: Tests status indicators, pre-population, and validation behavior
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
-import 'package:openvine/providers/username_notifier.dart';
+import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
-import 'package:openvine/state/username_state.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
 import 'package:url_launcher_platform_interface/url_launcher_platform_interface.dart';
 
@@ -23,19 +22,20 @@ void main() {
   });
 
   group('UsernameStatusIndicator', () {
-    Widget buildIndicator(UsernameState state) {
+    Widget buildIndicator(
+      UsernameStatus status, {
+      UsernameValidationError? error,
+    }) {
       return MaterialApp(
         theme: VineTheme.theme,
-        home: Scaffold(body: UsernameStatusIndicator(state: state)),
+        home: Scaffold(
+          body: UsernameStatusIndicator(status: status, error: error),
+        ),
       );
     }
 
     testWidgets('shows nothing when status is idle', (tester) async {
-      await tester.pumpWidget(
-        buildIndicator(
-          const UsernameState(username: '', status: UsernameCheckStatus.idle),
-        ),
-      );
+      await tester.pumpWidget(buildIndicator(UsernameStatus.idle));
 
       expect(find.text('Checking availability...'), findsNothing);
       expect(find.text('Username available!'), findsNothing);
@@ -44,42 +44,21 @@ void main() {
     });
 
     testWidgets('shows spinner when checking', (tester) async {
-      await tester.pumpWidget(
-        buildIndicator(
-          const UsernameState(
-            username: 'testuser',
-            status: UsernameCheckStatus.checking,
-          ),
-        ),
-      );
+      await tester.pumpWidget(buildIndicator(UsernameStatus.checking));
 
       expect(find.text('Checking availability...'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
     testWidgets('shows green checkmark when available', (tester) async {
-      await tester.pumpWidget(
-        buildIndicator(
-          const UsernameState(
-            username: 'availableuser',
-            status: UsernameCheckStatus.available,
-          ),
-        ),
-      );
+      await tester.pumpWidget(buildIndicator(UsernameStatus.available));
 
       expect(find.text('Username available!'), findsOneWidget);
       expect(find.byIcon(Icons.check_circle), findsOneWidget);
     });
 
     testWidgets('shows red X when taken', (tester) async {
-      await tester.pumpWidget(
-        buildIndicator(
-          const UsernameState(
-            username: 'takenuser',
-            status: UsernameCheckStatus.taken,
-          ),
-        ),
-      );
+      await tester.pumpWidget(buildIndicator(UsernameStatus.taken));
 
       expect(find.text('Username already taken'), findsOneWidget);
       expect(find.byIcon(Icons.cancel), findsOneWidget);
@@ -88,82 +67,59 @@ void main() {
     testWidgets('shows reserved indicator when status is reserved', (
       tester,
     ) async {
-      await tester.pumpWidget(
-        buildIndicator(
-          const UsernameState(
-            username: 'reserveduser',
-            status: UsernameCheckStatus.reserved,
-          ),
-        ),
-      );
+      await tester.pumpWidget(buildIndicator(UsernameStatus.reserved));
 
       expect(find.text('Username is reserved'), findsOneWidget);
       expect(find.byIcon(Icons.lock), findsOneWidget);
     });
 
-    testWidgets('shows error message when error', (tester) async {
+    testWidgets('shows error message when network error', (tester) async {
       await tester.pumpWidget(
         buildIndicator(
-          const UsernameState(
-            username: 'erroruser',
-            status: UsernameCheckStatus.error,
-            errorMessage: 'Network error',
-          ),
+          UsernameStatus.error,
+          error: UsernameValidationError.networkError,
         ),
       );
 
-      expect(find.text('Network error'), findsOneWidget);
+      expect(
+        find.text('Could not check availability. Please try again.'),
+        findsOneWidget,
+      );
       expect(find.byIcon(Icons.error_outline), findsOneWidget);
     });
-  });
 
-  group('Username Validation Logic', () {
-    test('allows valid usernames', () {
-      expect(_isValidUsername('testuser'), isTrue);
-      expect(_isValidUsername('test_user'), isTrue);
-      expect(_isValidUsername('test-user'), isTrue);
-      expect(_isValidUsername('test.user'), isTrue);
-      expect(_isValidUsername('TestUser123'), isTrue);
+    testWidgets('shows default error message when no error provided', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildIndicator(UsernameStatus.error));
+
+      expect(find.text('Failed to check availability'), findsOneWidget);
+      expect(find.byIcon(Icons.error_outline), findsOneWidget);
     });
 
-    test('rejects usernames that are too short', () {
-      expect(_isValidUsername('ab'), isFalse);
-      expect(_isValidUsername('a'), isFalse);
-      expect(_isValidUsername(''), isFalse);
+    testWidgets('shows format error message', (tester) async {
+      await tester.pumpWidget(
+        buildIndicator(
+          UsernameStatus.error,
+          error: UsernameValidationError.invalidFormat,
+        ),
+      );
+
+      expect(
+        find.text('Only letters, numbers, -, _, and . are allowed'),
+        findsOneWidget,
+      );
     });
 
-    test('rejects usernames that are too long', () {
-      expect(_isValidUsername('a' * (kMaxUsernameLength + 1)), isFalse);
-      expect(_isValidUsername('a' * 30), isFalse);
-    });
+    testWidgets('shows length error message', (tester) async {
+      await tester.pumpWidget(
+        buildIndicator(
+          UsernameStatus.error,
+          error: UsernameValidationError.invalidLength,
+        ),
+      );
 
-    test('rejects usernames with invalid characters', () {
-      expect(_isValidUsername('user@name'), isFalse);
-      expect(_isValidUsername('user name'), isFalse);
-      expect(_isValidUsername('user!name'), isFalse);
-      expect(_isValidUsername('user#name'), isFalse);
-    });
-  });
-
-  group('NIP-05 Username Extraction', () {
-    test('extracts username from @divine.video domain', () {
-      expect(_extractUsername('testuser@divine.video'), equals('testuser'));
-      expect(_extractUsername('my_user@divine.video'), equals('my_user'));
-    });
-
-    test('extracts username from legacy @openvine.co domain', () {
-      expect(_extractUsername('legacyuser@openvine.co'), equals('legacyuser'));
-    });
-
-    test('returns null for external domains', () {
-      expect(_extractUsername('user@nostr.com'), isNull);
-      expect(_extractUsername('user@example.org'), isNull);
-    });
-
-    test('returns null for invalid formats', () {
-      expect(_extractUsername('invalid'), isNull);
-      expect(_extractUsername(''), isNull);
-      expect(_extractUsername('user@'), isNull);
+      expect(find.text('Username must be 3-20 characters'), findsOneWidget);
     });
   });
 
@@ -279,25 +235,4 @@ void main() {
       );
     });
   });
-}
-
-/// Validation logic matching ProfileSetupScreen
-bool _isValidUsername(String username) {
-  final regex = RegExp(r'^[a-z0-9\-_.]+$', caseSensitive: false);
-  return regex.hasMatch(username) &&
-      username.length >= kMinUsernameLength &&
-      username.length <= kMaxUsernameLength;
-}
-
-/// Username extraction logic matching ProfileSetupScreen
-String? _extractUsername(String? nip05) {
-  if (nip05 == null || nip05.isEmpty) return null;
-
-  if (nip05.endsWith('@divine.video') || nip05.endsWith('@openvine.co')) {
-    final parts = nip05.split('@');
-    if (parts.length == 2) {
-      return parts[0];
-    }
-  }
-  return null;
 }

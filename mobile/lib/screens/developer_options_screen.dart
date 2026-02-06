@@ -1,5 +1,5 @@
 // ABOUTME: Developer options screen for switching between environments
-// ABOUTME: Allows switching relay URLs (Production, Staging, Dev relays, Funnelcake Prod)
+// ABOUTME: Allows switching relay URLs (POC, Staging, Test, Production)
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,22 +28,8 @@ class DeveloperOptionsScreen extends ConsumerWidget {
     final environments = [
       const EnvironmentConfig(environment: AppEnvironment.production),
       const EnvironmentConfig(environment: AppEnvironment.staging),
-      const EnvironmentConfig(
-        environment: AppEnvironment.dev,
-        devRelay: DevRelay.umbra,
-      ),
-      const EnvironmentConfig(
-        environment: AppEnvironment.dev,
-        devRelay: DevRelay.shugur,
-      ),
-      const EnvironmentConfig(
-        environment: AppEnvironment.dev,
-        devRelay: DevRelay.funnelcakeProd,
-      ),
-      const EnvironmentConfig(
-        environment: AppEnvironment.dev,
-        devRelay: DevRelay.localhost,
-      ),
+      const EnvironmentConfig(environment: AppEnvironment.test),
+      const EnvironmentConfig(environment: AppEnvironment.poc),
     ];
 
     return Scaffold(

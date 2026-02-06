@@ -55,7 +55,7 @@ bool showEnvironmentIndicator(Ref ref) {
 ///
 /// Cancels all active subscriptions, clears kind 34236 video events and their
 /// metrics from the local database to ensure a fresh start when switching
-/// between prod/staging/dev. Also handles setting the dev relay.
+/// between environments.
 Future<void> switchEnvironment(
   WidgetRef ref,
   EnvironmentConfig newConfig,
@@ -73,7 +73,4 @@ Future<void> switchEnvironment(
 
   // Switch the environment (this also clears persisted relay list)
   await service.setEnvironment(newConfig.environment);
-  if (newConfig.devRelay != null) {
-    await service.setDevRelay(newConfig.devRelay!);
-  }
 }

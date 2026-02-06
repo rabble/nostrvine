@@ -1,6 +1,7 @@
 // ABOUTME: BLoC for orchestrating profile save and username claiming
 // ABOUTME: Handles rollback when username claim fails
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
@@ -8,9 +9,29 @@ import 'package:openvine/models/user_profile.dart' as app_models;
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
+import 'package:stream_transform/stream_transform.dart';
 
 part 'profile_editor_event.dart';
 part 'profile_editor_state.dart';
+
+/// Minimum username length.
+const _minUsernameLength = 3;
+
+/// Maximum username length.
+const _maxUsernameLength = 20;
+
+/// Username format: letters, numbers, hyphens, underscores, periods.
+final _usernamePattern = RegExp(r'^[a-zA-Z0-9._-]+$');
+
+/// Debounce duration for username validation
+const _debounceDuration = Duration(milliseconds: 500);
+
+/// Event transformer that debounces and restarts on new events
+EventTransformer<E> _debounceRestartable<E>() {
+  return (events, mapper) {
+    return restartable<E>().call(events.debounce(_debounceDuration), mapper);
+  };
+}
 
 /// BLoC for orchestrating profile publishing and username claiming.
 class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
@@ -24,6 +45,10 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
        super(const ProfileEditorState()) {
     on<ProfileSaved>(_onProfileSaved);
     on<ProfileSaveConfirmed>(_onProfileSaveConfirmed);
+    on<UsernameChanged>(
+      _onUsernameChanged,
+      transformer: _debounceRestartable(),
+    );
   }
 
   final ProfileRepository _profileRepository;
@@ -70,6 +95,100 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     );
 
     await _saveProfile(state.pendingEvent!, emit);
+  }
+
+  Future<void> _onUsernameChanged(
+    UsernameChanged event,
+    Emitter<ProfileEditorState> emit,
+  ) async {
+    final rawUsername = event.username;
+    final username = rawUsername.trim();
+
+    if (username.isEmpty) {
+      emit(
+        state.copyWith(
+          username: username,
+          usernameStatus: UsernameStatus.idle,
+          usernameError: null,
+        ),
+      );
+      return;
+    }
+
+    if (!_usernamePattern.hasMatch(rawUsername)) {
+      emit(
+        state.copyWith(
+          username: username,
+          usernameStatus: UsernameStatus.error,
+          usernameError: UsernameValidationError.invalidFormat,
+        ),
+      );
+      return;
+    }
+
+    // Then check length
+    if (username.length < _minUsernameLength ||
+        username.length > _maxUsernameLength) {
+      emit(
+        state.copyWith(
+          username: username,
+          usernameStatus: UsernameStatus.error,
+          usernameError: UsernameValidationError.invalidLength,
+        ),
+      );
+      return;
+    }
+
+    if (state.reservedUsernames.contains(username)) {
+      emit(
+        state.copyWith(
+          username: username,
+          usernameStatus: UsernameStatus.reserved,
+          usernameError: null,
+        ),
+      );
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        username: username,
+        usernameStatus: UsernameStatus.checking,
+        usernameError: null,
+      ),
+    );
+
+    final result = await _profileRepository.checkUsernameAvailability(
+      username: username,
+    );
+
+    switch (result) {
+      case UsernameAvailable():
+        emit(
+          state.copyWith(
+            usernameStatus: UsernameStatus.available,
+            usernameError: null,
+          ),
+        );
+      case UsernameTaken():
+        emit(
+          state.copyWith(
+            usernameStatus: UsernameStatus.taken,
+            usernameError: null,
+          ),
+        );
+      case UsernameCheckError(:final message):
+        Log.error(
+          'Username availability check failed: $message',
+          name: 'ProfileEditorBloc',
+        );
+        emit(
+          state.copyWith(
+            usernameStatus: UsernameStatus.error,
+            usernameError: UsernameValidationError.networkError,
+          ),
+        );
+    }
   }
 
   /// Core profile save logic (extracted for reuse)
@@ -151,7 +270,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       UsernameClaimSuccess() => null,
       UsernameClaimTaken() => ProfileEditorError.usernameTaken,
       UsernameClaimReserved() => ProfileEditorError.usernameReserved,
-      UsernameClaimError() => ProfileEditorError.publishFailed,
+      UsernameClaimError() => ProfileEditorError.claimFailed,
     };
 
     if (error == null) {
@@ -181,7 +300,24 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       Log.error('Rollback failed: $e', name: 'ProfileEditorBloc');
     }
 
-    emit(state.copyWith(status: ProfileEditorStatus.failure, error: error));
+    final usernameStatus = switch (error) {
+      ProfileEditorError.usernameReserved => UsernameStatus.reserved,
+      ProfileEditorError.usernameTaken => UsernameStatus.taken,
+      _ => null,
+    };
+
+    final reservedUsernames = usernameStatus == UsernameStatus.reserved
+        ? {...state.reservedUsernames, username}
+        : null;
+
+    emit(
+      state.copyWith(
+        status: ProfileEditorStatus.failure,
+        error: error,
+        usernameStatus: usernameStatus,
+        reservedUsernames: reservedUsernames,
+      ),
+    );
   }
 }
 

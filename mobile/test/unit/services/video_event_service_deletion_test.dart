@@ -9,7 +9,6 @@ import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/repositories/video_repository.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 
@@ -48,12 +47,10 @@ void main() {
   group('VideoEventService.removeVideoCompletely()', () {
     late VideoEventService videoEventService;
     late MockNostrService mockNostrService;
-    late VideoRepository videoRepository;
     late StreamController<Event> eventStreamController;
 
     setUp(() {
       mockNostrService = MockNostrService();
-      videoRepository = VideoRepository();
       eventStreamController = StreamController<Event>.broadcast();
 
       when(() => mockNostrService.isInitialized).thenReturn(true);
@@ -69,7 +66,6 @@ void main() {
       videoEventService = VideoEventService(
         mockNostrService,
         subscriptionManager: testSubscriptionManager,
-        videoRepository: videoRepository,
       );
     });
 
@@ -88,15 +84,6 @@ void main() {
       expect(videoEventService.isVideoLocallyDeleted(videoId), isTrue);
     });
 
-    test('marks video as locally deleted in VideoRepository', () {
-      const videoId = 'test-video-id-repo-delegate';
-
-      videoEventService.removeVideoCompletely(videoId);
-
-      // Verify VideoRepository has the video marked as deleted
-      expect(videoRepository.isVideoLocallyDeleted(videoId), isTrue);
-    });
-
     test('handles non-existent video gracefully without throwing', () {
       const videoId = 'non-existent-video-id';
 
@@ -108,7 +95,6 @@ void main() {
 
       // Video should still be marked as locally deleted
       expect(videoEventService.isVideoLocallyDeleted(videoId), isTrue);
-      expect(videoRepository.isVideoLocallyDeleted(videoId), isTrue);
     });
 
     test(
@@ -124,7 +110,6 @@ void main() {
 
         // Verify video is marked as deleted (proves delegation happened)
         expect(videoEventService.isVideoLocallyDeleted(videoId), isTrue);
-        expect(videoRepository.isVideoLocallyDeleted(videoId), isTrue);
       },
     );
 
@@ -146,18 +131,5 @@ void main() {
         // ensuring they don't "resurrect" when new data loads
       },
     );
-
-    test('works with both service and repository deletion tracking', () {
-      const videoId = 'test-video-dual-tracking';
-
-      videoEventService.removeVideoCompletely(videoId);
-
-      // Both services should track deletion
-      expect(videoEventService.isVideoLocallyDeleted(videoId), isTrue);
-      expect(videoRepository.isVideoLocallyDeleted(videoId), isTrue);
-
-      // The isVideoLocallyDeleted method checks both sources
-      // This ensures comprehensive deletion tracking
-    });
   });
 }

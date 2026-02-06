@@ -471,8 +471,8 @@ class _VideoItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       identifier: 'video_thumbnail_$index',
+      label: 'Video thumbnail ${index + 1}',
       button: true,
-      label: 'Video thumbnail',
       child: GestureDetector(
         onTap: () => onVideoTap(displayedVideos, index),
         onLongPress: onLongPress,

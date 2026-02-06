@@ -1,6 +1,8 @@
 // ABOUTME: BLoC for managing profile liked videos grid
 // ABOUTME: Coordinates between LikesRepository (for IDs) and VideosRepository
-// ABOUTME: (for video data)
+// ABOUTME: (cache-aware relay fetch with SQLite local storage)
+
+import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -21,11 +23,12 @@ const _pageSize = 18;
 ///
 /// Coordinates between:
 /// - [LikesRepository]: Provides liked event IDs (sync for own, fetch for other)
-/// - [VideosRepository]: Fetches actual video data by IDs
+/// - [VideosRepository]: Fetches video data with cache-first lookups via
+///   SQLite local storage. Automatically checks cache before relay queries.
 ///
 /// Handles:
 /// - Syncing liked event IDs from LikesRepository
-/// - Loading video data for liked event IDs via VideosRepository
+/// - Loading video data with cache-first pattern (SQLite → relay fallback)
 /// - Filtering: excludes unsupported video formats
 /// - Listening for like changes to update the list
 /// - Pagination: loads videos in batches of [_pageSize]
@@ -60,6 +63,13 @@ class ProfileLikedVideosBloc
       _targetUserPubkey != null && _targetUserPubkey != _currentUserPubkey;
 
   /// Handle sync request - syncs liked IDs from repository then loads videos.
+  ///
+  /// For own profile: Uses "show cached first, refresh in background" pattern:
+  /// 1. Load cached IDs from local storage (instant)
+  /// 2. Fetch videos for cached IDs and show immediately
+  /// 3. Sync from relay in background, update if new likes found
+  ///
+  /// For other profiles: Fetch from relay (no cache available).
   Future<void> _onSyncRequested(
     ProfileLikedVideosSyncRequested event,
     Emitter<ProfileLikedVideosState> emit,
@@ -74,16 +84,30 @@ class ProfileLikedVideosBloc
       category: LogCategory.video,
     );
 
+    // For other profiles, use the original flow (no cache available)
+    if (_isOtherUserProfile) {
+      await _syncOtherUserLikes(emit);
+      return;
+    }
+
+    // For own profile: show cached data first, then refresh in background
+    await _syncOwnProfileLikes(emit);
+  }
+
+  /// Sync likes for other user's profile (no cache available).
+  Future<void> _syncOtherUserLikes(
+    Emitter<ProfileLikedVideosState> emit,
+  ) async {
     emit(state.copyWith(status: ProfileLikedVideosStatus.syncing));
 
     try {
-      // Get liked event IDs - either from repository (own) or relays (other)
-      final likedEventIds = _isOtherUserProfile
-          ? await _likesRepository.fetchUserLikes(_targetUserPubkey!)
-          : (await _likesRepository.syncUserReactions()).orderedEventIds;
+      final likedEventIds = await _likesRepository.fetchUserLikes(
+        _targetUserPubkey!,
+      );
 
       Log.info(
-        'ProfileLikedVideosBloc: Synced ${likedEventIds.length} liked IDs',
+        'ProfileLikedVideosBloc: Fetched ${likedEventIds.length} liked IDs '
+        'for other user',
         name: 'ProfileLikedVideosBloc',
         category: LogCategory.video,
       );
@@ -108,9 +132,8 @@ class ProfileLikedVideosBloc
         ),
       );
 
-      // Fetch video data for the first page of liked IDs
       final firstPageIds = likedEventIds.take(_pageSize).toList();
-      final videos = await _fetchVideos(firstPageIds);
+      final videos = await _fetchVideos(firstPageIds, cacheResults: true);
 
       Log.info(
         'ProfileLikedVideosBloc: Loaded ${videos.length} videos '
@@ -127,9 +150,9 @@ class ProfileLikedVideosBloc
           clearError: true,
         ),
       );
-    } on SyncFailedException catch (e) {
+    } on FetchLikesFailedException catch (e) {
       Log.error(
-        'ProfileLikedVideosBloc: Sync failed - ${e.message}',
+        'ProfileLikedVideosBloc: Fetch likes failed - ${e.message}',
         name: 'ProfileLikedVideosBloc',
         category: LogCategory.video,
       );
@@ -139,9 +162,140 @@ class ProfileLikedVideosBloc
           error: ProfileLikedVideosError.syncFailed,
         ),
       );
-    } on FetchLikesFailedException catch (e) {
+    } catch (e) {
       Log.error(
-        'ProfileLikedVideosBloc: Fetch likes failed - ${e.message}',
+        'ProfileLikedVideosBloc: Failed to load videos - $e',
+        name: 'ProfileLikedVideosBloc',
+        category: LogCategory.video,
+      );
+      emit(
+        state.copyWith(
+          status: ProfileLikedVideosStatus.failure,
+          error: ProfileLikedVideosError.loadFailed,
+        ),
+      );
+    }
+  }
+
+  /// Sync likes for own profile using "show cached first" pattern.
+  Future<void> _syncOwnProfileLikes(
+    Emitter<ProfileLikedVideosState> emit,
+  ) async {
+    try {
+      // Step 1: Get cached IDs from local storage (instant - no relay)
+      final cachedIds = await _likesRepository.getOrderedLikedEventIds();
+
+      Log.info(
+        'ProfileLikedVideosBloc: Got ${cachedIds.length} cached liked IDs',
+        name: 'ProfileLikedVideosBloc',
+        category: LogCategory.video,
+      );
+
+      // If we have cached data, load videos immediately
+      if (cachedIds.isNotEmpty) {
+        emit(
+          state.copyWith(
+            status: ProfileLikedVideosStatus.loading,
+            likedEventIds: cachedIds,
+          ),
+        );
+
+        // Fetch videos for cached IDs
+        final firstPageIds = cachedIds.take(_pageSize).toList();
+        final videos = await _fetchVideos(firstPageIds, cacheResults: true);
+
+        Log.info(
+          'ProfileLikedVideosBloc: Loaded ${videos.length} videos from cache '
+          '(first page of ${cachedIds.length} total)',
+          name: 'ProfileLikedVideosBloc',
+          category: LogCategory.video,
+        );
+
+        emit(
+          state.copyWith(
+            status: ProfileLikedVideosStatus.success,
+            videos: videos,
+            hasMoreContent: cachedIds.length > _pageSize,
+            clearError: true,
+          ),
+        );
+
+        // Step 2: Sync from relay in background (fire and forget)
+        // The subscription handler will update the list if new likes are found
+        unawaited(
+          _likesRepository
+              .syncUserReactions()
+              .then((_) {
+                Log.debug(
+                  'ProfileLikedVideosBloc: Background relay sync completed',
+                  name: 'ProfileLikedVideosBloc',
+                  category: LogCategory.video,
+                );
+              })
+              .catchError((e) {
+                Log.warning(
+                  'ProfileLikedVideosBloc: Background sync failed - $e',
+                  name: 'ProfileLikedVideosBloc',
+                  category: LogCategory.video,
+                );
+              }),
+        );
+      } else {
+        // No cached data - need to sync from relay (show loading state)
+        emit(state.copyWith(status: ProfileLikedVideosStatus.syncing));
+
+        final syncResult = await _likesRepository.syncUserReactions();
+        final likedEventIds = syncResult.orderedEventIds;
+
+        Log.info(
+          'ProfileLikedVideosBloc: Synced ${likedEventIds.length} liked IDs '
+          'from relay (no cache)',
+          name: 'ProfileLikedVideosBloc',
+          category: LogCategory.video,
+        );
+
+        if (likedEventIds.isEmpty) {
+          emit(
+            state.copyWith(
+              status: ProfileLikedVideosStatus.success,
+              videos: [],
+              likedEventIds: [],
+              hasMoreContent: false,
+              clearError: true,
+            ),
+          );
+          return;
+        }
+
+        emit(
+          state.copyWith(
+            status: ProfileLikedVideosStatus.loading,
+            likedEventIds: likedEventIds,
+          ),
+        );
+
+        final firstPageIds = likedEventIds.take(_pageSize).toList();
+        final videos = await _fetchVideos(firstPageIds, cacheResults: true);
+
+        Log.info(
+          'ProfileLikedVideosBloc: Loaded ${videos.length} videos '
+          '(first page of ${likedEventIds.length} total)',
+          name: 'ProfileLikedVideosBloc',
+          category: LogCategory.video,
+        );
+
+        emit(
+          state.copyWith(
+            status: ProfileLikedVideosStatus.success,
+            videos: videos,
+            hasMoreContent: likedEventIds.length > _pageSize,
+            clearError: true,
+          ),
+        );
+      }
+    } on SyncFailedException catch (e) {
+      Log.error(
+        'ProfileLikedVideosBloc: Sync failed - ${e.message}',
         name: 'ProfileLikedVideosBloc',
         category: LogCategory.video,
       );
@@ -295,16 +449,40 @@ class ProfileLikedVideosBloc
     }
   }
 
-  /// Fetch videos for the given event IDs via VideosRepository.
+  /// Fetch videos for the given event IDs.
   ///
-  /// The repository handles:
-  /// - Fetching from Nostr relays
-  /// - Filtering out invalid/expired videos
-  /// - Preserving order based on input IDs
-  Future<List<VideoEvent>> _fetchVideos(List<String> eventIds) async {
-    final videos = await _videosRepository.getVideosByIds(eventIds);
+  /// Uses [VideosRepository.getVideosByIds] which implements cache-first:
+  /// 1. Checks SQLite local storage for cached events
+  /// 2. Queries Nostr relays only for missing events
+  /// 3. Optionally saves fetched events to cache
+  ///
+  /// When [cacheResults] is true, videos fetched from relay are saved to
+  /// local storage for future cache hits. Only use for first page loads
+  /// to avoid bloating the cache.
+  ///
+  /// Returns videos in the same order as [eventIds], excluding:
+  /// - Videos not found in cache or relay
+  /// - Unsupported video formats (WebM on iOS/macOS)
+  Future<List<VideoEvent>> _fetchVideos(
+    List<String> eventIds, {
+    bool cacheResults = false,
+  }) async {
+    if (eventIds.isEmpty) return [];
 
-    // Filter out unsupported videos (WebM on iOS/macOS)
+    // VideosRepository handles cache-first lookup internally
+    final videos = await _videosRepository.getVideosByIds(
+      eventIds,
+      cacheResults: cacheResults,
+    );
+
+    Log.debug(
+      'ProfileLikedVideosBloc: Fetched ${videos.length}/${eventIds.length} videos '
+      '(cacheResults: $cacheResults)',
+      name: 'ProfileLikedVideosBloc',
+      category: LogCategory.video,
+    );
+
+    // Filter unsupported formats
     return videos.where((v) => v.isSupportedOnCurrentPlatform).toList();
   }
 }

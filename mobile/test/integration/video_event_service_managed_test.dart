@@ -5,7 +5,6 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/repositories/video_repository.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -37,7 +36,6 @@ void main() {
       videoEventService = VideoEventService(
         mockNostrService,
         subscriptionManager: subscriptionManager,
-        videoRepository: VideoRepository(),
       );
     });
 

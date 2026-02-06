@@ -4,28 +4,30 @@ tags:
 ---
 #TC to unlike a video,
 # given the user is logged in in the app and only has 1 video liked,
-# validate the like is on for the video VIDEO_TITLE unlike it, and empty likes tab on the profile
+# validate the like is on for the video on the liked tab unlike it, and empty likes tab on the profile
 #Steps:
-# 1. Open specific video VIDEO_TITLE
-# 2. Tap on the Heart: Validate video is unliked
-# 3. Tap on the profile: Validate profile is loaded
-# 4. Tap on the likes tab: Validate tab is loaded and VIDEO_TITLE is not listed
+# 1. Open the profile and navigate to the liked_tab: Tab is displayed
+# 2. Tap on 1st video of the liked tab and unlike the video: Validate video is unliked
+# 3. Close the video and Tap on profile, liked tab: Validate tab is loaded and video is not listed
 
-# 1. Open specific video VIDEO_TITLE
-- runFlow: ../utils/openSpecificVideo.yaml
+# 1. Open the profile and navigate to the liked_tab: Tab is displayed
+#- runFlow: ../utils/openSpecificVideo.yaml
+- tapOn:
+    id: profile_tab
+- runFlow: ../asserts/assertProfile.yaml
+- tapOn: |-
+    liked_tab
+    Tab 2 of 3
 
-# 2. Tap on the Heart: Validate video is unliked
+# 2. Tap on 1st video of the liked tab and unlike the video: Validate video is unliked
+- tapOn: liked_video_thumbnail_0
 - tapOn:
     id: like_button
 - runFlow: "../asserts/assertVideounLiked.yaml"
 
-# 3. Tap on the profile: Validate profile is loaded
-- tapOn:
-    id: profile_tab
-- runFlow: ../asserts/assertProfile.yaml
-
-# 4. Tap on the likes tab: Validate tab is loaded and VIDEO_TITLE is not listed
-- tapOn: Tab 2 of 3
-- tapOn:
-    point: 1%,78%
-- assertNotVisible: ${VIDEO_TITLE}
+# 3. Close the video and Tap on profile, liked tab: Validate tab is loaded and video is not listed
+- tapOn: Close video player
+- tapOn: |-
+    liked_tab
+    Tab 2 of 3
+- assertNotVisible: liked_video_thumbnail_0

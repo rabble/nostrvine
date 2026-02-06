@@ -3,7 +3,6 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
-import 'package:openvine/repositories/video_repository.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import '../helpers/real_integration_test_helper.dart';
@@ -24,7 +23,6 @@ void main() {
       videoEventService = VideoEventService(
         nostrService,
         subscriptionManager: subscriptionManager,
-        videoRepository: VideoRepository(),
       );
       // VideoEventService doesn't have initialize anymore
     });

@@ -10,7 +10,6 @@ import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/seen_videos_notifier.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/repositories/video_repository.dart';
 
 import '../helpers/test_provider_overrides.mocks.dart';
 
@@ -32,7 +31,6 @@ void main() {
       videoEventService = VideoEventService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
-        videoRepository: VideoRepository(),
       );
 
       container = ProviderContainer(

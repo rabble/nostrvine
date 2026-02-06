@@ -962,5 +962,208 @@ void main() {
         expect(error.toString(), equals('UsernameClaimError(test error)'));
       });
     });
+
+    group('checkUsernameAvailability', () {
+      test('returns UsernameAvailable when username not in '
+          'names map', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer(
+          (_) async => Response(
+            jsonEncode({
+              'names': {'existinguser': 'pubkey123'},
+            }),
+            200,
+          ),
+        );
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'newuser',
+        );
+
+        expect(result, equals(const UsernameAvailable()));
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=newuser',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('returns UsernameAvailable when names map is null', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer(
+          (_) async => Response(
+            jsonEncode({'relays': <String, dynamic>{}}),
+            200,
+          ),
+        );
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'testuser',
+        );
+
+        expect(result, equals(const UsernameAvailable()));
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=testuser',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('returns UsernameAvailable when names map is empty', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer(
+          (_) async => Response(
+            jsonEncode({'names': <String, dynamic>{}}),
+            200,
+          ),
+        );
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'testuser',
+        );
+
+        expect(result, equals(const UsernameAvailable()));
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=testuser',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('returns UsernameTaken when username exists in names map', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer(
+          (_) async => Response(
+            jsonEncode({
+              'names': {
+                'alice': 'pubkey1',
+                'bob': 'pubkey2',
+                'takenuser': 'pubkey3',
+              },
+            }),
+            200,
+          ),
+        );
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'takenuser',
+        );
+
+        expect(result, equals(const UsernameTaken()));
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=takenuser',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('returns UsernameCheckError when HTTP status is not 200', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer(
+          (_) async => Response('Server error', 500),
+        );
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'testuser',
+        );
+
+        expect(
+          result,
+          isA<UsernameCheckError>().having(
+            (e) => e.message,
+            'message',
+            'Server returned status 500',
+          ),
+        );
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=testuser',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('returns UsernameCheckError on network exception', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenThrow(Exception('Connection timeout'));
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'testuser',
+        );
+
+        expect(
+          result,
+          isA<UsernameCheckError>().having(
+            (e) => e.message,
+            'message',
+            'Network error: Exception: Connection timeout',
+          ),
+        );
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=testuser',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('returns UsernameCheckError on JSON parsing error', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer(
+          (_) async => Response('invalid json', 200),
+        );
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'testuser',
+        );
+
+        expect(
+          result,
+          isA<UsernameCheckError>().having(
+            (e) => e.message,
+            'message',
+            contains('Network error'),
+          ),
+        );
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=testuser',
+            ),
+          ),
+        ).called(1);
+      });
+    });
+
+    group('UsernameAvailabilityResult', () {
+      test('UsernameCheckError toString returns formatted message', () {
+        const error = UsernameCheckError('test error');
+        expect(error.toString(), equals('UsernameCheckError(test error)'));
+      });
+    });
   });
 }
