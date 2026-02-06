@@ -276,6 +276,68 @@ void main() {
 
         expect(find.text('Body Content'), findsOneWidget);
       });
+
+      testWidgets('calls onShow callback when shown', (tester) async {
+        var onShowCalled = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    await VineBottomSheet.show<void>(
+                      context: context,
+                      children: const [Text('Content')],
+                      onShow: () => onShowCalled = true,
+                    );
+                  },
+                  child: const Text('Show Sheet'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        expect(onShowCalled, isFalse);
+        await tester.tap(find.text('Show Sheet'));
+        await tester.pump();
+        expect(onShowCalled, isTrue);
+      });
+
+      testWidgets('calls onDismiss callback when dismissed', (tester) async {
+        var onDismissCalled = false;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    await VineBottomSheet.show<void>(
+                      context: context,
+                      children: const [Text('Content')],
+                      onDismiss: () => onDismissCalled = true,
+                    );
+                  },
+                  child: const Text('Show Sheet'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show Sheet'));
+        await tester.pumpAndSettle();
+
+        expect(onDismissCalled, isFalse);
+
+        // Dismiss by tapping outside
+        await tester.tapAt(Offset.zero);
+        await tester.pumpAndSettle();
+
+        expect(onDismissCalled, isTrue);
+      });
     });
   });
 }
