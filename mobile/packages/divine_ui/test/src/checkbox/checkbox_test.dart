@@ -48,7 +48,7 @@ void main() {
     group('states', () {
       testWidgets('renders unselected state', (tester) async {
         await tester.pumpWidget(
-          buildTestWidget(state: DivineCheckboxState.unselected),
+          buildTestWidget(),
         );
 
         final animatedOpacity = tester.widget<AnimatedOpacity>(
@@ -197,8 +197,8 @@ void main() {
 
   group('DivineRowCheckbox', () {
     Widget buildTestWidget({
-      DivineCheckboxState state = DivineCheckboxState.unselected,
       required ValueChanged<bool> onChanged,
+      DivineCheckboxState state = DivineCheckboxState.unselected,
       Widget label = const Text('Test label'),
       CrossAxisAlignment crossAxisAlignment = CrossAxisAlignment.center,
       Duration animationDuration = const Duration(milliseconds: 100),
@@ -244,7 +244,6 @@ void main() {
         bool? newValue;
         await tester.pumpWidget(
           buildTestWidget(
-            state: DivineCheckboxState.unselected,
             onChanged: (value) => newValue = value,
           ),
         );
@@ -294,7 +293,6 @@ void main() {
       testWidgets('has muted border when unselected', (tester) async {
         await tester.pumpWidget(
           buildTestWidget(
-            state: DivineCheckboxState.unselected,
             onChanged: (_) {},
           ),
         );
