@@ -7,12 +7,9 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:gal/gal.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_clip_preview.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
@@ -43,9 +40,6 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
   final FocusNode _titleFocusNode = FocusNode();
   final FocusNode _descriptionFocusNode = FocusNode();
 
-  bool _gallerySaveDenied = false;
-  bool _gallerySaveAttempted = false;
-
   @override
   void initState() {
     super.initState();
@@ -54,51 +48,7 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
       final editorProvider = ref.read(videoEditorProvider);
       _titleController.text = editorProvider.title;
       _descriptionController.text = editorProvider.description;
-
-      // Try saving immediately if clip is already available
-      _trySaveToGallery(editorProvider.finalRenderedClip);
     });
-  }
-
-  void _trySaveToGallery(RecordingClip? clip) {
-    if (clip == null || _gallerySaveAttempted) return;
-    _gallerySaveAttempted = true;
-    unawaited(_saveToGallery(clip));
-  }
-
-  Future<void> _saveToGallery(RecordingClip clip) async {
-    try {
-      final path = await clip.video.safeFilePath();
-
-      final hasAccess = await Gal.hasAccess();
-      if (!hasAccess) {
-        await Gal.requestAccess();
-        final granted = await Gal.hasAccess();
-        if (!granted) {
-          if (mounted) setState(() => _gallerySaveDenied = true);
-          Log.warning(
-            'Gallery permission denied by user',
-            name: 'VideoMetadataScreen',
-            category: LogCategory.video,
-          );
-          return;
-        }
-      }
-
-      await Gal.putVideo(path);
-      if (mounted) setState(() => _gallerySaveDenied = false);
-      Log.info(
-        'Video saved to gallery: $path',
-        name: 'VideoMetadataScreen',
-        category: LogCategory.video,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to save video to gallery: $e',
-        name: 'VideoMetadataScreen',
-        category: LogCategory.video,
-      );
-    }
   }
 
   @override
@@ -113,16 +63,6 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Listen for finalRenderedClip to become available (async rendering)
-    ref.listen(videoEditorProvider.select((s) => s.finalRenderedClip), (
-      previous,
-      next,
-    ) {
-      if (previous == null && next != null) {
-        _trySaveToGallery(next);
-      }
-    });
-
     // Cancel video render when user navigates back
     return PopScope(
       onPopInvokedWithResult: (didPop, result) {
@@ -174,20 +114,6 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
                           // Video preview at top
                           const VideoMetadataClipPreview(),
 
-                          // Gallery permission banner
-                          if (_gallerySaveDenied)
-                            _GalleryPermissionBanner(
-                              onAllow: () {
-                                final clip = ref
-                                    .read(videoEditorProvider)
-                                    .finalRenderedClip;
-                                if (clip != null) {
-                                  _gallerySaveAttempted = false;
-                                  _trySaveToGallery(clip);
-                                }
-                              },
-                            ),
-
                           // Form fields
                           _FormData(
                             titleController: _titleController,
@@ -220,61 +146,6 @@ class _Divider extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Divider(thickness: 0, height: 1, color: Color(0xFF001A12));
-  }
-}
-
-/// Banner shown when gallery save permission is denied.
-class _GalleryPermissionBanner extends StatelessWidget {
-  const _GalleryPermissionBanner({required this.onAllow});
-
-  final VoidCallback onAllow;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: const Color(0xFF1A1A2E),
-      child: Row(
-        children: [
-          const Icon(
-            Icons.photo_library_outlined,
-            color: VineTheme.vineGreen,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Allow access to save a copy to your photo library.',
-              style: VineTheme.bodyFont(
-                color: VineTheme.secondaryText,
-                fontSize: 13,
-                fontWeight: FontWeight.w400,
-                height: 1.38,
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          GestureDetector(
-            onTap: onAllow,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: VineTheme.vineGreen,
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: Text(
-                'Allow',
-                style: VineTheme.bodyFont(
-                  color: VineTheme.backgroundColor,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
