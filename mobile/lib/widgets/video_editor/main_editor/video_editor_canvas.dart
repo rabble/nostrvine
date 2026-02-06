@@ -1,8 +1,6 @@
 // ABOUTME: Canvas widget wrapping ProImageEditor for the video editor.
 // ABOUTME: Handles layer manipulation callbacks and editor configuration.
 
-import 'dart:ui';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
