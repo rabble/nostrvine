@@ -7,6 +7,7 @@ import 'package:http/io_client.dart';
 import 'package:media_cache/src/safe_cache_info_repository.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
 
 /// {@template media_cache_config}
 /// Configuration for [MediaCacheManager].
@@ -120,13 +121,29 @@ class MediaCacheConfig {
 /// );
 /// ```
 /// {@endtemplate}
+
+/// Provides the path to the sqflite databases directory.
+typedef DatabasePathProvider = Future<String> Function();
+
+/// Opens a sqflite database at the given path.
+typedef DatabaseOpener =
+    Future<sqflite.Database> Function(
+      String path, {
+      bool readOnly,
+    });
+
+/// {@macro media_cache_manager}
 class MediaCacheManager extends CacheManager {
   /// {@macro media_cache_manager}
   MediaCacheManager({
     required MediaCacheConfig config,
     @visibleForTesting DirectoryProvider? tempDirectoryProvider,
+    @visibleForTesting DatabasePathProvider? databasePathProvider,
+    @visibleForTesting DatabaseOpener? databaseOpener,
   }) : _config = config,
        _tempDirectoryProvider = tempDirectoryProvider ?? getTemporaryDirectory,
+       _databasePathProvider = databasePathProvider ?? sqflite.getDatabasesPath,
+       _databaseOpener = databaseOpener ?? _defaultDatabaseOpener,
        super(
          Config(
            config.cacheKey,
@@ -139,6 +156,8 @@ class MediaCacheManager extends CacheManager {
 
   final MediaCacheConfig _config;
   final DirectoryProvider _tempDirectoryProvider;
+  final DatabasePathProvider _databasePathProvider;
+  final DatabaseOpener _databaseOpener;
 
   /// In-memory manifest for synchronous lookups.
   /// Maps cache key to file path.
@@ -155,6 +174,11 @@ class MediaCacheManager extends CacheManager {
 
   /// The configuration used by this cache manager.
   MediaCacheConfig get mediaConfig => _config;
+
+  static Future<sqflite.Database> _defaultDatabaseOpener(
+    String path, {
+    bool readOnly = false,
+  }) => sqflite.openDatabase(path, readOnly: readOnly);
 
   static HttpFileService _createHttpFileService(MediaCacheConfig config) {
     final httpClient = HttpClient()
@@ -185,30 +209,53 @@ class MediaCacheManager extends CacheManager {
     }
 
     try {
-      // Get the base cache directory
-      final tempDir = await _tempDirectoryProvider();
-      final baseCacheDir = path.join(tempDir.path, _config.cacheKey);
-      final cacheDir = Directory(baseCacheDir);
+      // Query the cache database to get key → filepath mappings
+      // flutter_cache_manager stores metadata in sqflite, NOT in filenames
+      final dbPath = await _databasePathProvider();
+      final cacheDbPath = path.join(dbPath, '${_config.cacheKey}.db');
 
-      if (!cacheDir.existsSync()) {
+      // Check if database exists
+      if (!File(cacheDbPath).existsSync()) {
         _manifestInitialized = true;
         return;
       }
 
-      // Scan the cache directory for files
-      await for (final entity in cacheDir.list()) {
-        if (entity is File) {
-          final fileName = path.basename(entity.path);
-          // flutter_cache_manager uses the key as filename (with extension)
-          // We store without extension as the key
-          final key = path.basenameWithoutExtension(fileName);
-          _cacheManifest[key] = entity.path;
+      final database = await _databaseOpener(cacheDbPath, readOnly: true);
+
+      try {
+        // Query all cache objects from the cacheObject table
+        final List<Map<String, dynamic>> maps = await database.query(
+          'cacheObject',
+        );
+
+        // Get the base cache directory for constructing full paths
+        final tempDir = await _tempDirectoryProvider();
+        final baseCacheDir = path.join(tempDir.path, _config.cacheKey);
+
+        // Populate manifest with verified cache entries
+        for (final map in maps) {
+          final cacheKey = map['key'] as String?;
+          final relativePath = map['relativePath'] as String?;
+
+          if (cacheKey == null || relativePath == null) continue;
+
+          // Construct full file path
+          final fullPath = path.join(baseCacheDir, relativePath);
+          final file = File(fullPath);
+
+          // Only add to manifest if file actually exists
+          if (file.existsSync()) {
+            _cacheManifest[cacheKey] = fullPath;
+          }
         }
+      } finally {
+        await database.close();
       }
 
       _manifestInitialized = true;
-    } on Exception {
+    } on Exception catch (_) {
       // Don't throw - degraded functionality is better than crash
+      // Also handles cases where sqflite isn't initialized (e.g., in tests)
       _manifestInitialized = true;
     }
   }
