@@ -97,7 +97,7 @@ class _VideoEditor extends ConsumerStatefulWidget {
 class _VideoEditorState extends ConsumerState<_VideoEditor> {
   static const _renderTaskId = 'diVine_Editor_Merger';
 
-  ProVideoController? _proVideoController;
+  late final ProVideoController _proVideoController;
   final _isPlayerReadyNotifier = ValueNotifier<bool>(false);
   VideoPlayerController? _videoPlayer;
 
@@ -121,7 +121,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   }
 
   Future<void> _initializePlayer() async {
-    _proVideoController ??= ProVideoController(
+    _proVideoController = ProVideoController(
       videoPlayer: ValueListenableBuilder(
         valueListenable: _isPlayerReadyNotifier,
         builder: (_, isPlayerReady, _) {
@@ -132,8 +132,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         },
       ),
       initialResolution: widget.constraints.biggest,
-
-      /// These values are not used since we provide a custom-UI.
+      // These values are not used since we provide a custom-UI.
       fileSize: 0,
       videoDuration: .zero,
     );
@@ -149,6 +148,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     await _videoPlayer!.initialize();
     if (!mounted) return;
     await _videoPlayer!.seekTo(clips.first.thumbnailTimestamp);
+    // Wait for the video player to actually reach the seek position.
+    // The player doesn't seek instantly, it usually takes just a few
+    // milliseconds, but we use a slightly higher value to be safe.
+    // In the worst case, the user might see a quick frame jump.
+    await Future.delayed(Duration(milliseconds: 200));
     if (!mounted) return;
     await _videoPlayer!.setLooping(true);
     if (!mounted) return;
@@ -199,6 +203,33 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     ref.read(videoEditorProvider.notifier).updateEditorStateHistory(history);
   }
 
+  /// Handles the completion of the image editor with parameters.
+  ///
+  /// Precaches the generated image overlay and triggers video rendering.
+  Future<void> _handleEditorComplete(CompleteParameters parameters) async {
+    final notifier = ref.read(videoEditorProvider.notifier);
+    if (parameters.image.isNotEmpty) {
+      try {
+        await precacheImage(MemoryImage(parameters.image), context);
+      } catch (_) {
+        // Ignore precache errors - rendering will still work
+      }
+    }
+    notifier.updateEditorEditingParameters(parameters);
+    notifier.startRenderVideo();
+  }
+
+  /// Handles the done action from the main editor.
+  ///
+  /// Pauses video, marks processing state, navigates to metadata screen,
+  /// and resumes video when returning.
+  Future<void> _handleDone() async {
+    _videoPlayer?.pause();
+    ref.read(videoEditorProvider.notifier).setProcessing(true);
+    await context.push(VideoMetadataScreen.path);
+    if (mounted) _videoPlayer?.play();
+  }
+
   @override
   Widget build(BuildContext context) {
     final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
@@ -214,7 +245,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     );
 
     return ProImageEditor.video(
-      _proVideoController!,
+      _proVideoController,
       key: scope.editorKey,
 
       /// TODO(@hm21): Once all subeditors have been implemented,
@@ -228,7 +259,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               )
             : const StateHistoryConfigs(),
         imageGeneration: ImageGenerationConfigs(
-          captureImageByteFormat: ImageByteFormat.rawStraightRgba,
+          captureImageByteFormat: .rawStraightRgba,
           customPixelRatio: devicePixelRatio,
         ),
         mainEditor: MainEditorConfigs(
@@ -287,24 +318,14 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         ),
       ),
       callbacks: ProImageEditorCallbacks(
-        onCompleteWithParameters: (parameters) async {
-          final notifier = ref.read(videoEditorProvider.notifier);
-          notifier.updateEditorEditingParameters(parameters);
-          notifier.startRenderVideo();
-        },
+        onCompleteWithParameters: _handleEditorComplete,
         mainEditorCallbacks: MainEditorCallbacks(
           onAfterViewInit: () {
             _isInitialized = true;
             _hasImportedHistory = true;
             _syncMainCapabilities(scope, bloc);
           },
-          onDone: () async {
-            _videoPlayer?.pause();
-            final notifier = ref.read(videoEditorProvider.notifier);
-            notifier.setProcessing(true);
-            await context.push(VideoMetadataScreen.path);
-            if (mounted) _videoPlayer?.play();
-          },
+          onDone: _handleDone,
           onImportHistoryStart: (state, import) => _isImportingHistory = true,
           onImportHistoryEnd: (state, import) {
             _isImportingHistory = false;
