@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
 import 'package:openvine/widgets/video_clip_editor/video_clip_editor_processing_overlay.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_preview_thumbnail.dart';
 
 /// Video clip preview widget with thumbnail and play button.
 ///
@@ -71,7 +71,7 @@ class VideoMetadataClipPreview extends ConsumerWidget {
                       duration: const Duration(milliseconds: 150),
                       child: clip.thumbnailPath != null
                           ? // Video thumbnail image
-                            Image.file(File(clip.thumbnailPath!), fit: .cover)
+                            VideoMetadataPreviewThumbnail(clip: clip)
                           : // Fallback placeholder
                             ColoredBox(
                               color: Colors.grey.shade400,
