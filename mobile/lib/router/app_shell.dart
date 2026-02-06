@@ -2,14 +2,12 @@
 // ABOUTME: Header title uses Bricolage Grotesque font, camera button in bottom nav
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/vine_drawer.dart';
