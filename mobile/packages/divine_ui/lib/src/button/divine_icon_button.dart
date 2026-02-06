@@ -13,7 +13,8 @@ enum DivineIconButtonType {
   /// Tertiary button with white background and dark green icon.
   tertiary,
 
-  /// Ghost button with semi-transparent dark background (65% black) and white icon.
+  /// Ghost button with semi-transparent dark background (65% black)
+  /// and white icon.
   ghost,
 
   /// Ghost secondary button with lighter scrim (15% black) and white icon.
@@ -58,6 +59,7 @@ enum DivineIconButtonSize {
 /// )
 /// ```
 class DivineIconButton extends StatelessWidget {
+  /// Creates an icon-only button following the Divine design system.
   const DivineIconButton({
     required this.icon,
     required this.onPressed,

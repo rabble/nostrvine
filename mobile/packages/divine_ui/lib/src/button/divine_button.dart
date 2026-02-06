@@ -17,8 +17,8 @@ enum DivineButtonType {
   /// Use for high-contrast actions on dark backgrounds.
   tertiary,
 
-  /// Ghost button with semi-transparent dark background (65% black) and white text.
-  /// Use for actions overlaying content like video controls.
+  /// Ghost button with semi-transparent dark background (65% black)
+  /// and white text. Use for actions overlaying content like video controls.
   ghost,
 
   /// Ghost secondary button with lighter scrim (15% black) and white text.
@@ -68,6 +68,7 @@ enum DivineButtonSize {
 /// )
 /// ```
 class DivineButton extends StatelessWidget {
+  /// Creates a Divine design system button.
   const DivineButton({
     required this.label,
     required this.onPressed,
@@ -325,6 +326,7 @@ class _DivineButtonContent extends StatelessWidget {
 /// )
 /// ```
 class DivineTextLink extends StatelessWidget {
+  /// Creates an inline text link.
   const DivineTextLink({
     required this.text,
     required this.onTap,
