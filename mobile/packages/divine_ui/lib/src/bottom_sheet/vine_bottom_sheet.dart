@@ -106,8 +106,6 @@ class VineBottomSheet extends StatelessWidget {
     double initialChildSize = 0.6,
     double minChildSize = 0.3,
     double maxChildSize = 0.9,
-    VoidCallback? onShow,
-    VoidCallback? onDismiss,
   }) {
     // Call onShow callback before showing modal
     onShow?.call();
@@ -145,7 +143,7 @@ class VineBottomSheet extends StatelessWidget {
             children: children,
           ),
         ),
-      ).whenComplete(() => onDismiss?.call());
+      );
     } else {
       // Fixed mode
       return showModalBottomSheet<T>(
@@ -164,7 +162,7 @@ class VineBottomSheet extends StatelessWidget {
           body: body,
           children: children,
         ),
-      ).whenComplete(() => onDismiss?.call());
+      );
     }
   }
 
