@@ -36,6 +36,9 @@ void main() {
         mockAuthService.authStateStream,
       ).thenAnswer((_) => Stream.value(AuthState.authenticated));
       when(mockAudioSharingService.isAudioSharingEnabled).thenReturn(false);
+      when(
+        mockAuthService.authenticationSource,
+      ).thenReturn(AuthenticationSource.automatic);
     });
 
     Widget createTestWidget() {

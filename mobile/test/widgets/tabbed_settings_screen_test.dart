@@ -54,6 +54,9 @@ void main() {
     when(mockNostrService.configuredRelays).thenReturn([]);
     when(mockBlossomService.isBlossomEnabled()).thenAnswer((_) async => false);
     when(mockBlossomService.getBlossomServer()).thenAnswer((_) async => null);
+    when(
+      mockAuthService.authenticationSource,
+    ).thenReturn(AuthenticationSource.automatic);
   });
 
   Widget createTestWidget() {

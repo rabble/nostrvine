@@ -23,6 +23,9 @@ void main() {
       mockAuthService = MockAuthService();
       when(mockAuthService.isAuthenticated).thenReturn(true);
       when(mockAuthService.isAnonymous).thenReturn(false);
+      when(
+        mockAuthService.authenticationSource,
+      ).thenReturn(AuthenticationSource.automatic);
     });
 
     testWidgets('SettingsScreen has nav green AppBar', (tester) async {

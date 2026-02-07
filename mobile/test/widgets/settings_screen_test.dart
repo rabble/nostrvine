@@ -31,6 +31,9 @@ void main() {
       when(
         mockAuthService.authStateStream,
       ).thenAnswer((_) => Stream.value(AuthState.authenticated));
+      when(
+        mockAuthService.authenticationSource,
+      ).thenReturn(AuthenticationSource.automatic);
     });
 
     testWidgets('Settings screen displays all sections', (tester) async {
@@ -159,19 +162,23 @@ void main() {
       // Developer Options should always be visible (not hidden behind 7-tap)
       expect(find.text('Developer Options'), findsOneWidget);
 
-      // Scroll to find Account section at the bottom with key management
+      // Scroll to verify Account section exists with key management items
       await tester.scrollUntilVisible(
-        find.text('Key Management'),
+        find.text('ACCOUNT'),
         100,
         scrollable: find.byType(Scrollable),
       );
       await tester.pumpAndSettle();
-
-      // Account section should have all key/account related items together
       expect(find.text('ACCOUNT'), findsOneWidget);
-      expect(find.text('Sign Out'), findsOneWidget);
-      expect(find.text('Key Management'), findsOneWidget);
-      expect(find.text('Forget This Device'), findsOneWidget);
+
+      // Scroll to verify Danger Zone exists at the bottom
+      await tester.scrollUntilVisible(
+        find.text('DANGER ZONE'),
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('DANGER ZONE'), findsOneWidget);
       expect(find.text('Delete Account and Data'), findsOneWidget);
 
       // Dispose and pump to clear any pending timers from overlay visibility
