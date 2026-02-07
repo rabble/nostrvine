@@ -138,19 +138,25 @@ class ProfileHeaderWidget extends ConsumerWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          ProfileStatColumn(
-                            count: videoCount,
-                            label: 'Videos',
-                            isLoading: false,
-                            onTap: null, // Videos aren't tappable
+                          Flexible(
+                            child: ProfileStatColumn(
+                              count: videoCount,
+                              label: 'Videos',
+                              isLoading: false,
+                              onTap: null, // Videos aren't tappable
+                            ),
                           ),
-                          ProfileFollowersStat(
-                            pubkey: userIdHex,
-                            displayName: displayName,
+                          Flexible(
+                            child: ProfileFollowersStat(
+                              pubkey: userIdHex,
+                              displayName: displayName,
+                            ),
                           ),
-                          ProfileFollowingStat(
-                            pubkey: userIdHex,
-                            displayName: displayName,
+                          Flexible(
+                            child: ProfileFollowingStat(
+                              pubkey: userIdHex,
+                              displayName: displayName,
+                            ),
                           ),
                         ],
                       ),
@@ -541,9 +547,11 @@ class _UniqueIdentifier extends ConsumerWidget {
                   size: 14,
                 ),
                 const SizedBox(width: 4),
-                Text(
-                  'Username not verifying - contact support',
-                  style: VineTheme.bodySmallFont(color: Colors.orange),
+                Flexible(
+                  child: Text(
+                    'Username not verifying - contact support',
+                    style: VineTheme.bodySmallFont(color: Colors.orange),
+                  ),
                 ),
               ],
             ),
