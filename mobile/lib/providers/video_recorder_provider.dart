@@ -5,7 +5,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:gal/gal.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -16,6 +15,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
+import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -460,9 +460,6 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
 
-    // Save clip to device gallery (fire-and-forget)
-    unawaited(_saveClipToGallery(videoResult));
-
     /// We used the stopwatch as a temporary timer to set an expected duration.
     /// However, we now read the exact video duration in the background and
     /// update it.
@@ -473,6 +470,15 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       '📊 Video duration: ${metadata.duration.inMilliseconds}ms',
       name: 'VideoRecorderNotifier',
       category: .video,
+    );
+
+    // Save clip to device gallery (fire-and-forget)
+    unawaited(
+      GallerySaveService().saveVideoToGallery(
+        videoResult,
+        aspectRatio: state.aspectRatio,
+        metadata: metadata,
+      ),
     );
 
     // Generate and attach thumbnail.
@@ -503,41 +509,6 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     } else {
       Log.warning(
         '⚠️ Thumbnail generation failed',
-        name: 'VideoRecorderNotifier',
-        category: .video,
-      );
-    }
-  }
-
-  /// Save a recorded clip to the device gallery in the "diVine" album.
-  ///
-  /// Requests gallery permission if not already granted. Errors are caught
-  /// and logged so they never interrupt the recording flow.
-  Future<void> _saveClipToGallery(EditorVideo video) async {
-    try {
-      final path = await video.safeFilePath();
-      var hasAccess = await Gal.hasAccess(toAlbum: true);
-      if (!hasAccess) {
-        await Gal.requestAccess(toAlbum: true);
-        hasAccess = await Gal.hasAccess(toAlbum: true);
-        if (!hasAccess) {
-          Log.warning(
-            'Gallery permission denied - clip not saved',
-            name: 'VideoRecorderNotifier',
-            category: .video,
-          );
-          return;
-        }
-      }
-      await Gal.putVideo(path, album: 'diVine');
-      Log.info(
-        'Clip saved to gallery album "diVine": $path',
-        name: 'VideoRecorderNotifier',
-        category: .video,
-      );
-    } catch (e) {
-      Log.error(
-        'Failed to save clip to gallery: $e',
         name: 'VideoRecorderNotifier',
         category: .video,
       );

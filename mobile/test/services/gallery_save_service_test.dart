@@ -3,6 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/services/gallery_save_service.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
   group('GallerySaveResult', () {
@@ -62,7 +63,7 @@ void main() {
     test('returns failure when file does not exist', () async {
       // Use a path that definitely doesn't exist
       final result = await service.saveVideoToGallery(
-        '/nonexistent/path/to/video.mp4',
+        EditorVideo.file('/nonexistent/path/to/video.mp4'),
       );
 
       expect(result, isA<GallerySaveFailure>());
@@ -71,7 +72,7 @@ void main() {
     });
 
     test('handles empty file path', () async {
-      final result = await service.saveVideoToGallery('');
+      final result = await service.saveVideoToGallery(EditorVideo.file(''));
 
       expect(result, isA<GallerySaveFailure>());
     });
