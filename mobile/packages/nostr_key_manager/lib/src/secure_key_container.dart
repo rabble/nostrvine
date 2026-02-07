@@ -1,8 +1,6 @@
 // ABOUTME: Secure container for storing cryptographic keys with memory wipe
 // ABOUTME: Prevents key exposure through memory dumps or debugging
 
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
 import 'package:logging/logging.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
