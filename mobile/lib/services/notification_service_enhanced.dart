@@ -41,7 +41,7 @@ class NotificationServiceEnhanced {
   NostrClient? _nostrService;
   UserProfileService? _profileService;
   VideoEventService? _videoService;
-  Box<Map<String, dynamic>>? _notificationBox;
+  Box<dynamic>? _notificationBox;
 
   bool _permissionsGranted = false;
   bool _disposed = false;
@@ -75,9 +75,7 @@ class NotificationServiceEnhanced {
 
     try {
       // Initialize Hive for notification storage
-      _notificationBox = await Hive.openBox<Map<String, dynamic>>(
-        'notifications',
-      );
+      _notificationBox = await Hive.openBox<dynamic>('notifications');
 
       // Load cached notifications
       await _loadCachedNotifications();
@@ -692,9 +690,10 @@ class NotificationServiceEnhanced {
     if (_notificationBox != null) {
       final keysToRemove = <String>[];
       for (final entry in _notificationBox!.toMap().entries) {
-        final notification = NotificationModel.fromJson(entry.value);
+        final jsonData = Map<String, dynamic>.from(entry.value as Map);
+        final notification = NotificationModel.fromJson(jsonData);
         if (notification.timestamp.isBefore(cutoff)) {
-          keysToRemove.add(entry.key);
+          keysToRemove.add(entry.key as String);
         }
       }
       await _notificationBox!.deleteAll(keysToRemove);

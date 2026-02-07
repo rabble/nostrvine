@@ -151,6 +151,64 @@ class ProfileFeed extends _$ProfileFeed {
           .where((v) => !v.isRepost)
           .toList();
 
+      // If initial load returned 0 videos, retry once.
+      // This handles the case where a relay reconnect killed the subscription
+      // mid-load, causing stability detection to complete with 0 results.
+      if (authorVideos.isEmpty) {
+        Log.warning(
+          'ProfileFeed: Initial load returned 0 videos for user=$userId, '
+          'retrying once',
+          name: 'ProfileFeedProvider',
+          category: LogCategory.video,
+        );
+
+        await videoEventService.subscribeToUserVideos(userId, limit: 100);
+
+        // Wait for retry results with same stability pattern
+        final retryCompleter = Completer<void>();
+        int retryStableCount = 0;
+        Timer? retryStabilityTimer;
+
+        void checkRetryStability() {
+          final currentCount = videoEventService.authorVideos(userId).length;
+          if (currentCount != retryStableCount) {
+            retryStableCount = currentCount;
+            retryStabilityTimer?.cancel();
+            retryStabilityTimer = Timer(const Duration(milliseconds: 300), () {
+              if (!retryCompleter.isCompleted) {
+                retryCompleter.complete();
+              }
+            });
+          }
+        }
+
+        videoEventService.addListener(checkRetryStability);
+
+        Timer(const Duration(seconds: 5), () {
+          if (!retryCompleter.isCompleted) {
+            retryCompleter.complete();
+          }
+        });
+
+        checkRetryStability();
+        await retryCompleter.future;
+
+        videoEventService.removeListener(checkRetryStability);
+        retryStabilityTimer?.cancel();
+
+        authorVideos = videoEventService
+            .authorVideos(userId)
+            .where((v) => !v.isRepost)
+            .toList();
+
+        Log.info(
+          'ProfileFeed: Retry got ${authorVideos.length} videos for '
+          'user=$userId',
+          name: 'ProfileFeedProvider',
+          category: LogCategory.video,
+        );
+      }
+
       // Apply cached metadata to preserve engagement stats from previous REST API calls
       authorVideos = _applyMetadataCache(authorVideos);
 

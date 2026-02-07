@@ -11,8 +11,8 @@ class PersonalEventCacheService {
   static const String _boxName = 'personal_events';
   static const String _metadataBoxName = 'personal_events_metadata';
 
-  Box<Map<String, dynamic>>? _eventsBox;
-  Box<Map<String, dynamic>>? _metadataBox;
+  Box<dynamic>? _eventsBox;
+  Box<dynamic>? _metadataBox;
   bool _isInitialized = false;
   String? _currentUserPubkey;
 
@@ -27,10 +27,10 @@ class PersonalEventCacheService {
       _currentUserPubkey = userPubkey;
 
       // Try to open the events box
-      _eventsBox = await Hive.openBox<Map<String, dynamic>>(_boxName);
+      _eventsBox = await Hive.openBox<dynamic>(_boxName);
 
       // Open the metadata box for indexing
-      _metadataBox = await Hive.openBox<Map<String, dynamic>>(_metadataBoxName);
+      _metadataBox = await Hive.openBox<dynamic>(_metadataBoxName);
 
       _isInitialized = true;
 
@@ -61,10 +61,8 @@ class PersonalEventCacheService {
         await Hive.deleteBoxFromDisk(_metadataBoxName);
 
         // Retry opening after deletion
-        _eventsBox = await Hive.openBox<Map<String, dynamic>>(_boxName);
-        _metadataBox = await Hive.openBox<Map<String, dynamic>>(
-          _metadataBoxName,
-        );
+        _eventsBox = await Hive.openBox<dynamic>(_boxName);
+        _metadataBox = await Hive.openBox<dynamic>(_metadataBoxName);
 
         _isInitialized = true;
 
@@ -117,10 +115,10 @@ class PersonalEventCacheService {
 
       // Update metadata for quick queries
       final kindKey = 'kind_${event.kind}';
-      final kindEvents = _metadataBox!.get(
-        kindKey,
-        defaultValue: <String, dynamic>{},
-      )!;
+      final rawKindEvents = _metadataBox!.get(kindKey);
+      final kindEvents = rawKindEvents != null
+          ? Map<String, dynamic>.from(rawKindEvents as Map)
+          : <String, dynamic>{};
       kindEvents[event.id] = {
         'created_at': event.createdAt,
         'cached_at': DateTime.now().millisecondsSinceEpoch,
@@ -149,15 +147,16 @@ class PersonalEventCacheService {
 
     try {
       final kindKey = 'kind_$kind';
-      final kindEvents = _metadataBox!.get(
-        kindKey,
-        defaultValue: <String, dynamic>{},
-      )!;
+      final rawKindEvents = _metadataBox!.get(kindKey);
+      final kindEvents = rawKindEvents != null
+          ? Map<String, dynamic>.from(rawKindEvents as Map)
+          : <String, dynamic>{};
 
       final events = <Event>[];
       for (final eventId in kindEvents.keys) {
-        final eventData = _eventsBox!.get(eventId);
-        if (eventData != null) {
+        final rawEventData = _eventsBox!.get(eventId);
+        if (rawEventData != null) {
+          final eventData = Map<String, dynamic>.from(rawEventData as Map);
           final event = _eventDataToEvent(eventData);
           if (event != null) {
             events.add(event);
@@ -193,7 +192,9 @@ class PersonalEventCacheService {
 
     try {
       final events = <Event>[];
-      for (final eventData in _eventsBox!.values) {
+      for (final rawEventData in _eventsBox!.values) {
+        if (rawEventData == null) continue;
+        final eventData = Map<String, dynamic>.from(rawEventData as Map);
         final event = _eventDataToEvent(eventData);
         if (event != null) {
           events.add(event);
@@ -227,8 +228,9 @@ class PersonalEventCacheService {
     }
 
     try {
-      final eventData = _eventsBox!.get(eventId);
-      if (eventData != null) {
+      final rawEventData = _eventsBox!.get(eventId);
+      if (rawEventData != null) {
+        final eventData = Map<String, dynamic>.from(rawEventData as Map);
         return _eventDataToEvent(eventData);
       }
     } catch (e) {
@@ -264,13 +266,13 @@ class PersonalEventCacheService {
 
     // Count events by kind
     for (final kindKey in _metadataBox!.keys) {
-      if (kindKey.startsWith('kind_')) {
+      if (kindKey is String && kindKey.startsWith('kind_')) {
         final kind = kindKey.substring(5);
-        final kindEvents = _metadataBox!.get(
-          kindKey,
-          defaultValue: <String, dynamic>{},
-        )!;
-        stats['by_kind'][kind] = kindEvents.length;
+        final rawKindEvents = _metadataBox!.get(kindKey);
+        final kindEvents = rawKindEvents != null
+            ? Map<String, dynamic>.from(rawKindEvents as Map)
+            : <String, dynamic>{};
+        (stats['by_kind'] as Map<String, int>)[kind] = kindEvents.length;
       }
     }
 

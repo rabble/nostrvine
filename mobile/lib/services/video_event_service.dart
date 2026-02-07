@@ -2866,6 +2866,11 @@ class VideoEventService extends ChangeNotifier {
             _subscriptionParams[SubscriptionType.discovery]!,
           )
         : null;
+    final profileParams = _subscriptionParams[SubscriptionType.profile] != null
+        ? Map<String, dynamic>.from(
+            _subscriptionParams[SubscriptionType.profile]!,
+          )
+        : null;
 
     // Cancel all subscriptions
     await unsubscribeFromVideoFeed();
@@ -2894,6 +2899,20 @@ class VideoEventService extends ChangeNotifier {
           authors,
           limit: homeFeedParams['limit'] as int? ?? 100,
           sortBy: homeFeedParams['sortBy'] as VideoSortField?,
+          force: true,
+        );
+      }
+    }
+
+    // Re-subscribe to active profile feed if one was active
+    if (profileParams != null) {
+      final authors = profileParams['authors'] as List<String>?;
+      if (authors != null && authors.isNotEmpty) {
+        await subscribeToVideoFeed(
+          subscriptionType: SubscriptionType.profile,
+          authors: authors,
+          limit: profileParams['limit'] as int? ?? 100,
+          includeReposts: profileParams['includeReposts'] as bool? ?? true,
           force: true,
         );
       }

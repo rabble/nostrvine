@@ -53,6 +53,27 @@ class HomeFeed extends _$HomeFeed {
     _nextCursor = null;
     _hasMoreFromApi = true;
 
+    // Re-trigger build when NostrClient becomes ready.
+    // This handles the race condition where followRepositoryProvider is null
+    // during initial build (NostrClient not ready), and the provider
+    // auto-disposes before the dependency transitions from null to non-null.
+    ref.listen<bool>(isNostrReadyProvider, (prev, next) {
+      if (prev == false && next == true) {
+        Log.info(
+          '🏠 HomeFeed: NostrClient became ready, triggering rebuild',
+          name: 'HomeFeedProvider',
+          category: LogCategory.video,
+        );
+        final now = DateTime.now();
+        final timeSinceLast = _lastBuildTime != null
+            ? now.difference(_lastBuildTime!).inMilliseconds
+            : 5000;
+        if (timeSinceLast >= 2000) {
+          ref.invalidateSelf();
+        }
+      }
+    });
+
     // Prevent auto-dispose during async operations
     final keepAliveLink = ref.keepAlive();
 
