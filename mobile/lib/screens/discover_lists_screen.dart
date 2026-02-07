@@ -30,6 +30,7 @@ class DiscoverListsScreen extends ConsumerStatefulWidget {
 
 class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
   bool _isLoadingMore = false;
+  bool _hasReachedEnd = false;
   String? _errorMessage;
   StreamSubscription<List<CuratedList>>? _subscription;
   final _scrollController = ScrollController();
@@ -70,9 +71,10 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
   }
 
   void _onScroll() {
-    // Load more when near bottom
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 200) {
+    // Load more when near bottom, but not if we already exhausted results
+    if (!_hasReachedEnd &&
+        _scrollController.position.pixels >=
+            _scrollController.position.maxScrollExtent - 200) {
       _loadMoreLists();
     }
   }
@@ -88,6 +90,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
       _errorMessage = null;
       _isRefreshing = isRefresh;
       _autoPaginationAttempts = 0;
+      _hasReachedEnd = false;
     });
 
     // Set loading state in provider
@@ -200,7 +203,11 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
 
   Future<void> _loadMoreLists() async {
     final providerState = ref.read(discoveredListsProvider);
-    if (_isLoadingMore || providerState.oldestTimestamp == null) return;
+    if (_isLoadingMore ||
+        _hasReachedEnd ||
+        providerState.oldestTimestamp == null) {
+      return;
+    }
 
     setState(() {
       _isLoadingMore = true;
@@ -208,6 +215,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
 
     StreamSubscription<List<CuratedList>>? subscription;
     Timer? timeoutTimer;
+    var foundNewLists = false;
 
     try {
       final service = await ref
@@ -235,6 +243,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
           category: LogCategory.ui,
         );
         subscription?.cancel();
+        subscription = null; // Prevent double-cancel in finally
         if (!completer.isCompleted) completer.complete();
       });
 
@@ -253,6 +262,7 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
               .toList();
 
           if (newLists.isNotEmpty) {
+            foundNewLists = true;
             for (final list in newLists) {
               existingIds.add(list.id);
               // Update oldest timestamp in provider
@@ -265,6 +275,9 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
         },
         onError: (error) {
           Log.error('Pagination error: $error', category: LogCategory.ui);
+          if (!completer.isCompleted) completer.complete();
+        },
+        onDone: () {
           if (!completer.isCompleted) completer.complete();
         },
       );
@@ -280,13 +293,18 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
       timeoutTimer?.cancel();
       await subscription?.cancel();
       if (mounted) {
+        if (!foundNewLists) {
+          _hasReachedEnd = true;
+        }
+
         setState(() {
           _isLoadingMore = false;
         });
 
         // Continue auto-paginating if we still have few results
         final finalState = ref.read(discoveredListsProvider);
-        if (finalState.lists.length < _minListsBeforeAutoPaginate &&
+        if (!_hasReachedEnd &&
+            finalState.lists.length < _minListsBeforeAutoPaginate &&
             finalState.oldestTimestamp != null &&
             _autoPaginationAttempts < _maxAutoPaginationAttempts) {
           _autoPaginationAttempts++;
