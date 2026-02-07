@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
@@ -13,6 +14,7 @@ import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/notification_badge.dart';
 
 /// Shared bottom navigation bar used by AppShell and standalone profile screens.
 class VineBottomNav extends ConsumerWidget {
@@ -135,12 +137,15 @@ class VineBottomNav extends ConsumerWidget {
                 context.push(VideoRecorderScreen.path);
               },
             ),
-            _buildTabButton(
-              context,
-              ref,
-              'assets/icon/bell.svg',
-              2,
-              'notifications_tab',
+            NotificationBadge(
+              count: ref.watch(relayNotificationUnreadCountProvider),
+              child: _buildTabButton(
+                context,
+                ref,
+                'assets/icon/bell.svg',
+                2,
+                'notifications_tab',
+              ),
             ),
             _buildTabButton(
               context,
