@@ -16,13 +16,17 @@ class VideoEditorMainCapabilitiesChanged extends VideoEditorMainEvent {
   const VideoEditorMainCapabilitiesChanged({
     required this.canUndo,
     required this.canRedo,
+    this.layers,
   });
 
   final bool canUndo;
   final bool canRedo;
 
+  /// The current list of active layers, or `null` if unchanged.
+  final List<Layer>? layers;
+
   @override
-  List<Object?> get props => [canUndo, canRedo];
+  List<Object?> get props => [canUndo, canRedo, layers];
 }
 
 /// Triggered when layer interaction (scaling/rotating) starts.
@@ -58,6 +62,26 @@ class VideoEditorMainOpenSubEditor extends VideoEditorMainEvent {
 /// Triggered when a sub-editor is closed.
 class VideoEditorMainSubEditorClosed extends VideoEditorMainEvent {
   const VideoEditorMainSubEditorClosed();
+}
+
+/// Triggered when a layer is added to the editor.
+class VideoEditorLayerAdded extends VideoEditorMainEvent {
+  const VideoEditorLayerAdded(this.layer);
+
+  final Layer layer;
+
+  @override
+  List<Object?> get props => [layer];
+}
+
+/// Triggered when a layer is removed from the editor.
+class VideoEditorLayerRemoved extends VideoEditorMainEvent {
+  const VideoEditorLayerRemoved(this.layer);
+
+  final Layer layer;
+
+  @override
+  List<Object?> get props => [layer];
 }
 
 /// Types of sub-editors that can be opened.

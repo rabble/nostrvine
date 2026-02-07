@@ -4,7 +4,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
@@ -16,7 +15,7 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 ///
 /// Displays close, undo, redo, and done buttons. Uses [BlocSelector] to
 /// reactively enable/disable undo and redo based on editor state.
-class VideoEditorMainTopBar extends ConsumerWidget {
+class VideoEditorMainTopBar extends StatelessWidget {
   const VideoEditorMainTopBar({super.key});
 
   Future<void> _reorderLayers(BuildContext context, List<Layer> layers) async {
@@ -45,7 +44,7 @@ class VideoEditorMainTopBar extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.topCenter,
       child: SafeArea(
@@ -55,13 +54,15 @@ class VideoEditorMainTopBar extends ConsumerWidget {
               BlocSelector<
                 VideoEditorMainBloc,
                 VideoEditorMainState,
-                ({bool canUndo, bool canRedo})
+                ({bool canUndo, bool canRedo, List<Layer> layers})
               >(
-                selector: (state) =>
-                    (canUndo: state.canUndo, canRedo: state.canRedo),
+                selector: (state) => (
+                  canUndo: state.canUndo,
+                  canRedo: state.canRedo,
+                  layers: state.layers,
+                ),
                 builder: (context, state) {
                   final scope = VideoEditorScope.of(context);
-                  final layers = scope.editor?.activeLayers ?? [];
 
                   return Row(
                     spacing: 8,
@@ -101,8 +102,11 @@ class VideoEditorMainTopBar extends ConsumerWidget {
                         // TODO(l10n): Replace with context.l10n when localization is added.
                         semanticsLabel: 'Reorder',
                         iconPath: 'assets/icon/stack_simple.svg',
-                        onTap: layers.length > 1
-                            ? () => _reorderLayers(context, layers)
+                        onTap: state.layers.length > 1
+                            ? () => _reorderLayers(
+                                context,
+                                scope.editor?.activeLayers ?? state.layers,
+                              )
                             : null,
                       ),
                       _IconButton(

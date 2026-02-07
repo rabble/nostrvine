@@ -174,6 +174,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         VideoEditorMainCapabilitiesChanged(
           canUndo: editor?.canUndo ?? false,
           canRedo: editor?.canRedo ?? false,
+          layers: editor?.activeLayers,
         ),
       );
     });
@@ -377,6 +378,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
             bloc.add(const VideoEditorLayerInteractionEnded());
           },
+          onAddLayer: (layer) => _syncMainCapabilities(scope, bloc),
+          onRemoveLayer: (layer) => _syncMainCapabilities(scope, bloc),
           onCreateTextLayer: scope.onAddEditTextLayer,
           onEditTextLayer: scope.onAddEditTextLayer,
         ),

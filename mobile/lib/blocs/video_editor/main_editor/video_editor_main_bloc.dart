@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 
 part 'video_editor_main_event.dart';
 part 'video_editor_main_state.dart';
@@ -20,6 +21,8 @@ class VideoEditorMainBloc
     on<VideoEditorLayerOverRemoveAreaChanged>(_onLayerOverRemoveAreaChanged);
     on<VideoEditorMainOpenSubEditor>(_onOpenSubEditor);
     on<VideoEditorMainSubEditorClosed>(_onSubEditorClosed);
+    on<VideoEditorLayerAdded>(_onLayerAdded);
+    on<VideoEditorLayerRemoved>(_onLayerRemoved);
   }
 
   /// Updates undo/redo/subEditor state based on editor capabilities.
@@ -27,7 +30,13 @@ class VideoEditorMainBloc
     VideoEditorMainCapabilitiesChanged event,
     Emitter<VideoEditorMainState> emit,
   ) {
-    emit(state.copyWith(canUndo: event.canUndo, canRedo: event.canRedo));
+    emit(
+      state.copyWith(
+        canUndo: event.canUndo,
+        canRedo: event.canRedo,
+        layers: event.layers,
+      ),
+    );
   }
 
   void _onLayerInteractionStarted(
@@ -70,5 +79,23 @@ class VideoEditorMainBloc
     Emitter<VideoEditorMainState> emit,
   ) {
     emit(state.copyWith(clearOpenSubEditor: true));
+  }
+
+  void _onLayerAdded(
+    VideoEditorLayerAdded event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(state.copyWith(layers: [...state.layers, event.layer]));
+  }
+
+  void _onLayerRemoved(
+    VideoEditorLayerRemoved event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    emit(
+      state.copyWith(
+        layers: state.layers.where((l) => l != event.layer).toList(),
+      ),
+    );
   }
 }

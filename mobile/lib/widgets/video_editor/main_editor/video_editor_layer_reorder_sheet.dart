@@ -30,16 +30,16 @@ class VideoEditorLayerReorderSheet extends StatefulWidget {
 
 class _VideoEditorLayerReorderSheetState
     extends State<VideoEditorLayerReorderSheet> {
-  late final List<Layer> _layers = widget.layers;
+  late final List<Layer> _layers = List.from(widget.layers);
 
   /// Reorders the local layer list and forwards the callback to the parent.
   void _onReorder(int oldIndex, int newIndex) {
-    widget.onReorder(oldIndex, newIndex);
     setState(() {
       if (oldIndex < newIndex) newIndex--;
       final layer = _layers.removeAt(oldIndex);
       _layers.insert(newIndex, layer);
     });
+    widget.onReorder(oldIndex, newIndex);
   }
 
   @override
@@ -48,32 +48,28 @@ class _VideoEditorLayerReorderSheetState
       reverse: true,
       primary: false,
       shrinkWrap: true,
-      proxyDecorator: _proxyDecorator,
+      proxyDecorator: (child, index, animation) => AnimatedBuilder(
+        animation: animation,
+        builder: (context, child) {
+          final elevation = lerpDouble(0, 6, animation.value) ?? 0;
+          return Material(
+            elevation: elevation,
+            color: VineTheme.containerLow,
+            borderRadius: .circular(12),
+            child: child,
+          );
+        },
+        child: child,
+      ),
       itemBuilder: (context, index) {
         return _LayerTile(
-          key: ValueKey(widget.layers[index]),
-          layer: widget.layers[index],
+          key: ValueKey(_layers[index]),
+          layer: _layers[index],
           index: index,
         );
       },
-      itemCount: widget.layers.length,
+      itemCount: _layers.length,
       onReorder: _onReorder,
-    );
-  }
-
-  Widget _proxyDecorator(Widget child, int index, Animation<double> animation) {
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, child) {
-        final elevation = lerpDouble(0, 6, animation.value) ?? 0;
-        return Material(
-          elevation: elevation,
-          color: VineTheme.containerLow,
-          borderRadius: .circular(12),
-          child: child,
-        );
-      },
-      child: child,
     );
   }
 }
