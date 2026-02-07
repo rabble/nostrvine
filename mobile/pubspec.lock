@@ -1667,10 +1667,10 @@ packages:
     dependency: "direct main"
     description:
       name: pro_video_editor
-      sha256: "8c8ec092211e670ea72741be46220d5c3fdc9908c545388ad77dfa5cda1107c5"
+      sha256: c88186f69cf0649f19ec20ad3a60c89ac98f940df43eed7b7601195bdcd0246b
       url: "https://pub.dev"
     source: hosted
-    version: "1.4.2"
+    version: "1.5.0"
   process:
     dependency: transitive
     description:

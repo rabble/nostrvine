@@ -414,6 +414,7 @@ class VideoEditorRenderService {
           : null,
       blur: parameters?.blur,
       colorMatrixList: parameters?.colorFilters ?? [],
+      imageBytesWithCropping: true,
       transform: ExportTransform(
         x: cropParams.x,
         y: cropParams.y,
@@ -465,6 +466,7 @@ class VideoEditorRenderService {
           : null,
       blur: parameters?.blur,
       colorMatrixList: parameters?.colorFilters ?? [],
+      imageBytesWithCropping: true,
       transform: globalTransform != null
           ? ExportTransform(
               x: globalTransform.x,

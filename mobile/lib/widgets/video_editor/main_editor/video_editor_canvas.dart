@@ -65,9 +65,8 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
             return FittedBox(
               fit: .cover,
               child: SizedBox(
-                width:
-                    constraints.biggest.height / clip.targetAspectRatio.value,
-                height: constraints.biggest.height,
+                width: constraints.maxHeight / clip.targetAspectRatio.value,
+                height: constraints.maxHeight,
                 // Wraps sub-editors in a nested Navigator so they open within
                 // the fitted aspect-ratio area instead of full-screen, since
                 // cropping hasn't been applied yet.
