@@ -42,8 +42,6 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
   PageController? _controller;
   int? _lastUrlIndex;
   int? _lastPrefetchIndex;
-  String? _currentVideoStableId;
-  bool _urlUpdateScheduled = false; // Prevent infinite rebuild loops
 
   @override
   void initState() {
@@ -175,39 +173,9 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
               final safeIndex = urlIndex.clamp(0, itemCount - 1);
               _controller = PageController(initialPage: safeIndex);
               _lastUrlIndex = safeIndex;
-              _currentVideoStableId = videos[safeIndex].stableId;
-            }
-
-            // Check if video list changed (e.g., reordered due to social provider update)
-            // If current video moved to different index, update URL to maintain position
-            bool urlUpdatePending = false;
-            if (_currentVideoStableId != null &&
-                videos.isNotEmpty &&
-                !_urlUpdateScheduled) {
-              final currentVideoIndex = videos.indexWhere(
-                (v) => v.stableId == _currentVideoStableId,
-              );
-              // Only update URL if video moved to a different index
-              if (currentVideoIndex != -1 && currentVideoIndex != urlIndex) {
-                // Video we're viewing is now at a different index - update URL silently
-                Log.debug(
-                  '📍 Video $_currentVideoStableId moved from index $urlIndex → $currentVideoIndex, updating URL',
-                  name: 'HomeScreenRouter',
-                  category: LogCategory.video,
-                );
-                _urlUpdateScheduled = true; // Prevent multiple pending updates
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (!mounted) return;
-                  _urlUpdateScheduled = false; // Reset flag after update
-                  context.go(HomeScreenRouter.pathForIndex(currentVideoIndex));
-                });
-                urlUpdatePending = true;
-              }
             }
 
             // Sync controller when URL changes externally (back/forward/deeplink)
-            // OR when videos list changes (e.g., social provider loads)
-            // Skip if URL update is already pending from reorder detection
             final shouldSyncNow = shouldSync(
               urlIndex: urlIndex,
               lastUrlIndex: _lastUrlIndex,
@@ -215,15 +183,13 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
               targetIndex: urlIndex.clamp(0, itemCount - 1),
             );
 
-            if (!urlUpdatePending && shouldSyncNow) {
+            if (shouldSyncNow) {
               Log.debug(
                 '🔄 SYNCING PageController: urlIndex=$urlIndex, lastUrlIndex=$_lastUrlIndex, currentPage=${_controller?.page?.round()}',
                 name: 'HomeScreenRouter',
                 category: LogCategory.video,
               );
               _lastUrlIndex = urlIndex;
-              _currentVideoStableId = videos[urlIndex.clamp(0, itemCount - 1)]
-                  .stableId; // Update tracked video
               syncPageController(
                 controller: _controller!,
                 targetIndex: urlIndex,
@@ -270,9 +236,6 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                 controller: _controller,
                 scrollDirection: Axis.vertical,
                 onPageChanged: (newIndex) {
-                  // Update tracked video stableId
-                  _currentVideoStableId = videos[newIndex].stableId;
-
                   // Guard: only navigate if URL doesn't match
                   if (newIndex != urlIndex) {
                     context.go(HomeScreenRouter.pathForIndex(newIndex));

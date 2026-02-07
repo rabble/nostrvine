@@ -54,8 +54,12 @@ class ProfileFeed extends _$ProfileFeed {
     List<VideoEvent> authorVideos = [];
 
     // Try REST API first if available (use centralized availability check)
+    // Use ref.read() instead of ref.watch() to prevent cascade rebuilds
+    // through userProfileService → videoEventService chain when funnelcake
+    // availability resolves. ProfileFeed is keepAlive, so cascade rebuilds
+    // create new instances and lose state.
     final funnelcakeAvailable =
-        ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
+        ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
     final analyticsService = ref.read(analyticsApiServiceProvider);
     if (funnelcakeAvailable) {
       Log.info(

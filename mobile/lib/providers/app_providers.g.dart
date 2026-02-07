@@ -1922,6 +1922,11 @@ String _$currentAuthStateHash() => r'41c987ffc8f661555bab3ebec9078180411f66eb';
 ///
 /// This prevents race conditions where auth state is 'authenticated' but
 /// the NostrClient hasn't yet rebuilt with the new keys.
+///
+/// NostrClient.initialize() runs asynchronously in a Future.microtask after
+/// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
+/// because it's the same object reference. When not ready but authenticated,
+/// we schedule brief retries to catch the async initialization.
 
 @ProviderFor(isNostrReady)
 const isNostrReadyProvider = IsNostrReadyProvider._();
@@ -1932,6 +1937,11 @@ const isNostrReadyProvider = IsNostrReadyProvider._();
 ///
 /// This prevents race conditions where auth state is 'authenticated' but
 /// the NostrClient hasn't yet rebuilt with the new keys.
+///
+/// NostrClient.initialize() runs asynchronously in a Future.microtask after
+/// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
+/// because it's the same object reference. When not ready but authenticated,
+/// we schedule brief retries to catch the async initialization.
 
 final class IsNostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
@@ -1941,6 +1951,11 @@ final class IsNostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
   ///
   /// This prevents race conditions where auth state is 'authenticated' but
   /// the NostrClient hasn't yet rebuilt with the new keys.
+  ///
+  /// NostrClient.initialize() runs asynchronously in a Future.microtask after
+  /// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
+  /// because it's the same object reference. When not ready but authenticated,
+  /// we schedule brief retries to catch the async initialization.
   const IsNostrReadyProvider._()
     : super(
         from: null,
@@ -1974,7 +1989,7 @@ final class IsNostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
   }
 }
 
-String _$isNostrReadyHash() => r'555da82d3449835978ad9d745e478332f179c4f5';
+String _$isNostrReadyHash() => r'ea9cfcc9e19612778d785043dbe87d4259ddea0a';
 
 /// Provider that sets Zendesk user identity when auth state changes
 /// Watch this provider at app startup to keep Zendesk identity in sync with auth

@@ -600,6 +600,11 @@ AuthState currentAuthState(Ref ref) {
 ///
 /// This prevents race conditions where auth state is 'authenticated' but
 /// the NostrClient hasn't yet rebuilt with the new keys.
+///
+/// NostrClient.initialize() runs asynchronously in a Future.microtask after
+/// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
+/// because it's the same object reference. When not ready but authenticated,
+/// we schedule brief retries to catch the async initialization.
 @Riverpod(keepAlive: true)
 bool isNostrReady(Ref ref) {
   final authService = ref.watch(authServiceProvider);
@@ -610,7 +615,31 @@ bool isNostrReady(Ref ref) {
   if (!authService.isAuthenticated) return false;
 
   final nostrClient = ref.watch(nostrServiceProvider);
-  return nostrClient.hasKeys;
+  final ready = nostrClient.hasKeys;
+
+  if (!ready) {
+    // NostrClient.initialize() runs asynchronously in a Future.microtask
+    // after NostrService.build() returns. Riverpod can't detect when
+    // hasKeys transitions because it's the same object reference.
+    // Schedule retries at increasing intervals to catch the transition.
+    var disposed = false;
+    ref.onDispose(() => disposed = true);
+
+    for (final delayMs in [100, 500, 2000]) {
+      Future.delayed(Duration(milliseconds: delayMs), () {
+        if (!disposed && nostrClient.hasKeys) {
+          Log.info(
+            'isNostrReady: NostrClient.hasKeys became true after ${delayMs}ms, invalidating',
+            name: 'isNostrReadyProvider',
+            category: LogCategory.system,
+          );
+          ref.invalidateSelf();
+        }
+      });
+    }
+  }
+
+  return ready;
 }
 
 /// Provider that sets Zendesk user identity when auth state changes
