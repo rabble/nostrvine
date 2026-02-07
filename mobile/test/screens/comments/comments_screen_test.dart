@@ -29,6 +29,9 @@ String _errorToString(CommentsError error) {
     CommentsError.postCommentFailed => 'Failed to post comment',
     CommentsError.postReplyFailed => 'Failed to post reply',
     CommentsError.deleteCommentFailed => 'Failed to delete comment',
+    CommentsError.likeFailed => 'Failed to like comment',
+    CommentsError.reportFailed => 'Failed to report comment',
+    CommentsError.blockFailed => 'Failed to block user',
   };
 }
 
@@ -314,6 +317,41 @@ void main() {
         await tester.pump();
 
         expect(find.text('1 Comment'), findsOneWidget);
+      });
+    });
+
+    group('threaded comments', () {
+      testWidgets('renders nested reply with indentation', (tester) async {
+        final parent = CommentBuilder()
+            .withId(TestCommentIds.comment1Id)
+            .withAuthorPubkey(TestCommentIds.author1Pubkey)
+            .withContent('Parent comment')
+            .build();
+        final reply = CommentBuilder()
+            .withId(TestCommentIds.comment2Id)
+            .withAuthorPubkey(TestCommentIds.author2Pubkey)
+            .withContent('Reply comment')
+            .asReplyTo(
+              parentEventId: TestCommentIds.comment1Id,
+              parentAuthorPubkey: TestCommentIds.author1Pubkey,
+            )
+            .build();
+
+        final state = CommentsState(
+          rootEventId: testVideoEventId,
+          rootAuthorPubkey: testVideoAuthorPubkey,
+          status: CommentsStatus.success,
+          commentsById: {parent.id: parent, reply.id: reply},
+        );
+
+        await tester.pumpWidget(buildTestWidget(commentsState: state));
+        await tester.pump();
+
+        // Both comments should be visible
+        expect(find.text('Parent comment'), findsOneWidget);
+        expect(find.text('Reply comment'), findsOneWidget);
+        // Two CommentItem widgets
+        expect(find.byType(CommentItem), findsNWidgets(2));
       });
     });
 

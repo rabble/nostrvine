@@ -23,6 +23,9 @@ String _errorToString(CommentsError error) {
     CommentsError.postCommentFailed => 'Failed to post comment',
     CommentsError.postReplyFailed => 'Failed to post reply',
     CommentsError.deleteCommentFailed => 'Failed to delete comment',
+    CommentsError.likeFailed => 'Failed to like comment',
+    CommentsError.reportFailed => 'Failed to report comment',
+    CommentsError.blockFailed => 'Failed to block user',
   };
 }
 
@@ -128,6 +131,21 @@ class CommentsScreen extends ConsumerWidget {
     final commentsRepository = ref.watch(commentsRepositoryProvider);
     final authService = ref.watch(authServiceProvider);
 
+    // Sync providers — watch normally
+    final likesRepository = ref.watch(likesRepositoryProvider);
+    final contentBlocklistService = ref.watch(contentBlocklistServiceProvider);
+
+    // Async providers — pass as Future (per Critical Review Issue 1)
+    // Pattern from share_video_menu.dart:2065
+    final contentReportingServiceFuture = ref.read(
+      contentReportingServiceProvider.future,
+    );
+    final muteServiceFuture = ref.read(muteServiceProvider.future);
+
+    // Mention search dependencies
+    final userProfileService = ref.watch(userProfileServiceProvider);
+    final followRepository = ref.watch(followRepositoryProvider);
+
     // Use original comments count for pagination hint
     // This helps determine hasMoreContent more accurately than page size heuristic
     final initialCount = videoEvent.originalComments;
@@ -136,16 +154,23 @@ class CommentsScreen extends ConsumerWidget {
       create: (_) => CommentsBloc(
         commentsRepository: commentsRepository,
         authService: authService,
+        likesRepository: likesRepository,
+        contentReportingServiceFuture: contentReportingServiceFuture,
+        muteServiceFuture: muteServiceFuture,
+        contentBlocklistService: contentBlocklistService,
         rootEventId: videoEvent.id,
         rootEventKind: NIP71VideoKinds.addressableShortVideo,
         rootAuthorPubkey: videoEvent.pubkey,
         rootAddressableId: videoEvent.addressableId,
         initialTotalCount: initialCount,
+        userProfileService: userProfileService,
+        followRepository: followRepository,
       )..add(const CommentsLoadRequested()),
       child: VineBottomSheet(
         title: _CommentsTitle(
           initialCount: initialCommentCount ?? videoEvent.originalComments ?? 0,
         ),
+        trailing: const _CommentsSortToggle(),
         body: _CommentsScreenBody(
           videoEvent: videoEvent,
           sheetScrollController: sheetScrollController,
@@ -231,7 +256,8 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
           prev.mainInputText != next.mainInputText ||
           prev.replyInputText != next.replyInputText ||
           prev.activeReplyCommentId != next.activeReplyCommentId ||
-          prev.isPosting != next.isPosting,
+          prev.isPosting != next.isPosting ||
+          prev.mentionSuggestions != next.mentionSuggestions,
       builder: (context, state) {
         final isReplyMode = state.activeReplyCommentId != null;
         final inputText = isReplyMode
@@ -275,6 +301,21 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
           focusNode: _focusNode,
           isPosting: state.isPosting,
           replyToDisplayName: replyToDisplayName,
+          mentionSuggestions: state.mentionSuggestions,
+          onMentionQuery: (query) {
+            if (query.isEmpty) {
+              context.read<CommentsBloc>().add(
+                const MentionSuggestionsCleared(),
+              );
+            } else {
+              context.read<CommentsBloc>().add(MentionSearchRequested(query));
+            }
+          },
+          onMentionSelected: (npub, displayName) {
+            context.read<CommentsBloc>()
+              ..add(MentionRegistered(displayName: displayName, npub: npub))
+              ..add(const MentionSuggestionsCleared());
+          },
           onChanged: (text) {
             context.read<CommentsBloc>().add(
               CommentTextChanged(text, commentId: state.activeReplyCommentId),
@@ -297,6 +338,61 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
               CommentReplyToggled(state.activeReplyCommentId!),
             );
           },
+        );
+      },
+    );
+  }
+}
+
+/// Sort toggle button that cycles: New → Top → Old → New
+class _CommentsSortToggle extends StatelessWidget {
+  const _CommentsSortToggle();
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocSelector<CommentsBloc, CommentsState, CommentsSortMode>(
+      selector: (state) => state.sortMode,
+      builder: (context, sortMode) {
+        final (icon, label) = switch (sortMode) {
+          CommentsSortMode.newest => (Icons.schedule, 'New'),
+          CommentsSortMode.topEngagement => (
+            Icons.local_fire_department,
+            'Top',
+          ),
+          CommentsSortMode.oldest => (Icons.history, 'Old'),
+        };
+
+        return GestureDetector(
+          onTap: () {
+            final nextMode = switch (sortMode) {
+              CommentsSortMode.newest => CommentsSortMode.topEngagement,
+              CommentsSortMode.topEngagement => CommentsSortMode.oldest,
+              CommentsSortMode.oldest => CommentsSortMode.newest,
+            };
+            context.read<CommentsBloc>().add(CommentsSortModeChanged(nextMode));
+          },
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: VineTheme.containerLow,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, size: 14, color: VineTheme.onSurfaceVariant),
+                const SizedBox(width: 4),
+                Text(
+                  label,
+                  style: VineTheme.bodyFont(
+                    fontSize: 12,
+                    color: VineTheme.onSurfaceVariant,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
       },
     );

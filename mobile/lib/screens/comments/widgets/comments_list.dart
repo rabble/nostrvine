@@ -28,16 +28,19 @@ class CommentsList extends StatelessWidget {
           return const _ErrorState();
         }
 
-        if (state.comments.isEmpty) {
+        final threaded = state.threadedComments;
+
+        if (threaded.isEmpty) {
           return CommentsEmptyState(isClassicVine: isOriginalVine);
         }
 
         return ListView.builder(
           controller: scrollController,
-          itemCount: state.comments.length,
-
-          itemBuilder: (context, index) =>
-              CommentItem(comment: state.comments[index]),
+          itemCount: threaded.length,
+          itemBuilder: (context, index) {
+            final node = threaded[index];
+            return CommentItem(comment: node.comment, depth: node.depth);
+          },
         );
       },
     );
