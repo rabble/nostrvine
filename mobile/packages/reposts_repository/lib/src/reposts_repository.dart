@@ -101,7 +101,11 @@ class RepostsRepository {
   bool _isInitialized = false;
 
   /// Emits the current set of reposted addressable IDs.
+  ///
+  /// Guards against emitting after the controller has been closed, which can
+  /// happen if [clearCache] runs during or after [dispose] (e.g. on logout).
   void _emitRepostedIds() {
+    if (_repostedIdsController.isClosed) return;
     _repostedIdsController.add(_repostRecords.keys.toSet());
   }
 

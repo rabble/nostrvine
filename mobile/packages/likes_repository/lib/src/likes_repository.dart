@@ -106,7 +106,11 @@ class LikesRepository {
   bool _isInitialized = false;
 
   /// Emits the current set of liked event IDs.
+  ///
+  /// Guards against emitting after the controller has been closed, which can
+  /// happen if [clearCache] runs during or after [dispose] (e.g. on logout).
   void _emitLikedIds() {
+    if (_likedIdsController.isClosed) return;
     _likedIdsController.add(_likeRecords.keys.toSet());
   }
 
