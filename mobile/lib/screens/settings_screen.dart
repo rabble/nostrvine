@@ -286,17 +286,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   subtitle: 'Export, backup, and restore your Nostr keys',
                   onTap: () => context.push(KeyManagementScreen.path),
                 ),
-                _buildSettingsTile(
-                  context,
-                  icon: Icons.key_off,
-                  title: 'Forget This Device',
-                  subtitle:
-                      'Remove your keys from this device. '
-                      'You\'ll need your nsec backup to sign back in.',
-                  onTap: () => _handleRemoveKeys(context, ref),
-                  iconColor: Colors.orange,
-                  titleColor: Colors.orange,
-                ),
+                if (authService.authenticationSource ==
+                        AuthenticationSource.automatic ||
+                    authService.authenticationSource ==
+                        AuthenticationSource.importedKeys)
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.key_off,
+                    title: 'Forget This Device',
+                    subtitle:
+                        'Remove your keys from this device. '
+                        'You\'ll need your nsec backup to sign back in.',
+                    onTap: () => _handleRemoveKeys(context, ref),
+                    iconColor: Colors.orange,
+                    titleColor: Colors.orange,
+                  ),
                 const SizedBox(height: 16),
                 _buildSectionHeader('Danger Zone'),
                 _buildSettingsTile(
