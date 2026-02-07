@@ -105,6 +105,10 @@ class CommentActionButton extends ConsumerWidget {
       }
     }
 
-    CommentsScreen.show(context, video);
+    CommentsScreen.show(
+      context,
+      video,
+      initialCommentCount: video.originalComments ?? 0,
+    );
   }
 }

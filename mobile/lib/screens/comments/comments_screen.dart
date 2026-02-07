@@ -64,14 +64,25 @@ class CommentsScreen extends ConsumerWidget {
   const CommentsScreen({
     required this.videoEvent,
     required this.sheetScrollController,
+    this.initialCommentCount,
     super.key,
   });
 
   final VideoEvent videoEvent;
   final ScrollController sheetScrollController;
 
+  /// Optional live comment count from the caller (e.g. from
+  /// [VideoInteractionsBloc]).  When provided this value is shown in the
+  /// header while comments are still loading, avoiding the stale count
+  /// stored in the video event metadata.
+  final int? initialCommentCount;
+
   /// Shows comments as a modal bottom sheet overlay
-  static Future<void> show(BuildContext context, VideoEvent video) {
+  static Future<void> show(
+    BuildContext context,
+    VideoEvent video, {
+    int? initialCommentCount,
+  }) {
     final container = ProviderScope.containerOf(context, listen: false);
     final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
     overlayNotifier.setModalOpen(true);
@@ -102,6 +113,7 @@ class CommentsScreen extends ConsumerWidget {
             child: CommentsScreen(
               videoEvent: video,
               sheetScrollController: scrollController,
+              initialCommentCount: initialCommentCount,
             ),
           ),
         );
@@ -131,7 +143,9 @@ class CommentsScreen extends ConsumerWidget {
         initialTotalCount: initialCount,
       )..add(const CommentsLoadRequested()),
       child: VineBottomSheet(
-        title: _CommentsTitle(initialCount: videoEvent.originalComments ?? 0),
+        title: _CommentsTitle(
+          initialCount: initialCommentCount ?? videoEvent.originalComments ?? 0,
+        ),
         body: _CommentsScreenBody(
           videoEvent: videoEvent,
           sheetScrollController: sheetScrollController,

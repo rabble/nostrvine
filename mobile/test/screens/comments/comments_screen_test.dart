@@ -104,6 +104,7 @@ void main() {
     Widget buildTestWidget({
       CommentsState? commentsState,
       VideoEvent? videoEvent,
+      int? initialCommentCount,
     }) {
       if (commentsState != null) {
         when(() => mockCommentsBloc.state).thenReturn(commentsState);
@@ -123,6 +124,7 @@ void main() {
               child: _CommentsScreenTestContent(
                 videoEvent: videoEvent ?? testVideoEvent,
                 sheetScrollController: scrollController,
+                initialCommentCount: initialCommentCount ?? 0,
               ),
             ),
           ),
@@ -255,6 +257,66 @@ void main() {
       });
     });
 
+    group('title count', () {
+      testWidgets('shows correct initial count during loading state', (
+        tester,
+      ) async {
+        final state = CommentsState(
+          rootEventId: testVideoEventId,
+          rootAuthorPubkey: testVideoAuthorPubkey,
+          status: CommentsStatus.loading,
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(commentsState: state, initialCommentCount: 5),
+        );
+        await tester.pump();
+
+        expect(find.text('5 Comments'), findsOneWidget);
+      });
+
+      testWidgets('shows loaded count after success', (tester) async {
+        final comment1 = CommentBuilder()
+            .withId(TestCommentIds.comment1Id)
+            .withContent('Comment 1')
+            .build();
+        final comment2 = CommentBuilder()
+            .withId(TestCommentIds.comment2Id)
+            .withContent('Comment 2')
+            .build();
+
+        final state = CommentsState(
+          rootEventId: testVideoEventId,
+          rootAuthorPubkey: testVideoAuthorPubkey,
+          status: CommentsStatus.success,
+          commentsById: {comment1.id: comment1, comment2.id: comment2},
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(commentsState: state, initialCommentCount: 5),
+        );
+        await tester.pump();
+
+        // Once loaded, should show actual count (2), not initial (5)
+        expect(find.text('2 Comments'), findsOneWidget);
+      });
+
+      testWidgets('shows singular "Comment" for count of 1', (tester) async {
+        final state = CommentsState(
+          rootEventId: testVideoEventId,
+          rootAuthorPubkey: testVideoAuthorPubkey,
+          status: CommentsStatus.loading,
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(commentsState: state, initialCommentCount: 1),
+        );
+        await tester.pump();
+
+        expect(find.text('1 Comment'), findsOneWidget);
+      });
+    });
+
     group('loading states', () {
       testWidgets('shows loading indicator in list when loading', (
         tester,
@@ -308,10 +370,12 @@ class _CommentsScreenTestContent extends StatelessWidget {
   const _CommentsScreenTestContent({
     required this.videoEvent,
     required this.sheetScrollController,
+    required this.initialCommentCount,
   });
 
   final VideoEvent videoEvent;
   final ScrollController sheetScrollController;
+  final int initialCommentCount;
 
   @override
   Widget build(BuildContext context) {
@@ -329,6 +393,7 @@ class _CommentsScreenTestContent extends StatelessWidget {
       child: Column(
         children: [
           const CommentsDragHandle(),
+          _TestCommentsTitle(initialCount: initialCommentCount),
           CommentsHeader(onClose: () => Navigator.pop(context)),
           const Divider(color: Colors.white24, height: 1),
           Expanded(
@@ -439,6 +504,32 @@ class _MainCommentInputTestState extends State<_MainCommentInputTest> {
             );
           },
         );
+      },
+    );
+  }
+}
+
+/// Test replica of `_CommentsTitle` from comments_screen.dart.
+///
+/// Mirrors the same logic: shows [initialCount] during loading,
+/// switches to actual comment count on success.
+class _TestCommentsTitle extends StatelessWidget {
+  const _TestCommentsTitle({required this.initialCount});
+
+  final int initialCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<CommentsBloc, CommentsState>(
+      buildWhen: (prev, next) =>
+          prev.comments.length != next.comments.length ||
+          prev.status != next.status,
+      builder: (context, state) {
+        final count = state.status == CommentsStatus.success
+            ? state.comments.length
+            : initialCount;
+
+        return Text('$count ${count == 1 ? 'Comment' : 'Comments'}');
       },
     );
   }

@@ -2017,7 +2017,11 @@ class _CommentActionButton extends StatelessWidget {
                   }
                 }
               }
-              CommentsScreen.show(context, video);
+              CommentsScreen.show(
+                context,
+                video,
+                initialCommentCount: totalComments,
+              );
             },
             icon: DecoratedBox(
               decoration: BoxDecoration(
