@@ -2,10 +2,12 @@
 // ABOUTME: Handles layer manipulation callbacks and editor configuration.
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
@@ -126,6 +128,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   }
 
   Future<void> _initializePlayer() async {
+    final clips = ref.read(clipManagerProvider).clips;
+
     _proVideoController = ProVideoController(
       videoPlayer: ValueListenableBuilder(
         valueListenable: _isPlayerReadyNotifier,
@@ -133,6 +137,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           return VideoEditorPlayer(
             isPlayerReady: isPlayerReady,
             controller: _videoPlayer,
+            targetAspectRatio: clips.first.targetAspectRatio,
           );
         },
       ),
@@ -142,7 +147,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       videoDuration: .zero,
     );
 
-    final clips = ref.read(clipManagerProvider).clips;
     final outputPath = await VideoEditorRenderService.renderVideo(
       taskId: _renderTaskId,
       clips: clips,
@@ -249,6 +253,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     final editorStateHistory = ref.read(
       videoEditorProvider.select((s) => s.editorStateHistory),
     );
+    final targetAspectRatio = ref.read(
+      clipManagerProvider.select((s) => s.clips.first.targetAspectRatio),
+    );
 
     return ProImageEditor.video(
       _proVideoController,
@@ -311,14 +318,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         videoEditor: VideoEditorConfigs(
           showControls: false,
           widgets: VideoEditorWidgets(
-            videoSetupLoadingIndicator: Center(
-              child: ClipRRect(
-                borderRadius: .all(.circular(32)),
-                child: SizedBox.fromSize(
-                  size: widget.constraints.biggest,
-                  child: VideoEditorThumbnail(constraints: widget.constraints),
-                ),
-              ),
+            videoSetupLoadingIndicator: _VideoSetupLoadingIndicator(
+              size: widget.constraints.biggest,
+              targetAspectRatio: targetAspectRatio,
             ),
           ),
         ),
@@ -414,6 +416,40 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             filterEditor?.setFilterOpacity(filterState.opacity);
           },
         ),
+      ),
+    );
+  }
+}
+
+class _VideoSetupLoadingIndicator extends StatelessWidget {
+  const _VideoSetupLoadingIndicator({
+    required this.size,
+    required this.targetAspectRatio,
+  });
+
+  final Size size;
+  final model.AspectRatio targetAspectRatio;
+
+  @override
+  Widget build(BuildContext context) {
+    final useFullSize =
+        targetAspectRatio == .vertical && (kIsWeb || !Platform.isMacOS);
+
+    return Center(
+      child: ClipRRect(
+        borderRadius: .all(.circular(32)),
+        child: useFullSize
+            ? SizedBox.fromSize(
+                size: size,
+                child: VideoEditorThumbnail(contentSize: size),
+              )
+            : SizedBox(
+                width: size.shortestSide,
+                height: size.shortestSide / targetAspectRatio.value,
+                child: VideoEditorThumbnail(
+                  contentSize: Size.square(size.shortestSide),
+                ),
+              ),
       ),
     );
   }

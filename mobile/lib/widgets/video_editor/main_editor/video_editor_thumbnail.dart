@@ -7,12 +7,12 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 
 class VideoEditorThumbnail extends ConsumerWidget {
   const VideoEditorThumbnail({
-    required this.constraints,
+    required this.contentSize,
     this.isInitialized = false,
   });
 
   final bool isInitialized;
-  final BoxConstraints constraints;
+  final Size contentSize;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -26,7 +26,7 @@ class VideoEditorThumbnail extends ConsumerWidget {
         child: clip.thumbnailPath != null
             ? Image.file(File(clip.thumbnailPath!))
             : SizedBox.fromSize(
-                size: constraints.biggest,
+                size: contentSize,
                 child: const Center(
                   child: CircularProgressIndicator(color: VineTheme.primary),
                 ),
