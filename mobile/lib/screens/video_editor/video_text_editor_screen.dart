@@ -95,103 +95,122 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
       ),
     );
 
-    return BlocBuilder<VideoEditorTextBloc, VideoEditorTextState>(
-      buildWhen: (previous, current) =>
-          previous.showFontSelector != current.showFontSelector ||
-          previous.showColorPicker != current.showColorPicker ||
-          previous.color != current.color,
-      builder: (context, state) {
-        final showBottomPanel = state.showFontSelector || state.showColorPicker;
+    return Stack(
+      children: [
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: MediaQuery.paddingOf(context).top,
+          child: ColoredBox(color: VideoEditorConstants.textEditorBackground),
+        ),
+        Positioned.fill(
+          child: BlocBuilder<VideoEditorTextBloc, VideoEditorTextState>(
+            buildWhen: (previous, current) =>
+                previous.showFontSelector != current.showFontSelector ||
+                previous.showColorPicker != current.showColorPicker ||
+                previous.color != current.color,
+            builder: (context, state) {
+              final showBottomPanel =
+                  state.showFontSelector || state.showColorPicker;
 
-        return Column(
-          children: [
-            // TextEditor with padding when panel is shown
-            Expanded(
-              child: TextEditor(
-                key: _textEditorKey,
-                layer: widget.layer,
-                theme: Theme.of(context),
-                heroTag: widget.layer?.id,
-                callbacks: ProImageEditorCallbacks(
-                  textEditorCallbacks: TextEditorCallbacks(
-                    onBackgroundModeChanged: (value) {
-                      context.read<VideoEditorTextBloc>().add(
-                        VideoEditorTextBackgroundStyleChanged(value),
-                      );
-                    },
-                    onTextAlignChanged: (value) {
-                      context.read<VideoEditorTextBloc>().add(
-                        VideoEditorTextAlignmentChanged(value),
-                      );
-                    },
-                  ),
-                ),
-                configs: ProImageEditorConfigs(
-                  i18n: I18n(textEditor: I18nTextEditor(inputHintText: '')),
-                  textEditor: TextEditorConfigs(
-                    style: TextEditorStyle(
-                      inputCursorColor: VineTheme.whiteText,
-                      inputTextFieldPadding: .only(left: 16, right: 48),
-                      background: VideoEditorConstants.textEditorBackground,
-                    ),
-                    resizeToAvoidBottomInset: false,
-                    minFontScale: VideoEditorConstants.minFontScale,
-                    maxFontScale: VideoEditorConstants.maxFontScale,
-                    initFontSize: VideoEditorConstants.baseFontSize,
-                    initFontScale: _getFontScale(fontSize),
-                    initialBackgroundColorMode: backgroundStyle,
-                    initialTextAlign: alignment,
-                    initialPrimaryColor: state.color,
-                    defaultTextStyle: VideoEditorConstants
-                        .textFonts[state.selectedFontIndex](),
-                    inputTextFieldAlign: _getInputAlignment(alignment),
-                    enableAutoOverflow: false,
-                    widgets: TextEditorWidgets(
-                      appBar: (_, _) => null,
-                      bottomBar: (_, _) => null,
-                      colorPicker: (_, _, _, _) => null,
-                      bodyItemsOverlay: (editor, rebuildStream) => [
-                        ReactiveWidget(
-                          stream: rebuildStream,
-                          builder: (_) => VideoTextEditorScope(
-                            editor: editor,
-                            child: const VideoEditorTextOverlayControls(),
+              return Column(
+                children: [
+                  // TextEditor with padding when panel is shown
+                  Expanded(
+                    child: TextEditor(
+                      key: _textEditorKey,
+                      layer: widget.layer,
+                      theme: Theme.of(context),
+                      heroTag: widget.layer?.id,
+                      callbacks: ProImageEditorCallbacks(
+                        textEditorCallbacks: TextEditorCallbacks(
+                          onBackgroundModeChanged: (value) {
+                            context.read<VideoEditorTextBloc>().add(
+                              VideoEditorTextBackgroundStyleChanged(value),
+                            );
+                          },
+                          onTextAlignChanged: (value) {
+                            context.read<VideoEditorTextBloc>().add(
+                              VideoEditorTextAlignmentChanged(value),
+                            );
+                          },
+                        ),
+                      ),
+                      configs: ProImageEditorConfigs(
+                        i18n: I18n(
+                          textEditor: I18nTextEditor(inputHintText: ''),
+                        ),
+                        textEditor: TextEditorConfigs(
+                          style: TextEditorStyle(
+                            inputCursorColor: VineTheme.whiteText,
+                            inputTextFieldPadding: .only(left: 16, right: 48),
+                            background:
+                                VideoEditorConstants.textEditorBackground,
+                          ),
+                          resizeToAvoidBottomInset: false,
+                          minFontScale: VideoEditorConstants.minFontScale,
+                          maxFontScale: VideoEditorConstants.maxFontScale,
+                          initFontSize: VideoEditorConstants.baseFontSize,
+                          initFontScale: _getFontScale(fontSize),
+                          initialBackgroundColorMode: backgroundStyle,
+                          initialTextAlign: alignment,
+                          initialPrimaryColor: state.color,
+                          defaultTextStyle: VideoEditorConstants
+                              .textFonts[state.selectedFontIndex](),
+                          inputTextFieldAlign: _getInputAlignment(alignment),
+                          enableAutoOverflow: false,
+                          widgets: TextEditorWidgets(
+                            appBar: (_, _) => null,
+                            bottomBar: (_, _) => null,
+                            colorPicker: (_, _, _, _) => null,
+                            bodyItemsOverlay: (editor, rebuildStream) => [
+                              ReactiveWidget(
+                                stream: rebuildStream,
+                                builder: (_) => VideoTextEditorScope(
+                                  editor: editor,
+                                  child: const VideoEditorTextOverlayControls(),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
 
-            // Bottom panels (font selector / color picker)
-            _KeyboardHeightPanel(
-              showBottomPanel: showBottomPanel,
-              backgroundColor: VideoEditorConstants.textEditorBackground,
-              onKeyboardClosedWithoutPanel: () {
-                if (mounted) context.pop();
-              },
-              builder: (height) => state.showFontSelector
-                  ? VideoEditorTextInlineFontSelector.VideoEditorTextFontSelector(
-                      onFontSelected: (textStyle) {
-                        _textEditorKey.currentState?.setTextStyle(textStyle);
-                      },
-                    )
-                  : VideoEditorColorPickerSheet(
-                      height: height,
-                      selectedColor: state.color,
-                      onColorSelected: (color) {
-                        _textEditorKey.currentState?.primaryColor = color;
-                        context.read<VideoEditorTextBloc>().add(
-                          VideoEditorTextColorSelected(color),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        );
-      },
+                  // Bottom panels (font selector / color picker)
+                  _KeyboardHeightPanel(
+                    showBottomPanel: showBottomPanel,
+                    backgroundColor: VideoEditorConstants.textEditorBackground,
+                    onKeyboardClosedWithoutPanel: () {
+                      if (mounted) context.pop();
+                    },
+                    builder: (height) => state.showFontSelector
+                        ? VideoEditorTextFontSelector(
+                            onFontSelected: (textStyle) {
+                              _textEditorKey.currentState?.setTextStyle(
+                                textStyle,
+                              );
+                            },
+                          )
+                        : VideoEditorColorPickerSheet(
+                            height: height,
+                            selectedColor: state.color,
+                            onColorSelected: (color) {
+                              _textEditorKey.currentState?.primaryColor = color;
+                              context.read<VideoEditorTextBloc>().add(
+                                VideoEditorTextColorSelected(color),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

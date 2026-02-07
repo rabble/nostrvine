@@ -17,6 +17,7 @@ class VideoEditorMainBloc
     on<VideoEditorMainCapabilitiesChanged>(_onCapabilitiesChanged);
     on<VideoEditorLayerInteractionStarted>(_onLayerInteractionStarted);
     on<VideoEditorLayerInteractionEnded>(_onLayerInteractionEnded);
+    on<VideoEditorLayerOverRemoveAreaChanged>(_onLayerOverRemoveAreaChanged);
     on<VideoEditorMainOpenSubEditor>(_onOpenSubEditor);
     on<VideoEditorMainSubEditorClosed>(_onSubEditorClosed);
   }
@@ -40,7 +41,21 @@ class VideoEditorMainBloc
     VideoEditorLayerInteractionEnded event,
     Emitter<VideoEditorMainState> emit,
   ) {
-    emit(state.copyWith(isLayerInteractionActive: false));
+    emit(
+      state.copyWith(
+        isLayerInteractionActive: false,
+        isLayerOverRemoveArea: false,
+      ),
+    );
+  }
+
+  void _onLayerOverRemoveAreaChanged(
+    VideoEditorLayerOverRemoveAreaChanged event,
+    Emitter<VideoEditorMainState> emit,
+  ) {
+    if (state.isLayerOverRemoveArea != event.isOver) {
+      emit(state.copyWith(isLayerOverRemoveArea: event.isOver));
+    }
   }
 
   void _onOpenSubEditor(
