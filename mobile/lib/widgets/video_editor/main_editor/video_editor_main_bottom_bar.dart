@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 
 /// Bottom action bar for the video editor.
@@ -17,7 +18,8 @@ class VideoEditorMainBottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final scope = VideoEditorScope.of(context);
 
-    return Padding(
+    return Container(
+      height: VideoEditorConstants.bottomBarHeight,
       padding: const .fromLTRB(16, 0, 16, 4),
       child: Row(
         mainAxisAlignment: .spaceBetween,

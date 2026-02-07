@@ -71,6 +71,7 @@ class _VideoClipEditorScreenState extends ConsumerState<VideoClipEditorScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: VineTheme.surfaceContainerHigh,
+        systemNavigationBarColor: VineTheme.surfaceContainerHigh,
         statusBarIconBrightness: .light,
         statusBarBrightness: .dark,
       ),

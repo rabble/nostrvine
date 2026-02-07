@@ -99,8 +99,11 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     );
 
     if (sticker != null) {
+      final screenWidth = MediaQuery.sizeOf(context).width;
+      final stickerWidth = screenWidth / 3;
+
       final layer = WidgetLayer(
-        width: 120,
+        width: stickerWidth,
         widget: Semantics(
           label: sticker.description,
           child: VideoEditorSticker(
