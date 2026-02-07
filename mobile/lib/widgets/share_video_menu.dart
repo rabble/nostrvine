@@ -854,7 +854,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
             duration: const Duration(seconds: 2),
           ),
         );
-        context.pop();
+        _safePop(context);
       }
     } catch (e) {
       Log.error(
@@ -948,7 +948,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
             duration: Duration(seconds: 2),
           ),
         );
-        context.pop();
+        _safePop(context);
       }
     } catch (e) {
       Log.error(
@@ -967,7 +967,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
 
     // If list was created successfully, handle closing share menu and showing snackbar
     if (result != null && mounted) {
-      context.pop();
+      _safePop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Created list "$result" and added video')),
@@ -1286,7 +1286,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
             widget.onDismiss!();
           } else if (mounted) {
             // Fallback: close the bottom sheet via Navigator
-            context.pop();
+            _safePop(context);
           }
 
           // Navigate back to previous screen (profile or feed)
@@ -3461,7 +3461,11 @@ class _PublicListsSectionState extends ConsumerState<_PublicListsSection> {
 
   void _navigateToList(CuratedList list) {
     // Close the share menu bottom sheet first
-    context.pop();
+    if (context.canPop()) {
+      context.pop();
+    } else {
+      Navigator.of(context).maybePop();
+    }
 
     // Navigate to the curated list feed screen
     context.push(

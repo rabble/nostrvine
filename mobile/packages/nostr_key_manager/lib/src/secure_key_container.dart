@@ -96,14 +96,21 @@ class SecureKeyContainer {
   SecureKeyContainer.fromNsec(String nsec)
     : this.fromPrivateKeyHex(Nip19.decode(nsec));
 
-  /// Generate a new secure container with a random private key
-  factory SecureKeyContainer.generate() {
+  /// Generate a new secure container with a random private key.
+  ///
+  /// Key generation uses BouncyCastle secp256k1 which can block for
+  /// 200-500ms. This runs in an isolate via [compute] to avoid ANR
+  /// on the main thread.
+  static Future<SecureKeyContainer> generate() async {
     try {
       _log.fine('Generating new secure key container...');
 
-      // Import the nostr_sdk function for key generation
-      // This will be replaced with platform-specific secure generation
-      final privateKeyHex = _generateSecurePrivateKey();
+      // Run key generation in an isolate to avoid blocking the main thread.
+      // BouncyCastle secp256k1 prime generation takes 200-500ms.
+      final privateKeyHex = await compute(
+        (_) => _generateSecurePrivateKey(),
+        null,
+      );
 
       _log.info('Secure key generated successfully');
       return SecureKeyContainer.fromPrivateKeyHex(privateKeyHex);
@@ -112,6 +119,7 @@ class SecureKeyContainer {
       rethrow;
     }
   }
+
   late final Uint8List _privateKeyBytes;
   late final Uint8List _publicKeyBytes;
   late final String _npub;

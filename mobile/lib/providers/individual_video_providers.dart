@@ -405,7 +405,16 @@ VideoPlayerController individualVideoController(
   bool? _lastHasError;
 
   void stateChangeListener() {
-    final value = controller.value;
+    // Guard against platform callbacks firing after player disposal.
+    // AVFoundation/ExoPlayer may fire async callbacks after the Dart-side
+    // controller is invalidated via Riverpod, causing "No active player" errors.
+    final VideoPlayerValue value;
+    try {
+      value = controller.value;
+    } catch (e) {
+      if (_isDisposalError(e)) return;
+      rethrow;
+    }
 
     // Only log significant state changes, not every position update
     final isInitialized = value.isInitialized;

@@ -34,7 +34,9 @@ class VideoMetadataClipPreview extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Get the first (and only) clip from manager
-    final clip = ref.watch(clipManagerProvider).clips.first;
+    final clips = ref.watch(clipManagerProvider).clips;
+    if (clips.isEmpty) return const SizedBox.shrink();
+    final clip = clips.first;
     // Watch processing state and rendered clip
     final state = ref.watch(
       videoEditorProvider.select(
