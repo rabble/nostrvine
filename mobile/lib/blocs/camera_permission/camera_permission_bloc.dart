@@ -62,13 +62,10 @@ class CameraPermissionBloc
         return;
       }
 
-      final galleryStatus = await _permissionsService
-          .requestGalleryPermission();
-
-      if (galleryStatus != PermissionStatus.granted) {
-        emit(const CameraPermissionDenied());
-        return;
-      }
+      // Note: Gallery permission is optional. We don't block recording if
+      // gallery access is denied - the video will still upload, just won't
+      // be saved locally.
+      await _permissionsService.requestGalleryPermission();
 
       emit(const CameraPermissionLoaded(CameraPermissionStatus.authorized));
     } catch (e) {
@@ -127,21 +124,18 @@ class CameraPermissionBloc
 
   /// Check the status of camera, microphone, and gallery permissions.
   Future<CameraPermissionStatus> checkPermissions() async {
-    final (cameraStatus, micStatus, galleryStatus) = await (
+    final (cameraStatus, micStatus) = await (
       _permissionsService.checkCameraStatus(),
       _permissionsService.checkMicrophoneStatus(),
-      _permissionsService.checkGalleryStatus(),
     ).wait;
 
     if (cameraStatus == PermissionStatus.granted &&
-        micStatus == PermissionStatus.granted &&
-        galleryStatus == PermissionStatus.granted) {
+        micStatus == PermissionStatus.granted) {
       return CameraPermissionStatus.authorized;
     }
 
     if (cameraStatus == PermissionStatus.requiresSettings ||
-        micStatus == PermissionStatus.requiresSettings ||
-        galleryStatus == PermissionStatus.requiresSettings) {
+        micStatus == PermissionStatus.requiresSettings) {
       return CameraPermissionStatus.requiresSettings;
     }
 
