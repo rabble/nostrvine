@@ -54,16 +54,21 @@ final fallbackUrlCacheProvider = StateProvider<Map<String, String>>(
 const _blossomFallbackServer = 'https://media.divine.video';
 
 /// Track controllers that have been scheduled for disposal.
-/// This prevents race conditions where async callbacks try to use disposed controllers.
-/// Key: videoId, Value: true if disposal has been scheduled
-final _disposedControllersProvider = StateProvider<Set<String>>((ref) => {});
+/// This prevents race conditions where async callbacks try to use disposed
+/// controllers. Marked synchronously in `ref.onDispose` (before the deferred
+/// `controller.dispose()` microtask) so that widgets can check whether the
+/// native player is still alive before building [VideoPlayer].
+///
+/// Public so that widget-layer code (e.g. [_SafeVideoPlayer]) can read it
+/// via `ref.watch` / `ref.read`.
+final disposedControllersProvider = StateProvider<Set<String>>((ref) => {});
 
 /// Check if a video controller has been scheduled for disposal.
 /// Use this before any controller operation to prevent "No active player" crashes.
 /// Note: This function is available for widgets but the safe* helpers below
 /// are the preferred approach for most use cases.
 bool isControllerDisposed(Ref ref, String videoId) {
-  return ref.read(_disposedControllersProvider).contains(videoId);
+  return ref.read(disposedControllersProvider).contains(videoId);
 }
 
 /// Safe wrapper for async controller operations that may fail after disposal.
@@ -267,6 +272,19 @@ VideoPlayerController individualVideoController(
     // New listener added - cancel the disposal timer
     cacheTimer?.cancel();
   });
+
+  // Clear the disposed flag for this video since we are creating a fresh
+  // controller (handles retries and scroll-back scenarios).
+  try {
+    final currentDisposed = ref.read(disposedControllersProvider);
+    if (currentDisposed.contains(params.videoId)) {
+      ref.read(disposedControllersProvider.notifier).state = {
+        ...currentDisposed,
+      }..remove(params.videoId);
+    }
+  } catch (_) {
+    // Ignore - provider may not be available during startup
+  }
 
   Log.info(
     '🎬 Creating VideoPlayerController for video ${params.videoId.length > 8 ? params.videoId : params.videoId}...',
@@ -890,6 +908,25 @@ VideoPlayerController individualVideoController(
 
     // Remove state change listener before disposal
     controller.removeListener(stateChangeListener);
+
+    // Mark controller as disposed IMMEDIATELY (synchronously) so that
+    // any widget that rebuilds before the microtask runs can check this
+    // flag and avoid calling VideoPlayer with a stale controller.
+    // This prevents the "No active player with ID" crash (Crashlytics issue).
+    try {
+      final currentDisposed = ref.read(disposedControllersProvider);
+      ref.read(disposedControllersProvider.notifier).state = {
+        ...currentDisposed,
+        params.videoId,
+      };
+    } catch (e) {
+      // Provider may already be disposed - ignore since this is cleanup code
+      Log.debug(
+        'Could not mark controller as disposed: $e',
+        name: 'IndividualVideoController',
+        category: LogCategory.video,
+      );
+    }
 
     // Defer controller disposal to avoid triggering listener callbacks during lifecycle
     // This prevents "Cannot use Ref inside life-cycles" errors when listeners try to access providers

@@ -133,17 +133,21 @@ class ProfileFeed extends _$ProfileFeed {
 
       videoEventService.addListener(checkStability);
 
-      // Also set a maximum wait time
-      Timer(const Duration(seconds: 3), () {
+      // Also set a maximum wait time (1.5s is sufficient since relay EOSE
+      // typically arrives in ~300ms; reduces wait for 0-video profiles)
+      Timer(const Duration(milliseconds: 1500), () {
         if (!completer.isCompleted) {
           completer.complete();
         }
       });
 
       // Trigger initial check
+      final waitStart = DateTime.now();
       checkStability();
 
       await completer.future;
+
+      final waitDuration = DateTime.now().difference(waitStart);
 
       // Clean up
       videoEventService.removeListener(checkStability);
@@ -155,10 +159,14 @@ class ProfileFeed extends _$ProfileFeed {
           .where((v) => !v.isRepost)
           .toList();
 
-      // If initial load returned 0 videos, retry once.
-      // This handles the case where a relay reconnect killed the subscription
-      // mid-load, causing stability detection to complete with 0 results.
-      if (authorVideos.isEmpty) {
+      // If initial load returned 0 videos, retry once — but only if the wait
+      // hit the timeout ceiling. A fast completion with 0 results means the
+      // relay sent EOSE promptly with no events (user genuinely has no videos),
+      // so retrying the same subscription is pointless. We only retry when the
+      // timeout fired, which suggests a relay reconnect may have killed the
+      // subscription mid-load.
+      final hitTimeout = waitDuration.inMilliseconds >= 1400;
+      if (authorVideos.isEmpty && hitTimeout) {
         Log.warning(
           'ProfileFeed: Initial load returned 0 videos for user=$userId, '
           'retrying once',
@@ -188,7 +196,7 @@ class ProfileFeed extends _$ProfileFeed {
 
         videoEventService.addListener(checkRetryStability);
 
-        Timer(const Duration(seconds: 5), () {
+        Timer(const Duration(seconds: 2), () {
           if (!retryCompleter.isCompleted) {
             retryCompleter.complete();
           }

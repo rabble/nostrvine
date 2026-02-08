@@ -280,6 +280,64 @@ class VideoEditorRenderService {
     }
   }
 
+  /// Crops a video to the specified aspect ratio.
+  ///
+  /// Returns the path to the cropped video file, or the original path if no
+  /// cropping is needed.
+  static Future<String> cropToAspectRatio({
+    required EditorVideo video,
+    required model.AspectRatio aspectRatio,
+    bool enableAudio = true,
+    VideoMetadata? metadata,
+  }) async {
+    metadata ??= await ProVideoEditor.instance.getMetadata(video);
+    final resolution = metadata.resolution;
+    final cropParams = _CropParameters.forAspectRatio(
+      resolution: resolution,
+      aspectRatio: aspectRatio,
+    );
+
+    // No cropping needed if video already matches target aspect ratio
+    if (!cropParams.needsCropping(resolution)) {
+      Log.debug(
+        '⏭️ Video already matches target aspect ratio - no crop needed',
+        name: _logName,
+        category: .video,
+      );
+      return await video.safeFilePath();
+    }
+
+    Log.debug(
+      '✂️ Cropping video from ${resolution.width.round()}x${resolution.height.round()} '
+      'to ${cropParams.width}x${cropParams.height}',
+      name: _logName,
+      category: .video,
+    );
+
+    final tempDir = await getTemporaryDirectory();
+    final outputPath = path.join(
+      tempDir.path,
+      'cropped_${DateTime.now().microsecondsSinceEpoch}.mp4',
+    );
+
+    final task = VideoRenderData(
+      video: video,
+      enableAudio: enableAudio,
+      shouldOptimizeForNetworkUse: true,
+      transform: cropParams.toExportTransform(),
+    );
+
+    await ProVideoEditor.instance.renderVideoToFile(outputPath, task);
+
+    Log.debug(
+      '✅ Video cropped to: $outputPath',
+      name: _logName,
+      category: .video,
+    );
+
+    return outputPath;
+  }
+
   /// Normalizes all clips to the target aspect ratio.
   ///
   /// Optimizes rendering by:

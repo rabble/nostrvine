@@ -387,6 +387,36 @@ Future<void> _startOpenVineApp() async {
       return;
     }
 
+    // Downgrade "No active player with ID" errors from FATAL to non-fatal.
+    // This is a known race condition where the native video player
+    // (AVFoundation/ExoPlayer) is disposed during tab switches or feed
+    // scrolling, but the Flutter VideoPlayer widget still tries to rebuild
+    // with the stale player ID. The primary defense is _SafeVideoPlayer
+    // in video_feed_item.dart, but this catch handles any cases that slip
+    // through (e.g. timing gaps).
+    final errorStr = details.exception.toString();
+    if (errorStr.contains('No active player with ID') ||
+        (errorStr.contains('Bad state') && errorStr.contains('player'))) {
+      Log.warning(
+        'Video player disposed race condition (non-fatal): '
+        '${details.exception}',
+        name: 'Main',
+      );
+      // Record as non-fatal in Crashlytics (if available) instead of
+      // letting it propagate as a fatal crash.
+      try {
+        FirebaseCrashlytics.instance.recordError(
+          details.exception,
+          details.stack,
+          reason: 'Video player disposed race condition',
+        );
+      } catch (_) {}
+      // Still show the error widget (dark placeholder) but don't report
+      // as fatal.
+      FlutterError.presentError(details);
+      return;
+    }
+
     // For other errors, forward to any existing handler (e.g., Crashlytics),
     // then use default presentation which will now use our ErrorWidget.builder
     try {

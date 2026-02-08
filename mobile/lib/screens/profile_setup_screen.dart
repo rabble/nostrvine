@@ -1724,16 +1724,16 @@ class _ProfileColorPicker extends StatelessWidget {
   final Color? selectedColor;
   final ValueChanged<Color?> onColorChanged;
 
-  // Preset colors inspired by classic Vine profile colors
+  // Preset colors from VineTheme brand accent palette
   static const _presetColors = [
-    Color(0xFF33CCBF), // Teal (Vine default)
-    Color(0xFF6B93D6), // Blue
-    Color(0xFF9B59B6), // Purple
-    Color(0xFFE74C3C), // Red
-    Color(0xFFF39C12), // Orange
-    Color(0xFF2ECC71), // Green
-    Color(0xFFE91E63), // Pink
-    Color(0xFF00BCD4), // Cyan
+    VineTheme.vineGreen, // Green (brand primary)
+    VineTheme.accentBlue, // Blue
+    VineTheme.accentPurple, // Purple
+    VineTheme.likeRed, // Red
+    VineTheme.accentOrange, // Orange
+    VineTheme.accentLime, // Lime
+    VineTheme.accentPink, // Pink
+    VineTheme.accentViolet, // Violet
   ];
 
   @override
@@ -1843,7 +1843,7 @@ class _CustomColorButton extends StatelessWidget {
   }
 
   Future<void> _showColorPicker(BuildContext context) async {
-    Color pickerColor = currentColor ?? const Color(0xFF33CCBF);
+    Color pickerColor = currentColor ?? VineTheme.vineGreen;
 
     final result = await showDialog<Color>(
       context: context,

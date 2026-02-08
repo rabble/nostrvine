@@ -38,6 +38,16 @@ class NotificationServiceEnhanced {
   final Map<String, StreamSubscription> _subscriptions = {};
   final Lock _notificationLock = Lock(); // Mutex for atomic deduplication
 
+  /// Broadcast stream for new notifications (used by real-time bridge)
+  final StreamController<NotificationModel> _newNotificationController =
+      StreamController<NotificationModel>.broadcast();
+
+  /// Stream that emits each new notification after dedup check passes.
+  /// Used by the real-time bridge provider to push WebSocket notifications
+  /// into the Riverpod state.
+  Stream<NotificationModel> get onNewNotification =>
+      _newNotificationController.stream;
+
   NostrClient? _nostrService;
   UserProfileService? _profileService;
   VideoEventService? _videoService;
@@ -442,6 +452,11 @@ class NotificationServiceEnhanced {
         await _showPlatformNotification(notification);
       }
 
+      // Emit to stream for real-time bridge
+      if (!_newNotificationController.isClosed) {
+        _newNotificationController.add(notification);
+      }
+
       // Keep only recent notifications
       if (_notifications.length > 100) {
         _notifications.removeRange(100, _notifications.length);
@@ -748,6 +763,9 @@ class NotificationServiceEnhanced {
     if (_disposed) return;
 
     _disposed = true;
+
+    // Close notification stream
+    _newNotificationController.close();
 
     // Cancel all subscriptions
     for (final subscription in _subscriptions.values) {

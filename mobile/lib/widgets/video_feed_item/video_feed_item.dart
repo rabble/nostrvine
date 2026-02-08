@@ -913,7 +913,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                 child: SizedBox(
                                   width: videoWidth,
                                   height: videoHeight,
-                                  child: VideoPlayer(controller),
+                                  child: _SafeVideoPlayer(
+                                    controller: controller,
+                                    videoId: video.id,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1099,6 +1102,57 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       },
       child: child,
     );
+  }
+}
+
+/// A wrapper around [VideoPlayer] that guards against "No active player
+/// with ID" crashes caused by the native AVFoundation/ExoPlayer being
+/// disposed while the Flutter widget tree still references the controller.
+///
+/// This race condition occurs during tab switches or feed scrolling when
+/// Riverpod auto-disposes the [VideoPlayerController] (via `Future.microtask`)
+/// while the [ValueListenableBuilder] still holds a reference and triggers
+/// a rebuild.
+///
+/// The widget performs two layers of defense:
+/// 1. **Pre-build**: Checks [disposedControllersProvider] which is marked
+///    synchronously in the Riverpod `onDispose` callback, BEFORE the deferred
+///    `controller.dispose()` microtask runs. If the video ID is in the set,
+///    the native player is gone (or will be momentarily) and we show a
+///    placeholder instead.
+/// 2. **Fallback**: If the pre-build check misses the race (e.g. the disposal
+///    happened outside our provider lifecycle), the error is handled at the
+///    [FlutterError.onError] level in `main.dart` where it is downgraded from
+///    FATAL to non-fatal, and the global [ErrorWidget.builder] renders a dark
+///    placeholder.
+class _SafeVideoPlayer extends ConsumerWidget {
+  const _SafeVideoPlayer({required this.controller, required this.videoId});
+
+  final VideoPlayerController controller;
+  final String videoId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Check the disposed-controllers set. This is marked synchronously in
+    // Riverpod's onDispose, so it is always up-to-date BEFORE the deferred
+    // controller.dispose() microtask removes the native player.
+    final isDisposed = ref.watch(
+      disposedControllersProvider.select(
+        (disposed) => disposed.contains(videoId),
+      ),
+    );
+
+    if (isDisposed) {
+      Log.debug(
+        'SafeVideoPlayer: controller for $videoId is marked disposed, '
+        'showing placeholder',
+        name: 'SafeVideoPlayer',
+        category: LogCategory.video,
+      );
+      return const SizedBox.shrink();
+    }
+
+    return VideoPlayer(controller);
   }
 }
 

@@ -12,6 +12,7 @@ import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// Bottom bar with "Save for Later" and "Post" buttons for video metadata.
 ///
@@ -116,7 +117,7 @@ class _SaveForLaterButton extends ConsumerWidget {
       final videoPath = await recordingClips.first.video.safeFilePath();
       final gallerySaveService = ref.read(gallerySaveServiceProvider);
       final galleryResult = await gallerySaveService.saveVideoToGallery(
-        videoPath,
+        EditorVideo.file(videoPath),
       );
 
       gallerySaveMessage = switch (galleryResult) {
