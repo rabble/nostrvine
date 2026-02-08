@@ -139,7 +139,8 @@ void main() {
       );
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
-        'emits [Denied] when gallery permission denied',
+        'emits [Loaded(authorized)] when gallery permission denied '
+        '(gallery is optional)',
         setUp: () {
           when(
             () => mockPermissionsService.requestCameraPermission(),
@@ -158,7 +159,9 @@ void main() {
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
-        expect: () => [const CameraPermissionDenied()],
+        expect: () => [
+          const CameraPermissionLoaded(CameraPermissionStatus.authorized),
+        ],
       );
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
@@ -199,7 +202,8 @@ void main() {
       );
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
-        'emits [Denied] when gallery permission requires settings',
+        'emits [Loaded(authorized)] when gallery permission requires settings '
+        '(gallery is optional)',
         setUp: () {
           when(
             () => mockPermissionsService.requestCameraPermission(),
@@ -218,7 +222,9 @@ void main() {
         seed: () =>
             const CameraPermissionLoaded(CameraPermissionStatus.canRequest),
         act: (bloc) => bloc.add(const CameraPermissionRequest()),
-        expect: () => [const CameraPermissionDenied()],
+        expect: () => [
+          const CameraPermissionLoaded(CameraPermissionStatus.authorized),
+        ],
       );
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
@@ -352,28 +358,7 @@ void main() {
         ],
       );
 
-      blocTest<CameraPermissionBloc, CameraPermissionState>(
-        'emits [Loaded(requiresSettings)] when gallery requires settings',
-        setUp: () {
-          when(
-            () => mockPermissionsService.checkCameraStatus(),
-          ).thenAnswer((_) async => PermissionStatus.granted);
-          when(
-            () => mockPermissionsService.checkMicrophoneStatus(),
-          ).thenAnswer((_) async => PermissionStatus.granted);
-          when(
-            () => mockPermissionsService.checkGalleryStatus(),
-          ).thenAnswer((_) async => PermissionStatus.requiresSettings);
-        },
-        build: () => CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
-        ),
-        act: (bloc) => bloc.add(const CameraPermissionRefresh()),
-        expect: () => [
-          const CameraPermissionLoaded(CameraPermissionStatus.requiresSettings),
-        ],
-      );
+      // Gallery permission is now optional - doesn't affect refresh status
 
       blocTest<CameraPermissionBloc, CameraPermissionState>(
         'emits [Error] when checkPermissions throws',
@@ -483,25 +468,7 @@ void main() {
         },
       );
 
-      test('returns requiresSettings when gallery requires settings', () async {
-        when(
-          () => mockPermissionsService.checkCameraStatus(),
-        ).thenAnswer((_) async => PermissionStatus.granted);
-        when(
-          () => mockPermissionsService.checkMicrophoneStatus(),
-        ).thenAnswer((_) async => PermissionStatus.granted);
-        when(
-          () => mockPermissionsService.checkGalleryStatus(),
-        ).thenAnswer((_) async => PermissionStatus.requiresSettings);
-
-        final bloc = CameraPermissionBloc(
-          permissionsService: mockPermissionsService,
-          skipMacOSBypass: true,
-        );
-        final result = await bloc.checkPermissions();
-
-        expect(result, CameraPermissionStatus.requiresSettings);
-      });
+      // Gallery permission is now optional - doesn't affect checkPermissions
 
       test('returns canRequest when permissions can be requested', () async {
         when(
