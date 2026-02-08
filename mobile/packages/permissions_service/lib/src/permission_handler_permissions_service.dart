@@ -59,7 +59,9 @@ class PermissionHandlerPermissionsService implements PermissionsService {
   }
 
   @override
-  Future<bool> openAppSettings() => ph.openAppSettings(); // coverage:ignore-line
+  // coverage:ignore-start
+  Future<bool> openAppSettings() => ph.openAppSettings();
+  // coverage:ignore-end
 
   @override
   Future<PermissionStatus> checkGalleryStatus() async {
