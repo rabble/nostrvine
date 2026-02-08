@@ -817,6 +817,59 @@ final class GeoBlockingServiceProvider
 String _$geoBlockingServiceHash() =>
     r'0475466204746fb8b4c6dd614847e3853d360d12';
 
+/// Permissions service for checking and requesting OS permissions
+
+@ProviderFor(permissionsService)
+const permissionsServiceProvider = PermissionsServiceProvider._();
+
+/// Permissions service for checking and requesting OS permissions
+
+final class PermissionsServiceProvider
+    extends
+        $FunctionalProvider<
+          PermissionsService,
+          PermissionsService,
+          PermissionsService
+        >
+    with $Provider<PermissionsService> {
+  /// Permissions service for checking and requesting OS permissions
+  const PermissionsServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'permissionsServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$permissionsServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<PermissionsService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  PermissionsService create(Ref ref) {
+    return permissionsService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(PermissionsService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<PermissionsService>(value),
+    );
+  }
+}
+
+String _$permissionsServiceHash() =>
+    r'7212219b8e720fe0fcd19ae7e9313e2c5c5be1d5';
+
 /// Gallery save service for saving videos to device camera roll
 
 @ProviderFor(gallerySaveService)
@@ -868,7 +921,7 @@ final class GallerySaveServiceProvider
 }
 
 String _$gallerySaveServiceHash() =>
-    r'4b0658e0f13e5f4adb34c0bb80d8469a9eb30a2f';
+    r'8d7d0ea856c9bbd1923895e6878e351ea8f9524d';
 
 /// Secure key storage service (foundational service)
 

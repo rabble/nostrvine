@@ -7,6 +7,7 @@ import 'package:gal/gal.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:permissions_service/permissions_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// Result of a gallery save operation.
@@ -31,6 +32,12 @@ class GallerySaveFailure extends GallerySaveResult {
 /// when publishing. It handles permission requests internally via the gal
 /// package and never throws exceptions - instead returning a result object.
 class GallerySaveService {
+  /// Creates a [GallerySaveService] with the given [permissionsService].
+  const GallerySaveService({required PermissionsService permissionsService})
+    : _permissionsService = permissionsService;
+
+  final PermissionsService _permissionsService;
+
   /// Saves a video file to the device's camera roll/gallery.
   ///
   /// This method:
@@ -73,19 +80,15 @@ class GallerySaveService {
         return const GallerySaveFailure('File does not exist');
       }
 
-      // Check if we have permission (gal handles requesting if needed)
-      final hasAccess = await Gal.hasAccess(toAlbum: true);
-      if (!hasAccess) {
-        // Request permission
-        final granted = await Gal.requestAccess(toAlbum: true);
-        if (!granted) {
-          Log.warning(
-            'Gallery save skipped: permission denied',
-            name: 'GallerySaveService',
-            category: LogCategory.video,
-          );
-          return const GallerySaveFailure('Permission denied');
-        }
+      // Check gallery permission (should already be granted from camera flow)
+      final status = await _permissionsService.checkGalleryStatus();
+      if (status != PermissionStatus.granted) {
+        Log.warning(
+          'Gallery save skipped: permission not granted (status: $status)',
+          name: 'GallerySaveService',
+          category: LogCategory.video,
+        );
+        return const GallerySaveFailure('Permission denied');
       }
 
       // Save the video to the gallery

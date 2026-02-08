@@ -11,11 +11,11 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
-import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
@@ -474,11 +474,13 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
     // Save clip to device gallery (fire-and-forget)
     unawaited(
-      GallerySaveService().saveVideoToGallery(
-        videoResult,
-        aspectRatio: state.aspectRatio,
-        metadata: metadata,
-      ),
+      ref
+          .read(gallerySaveServiceProvider)
+          .saveVideoToGallery(
+            videoResult,
+            aspectRatio: state.aspectRatio,
+            metadata: metadata,
+          ),
     );
 
     // Generate and attach thumbnail.

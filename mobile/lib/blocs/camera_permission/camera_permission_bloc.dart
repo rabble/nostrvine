@@ -62,6 +62,14 @@ class CameraPermissionBloc
         return;
       }
 
+      final galleryStatus = await _permissionsService
+          .requestGalleryPermission();
+
+      if (galleryStatus != PermissionStatus.granted) {
+        emit(const CameraPermissionDenied());
+        return;
+      }
+
       emit(const CameraPermissionLoaded(CameraPermissionStatus.authorized));
     } catch (e) {
       emit(const CameraPermissionError());
@@ -117,20 +125,23 @@ class CameraPermissionBloc
     await _permissionsService.openAppSettings();
   }
 
-  /// Check the status of camera and microphone permissions.
+  /// Check the status of camera, microphone, and gallery permissions.
   Future<CameraPermissionStatus> checkPermissions() async {
-    final (cameraStatus, micStatus) = await (
+    final (cameraStatus, micStatus, galleryStatus) = await (
       _permissionsService.checkCameraStatus(),
       _permissionsService.checkMicrophoneStatus(),
+      _permissionsService.checkGalleryStatus(),
     ).wait;
 
     if (cameraStatus == PermissionStatus.granted &&
-        micStatus == PermissionStatus.granted) {
+        micStatus == PermissionStatus.granted &&
+        galleryStatus == PermissionStatus.granted) {
       return CameraPermissionStatus.authorized;
     }
 
     if (cameraStatus == PermissionStatus.requiresSettings ||
-        micStatus == PermissionStatus.requiresSettings) {
+        micStatus == PermissionStatus.requiresSettings ||
+        galleryStatus == PermissionStatus.requiresSettings) {
       return CameraPermissionStatus.requiresSettings;
     }
 

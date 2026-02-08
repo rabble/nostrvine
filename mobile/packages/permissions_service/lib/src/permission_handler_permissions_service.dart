@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
 import 'package:meta/meta.dart';
 import 'package:permission_handler/permission_handler.dart' as ph;
 import 'package:permissions_service/src/models/models.dart';
@@ -49,6 +50,32 @@ class PermissionHandlerPermissionsService implements PermissionsService {
 
   @override
   Future<bool> openAppSettings() => ph.openAppSettings();
+
+  @override
+  Future<PermissionStatus> checkGalleryStatus() async {
+    // Web: No permissions needed, browser handles downloads
+    if (kIsWeb) return .granted;
+
+    // Android: storage permission
+    // iOS: photosAddOnly for saving media
+    final permission = defaultTargetPlatform == .android
+        ? ph.Permission.storage
+        : ph.Permission.photosAddOnly;
+    final status = await permission.status;
+    return mapPermissionStatus(status);
+  }
+
+  @override
+  Future<PermissionStatus> requestGalleryPermission() async {
+    // Web: No permissions needed, browser handles downloads
+    if (kIsWeb) return .granted;
+
+    final permission = defaultTargetPlatform == .android
+        ? ph.Permission.storage
+        : ph.Permission.photosAddOnly;
+    final status = await permission.request();
+    return mapPermissionStatus(status);
+  }
 
   /// Maps a permission_handler [ph.PermissionStatus] to our domain
   /// [PermissionStatus].
