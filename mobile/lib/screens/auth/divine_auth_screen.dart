@@ -2,6 +2,7 @@
 // ABOUTME: Handles both login and registration with email verification flow
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
@@ -186,6 +187,9 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
       final authService = ref.read(authServiceProvider);
       await authService.signInWithDivineOAuth(session);
 
+      // Signal password manager to save credentials
+      TextInput.finishAutofillContext();
+
       // Navigation will be handled by auth state listener
     } on OAuthException catch (e) {
       _setErrorMessage(e.message);
@@ -252,7 +256,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                 controller: _tabController,
                 indicatorColor: Colors.white,
                 labelColor: Colors.white,
-                unselectedLabelColor: Colors.white60,
+                unselectedLabelColor: VineTheme.onSurfaceMuted,
                 tabs: const [
                   Tab(text: 'Log In'),
                   Tab(text: 'Create Account'),
@@ -317,7 +321,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                                   _obscurePassword
                                       ? Icons.visibility_off
                                       : Icons.visibility,
-                                  color: Colors.white60,
+                                  color: VineTheme.onSurfaceMuted,
                                 ),
                                 onPressed: () => setState(
                                   () => _obscurePassword = !_obscurePassword,
@@ -352,7 +356,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                                               _obscureConfirmPassword
                                                   ? Icons.visibility_off
                                                   : Icons.visibility,
-                                              color: Colors.white60,
+                                              color: VineTheme.onSurfaceMuted,
                                             ),
                                             onPressed: () => setState(
                                               () => _obscureConfirmPassword =
@@ -382,7 +386,8 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: Colors.white,
                                 foregroundColor: VineTheme.vineGreen,
-                                disabledBackgroundColor: Colors.white60,
+                                disabledBackgroundColor:
+                                    VineTheme.onSurfaceMuted,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                 ),
@@ -416,7 +421,9 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                               onPressed: _showForgotPasswordDialog,
                               child: const Text(
                                 'Forgot Password?',
-                                style: TextStyle(color: Colors.white70),
+                                style: TextStyle(
+                                  color: VineTheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
                         ],
@@ -477,7 +484,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
             onPressed: dialogContext.pop,
             child: const Text(
               'Cancel',
-              style: TextStyle(color: Colors.white60),
+              style: TextStyle(color: VineTheme.onSurfaceMuted),
             ),
           ),
           ElevatedButton(
