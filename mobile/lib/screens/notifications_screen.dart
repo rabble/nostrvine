@@ -188,33 +188,53 @@ class _NotificationTabContentState
         if (notifications.isEmpty) {
           return Container(
             color: VineTheme.backgroundColor,
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.notifications_none,
-                    size: 64,
-                    color: VineTheme.lightText,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    widget.filter == null
-                        ? 'No notifications yet'
-                        : 'No ${_getFilterName(widget.filter!)} notifications',
-                    style: TextStyle(
-                      fontSize: 18,
-                      color: VineTheme.secondaryText,
+            child: RefreshIndicator(
+              semanticsLabel: 'checking for new notifications',
+              color: VineTheme.onPrimary,
+              backgroundColor: VineTheme.vineGreen,
+              onRefresh: () async {
+                await ref.read(relayNotificationsProvider.notifier).refresh();
+              },
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  child: SizedBox(
+                    height: constraints.maxHeight,
+                    child: Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.notifications_none,
+                            size: 64,
+                            color: VineTheme.lightText,
+                          ),
+                          const SizedBox(height: 16),
+                          Text(
+                            widget.filter == null
+                                ? 'No notifications yet'
+                                : 'No ${_getFilterName(widget.filter!)}'
+                                      ' notifications',
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: VineTheme.secondaryText,
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            "When people interact with your content,\n"
+                            "you'll see it here",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: VineTheme.lightText,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    "When people interact with your content,\n"
-                    "you'll see it here",
-                    textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 14, color: VineTheme.lightText),
-                  ),
-                ],
+                ),
               ),
             ),
           );
