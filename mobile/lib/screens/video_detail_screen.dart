@@ -11,6 +11,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class VideoDetailScreen extends ConsumerStatefulWidget {
@@ -69,6 +70,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
             _video = video;
             _isLoading = false;
           });
+          ScreenAnalyticsService().markDataLoaded('video_detail');
         }
         return;
       }
@@ -95,6 +97,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
             _video = fetchedVideo;
             _isLoading = false;
           });
+          ScreenAnalyticsService().markDataLoaded('video_detail');
         }
       } else {
         Log.warning(
