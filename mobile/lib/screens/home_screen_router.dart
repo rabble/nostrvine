@@ -13,6 +13,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -162,6 +163,11 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                 ),
               );
             }
+
+            ScreenAnalyticsService().markDataLoaded(
+              'home_feed',
+              dataMetrics: {'video_count': videos.length},
+            );
 
             // Determine target index from route context (index-based routing)
             urlIndex = (ctx.videoIndex ?? 0).clamp(0, videos.length - 1);

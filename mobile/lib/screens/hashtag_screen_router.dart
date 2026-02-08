@@ -10,6 +10,7 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/hashtag_feed_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Router-aware hashtag screen that shows grid or feed based on route
@@ -90,6 +91,10 @@ class _HashtagScreenRouterState extends ConsumerState<HashtagScreenRouter>
         ),
       ),
       onData: (feedState) {
+        ScreenAnalyticsService().markDataLoaded(
+          'hashtag_feed',
+          dataMetrics: {'video_count': feedState.videos.length},
+        );
         final videos = feedState.videos;
 
         if (videos.isEmpty) {

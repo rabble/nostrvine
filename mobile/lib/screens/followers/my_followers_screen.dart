@@ -10,6 +10,7 @@ import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
 import 'package:openvine/widgets/user_profile_tile.dart';
@@ -102,7 +103,15 @@ class _MyFollowersView extends StatelessWidget {
               : 0,
         ),
       ),
-      body: BlocBuilder<MyFollowersBloc, MyFollowersState>(
+      body: BlocConsumer<MyFollowersBloc, MyFollowersState>(
+        listener: (context, state) {
+          if (state.status == MyFollowersStatus.success) {
+            ScreenAnalyticsService().markDataLoaded(
+              'followers',
+              dataMetrics: {'followers_count': state.followersPubkeys.length},
+            );
+          }
+        },
         builder: (context, state) {
           return switch (state.status) {
             MyFollowersStatus.initial || MyFollowersStatus.loading =>

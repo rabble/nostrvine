@@ -2,6 +2,7 @@
 // ABOUTME: Tracks screen load times, navigation patterns, and user engagement metrics
 
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:openvine/services/page_load_history.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Service for tracking screen navigation, performance, and user engagement
@@ -11,7 +12,10 @@ class ScreenAnalyticsService {
   factory ScreenAnalyticsService() => _instance;
   ScreenAnalyticsService._internal();
 
-  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+  // Lazy-init to avoid crashing when Firebase isn't initialized (e.g. tests).
+  FirebaseAnalytics? _analyticsInstance;
+  FirebaseAnalytics get _analytics =>
+      _analyticsInstance ??= FirebaseAnalytics.instance;
   final Map<String, _ScreenSession> _activeSessions = {};
 
   String? _currentScreen;
@@ -57,6 +61,22 @@ class ScreenAnalyticsService {
         ...session.params,
       },
     );
+
+    // Record to page load history
+    PageLoadHistory().addOrUpdate(
+      PageLoadRecord(
+        screenName: screenName,
+        timestamp: session.loadStartTime,
+        contentVisibleMs: loadTime,
+      ),
+    );
+
+    // PERF summary log
+    final slowFlag = loadTime > 1000 ? ' [SLOW]' : '';
+    UnifiedLogger.info(
+      'PERF: $screenName — visible: ${loadTime}ms$slowFlag',
+      name: 'PagePerf',
+    );
   }
 
   /// Mark when screen data is fully loaded (async data fetched)
@@ -83,6 +103,32 @@ class ScreenAnalyticsService {
         if (dataMetrics != null) ...dataMetrics,
         ...session.params,
       },
+    );
+
+    // Record to page load history
+    final contentVisibleMs = session.contentVisibleTime != null
+        ? session.contentVisibleTime!
+              .difference(session.loadStartTime)
+              .inMilliseconds
+        : null;
+    PageLoadHistory().addOrUpdate(
+      PageLoadRecord(
+        screenName: screenName,
+        timestamp: session.loadStartTime,
+        contentVisibleMs: contentVisibleMs,
+        dataLoadedMs: dataLoadTime,
+        dataMetrics: dataMetrics ?? {},
+      ),
+    );
+
+    // PERF summary log
+    final visibleStr = contentVisibleMs != null
+        ? 'visible: ${contentVisibleMs}ms, '
+        : '';
+    final slowFlag = dataLoadTime > 3000 ? ' [SLOW]' : '';
+    UnifiedLogger.info(
+      'PERF: $screenName — ${visibleStr}data: ${dataLoadTime}ms$slowFlag',
+      name: 'PagePerf',
     );
   }
 
