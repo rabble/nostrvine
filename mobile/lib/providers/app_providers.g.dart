@@ -2301,17 +2301,17 @@ final class UserProfileServiceProvider
 String _$userProfileServiceHash() =>
     r'c794efc557e51b13c9cf3ff59fd3f56f1582cbd0';
 
-/// Social service depends on Nostr service and Auth service
+/// Social service depends on Nostr service, Auth service, and Analytics API
 
 @ProviderFor(socialService)
 const socialServiceProvider = SocialServiceProvider._();
 
-/// Social service depends on Nostr service and Auth service
+/// Social service depends on Nostr service, Auth service, and Analytics API
 
 final class SocialServiceProvider
     extends $FunctionalProvider<SocialService, SocialService, SocialService>
     with $Provider<SocialService> {
-  /// Social service depends on Nostr service and Auth service
+  /// Social service depends on Nostr service, Auth service, and Analytics API
   const SocialServiceProvider._()
     : super(
         from: null,
@@ -2345,7 +2345,7 @@ final class SocialServiceProvider
   }
 }
 
-String _$socialServiceHash() => r'5b4d5751d3f2ef22c9ee2610cda1c4e70b2302a7';
+String _$socialServiceHash() => r'f3e43d187c9560fd9db5fe9925238eeb18048fff';
 
 /// Provider for FollowRepository instance
 ///

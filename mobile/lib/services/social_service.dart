@@ -7,6 +7,7 @@ import 'dart:async';
 
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -85,12 +86,15 @@ class SocialService {
     this._nostrService,
     this._authService, {
     PersonalEventCacheService? personalEventCache,
-  }) : _personalEventCache = personalEventCache {
+    AnalyticsApiService? analyticsApiService,
+  }) : _personalEventCache = personalEventCache,
+       _analyticsApiService = analyticsApiService {
     _initialize();
   }
   final NostrClient _nostrService;
   final AuthService _authService;
   final PersonalEventCacheService? _personalEventCache;
+  final AnalyticsApiService? _analyticsApiService;
 
   // Cache for follower/following counts
   final Map<String, Map<String, int>> _followerStats =
@@ -184,95 +188,149 @@ class SocialService {
     }
   }
 
-  /// Fetch follower stats from the network
+  /// Fetch follower stats from the network.
+  ///
+  /// Tries the REST API first (instant response) and falls back to
+  /// WebSocket queries if the REST API is unavailable.
   Future<Map<String, int>> _fetchFollowerStats(String pubkey) async {
+    // 1. Try REST API first (fast, non-blocking)
+    final restResult = await _fetchFollowerStatsViaRest(pubkey);
+    if (restResult != null) {
+      return restResult;
+    }
+
+    // 2. Fall back to WebSocket queries (run in parallel)
+    return _fetchFollowerStatsViaWebSocket(pubkey);
+  }
+
+  /// Try fetching follower stats via the Funnelcake REST API.
+  ///
+  /// Returns null if the REST API is unavailable or the request fails.
+  Future<Map<String, int>?> _fetchFollowerStatsViaRest(String pubkey) async {
+    final analyticsApi = _analyticsApiService;
+    if (analyticsApi == null || !analyticsApi.isAvailable) {
+      return null;
+    }
+
     try {
-      // ✅ Use immediate completion for both queries
-      var followingCount = 0;
-      var followersCount = 0;
-
-      // 1. ✅ Get following count with immediate completion
-      final followingEventStream = _nostrService.subscribe([
-        Filter(authors: [pubkey], kinds: [3], limit: 1),
-      ]);
-
-      final followingEvent = await ContactListCompletionHelper.queryContactList(
-        eventStream: followingEventStream,
-        pubkey: pubkey,
-        fallbackTimeoutSeconds: 8,
-      );
-
-      if (followingEvent != null) {
-        followingCount = followingEvent.tags
-            .where((tag) => tag.isNotEmpty && tag[0] == 'p')
-            .length;
+      final counts = await analyticsApi.getSocialCounts(pubkey);
+      if (counts != null) {
         Log.debug(
-          '✅ Following count received immediately: $followingCount for $pubkey',
+          'REST API follower stats: ${counts.followerCount} followers, '
+          '${counts.followingCount} following for $pubkey',
           name: 'SocialService',
           category: LogCategory.system,
         );
+        return {
+          'followers': counts.followerCount,
+          'following': counts.followingCount,
+        };
       }
+    } catch (e) {
+      Log.warning(
+        'REST API follower stats failed, falling back to WebSocket: $e',
+        name: 'SocialService',
+        category: LogCategory.system,
+      );
+    }
+    return null;
+  }
 
-      // 2. ✅ Get followers count with immediate completion
-      final followersEventStream = _nostrService.subscribe([
-        Filter(
-          kinds: [3],
-          p: [pubkey], // Events that mention this pubkey in p tags
-        ),
+  /// Fetch follower stats via WebSocket queries (parallel).
+  ///
+  /// Used as a fallback when the REST API is unavailable.
+  Future<Map<String, int>> _fetchFollowerStatsViaWebSocket(
+    String pubkey,
+  ) async {
+    try {
+      // Run both queries in parallel using Future.wait
+      final results = await Future.wait([
+        _fetchFollowingCountViaWebSocket(pubkey),
+        _fetchFollowersCountViaWebSocket(pubkey),
       ]);
 
-      // Use exhaustive mode to collect all followers
-      final config = CompletionConfig(
-        mode: CompletionMode.exhaustive,
-        fallbackTimeoutSeconds: 8,
-        serviceName: 'FollowersQuery',
-        logCategory: LogCategory.system,
-      );
-
-      final followerPubkeys = <String>{};
-      final followersCompleter = Completer<int>();
-
-      ImmediateCompletionHelper.createImmediateSubscription(
-        eventStream: followersEventStream,
-        config: config,
-        onEvent: (event) {
-          // Each unique author who has this pubkey in their contact list is a follower
-          followerPubkeys.add(event.pubkey);
-        },
-        onComplete: (result) {
-          followersCount = followerPubkeys.length;
-          Log.debug(
-            '✅ Followers query completed: $followersCount followers for $pubkey',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-          if (!followersCompleter.isCompleted) {
-            followersCompleter.complete(followersCount);
-          }
-        },
-        onError: (error) {
-          Log.error(
-            'Error fetching followers count: $error',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-          if (!followersCompleter.isCompleted) {
-            followersCompleter.complete(followerPubkeys.length);
-          }
-        },
-      );
-
-      await followersCompleter.future;
-
-      return {'followers': followersCount, 'following': followingCount};
+      return {'following': results[0], 'followers': results[1]};
     } catch (e) {
       Log.error(
-        'Error fetching follower stats: $e',
+        'Error fetching follower stats via WebSocket: $e',
         name: 'SocialService',
         category: LogCategory.system,
       );
       return {'followers': 0, 'following': 0};
     }
+  }
+
+  /// Get following count via WebSocket (Kind 3 contact list).
+  Future<int> _fetchFollowingCountViaWebSocket(String pubkey) async {
+    final eventStream = _nostrService.subscribe([
+      Filter(authors: [pubkey], kinds: [3], limit: 1),
+    ]);
+
+    final event = await ContactListCompletionHelper.queryContactList(
+      eventStream: eventStream,
+      pubkey: pubkey,
+      fallbackTimeoutSeconds: 8,
+    );
+
+    if (event != null) {
+      final count = event.tags
+          .where((tag) => tag.isNotEmpty && tag[0] == 'p')
+          .length;
+      Log.debug(
+        'WebSocket following count: $count for $pubkey',
+        name: 'SocialService',
+        category: LogCategory.system,
+      );
+      return count;
+    }
+    return 0;
+  }
+
+  /// Get followers count via WebSocket (Kind 3 events mentioning pubkey).
+  Future<int> _fetchFollowersCountViaWebSocket(String pubkey) async {
+    final eventStream = _nostrService.subscribe([
+      Filter(kinds: [3], p: [pubkey]),
+    ]);
+
+    final config = CompletionConfig(
+      mode: CompletionMode.exhaustive,
+      fallbackTimeoutSeconds: 8,
+      serviceName: 'FollowersQuery',
+      logCategory: LogCategory.system,
+    );
+
+    final followerPubkeys = <String>{};
+    final completer = Completer<int>();
+
+    ImmediateCompletionHelper.createImmediateSubscription(
+      eventStream: eventStream,
+      config: config,
+      onEvent: (event) {
+        followerPubkeys.add(event.pubkey);
+      },
+      onComplete: (result) {
+        Log.debug(
+          'WebSocket followers count: ${followerPubkeys.length} for $pubkey',
+          name: 'SocialService',
+          category: LogCategory.system,
+        );
+        if (!completer.isCompleted) {
+          completer.complete(followerPubkeys.length);
+        }
+      },
+      onError: (error) {
+        Log.error(
+          'Error fetching followers count via WebSocket: $error',
+          name: 'SocialService',
+          category: LogCategory.system,
+        );
+        if (!completer.isCompleted) {
+          completer.complete(followerPubkeys.length);
+        }
+      },
+    );
+
+    return completer.future;
   }
 
   // === FOLLOW SETS MANAGEMENT (NIP-51 Kind 30000) ===
