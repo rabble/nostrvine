@@ -71,7 +71,7 @@ class VineBottomSheetHeader extends StatelessWidget {
                       if (trailing != null)
                         Positioned(
                           right: 0,
-                          child: SizedBox(width: 62, child: trailing),
+                          child: trailing!,
                         ),
                     ],
                   ),
