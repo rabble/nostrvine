@@ -5,9 +5,13 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart'
+    hide LogCategory, NotificationModel, NotificationType;
 import 'package:openvine/models/notification_model.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
+import 'package:openvine/screens/comments/comments_screen.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -353,7 +357,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     switch (notification.navigationAction) {
       case 'open_video':
         if (notification.navigationTarget != null) {
-          _navigateToVideo(context, notification.navigationTarget!);
+          _navigateToVideo(
+            context,
+            notification.navigationTarget!,
+            notificationType: notification.type,
+          );
         }
         break;
       case 'open_profile':
@@ -373,7 +381,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     }
   }
 
-  void _navigateToVideo(BuildContext context, String videoEventId) {
+  Future<void> _navigateToVideo(
+    BuildContext context,
+    String videoEventId, {
+    NotificationType? notificationType,
+  }) async {
     Log.info(
       'Navigating to video: $videoEventId',
       name: 'NotificationsScreen',
@@ -383,20 +395,35 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
     // Get video from video event service (search all feed types)
     final videoEventService = ref.read(videoEventServiceProvider);
 
-    // Try to find video in discovery videos first, then other feeds
-    final allVideos = [
-      ...videoEventService.discoveryVideos,
-      ...videoEventService.homeFeedVideos,
-      ...videoEventService.profileVideos,
-    ];
+    // Use the service's built-in search across all subscription types
+    var video = videoEventService.getVideoById(videoEventId);
 
-    final video = allVideos.cast().firstWhere(
-      (v) => v != null && v.id == videoEventId,
-      orElse: () => null,
-    );
+    // If not found in cache, try fetching from Nostr
+    if (video == null) {
+      Log.info(
+        'Video not in cache, fetching from Nostr: $videoEventId',
+        name: 'NotificationsScreen',
+        category: LogCategory.ui,
+      );
+
+      try {
+        final nostrService = ref.read(nostrServiceProvider);
+        final event = await nostrService.fetchEventById(videoEventId);
+        if (event != null) {
+          video = VideoEvent.fromNostrEvent(event);
+        }
+      } catch (e) {
+        Log.error(
+          'Failed to fetch video from Nostr: $e',
+          name: 'NotificationsScreen',
+          category: LogCategory.ui,
+        );
+      }
+    }
+
+    if (!context.mounted) return;
 
     if (video == null) {
-      // Video not found, show error
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Video not found'),
@@ -406,17 +433,28 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen>
       return;
     }
 
+    final shouldAutoOpenComments = notificationType == NotificationType.comment;
+    final videoForNav = video;
+
     // Navigate to video player with this specific video
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => ExploreVideoScreenPure(
-          startingVideo: video,
-          videoList: [video],
-          contextTitle: 'From Notification',
-          startingIndex: 0,
-          useLocalActiveState:
-              true, // Use local state since not using URL routing
-        ),
+        builder: (navContext) {
+          if (shouldAutoOpenComments) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (navContext.mounted) {
+                CommentsScreen.show(navContext, videoForNav);
+              }
+            });
+          }
+          return ExploreVideoScreenPure(
+            startingVideo: videoForNav,
+            videoList: [videoForNav],
+            contextTitle: 'From Notification',
+            startingIndex: 0,
+            useLocalActiveState: true,
+          );
+        },
       ),
     );
   }
