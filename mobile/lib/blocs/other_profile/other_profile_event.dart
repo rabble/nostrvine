@@ -11,14 +11,14 @@ sealed class OtherProfileEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-/// Event triggered when the other profile screen is opened.
+/// Event triggered to load the profile.
 ///
 /// This initiates the profile loading sequence:
 /// 1. Emit cached profile immediately (if available)
 /// 2. Fetch fresh profile from relay
 /// 3. Emit fresh profile when received
-final class OtherProfileScreenOpened extends OtherProfileEvent {
-  const OtherProfileScreenOpened();
+final class OtherProfileLoadRequested extends OtherProfileEvent {
+  const OtherProfileLoadRequested();
 }
 
 /// Event triggered when user pulls to refresh the profile.

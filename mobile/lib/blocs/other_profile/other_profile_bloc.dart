@@ -12,7 +12,7 @@ part 'other_profile_state.dart';
 /// BLoC for managing the state of viewing another user's profile.
 ///
 /// Implements the cache+fresh pattern:
-/// 1. On [OtherProfileScreenOpened], emit cached profile immediately (if available)
+/// 1. On [OtherProfileLoadRequested], emit cached profile immediately (if available)
 /// 2. Fetch fresh profile from relay
 /// 3. Emit fresh profile when received
 ///
@@ -24,7 +24,7 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
     required this.pubkey,
   }) : _profileRepository = profileRepository,
        super(const OtherProfileInitial()) {
-    on<OtherProfileScreenOpened>(_onScreenOpened);
+    on<OtherProfileLoadRequested>(_onLoadRequested);
     on<OtherProfileRefreshRequested>(_onRefreshRequested);
   }
 
@@ -33,8 +33,8 @@ class OtherProfileBloc extends Bloc<OtherProfileEvent, OtherProfileState> {
   /// The pubkey of the profile being viewed.
   final String pubkey;
 
-  Future<void> _onScreenOpened(
-    OtherProfileScreenOpened event,
+  Future<void> _onLoadRequested(
+    OtherProfileLoadRequested event,
     Emitter<OtherProfileState> emit,
   ) async {
     // 1. Get cached profile from repository

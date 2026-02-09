@@ -62,8 +62,9 @@ class ProfileRepository {
   ///
   /// Returns `null` if no profile exists for the given pubkey.
   ///
-  /// **Note:** For viewing other users' profiles, prefer using [getCachedProfile]
-  /// and [fetchFreshProfile] separately to implement the cache+fresh pattern.
+  /// **Note:** For viewing other users' profiles, prefer using
+  /// [getCachedProfile] and [fetchFreshProfile] separately to implement
+  /// the cache+fresh pattern.
   @Deprecated(
     'Use getCachedProfile and fetchFreshProfile for cache+fresh pattern',
   )
