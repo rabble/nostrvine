@@ -3,6 +3,7 @@ import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 
 import 'package:pooled_video_player/src/controllers/video_feed_controller.dart';
+import 'package:pooled_video_player/src/models/video_index_state.dart';
 import 'package:pooled_video_player/src/widgets/video_pool_provider.dart';
 
 /// Builder for the video layer.
@@ -83,12 +84,12 @@ class PooledVideoPlayer extends StatelessWidget {
   Widget build(BuildContext context) {
     final feedController = controller ?? VideoPoolProvider.feedOf(context);
 
-    return ListenableBuilder(
-      listenable: feedController,
-      builder: (context, _) {
-        final videoController = feedController.getVideoController(index);
-        final player = feedController.getPlayer(index);
-        final loadState = feedController.getLoadState(index);
+    return ValueListenableBuilder<VideoIndexState>(
+      valueListenable: feedController.getIndexNotifier(index),
+      builder: (context, state, _) {
+        final videoController = state.videoController;
+        final player = state.player;
+        final loadState = state.loadState;
 
         Widget content;
 
