@@ -58,7 +58,6 @@ class FullscreenFeedBloc
     on<FullscreenFeedLoadMoreRequested>(_onLoadMoreRequested);
     on<FullscreenFeedIndexChanged>(_onIndexChanged);
     on<FullscreenFeedVideoCacheStarted>(_onVideoCacheStarted);
-
     on<FullscreenFeedPositionUpdated>(_onPositionUpdated);
     on<FullscreenFeedSeekCommandHandled>(_onSeekCommandHandled);
   }
