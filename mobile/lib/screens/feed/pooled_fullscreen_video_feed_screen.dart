@@ -13,6 +13,7 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -53,7 +54,7 @@ class PooledFullscreenVideoFeedArgs {
 ///
 /// Uses [FullscreenFeedBloc] for state management, receiving videos from
 /// the source via a stream and delegating pagination back to the source.
-class PooledFullscreenVideoFeedScreen extends StatelessWidget {
+class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   /// Route name for this screen.
   static const routeName = 'pooled-video-feed';
 
@@ -74,12 +75,17 @@ class PooledFullscreenVideoFeedScreen extends StatelessWidget {
   final String? contextTitle;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mediaCache = ref.read(mediaCacheProvider);
+    final blossomAuthService = ref.read(blossomAuthServiceProvider);
+
     return BlocProvider(
       create: (_) => FullscreenFeedBloc(
         videosStream: videosStream,
         initialIndex: initialIndex,
         onLoadMore: onLoadMore,
+        mediaCache: mediaCache,
+        blossomAuthService: blossomAuthService,
       )..add(const FullscreenFeedStarted()),
       child: _FullscreenFeedContent(contextTitle: contextTitle),
     );
