@@ -210,8 +210,32 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
   }) {
     return InputDecoration(
       labelText: label,
-      prefixIcon: Icon(icon),
+      labelStyle: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted),
+      floatingLabelStyle: VineTheme.bodySmallFont(color: VineTheme.primary),
+      prefixIcon: Icon(icon, color: VineTheme.onSurfaceMuted),
       suffixIcon: suffixIcon,
+      filled: true,
+      fillColor: VineTheme.surfaceContainer,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: VineTheme.outlineMuted),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: BorderSide(color: VineTheme.outlineMuted),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: VineTheme.primary, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: VineTheme.error),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: VineTheme.error, width: 2),
+      ),
     );
   }
 
@@ -219,178 +243,158 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
-      body: Container(
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header with back button
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => context.pop(),
-                    ),
-                    const Spacer(),
-                  ],
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Back button
+            Align(
+              alignment: Alignment.topLeft,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+                child: DivineIconButton(
+                  icon: DivineIconName.caretLeft,
+                  type: DivineIconButtonType.secondary,
+                  size: DivineIconButtonSize.small,
+                  onPressed: () => context.pop(),
                 ),
               ),
+            ),
 
-              // Tab bar
-              TabBar(
-                controller: _tabController,
-                indicatorColor: Colors.white,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white60,
-                tabs: const [
-                  Tab(text: 'Log In'),
-                  Tab(text: 'Create Account'),
-                ],
-                onTap: (_) {
-                  // Clear error when switching tabs
-                  setState(() => _errorMessage = null);
-                },
-              ),
+            // Tab bar
+            TabBar(
+              controller: _tabController,
+              indicatorColor: VineTheme.primary,
+              indicatorWeight: 3,
+              labelColor: VineTheme.onSurface,
+              labelStyle: VineTheme.titleMediumFont(),
+              unselectedLabelColor: VineTheme.onSurfaceMuted,
+              unselectedLabelStyle: VineTheme.titleMediumFont(),
+              dividerColor: VineTheme.outlineMuted,
+              tabs: const [
+                Tab(text: 'Log In'),
+                Tab(text: 'Create Account'),
+              ],
+              onTap: (_) {
+                // Clear error when switching tabs
+                setState(() => _errorMessage = null);
+              },
+            ),
 
-              // Form
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(24),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 32),
+            // Form
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: 32),
 
-                        // Email field
-                        TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          autocorrect: false,
-                          decoration: _buildInputDecoration(
-                            label: 'Email',
-                            icon: Icons.email_outlined,
-                          ),
-                          validator: Validators.validateEmail,
+                      // Email field
+                      TextFormField(
+                        controller: _emailController,
+                        keyboardType: TextInputType.emailAddress,
+                        autocorrect: false,
+                        style: VineTheme.bodyLargeFont(),
+                        decoration: _buildInputDecoration(
+                          label: 'Email',
+                          icon: Icons.email_outlined,
                         ),
-                        const SizedBox(height: 16),
+                        validator: Validators.validateEmail,
+                      ),
+                      const SizedBox(height: 16),
 
-                        // Password field
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          decoration: _buildInputDecoration(
-                            label: 'Password',
-                            icon: Icons.lock_outlined,
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                                color: Colors.white60,
-                              ),
-                              onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword,
-                              ),
+                      // Password field
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: _obscurePassword,
+                        style: VineTheme.bodyLargeFont(),
+                        decoration: _buildInputDecoration(
+                          label: 'Password',
+                          icon: Icons.lock_outlined,
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscurePassword
+                                  ? Icons.visibility_off
+                                  : Icons.visibility,
+                              color: VineTheme.onSurfaceMuted,
+                            ),
+                            onPressed: () => setState(
+                              () => _obscurePassword = !_obscurePassword,
                             ),
                           ),
-                          validator: Validators.validatePassword,
                         ),
-                        const SizedBox(height: 16),
+                        validator: Validators.validatePassword,
+                      ),
+                      const SizedBox(height: 16),
 
-                        // Confirm password (register only)
-                        AnimatedSize(
-                          duration: const Duration(milliseconds: 200),
-                          child: _tabController.index == 1
-                              ? Column(
-                                  children: [
-                                    TextFormField(
-                                      controller: _confirmPasswordController,
-                                      obscureText: _obscureConfirmPassword,
-                                      decoration: _buildInputDecoration(
-                                        label: 'Confirm Password',
-                                        icon: Icons.lock_outlined,
-                                        suffixIcon: IconButton(
-                                          icon: Icon(
-                                            _obscureConfirmPassword
-                                                ? Icons.visibility_off
-                                                : Icons.visibility,
-                                            color: Colors.white60,
-                                          ),
-                                          onPressed: () => setState(
-                                            () => _obscureConfirmPassword =
-                                                !_obscureConfirmPassword,
-                                          ),
+                      // Confirm password (register only)
+                      AnimatedSize(
+                        duration: const Duration(milliseconds: 200),
+                        child: _tabController.index == 1
+                            ? Column(
+                                children: [
+                                  TextFormField(
+                                    controller: _confirmPasswordController,
+                                    obscureText: _obscureConfirmPassword,
+                                    style: VineTheme.bodyLargeFont(),
+                                    decoration: _buildInputDecoration(
+                                      label: 'Confirm Password',
+                                      icon: Icons.lock_outlined,
+                                      suffixIcon: IconButton(
+                                        icon: Icon(
+                                          _obscureConfirmPassword
+                                              ? Icons.visibility_off
+                                              : Icons.visibility,
+                                          color: VineTheme.onSurfaceMuted,
+                                        ),
+                                        onPressed: () => setState(
+                                          () => _obscureConfirmPassword =
+                                              !_obscureConfirmPassword,
                                         ),
                                       ),
-                                      validator: _validateConfirmPassword,
                                     ),
-                                    const SizedBox(height: 16),
-                                  ],
-                                )
-                              : const SizedBox.shrink(),
-                        ),
-
-                        // Error message
-                        if (_errorMessage != null) ...[
-                          ErrorMessage(message: _errorMessage),
-                          const SizedBox(height: 16),
-                        ],
-
-                        // Submit button
-                        SizedBox(
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _handleSubmit,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: VineTheme.vineGreen,
-                              disabledBackgroundColor: Colors.white60,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: VineTheme.vineGreen,
-                                    ),
-                                  )
-                                : Text(
-                                    _tabController.index == 0
-                                        ? 'Log In'
-                                        : 'Create Account',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                    validator: _validateConfirmPassword,
                                   ),
+                                  const SizedBox(height: 16),
+                                ],
+                              )
+                            : const SizedBox.shrink(),
+                      ),
+
+                      // Error message
+                      if (_errorMessage != null) ...[
+                        ErrorMessage(message: _errorMessage),
+                        const SizedBox(height: 16),
+                      ],
+
+                      // Submit button
+                      DivineButton(
+                        label: _tabController.index == 0
+                            ? 'Log In'
+                            : 'Create Account',
+                        expanded: true,
+                        isLoading: _isLoading,
+                        onPressed: _isLoading ? null : _handleSubmit,
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Forgot password (login only)
+                      if (_tabController.index == 0)
+                        Center(
+                          child: DivineTextLink(
+                            text: 'Forgot Password?',
+                            onTap: _showForgotPasswordDialog,
                           ),
                         ),
-
-                        const SizedBox(height: 24),
-
-                        // Forgot password (login only)
-                        if (_tabController.index == 0)
-                          TextButton(
-                            onPressed: _showForgotPasswordDialog,
-                            child: const Text(
-                              'Forgot Password?',
-                              style: TextStyle(color: Colors.white70),
-                            ),
-                          ),
-                      ],
-                    ),
+                    ],
                   ),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -406,10 +410,11 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     showDialog(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: const Text(
+        backgroundColor: VineTheme.surfaceContainer,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
           'Reset Password',
-          style: TextStyle(color: Colors.white),
+          style: VineTheme.titleLargeFont(color: VineTheme.onSurface),
         ),
         content: Form(
           key: dialogFormKey,
@@ -418,14 +423,18 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
-                  'Enter your email address and we\'ll send you a link to reset your password.',
-                  style: TextStyle(color: Colors.grey[400], fontSize: 14),
+                  'Enter your email address and we\'ll send you a link to '
+                  'reset your password.',
+                  style: VineTheme.bodyMediumFont(
+                    color: VineTheme.onSurfaceMuted,
+                  ),
                 ),
                 const SizedBox(height: 20),
                 TextFormField(
                   controller: resetEmailController,
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
+                  style: VineTheme.bodyLargeFont(),
                   decoration: _buildInputDecoration(
                     label: 'Email Address',
                     icon: Icons.email_outlined,
@@ -436,27 +445,31 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
             ),
           ),
         ),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
         actions: [
-          TextButton(
-            onPressed: dialogContext.pop,
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white60),
-            ),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: VineTheme.vineGreen,
-              foregroundColor: Colors.white,
-            ),
-            onPressed: () async {
-              if (dialogFormKey.currentState!.validate()) {
-                final email = resetEmailController.text.trim();
-                dialogContext.pop();
-                await _performPasswordReset(email);
-              }
-            },
-            child: const Text('Email Reset Link'),
+          Row(
+            children: [
+              Expanded(
+                child: DivineButton(
+                  label: 'Cancel',
+                  type: DivineButtonType.secondary,
+                  onPressed: dialogContext.pop,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: DivineButton(
+                  label: 'Send Link',
+                  onPressed: () async {
+                    if (dialogFormKey.currentState!.validate()) {
+                      final email = resetEmailController.text.trim();
+                      dialogContext.pop();
+                      await _performPasswordReset(email);
+                    }
+                  },
+                ),
+              ),
+            ],
           ),
         ],
       ),
