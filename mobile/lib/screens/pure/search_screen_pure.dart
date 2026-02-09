@@ -16,7 +16,7 @@ import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/search_utils.dart';
@@ -438,26 +438,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
   @override
   Widget build(BuildContext context) {
-    final pageContext = ref.watch(pageContextProvider);
-    final isInFeedMode = pageContext.maybeWhen(
-      data: (ctx) => ctx.type == RouteType.search && ctx.videoIndex != null,
-      orElse: () => false,
-    );
-
-    if (isInFeedMode && _videoResults.isNotEmpty) {
-      final videoIndex = pageContext.asData?.value.videoIndex ?? 0;
-      final safeIndex = videoIndex.clamp(0, _videoResults.length - 1);
-
-      return ExploreVideoScreenPure(
-        startingVideo: _videoResults[safeIndex],
-        videoList: _videoResults,
-        contextTitle: 'Search: $_currentQuery',
-        startingIndex: safeIndex,
-        // No onBackToGrid needed - AppShell's AppBar back button handles this
-      );
-    }
-
-    // Otherwise show search grid UI
+    // Search always shows grid UI - videos open in fullscreen via push navigation
     final searchBar = SizedBox(
       height: 48,
       child: TextField(
@@ -694,11 +675,15 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                 '🔍 SearchScreenPure: Tapped video at index $index',
                 category: LogCategory.video,
               );
-              // Navigate using GoRouter to enable router-driven video playback
-              context.go(
-                SearchScreenPure.pathForTerm(
-                  term: _currentQuery.isNotEmpty ? _currentQuery : null,
-                  index: index,
+              // Push to fullscreen video feed (outside shell, no bottom nav)
+              context.push(
+                FullscreenVideoFeedScreen.path,
+                extra: FullscreenVideoFeedArgs(
+                  source: StaticFeedSource(videos),
+                  initialIndex: index,
+                  contextTitle: _currentQuery.isNotEmpty
+                      ? 'Search: $_currentQuery'
+                      : null,
                 ),
               );
             },
