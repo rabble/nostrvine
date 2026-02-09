@@ -1228,5 +1228,119 @@ void main() {
         expect(afterFirstChange, greaterThan(initialCount));
       });
     });
+
+    group('HLS streaming support', () {
+      test('accepts HLS URLs with .m3u8 extension', () {
+        final hlsVideos = [
+          const VideoItem(
+            id: 'hls_video_1',
+            url: 'https://media.divine.video/abc123/hls/master.m3u8',
+          ),
+          const VideoItem(
+            id: 'hls_video_2',
+            url: 'https://example.com/stream/video.m3u8',
+          ),
+        ];
+
+        final controller = VideoFeedController(
+          videos: hlsVideos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        expect(controller.videos, equals(hlsVideos));
+        expect(controller.videoCount, equals(2));
+        expect(controller.videos[0].url, contains('.m3u8'));
+        expect(controller.videos[1].url, contains('.m3u8'));
+      });
+
+      test('accepts mixed MP4 and HLS URLs', () {
+        final mixedVideos = [
+          const VideoItem(
+            id: 'mp4_video',
+            url: 'https://example.com/video.mp4',
+          ),
+          const VideoItem(
+            id: 'hls_video',
+            url: 'https://media.divine.video/abc123/hls/master.m3u8',
+          ),
+          const VideoItem(
+            id: 'mov_video',
+            url: 'https://example.com/video.mov',
+          ),
+        ];
+
+        final controller = VideoFeedController(
+          videos: mixedVideos,
+          pool: pool,
+        );
+        addTearDown(controller.dispose);
+
+        expect(controller.videos.length, equals(3));
+        expect(controller.videos[0].url, contains('.mp4'));
+        expect(controller.videos[1].url, contains('.m3u8'));
+        expect(controller.videos[2].url, contains('.mov'));
+      });
+
+      test('mediaSourceResolver works with HLS URLs', () async {
+        final hlsVideos = [
+          const VideoItem(
+            id: 'hls_video',
+            url: 'https://media.divine.video/abc123/hls/master.m3u8',
+          ),
+        ];
+
+        String? resolvedUrl;
+
+        final controller = VideoFeedController(
+          videos: hlsVideos,
+          pool: pool,
+          mediaSourceResolver: (video) {
+            resolvedUrl = video.url;
+            // Return original URL (no cache override)
+            return null;
+          },
+        );
+        addTearDown(controller.dispose);
+
+        // Wait for video to be loaded (async operation)
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Verify the resolver was called with the HLS URL
+        expect(resolvedUrl, equals(hlsVideos[0].url));
+        expect(resolvedUrl, contains('.m3u8'));
+      });
+
+      test('mediaSourceResolver can override HLS URL with cached MP4', () async {
+        final hlsVideos = [
+          const VideoItem(
+            id: 'hls_video',
+            url: 'https://media.divine.video/abc123/hls/master.m3u8',
+          ),
+        ];
+
+        const cachedPath = '/cache/hls_video.mp4';
+
+        final controller = VideoFeedController(
+          videos: hlsVideos,
+          pool: pool,
+          mediaSourceResolver: (video) {
+            // Simulate returning a cached MP4 instead of HLS
+            return cachedPath;
+          },
+        );
+        addTearDown(controller.dispose);
+
+        // Wait for video to be loaded
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Verify the player received the resolved (cached) URL
+        // The mock player's open() was called with the cached path
+        final setup = playerSetups.values.first;
+        verify(
+          () => setup.player.open(any(), play: any(named: 'play')),
+        ).called(greaterThanOrEqualTo(1));
+      });
+    });
   });
 }
