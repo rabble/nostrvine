@@ -83,7 +83,7 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
 
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: const EdgeInsets.fromLTRB(16, 28, 16, 0),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
@@ -98,40 +98,31 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      const Text(
-                        'Choose how you want to sign in',
-                        style: TextStyle(fontSize: 16, color: Colors.white70),
+                      Align(
+                        alignment: Alignment.topLeft,
+                        child: Text(
+                          'Choose how you want to sign in',
+                          style: VineTheme.bodyLargeFont(
+                            color: VineTheme.onSurface,
+                          ),
+                        ),
                       ),
                       const SizedBox(height: 48),
 
                       // Primary: Login/Register with diVine
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: () =>
-                              context.push(WelcomeScreen.authNativePath),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: VineTheme.vineGreen,
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon: const Icon(Icons.email_outlined),
-                          label: const Text(
-                            'Continue with Email',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                      DivineButton(
+                        label: 'Continue with email',
+                        leadingIcon: DivineIconName.envelope,
+                        expanded: true,
+                        onPressed: () =>
+                            context.push(WelcomeScreen.authNativePath),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      Text(
                         'Login or create a new account',
-                        style: TextStyle(fontSize: 12, color: Colors.white60),
+                        style: VineTheme.bodySmallFont(
+                          color: VineTheme.onSurfaceMuted,
+                        ),
                       ),
 
                       const SizedBox(height: 32),
@@ -140,20 +131,25 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
                       Row(
                         children: [
                           Expanded(
-                            child: Container(height: 1, color: Colors.white24),
+                            child: Container(
+                              height: 1,
+                              color: VineTheme.outlineMuted,
+                            ),
                           ),
-                          const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 16),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
                             child: Text(
                               'or',
-                              style: TextStyle(
-                                color: Colors.white60,
-                                fontSize: 14,
+                              style: VineTheme.bodyMediumFont(
+                                color: VineTheme.onSurfaceMuted,
                               ),
                             ),
                           ),
                           Expanded(
-                            child: Container(height: 1, color: Colors.white24),
+                            child: Container(
+                              height: 1,
+                              color: VineTheme.outlineMuted,
+                            ),
                           ),
                         ],
                       ),
@@ -161,64 +157,37 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
                       const SizedBox(height: 32),
 
                       // Secondary: Import Nostr Key
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () => context.push(KeyImportScreen.path),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            side: const BorderSide(color: Colors.white54),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon: const Icon(Icons.key),
-                          label: const Text(
-                            'Import Nostr Key',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                      DivineButton(
+                        label: 'Enter Nostr key',
+                        type: DivineButtonType.secondary,
+                        leadingIcon: DivineIconName.key,
+                        expanded: true,
+                        onPressed: () => context.push(KeyImportScreen.path),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      Text(
                         'Already have an nsec? Import it here',
-                        style: TextStyle(fontSize: 12, color: Colors.white60),
+                        style: VineTheme.bodySmallFont(
+                          color: VineTheme.onSurfaceMuted,
+                        ),
                       ),
 
                       const SizedBox(height: 24),
 
                       // Tertiary: Connect with Signer App (NIP-46)
-                      SizedBox(
-                        width: double.infinity,
-                        child: OutlinedButton.icon(
-                          onPressed: () =>
-                              context.push(NostrConnectScreen.path),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.white,
-                            side: const BorderSide(color: Colors.white54),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon: const Icon(Icons.qr_code_scanner),
-                          label: const Text(
-                            'Connect with Signer App',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
+                      DivineButton(
+                        label: 'Connect with Signer App',
+                        type: DivineButtonType.secondary,
+                        leadingIcon: DivineIconName.linkSimple,
+                        expanded: true,
+                        onPressed: () => context.push(NostrConnectScreen.path),
                       ),
                       const SizedBox(height: 12),
-                      const Text(
+                      Text(
                         'Use Amber, nsecBunker, or other NIP-46 signers',
-                        style: TextStyle(fontSize: 12, color: Colors.white60),
+                        style: VineTheme.bodySmallFont(
+                          color: VineTheme.onSurfaceMuted,
+                        ),
                       ),
 
                       // Amber button (Android only)
@@ -241,7 +210,7 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
   }
 }
 
-/// Amber sign-in button that only appears when Amber is installed
+/// Amber sign-in button that only appears when Amber is installed.
 class _AmberButton extends StatelessWidget {
   const _AmberButton({required this.isConnecting, required this.onPressed});
 
@@ -260,43 +229,18 @@ class _AmberButton extends StatelessWidget {
 
         return Column(
           children: [
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                onPressed: isConnecting ? null : onPressed,
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.white,
-                  side: const BorderSide(color: Colors.amber),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                icon: isConnecting
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Colors.amber,
-                          ),
-                        ),
-                      )
-                    : const Icon(Icons.security, color: Colors.amber),
-                label: Text(
-                  isConnecting ? 'Connecting...' : 'Sign with Amber',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
+            DivineButton(
+              label: isConnecting ? 'Connecting...' : 'Sign with Amber',
+              type: DivineButtonType.secondary,
+              leadingIcon: DivineIconName.shieldCheck,
+              expanded: true,
+              isLoading: isConnecting,
+              onPressed: onPressed,
             ),
-            const SizedBox(height: 8),
-            const Text(
+            const SizedBox(height: 12),
+            Text(
               'Use your Amber signer app',
-              style: TextStyle(fontSize: 12, color: Colors.white60),
+              style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
             ),
           ],
         );

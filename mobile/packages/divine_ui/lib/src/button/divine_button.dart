@@ -76,6 +76,7 @@ class DivineButton extends StatelessWidget {
     this.leadingIcon,
     this.trailingIcon,
     this.expanded = false,
+    this.isLoading = false,
     super.key,
   });
 
@@ -107,6 +108,12 @@ class DivineButton extends StatelessWidget {
   /// Whether the button should expand to fill available width.
   final bool expanded;
 
+  /// Whether the button is in a loading state.
+  ///
+  /// When true, displays a spinner in place of [leadingIcon] and disables
+  /// the button.
+  final bool isLoading;
+
   @override
   Widget build(BuildContext context) {
     return _DivineButtonContent(
@@ -117,6 +124,7 @@ class DivineButton extends StatelessWidget {
       leadingIcon: leadingIcon,
       trailingIcon: trailingIcon,
       expanded: expanded,
+      isLoading: isLoading,
     );
   }
 }
@@ -128,6 +136,7 @@ class _DivineButtonContent extends StatelessWidget {
     required this.type,
     required this.size,
     required this.expanded,
+    required this.isLoading,
     this.leadingIcon,
     this.trailingIcon,
   });
@@ -139,8 +148,9 @@ class _DivineButtonContent extends StatelessWidget {
   final DivineIconName? leadingIcon;
   final DivineIconName? trailingIcon;
   final bool expanded;
+  final bool isLoading;
 
-  bool get _isEnabled => onPressed != null;
+  bool get _isEnabled => onPressed != null && !isLoading;
 
   double get _iconSize => switch (size) {
     DivineButtonSize.small => 20,
@@ -231,7 +241,17 @@ class _DivineButtonContent extends StatelessWidget {
       mainAxisSize: expanded ? MainAxisSize.max : MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        if (leadingIcon != null) ...[
+        if (isLoading) ...[
+          SizedBox(
+            width: _iconSize,
+            height: _iconSize,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(_foregroundColor),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ] else if (leadingIcon != null) ...[
           DivineIcon(
             icon: leadingIcon!,
             size: _iconSize,
