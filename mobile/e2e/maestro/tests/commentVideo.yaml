@@ -24,6 +24,7 @@ env:
     id: comments_button
 - runFlow: "../asserts/assertCommentsModal.yaml"
 
+
 # 3. Input comment COMMENT with current timestamp: Validate comment is displayed with "now" as timestamp
 - tapOn:
     id: comment_text_field
@@ -33,10 +34,8 @@ env:
     id: send_comment_button
 - assertVisible: ${FULL_COMMENT}
 - waitForAnimationToEnd
-- assertVisible: |-
-    now
-     • 
-    You
+- assertVisible: "now\n • \nYou.*"
+
 
 # 4. Close the comments section: Validate playback screen is displayed
 - swipe:

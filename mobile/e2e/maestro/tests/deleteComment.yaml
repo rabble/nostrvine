@@ -14,16 +14,18 @@ appId: co.openvine.app
     id: comments_button
 - runFlow: "../asserts/assertCommentsModal.yaml"
 - assertVisible:
-    text: ".*•.*You"
+    text: ".*•.*You.*"
 
 # 2. Long press on *You: The Options modal is displayed
 - longPressOn:
-    text: ".*•.*You"
+    text: ".*•.*You.*"
 - runFlow: "../asserts/assertCommentsOptions.yaml"
 
 # 3. Tap on "Delete": Comments modal closed and the comment is not present
 - tapOn:
     id: delete_comment_option
+- tapOn: Delete comment
+
 - runFlow: "../asserts/assertCommentsModal.yaml"
 - assertNotVisible:
     text: ".*•.*You"
