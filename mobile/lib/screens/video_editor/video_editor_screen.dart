@@ -38,6 +38,7 @@ class VideoEditorScreen extends StatefulWidget {
 
 class _VideoEditorScreenState extends State<VideoEditorScreen> {
   final _editorKey = GlobalKey<ProImageEditorState>();
+  final _removeAreaKey = GlobalKey();
 
   /// Manually managed instead of using [BlocProvider.create] so we can reuse
   /// it in contexts outside the widget tree (e.g., bottom sheets opened via
@@ -99,8 +100,11 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     );
 
     if (sticker != null) {
+      final screenWidth = MediaQuery.sizeOf(context).width;
+      final stickerWidth = screenWidth / 3;
+
       final layer = WidgetLayer(
-        width: 120,
+        width: stickerWidth,
         widget: Semantics(
           label: sticker.description,
           child: VideoEditorSticker(
@@ -168,6 +172,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
         builder: (context) {
           return VideoEditorScope(
             editorKey: _editorKey,
+            removeAreaKey: _removeAreaKey,
             onAddStickers: _addStickers,
             onAddEditTextLayer: ([layer]) {
               final mainBloc = context.read<VideoEditorMainBloc>();

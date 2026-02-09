@@ -136,7 +136,10 @@ void main() {
         ).thenAnswer((_) async => reportEvent);
 
         when(
-          mockNostrService.publishEvent(any),
+          mockNostrService.publishEvent(
+            any,
+            targetRelays: anyNamed('targetRelays'),
+          ),
         ).thenAnswer((_) async => reportEvent);
 
         // Act
@@ -160,8 +163,13 @@ void main() {
           ),
         ).called(1);
 
-        // Verify Nostr event was published
-        verify(mockNostrService.publishEvent(any)).called(1);
+        // Verify Nostr event was published to moderation relay
+        verify(
+          mockNostrService.publishEvent(
+            any,
+            targetRelays: anyNamed('targetRelays'),
+          ),
+        ).called(1);
       },
     );
 
@@ -185,7 +193,10 @@ void main() {
         ).thenAnswer((_) async => reportEvent);
 
         when(
-          mockNostrService.publishEvent(any),
+          mockNostrService.publishEvent(
+            any,
+            targetRelays: anyNamed('targetRelays'),
+          ),
         ).thenAnswer((_) async => reportEvent);
 
         final reasons = ContentFilterReason.values;
@@ -237,7 +248,10 @@ void main() {
       ).thenAnswer((_) async => reportEvent);
 
       when(
-        mockNostrService.publishEvent(any),
+        mockNostrService.publishEvent(
+          any,
+          targetRelays: anyNamed('targetRelays'),
+        ),
       ).thenAnswer((_) async => reportEvent);
 
       // Act - This should not throw an exception due to missing switch case
@@ -271,7 +285,12 @@ void main() {
       ).thenAnswer((_) async => reportEvent);
 
       // Mock failed publish - returns null on failure
-      when(mockNostrService.publishEvent(any)).thenAnswer((_) async => null);
+      when(
+        mockNostrService.publishEvent(
+          any,
+          targetRelays: anyNamed('targetRelays'),
+        ),
+      ).thenAnswer((_) async => null);
 
       // Act
       final result = await service.reportContent(
@@ -308,7 +327,10 @@ void main() {
       ).thenAnswer((_) async => reportEvent);
 
       when(
-        mockNostrService.publishEvent(any),
+        mockNostrService.publishEvent(
+          any,
+          targetRelays: anyNamed('targetRelays'),
+        ),
       ).thenAnswer((_) async => reportEvent);
 
       // Act
@@ -378,7 +400,12 @@ void main() {
         expect(result.error, contains('Failed to create report event'));
 
         // Verify publishEvent was NOT called
-        verifyNever(mockNostrService.publishEvent(any));
+        verifyNever(
+          mockNostrService.publishEvent(
+            any,
+            targetRelays: anyNamed('targetRelays'),
+          ),
+        );
       },
     );
   });
@@ -429,7 +456,10 @@ void main() {
       ).thenAnswer((_) async => reportEvent);
 
       when(
-        mockNostrService.publishEvent(any),
+        mockNostrService.publishEvent(
+          any,
+          targetRelays: anyNamed('targetRelays'),
+        ),
       ).thenAnswer((_) async => reportEvent);
 
       // Now reportContent should work

@@ -13,6 +13,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
@@ -292,6 +293,16 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
     final profile = profileAsync.value;
     // Get profile color for Vine-style colored header
     final profileColor = profile?.profileBackgroundColor;
+
+    // Track analytics when data is loaded
+    if (videosAsync is AsyncData && profileAsync is AsyncData) {
+      ScreenAnalyticsService().markDataLoaded(
+        'other_profile',
+        dataMetrics: {
+          'video_count': videosAsync.asData?.value.videos.length ?? 0,
+        },
+      );
+    }
 
     return BlocBuilder<OtherProfileBloc, OtherProfileState>(
       builder: (context, state) {

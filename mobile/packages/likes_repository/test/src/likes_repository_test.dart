@@ -1120,6 +1120,16 @@ void main() {
         verify(() => mockLocalStorage.clearAll()).called(1);
         expect(await repository.getLikedEventIds(), isEmpty);
       });
+
+      test('does not throw when called after dispose', () async {
+        when(() => mockLocalStorage.clearAll()).thenAnswer((_) async {});
+
+        repository = createRepository()..dispose();
+
+        // clearCache after dispose should not throw "Cannot add new events
+        // after calling close" on the BehaviorSubject.
+        await expectLater(repository.clearCache(), completes);
+      });
     });
 
     group('watchLikedEventIds', () {

@@ -1,16 +1,19 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
-import 'package:openvine/widgets/divine_icon_button.dart';
+import 'package:openvine/widgets/video_editor_icon_button.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_preview_thumbnail.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_upload_status.dart';
 import 'package:video_player/video_player.dart';
 import 'package:models/models.dart' show VideoEvent;
@@ -97,6 +100,7 @@ class _VideoMetadataPreviewScreenState
       body: Stack(
         children: [
           Column(
+            spacing: 16,
             children: [
               // Video preview area with close button
               Expanded(
@@ -181,40 +185,50 @@ class _VideoPlayerWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: AspectRatio(
-        aspectRatio: clip.targetAspectRatio.value,
-        child: ClipRRect(
-          borderRadius: .circular(16),
-          child: Stack(
-            fit: .expand,
-            children: [
-              // Show thumbnail while video loads
-              if (clip.thumbnailPath != null)
-                Image.file(File(clip.thumbnailPath!), fit: .cover),
-              // Smooth transition to video player
-              AnimatedSwitcher(
-                layoutBuilder: (currentChild, previousChildren) => Stack(
-                  alignment: .center,
-                  fit: .expand,
-                  children: <Widget>[...previousChildren, ?currentChild],
-                ),
-                switchInCurve: Curves.easeInOut,
-                duration: const Duration(milliseconds: 120),
-                child: isInitialized && controller != null
-                    ? FittedBox(
-                        fit: .cover,
-                        clipBehavior: .hardEdge,
-                        child: SizedBox(
-                          width: controller!.value.size.width,
-                          height: controller!.value.size.height,
-                          child: VideoPlayer(controller!),
-                        ),
-                      )
-                    : const SizedBox.shrink(),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // For vertical videos (9:16), expand to fill the available space.
+          // For other ratios (e.g., square), maintain their intrinsic aspect.
+          final aspectRatio = clip.targetAspectRatio == .vertical
+              ? constraints.biggest.aspectRatio
+              : clip.targetAspectRatio.value;
+
+          return AspectRatio(
+            aspectRatio: aspectRatio,
+            child: ClipRRect(
+              borderRadius: .circular(16),
+              child: Stack(
+                fit: .expand,
+                children: [
+                  // Show thumbnail while video loads
+                  if (clip.thumbnailPath != null)
+                    VideoMetadataPreviewThumbnail(clip: clip),
+                  // Smooth transition to video player
+                  AnimatedSwitcher(
+                    layoutBuilder: (currentChild, previousChildren) => Stack(
+                      alignment: .center,
+                      fit: .expand,
+                      children: <Widget>[...previousChildren, ?currentChild],
+                    ),
+                    switchInCurve: Curves.easeInOut,
+                    duration: const Duration(milliseconds: 120),
+                    child: isInitialized && controller != null
+                        ? FittedBox(
+                            fit: .cover,
+                            clipBehavior: .hardEdge,
+                            child: SizedBox(
+                              width: controller!.value.size.width,
+                              height: controller!.value.size.height,
+                              child: VideoPlayer(controller!),
+                            ),
+                          )
+                        : const SizedBox.shrink(),
+                  ),
+                ],
               ),
-            ],
-          ),
-        ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -283,12 +297,15 @@ class _CloseButton extends StatelessWidget {
       top: 6,
       left: 6,
       child: SafeArea(
-        child: DivineIconButton(
-          backgroundColor: Color(0x26000000),
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          semanticLabel: 'Close video recorder',
-          iconPath: 'assets/icon/CaretLeft.svg',
-          onTap: () => context.pop(),
+        child: Hero(
+          tag: VideoEditorConstants.heroBackButtonId,
+          child: VideoEditorIconButton(
+            backgroundColor: VineTheme.scrim15,
+            // TODO(l10n): Replace with context.l10n when localization is added.
+            semanticLabel: 'Close video recorder',
+            iconPath: 'assets/icon/CaretLeft.svg',
+            onTap: () => context.pop(),
+          ),
         ),
       ),
     );

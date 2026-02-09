@@ -9,7 +9,7 @@ import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
-import 'package:openvine/widgets/divine_icon_button.dart';
+import 'package:openvine/widgets/video_editor_icon_button.dart';
 import 'package:openvine/widgets/video_clip_editor/video_clip_editor_more_button.dart';
 import 'package:openvine/widgets/video_clip_editor/video_time_display.dart';
 
@@ -103,7 +103,7 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                   Row(
                     spacing: 16,
                     children: [
-                      DivineIconButton(
+                      VideoEditorIconButton(
                         backgroundColor: const Color(0x00000000),
                         iconPath: state.isPlaying
                             ? 'assets/icon/pause.svg'
@@ -113,7 +113,7 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                         semanticLabel: 'Play or pause video',
                       ),
                       if (state.isEditing)
-                        DivineIconButton(
+                        VideoEditorIconButton(
                           backgroundColor: const Color(0x00000000),
                           iconPath: 'assets/icon/trim.svg',
                           onTap: () => _handleSplitClip(context, ref),

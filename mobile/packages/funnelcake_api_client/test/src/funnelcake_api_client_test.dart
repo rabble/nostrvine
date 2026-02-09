@@ -548,6 +548,111 @@ void main() {
         );
       });
 
+      test('includes sort_by query param when provided', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.searchProfiles(query: 'test', sortBy: 'followers');
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['sort_by'], equals('followers'));
+      });
+
+      test('includes has_videos query param when true', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.searchProfiles(query: 'test', hasVideos: true);
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['has_videos'], equals('true'));
+      });
+
+      test('omits has_videos when false (default)', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.searchProfiles(query: 'test');
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters.containsKey('has_videos'), isFalse);
+      });
+
+      test('omits sort_by when not provided', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.searchProfiles(query: 'test');
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters.containsKey('sort_by'), isFalse);
+      });
+
+      test(
+        'constructs URL with all params',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response('[]', 200),
+          );
+
+          await client.searchProfiles(
+            query: 'test',
+            limit: 25,
+            offset: 50,
+            sortBy: 'followers',
+            hasVideos: true,
+          );
+
+          final captured = verify(
+            () => mockHttpClient.get(
+              captureAny(),
+              headers: any(named: 'headers'),
+            ),
+          ).captured;
+
+          final uri = captured.first as Uri;
+          expect(uri.queryParameters['q'], equals('test'));
+          expect(uri.queryParameters['limit'], equals('25'));
+          expect(uri.queryParameters['offset'], equals('50'));
+          expect(uri.queryParameters['sort_by'], equals('followers'));
+          expect(uri.queryParameters['has_videos'], equals('true'));
+        },
+      );
+
       test('handles pubkey as byte array', () async {
         // Funnelcake sometimes returns IDs as ASCII byte arrays
         const byteArrayResponse = '''

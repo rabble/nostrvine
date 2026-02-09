@@ -9,3 +9,4 @@ export 'comments_drag_handle.dart';
 export 'comments_empty_state.dart';
 export 'comments_header.dart';
 export 'comments_list.dart';
+export 'mention_overlay.dart';

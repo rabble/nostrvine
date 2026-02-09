@@ -1,10 +1,20 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/services/gallery_save_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
-/// Bottom bar with "Save draft" and "Post" buttons for video metadata.
+/// Bottom bar with "Save for Later" and "Post" buttons for video metadata.
 ///
 /// Buttons are disabled with reduced opacity when metadata is invalid.
 class VideoMetadataBottomBar extends StatelessWidget {
@@ -14,13 +24,12 @@ class VideoMetadataBottomBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Padding(
-      padding: .fromLTRB(16, 0, 16, 4),
+      padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
       child: Row(
-        crossAxisAlignment: .end,
-        spacing: 16,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // TODO(@hm21): Once the Drafts library exists, uncomment the Drafts button again.
-          // Expanded(child: _SaveDraftButton()),
+          Expanded(child: _SaveForLaterButton()),
+          SizedBox(width: 16),
           Expanded(child: _PostButton()),
         ],
       ),
@@ -28,10 +37,10 @@ class VideoMetadataBottomBar extends StatelessWidget {
   }
 }
 
-/// Outlined button to save the video as a draft.
-/* class _SaveDraftButton extends ConsumerWidget {
-  /// Creates a save draft button.
-  const _SaveDraftButton();
+/// Outlined button to save the video to drafts and gallery without publishing.
+class _SaveForLaterButton extends ConsumerWidget {
+  /// Creates a save for later button.
+  const _SaveForLaterButton();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -41,22 +50,24 @@ class VideoMetadataBottomBar extends StatelessWidget {
 
     return Semantics(
       // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Save draft button',
-      hint: isSaving ? 'Saving draft...' : 'Save video as draft',
+      label: 'Save for later button',
+      hint: isSaving
+          ? 'Saving video...'
+          : 'Save video to drafts and camera roll',
       button: true,
       enabled: !isSaving,
       child: GestureDetector(
-        onTap: isSaving ? null : () => _onSaveDraft(context, ref),
+        onTap: isSaving ? null : () => _onSaveForLater(context, ref),
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),
           opacity: isSaving ? 0.6 : 1.0,
           child: Container(
             decoration: BoxDecoration(
               color: VineTheme.surfaceContainer,
-              border: .all(color: Color(0xFF0E2B21), width: 2),
-              borderRadius: .circular(20),
+              border: Border.all(color: const Color(0xFF0E2B21), width: 2),
+              borderRadius: BorderRadius.circular(20),
             ),
-            padding: const .symmetric(vertical: 10),
+            padding: const EdgeInsets.symmetric(vertical: 10),
             child: Center(
               child: isSaving
                   ? const SizedBox(
@@ -69,10 +80,10 @@ class VideoMetadataBottomBar extends StatelessWidget {
                     )
                   // TODO(l10n): Replace with context.l10n when localization is added.
                   : Text(
-                      'Save draft',
+                      'Save for Later',
                       style: GoogleFonts.bricolageGrotesque(
                         fontSize: 18,
-                        fontWeight: .w800,
+                        fontWeight: FontWeight.w800,
                         color: VineTheme.primary,
                         height: 1.33,
                         letterSpacing: 0.15,
@@ -85,44 +96,133 @@ class VideoMetadataBottomBar extends StatelessWidget {
     );
   }
 
-  Future<void> _onSaveDraft(BuildContext context, WidgetRef ref) async {
-    final success = await ref.read(videoEditorProvider.notifier).saveAsDraft();
+  Future<void> _onSaveForLater(BuildContext context, WidgetRef ref) async {
+    // Get the clips from clip manager
+    final recordingClips = ref.read(clipManagerProvider).clips;
+    if (recordingClips.isEmpty) {
+      Log.warning(
+        'No clips to save',
+        name: '_SaveForLaterButton',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    var saveSuccess = true;
+    String? gallerySaveMessage;
+
+    try {
+      // 1. Get video path and save to gallery FIRST (before draft save deletes
+      // the original file)
+      final videoPath = await recordingClips.first.video.safeFilePath();
+      final gallerySaveService = ref.read(gallerySaveServiceProvider);
+      final galleryResult = await gallerySaveService.saveVideoToGallery(
+        EditorVideo.file(videoPath),
+      );
+
+      gallerySaveMessage = switch (galleryResult) {
+        GallerySaveSuccess() => 'Saved to camera roll',
+        GallerySaveFailure(:final reason) => 'Camera roll: $reason',
+      };
+
+      // 2. Save each clip to the clip library for the Clips tab
+      // (must happen before saveAsDraft which may delete files)
+      final clipLibraryService = ref.read(clipLibraryServiceProvider);
+      final sessionId = 'save_${DateTime.now().millisecondsSinceEpoch}';
+
+      for (final clip in recordingClips) {
+        final clipPath = await clip.video.safeFilePath();
+        final savedClip = SavedClip(
+          id: 'clip_${DateTime.now().microsecondsSinceEpoch}_${clip.id}',
+          filePath: clipPath,
+          thumbnailPath: clip.thumbnailPath,
+          duration: clip.duration,
+          createdAt: DateTime.now(),
+          aspectRatio: clip.targetAspectRatio.name,
+          sessionId: sessionId,
+        );
+
+        await clipLibraryService.saveClip(savedClip);
+
+        Log.info(
+          'Saved clip to library: ${savedClip.id}',
+          name: '_SaveForLaterButton',
+          category: LogCategory.video,
+        );
+      }
+
+      // 3. Save as draft (with metadata) for the Drafts tab
+      // Note: This may delete original files, so it must happen LAST
+      final draftSuccess = await ref
+          .read(videoEditorProvider.notifier)
+          .saveAsDraft();
+      if (!draftSuccess) {
+        Log.warning(
+          'Failed to save draft',
+          name: '_SaveForLaterButton',
+          category: LogCategory.video,
+        );
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to save: $e',
+        name: '_SaveForLaterButton',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      saveSuccess = false;
+    }
 
     if (!context.mounted) return;
 
-    // Store router reference before showing SnackBar, as context may become
-    // invalid after navigate to the home page.
+    // Store router reference before showing SnackBar
     final router = GoRouter.of(context);
-
     final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    // Build the status message
+    String label;
+    if (saveSuccess) {
+      label = gallerySaveMessage != null
+          ? 'Saved to library & camera roll!'
+          : 'Saved to library!';
+    } else {
+      label = 'Failed to save';
+    }
+
     scaffoldMessenger.showSnackBar(
       SnackBar(
         padding: EdgeInsets.zero,
         backgroundColor: Colors.transparent,
         elevation: 0,
-        behavior: .floating,
-        duration: Duration(seconds: 5),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 5),
         content: DivineSnackbarContainer(
           // TODO(l10n): Replace with context.l10n when localization is added.
-          label: success ? 'Draft has been saved!' : 'Failed to save draft',
-          error: !success,
+          label: label,
+          error: !saveSuccess,
           // TODO(l10n): Replace with context.l10n when localization is added.
           actionLabel: 'Go to Library',
           onActionPressed: () {
             scaffoldMessenger.hideCurrentSnackBar();
-            router.push(ClipLibraryScreen.draftsPath);
+            router.push(ClipLibraryScreen.clipsPath);
           },
         ),
       ),
     );
 
-    if (success) {
-      ref.read(videoPublishProvider.notifier).cleanupAfterPublish();
-      context.goHome();
+    if (saveSuccess) {
+      // Navigate first, then cleanup after the frame to avoid
+      // "Bad state: No element" errors from widgets rebuilding
+      // during the transition
+      router.go(HomeScreenRouter.pathForIndex(0));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(videoPublishProvider.notifier).clearAll();
+      });
     }
   }
 }
- */
+
 /// Filled button to publish the video to the feed.
 class _PostButton extends ConsumerWidget {
   /// Creates a post button.
@@ -153,16 +253,16 @@ class _PostButton extends ConsumerWidget {
           child: Container(
             decoration: BoxDecoration(
               color: VineTheme.primary,
-              borderRadius: .circular(20),
+              borderRadius: BorderRadius.circular(20),
             ),
-            padding: const .symmetric(vertical: 12),
+            padding: const EdgeInsets.symmetric(vertical: 12),
             child: Center(
               // TODO(l10n): Replace with context.l10n when localization is added.
               child: Text(
                 'Post',
                 style: GoogleFonts.bricolageGrotesque(
                   fontSize: 18,
-                  fontWeight: .w800,
+                  fontWeight: FontWeight.w800,
                   color: const Color(0xFF002C1C),
                   height: 1.33,
                   letterSpacing: 0.15,

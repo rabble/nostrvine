@@ -347,6 +347,12 @@ class VineTheme {
   /// Scrim at 65% opacity (black 65%).
   static const Color scrim65 = Color(0xA6000000);
 
+  /// Inverse surface color (white) for tertiary buttons.
+  static const Color inverseSurface = Color(0xFFFFFFFF);
+
+  /// Inverse on-surface color (dark green) for text on inverse surfaces.
+  static const Color inverseOnSurface = Color(0xFF00452D);
+
   // Text colors (dark theme optimized)
 
   /// Primary text color (white for dark backgrounds).

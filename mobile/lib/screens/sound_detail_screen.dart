@@ -11,6 +11,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/audio_playback_service.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -627,6 +628,10 @@ class _VideosGridContentState extends ConsumerState<_VideosGridContent> {
         _videoEvents = events;
         _isLoading = false;
       });
+      ScreenAnalyticsService().markDataLoaded(
+        'sound_detail',
+        dataMetrics: {'video_count': events.length},
+      );
     }
   }
 

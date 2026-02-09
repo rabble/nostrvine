@@ -1185,6 +1185,14 @@ class MockNotificationServiceEnhanced extends _i1.Mock
   }
 
   @override
+  _i9.Stream<_i17.NotificationModel> get onNewNotification =>
+      (super.noSuchMethod(
+            Invocation.getter(#onNewNotification),
+            returnValue: _i9.Stream<_i17.NotificationModel>.empty(),
+          )
+          as _i9.Stream<_i17.NotificationModel>);
+
+  @override
   List<_i17.NotificationModel> get notifications =>
       (super.noSuchMethod(
             Invocation.getter(#notifications),
