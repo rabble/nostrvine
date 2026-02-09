@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_clip_preview.dart';
@@ -74,22 +75,25 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
         child: Stack(
           children: [
             Scaffold(
-              backgroundColor: const Color(0xFF000A06),
+              backgroundColor: VineTheme.surfaceContainerHigh,
               appBar: AppBar(
                 backgroundColor: Colors.transparent,
                 surfaceTintColor: Colors.transparent,
-                leading: IconButton(
-                  padding: const .all(8),
-                  icon: SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: SvgPicture.asset(
-                      'assets/icon/CaretLeft.svg',
-                      colorFilter: const .mode(Colors.white, .srcIn),
+                leading: Hero(
+                  tag: VideoEditorConstants.heroBackButtonId,
+                  child: IconButton(
+                    padding: const .all(8),
+                    icon: SizedBox(
+                      width: 32,
+                      height: 32,
+                      child: SvgPicture.asset(
+                        'assets/icon/CaretLeft.svg',
+                        colorFilter: const .mode(Colors.white, .srcIn),
+                      ),
                     ),
+                    onPressed: () => context.pop(),
+                    tooltip: 'Back',
                   ),
-                  onPressed: () => context.pop(),
-                  tooltip: 'Back',
                 ),
                 title: Text(
                   'Post details',
