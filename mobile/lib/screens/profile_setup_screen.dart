@@ -132,7 +132,7 @@ class _ProfileSetupScreenViewState
           final profileRepo = ref.read(profileRepositoryProvider);
           // Return early if NostrClient doesn't have keys yet
           if (profileRepo == null) return;
-          final repoProfile = await profileRepo.getProfile(
+          final repoProfile = await profileRepo.getCachedProfile(
             pubkey: authService.currentPublicKeyHex!,
           );
           final profile = repoProfile != null

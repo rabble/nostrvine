@@ -55,31 +55,6 @@ class ProfileRepository {
   final UserBlockFilter? _userBlockFilter;
   final ProfileSearchFilter? _profileSearchFilter;
 
-  /// Fetches a user profile by pubkey using cache-first strategy.
-  ///
-  /// First checks the local cache (SQLite). If found, returns immediately.
-  /// On cache miss, fetches from Nostr relays, caches the result, and returns.
-  ///
-  /// Returns `null` if no profile exists for the given pubkey.
-  ///
-  /// **Note:** For viewing other users' profiles, prefer using
-  /// [getCachedProfile] and [fetchFreshProfile] separately to implement
-  /// the cache+fresh pattern.
-  @Deprecated(
-    'Use getCachedProfile and fetchFreshProfile for cache+fresh pattern',
-  )
-  Future<UserProfile?> getProfile({required String pubkey}) async {
-    final cachedProfile = await _userProfilesDao.getProfile(pubkey);
-    if (cachedProfile != null) return cachedProfile;
-
-    final profileEvent = await _nostrClient.fetchProfile(pubkey);
-    if (profileEvent == null) return null;
-
-    final profile = UserProfile.fromNostrEvent(profileEvent);
-    await _userProfilesDao.upsertProfile(profile);
-    return profile;
-  }
-
   /// Returns the cached profile from local storage (SQLite) only.
   ///
   /// Does NOT fetch from Nostr relays. Use this for immediate UI display

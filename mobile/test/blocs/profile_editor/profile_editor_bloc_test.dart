@@ -86,7 +86,7 @@ void main() {
           'emits [loading, success] when profile publishes successfully',
           setUp: () {
             when(
-              () => mockProfileRepository.getProfile(pubkey: testPubkey),
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -142,7 +142,7 @@ void main() {
           setUp: () {
             final existingProfile = createTestProfile(nip05: testOriginalNip05);
             when(
-              () => mockProfileRepository.getProfile(pubkey: testPubkey),
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => existingProfile);
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -181,7 +181,7 @@ void main() {
           'publishes profile with null nip05 when username is empty string',
           setUp: () {
             when(
-              () => mockProfileRepository.getProfile(pubkey: testPubkey),
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -234,7 +234,7 @@ void main() {
           'emits [loading, success] when profile and username claim succeed',
           setUp: () {
             when(
-              () => mockProfileRepository.getProfile(pubkey: testPubkey),
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -293,7 +293,7 @@ void main() {
           'emits [loading, failure] with publishFailed error',
           setUp: () {
             when(
-              () => mockProfileRepository.getProfile(pubkey: testPubkey),
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -334,7 +334,7 @@ void main() {
           'does not attempt username claim when profile publish fails',
           setUp: () {
             when(
-              () => mockProfileRepository.getProfile(pubkey: testPubkey),
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -372,7 +372,7 @@ void main() {
           setUp: () {
             final existingProfile = createTestProfile(nip05: testOriginalNip05);
             when(
-              () => mockProfileRepository.getProfile(pubkey: testPubkey),
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => existingProfile);
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -427,7 +427,7 @@ void main() {
           setUp: () {
             final existingProfile = createTestProfile(nip05: testOriginalNip05);
             when(
-              () => mockProfileRepository.getProfile(pubkey: testPubkey),
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => existingProfile);
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -485,7 +485,7 @@ void main() {
           'rolls back to null nip05 when no existing profile',
           setUp: () {
             when(
-              () => mockProfileRepository.getProfile(pubkey: testPubkey),
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => null);
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -546,7 +546,7 @@ void main() {
           setUp: () {
             final existingProfile = createTestProfile(nip05: testOriginalNip05);
             when(
-              () => mockProfileRepository.getProfile(pubkey: testPubkey),
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => existingProfile);
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -601,7 +601,7 @@ void main() {
           setUp: () {
             final existingProfile = createTestProfile(nip05: testOriginalNip05);
             when(
-              () => mockProfileRepository.getProfile(pubkey: testPubkey),
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => existingProfile);
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -662,7 +662,7 @@ void main() {
           setUp: () {
             final existingProfile = createTestProfile(nip05: testOriginalNip05);
             when(
-              () => mockProfileRepository.getProfile(pubkey: testPubkey),
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => existingProfile);
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -721,7 +721,7 @@ void main() {
           setUp: () {
             final existingProfile = createTestProfile(nip05: testOriginalNip05);
             when(
-              () => mockProfileRepository.getProfile(pubkey: testPubkey),
+              () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
             ).thenAnswer((_) async => existingProfile);
             when(
               () => mockProfileRepository.saveProfileEvent(
@@ -1002,7 +1002,7 @@ void main() {
           // First, trigger a ProfileSaved that returns UsernameClaimReserved
           final existingProfile = createTestProfile(nip05: testOriginalNip05);
           when(
-            () => mockProfileRepository.getProfile(pubkey: testPubkey),
+            () => mockProfileRepository.getCachedProfile(pubkey: testPubkey),
           ).thenAnswer((_) async => existingProfile);
           when(
             () => mockProfileRepository.saveProfileEvent(
