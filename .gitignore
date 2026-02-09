@@ -8,7 +8,7 @@
 
 # Claude Code
 .claude/settings.local.json
-.claude/**/*.local.md
+.claude/*.local.md
 
 # Git worktrees
 .worktrees/
