@@ -27,8 +27,9 @@ import 'package:flutter/services.dart';
 class DivineTextField extends StatefulWidget {
   /// Creates a Divine styled text field.
   const DivineTextField({
-    required this.label,
     super.key,
+    this.label,
+    @Deprecated('Use label instead') this.labelText,
     this.controller,
     this.focusNode,
     this.obscureText = false,
@@ -44,10 +45,20 @@ class DivineTextField extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.onEditingComplete,
+    this.minLines,
+    this.maxLines,
+    this.contentPadding,
   });
 
   /// Label text shown inside the field, floats above when focused/filled.
-  final String label;
+  final String? label;
+
+  /// Deprecated: Use [label] instead.
+  @Deprecated('Use label instead')
+  final String? labelText;
+
+  /// The effective label to display (prefers [label] over [labelText]).
+  String? get effectiveLabel => label ?? labelText;
 
   /// Controller for the text field.
   final TextEditingController? controller;
@@ -95,6 +106,15 @@ class DivineTextField extends StatefulWidget {
 
   /// Called when editing is complete.
   final VoidCallback? onEditingComplete;
+
+  /// Minimum number of lines to display.
+  final int? minLines;
+
+  /// Maximum number of lines to display.
+  final int? maxLines;
+
+  /// Custom content padding for the text field.
+  final EdgeInsetsGeometry? contentPadding;
 
   @override
   State<DivineTextField> createState() => _DivineTextFieldState();
@@ -157,6 +177,11 @@ class _DivineTextFieldState extends State<DivineTextField> {
     setState(() => _isObscured = !_isObscured);
   }
 
+  // Fixed content height: label (16px) + gap (4px) + input (24px) = 44px
+  static const double _contentHeight = 44.0;
+  static const double _labelLineHeight = 16.0;
+  static const double _labelGap = 4.0;
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -168,13 +193,14 @@ class _DivineTextFieldState extends State<DivineTextField> {
         padding: EdgeInsets.only(
           left: 24,
           right: widget.obscureText ? 8 : 24,
-          top: 16,
-          bottom: 16,
+          top: 6,
+          bottom: 6,
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: _buildTextField(),
+              child: _buildLabeledTextField(),
             ),
             if (widget.obscureText) _buildVisibilityToggle(),
           ],
@@ -183,10 +209,44 @@ class _DivineTextFieldState extends State<DivineTextField> {
     );
   }
 
-  Widget _buildTextField() {
-    final showObscured = widget.obscureText && _isObscured;
+  Widget _buildLabeledTextField() {
+    final label = widget.effectiveLabel;
+    final hasLabel = label != null && label.isNotEmpty;
+    final showFloatingLabel = hasLabel && _isFloating;
 
-    return TextField(
+    // Fixed height container ensures consistent sizing
+    // Always use same structure: label + gap + input (label hidden when not floating)
+    return SizedBox(
+      height: _contentHeight,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Label - always present for layout, but transparent when not floating
+          SizedBox(
+            height: _labelLineHeight,
+            child: showFloatingLabel
+                ? Text(
+                    label!,
+                    style: VineTheme.labelSmallFont(color: VineTheme.primary),
+                  )
+                : null,
+          ),
+          const SizedBox(height: _labelGap),
+          // TextField - always at same position
+          Expanded(
+            child: _buildTextField(showHint: hasLabel && !_isFloating),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTextField({required bool showHint}) {
+    final showObscured = widget.obscureText && _isObscured;
+    final label = widget.effectiveLabel;
+
+    return TextFormField(
       controller: _controller,
       focusNode: _focusNode,
       obscureText: showObscured,
@@ -198,15 +258,18 @@ class _DivineTextFieldState extends State<DivineTextField> {
       textInputAction: widget.textInputAction,
       textCapitalization: widget.textCapitalization,
       inputFormatters: widget.inputFormatters,
+      validator: widget.validator,
       onTap: widget.onTap,
       onChanged: widget.onChanged,
-      onSubmitted: widget.onSubmitted,
+      onFieldSubmitted: widget.onSubmitted,
       onEditingComplete: widget.onEditingComplete,
+      minLines: widget.minLines,
+      maxLines: widget.obscureText ? 1 : widget.maxLines,
       style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
       cursorColor: VineTheme.primary,
       decoration: InputDecoration(
         isDense: true,
-        contentPadding: EdgeInsets.zero,
+        contentPadding: widget.contentPadding ?? EdgeInsets.zero,
         border: InputBorder.none,
         enabledBorder: InputBorder.none,
         focusedBorder: InputBorder.none,
@@ -214,10 +277,9 @@ class _DivineTextFieldState extends State<DivineTextField> {
         focusedErrorBorder: InputBorder.none,
         disabledBorder: InputBorder.none,
         filled: false,
-        labelText: widget.label,
-        labelStyle: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted),
-        floatingLabelBehavior: FloatingLabelBehavior.auto,
-        floatingLabelStyle: VineTheme.labelSmallFont(color: VineTheme.primary),
+        hintText: showHint ? label : null,
+        hintStyle: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted),
+        errorStyle: VineTheme.bodySmallFont(color: VineTheme.error),
       ),
     );
   }
