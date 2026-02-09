@@ -16,21 +16,12 @@ appId: co.openvine.app
 - tapOn: I am 16 years or older
 - tapOn: "I agree to the "
 
-# Handle fresh install vs returning user
-# Fresh install shows "Get Started", returning user shows "Start with a new identity"
-# Use a variable to prevent both branches from executing
-- evalScript: ${output.isFreshInstall = false}
-
 - runFlow:
     when:
       visible: Get Started
     commands:
-      - evalScript: ${output.isFreshInstall = true}
       - tapOn: Get Started
 
-- evalScript: |
-    console.log('DEBUG: isFreshInstall is:', output.isFreshInstall);
-    
 - runFlow:
     when:
       visible: Continue with Saved Keys
