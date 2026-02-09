@@ -56,28 +56,32 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
           bloc.add(const VideoEditorMainSubEditorClosed());
         }
       },
-      child: LayoutBuilder(
-        builder: (_, constraints) {
-          return FittedBox(
-            fit: .cover,
-            child: SizedBox(
-              width: constraints.biggest.height / clip.targetAspectRatio.value,
-              height: constraints.biggest.height,
-              // Wraps sub-editors in a nested Navigator so they open within
-              // the fitted aspect-ratio area instead of full-screen, since
-              // cropping hasn't been applied yet.
-              child: Navigator(
-                clipBehavior: .none,
-                onGenerateRoute: (_) {
-                  return PageRouteBuilder(
-                    pageBuilder: (_, _, _) =>
-                        _VideoEditor(constraints: constraints),
-                  );
-                },
+      child: Padding(
+        padding: const .only(bottom: VideoEditorConstants.bottomBarHeight),
+        child: LayoutBuilder(
+          builder: (_, constraints) {
+            return FittedBox(
+              fit: .cover,
+              child: SizedBox(
+                width:
+                    constraints.biggest.height / clip.targetAspectRatio.value,
+                height: constraints.biggest.height,
+                // Wraps sub-editors in a nested Navigator so they open within
+                // the fitted aspect-ratio area instead of full-screen, since
+                // cropping hasn't been applied yet.
+                child: Navigator(
+                  clipBehavior: .none,
+                  onGenerateRoute: (_) {
+                    return PageRouteBuilder(
+                      pageBuilder: (_, _, _) =>
+                          _VideoEditor(constraints: constraints),
+                    );
+                  },
+                ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -102,7 +106,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   bool _isInitialized = false;
   bool _isImportingHistory = false;
   bool _hasImportedHistory = false;
-  bool _isLayerBeingTransformed = false;
+
+  bool get _isLayerBeingTransformed => _selectedLayer != null;
+
+  Layer? _selectedLayer;
 
   @override
   void initState() {
@@ -167,6 +174,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         VideoEditorMainCapabilitiesChanged(
           canUndo: editor?.canUndo ?? false,
           canRedo: editor?.canRedo ?? false,
+          layers: editor?.activeLayers,
         ),
       );
     });
@@ -345,17 +353,30 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           onStartCloseSubEditor: (_) =>
               bloc.add(const VideoEditorMainSubEditorClosed()),
           onScaleStart: (_) {
-            _isLayerBeingTransformed = scope.editor?.hasSelectedLayers == true;
             bloc.add(const VideoEditorLayerInteractionStarted());
+            _selectedLayer = scope.editor?.selectedLayer;
+          },
+          onScaleUpdate: (details) {
+            if (!_isLayerBeingTransformed) return;
+            final isOverRemoveArea = scope.isOverRemoveArea(details.focalPoint);
+            bloc.add(
+              VideoEditorLayerOverRemoveAreaChanged(isOver: isOverRemoveArea),
+            );
           },
           onScaleEnd: (_) {
-            bloc.add(const VideoEditorLayerInteractionEnded());
-
             if (_isLayerBeingTransformed) {
+              if (bloc.state.isLayerOverRemoveArea) {
+                scope.editor?.activeLayers.remove(_selectedLayer!);
+              }
+
               _onStateHistoryChange(scope, bloc);
-              _isLayerBeingTransformed = false;
+              _selectedLayer = null;
             }
+
+            bloc.add(const VideoEditorLayerInteractionEnded());
           },
+          onAddLayer: (layer) => _syncMainCapabilities(scope, bloc),
+          onRemoveLayer: (layer) => _syncMainCapabilities(scope, bloc),
           onCreateTextLayer: scope.onAddEditTextLayer,
           onEditTextLayer: scope.onAddEditTextLayer,
         ),
