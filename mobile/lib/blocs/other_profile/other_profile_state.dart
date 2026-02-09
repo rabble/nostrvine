@@ -10,9 +10,6 @@ enum OtherProfileErrorType {
 
   /// Network or relay error occurred.
   networkError,
-
-  /// An unexpected error occurred.
-  unknown,
 }
 
 /// Base class for all other profile states.
