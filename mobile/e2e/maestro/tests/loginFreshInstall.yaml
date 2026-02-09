@@ -28,9 +28,12 @@ appId: co.openvine.app
       - evalScript: ${output.isFreshInstall = true}
       - tapOn: Get Started
 
+- evalScript: |
+    console.log('DEBUG: isFreshInstall is:', output.isFreshInstall);
+    
 - runFlow:
     when:
-      true: ${output.isFreshInstall == false} # Use == for comparison
+      visible: Continue with Saved Keys
     commands:
       - assertVisible: Start with a new identity
       - tapOn: Start with a new identity
