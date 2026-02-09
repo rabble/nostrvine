@@ -32,7 +32,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('No Clips Yet'), findsOneWidget);
+      expect(find.text('Library Empty'), findsOneWidget);
       expect(find.text('Record a Video'), findsOneWidget);
     });
 

@@ -1,11 +1,8 @@
-// ABOUTME: Tests for VideoPoolConfig model
-// ABOUTME: Validates default values, custom config, assertions, and equality
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 void main() {
-  group('VideoPoolConfig', () {
+  group(VideoPoolConfig, () {
     group('constructor', () {
       test('creates with default values', () {
         const config = VideoPoolConfig();
@@ -13,6 +10,13 @@ void main() {
         expect(config.maxPlayers, equals(5));
         expect(config.preloadAhead, equals(2));
         expect(config.preloadBehind, equals(1));
+        expect(config.mediaSourceResolver, isNull);
+        expect(config.onVideoReady, isNull);
+        expect(config.positionCallback, isNull);
+        expect(
+          config.positionCallbackInterval,
+          equals(const Duration(milliseconds: 200)),
+        );
       });
 
       test('accepts custom maxPlayers', () {
@@ -69,11 +73,46 @@ void main() {
         expect(config.preloadBehind, equals(0));
       });
 
-      test('can be created as const', () {
+      test('can be created as const when no hooks are provided', () {
         const config1 = VideoPoolConfig();
         const config2 = VideoPoolConfig();
 
         expect(identical(config1, config2), isTrue);
+      });
+
+      test('accepts custom mediaSourceResolver', () {
+        String? resolver(VideoItem video) => '/cached/${video.id}';
+
+        final config = VideoPoolConfig(mediaSourceResolver: resolver);
+
+        expect(config.mediaSourceResolver, equals(resolver));
+      });
+
+      test('accepts custom onVideoReady', () {
+        void callback(int index, Player player) {}
+
+        final config = VideoPoolConfig(onVideoReady: callback);
+
+        expect(config.onVideoReady, equals(callback));
+      });
+
+      test('accepts custom positionCallback', () {
+        void callback(int index, Duration position) {}
+
+        final config = VideoPoolConfig(positionCallback: callback);
+
+        expect(config.positionCallback, equals(callback));
+      });
+
+      test('accepts custom positionCallbackInterval', () {
+        const config = VideoPoolConfig(
+          positionCallbackInterval: Duration(seconds: 1),
+        );
+
+        expect(
+          config.positionCallbackInterval,
+          equals(const Duration(seconds: 1)),
+        );
       });
     });
 
@@ -108,7 +147,7 @@ void main() {
     });
 
     group('equality', () {
-      test('configs with same values are equal', () {
+      test('configs with same default values are equal', () {
         const config1 = VideoPoolConfig();
         const config2 = VideoPoolConfig();
 
@@ -148,6 +187,57 @@ void main() {
 
         expect(config == otherObject, isFalse);
       });
+
+      test('configs with different mediaSourceResolver are not equal', () {
+        String? resolverA(VideoItem video) => '/a/${video.id}';
+        String? resolverB(VideoItem video) => '/b/${video.id}';
+
+        final config1 = VideoPoolConfig(mediaSourceResolver: resolverA);
+        final config2 = VideoPoolConfig(mediaSourceResolver: resolverB);
+
+        expect(config1, isNot(equals(config2)));
+      });
+
+      test('configs with same mediaSourceResolver are equal', () {
+        String? resolver(VideoItem video) => '/cached/${video.id}';
+
+        final config1 = VideoPoolConfig(mediaSourceResolver: resolver);
+        final config2 = VideoPoolConfig(mediaSourceResolver: resolver);
+
+        expect(config1, equals(config2));
+      });
+
+      test('configs with different onVideoReady are not equal', () {
+        void callbackA(int index, Player player) {}
+        void callbackB(int index, Player player) {}
+
+        final config1 = VideoPoolConfig(onVideoReady: callbackA);
+        final config2 = VideoPoolConfig(onVideoReady: callbackB);
+
+        expect(config1, isNot(equals(config2)));
+      });
+
+      test('configs with different positionCallback are not equal', () {
+        void callbackA(int index, Duration position) {}
+        void callbackB(int index, Duration position) {}
+
+        final config1 = VideoPoolConfig(positionCallback: callbackA);
+        final config2 = VideoPoolConfig(positionCallback: callbackB);
+
+        expect(config1, isNot(equals(config2)));
+      });
+
+      test(
+        'configs with different positionCallbackInterval are not equal',
+        () {
+          const config1 = VideoPoolConfig();
+          const config2 = VideoPoolConfig(
+            positionCallbackInterval: Duration(seconds: 1),
+          );
+
+          expect(config1, isNot(equals(config2)));
+        },
+      );
     });
 
     group('hashCode', () {
@@ -174,6 +264,51 @@ void main() {
 
         expect(hashCode1, equals(hashCode2));
         expect(hashCode2, equals(hashCode3));
+      });
+
+      test('different hooks produce different hashCode', () {
+        String? resolver(VideoItem video) => '/cached/${video.id}';
+
+        const config1 = VideoPoolConfig();
+        final config2 = VideoPoolConfig(mediaSourceResolver: resolver);
+
+        expect(config1.hashCode, isNot(equals(config2.hashCode)));
+      });
+    });
+
+    group('hooks', () {
+      test('mediaSourceResolver is invoked with correct video', () {
+        const video = VideoItem(id: 'test-id', url: 'https://example.com');
+        String? resolver(VideoItem v) => '/cached/${v.id}';
+
+        final config = VideoPoolConfig(mediaSourceResolver: resolver);
+
+        expect(config.mediaSourceResolver!(video), equals('/cached/test-id'));
+      });
+
+      test('mediaSourceResolver can return null', () {
+        const video = VideoItem(id: 'test-id', url: 'https://example.com');
+        String? resolver(VideoItem v) => null;
+
+        final config = VideoPoolConfig(mediaSourceResolver: resolver);
+
+        expect(config.mediaSourceResolver!(video), isNull);
+      });
+
+      test('positionCallback is invoked with index and position', () {
+        int? capturedIndex;
+        Duration? capturedPosition;
+
+        void callback(int index, Duration position) {
+          capturedIndex = index;
+          capturedPosition = position;
+        }
+
+        final config = VideoPoolConfig(positionCallback: callback);
+        config.positionCallback!(3, const Duration(seconds: 5));
+
+        expect(capturedIndex, equals(3));
+        expect(capturedPosition, equals(const Duration(seconds: 5)));
       });
     });
 

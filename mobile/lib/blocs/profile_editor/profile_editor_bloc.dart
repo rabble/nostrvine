@@ -211,7 +211,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     final currentProfile = await _profileRepository.getProfile(
       pubkey: event.pubkey,
     );
-    final nip05 = username != null ? '$username@divine.video' : null;
+    final nip05 = username != null ? '_@$username.divine.video' : null;
 
     Log.info(
       '📝 saveProfile: displayName=$displayName, '

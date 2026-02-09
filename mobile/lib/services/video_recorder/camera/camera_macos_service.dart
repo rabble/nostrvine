@@ -173,13 +173,41 @@ class CameraMacOSService extends CameraService {
       _hasFlash = hasFlash;
       onUpdateState(forceCameraRebuild: true);
     } catch (e) {
-      _initializationError = 'Camera initialization failed: $e';
+      _initializationError = _getUserFriendlyErrorMessage(e.toString());
       Log.error(
         '📷 Failed to initialize camera controller: $e',
         name: 'CameraMacOSService',
         category: .video,
       );
     }
+  }
+
+  /// Converts native camera error messages to user-friendly descriptions.
+  String _getUserFriendlyErrorMessage(String error) {
+    final errorLower = error.toLowerCase();
+
+    if (errorLower.contains('cannot use') ||
+        errorLower.contains('in use') ||
+        errorLower.contains('busy')) {
+      return 'Camera is being used by another app. '
+          'Please close other apps using the camera and try again.';
+    }
+
+    if (errorLower.contains('denied') ||
+        errorLower.contains('not authorized') ||
+        errorLower.contains('permission')) {
+      return 'Camera access denied. '
+          'Please allow camera access in System Settings > Privacy & Security.';
+    }
+
+    if (errorLower.contains('not found') ||
+        errorLower.contains('no camera') ||
+        errorLower.contains('unavailable')) {
+      return 'No camera found. Please connect a camera and try again.';
+    }
+
+    // Default fallback - still better than raw error
+    return 'Unable to access camera. Please try again.';
   }
 
   @override

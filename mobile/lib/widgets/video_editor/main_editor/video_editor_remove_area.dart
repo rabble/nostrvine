@@ -4,18 +4,21 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 
 class VideoEditorRemoveArea extends ConsumerWidget {
-  const VideoEditorRemoveArea();
+  const VideoEditorRemoveArea({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final scope = VideoEditorScope.of(context);
     final isLayerOverRemoveArea = context.select(
       (VideoEditorMainBloc bloc) => bloc.state.isLayerOverRemoveArea,
     );
 
     return Center(
       child: AnimatedScale(
+        key: scope.removeAreaKey,
         scale: isLayerOverRemoveArea ? 1.4 : 1.0,
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeInOut,

@@ -15,7 +15,7 @@ class ProfileStatsRowWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.symmetric(horizontal: 20),
+    margin: const EdgeInsets.symmetric(horizontal: 24),
     padding: const EdgeInsets.all(16),
     decoration: BoxDecoration(
       color: VineTheme.cardBackground,

@@ -49,7 +49,7 @@ void main() {
 
     setUp(() async {
       // Create real services
-      final keyContainer = SecureKeyContainer.generate();
+      final keyContainer = await SecureKeyContainer.generate();
       nostrService = NostrServiceFactory.create(keyContainer: keyContainer);
       subscriptionManager = SubscriptionManager(nostrService);
       videoEventService = VideoEventService(

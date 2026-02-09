@@ -64,6 +64,9 @@ void main() {
         () => mockProfileRepository.searchUsers(
           query: any(named: 'query'),
           limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+          sortBy: any(named: 'sortBy'),
+          hasVideos: any(named: 'hasVideos'),
         ),
       ).thenAnswer((_) async => <UserProfile>[]);
     });

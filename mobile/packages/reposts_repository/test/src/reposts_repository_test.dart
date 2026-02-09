@@ -948,6 +948,16 @@ void main() {
 
         verify(() => mockLocalStorage.clearAll()).called(1);
       });
+
+      test('does not throw when called after dispose', () async {
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+        )..dispose();
+
+        // clearCache after dispose should not throw "Cannot add new events
+        // after calling close" on the BehaviorSubject.
+        await expectLater(repository.clearCache(), completes);
+      });
     });
 
     group('watchRepostedAddressableIds', () {

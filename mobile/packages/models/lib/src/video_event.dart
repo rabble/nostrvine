@@ -262,7 +262,10 @@ class VideoEvent {
                 // Blurhash for progressive loading
                 blurhash ??= value;
               case 'duration':
-                duration ??= double.tryParse(value)?.round();
+                final parsedDuration = double.tryParse(value);
+                if (parsedDuration != null && parsedDuration.isFinite) {
+                  duration ??= parsedDuration.round();
+                }
             }
           });
         case 'title':

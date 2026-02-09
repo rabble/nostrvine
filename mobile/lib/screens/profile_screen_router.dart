@@ -23,6 +23,7 @@ import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
@@ -628,6 +629,15 @@ class _ProfileDataView extends ConsumerWidget {
 
     // Get profile stats
     final profileStatsAsync = ref.watch(fetchProfileStatsProvider(userIdHex));
+
+    if (videosAsync is AsyncData) {
+      ScreenAnalyticsService().markDataLoaded(
+        'own_profile',
+        dataMetrics: {
+          'video_count': videosAsync.asData?.value.videos.length ?? 0,
+        },
+      );
+    }
 
     return BlocListener<BackgroundPublishBloc, BackgroundPublishState>(
       listenWhen: (previous, current) {

@@ -45,7 +45,7 @@ void main() {
 
       // Create real services for live testing using the factory pattern
       // Generate a test key container for live testing
-      final keyContainer = SecureKeyContainer.generate();
+      final keyContainer = await SecureKeyContainer.generate();
       print('Generated test keys: ${keyContainer.publicKeyHex}...');
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();

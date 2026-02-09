@@ -138,6 +138,8 @@ class FunnelcakeApiClient {
   /// and NIP-05 identifiers.
   /// [limit] is the maximum number of profiles to return (defaults to 50).
   /// [offset] is the number of results to skip for pagination.
+  /// [sortBy] optionally sorts results server-side (e.g., 'followers').
+  /// [hasVideos] when true, filters to only users who have published videos.
   ///
   /// Returns a list of [ProfileSearchResult] objects.
   ///
@@ -151,6 +153,8 @@ class FunnelcakeApiClient {
     required String query,
     int limit = 50,
     int offset = 0,
+    String? sortBy,
+    bool hasVideos = false,
   }) async {
     if (!isAvailable) {
       throw const FunnelcakeNotConfiguredException();
@@ -167,6 +171,12 @@ class FunnelcakeApiClient {
     };
     if (offset > 0) {
       queryParams['offset'] = offset.toString();
+    }
+    if (sortBy != null) {
+      queryParams['sort_by'] = sortBy;
+    }
+    if (hasVideos) {
+      queryParams['has_videos'] = 'true';
     }
 
     final uri = Uri.parse(

@@ -146,12 +146,25 @@ class _ProfileSetupScreenViewState
               _pictureController.text = profile.picture ?? '';
 
               // Extract username from NIP-05 if present
-              if (profile.nip05 != null &&
-                  (profile.nip05!.endsWith('@divine.video') ||
-                      profile.nip05!.endsWith('@openvine.co'))) {
-                final username = profile.nip05!.split('@')[0];
-                _nip05Controller.text = username;
-                _initialUsername = username;
+              // Support both new subdomain format and legacy formats
+              if (profile.nip05 != null) {
+                String? username;
+                // New subdomain format: _@username.divine.video
+                final subdomainMatch = RegExp(
+                  r'^_@([a-z0-9\-_.]+)\.divine\.video$',
+                ).firstMatch(profile.nip05!);
+                if (subdomainMatch != null) {
+                  username = subdomainMatch.group(1);
+                }
+                // Old format: username@divine.video or username@openvine.co
+                else if (profile.nip05!.endsWith('@divine.video') ||
+                    profile.nip05!.endsWith('@openvine.co')) {
+                  username = profile.nip05!.split('@')[0];
+                }
+                if (username != null) {
+                  _nip05Controller.text = username;
+                  _initialUsername = username;
+                }
               }
 
               // Load profile color from banner field
@@ -898,7 +911,7 @@ class _ProfileSetupScreenViewState
                                   prefixStyle: VineTheme.bodyLargeFont(
                                     color: VineTheme.onSurfaceMuted,
                                   ),
-                                  suffixText: '@divine.video',
+                                  suffixText: '.divine.video',
                                   suffixStyle: VineTheme.bodyLargeFont(
                                     color: VineTheme.onSurfaceMuted,
                                   ),
@@ -1711,16 +1724,16 @@ class _ProfileColorPicker extends StatelessWidget {
   final Color? selectedColor;
   final ValueChanged<Color?> onColorChanged;
 
-  // Preset colors inspired by classic Vine profile colors
+  // Preset colors from VineTheme brand accent palette
   static const _presetColors = [
-    Color(0xFF33CCBF), // Teal (Vine default)
-    Color(0xFF6B93D6), // Blue
-    Color(0xFF9B59B6), // Purple
-    Color(0xFFE74C3C), // Red
-    Color(0xFFF39C12), // Orange
-    Color(0xFF2ECC71), // Green
-    Color(0xFFE91E63), // Pink
-    Color(0xFF00BCD4), // Cyan
+    VineTheme.vineGreen, // Green (brand primary)
+    VineTheme.accentBlue, // Blue
+    VineTheme.accentPurple, // Purple
+    VineTheme.likeRed, // Red
+    VineTheme.accentOrange, // Orange
+    VineTheme.accentLime, // Lime
+    VineTheme.accentPink, // Pink
+    VineTheme.accentViolet, // Violet
   ];
 
   @override
@@ -1830,7 +1843,7 @@ class _CustomColorButton extends StatelessWidget {
   }
 
   Future<void> _showColorPicker(BuildContext context) async {
-    Color pickerColor = currentColor ?? const Color(0xFF33CCBF);
+    Color pickerColor = currentColor ?? VineTheme.vineGreen;
 
     final result = await showDialog<Color>(
       context: context,

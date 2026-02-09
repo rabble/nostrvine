@@ -2,6 +2,10 @@ import 'package:file/file.dart';
 import 'package:flutter_cache_manager/flutter_cache_manager.dart';
 import 'package:media_cache/media_cache.dart';
 import 'package:mocktail/mocktail.dart';
+import 'package:sqflite/sqflite.dart' as sqflite;
+
+/// A mock [sqflite.Database] for testing.
+class MockDatabase extends Mock implements sqflite.Database {}
 
 /// A mock [FileInfo] for testing.
 class MockFileInfo extends Mock implements FileInfo {}

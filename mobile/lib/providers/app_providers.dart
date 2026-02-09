@@ -43,6 +43,7 @@ import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/email_verification_listener.dart';
 import 'package:openvine/services/event_router.dart';
+import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
@@ -79,6 +80,7 @@ import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/search_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:permissions_service/permissions_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -371,6 +373,20 @@ GeoBlockingService geoBlockingService(Ref ref) {
   return GeoBlockingService();
 }
 
+/// Permissions service for checking and requesting OS permissions
+@riverpod
+PermissionsService permissionsService(Ref ref) {
+  return const PermissionHandlerPermissionsService();
+}
+
+/// Gallery save service for saving videos to device camera roll
+@riverpod
+GallerySaveService gallerySaveService(Ref ref) {
+  return GallerySaveService(
+    permissionsService: ref.watch(permissionsServiceProvider),
+  );
+}
+
 /// Secure key storage service (foundational service)
 @Riverpod(keepAlive: true)
 SecureKeyStorage secureKeyStorage(Ref ref) {
@@ -593,6 +609,11 @@ AuthState currentAuthState(Ref ref) {
 ///
 /// This prevents race conditions where auth state is 'authenticated' but
 /// the NostrClient hasn't yet rebuilt with the new keys.
+///
+/// NostrClient.initialize() runs asynchronously in a Future.microtask after
+/// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
+/// because it's the same object reference. When not ready but authenticated,
+/// we schedule brief retries to catch the async initialization.
 @Riverpod(keepAlive: true)
 bool isNostrReady(Ref ref) {
   final authService = ref.watch(authServiceProvider);
@@ -603,7 +624,31 @@ bool isNostrReady(Ref ref) {
   if (!authService.isAuthenticated) return false;
 
   final nostrClient = ref.watch(nostrServiceProvider);
-  return nostrClient.hasKeys;
+  final ready = nostrClient.hasKeys;
+
+  if (!ready) {
+    // NostrClient.initialize() runs asynchronously in a Future.microtask
+    // after NostrService.build() returns. Riverpod can't detect when
+    // hasKeys transitions because it's the same object reference.
+    // Schedule retries at increasing intervals to catch the transition.
+    var disposed = false;
+    ref.onDispose(() => disposed = true);
+
+    for (final delayMs in [100, 500, 2000]) {
+      Future.delayed(Duration(milliseconds: delayMs), () {
+        if (!disposed && nostrClient.hasKeys) {
+          Log.info(
+            'isNostrReady: NostrClient.hasKeys became true after ${delayMs}ms, invalidating',
+            name: 'isNostrReadyProvider',
+            category: LogCategory.system,
+          );
+          ref.invalidateSelf();
+        }
+      });
+    }
+  }
+
+  return ready;
 }
 
 /// Provider that sets Zendesk user identity when auth state changes
@@ -755,17 +800,19 @@ UserProfileService userProfileService(Ref ref) {
   return service;
 }
 
-/// Social service depends on Nostr service and Auth service
+/// Social service depends on Nostr service, Auth service, and Analytics API
 @Riverpod(keepAlive: true)
 SocialService socialService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
+  final analyticsApiService = ref.watch(analyticsApiServiceProvider);
 
   return SocialService(
     nostrService,
     authService,
     personalEventCache: personalEventCache,
+    analyticsApiService: analyticsApiService,
   );
 }
 

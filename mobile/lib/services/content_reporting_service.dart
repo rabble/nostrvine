@@ -175,7 +175,10 @@ class ContentReportingService {
         return ReportResult.failure('Failed to create report event');
       }
 
-      final sentEvent = await _nostrService.publishEvent(reportEvent);
+      final sentEvent = await _nostrService.publishEvent(
+        reportEvent,
+        targetRelays: [moderationRelayUrl],
+      );
       if (sentEvent == null) {
         Log.error(
           'Failed to publish report to relays',
