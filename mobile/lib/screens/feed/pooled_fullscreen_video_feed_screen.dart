@@ -92,6 +92,12 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   }
 }
 
+/// Factory function for creating a [VideoFeedController].
+///
+/// Used for dependency injection in tests.
+typedef VideoFeedControllerFactory =
+    VideoFeedController Function(List<VideoItem> videos, int initialIndex);
+
 /// Content widget for the fullscreen video feed.
 ///
 /// Manages the [VideoFeedController] lifecycle and wires hooks to dispatch
@@ -100,10 +106,22 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
 class FullscreenFeedContent extends StatefulWidget {
   /// Creates fullscreen feed content.
   @visibleForTesting
-  const FullscreenFeedContent({this.contextTitle, super.key});
+  const FullscreenFeedContent({
+    this.contextTitle,
+    @visibleForTesting this.controllerFactory,
+    super.key,
+  });
 
   /// Optional title for context display.
   final String? contextTitle;
+
+  /// Optional factory for creating the [VideoFeedController].
+  ///
+  /// If provided, this factory is used instead of the default controller
+  /// creation. This allows tests to inject a custom controller with
+  /// hooks that can be verified.
+  @visibleForTesting
+  final VideoFeedControllerFactory? controllerFactory;
 
   @override
   State<FullscreenFeedContent> createState() => _FullscreenFeedContentState();
@@ -120,10 +138,19 @@ class _FullscreenFeedContentState extends State<FullscreenFeedContent> {
   }
 
   /// Creates a VideoFeedController with hooks wired to dispatch BLoC events.
+  ///
+  /// If [widget.controllerFactory] is provided (for testing), uses that
+  /// instead of the default controller creation.
   VideoFeedController _createController(
     List<VideoItem> videos,
     int initialIndex,
   ) {
+    // Use injected factory if provided (for testing)
+    final factory = widget.controllerFactory;
+    if (factory != null) {
+      return factory(videos, initialIndex);
+    }
+
     return VideoFeedController(
       videos: videos,
       pool: PlayerPool.instance,
