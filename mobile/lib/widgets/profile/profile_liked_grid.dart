@@ -8,8 +8,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Grid widget displaying user's liked videos
 ///
@@ -173,17 +174,24 @@ class _LikedGridTile extends StatelessWidget {
           'videoId=${videoEvent.id}',
           category: LogCategory.video,
         );
-        // Use LikedVideosFeedSource for fullscreen playback
+        // Use PooledFullscreenVideoFeedScreen for fullscreen playback
+        final bloc = context.read<ProfileLikedVideosBloc>();
         context.push(
-          FullscreenVideoFeedScreen.path,
-          extra: FullscreenVideoFeedArgs(
-            source: LikedVideosFeedSource(allVideos),
+          PooledFullscreenVideoFeedScreen.path,
+          extra: PooledFullscreenVideoFeedArgs(
+            // Start with current videos, then listen for updates (pagination)
+            videosStream: bloc.stream
+                .map((state) => state.videos)
+                .startWith(bloc.state.videos),
             initialIndex: index,
+            onLoadMore: () =>
+                bloc.add(const ProfileLikedVideosLoadMoreRequested()),
+            contextTitle: 'Liked Videos',
           ),
         );
         Log.info(
-          '✅ ProfileLikedGrid: Called pushVideoFeed with '
-          'LikedVideosFeedSource at index $index',
+          '✅ ProfileLikedGrid: Called push with '
+          'PooledFullscreenVideoFeedScreen at index $index',
           category: LogCategory.video,
         );
       },
