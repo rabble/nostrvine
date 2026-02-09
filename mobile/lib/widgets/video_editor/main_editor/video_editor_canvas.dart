@@ -303,9 +303,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           showControls: false,
           widgets: VideoEditorWidgets(
             videoSetupLoadingIndicator: _VideoSetupLoadingIndicator(
-              size: widget.renderSize,
+              renderSize: widget.renderSize,
+              bodySize: widget.bodySize,
               targetAspectRatio: targetAspectRatio,
-              bodyAspectRatio: widget.bodySize.aspectRatio,
             ),
           ),
         ),
@@ -407,23 +407,29 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
 class _VideoSetupLoadingIndicator extends StatelessWidget {
   const _VideoSetupLoadingIndicator({
-    required this.size,
+    required this.renderSize,
+    required this.bodySize,
     required this.targetAspectRatio,
-    required this.bodyAspectRatio,
   });
 
-  final Size size;
-  final double bodyAspectRatio;
+  final Size renderSize;
+  final Size bodySize;
   final model.AspectRatio targetAspectRatio;
 
   @override
   Widget build(BuildContext context) {
-    final scope = VideoEditorScope.of(context);
     final useFullSize =
         targetAspectRatio == .vertical && (kIsWeb || !Platform.isMacOS);
 
-    final size = Size(this.size.width, this.size.width / bodyAspectRatio);
-    final radius = Radius.circular(32 * scope.originalClipAspectRatio);
+    // Calculate the scale factor that FittedBox.cover applies
+    final scale = max(
+      bodySize.width / renderSize.width,
+      bodySize.height / renderSize.height,
+    );
+
+    // Size in renderSize coordinates that equals bodySize after scaling
+    final size = bodySize / scale;
+    final radius = Radius.circular(32 / scale);
 
     return Center(
       child: ClipRRect(
