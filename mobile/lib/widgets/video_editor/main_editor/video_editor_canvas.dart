@@ -414,12 +414,13 @@ class _VideoSetupLoadingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final scope = VideoEditorScope.of(context);
     final useFullSize =
         targetAspectRatio == .vertical && (kIsWeb || !Platform.isMacOS);
 
     return Center(
       child: ClipRRect(
-        borderRadius: .all(.circular(32)),
+        borderRadius: .all(.circular(32 * scope.originalClipAspectRatio)),
         child: useFullSize
             ? SizedBox.fromSize(
                 size: size,
@@ -429,7 +430,7 @@ class _VideoSetupLoadingIndicator extends StatelessWidget {
                 width: size.shortestSide,
                 height: size.shortestSide / targetAspectRatio.value,
                 child: VideoEditorThumbnail(
-                  contentSize: Size.square(size.shortestSide),
+                  contentSize: .square(size.shortestSide),
                 ),
               ),
       ),
