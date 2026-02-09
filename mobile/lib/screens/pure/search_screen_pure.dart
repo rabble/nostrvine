@@ -18,6 +18,7 @@ import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/search_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -212,6 +213,14 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
           _isSearching = false;
         });
         ref.read(searchScreenVideosProvider.notifier).state = filteredVideos;
+
+        ScreenAnalyticsService().markDataLoaded(
+          'search',
+          dataMetrics: {
+            'video_count': filteredVideos.length,
+            'hashtag_count': hashtags.length,
+          },
+        );
       }
 
       Log.info(

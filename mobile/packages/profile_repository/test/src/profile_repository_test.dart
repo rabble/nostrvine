@@ -604,7 +604,10 @@ void main() {
           when(
             () => mockFunnelcakeClient.searchProfiles(
               query: 'alice',
-              limit: 200,
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
             (_) async => [
@@ -645,8 +648,13 @@ void main() {
           expect(result.any((p) => p.displayName == 'Alice WS'), isTrue);
 
           verify(
-            () =>
-                mockFunnelcakeClient.searchProfiles(query: 'alice', limit: 200),
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
           ).called(1);
           verify(
             () => mockNostrClient.queryUsers('alice', limit: 200),
@@ -681,6 +689,9 @@ void main() {
           () => mockFunnelcakeClient.searchProfiles(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
           ),
         );
         verify(() => mockNostrClient.queryUsers('test', limit: 200)).called(1);
@@ -692,7 +703,10 @@ void main() {
         when(
           () => mockFunnelcakeClient.searchProfiles(
             query: 'test',
-            limit: 200,
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
           ),
         ).thenThrow(Exception('REST API error'));
 
@@ -724,7 +738,10 @@ void main() {
         when(
           () => mockFunnelcakeClient.searchProfiles(
             query: 'alice',
-            limit: 200,
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
           ),
         ).thenAnswer(
           (_) async => [
@@ -763,6 +780,108 @@ void main() {
         expect(result, hasLength(1));
         expect(result.first.displayName, equals('Alice REST'));
       });
+
+      test(
+        'skips WebSocket on paginated request (offset > 0)',
+        () async {
+          // Arrange
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              offset: 50,
+              sortBy: 'followers',
+              hasVideos: true,
+            ),
+          ).thenAnswer(
+            (_) async => [
+              ProfileSearchResult(
+                pubkey: 'a' * 64,
+                displayName: 'Alice Page 2',
+                createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              ),
+            ],
+          );
+
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          // Act
+          final result = await repoWithFunnelcake.searchUsers(
+            query: 'alice',
+            offset: 50,
+            sortBy: 'followers',
+            hasVideos: true,
+          );
+
+          // Assert
+          expect(result, hasLength(1));
+          expect(result.first.displayName, equals('Alice Page 2'));
+
+          // WebSocket should NOT have been called for offset > 0
+          verifyNever(
+            () => mockNostrClient.queryUsers(
+              any(),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'skips client-side filter when sortBy is set',
+        () async {
+          // Arrange
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: 'followers',
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              ProfileSearchResult(
+                pubkey: 'a' * 64,
+                displayName: 'Alice REST',
+                createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              ),
+            ],
+          );
+
+          when(
+            () => mockNostrClient.queryUsers('alice', limit: 200),
+          ).thenAnswer((_) async => []);
+
+          var filterCalled = false;
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            profileSearchFilter: (query, profiles) {
+              filterCalled = true;
+              return profiles;
+            },
+          );
+
+          // Act
+          await repoWithFunnelcake.searchUsers(
+            query: 'alice',
+            sortBy: 'followers',
+          );
+
+          // Assert - filter should NOT be called when sortBy is set
+          expect(filterCalled, isFalse);
+        },
+      );
     });
 
     group('exceptions', () {

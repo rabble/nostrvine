@@ -107,9 +107,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   bool _isImportingHistory = false;
   bool _hasImportedHistory = false;
 
-  Layer? _selectedLayer;
-
   bool get _isLayerBeingTransformed => _selectedLayer != null;
+
+  Layer? _selectedLayer;
 
   @override
   void initState() {
@@ -358,10 +358,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           },
           onScaleUpdate: (details) {
             if (!_isLayerBeingTransformed) return;
-            final screenSize = MediaQuery.sizeOf(context);
-            final bottomBarTop =
-                screenSize.height - VideoEditorConstants.bottomBarHeight;
-            final isOverRemoveArea = details.focalPoint.dy >= bottomBarTop;
+            final isOverRemoveArea = scope.isOverRemoveArea(details.focalPoint);
             bloc.add(
               VideoEditorLayerOverRemoveAreaChanged(isOver: isOverRemoveArea),
             );

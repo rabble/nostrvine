@@ -68,14 +68,10 @@ class VideoInteractionsBloc
           final isLiked = likedIds.contains(_eventId);
           if (isLiked == state.isLiked) return state;
 
-          // Update like status and adjust count
-          final currentCount = state.likeCount ?? 0;
-          final newCount = isLiked ? currentCount + 1 : currentCount - 1;
-
-          return state.copyWith(
-            isLiked: isLiked,
-            likeCount: newCount < 0 ? 0 : newCount,
-          );
+          // Only sync like status here — count is owned by _onLikeToggled.
+          // This prevents a double-count race where both this subscription
+          // and the toggle handler adjust likeCount for the same action.
+          return state.copyWith(isLiked: isLiked);
         },
       ),
       if (_addressableId != null)

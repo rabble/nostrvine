@@ -32,7 +32,7 @@ class ProfileActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
     child: Row(
       children: [
         if (isOwnProfile) ...[

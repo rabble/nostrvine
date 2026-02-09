@@ -284,9 +284,9 @@ class _PrePermissionSheet extends StatelessWidget {
       child: _PermissionBottomSheet(
         icon: Icons.videocam,
         iconColor: VineTheme.vineGreen,
-        title: 'Allow camera and microphone access',
+        title: 'Allow camera, microphone & gallery access',
         subtitle:
-            'This allows you to capture and edit videos right here in the app, nothing more.',
+            'This allows you to capture, edit and save videos right here in the app.',
         primaryButtonText: 'Continue',
         onPrimaryPressed: onContinue,
         secondaryButtonText: 'Not now',
@@ -313,9 +313,9 @@ class _SettingsRequiredSheet extends StatelessWidget {
       child: _PermissionBottomSheet(
         icon: Icons.videocam_off,
         iconColor: VineTheme.vineGreen,
-        title: 'Allow camera & microphone access',
+        title: 'Allow camera, microphone & gallery access',
         subtitle:
-            'This allows you to capture and edit videos right here in the app, nothing more.',
+            'This allows you to capture, edit and save videos right here in the app.',
         additionalText: 'Please enable permissions in Settings to continue.',
         primaryButtonText: 'Go to Settings',
         onPrimaryPressed: onGoToSettings,

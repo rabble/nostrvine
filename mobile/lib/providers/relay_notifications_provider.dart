@@ -362,6 +362,30 @@ class RelayNotifications extends _$RelayNotifications {
     }
   }
 
+  /// Insert a notification from the WebSocket real-time stream.
+  ///
+  /// Deduplicates against existing notifications and inserts at the correct
+  /// position sorted by timestamp (newest first). Increments unread count
+  /// if the notification is unread.
+  Future<void> insertFromWebSocket(NotificationModel notification) async {
+    final currentState = await future;
+    if (!ref.mounted) return;
+
+    // Deduplicate
+    if (currentState.notifications.any((n) => n.id == notification.id)) return;
+
+    // Insert at correct position (sorted by timestamp, newest first)
+    final updated = [notification, ...currentState.notifications];
+    updated.sort((a, b) => b.timestamp.compareTo(a.timestamp));
+
+    state = AsyncData(
+      currentState.copyWith(
+        notifications: updated,
+        unreadCount: currentState.unreadCount + (notification.isRead ? 0 : 1),
+      ),
+    );
+  }
+
   /// Refresh notifications from the API
   Future<void> refresh() async {
     Log.info(

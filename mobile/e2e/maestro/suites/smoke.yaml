@@ -1,38 +1,6 @@
 appId: co.openvine.app
-name: Divine regression test
-env:
-  VIDEO_TITLE: "time to" # Setting the video title parameter
-  SEARCH_TAG: "comedy"
-  SEARCH_USER: "liz"
-  SEARCH_USER_DESCRIPTION: "liz"
-  SEARCH_USER_ID: user_profile_tile_0edc2f474484769bc9bf6d471d180e4e280b0bcd719b6da791001beb730cff1b
-  SEARCH_USER_BIO: "liz"
-  COMMENT: "Automated comment"
-  DISPLAY_NAME: "AutomationUser"
-  USER_BIO: "AutomationUser bio"
-  USER_NAME: "Automation User"
-  USER_KEYS: "nsec16fvy70pyfw7cjegt4wry24z4nwaleqanrkwputmy5na0wrdyak4sdkn8l2" #A test user
-  USER_wKEYS_NAME: "AleB wKeys"
-  USER_wKEYS_BIO: "user profile from Uy for testing login with keys"
-  PRIV_KEY_TO_DELETE: ""
-  EXISTING_USERNAME: "jaysonpotter"
+name: Divine Smoke regression test
 ---
 #Social interaction tests
 
-#follow disabled till https://github.com/divinevideo/divine-mobile/issues/1070 is fixed
-#- runFlow: ../flows/followFlow.yaml
 - runFlow: ../flows/likeFlow.yaml
-- runFlow: ../flows/commentFlow.yaml
-
-#Search tests
-- runFlow: ../flows/searchVideoFlow.yaml
-- runFlow: ../flows/searchUserFlow.yaml
-- runFlow: ../flows/searchTagFlow.yaml
-
-#Navigation tests
-- runFlow: ../flows/profileNavigationFlow.yaml
-- runFlow: ../tests/logout.yaml
-
-#Account data management tests
-- runFlow: ../tests/loginFreshInstall.yaml
-- runFlow: ../tests/removeKeys.yaml

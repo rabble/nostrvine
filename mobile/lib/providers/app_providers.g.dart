@@ -817,6 +817,112 @@ final class GeoBlockingServiceProvider
 String _$geoBlockingServiceHash() =>
     r'0475466204746fb8b4c6dd614847e3853d360d12';
 
+/// Permissions service for checking and requesting OS permissions
+
+@ProviderFor(permissionsService)
+const permissionsServiceProvider = PermissionsServiceProvider._();
+
+/// Permissions service for checking and requesting OS permissions
+
+final class PermissionsServiceProvider
+    extends
+        $FunctionalProvider<
+          PermissionsService,
+          PermissionsService,
+          PermissionsService
+        >
+    with $Provider<PermissionsService> {
+  /// Permissions service for checking and requesting OS permissions
+  const PermissionsServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'permissionsServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$permissionsServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<PermissionsService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  PermissionsService create(Ref ref) {
+    return permissionsService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(PermissionsService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<PermissionsService>(value),
+    );
+  }
+}
+
+String _$permissionsServiceHash() =>
+    r'7212219b8e720fe0fcd19ae7e9313e2c5c5be1d5';
+
+/// Gallery save service for saving videos to device camera roll
+
+@ProviderFor(gallerySaveService)
+const gallerySaveServiceProvider = GallerySaveServiceProvider._();
+
+/// Gallery save service for saving videos to device camera roll
+
+final class GallerySaveServiceProvider
+    extends
+        $FunctionalProvider<
+          GallerySaveService,
+          GallerySaveService,
+          GallerySaveService
+        >
+    with $Provider<GallerySaveService> {
+  /// Gallery save service for saving videos to device camera roll
+  const GallerySaveServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'gallerySaveServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$gallerySaveServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<GallerySaveService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GallerySaveService create(Ref ref) {
+    return gallerySaveService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GallerySaveService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GallerySaveService>(value),
+    );
+  }
+}
+
+String _$gallerySaveServiceHash() =>
+    r'8d7d0ea856c9bbd1923895e6878e351ea8f9524d';
+
 /// Secure key storage service (foundational service)
 
 @ProviderFor(secureKeyStorage)
@@ -1869,6 +1975,11 @@ String _$currentAuthStateHash() => r'41c987ffc8f661555bab3ebec9078180411f66eb';
 ///
 /// This prevents race conditions where auth state is 'authenticated' but
 /// the NostrClient hasn't yet rebuilt with the new keys.
+///
+/// NostrClient.initialize() runs asynchronously in a Future.microtask after
+/// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
+/// because it's the same object reference. When not ready but authenticated,
+/// we schedule brief retries to catch the async initialization.
 
 @ProviderFor(isNostrReady)
 const isNostrReadyProvider = IsNostrReadyProvider._();
@@ -1879,6 +1990,11 @@ const isNostrReadyProvider = IsNostrReadyProvider._();
 ///
 /// This prevents race conditions where auth state is 'authenticated' but
 /// the NostrClient hasn't yet rebuilt with the new keys.
+///
+/// NostrClient.initialize() runs asynchronously in a Future.microtask after
+/// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
+/// because it's the same object reference. When not ready but authenticated,
+/// we schedule brief retries to catch the async initialization.
 
 final class IsNostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
@@ -1888,6 +2004,11 @@ final class IsNostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
   ///
   /// This prevents race conditions where auth state is 'authenticated' but
   /// the NostrClient hasn't yet rebuilt with the new keys.
+  ///
+  /// NostrClient.initialize() runs asynchronously in a Future.microtask after
+  /// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
+  /// because it's the same object reference. When not ready but authenticated,
+  /// we schedule brief retries to catch the async initialization.
   const IsNostrReadyProvider._()
     : super(
         from: null,
@@ -1921,7 +2042,7 @@ final class IsNostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
   }
 }
 
-String _$isNostrReadyHash() => r'555da82d3449835978ad9d745e478332f179c4f5';
+String _$isNostrReadyHash() => r'ea9cfcc9e19612778d785043dbe87d4259ddea0a';
 
 /// Provider that sets Zendesk user identity when auth state changes
 /// Watch this provider at app startup to keep Zendesk identity in sync with auth
@@ -2233,17 +2354,17 @@ final class UserProfileServiceProvider
 String _$userProfileServiceHash() =>
     r'c794efc557e51b13c9cf3ff59fd3f56f1582cbd0';
 
-/// Social service depends on Nostr service and Auth service
+/// Social service depends on Nostr service, Auth service, and Analytics API
 
 @ProviderFor(socialService)
 const socialServiceProvider = SocialServiceProvider._();
 
-/// Social service depends on Nostr service and Auth service
+/// Social service depends on Nostr service, Auth service, and Analytics API
 
 final class SocialServiceProvider
     extends $FunctionalProvider<SocialService, SocialService, SocialService>
     with $Provider<SocialService> {
-  /// Social service depends on Nostr service and Auth service
+  /// Social service depends on Nostr service, Auth service, and Analytics API
   const SocialServiceProvider._()
     : super(
         from: null,
@@ -2277,7 +2398,7 @@ final class SocialServiceProvider
   }
 }
 
-String _$socialServiceHash() => r'5b4d5751d3f2ef22c9ee2610cda1c4e70b2302a7';
+String _$socialServiceHash() => r'f3e43d187c9560fd9db5fe9925238eeb18048fff';
 
 /// Provider for FollowRepository instance
 ///

@@ -233,6 +233,11 @@ class NostrClient {
     final sentEvent = await _nostr.sendEvent(
       event,
       targetRelays: targetRelays,
+      // Also pass as tempRelays so the SDK creates temporary connections
+      // to target relays not already in the connected pool. Without this,
+      // targetRelays only filters the existing pool and the event could
+      // be sent to zero relays.
+      tempRelays: targetRelays,
     );
 
     if (sentEvent == null) {

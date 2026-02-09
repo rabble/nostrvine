@@ -11,6 +11,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/services/curated_list_service.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
@@ -151,6 +152,16 @@ class _DiscoverListsScreenState extends ConsumerState<DiscoverListsScreen> {
                 setState(() {
                   _isRefreshing = false;
                 });
+
+                ScreenAnalyticsService().markDataLoaded(
+                  'discover_lists',
+                  dataMetrics: {
+                    'list_count': ref
+                        .read(discoveredListsProvider)
+                        .lists
+                        .length,
+                  },
+                );
 
                 // Auto-paginate if we have few results
                 final providerState = ref.read(discoveredListsProvider);

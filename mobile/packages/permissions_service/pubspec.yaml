@@ -10,6 +10,7 @@ environment:
 resolution: workspace
 
 dependencies:
+  device_info_plus: ^11.3.3
   flutter:
     sdk: flutter
   meta: ^1.16.0
