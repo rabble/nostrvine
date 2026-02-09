@@ -40,8 +40,6 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
   final _confirmPasswordController = TextEditingController();
 
   bool _isLoading = false;
-  bool _obscurePassword = true;
-  bool _obscureConfirmPassword = true;
   String? _errorMessage;
 
   void _setErrorMessage(String? message) {
@@ -203,42 +201,6 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     return null;
   }
 
-  InputDecoration _buildInputDecoration({
-    required String label,
-    required IconData icon,
-    Widget? suffixIcon,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      labelStyle: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted),
-      floatingLabelStyle: VineTheme.bodySmallFont(color: VineTheme.primary),
-      prefixIcon: Icon(icon, color: VineTheme.onSurfaceMuted),
-      suffixIcon: suffixIcon,
-      filled: true,
-      fillColor: VineTheme.surfaceContainer,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: VineTheme.outlineMuted),
-      ),
-      enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: VineTheme.outlineMuted),
-      ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: VineTheme.primary, width: 2),
-      ),
-      errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: VineTheme.error),
-      ),
-      focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: VineTheme.error, width: 2),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -292,39 +254,20 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                       const SizedBox(height: 32),
 
                       // Email field
-                      TextFormField(
+                      DivineTextField(
+                        label: 'Email',
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
                         autocorrect: false,
-                        style: VineTheme.bodyLargeFont(),
-                        decoration: _buildInputDecoration(
-                          label: 'Email',
-                          icon: Icons.email_outlined,
-                        ),
                         validator: Validators.validateEmail,
                       ),
                       const SizedBox(height: 16),
 
                       // Password field
-                      TextFormField(
+                      DivineTextField(
+                        label: 'Password',
                         controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        style: VineTheme.bodyLargeFont(),
-                        decoration: _buildInputDecoration(
-                          label: 'Password',
-                          icon: Icons.lock_outlined,
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_off
-                                  : Icons.visibility,
-                              color: VineTheme.onSurfaceMuted,
-                            ),
-                            onPressed: () => setState(
-                              () => _obscurePassword = !_obscurePassword,
-                            ),
-                          ),
-                        ),
+                        obscureText: true,
                         validator: Validators.validatePassword,
                       ),
                       const SizedBox(height: 16),
@@ -335,26 +278,10 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                         child: _tabController.index == 1
                             ? Column(
                                 children: [
-                                  TextFormField(
+                                  DivineTextField(
+                                    label: 'Confirm Password',
                                     controller: _confirmPasswordController,
-                                    obscureText: _obscureConfirmPassword,
-                                    style: VineTheme.bodyLargeFont(),
-                                    decoration: _buildInputDecoration(
-                                      label: 'Confirm Password',
-                                      icon: Icons.lock_outlined,
-                                      suffixIcon: IconButton(
-                                        icon: Icon(
-                                          _obscureConfirmPassword
-                                              ? Icons.visibility_off
-                                              : Icons.visibility,
-                                          color: VineTheme.onSurfaceMuted,
-                                        ),
-                                        onPressed: () => setState(
-                                          () => _obscureConfirmPassword =
-                                              !_obscureConfirmPassword,
-                                        ),
-                                      ),
-                                    ),
+                                    obscureText: true,
                                     validator: _validateConfirmPassword,
                                   ),
                                   const SizedBox(height: 16),
@@ -430,15 +357,11 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                   ),
                 ),
                 const SizedBox(height: 20),
-                TextFormField(
+                DivineTextField(
+                  label: 'Email Address',
                   controller: resetEmailController,
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
-                  style: VineTheme.bodyLargeFont(),
-                  decoration: _buildInputDecoration(
-                    label: 'Email Address',
-                    icon: Icons.email_outlined,
-                  ),
                   validator: Validators.validateEmail,
                 ),
               ],

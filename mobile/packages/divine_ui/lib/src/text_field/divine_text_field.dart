@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 /// A styled text field following the Divine design system.
 ///
 /// Features a container with rounded corners and a floating label that
-/// animates when the field is focused or has content.
+/// appears when the field is focused or has content.
 ///
 /// For password fields, set [obscureText] to true to enable the visibility
 /// toggle icon.
@@ -177,30 +177,46 @@ class _DivineTextFieldState extends State<DivineTextField> {
     setState(() => _isObscured = !_isObscured);
   }
 
-  // Fixed content height: label (16px) + gap (4px) + input (24px) = 44px
-  static const double _contentHeight = 44.0;
+  // Figma specs: 76px total = 16px padding + 16px label + 4px gap + 24px input + 16px padding
+  static const double _totalHeight = 76.0;
+  static const double _horizontalPadding = 24.0;
+  static const double _verticalPadding = 16.0;
   static const double _labelLineHeight = 16.0;
   static const double _labelGap = 4.0;
+  static const double _inputLineHeight = 24.0;
+
+  // Animation duration for label transition
+  static const Duration _animationDuration = Duration(milliseconds: 200);
+
+  // Label positions
+  static const double _labelTopFloating = _verticalPadding; // 16px
+  static const double _labelTopCentered =
+      (_totalHeight - _inputLineHeight) / 2; // 26px (centered with input)
+  static const double _inputTopFloating =
+      _verticalPadding + _labelLineHeight + _labelGap; // 36px
+  static const double _inputTopCentered =
+      (_totalHeight - _inputLineHeight) / 2; // 26px
 
   @override
   Widget build(BuildContext context) {
+    final label = widget.effectiveLabel;
+    final hasLabel = label != null && label.isNotEmpty;
+
     return Container(
+      height: _totalHeight,
       decoration: BoxDecoration(
         color: VineTheme.surfaceContainer,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Padding(
         padding: EdgeInsets.only(
-          left: 24,
-          right: widget.obscureText ? 8 : 24,
-          top: 6,
-          bottom: 6,
+          left: _horizontalPadding,
+          right: widget.obscureText ? 8 : _horizontalPadding,
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: _buildLabeledTextField(),
+              child: _buildContent(label, hasLabel),
             ),
             if (widget.obscureText) _buildVisibilityToggle(),
           ],
@@ -209,42 +225,44 @@ class _DivineTextFieldState extends State<DivineTextField> {
     );
   }
 
-  Widget _buildLabeledTextField() {
-    final label = widget.effectiveLabel;
-    final hasLabel = label != null && label.isNotEmpty;
-    final showFloatingLabel = hasLabel && _isFloating;
-
-    // Fixed height container ensures consistent sizing
-    // Always use same structure: label + gap + input (label hidden when not floating)
-    return SizedBox(
-      height: _contentHeight,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Label - always present for layout, but transparent when not floating
-          SizedBox(
-            height: _labelLineHeight,
-            child: showFloatingLabel
-                ? Text(
-                    label!,
-                    style: VineTheme.labelSmallFont(color: VineTheme.primary),
-                  )
-                : null,
+  /// Builds the content area with animated label and text field.
+  Widget _buildContent(String? label, bool hasLabel) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // Animated label - moves from center to top when floating
+        if (hasLabel)
+          AnimatedPositioned(
+            duration: _animationDuration,
+            curve: Curves.easeOut,
+            top: _isFloating ? _labelTopFloating : _labelTopCentered,
+            left: 0,
+            right: 0,
+            child: AnimatedDefaultTextStyle(
+              duration: _animationDuration,
+              curve: Curves.easeOut,
+              style: _isFloating
+                  ? VineTheme.labelSmallFont(color: VineTheme.primary)
+                  : VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted),
+              child: Text(label!),
+            ),
           ),
-          const SizedBox(height: _labelGap),
-          // TextField - always at same position
-          Expanded(
-            child: _buildTextField(showHint: hasLabel && !_isFloating),
-          ),
-        ],
-      ),
+        // TextField - animates position when label floats
+        AnimatedPositioned(
+          duration: _animationDuration,
+          curve: Curves.easeOut,
+          top: _isFloating ? _inputTopFloating : _inputTopCentered,
+          left: 0,
+          right: 0,
+          height: _inputLineHeight,
+          child: _buildTextField(),
+        ),
+      ],
     );
   }
 
-  Widget _buildTextField({required bool showHint}) {
+  Widget _buildTextField() {
     final showObscured = widget.obscureText && _isObscured;
-    final label = widget.effectiveLabel;
 
     return TextFormField(
       controller: _controller,
@@ -264,7 +282,7 @@ class _DivineTextFieldState extends State<DivineTextField> {
       onFieldSubmitted: widget.onSubmitted,
       onEditingComplete: widget.onEditingComplete,
       minLines: widget.minLines,
-      maxLines: widget.obscureText ? 1 : widget.maxLines,
+      maxLines: widget.obscureText ? 1 : (widget.maxLines ?? 1),
       style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
       cursorColor: VineTheme.primary,
       decoration: InputDecoration(
@@ -277,8 +295,7 @@ class _DivineTextFieldState extends State<DivineTextField> {
         focusedErrorBorder: InputBorder.none,
         disabledBorder: InputBorder.none,
         filled: false,
-        hintText: showHint ? label : null,
-        hintStyle: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted),
+        // No hintText - animated label serves as both hint and floating label
         errorStyle: VineTheme.bodySmallFont(color: VineTheme.error),
       ),
     );
