@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
-
 import 'package:pooled_video_player/src/controllers/player_pool.dart';
 import 'package:pooled_video_player/src/models/video_item.dart';
 import 'package:pooled_video_player/src/models/video_pool_config.dart';
@@ -33,9 +32,13 @@ class VideoFeedController extends ChangeNotifier {
   /// If [pool] is not provided, uses [PlayerPool.instance].
   /// This allows easy usage with the singleton while still supporting
   /// custom pools for testing.
+  ///
+  /// [initialIndex] sets the starting video index for preloading.
+  /// Defaults to 0.
   VideoFeedController({
     required List<VideoItem> videos,
     PlayerPool? pool,
+    int initialIndex = 0,
     this.preloadAhead = 2,
     this.preloadBehind = 1,
     this.mediaSourceResolver,
@@ -43,7 +46,11 @@ class VideoFeedController extends ChangeNotifier {
     this.positionCallback,
     this.positionCallbackInterval = const Duration(milliseconds: 200),
   }) : pool = pool ?? PlayerPool.instance,
-       _videos = List.from(videos) {
+       _videos = List.from(videos),
+       _currentIndex = initialIndex.clamp(
+         0,
+         videos.isEmpty ? 0 : videos.length - 1,
+       ) {
     _initialize();
   }
 
@@ -88,7 +95,7 @@ class VideoFeedController extends ChangeNotifier {
   int get videoCount => _videos.length;
 
   // State
-  int _currentIndex = 0;
+  int _currentIndex;
   bool _isActive = true;
   bool _isPaused = false;
   bool _isDisposed = false;
@@ -398,6 +405,14 @@ class VideoFeedController extends ChangeNotifier {
     if (_isDisposed) return;
     _isDisposed = true;
 
+    // Release all players back to pool (stops playback and removes from pool)
+    // This ensures clean state when videos are reopened.
+    for (var i = 0; i < _videos.length; i++) {
+      if (_loadedPlayers.containsKey(i)) {
+        unawaited(pool.release(_videos[i].url));
+      }
+    }
+
     // Cancel all position timers
     for (final timer in _positionTimers.values) {
       timer.cancel();
@@ -410,7 +425,7 @@ class VideoFeedController extends ChangeNotifier {
     }
     _bufferSubscriptions.clear();
 
-    // Clear state (players are managed by pool)
+    // Clear state
     _loadedPlayers.clear();
     _loadStates.clear();
     _loadingIndices.clear();

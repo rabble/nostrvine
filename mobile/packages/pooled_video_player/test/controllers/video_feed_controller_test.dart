@@ -12,6 +12,23 @@ class _MockPooledPlayer extends Mock implements PooledPlayer {}
 
 class _FakeMedia extends Fake implements Media {}
 
+/// A tracking player pool that reports when players are released.
+class _TrackingPlayerPool extends TestablePlayerPool {
+  _TrackingPlayerPool({
+    required super.mockPlayerFactory,
+    required this.onRelease,
+    super.maxPlayers,
+  });
+
+  final void Function(String url) onRelease;
+
+  @override
+  Future<void> release(String url) async {
+    onRelease(url);
+    await super.release(url);
+  }
+}
+
 void _setUpFallbacks() {
   registerFallbackValue(_FakeMedia());
   registerFallbackValue(Duration.zero);
@@ -129,6 +146,99 @@ void main() {
 
         expect(controller.videoCount, equals(5));
         expect(controller.videos.length, equals(5));
+
+        controller.dispose();
+      });
+
+      test('uses default initialIndex of 0', () {
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+        );
+
+        expect(controller.currentIndex, equals(0));
+
+        controller.dispose();
+      });
+
+      test('accepts custom initialIndex', () {
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+          initialIndex: 3,
+        );
+
+        expect(controller.currentIndex, equals(3));
+
+        controller.dispose();
+      });
+
+      test('clamps initialIndex to valid range (lower bound)', () {
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+          initialIndex: -5,
+        );
+
+        expect(controller.currentIndex, equals(0));
+
+        controller.dispose();
+      });
+
+      test('clamps initialIndex to valid range (upper bound)', () {
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+          initialIndex: 100,
+        );
+
+        // Last valid index is 4 (5 videos, indices 0-4)
+        expect(controller.currentIndex, equals(4));
+
+        controller.dispose();
+      });
+
+      test('handles initialIndex with empty video list', () {
+        final controller = VideoFeedController(
+          videos: [],
+          pool: pool,
+          initialIndex: 5,
+        );
+
+        expect(controller.currentIndex, equals(0));
+
+        controller.dispose();
+      });
+
+      test('preloads around initialIndex instead of 0', () async {
+        // Use initialIndex of 3 with preloadAhead=1, preloadBehind=1
+        // Should preload indices 2, 3, 4 instead of 0, 1, 2
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 10),
+          pool: pool,
+          initialIndex: 3,
+          preloadAhead: 1,
+        );
+
+        // Wait for async loading to start
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Indices 2, 3, 4 should be loading/loaded
+        expect(
+          controller.getLoadState(2),
+          isNot(equals(LoadState.none)),
+        );
+        expect(
+          controller.getLoadState(3),
+          isNot(equals(LoadState.none)),
+        );
+        expect(
+          controller.getLoadState(4),
+          isNot(equals(LoadState.none)),
+        );
+
+        // Index 0 should NOT be loaded (outside preload window)
+        expect(controller.getLoadState(0), equals(LoadState.none));
 
         controller.dispose();
       });
@@ -676,6 +786,107 @@ void main() {
           ..dispose()
           ..dispose()
           ..dispose();
+      });
+
+      test('releases all loaded players from pool', () async {
+        final releasedUrls = <String>[];
+
+        // Create a custom pool that tracks release calls
+        final trackingPool = _TrackingPlayerPool(
+          maxPlayers: 10,
+          mockPlayerFactory: (url) {
+            final setup = createMockPlayerSetup();
+            final mockPooledPlayer = _MockPooledPlayer();
+            when(() => mockPooledPlayer.player).thenReturn(setup.player);
+            when(
+              () => mockPooledPlayer.videoController,
+            ).thenReturn(createMockVideoController());
+            when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+            when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+            return mockPooledPlayer;
+          },
+          onRelease: releasedUrls.add,
+        );
+
+        final videos = createTestVideos(count: 3);
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: trackingPool,
+          preloadBehind: 0,
+        );
+
+        // Wait for videos to load
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Dispose the controller
+        controller.dispose();
+
+        // Wait for async release calls
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // All loaded video URLs should be released
+        expect(releasedUrls, containsAll(videos.map((v) => v.url)));
+      });
+
+      test('does not release unloaded videos', () async {
+        final releasedUrls = <String>[];
+
+        final trackingPool = _TrackingPlayerPool(
+          maxPlayers: 10,
+          mockPlayerFactory: (url) {
+            final setup = createMockPlayerSetup();
+            final mockPooledPlayer = _MockPooledPlayer();
+            when(() => mockPooledPlayer.player).thenReturn(setup.player);
+            when(
+              () => mockPooledPlayer.videoController,
+            ).thenReturn(createMockVideoController());
+            when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+            when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+            return mockPooledPlayer;
+          },
+          onRelease: releasedUrls.add,
+        );
+
+        // Create controller with 10 videos but only preload 3
+        final videos = createTestVideos(count: 10);
+        final controller = VideoFeedController(
+          videos: videos,
+          pool: trackingPool,
+          preloadBehind: 0,
+        );
+
+        // Wait for videos to load
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        controller.dispose();
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Only 3 videos should be released (0, 1, 2)
+        expect(releasedUrls.length, equals(3));
+        expect(releasedUrls, contains(videos[0].url));
+        expect(releasedUrls, contains(videos[1].url));
+        expect(releasedUrls, contains(videos[2].url));
+
+        // Videos outside preload window should NOT be released
+        expect(releasedUrls, isNot(contains(videos[5].url)));
+      });
+
+      test('clears internal state after dispose', () async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+        );
+
+        // Wait for loading
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Dispose
+        controller.dispose();
+
+        // After dispose, getVideoController/getPlayer return null
+        // because _loadedPlayers is cleared
+        expect(controller.getVideoController(0), isNull);
+        expect(controller.getPlayer(0), isNull);
       });
     });
 
