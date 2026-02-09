@@ -63,7 +63,12 @@ class VideoEditorScope extends InheritedWidget {
 
     final position = renderBox.localToGlobal(Offset.zero);
     final size = renderBox.size;
-    final rect = Rect.fromLTWH(position.dx, position.dy, size.width, size.height);
+    final rect = Rect.fromLTWH(
+      position.dx,
+      position.dy,
+      size.width,
+      size.height,
+    );
 
     return rect.contains(globalPosition);
   }
