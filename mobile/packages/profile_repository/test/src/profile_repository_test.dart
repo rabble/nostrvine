@@ -103,8 +103,9 @@ void main() {
           () => mockUserProfilesDao.getProfile(any()),
         ).thenAnswer((_) async => profile);
 
-        final result =
-            await profileRepository.getCachedProfile(pubkey: testPubkey);
+        final result = await profileRepository.getCachedProfile(
+          pubkey: testPubkey,
+        );
 
         expect(result, isNotNull);
         expect(result!.pubkey, equals(testPubkey));
@@ -115,8 +116,9 @@ void main() {
       });
 
       test('returns null when no cached profile exists', () async {
-        final result =
-            await profileRepository.getCachedProfile(pubkey: testPubkey);
+        final result = await profileRepository.getCachedProfile(
+          pubkey: testPubkey,
+        );
 
         expect(result, isNull);
 
@@ -127,8 +129,9 @@ void main() {
 
     group('fetchFreshProfile', () {
       test('fetches from relay and caches profile', () async {
-        final result =
-            await profileRepository.fetchFreshProfile(pubkey: testPubkey);
+        final result = await profileRepository.fetchFreshProfile(
+          pubkey: testPubkey,
+        );
 
         expect(result, isNotNull);
         expect(result!.pubkey, equals(testPubkey));
@@ -144,8 +147,9 @@ void main() {
           () => mockNostrClient.fetchProfile(testPubkey),
         ).thenAnswer((_) async => null);
 
-        final result =
-            await profileRepository.fetchFreshProfile(pubkey: testPubkey);
+        final result = await profileRepository.fetchFreshProfile(
+          pubkey: testPubkey,
+        );
 
         expect(result, isNull);
 
