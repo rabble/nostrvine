@@ -25,8 +25,10 @@ class VideoEditorPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final aspectRatio =
-        targetAspectRatio == .vertical && (kIsWeb || !Platform.isMacOS)
+    final useFullSize =
+        targetAspectRatio == .vertical && (kIsWeb || !Platform.isMacOS);
+
+    final aspectRatio = useFullSize
         ? renderSize.aspectRatio
         : targetAspectRatio.value;
 
@@ -35,6 +37,7 @@ class VideoEditorPlayer extends StatelessWidget {
         clipper: _RoundedRectClipper(
           bodySize: bodySize,
           aspectRatio: originalAspectRatio,
+          roundTopCorners: !useFullSize,
         ),
         child: AspectRatio(
           aspectRatio: aspectRatio,
@@ -69,26 +72,34 @@ class _RoundedRectClipper extends CustomClipper<Path> {
   const _RoundedRectClipper({
     required this.bodySize,
     required this.aspectRatio,
+    required this.roundTopCorners,
   });
 
   final Size bodySize;
   final double aspectRatio;
+  final bool roundTopCorners;
 
   @override
   Path getClip(Size size) {
+    final radius = Radius.circular(32 * aspectRatio);
     return Path()..addRRect(
-      .fromRectAndRadius(
+      .fromRectAndCorners(
         .fromCenter(
           center: Offset(size.width / 2, size.height / 2),
           width: bodySize.width * aspectRatio,
           height: bodySize.height * aspectRatio,
         ),
-        .circular(32 * aspectRatio),
+        topLeft: roundTopCorners ? radius : .zero,
+        topRight: roundTopCorners ? radius : .zero,
+        bottomLeft: radius,
+        bottomRight: radius,
       ),
     );
   }
 
   @override
   bool shouldReclip(_RoundedRectClipper oldClipper) =>
-      bodySize != oldClipper.bodySize || aspectRatio != oldClipper.aspectRatio;
+      bodySize != oldClipper.bodySize ||
+      aspectRatio != oldClipper.aspectRatio ||
+      roundTopCorners != oldClipper.roundTopCorners;
 }

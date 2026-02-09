@@ -305,6 +305,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             videoSetupLoadingIndicator: _VideoSetupLoadingIndicator(
               size: widget.renderSize,
               targetAspectRatio: targetAspectRatio,
+              bodyAspectRatio: widget.bodySize.aspectRatio,
             ),
           ),
         ),
@@ -408,9 +409,11 @@ class _VideoSetupLoadingIndicator extends StatelessWidget {
   const _VideoSetupLoadingIndicator({
     required this.size,
     required this.targetAspectRatio,
+    required this.bodyAspectRatio,
   });
 
   final Size size;
+  final double bodyAspectRatio;
   final model.AspectRatio targetAspectRatio;
 
   @override
@@ -419,9 +422,15 @@ class _VideoSetupLoadingIndicator extends StatelessWidget {
     final useFullSize =
         targetAspectRatio == .vertical && (kIsWeb || !Platform.isMacOS);
 
+    final size = Size(this.size.width, this.size.width / bodyAspectRatio);
+    final radius = Radius.circular(32 * scope.originalClipAspectRatio);
+
     return Center(
       child: ClipRRect(
-        borderRadius: .all(.circular(32 * scope.originalClipAspectRatio)),
+        borderRadius: .vertical(
+          top: useFullSize ? Radius.zero : radius,
+          bottom: radius,
+        ),
         child: useFullSize
             ? SizedBox.fromSize(
                 size: size,
