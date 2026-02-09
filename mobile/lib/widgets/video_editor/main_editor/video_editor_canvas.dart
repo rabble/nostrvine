@@ -285,8 +285,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             bottomBar: (_, _) => null,
           ),
         ),
-        helperLines: const HelperLineConfigs(
+        helperLines: HelperLineConfigs(
           style: HelperLineStyle(
+            strokeWidth: 1.25 * scope.originalClipAspectRatio,
             horizontalColor: VideoEditorConstants.primaryColor,
             verticalColor: VideoEditorConstants.primaryColor,
             rotateColor: VideoEditorConstants.primaryColor,
