@@ -87,19 +87,85 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
         mediaCache: mediaCache,
         blossomAuthService: blossomAuthService,
       )..add(const FullscreenFeedStarted()),
-      child: _FullscreenFeedContent(contextTitle: contextTitle),
+      child: FullscreenFeedContent(contextTitle: contextTitle),
     );
   }
 }
 
-class _FullscreenFeedContent extends StatelessWidget {
-  const _FullscreenFeedContent({this.contextTitle});
+/// Content widget for the fullscreen video feed.
+///
+/// Manages the [VideoFeedController] lifecycle and wires hooks to dispatch
+/// BLoC events for caching and loop enforcement.
+@visibleForTesting
+class FullscreenFeedContent extends StatefulWidget {
+  /// Creates fullscreen feed content.
+  @visibleForTesting
+  const FullscreenFeedContent({this.contextTitle, super.key});
 
+  /// Optional title for context display.
   final String? contextTitle;
 
   @override
+  State<FullscreenFeedContent> createState() => _FullscreenFeedContentState();
+}
+
+class _FullscreenFeedContentState extends State<FullscreenFeedContent> {
+  VideoFeedController? _controller;
+  List<VideoItem>? _lastPooledVideos;
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  /// Creates a VideoFeedController with hooks wired to dispatch BLoC events.
+  VideoFeedController _createController(
+    List<VideoItem> videos,
+    int initialIndex,
+  ) {
+    return VideoFeedController(
+      videos: videos,
+      pool: PlayerPool.instance,
+      // Hook: Dispatch event for background caching when video is ready
+      onVideoReady: (index, player) {
+        if (!mounted) return;
+        context.read<FullscreenFeedBloc>().add(
+          FullscreenFeedVideoCacheStarted(index: index),
+        );
+      },
+      // Hook: Dispatch position updates for loop enforcement
+      positionCallback: (index, position) {
+        if (!mounted) return;
+        context.read<FullscreenFeedBloc>().add(
+          FullscreenFeedPositionUpdated(index: index, position: position),
+        );
+      },
+      positionCallbackInterval: const Duration(milliseconds: 100),
+    );
+  }
+
+  void _handleSeekCommand(SeekCommand command) {
+    final controller = _controller;
+    if (controller == null) return;
+
+    controller.seek(command.position);
+    context.read<FullscreenFeedBloc>().add(
+      const FullscreenFeedSeekCommandHandled(),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
+    return BlocConsumer<FullscreenFeedBloc, FullscreenFeedState>(
+      listenWhen: (prev, curr) =>
+          curr.seekCommand != null && prev.seekCommand != curr.seekCommand,
+      listener: (context, state) {
+        final command = state.seekCommand;
+        if (command != null) {
+          _handleSeekCommand(command);
+        }
+      },
       builder: (context, state) {
         if (state.status == FullscreenFeedStatus.initial || !state.hasVideos) {
           return Scaffold(
@@ -128,12 +194,28 @@ class _FullscreenFeedContent extends StatelessWidget {
           );
         }
 
+        // Create controller on first valid videos, or add new videos
+        if (_controller == null) {
+          _controller = _createController(pooledVideos, state.currentIndex);
+          _lastPooledVideos = pooledVideos;
+        } else if (_lastPooledVideos != null) {
+          // Add any new videos that weren't in the previous list
+          final newVideos = pooledVideos
+              .where((v) => !_lastPooledVideos!.any((old) => old.id == v.id))
+              .toList();
+          if (newVideos.isNotEmpty) {
+            _controller!.addVideos(newVideos);
+          }
+          _lastPooledVideos = pooledVideos;
+        }
+
         return Scaffold(
           backgroundColor: Colors.black,
           extendBodyBehindAppBar: true,
           appBar: _FullscreenAppBar(currentVideo: state.currentVideo),
           body: PooledVideoFeed(
             videos: pooledVideos,
+            controller: _controller,
             initialIndex: state.currentIndex,
             onActiveVideoChanged: (video, index) {
               context.read<FullscreenFeedBloc>().add(
@@ -152,7 +234,7 @@ class _FullscreenFeedContent extends StatelessWidget {
                 video: originalEvent,
                 index: index,
                 isActive: isActive,
-                contextTitle: contextTitle,
+                contextTitle: widget.contextTitle,
               );
             },
           ),
