@@ -48,7 +48,10 @@ class ProfileStatColumn extends StatelessWidget {
       return InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
-        child: Padding(padding: const EdgeInsets.all(8.0), child: column),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: column,
+        ),
       );
     }
 
