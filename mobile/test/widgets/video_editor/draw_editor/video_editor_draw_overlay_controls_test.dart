@@ -35,6 +35,7 @@ void main() {
           body: VideoEditorScope(
             editorKey: GlobalKey(),
             removeAreaKey: GlobalKey(),
+            originalClipAspectRatio: 9 / 16,
             onAddStickers: () {},
             onAddEditTextLayer: ([layer]) async => null,
             child: BlocProvider<VideoEditorDrawBloc>.value(

@@ -30,31 +30,26 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 ///
 /// Wraps [ProImageEditor] and configures it for video editing with custom
 /// styling and callbacks that dispatch events to [VideoEditorMainBloc].
-class VideoEditorCanvas extends ConsumerStatefulWidget {
+class VideoEditorCanvas extends StatefulWidget {
   /// Creates a [VideoEditorCanvas].
   const VideoEditorCanvas({super.key});
 
   @override
-  ConsumerState<VideoEditorCanvas> createState() => _VideoEditorCanvasState();
+  State<VideoEditorCanvas> createState() => _VideoEditorCanvasState();
 }
 
-class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
+class _VideoEditorCanvasState extends State<VideoEditorCanvas> {
   @override
   Widget build(BuildContext context) {
-    // BLOCs
     final isSubEditorOpen = context.select(
       (VideoEditorMainBloc b) => b.state.isSubEditorOpen,
     );
-
-    // Riverpod
-    final clip = ref.watch(clipManagerProvider.select((s) => s.clips.first));
-
-    final scope = VideoEditorScope.of(context);
 
     return PopScope(
       canPop: !isSubEditorOpen,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) {
+          final scope = VideoEditorScope.of(context);
           scope.editor?.closeSubEditor();
           final bloc = context.read<VideoEditorMainBloc>();
           bloc.add(const VideoEditorMainSubEditorClosed());
@@ -62,47 +57,9 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
       },
       child: Padding(
         padding: const .only(bottom: VideoEditorConstants.bottomBarHeight),
-        child: LayoutBuilder(
-          builder: (_, constraints) {
-            final isVerticalRatio = clip.targetAspectRatio == .vertical;
-            final targetAspectRatio = clip.targetAspectRatio.value;
-            final bodySize = constraints.biggest;
-
-            // Height is constrained by maxWidth or maxHeight,
-            // depending on which dimension is reached first
-            final height = isVerticalRatio
-                ? min(bodySize.width, bodySize.height)
-                : bodySize.height;
-            final renderSize = Size(height * targetAspectRatio, height);
-
-            return FittedBox(
-              fit: .cover,
-              child: SizedBox.fromSize(
-                size: renderSize,
-                // Wraps sub-editors in a nested Navigator so they open within
-                // the fitted aspect-ratio area instead of full-screen, since
-                // cropping hasn't been applied yet.
-                child: Navigator(
-                  clipBehavior: .none,
-                  onGenerateRoute: (_) {
-                    print([
-                      'DEBUGX B',
-                      renderSize,
-                      bodySize,
-                      bodySize.aspectRatio,
-                    ]);
-
-                    return PageRouteBuilder(
-                      pageBuilder: (_, _, _) => _VideoEditor(
-                        bodySize: bodySize,
-                        renderSize: renderSize,
-                      ),
-                    );
-                  },
-                ),
-              ),
-            );
-          },
+        child: _CanvasFitter(
+          builder: (bodySize, renderSize) =>
+              _VideoEditor(renderSize: renderSize, bodySize: bodySize),
         ),
       ),
     );
@@ -159,6 +116,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             isPlayerReady: isPlayerReady,
             controller: _videoPlayer,
             targetAspectRatio: clips.first.targetAspectRatio,
+            originalAspectRatio: clips.first.originalAspectRatio,
             bodySize: widget.bodySize,
             renderSize: widget.renderSize,
           );
@@ -240,10 +198,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   ///
   /// Precaches the generated image overlay and triggers video rendering.
   Future<void> _handleEditorComplete(CompleteParameters parameters) async {
-    // FIXME(@hm21)
-    final r = await decodeImageFromList(parameters.image);
-    print(['DEBUGX', r.width, r.height, r.height / r.width]);
-
     final notifier = ref.read(videoEditorProvider.notifier);
     if (parameters.image.isNotEmpty) {
       try {
@@ -320,6 +274,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           widgets: PaintEditorWidgets(
             appBar: (_, _) => null,
             bottomBar: (_, _) => null,
+            colorPicker: (_, _, _, _) => null,
           ),
         ),
         filterEditor: FilterEditorConfigs(
@@ -419,7 +374,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             // Sync editor with current BLoC state
             paintEditor
               ?..setColor(drawState.selectedColor)
-              ..setStrokeWidth(drawState.strokeWidth)
+              ..setStrokeWidth(
+                drawState.strokeWidth * scope.originalClipAspectRatio,
+              )
               ..setOpacity(drawState.opacity)
               ..setMode(drawState.mode);
           },
@@ -476,6 +433,51 @@ class _VideoSetupLoadingIndicator extends StatelessWidget {
                 ),
               ),
       ),
+    );
+  }
+}
+
+class _CanvasFitter extends ConsumerWidget {
+  const _CanvasFitter({required this.builder});
+
+  final Widget Function(Size bodySize, Size renderSize) builder;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final clip = ref.watch(clipManagerProvider.select((s) => s.clips.first));
+
+    final isVerticalRatio = clip.targetAspectRatio == .vertical;
+
+    return LayoutBuilder(
+      builder: (_, constraints) {
+        final bodySize = constraints.biggest;
+
+        // Height is constrained by maxWidth or maxHeight,
+        // depending on which dimension is reached first
+        final height = min(bodySize.width, bodySize.height);
+        final renderSize = Size(height * clip.originalAspectRatio, height);
+
+        return FittedBox(
+          fit: isVerticalRatio ? .cover : .contain,
+          child: SizedBox.fromSize(
+            size: renderSize,
+            // Wraps sub-editors in a nested Navigator so they open within
+            // the fitted aspect-ratio area instead of full-screen, since
+            // cropping hasn't been applied yet.
+            child: Navigator(
+              clipBehavior: .none,
+              onGenerateRoute: (_) => PageRouteBuilder(
+                pageBuilder: (_, _, _) => builder(
+                  isVerticalRatio
+                      ? bodySize
+                      : Size.square(bodySize.shortestSide),
+                  renderSize,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

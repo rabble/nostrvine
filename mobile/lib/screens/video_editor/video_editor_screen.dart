@@ -6,12 +6,15 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show StickerData;
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
+import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
@@ -23,7 +26,7 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 ///
 /// Manages the [VideoEditorMainBloc] and [VideoEditorStickerBloc] lifecycle,
 /// precaches sticker images, and coordinates the editor canvas with toolbars.
-class VideoEditorScreen extends StatefulWidget {
+class VideoEditorScreen extends ConsumerStatefulWidget {
   const VideoEditorScreen({super.key});
 
   /// Route name for this screen.
@@ -33,10 +36,10 @@ class VideoEditorScreen extends StatefulWidget {
   static const path = '/video-editor';
 
   @override
-  State<VideoEditorScreen> createState() => _VideoEditorScreenState();
+  ConsumerState<VideoEditorScreen> createState() => _VideoEditorScreenState();
 }
 
-class _VideoEditorScreenState extends State<VideoEditorScreen> {
+class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   final _editorKey = GlobalKey<ProImageEditorState>();
   final _removeAreaKey = GlobalKey();
 
@@ -46,6 +49,9 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   late final VideoEditorStickerBloc _stickerBloc;
 
   ProImageEditorState? get _editor => _editorKey.currentState;
+
+  RecordingClip get _clip =>
+      ref.watch(clipManagerProvider.select((s) => s.clips.first));
 
   @override
   void initState() {
@@ -101,7 +107,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
 
     if (sticker != null) {
       final screenWidth = MediaQuery.sizeOf(context).width;
-      final stickerWidth = screenWidth / 3;
+      final stickerWidth = screenWidth / 3 * _clip.originalAspectRatio;
 
       final layer = WidgetLayer(
         width: stickerWidth,
@@ -155,7 +161,9 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     textBloc.add(const VideoEditorTextClosePanels());
     mainBloc.add(const VideoEditorMainSubEditorClosed());
 
-    return result;
+    return result?.copyWith(
+      scale: layer == null ? _clip.originalAspectRatio : null,
+    );
   }
 
   @override
@@ -173,6 +181,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
           return VideoEditorScope(
             editorKey: _editorKey,
             removeAreaKey: _removeAreaKey,
+            originalClipAspectRatio: _clip.originalAspectRatio,
             onAddStickers: _addStickers,
             onAddEditTextLayer: ([layer]) {
               final mainBloc = context.read<VideoEditorMainBloc>();

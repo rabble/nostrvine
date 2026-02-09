@@ -20,6 +20,7 @@ class VideoEditorScope extends InheritedWidget {
     required this.removeAreaKey,
     required this.onAddStickers,
     required this.onAddEditTextLayer,
+    required this.originalClipAspectRatio,
     required super.child,
     super.key,
   });
@@ -32,6 +33,8 @@ class VideoEditorScope extends InheritedWidget {
 
   /// Callback to open the sticker picker.
   final VoidCallback onAddStickers;
+
+  final double originalClipAspectRatio;
 
   /// Callback to open the text editor.
   final Future<TextLayer?> Function([TextLayer? layer]) onAddEditTextLayer;

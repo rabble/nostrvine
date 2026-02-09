@@ -10,6 +10,7 @@ class VideoEditorPlayer extends StatelessWidget {
     super.key,
     required this.controller,
     required this.targetAspectRatio,
+    required this.originalAspectRatio,
     required this.isPlayerReady,
     required this.bodySize,
     required this.renderSize,
@@ -17,61 +18,49 @@ class VideoEditorPlayer extends StatelessWidget {
 
   final bool isPlayerReady;
   final model.AspectRatio targetAspectRatio;
+  final double originalAspectRatio;
   final VideoPlayerController? controller;
   final Size bodySize;
   final Size renderSize;
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (_, constraints) {
-        final aspectRatio =
-            targetAspectRatio == .vertical && (kIsWeb || !Platform.isMacOS)
-            ? constraints.biggest.aspectRatio
-            : targetAspectRatio.value;
-        print([
-          'DEBUGX A',
-          constraints.biggest,
-          renderSize,
-          '----',
-          1 / constraints.biggest.aspectRatio,
-          1 / aspectRatio,
-          1 / renderSize.aspectRatio,
-          1 / targetAspectRatio.value,
-        ]);
-        return Center(
-          child: ClipPath(
-            clipper: _RoundedRectClipper(
-              bodySize: bodySize,
-              aspectRatio: targetAspectRatio.value,
-            ),
-            child: AspectRatio(
-              aspectRatio: aspectRatio,
-              child: Stack(
-                fit: .expand,
-                children: [
-                  // Video layer
-                  if (isPlayerReady)
-                    FittedBox(
-                      fit: .cover,
-                      child: SizedBox(
-                        width: controller!.value.size.width,
-                        height: controller!.value.size.height,
-                        child: VideoPlayer(controller!),
-                      ),
-                    ),
+    final aspectRatio =
+        targetAspectRatio == .vertical && (kIsWeb || !Platform.isMacOS)
+        ? renderSize.aspectRatio
+        : targetAspectRatio.value;
 
-                  // Thumbnail layer with fade out
-                  VideoEditorThumbnail(
-                    isInitialized: isPlayerReady,
-                    contentSize: constraints.biggest,
+    return Center(
+      child: ClipPath(
+        clipper: _RoundedRectClipper(
+          bodySize: bodySize,
+          aspectRatio: originalAspectRatio,
+        ),
+        child: AspectRatio(
+          aspectRatio: aspectRatio,
+          child: Stack(
+            fit: .expand,
+            children: [
+              // Video layer
+              if (isPlayerReady)
+                FittedBox(
+                  fit: .cover,
+                  child: SizedBox(
+                    width: controller!.value.size.width,
+                    height: controller!.value.size.height,
+                    child: VideoPlayer(controller!),
                   ),
-                ],
+                ),
+
+              // Thumbnail layer with fade out
+              VideoEditorThumbnail(
+                isInitialized: isPlayerReady,
+                contentSize: renderSize,
               ),
-            ),
+            ],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
