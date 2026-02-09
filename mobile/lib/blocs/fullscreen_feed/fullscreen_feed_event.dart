@@ -42,8 +42,8 @@ final class FullscreenFeedIndexChanged extends FullscreenFeedEvent {
 /// Dispatched when a video is ready for playback.
 ///
 /// BLoC triggers background caching for uncached videos.
-final class FullscreenFeedVideoReadyForCaching extends FullscreenFeedEvent {
-  const FullscreenFeedVideoReadyForCaching({required this.index});
+final class FullscreenFeedVideoCacheStarted extends FullscreenFeedEvent {
+  const FullscreenFeedVideoCacheStarted({required this.index});
 
   /// Index of the video that is ready.
   final int index;

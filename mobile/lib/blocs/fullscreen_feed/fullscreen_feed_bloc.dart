@@ -39,7 +39,7 @@ const maxPlaybackDuration = Duration(seconds: 6);
 ///
 /// **Playback hooks integration:**
 /// - Videos are cache-resolved when received (cached file paths replace URLs)
-/// - Background caching triggered via [FullscreenFeedVideoReadyForCaching]
+/// - Background caching triggered via [FullscreenFeedVideoCacheStarted]
 /// - Loop enforcement via [FullscreenFeedPositionUpdated] → [SeekCommand]
 class FullscreenFeedBloc
     extends Bloc<FullscreenFeedEvent, FullscreenFeedState> {
@@ -57,7 +57,7 @@ class FullscreenFeedBloc
     on<FullscreenFeedStarted>(_onStarted);
     on<FullscreenFeedLoadMoreRequested>(_onLoadMoreRequested);
     on<FullscreenFeedIndexChanged>(_onIndexChanged);
-    on<FullscreenFeedVideoReadyForCaching>(_onVideoReadyForCaching);
+    on<FullscreenFeedVideoCacheStarted>(_onVideoCacheStarted);
     on<FullscreenFeedPositionUpdated>(_onPositionUpdated);
     on<FullscreenFeedSeekCommandHandled>(_onSeekCommandHandled);
   }
@@ -173,8 +173,8 @@ class FullscreenFeedBloc
   /// Called when the video player signals a video is ready for playback.
   /// If the video is not already cached, downloads it in the background
   /// for future instant playback.
-  Future<void> _onVideoReadyForCaching(
-    FullscreenFeedVideoReadyForCaching event,
+  Future<void> _onVideoCacheStarted(
+    FullscreenFeedVideoCacheStarted event,
     Emitter<FullscreenFeedState> emit,
   ) async {
     if (event.index < 0 || event.index >= state.videos.length) return;

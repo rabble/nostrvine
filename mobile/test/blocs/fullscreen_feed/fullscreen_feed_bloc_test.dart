@@ -14,6 +14,8 @@ import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
 
+class MockFileInfo extends Mock implements FileInfo {}
+
 class MockMediaCacheManager extends Mock implements MediaCacheManager {}
 
 class MockBlossomAuthService extends Mock implements BlossomAuthService {}
@@ -444,8 +446,8 @@ void main() {
         expect(event.props, [5]);
       });
 
-      test('FullscreenFeedVideoReadyForCaching props contains index', () {
-        const event = FullscreenFeedVideoReadyForCaching(index: 3);
+      test('FullscreenFeedVideoCacheStarted props contains index', () {
+        const event = FullscreenFeedVideoCacheStarted(index: 3);
         expect(event.props, [3]);
       });
 
@@ -513,7 +515,7 @@ void main() {
       );
     });
 
-    group('FullscreenFeedVideoReadyForCaching', () {
+    group('FullscreenFeedVideoCacheStarted', () {
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'triggers background caching for uncached video',
         setUp: () {
@@ -531,7 +533,7 @@ void main() {
           videos: [createTestVideo('video1')],
         ),
         act: (bloc) =>
-            bloc.add(const FullscreenFeedVideoReadyForCaching(index: 0)),
+            bloc.add(const FullscreenFeedVideoCacheStarted(index: 0)),
         wait: const Duration(milliseconds: 100),
         verify: (_) {
           verify(
@@ -559,7 +561,7 @@ void main() {
           videos: [createTestVideo('video1')],
         ),
         act: (bloc) =>
-            bloc.add(const FullscreenFeedVideoReadyForCaching(index: 0)),
+            bloc.add(const FullscreenFeedVideoCacheStarted(index: 0)),
         wait: const Duration(milliseconds: 100),
         verify: (_) {
           verifyNever(
@@ -580,7 +582,7 @@ void main() {
           videos: [createTestVideo('video1')],
         ),
         act: (bloc) =>
-            bloc.add(const FullscreenFeedVideoReadyForCaching(index: 5)),
+            bloc.add(const FullscreenFeedVideoCacheStarted(index: 5)),
         wait: const Duration(milliseconds: 50),
         verify: (_) {
           verifyNever(
@@ -615,7 +617,7 @@ void main() {
           videos: [createTestVideo('video1', sha256: 'abc123')],
         ),
         act: (bloc) =>
-            bloc.add(const FullscreenFeedVideoReadyForCaching(index: 0)),
+            bloc.add(const FullscreenFeedVideoCacheStarted(index: 0)),
         wait: const Duration(milliseconds: 100),
         verify: (_) {
           verify(
@@ -714,5 +716,3 @@ void main() {
     });
   });
 }
-
-class MockFileInfo extends Mock implements FileInfo {}
