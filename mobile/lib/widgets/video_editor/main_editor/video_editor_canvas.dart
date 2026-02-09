@@ -457,8 +457,6 @@ class _CanvasFitter extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final clip = ref.watch(clipManagerProvider.select((s) => s.clips.first));
 
-    final isVerticalRatio = clip.targetAspectRatio == .vertical;
-
     return LayoutBuilder(
       builder: (_, constraints) {
         final bodySize = constraints.biggest;
@@ -469,7 +467,7 @@ class _CanvasFitter extends ConsumerWidget {
         final renderSize = Size(height * clip.originalAspectRatio, height);
 
         return FittedBox(
-          fit: isVerticalRatio ? .cover : .contain,
+          fit: .cover,
           child: SizedBox.fromSize(
             size: renderSize,
             // Wraps sub-editors in a nested Navigator so they open within
@@ -478,12 +476,7 @@ class _CanvasFitter extends ConsumerWidget {
             child: Navigator(
               clipBehavior: .none,
               onGenerateRoute: (_) => PageRouteBuilder(
-                pageBuilder: (_, _, _) => builder(
-                  isVerticalRatio
-                      ? bodySize
-                      : Size.square(bodySize.shortestSide),
-                  renderSize,
-                ),
+                pageBuilder: (_, _, _) => builder(bodySize, renderSize),
               ),
             ),
           ),

@@ -37,7 +37,7 @@ class VideoEditorPlayer extends StatelessWidget {
         clipper: _RoundedRectClipper(
           bodySize: bodySize,
           aspectRatio: originalAspectRatio,
-          roundTopCorners: !useFullSize,
+          enableFullScreen: useFullSize,
         ),
         child: AspectRatio(
           aspectRatio: aspectRatio,
@@ -72,25 +72,34 @@ class _RoundedRectClipper extends CustomClipper<Path> {
   const _RoundedRectClipper({
     required this.bodySize,
     required this.aspectRatio,
-    required this.roundTopCorners,
+    required this.enableFullScreen,
   });
 
   final Size bodySize;
   final double aspectRatio;
-  final bool roundTopCorners;
+  final bool enableFullScreen;
 
   @override
   Path getClip(Size size) {
-    final radius = Radius.circular(32 * aspectRatio);
+    final ratio = bodySize.aspectRatio > aspectRatio
+        ? aspectRatio
+        : bodySize.aspectRatio;
+
+    final radius = Radius.circular(32 * ratio);
+
+    final renderSize = enableFullScreen
+        ? bodySize * ratio
+        : Size(bodySize.shortestSide, bodySize.shortestSide) * ratio;
+
     return Path()..addRRect(
       .fromRectAndCorners(
         .fromCenter(
           center: Offset(size.width / 2, size.height / 2),
-          width: bodySize.width * aspectRatio,
-          height: bodySize.height * aspectRatio,
+          width: renderSize.width,
+          height: renderSize.height,
         ),
-        topLeft: roundTopCorners ? radius : .zero,
-        topRight: roundTopCorners ? radius : .zero,
+        topLeft: enableFullScreen ? .zero : radius,
+        topRight: enableFullScreen ? .zero : radius,
         bottomLeft: radius,
         bottomRight: radius,
       ),
@@ -101,5 +110,5 @@ class _RoundedRectClipper extends CustomClipper<Path> {
   bool shouldReclip(_RoundedRectClipper oldClipper) =>
       bodySize != oldClipper.bodySize ||
       aspectRatio != oldClipper.aspectRatio ||
-      roundTopCorners != oldClipper.roundTopCorners;
+      enableFullScreen != oldClipper.enableFullScreen;
 }
