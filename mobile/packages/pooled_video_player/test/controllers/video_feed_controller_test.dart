@@ -1311,36 +1311,39 @@ void main() {
         expect(resolvedUrl, contains('.m3u8'));
       });
 
-      test('mediaSourceResolver can override HLS URL with cached MP4', () async {
-        final hlsVideos = [
-          const VideoItem(
-            id: 'hls_video',
-            url: 'https://media.divine.video/abc123/hls/master.m3u8',
-          ),
-        ];
+      test(
+        'mediaSourceResolver can override HLS URL with cached MP4',
+        () async {
+          final hlsVideos = [
+            const VideoItem(
+              id: 'hls_video',
+              url: 'https://media.divine.video/abc123/hls/master.m3u8',
+            ),
+          ];
 
-        const cachedPath = '/cache/hls_video.mp4';
+          const cachedPath = '/cache/hls_video.mp4';
 
-        final controller = VideoFeedController(
-          videos: hlsVideos,
-          pool: pool,
-          mediaSourceResolver: (video) {
-            // Simulate returning a cached MP4 instead of HLS
-            return cachedPath;
-          },
-        );
-        addTearDown(controller.dispose);
+          final controller = VideoFeedController(
+            videos: hlsVideos,
+            pool: pool,
+            mediaSourceResolver: (video) {
+              // Simulate returning a cached MP4 instead of HLS
+              return cachedPath;
+            },
+          );
+          addTearDown(controller.dispose);
 
-        // Wait for video to be loaded
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+          // Wait for video to be loaded
+          await Future<void>.delayed(const Duration(milliseconds: 100));
 
-        // Verify the player received the resolved (cached) URL
-        // The mock player's open() was called with the cached path
-        final setup = playerSetups.values.first;
-        verify(
-          () => setup.player.open(any(), play: any(named: 'play')),
-        ).called(greaterThanOrEqualTo(1));
-      });
+          // Verify the player received the resolved (cached) URL
+          // The mock player's open() was called with the cached path
+          final setup = playerSetups.values.first;
+          verify(
+            () => setup.player.open(any(), play: any(named: 'play')),
+          ).called(greaterThanOrEqualTo(1));
+        },
+      );
     });
   });
 }
