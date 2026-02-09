@@ -11,8 +11,10 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/notification_badge.dart';
 
@@ -55,10 +57,21 @@ class VineBottomNav extends ConsumerWidget {
     }
 
     // Navigate to last position in that tab
+    if (tabIndex == 3) {
+      // Navigate to own profile grid mode using actual npub (matches AppShell behavior).
+      // When already on /profile/{npub}, GoRouter sees the same URL and no-ops.
+      final authService = ref.read(authServiceProvider);
+      final hex = authService.currentPublicKeyHex;
+      if (hex != null) {
+        final npub = NostrKeyUtils.encodePubKey(hex);
+        context.go(ProfileScreenRouter.pathForNpub(npub));
+      }
+      return;
+    }
+
     return switch (tabIndex) {
       1 => context.go(ExploreScreen.path),
       2 => context.go(NotificationsScreen.pathForIndex(lastIndex ?? 0)),
-      3 => context.go(ProfileScreenRouter.pathForIndex('me', lastIndex ?? 0)),
       _ => context.go(HomeScreenRouter.pathForIndex(lastIndex ?? 0)),
     };
   }

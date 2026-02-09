@@ -197,21 +197,31 @@ class ProfileRepository {
   ///
   /// Uses a hybrid search approach:
   /// 1. First tries Funnelcake REST API (fast, if available)
-  /// 2. Then fetches via NIP-50 WebSocket (comprehensive)
+  /// 2. Then fetches via NIP-50 WebSocket (comprehensive, first page only)
   /// 3. Merges results (REST results take priority by pubkey)
   ///
-  /// Filters using [ProfileSearchFilter] if provided, otherwise falls back to
-  /// simple bestDisplayName matching.
+  /// [offset] skips results for pagination. When offset > 0, the NIP-50
+  /// WebSocket fallback is skipped since it doesn't support offset.
+  /// [sortBy] requests server-side sorting (e.g., 'followers'). When set,
+  /// client-side re-sorting is skipped to preserve server order.
+  /// [hasVideos] filters to only users who have published at least one video.
+  ///
+  /// Filters using [ProfileSearchFilter] if provided (only when no server-side
+  /// sort is active), otherwise falls back to simple bestDisplayName matching.
   /// If a [UserBlockFilter] was provided, blocked users are excluded.
   /// Returns list of [UserProfile] matching the search query.
   /// Returns empty list if query is empty or no results found.
   Future<List<UserProfile>> searchUsers({
     required String query,
     int limit = 200,
+    int offset = 0,
+    String? sortBy,
+    bool hasVideos = false,
   }) async {
     if (query.trim().isEmpty) return [];
 
     final resultMap = <String, UserProfile>{};
+    final useServerSort = sortBy != null;
 
     // Phase 1: Try Funnelcake REST API (fast)
     if (_funnelcakeApiClient?.isAvailable ?? false) {
@@ -219,6 +229,9 @@ class ProfileRepository {
         final restResults = await _funnelcakeApiClient!.searchProfiles(
           query: query,
           limit: limit,
+          offset: offset,
+          sortBy: sortBy,
+          hasVideos: hasVideos,
         );
         for (final result in restResults) {
           resultMap[result.pubkey] = result.toUserProfile();
@@ -228,12 +241,15 @@ class ProfileRepository {
       }
     }
 
-    // Phase 2: NIP-50 WebSocket search (comprehensive)
-    final events = await _nostrClient.queryUsers(query, limit: limit);
-    for (final event in events) {
-      final profile = UserProfile.fromNostrEvent(event);
-      // Don't overwrite REST results - they may have more complete data
-      resultMap.putIfAbsent(profile.pubkey, () => profile);
+    // Phase 2: NIP-50 WebSocket search (comprehensive, first page only)
+    // Skip on paginated requests since NIP-50 doesn't support offset.
+    if (offset == 0) {
+      final events = await _nostrClient.queryUsers(query, limit: limit);
+      for (final event in events) {
+        final profile = UserProfile.fromNostrEvent(event);
+        // Don't overwrite REST results - they may have more complete data
+        resultMap.putIfAbsent(profile.pubkey, () => profile);
+      }
     }
 
     final profiles = resultMap.values.toList();
@@ -242,6 +258,11 @@ class ProfileRepository {
     final unblockedProfiles = profiles.where((profile) {
       return !(_userBlockFilter?.call(profile.pubkey) ?? false);
     }).toList();
+
+    // When server-side sorting is active, trust server order
+    if (useServerSort) {
+      return unblockedProfiles;
+    }
 
     // Use custom search filter if provided, otherwise simple contains match
     if (_profileSearchFilter != null) {

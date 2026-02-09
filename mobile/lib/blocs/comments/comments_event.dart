@@ -65,3 +65,83 @@ final class CommentDeleteRequested extends CommentsEvent {
   /// The ID of the comment to delete
   final String commentId;
 }
+
+/// Toggle like on a comment (optimistic update + relay publish)
+final class CommentLikeToggled extends CommentsEvent {
+  const CommentLikeToggled({
+    required this.commentId,
+    required this.authorPubkey,
+  });
+
+  /// The ID of the comment to like/unlike
+  final String commentId;
+
+  /// The pubkey of the comment author
+  final String authorPubkey;
+}
+
+/// Request to batch-fetch like counts for all loaded comments
+final class CommentLikeCountsFetchRequested extends CommentsEvent {
+  const CommentLikeCountsFetchRequested();
+}
+
+/// Change the sort order for comments
+final class CommentsSortModeChanged extends CommentsEvent {
+  const CommentsSortModeChanged(this.sortMode);
+
+  final CommentsSortMode sortMode;
+}
+
+/// Report a comment (publishes Kind 1984 / NIP-56)
+final class CommentReportRequested extends CommentsEvent {
+  const CommentReportRequested({
+    required this.commentId,
+    required this.authorPubkey,
+    required this.reason,
+    this.details = '',
+  });
+
+  /// The ID of the comment to report
+  final String commentId;
+
+  /// The pubkey of the comment author
+  final String authorPubkey;
+
+  /// The reason for the report
+  final ContentFilterReason reason;
+
+  /// Optional additional details
+  final String details;
+}
+
+/// Block a user from comments (updates Kind 10000 mute list / NIP-51)
+final class CommentBlockUserRequested extends CommentsEvent {
+  const CommentBlockUserRequested(this.authorPubkey);
+
+  /// The pubkey of the user to block
+  final String authorPubkey;
+}
+
+/// Search for mention suggestions based on a query string
+final class MentionSearchRequested extends CommentsEvent {
+  const MentionSearchRequested(this.query);
+
+  /// The partial query after '@'
+  final String query;
+}
+
+/// Register a mention mapping (displayName -> npub) for conversion on submit
+final class MentionRegistered extends CommentsEvent {
+  const MentionRegistered({required this.displayName, required this.npub});
+
+  /// The display name shown in the text field (e.g. "Alice")
+  final String displayName;
+
+  /// The npub to convert to on submit (e.g. "npub1abc...")
+  final String npub;
+}
+
+/// Clear mention suggestions (when @ is removed or input dismissed)
+final class MentionSuggestionsCleared extends CommentsEvent {
+  const MentionSuggestionsCleared();
+}

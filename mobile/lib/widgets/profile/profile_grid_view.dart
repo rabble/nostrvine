@@ -35,6 +35,8 @@ class ProfileGridView extends ConsumerStatefulWidget {
     this.displayNameHint,
     this.avatarUrlHint,
     this.refreshNotifier,
+    this.isLoadingVideos = false,
+    this.videoLoadError,
     super.key,
   });
 
@@ -77,6 +79,14 @@ class ProfileGridView extends ConsumerStatefulWidget {
   /// Notifier that triggers BLoC refresh when its value changes.
   /// Parent should call `notifier.value++` to trigger refresh.
   final ValueNotifier<int>? refreshNotifier;
+
+  /// Whether videos are currently being loaded.
+  /// When true and [videos] is empty, shows a loading indicator
+  /// in the videos tab instead of the empty state.
+  final bool isLoadingVideos;
+
+  /// Error message if video loading failed, shown in the videos tab.
+  final String? videoLoadError;
 
   @override
   ConsumerState<ProfileGridView> createState() => _ProfileGridViewState();
@@ -211,7 +221,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       child: TabBarView(
         controller: _tabController,
         children: [
-          ProfileVideosGrid(videos: widget.videos, userIdHex: widget.userIdHex),
+          ProfileVideosGrid(
+            videos: widget.videos,
+            userIdHex: widget.userIdHex,
+            isLoading: widget.isLoadingVideos,
+            errorMessage: widget.videoLoadError,
+          ),
           ProfileLikedGrid(isOwnProfile: widget.isOwnProfile),
           ProfileRepostsGrid(isOwnProfile: widget.isOwnProfile),
         ],

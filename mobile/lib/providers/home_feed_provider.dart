@@ -43,30 +43,21 @@ class HomeFeed extends _$HomeFeed {
 
   // REST API mode state
   bool _usingRestApi = false;
+  bool _restApiSucceededOnce = false; // Survives rebuilds - prefer REST API
   int? _nextCursor; // Cursor for REST API pagination
   bool _hasMoreFromApi = true;
 
   @override
   Future<VideoFeedState> build() async {
-    // Reset cursor state at start of build to ensure clean state
+    // Reset per-build state but preserve REST API preference
+    // _restApiSucceededOnce survives rebuilds so we keep using REST API
     _usingRestApi = false;
     _nextCursor = null;
     _hasMoreFromApi = true;
 
-    // Re-trigger build when NostrClient becomes ready.
-    // This handles the case where initial build used REST API but Nostr
-    // fallback was needed later. When isNostrReady transitions true,
-    // rebuild to enable Nostr-dependent features (follow stream, etc.).
-    ref.listen<bool>(isNostrReadyProvider, (prev, next) {
-      if (prev == false && next == true) {
-        Log.info(
-          '🏠 HomeFeed: NostrClient became ready, triggering rebuild',
-          name: 'HomeFeedProvider',
-          category: LogCategory.video,
-        );
-        ref.invalidateSelf();
-      }
-    });
+    // Note: isNostrReadyProvider listener removed intentionally.
+    // REST API is the primary path and doesn't need Nostr to be ready.
+    // Follow list reactivity is handled by followRepository.followingStream.
 
     // Prevent auto-dispose during async operations
     final keepAliveLink = ref.keepAlive();
@@ -185,6 +176,7 @@ class HomeFeed extends _$HomeFeed {
 
         if (feedResult.videos.isNotEmpty) {
           _usingRestApi = true;
+          _restApiSucceededOnce = true;
           _nextCursor = feedResult.nextCursor;
           _hasMoreFromApi = feedResult.hasMore;
           followingVideosFromSource = feedResult.videos;
@@ -203,11 +195,13 @@ class HomeFeed extends _$HomeFeed {
           );
           _usingRestApi = false;
         }
-      } catch (e) {
-        Log.warning(
+      } catch (e, stackTrace) {
+        Log.error(
           '🏠 HomeFeed: REST API failed ($e), falling back to Nostr',
           name: 'HomeFeedProvider',
           category: LogCategory.video,
+          error: e,
+          stackTrace: stackTrace,
         );
         _usingRestApi = false;
       }
@@ -224,20 +218,26 @@ class HomeFeed extends _$HomeFeed {
     // If REST API succeeded, we still set up followRepository listeners for
     // follow/unfollow reactivity, but don't block on it
     if (followRepository != null) {
-      final followingPubkeys = followRepository.followingPubkeys;
-
-      // Listen to followingStream and invalidate when following list changes
+      // Listen to followingStream and refresh when following list changes
       // Skip the initial replay from BehaviorSubject using skip(1)
       final followingSubscription = followRepository.followingStream
           .skip(1) // Skip initial replay, only react to NEW emissions
           .listen((newFollowingList) {
             Log.info(
-              '🏠 HomeFeed: Stream received new following list (${newFollowingList.length} users), current build has ${followingPubkeys.length}',
+              '🏠 HomeFeed: Stream received new following list '
+              '(${newFollowingList.length} users), '
+              'restApiPreferred=$_restApiSucceededOnce',
               name: 'HomeFeedProvider',
               category: LogCategory.video,
             );
             if (ref.mounted) {
-              ref.invalidateSelf();
+              if (_restApiSucceededOnce) {
+                // REST API worked before - re-fetch from REST API
+                // instead of invalidating (which resets _usingRestApi)
+                _refreshFromRestApi();
+              } else {
+                ref.invalidateSelf();
+              }
             }
           });
 
@@ -887,9 +887,111 @@ class HomeFeed extends _$HomeFeed {
     }
   }
 
+  /// Re-fetch home feed from REST API without a full provider rebuild.
+  /// Used when following list changes and REST API is the preferred path.
+  Future<void> _refreshFromRestApi() async {
+    final authService = ref.read(authServiceProvider);
+    final currentUserPubkey = authService.currentPublicKeyHex;
+    if (currentUserPubkey == null) return;
+
+    Log.info(
+      '🏠 HomeFeed: Re-fetching from REST API after follow list change',
+      name: 'HomeFeedProvider',
+      category: LogCategory.video,
+    );
+
+    try {
+      final analyticsService = ref.read(analyticsApiServiceProvider);
+      final feedResult = await analyticsService.getHomeFeed(
+        pubkey: currentUserPubkey,
+        limit: 100,
+        sort: 'recent',
+      );
+
+      if (!ref.mounted) return;
+
+      if (feedResult.videos.isNotEmpty) {
+        _usingRestApi = true;
+        _nextCursor = feedResult.nextCursor;
+        _hasMoreFromApi = feedResult.hasMore;
+
+        var videos = feedResult.videos
+            .where((v) => v.isSupportedOnCurrentPlatform)
+            .toList();
+
+        // Merge subscribed list videos
+        final subscribedListCache = ref.read(subscribedListVideoCacheProvider);
+        final subscribedVideos = subscribedListCache?.getVideos() ?? [];
+        final followingVideoIds = videos.map((v) => v.id).toSet();
+        final listOnlyVideoIds = <String>{};
+        final videoListSources = <String, Set<String>>{};
+
+        for (final video in subscribedVideos) {
+          final listIds = subscribedListCache?.getListsForVideo(video.id) ?? {};
+          if (listIds.isNotEmpty) {
+            videoListSources[video.id] = listIds;
+            if (!followingVideoIds.contains(video.id)) {
+              listOnlyVideoIds.add(video.id);
+              videos.add(video);
+            }
+          }
+        }
+
+        // Sort by creation time (newest first)
+        videos.sort((a, b) {
+          final timeCompare = b.createdAt.compareTo(a.createdAt);
+          if (timeCompare != 0) return timeCompare;
+          return a.id.compareTo(b.id);
+        });
+
+        Log.info(
+          '✅ HomeFeed: REST API refresh got ${videos.length} videos',
+          name: 'HomeFeedProvider',
+          category: LogCategory.video,
+        );
+
+        state = AsyncData(
+          VideoFeedState(
+            videos: videos,
+            hasMoreContent: feedResult.hasMore,
+            isLoadingMore: false,
+            lastUpdated: DateTime.now(),
+            videoListSources: videoListSources,
+            listOnlyVideoIds: listOnlyVideoIds,
+          ),
+        );
+      } else {
+        Log.warning(
+          '🏠 HomeFeed: REST API refresh returned empty, '
+          'falling back to full rebuild',
+          name: 'HomeFeedProvider',
+          category: LogCategory.video,
+        );
+        _restApiSucceededOnce = false;
+        ref.invalidateSelf();
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        '🏠 HomeFeed: REST API refresh failed: $e',
+        name: 'HomeFeedProvider',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      // Fall back to full rebuild which will try REST API then Nostr
+      _restApiSucceededOnce = false;
+      ref.invalidateSelf();
+    }
+  }
+
   /// Refresh state from VideoEventService without re-subscribing to relay
   /// Call this after a video is updated to sync the provider's state
+  /// Only applies to Nostr mode - REST API mode re-fetches on refresh()
   void refreshFromService() {
+    // Skip if using REST API - refreshFromService reads from Nostr cache
+    // which is empty in REST API mode, causing videos to disappear
+    if (_usingRestApi) return;
+
     final videoEventService = ref.read(videoEventServiceProvider);
     var updatedVideos = List<VideoEvent>.from(videoEventService.homeFeedVideos);
 
@@ -945,15 +1047,21 @@ class HomeFeed extends _$HomeFeed {
     );
   }
 
-  /// Refresh the home feed
+  /// Refresh the home feed (pull-to-refresh)
   Future<void> refresh() async {
     Log.info(
-      'HomeFeed: Refreshing home feed (following only)',
+      'HomeFeed: Refreshing home feed (restApiPreferred=$_restApiSucceededOnce)',
       name: 'HomeFeedProvider',
       category: LogCategory.video,
     );
 
-    // Get video event service and force a fresh subscription
+    // If REST API is the preferred path, re-fetch from REST API directly
+    if (_restApiSucceededOnce) {
+      await _refreshFromRestApi();
+      return;
+    }
+
+    // Nostr fallback path
     final videoEventService = ref.read(videoEventServiceProvider);
     final followRepository = ref.read(followRepositoryProvider);
 

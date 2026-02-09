@@ -14,11 +14,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
-import 'package:openvine/widgets/profile/profile_loading_view.dart';
 
 /// Fullscreen profile screen for viewing other users' profiles.
 ///
@@ -274,6 +274,15 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     // Get profile color for Vine-style colored header
     final profileColor = profile?.profileBackgroundColor;
 
+    if (videosAsync is AsyncData && profileAsync is AsyncData) {
+      ScreenAnalyticsService().markDataLoaded(
+        'other_profile',
+        dataMetrics: {
+          'video_count': videosAsync.asData?.value.videos.length ?? 0,
+        },
+      );
+    }
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -379,27 +388,22 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           ),
         ],
       ),
-      body: switch (videosAsync) {
-        AsyncLoading() => const ProfileLoadingView(),
-        AsyncError(:final error) => Center(
-          child: Text(
-            'Error: $error',
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-        AsyncData(:final value) => ProfileGridView(
-          userIdHex: userIdHex,
-          isOwnProfile: false,
-          displayName: displayName,
-          videos: value.videos,
-          profileStatsAsync: profileStatsAsync,
-          scrollController: _scrollController,
-          onBlockedTap: _showUnblockConfirmation,
-          displayNameHint: widget.displayNameHint,
-          avatarUrlHint: widget.avatarUrlHint,
-          refreshNotifier: _refreshNotifier,
-        ),
-      },
+      body: ProfileGridView(
+        userIdHex: userIdHex,
+        isOwnProfile: false,
+        displayName: displayName,
+        videos: videosAsync.asData?.value.videos ?? [],
+        profileStatsAsync: profileStatsAsync,
+        scrollController: _scrollController,
+        onBlockedTap: _showUnblockConfirmation,
+        displayNameHint: widget.displayNameHint,
+        avatarUrlHint: widget.avatarUrlHint,
+        refreshNotifier: _refreshNotifier,
+        isLoadingVideos: videosAsync is AsyncLoading,
+        videoLoadError: videosAsync is AsyncError
+            ? (videosAsync as AsyncError).error.toString()
+            : null,
+      ),
     );
   }
 }

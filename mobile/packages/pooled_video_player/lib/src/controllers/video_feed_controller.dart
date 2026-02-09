@@ -6,6 +6,7 @@ import 'package:media_kit_video/media_kit_video.dart';
 
 import 'package:pooled_video_player/src/controllers/player_pool.dart';
 import 'package:pooled_video_player/src/models/video_item.dart';
+import 'package:pooled_video_player/src/models/video_pool_config.dart';
 
 /// State of video loading for a specific index.
 enum LoadState {
@@ -37,6 +38,10 @@ class VideoFeedController extends ChangeNotifier {
     PlayerPool? pool,
     this.preloadAhead = 2,
     this.preloadBehind = 1,
+    this.mediaSourceResolver,
+    this.onVideoReady,
+    this.positionCallback,
+    this.positionCallbackInterval = const Duration(milliseconds: 200),
   }) : pool = pool ?? PlayerPool.instance,
        _videos = List.from(videos) {
     _initialize();
@@ -53,6 +58,28 @@ class VideoFeedController extends ChangeNotifier {
 
   /// Number of videos to preload behind current.
   final int preloadBehind;
+
+  /// Hook: Resolve video URL to actual media source (file path or URL).
+  ///
+  /// Used for cache integration — return a cached file path if available,
+  /// or `null` to use the original [VideoItem.url].
+  final MediaSourceResolver? mediaSourceResolver;
+
+  /// Hook: Called when a video is ready to play.
+  ///
+  /// Used for triggering background caching, analytics, etc.
+  final VideoReadyCallback? onVideoReady;
+
+  /// Hook: Called periodically with position updates.
+  ///
+  /// Used for loop enforcement, progress tracking, etc.
+  /// The interval is controlled by [positionCallbackInterval].
+  final PositionCallback? positionCallback;
+
+  /// Interval for [positionCallback] invocations.
+  ///
+  /// Defaults to 200ms.
+  final Duration positionCallbackInterval;
 
   /// Unmodifiable list of videos.
   List<VideoItem> get videos => List.unmodifiable(_videos);
@@ -71,6 +98,7 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, LoadState> _loadStates = {};
   final Map<int, StreamSubscription<bool>> _bufferSubscriptions = {};
   final Set<int> _loadingIndices = {};
+  final Map<int, Timer> _positionTimers = {};
 
   /// Currently visible video index.
   int get currentIndex => _currentIndex;
@@ -251,8 +279,11 @@ class VideoFeedController extends ChangeNotifier {
 
       _loadedPlayers[index] = pooledPlayer;
 
-      // Open media
-      await pooledPlayer.player.open(Media(video.url), play: false);
+      // Resolve media source via hook (for caching)
+      final resolvedSource = mediaSourceResolver?.call(video) ?? video.url;
+
+      // Open media with resolved source
+      await pooledPlayer.player.open(Media(resolvedSource), play: false);
       await pooledPlayer.player.setPlaylistMode(PlaylistMode.single);
 
       if (_isDisposed) return;
@@ -295,9 +326,15 @@ class VideoFeedController extends ChangeNotifier {
 
     _loadStates[index] = LoadState.ready;
 
+    // Call onVideoReady hook
+    onVideoReady?.call(index, player);
+
     if (index == _currentIndex && _isActive && !_isPaused) {
       // This is the current video - play it
       unawaited(player.setVolume(100));
+
+      // Start position callback timer for current video
+      _startPositionTimer(index);
     } else {
       // Preloaded video - pause it
       unawaited(player.pause());
@@ -315,6 +352,7 @@ class VideoFeedController extends ChangeNotifier {
     if (player != null && !player.state.playing) {
       unawaited(player.setVolume(100));
       unawaited(player.play());
+      _startPositionTimer(index);
     }
   }
 
@@ -323,9 +361,31 @@ class VideoFeedController extends ChangeNotifier {
     if (player != null && player.state.playing) {
       unawaited(player.pause());
     }
+    _stopPositionTimer(index);
+  }
+
+  void _startPositionTimer(int index) {
+    if (positionCallback == null) return;
+
+    _positionTimers[index]?.cancel();
+    _positionTimers[index] = Timer.periodic(
+      positionCallbackInterval,
+      (_) {
+        final player = _loadedPlayers[index]?.player;
+        if (player != null && player.state.playing) {
+          positionCallback?.call(index, player.state.position);
+        }
+      },
+    );
+  }
+
+  void _stopPositionTimer(int index) {
+    _positionTimers[index]?.cancel();
+    _positionTimers.remove(index);
   }
 
   void _releasePlayer(int index) {
+    _stopPositionTimer(index);
     unawaited(_bufferSubscriptions[index]?.cancel());
     _bufferSubscriptions.remove(index);
     _loadedPlayers.remove(index);
@@ -337,6 +397,12 @@ class VideoFeedController extends ChangeNotifier {
   void dispose() {
     if (_isDisposed) return;
     _isDisposed = true;
+
+    // Cancel all position timers
+    for (final timer in _positionTimers.values) {
+      timer.cancel();
+    }
+    _positionTimers.clear();
 
     // Cancel all subscriptions
     for (final subscription in _bufferSubscriptions.values) {

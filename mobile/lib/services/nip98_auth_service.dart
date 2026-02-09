@@ -112,7 +112,10 @@ class Nip98AuthService {
         category: LogCategory.system,
       );
 
-      // Parse URL to extract components
+      // Parse URL to extract scheme + host + path only.
+      // relay.divine.video requires the u tag to EXCLUDE query parameters,
+      // which differs from the NIP-98 spec (that says include them).
+      // Fragments are also stripped since they aren't sent over HTTP.
       final uri = Uri.parse(url);
       final normalizedUrl = '${uri.scheme}://${uri.host}${uri.path}';
 
@@ -181,12 +184,11 @@ class Nip98AuthService {
         ['created_at', timestamp.toString()], // Creation timestamp
       ];
 
-      // Add payload hash if payload exists
-      if (payload != null && payload.isNotEmpty) {
-        final payloadBytes = utf8.encode(payload);
-        final payloadHash = sha256.convert(payloadBytes);
-        tags.add(['payload', payloadHash.toString()]);
-      }
+      // Always include payload hash per NIP-98. For requests without a
+      // body (e.g. GET), use the SHA-256 of an empty string.
+      final payloadBytes = utf8.encode(payload ?? '');
+      final payloadHash = sha256.convert(payloadBytes);
+      tags.add(['payload', payloadHash.toString()]);
 
       // Create the event
       final authEvent = await _authService.createAndSignEvent(

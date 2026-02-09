@@ -39,7 +39,7 @@ void main() {
       blocklistService = ContentBlocklistService();
 
       // Generate a test key container
-      keyContainer = SecureKeyContainer.generate();
+      keyContainer = await SecureKeyContainer.generate();
       nostrService = NostrServiceFactory.create(keyContainer: keyContainer);
       await nostrService.initialize();
 

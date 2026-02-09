@@ -485,7 +485,7 @@ class _VideoItem extends StatelessWidget {
                 left: 0,
                 right: 0,
                 bottom: 0,
-                child: _VideoInfoSection(video: video),
+                child: _VideoInfoSection(video: video, index: index),
               ),
               if (isInSubscribedList)
                 Positioned(
@@ -513,9 +513,10 @@ class _VideoItem extends StatelessWidget {
 }
 
 class _VideoInfoSection extends StatelessWidget {
-  const _VideoInfoSection({required this.video});
+  const _VideoInfoSection({required this.video, required this.index});
 
   final VideoEvent video;
+  final int index;
 
   @override
   Widget build(BuildContext context) {
@@ -539,30 +540,17 @@ class _VideoInfoSection extends StatelessWidget {
         children: [
           // Always show username - UserName.fromPubKey uses bestDisplayName
           // which falls back to truncated npub when no profile name is set
-          UserName.fromPubKey(
-            video.pubkey,
-            embeddedName: video.authorName,
-            maxLines: 1,
-            style: VineTheme.titleTinyFont(color: Colors.white).copyWith(
-              shadows: const [
-                Shadow(
-                  offset: Offset(0, 1),
-                  blurRadius: 2,
-                  color: Color(0x26000000),
-                ),
-              ],
-            ),
-          ),
-          if (hasDescription)
-            Text(
-              video.title ?? video.content,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                color: Colors.white,
-                fontSize: 14,
-                height: 20 / 14,
-                letterSpacing: 0.25,
-                shadows: [
+          Semantics(
+            identifier: 'video_thumbnail_author_$index',
+            container: true,
+            explicitChildNodes: true,
+            label: 'Video author: ${video.authorName ?? ''}',
+            child: UserName.fromPubKey(
+              video.pubkey,
+              embeddedName: video.authorName,
+              maxLines: 1,
+              style: VineTheme.titleTinyFont(color: Colors.white).copyWith(
+                shadows: const [
                   Shadow(
                     offset: Offset(0, 1),
                     blurRadius: 2,
@@ -570,8 +558,33 @@ class _VideoInfoSection extends StatelessWidget {
                   ),
                 ],
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (hasDescription)
+            Semantics(
+              identifier: 'video_thumbnail_description_$index',
+              container: true,
+              explicitChildNodes: true,
+              label: 'Video description: ${video.title ?? video.content}',
+              child: Text(
+                video.title ?? video.content,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  color: Colors.white,
+                  fontSize: 14,
+                  height: 20 / 14,
+                  letterSpacing: 0.25,
+                  shadows: [
+                    Shadow(
+                      offset: Offset(0, 1),
+                      blurRadius: 2,
+                      color: Color(0x26000000),
+                    ),
+                  ],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
         ],
       ),

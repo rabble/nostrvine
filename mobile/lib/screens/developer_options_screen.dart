@@ -1,5 +1,6 @@
 // ABOUTME: Developer options screen for switching between environments
 // ABOUTME: Allows switching relay URLs (POC, Staging, Test, Production)
+// ABOUTME: Shows page load performance timing data for debugging
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,8 +9,17 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/environment_config.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/services/page_load_history.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
+
+/// Returns a color indicating speed: green (<1s), orange (1-3s), red (>3s).
+Color _getSpeedColor(PageLoadRecord record) {
+  final ms = record.dataLoadedMs ?? record.contentVisibleMs ?? 0;
+  if (ms > 3000) return VineTheme.likeRed;
+  if (ms > 1000) return VineTheme.accentOrange;
+  return VineTheme.vineGreen;
+}
 
 class DeveloperOptionsScreen extends ConsumerWidget {
   /// Route name for this screen.
@@ -32,8 +42,11 @@ class DeveloperOptionsScreen extends ConsumerWidget {
       const EnvironmentConfig(environment: AppEnvironment.poc),
     ];
 
+    final recentRecords = PageLoadHistory().getRecent(10);
+    final slowestRecords = PageLoadHistory().getSlowest(5);
+
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: VineTheme.backgroundColor,
       appBar: AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
@@ -58,7 +71,7 @@ class DeveloperOptionsScreen extends ConsumerWidget {
               width: 32,
               height: 32,
               colorFilter: const ColorFilter.mode(
-                Colors.white,
+                VineTheme.whiteText,
                 BlendMode.srcIn,
               ),
             ),
@@ -72,39 +85,140 @@ class DeveloperOptionsScreen extends ConsumerWidget {
           overflow: TextOverflow.ellipsis,
         ),
       ),
-      body: ListView.builder(
-        itemCount: environments.length,
-        itemBuilder: (context, index) {
-          final env = environments[index];
-          final isSelected = env == currentConfig;
+      body: ListView(
+        children: [
+          // Environment configs
+          ...environments.map((env) {
+            final isSelected = env == currentConfig;
+            return ListTile(
+              leading: Container(
+                width: 12,
+                height: 12,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Color(env.indicatorColorValue),
+                ),
+              ),
+              title: Text(
+                env.displayName,
+                style: const TextStyle(
+                  color: VineTheme.primaryText,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              subtitle: Text(
+                env.relayUrl,
+                style: const TextStyle(
+                  color: VineTheme.secondaryText,
+                  fontSize: 14,
+                ),
+              ),
+              trailing: isSelected
+                  ? const Icon(Icons.check, color: VineTheme.vineGreen)
+                  : null,
+              onTap: () => _switchEnvironment(context, ref, env, isSelected),
+            );
+          }),
 
-          return ListTile(
-            leading: Container(
-              width: 12,
-              height: 12,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Color(env.indicatorColorValue),
+          // Divider between environments and page load times
+          const Divider(color: VineTheme.outlineVariant, height: 32),
+
+          // Page Load Times section header
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Text(
+              'Page Load Times',
+              style: TextStyle(
+                color: VineTheme.vineGreen,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            title: Text(
-              env.displayName,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
+          ),
+
+          // Recent page load records
+          if (recentRecords.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'No page loads recorded yet.\n'
+                'Navigate around the app to see timing data.',
+                style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+              ),
+            )
+          else
+            ...recentRecords.map((record) {
+              return ListTile(
+                title: Text(
+                  record.screenName,
+                  style: const TextStyle(
+                    color: VineTheme.primaryText,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                subtitle: Text(
+                  'Visible: ${record.contentVisibleMs ?? "\u2014"}ms'
+                  '  |  '
+                  'Data: ${record.dataLoadedMs ?? "\u2014"}ms',
+                  style: const TextStyle(
+                    color: VineTheme.secondaryText,
+                    fontSize: 12,
+                  ),
+                ),
+                trailing: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _getSpeedColor(record),
+                  ),
+                ),
+              );
+            }),
+
+          // Slowest Screens subsection
+          if (slowestRecords.isNotEmpty) ...[
+            const Divider(color: VineTheme.outlineVariant, height: 32),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Text(
+                'Slowest Screens',
+                style: TextStyle(
+                  color: VineTheme.vineGreen,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-            subtitle: Text(
-              env.relayUrl,
-              style: const TextStyle(color: Colors.grey, fontSize: 14),
-            ),
-            trailing: isSelected
-                ? const Icon(Icons.check, color: VineTheme.vineGreen)
-                : null,
-            onTap: () => _switchEnvironment(context, ref, env, isSelected),
-          );
-        },
+            ...slowestRecords.map((record) {
+              final dataMs = record.dataLoadedMs ?? 0;
+              return ListTile(
+                title: Text(
+                  record.screenName,
+                  style: const TextStyle(
+                    color: VineTheme.primaryText,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                subtitle: Text(
+                  '${dataMs}ms',
+                  style: TextStyle(color: _getSpeedColor(record), fontSize: 12),
+                ),
+                trailing: Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _getSpeedColor(record),
+                  ),
+                ),
+              );
+            }),
+          ],
+        ],
       ),
     );
   }
@@ -125,19 +239,19 @@ class DeveloperOptionsScreen extends ConsumerWidget {
         backgroundColor: VineTheme.cardBackground,
         title: const Text(
           'Switch Environment?',
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(color: VineTheme.primaryText),
         ),
         content: Text(
           'Switch to ${newConfig.displayName}?\n\n'
           'This will clear cached video data and reconnect to the new relay.',
-          style: const TextStyle(color: Colors.white70),
+          style: const TextStyle(color: VineTheme.onSurfaceVariant),
         ),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
             child: const Text(
               'Cancel',
-              style: TextStyle(color: Colors.white70),
+              style: TextStyle(color: VineTheme.onSurfaceVariant),
             ),
           ),
           ElevatedButton(
@@ -145,7 +259,10 @@ class DeveloperOptionsScreen extends ConsumerWidget {
             style: ElevatedButton.styleFrom(
               backgroundColor: VineTheme.vineGreen,
             ),
-            child: const Text('Switch', style: TextStyle(color: Colors.white)),
+            child: const Text(
+              'Switch',
+              style: TextStyle(color: VineTheme.primaryText),
+            ),
           ),
         ],
       ),

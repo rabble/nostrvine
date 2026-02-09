@@ -22,6 +22,7 @@ import 'package:openvine/screens/settings_screen.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
+import 'package:openvine/screens/video_detail_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/screens/welcome_screen.dart';
 
@@ -254,6 +255,22 @@ void main() {
       });
     });
 
+    group('Video detail routes parse correctly', () {
+      test(
+        '${VideoDetailScreen.pathForId('abc123')} parses to RouteType.videoDetail',
+        () {
+          final context = parseRoute(VideoDetailScreen.pathForId('abc123'));
+          expect(context.type, RouteType.videoDetail);
+          expect(context.videoId, 'abc123');
+        },
+      );
+
+      test('/video without id redirects to home', () {
+        final context = parseRoute('/video');
+        expect(context.type, RouteType.home);
+      });
+    });
+
     group('Standalone routes parse correctly', () {
       test('${WelcomeScreen.path} parses to RouteType.welcome', () {
         final context = parseRoute(WelcomeScreen.path);
@@ -322,6 +339,39 @@ void main() {
     });
   });
 
+  group('Route normalization round-trip', () {
+    // buildRoute(parseRoute(path)) must equal path for all routes.
+    // This is exactly the check routeNormalizationProvider performs;
+    // a mismatch causes an unwanted redirect (see /video/:id bug).
+    final roundTripCases = {
+      'video detail': VideoDetailScreen.pathForId(
+        'a1b2c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c1d2e3f4a5b6c7d8e9f0a1b2',
+      ),
+      'home feed': HomeScreenRouter.pathForIndex(3),
+      'explore': ExploreScreen.path,
+      'explore feed': ExploreScreen.pathForIndex(5),
+      'profile grid': ProfileScreenRouter.pathForNpub('npub1test'),
+      'profile feed': ProfileScreenRouter.pathForIndex('npub1test', 2),
+      'hashtag': HashtagScreenRouter.pathForTag('nostr'),
+      'search with term': SearchScreenPure.pathForTerm(term: 'flutter'),
+      'settings': SettingsScreen.path,
+      'relay settings': RelaySettingsScreen.path,
+    };
+
+    for (final entry in roundTripCases.entries) {
+      test('${entry.key}: ${entry.value} survives normalization', () {
+        final canonical = buildRoute(parseRoute(entry.value));
+        expect(
+          canonical,
+          equals(entry.value),
+          reason:
+              '${entry.key} route would be redirected by normalization '
+              '(canonical=$canonical, original=${entry.value})',
+        );
+      });
+    }
+  });
+
   group('Route Coverage Completeness', () {
     // This test documents all routes that should be handled by parseRoute()
     // If a new route is added to app_router.dart, it should be added here too
@@ -349,6 +399,7 @@ void main() {
         RouteType.editProfile: ProfileSetupScreen.editPath,
         RouteType.clips: ClipLibraryScreen.clipsPath,
         RouteType.welcome: WelcomeScreen.path,
+        RouteType.videoDetail: VideoDetailScreen.pathForId('test_id'),
       };
 
       for (final entry in routeTypeExamples.entries) {

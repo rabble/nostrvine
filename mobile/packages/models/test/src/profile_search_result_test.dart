@@ -179,6 +179,52 @@ void main() {
         expect(result.website, isNull);
         expect(result.createdAt, isNull);
         expect(result.eventId, isNull);
+        expect(result.followerCount, isNull);
+        expect(result.videoCount, isNull);
+      });
+
+      test('parses follower_count as int', () {
+        final json = {
+          'pubkey': testPubkey,
+          'follower_count': 1500,
+        };
+
+        final result = ProfileSearchResult.fromJson(json);
+
+        expect(result.followerCount, equals(1500));
+      });
+
+      test('parses follower_count as string', () {
+        final json = {
+          'pubkey': testPubkey,
+          'follower_count': '2500',
+        };
+
+        final result = ProfileSearchResult.fromJson(json);
+
+        expect(result.followerCount, equals(2500));
+      });
+
+      test('parses video_count as int', () {
+        final json = {
+          'pubkey': testPubkey,
+          'video_count': 42,
+        };
+
+        final result = ProfileSearchResult.fromJson(json);
+
+        expect(result.videoCount, equals(42));
+      });
+
+      test('parses video_count as string', () {
+        final json = {
+          'pubkey': testPubkey,
+          'video_count': '100',
+        };
+
+        final result = ProfileSearchResult.fromJson(json);
+
+        expect(result.videoCount, equals(100));
       });
 
       test('handles null pubkey', () {
@@ -232,6 +278,8 @@ void main() {
           lud16: 'alice@getalby.com',
           createdAt: createdAt,
           eventId: 'event123',
+          followerCount: 1500,
+          videoCount: 42,
         );
 
         final profile = result.toUserProfile();
@@ -247,7 +295,17 @@ void main() {
         expect(profile.lud16, equals('alice@getalby.com'));
         expect(profile.createdAt, equals(createdAt));
         expect(profile.eventId, equals('event123'));
-        expect(profile.rawData, equals(const <String, dynamic>{}));
+        expect(profile.rawData['follower_count'], equals(1500));
+        expect(profile.rawData['video_count'], equals(42));
+      });
+
+      test('rawData omits null counts', () {
+        const result = ProfileSearchResult(pubkey: testPubkey);
+
+        final profile = result.toUserProfile();
+
+        expect(profile.rawData.containsKey('follower_count'), isFalse);
+        expect(profile.rawData.containsKey('video_count'), isFalse);
       });
 
       test('uses DateTime.now() when createdAt is null', () {
