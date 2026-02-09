@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_remove_area.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 
 class MockVideoEditorMainBloc
     extends MockBloc<VideoEditorMainEvent, VideoEditorMainState>
@@ -38,9 +39,15 @@ void main() {
       return ProviderScope(
         child: MaterialApp(
           home: Scaffold(
-            body: BlocProvider<VideoEditorMainBloc>.value(
-              value: mockBloc,
-              child: const VideoEditorRemoveArea(),
+            body: VideoEditorScope(
+              editorKey: GlobalKey(),
+              removeAreaKey: GlobalKey(),
+              onAddStickers: () {},
+              onAddEditTextLayer: ([layer]) async => null,
+              child: BlocProvider<VideoEditorMainBloc>.value(
+                value: mockBloc,
+                child: const VideoEditorRemoveArea(),
+              ),
             ),
           ),
         ),
