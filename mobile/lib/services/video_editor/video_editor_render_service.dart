@@ -12,6 +12,7 @@ import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// Result of normalizing clips to a target aspect ratio.
@@ -174,8 +175,10 @@ class VideoEditorRenderService {
   /// Returns the path to the rendered video file, or null if cancelled/failed.
   static Future<String?> renderVideo({
     required List<RecordingClip> clips,
-    required model.AspectRatio aspectRatio,
-    required bool enableAudio,
+    model.AspectRatio? aspectRatio,
+    bool enableAudio = true,
+    CompleteParameters? parameters,
+    String? taskId,
   }) async {
     final tempDir = await getTemporaryDirectory();
     var tempFilePaths = <String>[];
@@ -194,18 +197,20 @@ class VideoEditorRenderService {
 
       final result = await _normalizeClipsToAspectRatio(
         clips: clips,
-        aspectRatio: aspectRatio,
+        aspectRatio: aspectRatio ?? clips.first.targetAspectRatio,
         enableAudio: enableAudio,
         tempDir: tempDir,
+        parameters: parameters,
       );
       tempFilePaths = result.tempFilePaths;
 
       final outputPath = await _concatenateSegments(
         segments: result.segments,
-        clipId: clips.first.id,
+        taskId: taskId ?? clips.first.id,
         enableAudio: enableAudio,
         tempDir: tempDir,
         globalTransform: result.globalTransform,
+        parameters: parameters,
       );
 
       // Fire-and-forget: temp cleanup is non-critical and handles
@@ -350,6 +355,7 @@ class VideoEditorRenderService {
     required model.AspectRatio aspectRatio,
     required bool enableAudio,
     required Directory tempDir,
+    required CompleteParameters? parameters,
   }) async {
     // Analyze all clips first to determine the optimal rendering strategy
     final clipAnalysis = await _analyzeClips(clips, aspectRatio);
@@ -403,6 +409,7 @@ class VideoEditorRenderService {
           cropParams: entry.cropParams,
           enableAudio: enableAudio,
           tempDir: tempDir,
+          parameters: parameters,
         );
         tempFilePaths.add(normalizedPath);
         segments.add(
@@ -450,6 +457,7 @@ class VideoEditorRenderService {
     required _CropParameters cropParams,
     required bool enableAudio,
     required Directory tempDir,
+    required CompleteParameters? parameters,
   }) async {
     final outputPath =
         '${tempDir.path}/normalized_${index}_${DateTime.now().microsecondsSinceEpoch}.mp4';
@@ -459,7 +467,20 @@ class VideoEditorRenderService {
       video: clip.video,
       enableAudio: enableAudio,
       shouldOptimizeForNetworkUse: true,
-      transform: cropParams.toExportTransform(),
+      imageBytes: parameters?.layers.isNotEmpty == true
+          ? parameters?.image
+          : null,
+      blur: parameters?.blur,
+      colorMatrixList: parameters?.colorFilters ?? [],
+      transform: ExportTransform(
+        x: cropParams.x,
+        y: cropParams.y,
+        width: cropParams.width,
+        height: cropParams.height,
+        flipX: parameters?.flipX ?? false,
+        flipY: parameters?.flipY ?? false,
+        rotateTurns: parameters?.rotateTurns ?? 0,
+      ),
     );
 
     await ProVideoEditor.instance.renderVideoToFile(outputPath, task);
@@ -482,21 +503,37 @@ class VideoEditorRenderService {
   /// If [globalTransform] is provided, applies it to all segments in a single pass.
   static Future<String> _concatenateSegments({
     required List<VideoSegment> segments,
-    required String clipId,
+    required String taskId,
     required bool enableAudio,
     required Directory tempDir,
     _CropParameters? globalTransform,
+    required CompleteParameters? parameters,
   }) async {
     final outputPath =
         '${tempDir.path}/divine_${DateTime.now().microsecondsSinceEpoch}.mp4';
 
     final task = VideoRenderData(
-      id: clipId,
+      id: taskId,
       videoSegments: segments,
       endTime: VideoEditorConstants.maxDuration,
       enableAudio: enableAudio,
       shouldOptimizeForNetworkUse: true,
-      transform: globalTransform?.toExportTransform(),
+      imageBytes: parameters?.layers.isNotEmpty == true
+          ? parameters?.image
+          : null,
+      blur: parameters?.blur,
+      colorMatrixList: parameters?.colorFilters ?? [],
+      transform: globalTransform != null
+          ? ExportTransform(
+              x: globalTransform.x,
+              y: globalTransform.y,
+              width: globalTransform.width,
+              height: globalTransform.height,
+              flipX: parameters?.flipX ?? false,
+              flipY: parameters?.flipY ?? false,
+              rotateTurns: parameters?.rotateTurns ?? 0,
+            )
+          : null,
     );
 
     await ProVideoEditor.instance.renderVideoToFile(outputPath, task);

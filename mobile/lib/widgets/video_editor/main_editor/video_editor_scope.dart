@@ -17,6 +17,7 @@ class VideoEditorScope extends InheritedWidget {
   /// Creates a [VideoEditorScope].
   const VideoEditorScope({
     required this.editorKey,
+    required this.removeAreaKey,
     required this.onAddStickers,
     required this.onAddEditTextLayer,
     required super.child,
@@ -25,6 +26,9 @@ class VideoEditorScope extends InheritedWidget {
 
   /// Global key to access the [ProImageEditorState].
   final GlobalKey<ProImageEditorState> editorKey;
+
+  /// Global key to access the remove area widget.
+  final GlobalKey removeAreaKey;
 
   /// Callback to open the sticker picker.
   final VoidCallback onAddStickers;
@@ -51,7 +55,26 @@ class VideoEditorScope extends InheritedWidget {
     return scope!;
   }
 
+  /// Checks if the given position is over the remove area.
+  bool isOverRemoveArea(Offset globalPosition) {
+    final renderBox =
+        removeAreaKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return false;
+
+    final position = renderBox.localToGlobal(Offset.zero);
+    final size = renderBox.size;
+    final rect = Rect.fromLTWH(
+      position.dx,
+      position.dy,
+      size.width,
+      size.height,
+    );
+
+    return rect.contains(globalPosition);
+  }
+
   @override
   bool updateShouldNotify(VideoEditorScope oldWidget) =>
-      editorKey != oldWidget.editorKey;
+      editorKey != oldWidget.editorKey ||
+      removeAreaKey != oldWidget.removeAreaKey;
 }

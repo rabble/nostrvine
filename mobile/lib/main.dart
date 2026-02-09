@@ -346,21 +346,32 @@ Future<void> _startOpenVineApp() async {
   };
 
   // Configure global error widget builder for user-friendly error display
-  // IMPORTANT: Use only the most basic widgets - even Text requires directionality context
-  // This is only for early startup errors before MaterialApp is ready
+  // Wrap in Directionality to enable Text widgets even before MaterialApp is ready
   ErrorWidget.builder = (FlutterErrorDetails details) {
-    // Use only basic Container and Decoration - no Text widgets at all
-    return Container(
-      color: const Color(0xFF1A1A1A),
-      child: const Center(
-        child: SizedBox(
-          width: 100,
-          height: 100,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.orange,
-              borderRadius: BorderRadius.all(Radius.circular(8)),
-            ),
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Container(
+        color: VineTheme.backgroundColor,
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                color: VineTheme.accentOrange,
+                size: 48,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Oops, something went wrong',
+                style: TextStyle(
+                  color: VineTheme.whiteText,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  decoration: TextDecoration.none,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -523,6 +534,7 @@ Future<void> _startOpenVineApp() async {
 
   // Initialize the player pool singleton
   await PlayerPool.init();
+
   runApp(
     UncontrolledProviderScope(container: container, child: const DivineApp()),
   );

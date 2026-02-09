@@ -13,6 +13,7 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -53,7 +54,7 @@ class PooledFullscreenVideoFeedArgs {
 ///
 /// Uses [FullscreenFeedBloc] for state management, receiving videos from
 /// the source via a stream and delegating pagination back to the source.
-class PooledFullscreenVideoFeedScreen extends StatelessWidget {
+class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   /// Route name for this screen.
   static const routeName = 'pooled-video-feed';
 
@@ -74,84 +75,236 @@ class PooledFullscreenVideoFeedScreen extends StatelessWidget {
   final String? contextTitle;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final mediaCache = ref.read(mediaCacheProvider);
+    final blossomAuthService = ref.read(blossomAuthServiceProvider);
+
     return BlocProvider(
       create: (_) => FullscreenFeedBloc(
         videosStream: videosStream,
         initialIndex: initialIndex,
         onLoadMore: onLoadMore,
+        mediaCache: mediaCache,
+        blossomAuthService: blossomAuthService,
       )..add(const FullscreenFeedStarted()),
-      child: _FullscreenFeedContent(contextTitle: contextTitle),
+      child: FullscreenFeedContent(contextTitle: contextTitle),
     );
   }
 }
 
-class _FullscreenFeedContent extends StatelessWidget {
-  const _FullscreenFeedContent({this.contextTitle});
+/// Factory function for creating a [VideoFeedController].
+///
+/// Used for dependency injection in tests.
+typedef VideoFeedControllerFactory =
+    VideoFeedController Function(List<VideoItem> videos, int initialIndex);
 
+/// Content widget for the fullscreen video feed.
+///
+/// Manages the [VideoFeedController] lifecycle and wires hooks to dispatch
+/// BLoC events for caching and loop enforcement.
+@visibleForTesting
+class FullscreenFeedContent extends StatefulWidget {
+  /// Creates fullscreen feed content.
+  @visibleForTesting
+  const FullscreenFeedContent({
+    this.contextTitle,
+    @visibleForTesting this.controllerFactory,
+    super.key,
+  });
+
+  /// Optional title for context display.
   final String? contextTitle;
+
+  /// Optional factory for creating the [VideoFeedController].
+  ///
+  /// If provided, this factory is used instead of the default controller
+  /// creation. This allows tests to inject a custom controller with
+  /// hooks that can be verified.
+  @visibleForTesting
+  final VideoFeedControllerFactory? controllerFactory;
+
+  @override
+  State<FullscreenFeedContent> createState() => _FullscreenFeedContentState();
+}
+
+class _FullscreenFeedContentState extends State<FullscreenFeedContent> {
+  VideoFeedController? _controller;
+  List<VideoItem>? _lastPooledVideos;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize controller if BLoC already has videos on first build
+    _initializeControllerIfNeeded();
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  /// Initializes the controller if not already created and videos are available.
+  ///
+  /// Called from [didChangeDependencies] for initial setup and from
+  /// [BlocListener] when videos become available asynchronously.
+  void _initializeControllerIfNeeded({bool triggerRebuild = false}) {
+    if (_controller != null) return;
+
+    final state = context.read<FullscreenFeedBloc>().state;
+    if (!state.hasPooledVideos) return;
+
+    _controller = _createController(state.pooledVideos, state.currentIndex);
+    _lastPooledVideos = state.pooledVideos;
+
+    if (triggerRebuild) setState(() {});
+  }
+
+  /// Handles new videos from pagination.
+  void _handleVideosChanged(FullscreenFeedState state) {
+    final controller = _controller;
+    if (controller == null || _lastPooledVideos == null) return;
+
+    final newVideos = state.pooledVideos
+        .where((v) => !_lastPooledVideos!.any((old) => old.id == v.id))
+        .toList();
+
+    if (newVideos.isNotEmpty) {
+      controller.addVideos(newVideos);
+    }
+    _lastPooledVideos = state.pooledVideos;
+  }
+
+  /// Handles seek commands from the BLoC.
+  void _handleSeekCommand(SeekCommand command) {
+    final controller = _controller;
+    if (controller == null) return;
+
+    controller.seek(command.position);
+    context.read<FullscreenFeedBloc>().add(
+      const FullscreenFeedSeekCommandHandled(),
+    );
+  }
+
+  /// Creates a VideoFeedController with hooks wired to dispatch BLoC events.
+  ///
+  /// If [widget.controllerFactory] is provided (for testing), uses that
+  /// instead of the default controller creation.
+  VideoFeedController _createController(
+    List<VideoItem> videos,
+    int initialIndex,
+  ) {
+    // Use injected factory if provided (for testing)
+    final factory = widget.controllerFactory;
+    if (factory != null) {
+      return factory(videos, initialIndex);
+    }
+
+    return VideoFeedController(
+      videos: videos,
+      pool: PlayerPool.instance,
+      // Hook: Dispatch event for background caching when video is ready
+      onVideoReady: (index, player) {
+        if (!mounted) return;
+        context.read<FullscreenFeedBloc>().add(
+          FullscreenFeedVideoCacheStarted(index: index),
+        );
+      },
+      // Hook: Dispatch position updates for loop enforcement
+      positionCallback: (index, position) {
+        if (!mounted) return;
+        context.read<FullscreenFeedBloc>().add(
+          FullscreenFeedPositionUpdated(index: index, position: position),
+        );
+      },
+      positionCallbackInterval: const Duration(milliseconds: 100),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
-      builder: (context, state) {
-        if (state.status == FullscreenFeedStatus.initial || !state.hasVideos) {
-          return Scaffold(
-            backgroundColor: Colors.black,
-            appBar: const _FullscreenAppBar(),
-            body: const Center(child: BrandedLoadingIndicator(size: 60)),
-          );
-        }
+    return MultiBlocListener(
+      listeners: [
+        // Initialize controller when videos first become available
+        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+          listenWhen: (prev, curr) =>
+              !prev.hasPooledVideos && curr.hasPooledVideos,
+          listener: (context, state) =>
+              _initializeControllerIfNeeded(triggerRebuild: true),
+        ),
+        // Handle new videos from pagination
+        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+          listenWhen: (prev, curr) => prev.videos.length != curr.videos.length,
+          listener: (context, state) => _handleVideosChanged(state),
+        ),
+        // Handle seek commands
+        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+          listenWhen: (prev, curr) =>
+              curr.seekCommand != null && prev.seekCommand != curr.seekCommand,
+          listener: (context, state) {
+            final command = state.seekCommand;
+            if (command != null) {
+              _handleSeekCommand(command);
+            }
+          },
+        ),
+      ],
+      child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
+        builder: (context, state) {
+          if (state.status == FullscreenFeedStatus.initial ||
+              !state.hasVideos) {
+            return Scaffold(
+              backgroundColor: Colors.black,
+              appBar: const _FullscreenAppBar(),
+              body: const Center(child: BrandedLoadingIndicator(size: 60)),
+            );
+          }
 
-        final videos = state.videos;
-        final pooledVideos = videos
-            .where((v) => v.videoUrl != null)
-            .map((e) => VideoItem(id: e.id, url: e.videoUrl!))
-            .toList();
-
-        if (pooledVideos.isEmpty) {
-          return Scaffold(
-            backgroundColor: Colors.black,
-            appBar: const _FullscreenAppBar(),
-            body: const Center(
-              child: Text(
-                'No videos available',
-                style: TextStyle(color: Colors.white),
+          if (!state.hasPooledVideos) {
+            return Scaffold(
+              backgroundColor: Colors.black,
+              appBar: const _FullscreenAppBar(),
+              body: const Center(
+                child: Text(
+                  'No videos available',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
+            );
+          }
+
+          return Scaffold(
+            backgroundColor: Colors.black,
+            extendBodyBehindAppBar: true,
+            appBar: _FullscreenAppBar(currentVideo: state.currentVideo),
+            body: PooledVideoFeed(
+              videos: state.pooledVideos,
+              controller: _controller,
+              initialIndex: state.currentIndex,
+              onActiveVideoChanged: (video, index) {
+                context.read<FullscreenFeedBloc>().add(
+                  FullscreenFeedIndexChanged(index),
+                );
+              },
+              onNearEnd: (_) {
+                context.read<FullscreenFeedBloc>().add(
+                  const FullscreenFeedLoadMoreRequested(),
+                );
+              },
+              nearEndThreshold: 2,
+              itemBuilder: (context, video, index, {required isActive}) {
+                final originalEvent = state.videos[index];
+                return _PooledFullscreenItem(
+                  video: originalEvent,
+                  index: index,
+                  isActive: isActive,
+                  contextTitle: widget.contextTitle,
+                );
+              },
             ),
           );
-        }
-
-        return Scaffold(
-          backgroundColor: Colors.black,
-          extendBodyBehindAppBar: true,
-          appBar: _FullscreenAppBar(currentVideo: state.currentVideo),
-          body: PooledVideoFeed(
-            videos: pooledVideos,
-            initialIndex: state.currentIndex,
-            onActiveVideoChanged: (video, index) {
-              context.read<FullscreenFeedBloc>().add(
-                FullscreenFeedIndexChanged(index),
-              );
-            },
-            onNearEnd: (_) {
-              context.read<FullscreenFeedBloc>().add(
-                const FullscreenFeedLoadMoreRequested(),
-              );
-            },
-            nearEndThreshold: 2,
-            itemBuilder: (context, video, index, {required isActive}) {
-              final originalEvent = videos[index];
-              return _PooledFullscreenItem(
-                video: originalEvent,
-                index: index,
-                isActive: isActive,
-                contextTitle: contextTitle,
-              );
-            },
-          ),
-        );
-      },
+        },
+      ),
     );
   }
 }
