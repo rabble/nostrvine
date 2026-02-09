@@ -4,3 +4,4 @@ name: Divine Smoke regression test
 #Social interaction tests
 
 - runFlow: ../flows/likeFlow.yaml
+- runFlow: ../flows/commentFlow.yaml
