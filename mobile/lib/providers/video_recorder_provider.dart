@@ -13,8 +13,10 @@ import 'package:openvine/models/video_recorder/video_recorder_provider_state.dar
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:divine_camera/divine_camera.dart' show DivineVideoQuality;
+import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
@@ -38,6 +40,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
   final CameraService? _cameraServiceOverride;
   late final CameraService _cameraService;
+  AudioPlaybackService? _audioPlaybackService;
   Timer? _focusPointTimer;
 
   double _baseZoomLevel = 1;
@@ -72,6 +75,16 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       if (!_isDestroyed) {
         _isDestroyed = true; // Set flag before cleanup
         _focusPointTimer?.cancel();
+        try {
+          await _audioPlaybackService?.dispose();
+          _audioPlaybackService = null;
+        } catch (e) {
+          Log.warning(
+            '🧹 Audio playback service disposal failed: $e',
+            name: 'VideoRecorderNotifier',
+            category: .system,
+          );
+        }
         try {
           await _cameraService.dispose();
         } catch (e) {
@@ -162,6 +175,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     );
     _isDestroyed = true;
     _focusPointTimer?.cancel();
+    await _audioPlaybackService?.dispose();
+    _audioPlaybackService = null;
     await _cameraService.dispose();
   }
 
@@ -392,6 +407,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         category: .video,
       );
       clipProvider.startRecording();
+
+      // Start audio playback if a sound is selected
+      unawaited(_startSoundPlayback());
     } else {
       Log.warning(
         '⚠️ Recording failed to start or was stopped early',
@@ -435,6 +453,10 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
     _isStoppingRecording = true;
+
+    // Stop audio playback if active
+    await _stopSoundPlayback();
+
     final videoResult = result ?? await _cameraService.stopRecording();
 
     final clipProvider = ref.read(clipManagerProvider.notifier)
@@ -675,6 +697,67 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
     state = const VideoRecorderProviderState();
+  }
+
+  // === SOUND PLAYBACK DURING RECORDING ===
+
+  /// Starts audio playback for the selected sound during recording.
+  ///
+  /// Configures the audio session for simultaneous recording and playback,
+  /// loads the audio from the sound's URL, and starts playback.
+  /// Failures are logged but do not prevent recording from continuing.
+  Future<void> _startSoundPlayback() async {
+    final selectedSound = ref.read(selectedSoundProvider);
+    if (selectedSound == null || selectedSound.url == null) return;
+
+    try {
+      _audioPlaybackService ??= AudioPlaybackService();
+
+      // Configure audio session for recording + playback
+      await _audioPlaybackService!.configureForRecording();
+
+      // Load the audio from the sound's Blossom URL
+      await _audioPlaybackService!.loadAudio(selectedSound.url!);
+
+      // Start playback
+      await _audioPlaybackService!.play();
+
+      Log.info(
+        'Started sound playback during recording: '
+        '${selectedSound.title ?? selectedSound.id}',
+        name: 'VideoRecorderNotifier',
+        category: LogCategory.video,
+      );
+    } catch (e) {
+      Log.warning(
+        'Failed to start sound playback during recording: $e',
+        name: 'VideoRecorderNotifier',
+        category: LogCategory.video,
+      );
+      // Don't prevent recording - sound playback is best-effort
+    }
+  }
+
+  /// Stops audio playback and resets the audio session.
+  Future<void> _stopSoundPlayback() async {
+    if (_audioPlaybackService == null) return;
+
+    try {
+      await _audioPlaybackService!.stop();
+      await _audioPlaybackService!.resetAudioSession();
+
+      Log.info(
+        'Stopped sound playback',
+        name: 'VideoRecorderNotifier',
+        category: LogCategory.video,
+      );
+    } catch (e) {
+      Log.warning(
+        'Failed to stop sound playback: $e',
+        name: 'VideoRecorderNotifier',
+        category: LogCategory.video,
+      );
+    }
   }
 }
 

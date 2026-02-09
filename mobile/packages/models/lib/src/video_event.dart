@@ -8,6 +8,7 @@ import 'dart:developer' as developer;
 import 'package:json_annotation/json_annotation.dart';
 import 'package:meta/meta.dart';
 import 'package:models/src/nip71_video_kinds.dart';
+import 'package:models/src/video_attribution.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
 part 'video_event.g.dart';
@@ -56,6 +57,9 @@ class VideoEvent {
     this.nostrLikeCount,
     this.authorName,
     this.authorAvatar,
+    this.collaboratorPubkeys = const [],
+    this.inspiredByVideo,
+    this.inspiredByNpub,
   });
 
   /// Create VideoEvent from Nostr event
@@ -113,6 +117,8 @@ class VideoEvent {
     int? expirationTimestamp;
     String? audioEventId;
     String? audioEventRelay;
+    final collaboratorPubkeys = <String>[];
+    InspiredByInfo? inspiredByVideo;
 
     // Parse event tags according to NIP-71
     // Handle both List<String> and List<dynamic>
@@ -406,6 +412,25 @@ class VideoEvent {
               name: 'VideoEvent',
             );
           }
+        case 'p':
+          // NIP-71 p-tag: collaborator if pubkey differs from event author
+          if (tagValue.isNotEmpty && tagValue != event.pubkey) {
+            if (!collaboratorPubkeys.contains(tagValue)) {
+              collaboratorPubkeys.add(tagValue);
+            }
+          }
+        case 'a':
+          // NIP-33 addressable event reference
+          // Format: ['a', '34236:<pubkey>:<d-tag>', '<relay>', 'mention']
+          if (tagValue.isNotEmpty && tagValue.startsWith('34236:')) {
+            final relayHint = tag.length > 2 ? tag[2] : null;
+            inspiredByVideo ??= InspiredByInfo(
+              addressableId: tagValue,
+              relayUrl: relayHint != null && relayHint.isNotEmpty
+                  ? relayHint
+                  : null,
+            );
+          }
         default:
           // POSTEL'S LAW: Check if any unknown tag contains a valid video URL
           if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
@@ -420,6 +445,14 @@ class VideoEvent {
 
       // Store all tags for potential future use
       tags[tagName] = tagValue;
+    }
+
+    // Scan content for NIP-27 nostr:npub1... references (Inspired By person)
+    String? inspiredByNpub;
+    final npubPattern = RegExp('nostr:(npub1[a-z0-9]+)');
+    final npubMatch = npubPattern.firstMatch(event.content);
+    if (npubMatch != null) {
+      inspiredByNpub = npubMatch.group(1);
     }
 
     final createdAtTimestamp = event.createdAt is DateTime
@@ -568,6 +601,9 @@ class VideoEvent {
       expirationTimestamp: expirationTimestamp,
       audioEventId: audioEventId,
       audioEventRelay: audioEventRelay,
+      collaboratorPubkeys: collaboratorPubkeys,
+      inspiredByVideo: inspiredByVideo,
+      inspiredByNpub: inspiredByNpub,
     );
   }
   final String id;
@@ -630,6 +666,23 @@ class VideoEvent {
 
   /// Author avatar URL (from Funnelcake API for classic Viners)
   final String? authorAvatar;
+
+  // Attribution fields (collaborators and Inspired By)
+  /// Pubkeys of collaborators (non-author p-tags).
+  final List<String> collaboratorPubkeys;
+
+  /// Reference to the video that inspired this one (a-tag with 34236: prefix).
+  final InspiredByInfo? inspiredByVideo;
+
+  /// NIP-27 npub reference in content
+  /// (Inspired By a person, not a specific video).
+  final String? inspiredByNpub;
+
+  /// Whether this video has collaborators.
+  bool get hasCollaborators => collaboratorPubkeys.isNotEmpty;
+
+  /// Whether this video has any Inspired By attribution.
+  bool get hasInspiredBy => inspiredByVideo != null || inspiredByNpub != null;
 
   /// NIP-40: Check if this event has expired
   /// Returns true if expiration timestamp is set and current time >= expiration
@@ -979,6 +1032,9 @@ class VideoEvent {
     int? nostrLikeCount,
     String? authorName,
     String? authorAvatar,
+    List<String>? collaboratorPubkeys,
+    InspiredByInfo? inspiredByVideo,
+    String? inspiredByNpub,
   }) => VideoEvent(
     id: id ?? this.id,
     pubkey: pubkey ?? this.pubkey,
@@ -1017,6 +1073,9 @@ class VideoEvent {
     nostrLikeCount: nostrLikeCount ?? this.nostrLikeCount,
     authorName: authorName ?? this.authorName,
     authorAvatar: authorAvatar ?? this.authorAvatar,
+    collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
+    inspiredByVideo: inspiredByVideo ?? this.inspiredByVideo,
+    inspiredByNpub: inspiredByNpub ?? this.inspiredByNpub,
   );
 
   @override

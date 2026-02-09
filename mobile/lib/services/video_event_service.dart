@@ -880,6 +880,8 @@ class VideoEventService extends ChangeNotifier {
     NIP50SortMode?
     nip50Sort, // NIP-50 search sorting (e.g., sort:hot, sort:top)
     bool force = false, // Force refresh even if parameters match
+    List<String>?
+    collaboratorPubkeys, // Also fetch videos tagging these pubkeys
   }) async {
     // NostrService now handles subscription deduplication automatically via filter hashing
     // We still track subscription types for our own state management
@@ -1140,6 +1142,24 @@ class VideoEventService extends ChangeNotifier {
         );
         Log.debug(
           '  - Video filter ($limit limit): ${videoFilter.toJson()}',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+        );
+      }
+
+      // Add collaborator p-tag filter to catch videos tagging followed users
+      if (collaboratorPubkeys != null && collaboratorPubkeys.isNotEmpty) {
+        final collabFilter = Filter(
+          kinds: NIP71VideoKinds.getAllVideoKinds(),
+          p: collaboratorPubkeys,
+          since: effectiveSince,
+          until: effectiveUntil,
+          limit: (limit * 0.3).round(), // 30% of limit for collab videos
+        );
+        filters.add(collabFilter);
+        Log.debug(
+          '  - Collaborator filter (${(limit * 0.3).round()} limit, '
+          '${collaboratorPubkeys.length} pubkeys): ${collabFilter.toJson()}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -2522,6 +2542,7 @@ class VideoEventService extends ChangeNotifier {
       includeReposts: true,
       sortBy: sortBy,
       force: force,
+      collaboratorPubkeys: followingPubkeys,
     );
 
     // After subscription, seed from relay to ensure we have ALL videos from

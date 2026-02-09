@@ -987,5 +987,122 @@ void main() {
         expect(repository.followingPubkeys, isEmpty);
       });
     });
+
+    group('isMutualFollow', () {
+      test('returns false when not following the target', () async {
+        await repository.initialize();
+
+        // We don't follow testTargetPubkey, so instant false
+        final result = await repository.isMutualFollow(testTargetPubkey);
+
+        expect(result, isFalse);
+
+        // Should not even query the relay since step 1 fails
+        verifyNever(() => mockNostrClient.queryEvents(any()));
+      });
+
+      test('returns true when mutual follow exists', () async {
+        // Set up: we follow testTargetPubkey
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+        });
+
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+        );
+
+        await repository.initialize();
+
+        // Mock: their Kind 3 event includes our pubkey
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            Event(
+              testTargetPubkey,
+              3,
+              [
+                ['p', testCurrentUserPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ],
+        );
+
+        final result = await repository.isMutualFollow(testTargetPubkey);
+
+        expect(result, isTrue);
+      });
+
+      test('returns false when they do not follow us back', () async {
+        // Set up: we follow testTargetPubkey
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+        });
+
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+        );
+
+        await repository.initialize();
+
+        // isMutualFollow makes two queryEvents calls:
+        // 1. _fetchFollowers(ourPubkey) -> Filter(kinds:[3], #p:[ourPubkey])
+        // 2. _checkIfTheyFollowUs(pubkey) -> Filter(authors:[pubkey], kinds:[3])
+        // We need to return empty for _fetchFollowers (no one follows us)
+        // and return their contact list without our pubkey for the second.
+        var callCount = 0;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            // _fetchFollowers: no events found (nobody follows us)
+            return [];
+          }
+          // _checkIfTheyFollowUs: their contact list without our pubkey
+          return [
+            Event(
+              testTargetPubkey,
+              3,
+              [
+                [
+                  'p',
+                  'someoneelsepubkey1234567890123456789012345678901234567890',
+                ],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ];
+        });
+
+        final result = await repository.isMutualFollow(testTargetPubkey);
+
+        expect(result, isFalse);
+      });
+
+      test('returns false on error', () async {
+        // Set up: we follow testTargetPubkey
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+        });
+
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+        );
+
+        await repository.initialize();
+
+        // Mock: relay query throws
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenThrow(Exception('Network error'));
+
+        final result = await repository.isMutualFollow(testTargetPubkey);
+
+        expect(result, isFalse);
+      });
+    });
   });
 }

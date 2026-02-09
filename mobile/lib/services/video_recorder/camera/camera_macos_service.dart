@@ -428,7 +428,10 @@ class CameraMacOSService extends CameraService {
             name: 'CameraMacOSService',
             category: .video,
           );
-          await stopRecording();
+          final result = await stopRecording();
+          if (result != null) {
+            onAutoStopped(result);
+          }
         });
       }
 

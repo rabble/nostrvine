@@ -1149,7 +1149,9 @@ class AnalyticsApiService {
     }
 
     try {
-      var url = '$_baseUrl/api/users/$pubkey/feed?limit=$limit&sort=$sort';
+      var url =
+          '$_baseUrl/api/users/$pubkey/feed'
+          '?limit=$limit&sort=$sort&include_collabs=true';
       if (before != null) {
         url += '&before=$before';
       }

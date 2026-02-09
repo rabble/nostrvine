@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:models/models.dart' show InspiredByInfo;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
@@ -13,6 +14,7 @@ import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
@@ -512,11 +514,76 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     triggerAutosave();
   }
 
+  // === COLLABORATORS & INSPIRED BY ===
+
+  /// Maximum number of collaborators allowed per video.
+  static const int maxCollaborators = 5;
+
+  /// Add a collaborator pubkey to the video.
+  ///
+  /// Enforces a maximum of [maxCollaborators] collaborators.
+  /// Silently ignores duplicates.
+  void addCollaborator(String pubkey) {
+    if (state.collaboratorPubkeys.length >= maxCollaborators) return;
+    if (state.collaboratorPubkeys.contains(pubkey)) return;
+    state = state.copyWith(
+      collaboratorPubkeys: [...state.collaboratorPubkeys, pubkey],
+    );
+    triggerAutosave();
+  }
+
+  /// Remove a collaborator pubkey from the video.
+  void removeCollaborator(String pubkey) {
+    state = state.copyWith(
+      collaboratorPubkeys: state.collaboratorPubkeys
+          .where((p) => p != pubkey)
+          .toList(),
+    );
+    triggerAutosave();
+  }
+
+  /// Set the "Inspired By" reference to a specific video (a-tag).
+  void setInspiredByVideo(InspiredByInfo info) {
+    state = state.copyWith(inspiredByVideo: info, inspiredByNpub: null);
+    triggerAutosave();
+  }
+
+  /// Set the "Inspired By" reference to a person (NIP-27 npub in content).
+  void setInspiredByPerson(String npub) {
+    state = state.copyWith(inspiredByNpub: npub, inspiredByVideo: null);
+    triggerAutosave();
+  }
+
+  /// Clear all "Inspired By" attribution.
+  void clearInspiredBy() {
+    state = state.copyWith(inspiredByVideo: null, inspiredByNpub: null);
+    triggerAutosave();
+  }
+
   /// Create a VineDraft from the rendered clip with metadata.
+  ///
+  /// When a sound is selected via [selectedSoundProvider], automatically
+  /// populates [selectedAudioEventId] and [selectedAudioRelay] for the
+  /// publisher to add an `["e", ..., "audio"]` tag. Also auto-populates
+  /// [inspiredByVideo] from the sound's [sourceVideoReference] if not
+  /// already set.
   VineDraft getActiveDraft({
     bool isAutosave = false,
     bool enforceSeparatedClips = false,
   }) {
+    // Read selected sound for audio reference and auto-attribution
+    final selectedSound = ref.read(selectedSoundProvider);
+
+    // Auto-populate inspired-by from selected sound's source video
+    var inspiredByVideo = state.inspiredByVideo;
+    if (inspiredByVideo == null &&
+        selectedSound?.sourceVideoReference != null) {
+      inspiredByVideo = InspiredByInfo(
+        addressableId: selectedSound!.sourceVideoReference!,
+        relayUrl: selectedSound.sourceVideoRelay,
+      );
+    }
+
     return VineDraft.create(
       id: isAutosave ? VideoEditorConstants.autoSaveId : draftId,
       clips:
@@ -530,7 +597,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       expireTime: state.expiration.value,
       selectedApproach: 'video',
       editorStateHistory: state.editorStateHistory,
-      editorEditingParameters: state.editorEditingParameters?.toMap(),
+      editorEditingParameters: state.editorEditingParameters,
+      collaboratorPubkeys: state.collaboratorPubkeys,
+      inspiredByVideo: inspiredByVideo,
+      inspiredByNpub: state.inspiredByNpub,
+      selectedAudioEventId: selectedSound?.id,
+      selectedAudioRelay: selectedSound?.sourceVideoRelay,
     );
   }
 
@@ -554,7 +626,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   ///
   /// This stores the serialized editing parameters from ProImageEditor,
   /// enabling restoration of all applied effects when reopening a draft.
-  void updateEditorEditingParameters(CompleteParameters editingParameters) {
+  void updateEditorEditingParameters(Map<String, dynamic> editingParameters) {
     Log.debug(
       '🎨 Updated editor editing parameters',
       name: 'VideoEditorNotifier',
@@ -748,9 +820,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       allowAudioReuse: draft.allowAudioReuse,
       expiration: VideoMetadataExpiration.fromDuration(draft.expireTime),
       editorStateHistory: draft.editorStateHistory,
-      editorEditingParameters: CompleteParameters.fromMap(
-        draft.editorEditingParameters,
-      ),
+      editorEditingParameters: draft.editorEditingParameters,
+      collaboratorPubkeys: draft.collaboratorPubkeys,
+      inspiredByVideo: draft.inspiredByVideo,
+      inspiredByNpub: draft.inspiredByNpub,
+      selectedAudioEventId: draft.selectedAudioEventId,
+      selectedAudioRelay: draft.selectedAudioRelay,
     );
     _clipManager.addMultipleClips(clipsWithThumbnails);
     // We set the aspect ratio in the video recorder to match the clips,
@@ -788,27 +863,19 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   // === RENDERING & PUBLISHING ===
 
-  /// Set the processing state.
-  ///
-  /// Use this to mark that video processing has started before calling
-  /// [startRenderVideo], or to reset the state after processing completes.
-  void setProcessing(bool isProcessing) {
-    if (state.isProcessing == isProcessing) return;
-    state = state.copyWith(isProcessing: isProcessing);
-  }
-
   /// Render all clips into final video and prepare for publishing.
   ///
   /// Combines all clips, applies audio settings, generates proofmode
   /// attestation, and creates the final rendered clip for publishing.
   Future<void> startRenderVideo() async {
-    setProcessing(true);
+    if (state.isProcessing) return;
 
     Log.info(
       '🎬 Starting final video render',
       name: 'VideoEditorNotifier',
       category: .video,
     );
+    state = state.copyWith(isProcessing: true);
 
     // Render video and get proofmode data
     final (outputPath, proofManifestJson) = await _renderVideo();
@@ -860,6 +927,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       originalAspectRatio: _clips.first.originalAspectRatio,
       targetAspectRatio: _clips.first.targetAspectRatio,
       thumbnailPath: _clips.first.thumbnailPath,
+    );
+
+    Log.info(
+      '📤 Navigating to publish screen',
+      name: 'VideoEditorNotifier',
+      category: .video,
     );
 
     state = state.copyWith(
@@ -945,7 +1018,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         clips: _clips,
         aspectRatio: _clips.first.targetAspectRatio,
         enableAudio: !state.isMuted,
-        parameters: state.editorEditingParameters,
       );
       String? proofManifestJson;
 

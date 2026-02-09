@@ -14,6 +14,8 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_clip_preview.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_collaborators_input.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_inspired_by_input.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_tags_input.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_upload_status.dart';
 
@@ -217,6 +219,14 @@ class _FormData extends ConsumerWidget {
 
         // Expiration time selector
         const VideoMetadataExpirationSelector(),
+        const _Divider(),
+
+        // Collaborators
+        const VideoMetadataCollaboratorsInput(),
+        const _Divider(),
+
+        // Inspired By
+        const VideoMetadataInspiredByInput(),
       ],
     );
   }

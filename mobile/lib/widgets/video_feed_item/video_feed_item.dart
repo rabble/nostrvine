@@ -47,6 +47,8 @@ import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
+import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
+import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
@@ -1512,6 +1514,16 @@ class VideoOverlayActions extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  // Collaborator avatar row (if video has collaborators)
+                  if (video.hasCollaborators) ...[
+                    const SizedBox(height: 4),
+                    CollaboratorAvatarRow(video: video),
+                  ],
+                  // Inspired-by attribution row (if video credits another creator)
+                  if (video.hasInspiredBy) ...[
+                    const SizedBox(height: 4),
+                    InspiredByAttributionRow(video: video, isActive: isActive),
+                  ],
                   // Audio attribution row (if video uses external audio)
                   if (video.hasAudioReference) ...[
                     const SizedBox(height: 4),
