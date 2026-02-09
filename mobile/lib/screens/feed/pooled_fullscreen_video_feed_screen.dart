@@ -132,9 +132,58 @@ class _FullscreenFeedContentState extends State<FullscreenFeedContent> {
   List<VideoItem>? _lastPooledVideos;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize controller if BLoC already has videos on first build
+    _initializeControllerIfNeeded();
+  }
+
+  @override
   void dispose() {
     _controller?.dispose();
     super.dispose();
+  }
+
+  /// Initializes the controller if not already created and videos are available.
+  ///
+  /// Called from [didChangeDependencies] for initial setup and from
+  /// [BlocListener] when videos become available asynchronously.
+  void _initializeControllerIfNeeded({bool triggerRebuild = false}) {
+    if (_controller != null) return;
+
+    final state = context.read<FullscreenFeedBloc>().state;
+    if (!state.hasPooledVideos) return;
+
+    _controller = _createController(state.pooledVideos, state.currentIndex);
+    _lastPooledVideos = state.pooledVideos;
+
+    if (triggerRebuild) setState(() {});
+  }
+
+  /// Handles new videos from pagination.
+  void _handleVideosChanged(FullscreenFeedState state) {
+    final controller = _controller;
+    if (controller == null || _lastPooledVideos == null) return;
+
+    final newVideos = state.pooledVideos
+        .where((v) => !_lastPooledVideos!.any((old) => old.id == v.id))
+        .toList();
+
+    if (newVideos.isNotEmpty) {
+      controller.addVideos(newVideos);
+    }
+    _lastPooledVideos = state.pooledVideos;
+  }
+
+  /// Handles seek commands from the BLoC.
+  void _handleSeekCommand(SeekCommand command) {
+    final controller = _controller;
+    if (controller == null) return;
+
+    controller.seek(command.position);
+    context.read<FullscreenFeedBloc>().add(
+      const FullscreenFeedSeekCommandHandled(),
+    );
   }
 
   /// Creates a VideoFeedController with hooks wired to dispatch BLoC events.
@@ -172,101 +221,90 @@ class _FullscreenFeedContentState extends State<FullscreenFeedContent> {
     );
   }
 
-  void _handleSeekCommand(SeekCommand command) {
-    final controller = _controller;
-    if (controller == null) return;
-
-    controller.seek(command.position);
-    context.read<FullscreenFeedBloc>().add(
-      const FullscreenFeedSeekCommandHandled(),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<FullscreenFeedBloc, FullscreenFeedState>(
-      listenWhen: (prev, curr) =>
-          curr.seekCommand != null && prev.seekCommand != curr.seekCommand,
-      listener: (context, state) {
-        final command = state.seekCommand;
-        if (command != null) {
-          _handleSeekCommand(command);
-        }
-      },
-      builder: (context, state) {
-        if (state.status == FullscreenFeedStatus.initial || !state.hasVideos) {
-          return Scaffold(
-            backgroundColor: Colors.black,
-            appBar: const _FullscreenAppBar(),
-            body: const Center(child: BrandedLoadingIndicator(size: 60)),
-          );
-        }
+    return MultiBlocListener(
+      listeners: [
+        // Initialize controller when videos first become available
+        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+          listenWhen: (prev, curr) =>
+              !prev.hasPooledVideos && curr.hasPooledVideos,
+          listener: (context, state) =>
+              _initializeControllerIfNeeded(triggerRebuild: true),
+        ),
+        // Handle new videos from pagination
+        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+          listenWhen: (prev, curr) => prev.videos.length != curr.videos.length,
+          listener: (context, state) => _handleVideosChanged(state),
+        ),
+        // Handle seek commands
+        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+          listenWhen: (prev, curr) =>
+              curr.seekCommand != null && prev.seekCommand != curr.seekCommand,
+          listener: (context, state) {
+            final command = state.seekCommand;
+            if (command != null) {
+              _handleSeekCommand(command);
+            }
+          },
+        ),
+      ],
+      child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
+        builder: (context, state) {
+          if (state.status == FullscreenFeedStatus.initial ||
+              !state.hasVideos) {
+            return Scaffold(
+              backgroundColor: Colors.black,
+              appBar: const _FullscreenAppBar(),
+              body: const Center(child: BrandedLoadingIndicator(size: 60)),
+            );
+          }
 
-        final videos = state.videos;
-        final pooledVideos = videos
-            .where((v) => v.videoUrl != null)
-            .map((e) => VideoItem(id: e.id, url: e.videoUrl!))
-            .toList();
-
-        if (pooledVideos.isEmpty) {
-          return Scaffold(
-            backgroundColor: Colors.black,
-            appBar: const _FullscreenAppBar(),
-            body: const Center(
-              child: Text(
-                'No videos available',
-                style: TextStyle(color: Colors.white),
+          if (!state.hasPooledVideos) {
+            return Scaffold(
+              backgroundColor: Colors.black,
+              appBar: const _FullscreenAppBar(),
+              body: const Center(
+                child: Text(
+                  'No videos available',
+                  style: TextStyle(color: Colors.white),
+                ),
               ),
+            );
+          }
+
+          return Scaffold(
+            backgroundColor: Colors.black,
+            extendBodyBehindAppBar: true,
+            appBar: _FullscreenAppBar(currentVideo: state.currentVideo),
+            body: PooledVideoFeed(
+              videos: state.pooledVideos,
+              controller: _controller,
+              initialIndex: state.currentIndex,
+              onActiveVideoChanged: (video, index) {
+                context.read<FullscreenFeedBloc>().add(
+                  FullscreenFeedIndexChanged(index),
+                );
+              },
+              onNearEnd: (_) {
+                context.read<FullscreenFeedBloc>().add(
+                  const FullscreenFeedLoadMoreRequested(),
+                );
+              },
+              nearEndThreshold: 2,
+              itemBuilder: (context, video, index, {required isActive}) {
+                final originalEvent = state.videos[index];
+                return _PooledFullscreenItem(
+                  video: originalEvent,
+                  index: index,
+                  isActive: isActive,
+                  contextTitle: widget.contextTitle,
+                );
+              },
             ),
           );
-        }
-
-        // Create controller on first valid videos, or add new videos
-        if (_controller == null) {
-          _controller = _createController(pooledVideos, state.currentIndex);
-          _lastPooledVideos = pooledVideos;
-        } else if (_lastPooledVideos != null) {
-          // Add any new videos that weren't in the previous list
-          final newVideos = pooledVideos
-              .where((v) => !_lastPooledVideos!.any((old) => old.id == v.id))
-              .toList();
-          if (newVideos.isNotEmpty) {
-            _controller!.addVideos(newVideos);
-          }
-          _lastPooledVideos = pooledVideos;
-        }
-
-        return Scaffold(
-          backgroundColor: Colors.black,
-          extendBodyBehindAppBar: true,
-          appBar: _FullscreenAppBar(currentVideo: state.currentVideo),
-          body: PooledVideoFeed(
-            videos: pooledVideos,
-            controller: _controller,
-            initialIndex: state.currentIndex,
-            onActiveVideoChanged: (video, index) {
-              context.read<FullscreenFeedBloc>().add(
-                FullscreenFeedIndexChanged(index),
-              );
-            },
-            onNearEnd: (_) {
-              context.read<FullscreenFeedBloc>().add(
-                const FullscreenFeedLoadMoreRequested(),
-              );
-            },
-            nearEndThreshold: 2,
-            itemBuilder: (context, video, index, {required isActive}) {
-              final originalEvent = videos[index];
-              return _PooledFullscreenItem(
-                video: originalEvent,
-                index: index,
-                isActive: isActive,
-                contextTitle: widget.contextTitle,
-              );
-            },
-          ),
-        );
-      },
+        },
+      ),
     );
   }
 }
