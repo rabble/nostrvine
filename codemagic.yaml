@@ -18,7 +18,7 @@
 #   - Defaults to PRODUCTION for automatic builds
 # 7 - Setup Firebase App Distribution:
 #   7.1 - Create a Firebase service account: https://docs.codemagic.io/yaml-publishing/firebase-app-distribution/
-#   7.2 - Create environment variable group "firebase_credentials" with:
+#   7.2 - Create environment variable group "firebase" with:
 #     - FIREBASE_SERVICE_ACCOUNT (JSON service account key)
 #   7.3 - Register the Android app in Firebase console and set FIREBASE_ANDROID_APP_ID
 #   7.4 - Register the iOS app in Firebase console and set FIREBASE_IOS_APP_ID
@@ -244,7 +244,7 @@ workflows:
       cocoapods: default
       groups:
         - zendesk_credentials
-        - firebase_credentials
+        - firebase
       vars:
         BUNDLE_ID: co.openvine.app
       ios_signing:
@@ -292,7 +292,7 @@ workflows:
       java: 17
       groups:
         - zendesk_credentials
-        - firebase_credentials
+        - firebase
       android_signing:
         - divine_keystore
     cache:
