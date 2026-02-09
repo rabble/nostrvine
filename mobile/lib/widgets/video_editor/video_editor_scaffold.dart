@@ -32,16 +32,18 @@ class VideoEditorScaffold extends ConsumerWidget {
       child: Scaffold(
         backgroundColor: VineTheme.surfaceContainerHigh,
         resizeToAvoidBottomInset: false,
-        body: Stack(
-          fit: .expand,
-          clipBehavior: .none,
-          children: [
-            const VideoEditorCanvas(),
+        body: SizedBox(
+          child: Stack(
+            fit: .expand,
+            clipBehavior: .none,
+            children: [
+              const VideoEditorCanvas(),
 
-            const _OverlayControls(),
+              const _OverlayControls(),
 
-            const _BottomActions(),
-          ],
+              const _BottomActions(),
+            ],
+          ),
         ),
       ),
     );

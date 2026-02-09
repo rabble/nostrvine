@@ -107,6 +107,9 @@ class VideoEditorConstants {
 
   /// Height of the bottom action bar in the video editor.
   static const double bottomBarHeight = 90;
+
+  /// Target render width for the video editor output.
+  static const double renderWidth = 1080;
 }
 
 /// Constants for the video editor clip gallery layout and animations.

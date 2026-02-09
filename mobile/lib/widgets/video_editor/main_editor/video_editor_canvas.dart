@@ -1,6 +1,8 @@
 // ABOUTME: Canvas widget wrapping ProImageEditor for the video editor.
 // ABOUTME: Handles layer manipulation callbacks and editor configuration.
 
+import 'dart:math';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -62,20 +64,39 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
         padding: const .only(bottom: VideoEditorConstants.bottomBarHeight),
         child: LayoutBuilder(
           builder: (_, constraints) {
+            final isVerticalRatio = clip.targetAspectRatio == .vertical;
+            final targetAspectRatio = clip.targetAspectRatio.value;
+            final bodySize = constraints.biggest;
+
+            // Height is constrained by maxWidth or maxHeight,
+            // depending on which dimension is reached first
+            final height = isVerticalRatio
+                ? min(bodySize.width, bodySize.height)
+                : bodySize.height;
+            final renderSize = Size(height * targetAspectRatio, height);
+
             return FittedBox(
               fit: .cover,
-              child: SizedBox(
-                width: constraints.maxHeight / clip.targetAspectRatio.value,
-                height: constraints.maxHeight,
+              child: SizedBox.fromSize(
+                size: renderSize,
                 // Wraps sub-editors in a nested Navigator so they open within
                 // the fitted aspect-ratio area instead of full-screen, since
                 // cropping hasn't been applied yet.
                 child: Navigator(
                   clipBehavior: .none,
                   onGenerateRoute: (_) {
+                    print([
+                      'DEBUGX B',
+                      renderSize,
+                      bodySize,
+                      bodySize.aspectRatio,
+                    ]);
+
                     return PageRouteBuilder(
-                      pageBuilder: (_, _, _) =>
-                          _VideoEditor(constraints: constraints),
+                      pageBuilder: (_, _, _) => _VideoEditor(
+                        bodySize: bodySize,
+                        renderSize: renderSize,
+                      ),
                     );
                   },
                 ),
@@ -89,9 +110,10 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
 }
 
 class _VideoEditor extends ConsumerStatefulWidget {
-  const _VideoEditor({required this.constraints});
+  const _VideoEditor({required this.renderSize, required this.bodySize});
 
-  final BoxConstraints constraints;
+  final Size renderSize;
+  final Size bodySize;
 
   @override
   ConsumerState<_VideoEditor> createState() => _VideoEditorState();
@@ -137,10 +159,12 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             isPlayerReady: isPlayerReady,
             controller: _videoPlayer,
             targetAspectRatio: clips.first.targetAspectRatio,
+            bodySize: widget.bodySize,
+            renderSize: widget.renderSize,
           );
         },
       ),
-      initialResolution: widget.constraints.biggest,
+      initialResolution: widget.renderSize,
       // These values are not used since we provide a custom-UI.
       fileSize: 0,
       videoDuration: .zero,
@@ -216,6 +240,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   ///
   /// Precaches the generated image overlay and triggers video rendering.
   Future<void> _handleEditorComplete(CompleteParameters parameters) async {
+    // FIXME(@hm21)
+    final r = await decodeImageFromList(parameters.image);
+    print(['DEBUGX', r.width, r.height, r.height / r.width]);
+
     final notifier = ref.read(videoEditorProvider.notifier);
     if (parameters.image.isNotEmpty) {
       try {
@@ -241,7 +269,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
     final scope = VideoEditorScope.of(context);
 
     // BLOCs
@@ -255,7 +282,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     final targetAspectRatio = ref.read(
       clipManagerProvider.select((s) => s.clips.first.targetAspectRatio),
     );
-
     return ProImageEditor.video(
       _proVideoController,
       key: scope.editorKey,
@@ -272,7 +298,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             : const StateHistoryConfigs(),
         imageGeneration: ImageGenerationConfigs(
           captureImageByteFormat: .rawStraightRgba,
-          customPixelRatio: devicePixelRatio,
+          customPixelRatio: max(
+            1,
+            VideoEditorConstants.renderWidth / widget.renderSize.width,
+          ),
         ),
         mainEditor: MainEditorConfigs(
           safeArea: const EditorSafeArea.none(),
@@ -318,7 +347,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           showControls: false,
           widgets: VideoEditorWidgets(
             videoSetupLoadingIndicator: _VideoSetupLoadingIndicator(
-              size: widget.constraints.biggest,
+              size: widget.renderSize,
               targetAspectRatio: targetAspectRatio,
             ),
           ),

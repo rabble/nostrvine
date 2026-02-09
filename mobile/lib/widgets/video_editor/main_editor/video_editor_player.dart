@@ -11,11 +11,15 @@ class VideoEditorPlayer extends StatelessWidget {
     required this.controller,
     required this.targetAspectRatio,
     required this.isPlayerReady,
+    required this.bodySize,
+    required this.renderSize,
   });
 
   final bool isPlayerReady;
   final model.AspectRatio targetAspectRatio;
   final VideoPlayerController? controller;
+  final Size bodySize;
+  final Size renderSize;
 
   @override
   Widget build(BuildContext context) {
@@ -25,10 +29,22 @@ class VideoEditorPlayer extends StatelessWidget {
             targetAspectRatio == .vertical && (kIsWeb || !Platform.isMacOS)
             ? constraints.biggest.aspectRatio
             : targetAspectRatio.value;
-
+        print([
+          'DEBUGX A',
+          constraints.biggest,
+          renderSize,
+          '----',
+          1 / constraints.biggest.aspectRatio,
+          1 / aspectRatio,
+          1 / renderSize.aspectRatio,
+          1 / targetAspectRatio.value,
+        ]);
         return Center(
-          child: ClipRRect(
-            borderRadius: .all(.circular(32)),
+          child: ClipPath(
+            clipper: _RoundedRectClipper(
+              bodySize: bodySize,
+              aspectRatio: targetAspectRatio.value,
+            ),
             child: AspectRatio(
               aspectRatio: aspectRatio,
               child: Stack(
@@ -58,4 +74,32 @@ class VideoEditorPlayer extends StatelessWidget {
       },
     );
   }
+}
+
+class _RoundedRectClipper extends CustomClipper<Path> {
+  const _RoundedRectClipper({
+    required this.bodySize,
+    required this.aspectRatio,
+  });
+
+  final Size bodySize;
+  final double aspectRatio;
+
+  @override
+  Path getClip(Size size) {
+    return Path()..addRRect(
+      .fromRectAndRadius(
+        .fromCenter(
+          center: Offset(size.width / 2, size.height / 2),
+          width: bodySize.width * aspectRatio,
+          height: bodySize.height * aspectRatio,
+        ),
+        .circular(32 * aspectRatio),
+      ),
+    );
+  }
+
+  @override
+  bool shouldReclip(_RoundedRectClipper oldClipper) =>
+      bodySize != oldClipper.bodySize || aspectRatio != oldClipper.aspectRatio;
 }
