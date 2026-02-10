@@ -109,8 +109,14 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, Timer> _positionTimers = {};
   final Map<int, Timer> _bufferTimeoutTimers = {};
 
+  /// Timer for debouncing preload window updates during rapid scrolling.
+  Timer? _preloadDebounceTimer;
+
   /// Timeout duration for buffering before marking as error.
   static const _bufferTimeout = Duration(seconds: 10);
+
+  /// Debounce duration for preload window updates.
+  static const _preloadDebounce = Duration(milliseconds: 150);
 
   // Index-specific notifiers for granular widget updates
   final Map<int, ValueNotifier<VideoIndexState>> _indexNotifiers = {};
@@ -181,16 +187,26 @@ class VideoFeedController extends ChangeNotifier {
     final oldIndex = _currentIndex;
     _currentIndex = index;
 
-    // Pause old video
+    // Pause old video immediately
     _pauseVideo(oldIndex);
 
-    // Play new video if ready
+    // Play new video if ready, or start loading it immediately
     if (_isActive && !_isPaused && isVideoReady(index)) {
       _playVideo(index);
+    } else if (!_loadedPlayers.containsKey(index) &&
+        !_loadingIndices.contains(index)) {
+      // Current video not loaded - load it immediately (no debounce)
+      unawaited(_loadPlayer(index));
     }
 
-    // Update preload window
-    _updatePreloadWindow(index);
+    // Debounce preload window updates for adjacent videos
+    // This prevents a storm of load/release operations during rapid scrolling
+    _preloadDebounceTimer?.cancel();
+    _preloadDebounceTimer = Timer(_preloadDebounce, () {
+      if (!_isDisposed) {
+        _updatePreloadWindow(_currentIndex);
+      }
+    });
 
     notifyListeners();
   }
@@ -310,6 +326,13 @@ class VideoFeedController extends ChangeNotifier {
     }
   }
 
+  /// Check if an index is within the current preload window.
+  bool _isIndexInPreloadWindow(int index) {
+    final minIndex = _currentIndex - preloadBehind;
+    final maxIndex = _currentIndex + preloadAhead;
+    return index >= minIndex && index <= maxIndex;
+  }
+
   Future<void> _loadPlayer(int index) async {
     if (_isDisposed || _loadingIndices.contains(index)) return;
     if (index < 0 || index >= _videos.length) return;
@@ -322,9 +345,18 @@ class VideoFeedController extends ChangeNotifier {
       final video = _videos[index];
       final pooledPlayer = await pool.getPlayer(video.url);
 
-      if (_isDisposed) return;
+      // Check if still needed after async operation
+      if (_isDisposed || !_isIndexInPreloadWindow(index)) {
+        _loadingIndices.remove(index);
+        return;
+      }
 
       _loadedPlayers[index] = pooledPlayer;
+
+      // Reset player state before loading new media
+      // This ensures clean state when reusing players from pool
+      await pooledPlayer.player.stop();
+      await pooledPlayer.player.setVolume(0);
 
       // Resolve media source via hook (for caching)
       final resolvedSource = mediaSourceResolver?.call(video) ?? video.url;
@@ -333,7 +365,11 @@ class VideoFeedController extends ChangeNotifier {
       await pooledPlayer.player.open(Media(resolvedSource), play: false);
       await pooledPlayer.player.setPlaylistMode(PlaylistMode.single);
 
-      if (_isDisposed) return;
+      // Check again after more async operations
+      if (_isDisposed || !_isIndexInPreloadWindow(index)) {
+        _loadingIndices.remove(index);
+        return;
+      }
 
       // Set up buffer subscription
       unawaited(_bufferSubscriptions[index]?.cancel());
@@ -501,6 +537,9 @@ class VideoFeedController extends ChangeNotifier {
         unawaited(pool.release(_videos[i].url));
       }
     }
+
+    // Cancel preload debounce timer
+    _preloadDebounceTimer?.cancel();
 
     // Cancel all position timers
     for (final timer in _positionTimers.values) {
