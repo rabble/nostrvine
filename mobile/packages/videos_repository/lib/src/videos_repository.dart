@@ -62,8 +62,15 @@ class VideosRepository {
   /// This is the "Home" feed mode - shows videos only from users the
   /// current user follows.
   ///
+  /// Strategy:
+  /// 1. If [userPubkey] is provided and Funnelcake API is available, tries
+  ///    the REST API first (faster, pre-computed feeds)
+  /// 2. Falls back to Nostr relay query with [authors] filter
+  ///
   /// Parameters:
   /// - [authors]: List of pubkeys to filter by (followed users)
+  /// - [userPubkey]: The current user's pubkey for Funnelcake API lookups.
+  ///   Required for API-first path; when null, goes directly to Nostr.
   /// - [limit]: Maximum number of videos to return (default 5)
   /// - [until]: Only return videos created before this Unix timestamp
   ///   (for pagination - pass `previousVideo.createdAt`)
@@ -73,11 +80,31 @@ class VideosRepository {
   /// or on error.
   Future<List<VideoEvent>> getHomeFeedVideos({
     required List<String> authors,
+    String? userPubkey,
     int limit = _defaultLimit,
     int? until,
   }) async {
     if (authors.isEmpty) return [];
 
+    // 1. Try Funnelcake API first (if user pubkey provided)
+    if (userPubkey != null &&
+        _funnelcakeApiClient != null &&
+        _funnelcakeApiClient.isAvailable) {
+      try {
+        final response = await _funnelcakeApiClient.getHomeFeed(
+          pubkey: userPubkey,
+          limit: limit,
+          before: until,
+        );
+
+        final videos = _transformVideoStats(response.videos);
+        if (videos.isNotEmpty) return videos;
+      } on FunnelcakeException {
+        // Fall through to Nostr
+      }
+    }
+
+    // 2. Nostr fallback
     final filter = Filter(
       kinds: [_videoKind],
       authors: authors,
@@ -125,6 +152,10 @@ class VideosRepository {
   /// This is the "New" feed mode - shows all public videos sorted by
   /// creation time.
   ///
+  /// Strategy:
+  /// 1. If Funnelcake API is available, tries the REST API first (faster)
+  /// 2. Falls back to Nostr relay query
+  ///
   /// Parameters:
   /// - [limit]: Maximum number of videos to return (default 5)
   /// - [until]: Only return videos created before this Unix timestamp
@@ -136,6 +167,22 @@ class VideosRepository {
     int limit = _defaultLimit,
     int? until,
   }) async {
+    // 1. Try Funnelcake API first
+    if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
+      try {
+        final videoStats = await _funnelcakeApiClient.getRecentVideos(
+          limit: limit,
+          before: until,
+        );
+
+        final videos = _transformVideoStats(videoStats);
+        if (videos.isNotEmpty) return videos;
+      } on FunnelcakeException {
+        // Fall through to Nostr
+      }
+    }
+
+    // 2. Nostr fallback
     final filter = Filter(
       kinds: [_videoKind],
       limit: limit,
@@ -153,8 +200,10 @@ class VideosRepository {
   /// engagement metrics (loops, likes, comments, reposts).
   ///
   /// Strategy:
-  /// 1. First tries NIP-50 `sort:hot` server-side sorting (if relay supports)
-  /// 2. Falls back to client-side sorting by engagement score if NIP-50
+  /// 1. If Funnelcake API is available, tries the REST API first (best
+  ///    engagement data from ClickHouse)
+  /// 2. Tries NIP-50 `sort:hot` server-side sorting (if relay supports)
+  /// 3. Falls back to client-side sorting by engagement score if NIP-50
   ///    returns empty (relay doesn't support NIP-50)
   ///
   /// Parameters:
@@ -172,7 +221,26 @@ class VideosRepository {
     int? until,
     int fetchMultiplier = 4,
   }) async {
-    // 1. Try NIP-50 server-side sorting first
+    // 1. Try Funnelcake API first (best engagement data)
+    if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
+      try {
+        final videoStats = await _funnelcakeApiClient.getTrendingVideos(
+          limit: limit,
+          before: until,
+        );
+
+        // Preserve API order (sorted by trending score)
+        final videos = _transformVideoStats(
+          videoStats,
+          sortByCreatedAt: false,
+        );
+        if (videos.isNotEmpty) return videos;
+      } on FunnelcakeException {
+        // Fall through to NIP-50
+      }
+    }
+
+    // 2. Try NIP-50 server-side sorting
     final nip50Filter = Filter(
       kinds: [_videoKind],
       limit: limit,
@@ -191,7 +259,7 @@ class VideosRepository {
       return _transformAndFilter(nip50Events, sortByCreatedAt: false);
     }
 
-    // 2. Fallback: relay doesn't support NIP-50, use client-side sorting
+    // 3. Fallback: relay doesn't support NIP-50, use client-side sorting
     // Fetch more videos than needed so we have a good pool to sort from
     final fetchLimit = limit * fetchMultiplier;
 
@@ -448,6 +516,48 @@ class VideosRepository {
         // The video simply won't be included in the results.
       }
     }
+  }
+
+  /// Transforms [VideoStats] from Funnelcake API into filtered [VideoEvent]s.
+  ///
+  /// Converts each [VideoStats] to a [VideoEvent] via [VideoStats.toVideoEvent]
+  /// then applies the same filtering pipeline as [_transformAndFilter]:
+  /// - Block filter (pubkey blocklist)
+  /// - Video URL validation
+  /// - Expiration check (NIP-40)
+  /// - Content filter (NSFW, etc.)
+  ///
+  /// By default, sorts by creation time (newest first). Set [sortByCreatedAt]
+  /// to false to preserve the API's original order (e.g., trending sort).
+  List<VideoEvent> _transformVideoStats(
+    List<VideoStats> videoStatsList, {
+    bool sortByCreatedAt = true,
+  }) {
+    final videos = <VideoEvent>[];
+
+    for (final stats in videoStatsList) {
+      final video = stats.toVideoEvent();
+
+      // Block filter - check pubkey
+      if (_blockFilter?.call(video.pubkey) ?? false) continue;
+
+      // Skip videos without a playable URL
+      if (!video.hasVideo) continue;
+
+      // Skip expired videos (NIP-40)
+      if (video.isExpired) continue;
+
+      // Content filter - check parsed video (NSFW, etc.)
+      if (_contentFilter?.call(video) ?? false) continue;
+
+      videos.add(video);
+    }
+
+    if (sortByCreatedAt) {
+      videos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    }
+
+    return videos;
   }
 
   /// Attempts to parse an event into a VideoEvent and apply filters.
