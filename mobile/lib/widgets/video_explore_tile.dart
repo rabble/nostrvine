@@ -5,8 +5,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
+import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -102,7 +104,7 @@ class VideoExploreTile extends ConsumerWidget {
                       const SizedBox(height: 4),
                       if (video.title != null) ...[
                         Text(
-                          video.title!,
+                          video.title ?? '',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 14,
@@ -149,9 +151,11 @@ class _CreatorInfo extends ConsumerWidget {
       AsyncLoading() => 'Loading...',
     };
 
-    final isNip05Verified = switch (profileAsync) {
-      AsyncData(:final value) when value != null =>
-        value.nip05?.isNotEmpty == true,
+    // Use actual NIP-05 verification provider — only show badge when DNS
+    // lookup confirms the pubkey owns the claimed identifier (NIP-05 spec).
+    final verificationAsync = ref.watch(nip05VerificationProvider(pubkey));
+    final isNip05Verified = switch (verificationAsync) {
+      AsyncData(:final value) => value == Nip05VerificationStatus.verified,
       _ => false,
     };
 

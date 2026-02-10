@@ -22,7 +22,106 @@ void main() {
       service = Nip05Service(httpClient: mockClient);
     });
 
-    group('checkUsernameAvailability', () {
+    group('checkSubdomainAvailability', () {
+      test('returns true when subdomain returns 404 (not found)', () async {
+        // Arrange
+        const username = 'testuser';
+        when(
+          mockClient.get(any),
+        ).thenAnswer((_) async => http.Response('Not Found', 404));
+
+        // Act
+        final result = await service.checkSubdomainAvailability(username);
+
+        // Assert
+        expect(result, true);
+        verify(
+          mockClient.get(
+            Uri.parse(
+              'https://testuser.divine.video/.well-known/nostr.json?name=_',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('returns true when subdomain exists but has no _ entry', () async {
+        // Arrange
+        const username = 'testuser';
+        when(mockClient.get(any)).thenAnswer(
+          (_) async => http.Response(jsonEncode({'names': {}}), 200),
+        );
+
+        // Act
+        final result = await service.checkSubdomainAvailability(username);
+
+        // Assert
+        expect(result, true);
+      });
+
+      test('returns false when subdomain has _ entry (taken)', () async {
+        // Arrange
+        const username = 'taken';
+        when(mockClient.get(any)).thenAnswer(
+          (_) async => http.Response(
+            jsonEncode({
+              'names': {'_': 'pubkey123'},
+            }),
+            200,
+          ),
+        );
+
+        // Act
+        final result = await service.checkSubdomainAvailability(username);
+
+        // Assert
+        expect(result, false);
+      });
+
+      test('returns false for invalid username format', () async {
+        // Test invalid usernames (no network call needed)
+        expect(await service.checkSubdomainAvailability(''), false);
+        expect(
+          await service.checkSubdomainAvailability('a'),
+          false,
+        ); // too short
+        expect(
+          await service.checkSubdomainAvailability('user name'),
+          false,
+        ); // contains space
+        expect(
+          await service.checkSubdomainAvailability('user@name'),
+          false,
+        ); // invalid char
+        expect(
+          await service.checkSubdomainAvailability('aaaaaaaaaaaaaaaaaaaaa'),
+          false,
+        ); // too long
+      });
+
+      test('falls back to legacy check on network error', () async {
+        // Arrange
+        const username = 'testuser';
+        var callCount = 0;
+        when(mockClient.get(any)).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            // First call (subdomain) throws
+            throw Exception('Network error');
+          }
+          // Second call (legacy) succeeds
+          return http.Response(jsonEncode({'names': {}}), 200);
+        });
+
+        // Act
+        final result = await service.checkSubdomainAvailability(username);
+
+        // Assert
+        expect(result, true);
+        expect(callCount, 2);
+      });
+    });
+
+    group('checkUsernameAvailability (legacy)', () {
       test('returns true when username is available', () async {
         // Arrange
         const username = 'testuser';

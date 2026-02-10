@@ -40,9 +40,18 @@ _MockPlayer _createMockPlayer() {
   return mockPlayer;
 }
 
-_MockVideoFeedController _createMockVideoFeedController() {
+/// Creates a mock controller with a real ValueNotifier for the given index.
+///
+/// The returned map contains the notifier that can be updated to trigger
+/// widget rebuilds.
+({
+  _MockVideoFeedController controller,
+  Map<int, ValueNotifier<VideoIndexState>> notifiers,
+})
+_createMockVideoFeedControllerWithNotifier() {
   final mockController = _MockVideoFeedController();
   final videoList = createTestVideos();
+  final notifiers = <int, ValueNotifier<VideoIndexState>>{};
 
   when(() => mockController.videos).thenReturn(videoList);
   when(() => mockController.videoCount).thenReturn(videoList.length);
@@ -68,7 +77,16 @@ _MockVideoFeedController _createMockVideoFeedController() {
   when(() => mockController.removeListener(any())).thenReturn(null);
   when(mockController.dispose).thenReturn(null);
 
-  return mockController;
+  // Set up getIndexNotifier to return a real ValueNotifier
+  when(() => mockController.getIndexNotifier(any())).thenAnswer((invocation) {
+    final index = invocation.positionalArguments[0] as int;
+    return notifiers.putIfAbsent(
+      index,
+      () => ValueNotifier(const VideoIndexState()),
+    );
+  });
+
+  return (controller: mockController, notifiers: notifiers);
 }
 
 void main() {
@@ -76,11 +94,14 @@ void main() {
 
   group('PooledVideoPlayer', () {
     late _MockVideoFeedController mockController;
+    late Map<int, ValueNotifier<VideoIndexState>> indexNotifiers;
     late _MockVideoController mockVideoController;
     late _MockPlayer mockPlayer;
 
     setUp(() {
-      mockController = _createMockVideoFeedController();
+      final result = _createMockVideoFeedControllerWithNotifier();
+      mockController = result.controller;
+      indexNotifiers = result.notifiers;
       mockVideoController = _MockVideoController();
       mockPlayer = _createMockPlayer();
     });
@@ -138,9 +159,10 @@ void main() {
       testWidgets('shows default loading when LoadState is loading', (
         tester,
       ) async {
-        when(
-          () => mockController.getLoadState(0),
-        ).thenReturn(LoadState.loading);
+        // Pre-create notifier with loading state
+        indexNotifiers[0] = ValueNotifier(
+          const VideoIndexState(loadState: LoadState.loading),
+        );
 
         await tester.pumpWidget(buildWidget());
 
@@ -150,16 +172,14 @@ void main() {
       testWidgets('shows default loading when LoadState is none', (
         tester,
       ) async {
-        when(() => mockController.getLoadState(0)).thenReturn(LoadState.none);
-
+        // Default state is LoadState.none
         await tester.pumpWidget(buildWidget());
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
 
       testWidgets('shows custom loadingBuilder when provided', (tester) async {
-        when(() => mockController.getLoadState(0)).thenReturn(LoadState.none);
-
+        // Default state is LoadState.none
         await tester.pumpWidget(
           buildWidget(
             loadingBuilder: (context) => const Text('Custom Loading'),
@@ -171,9 +191,9 @@ void main() {
       });
 
       testWidgets('shows thumbnail in default loading state', (tester) async {
-        when(
-          () => mockController.getLoadState(0),
-        ).thenReturn(LoadState.loading);
+        indexNotifiers[0] = ValueNotifier(
+          const VideoIndexState(loadState: LoadState.loading),
+        );
 
         await tester.pumpWidget(
           buildWidget(thumbnailUrl: 'https://example.com/thumb.jpg'),
@@ -185,9 +205,9 @@ void main() {
       testWidgets('thumbnail errorBuilder returns SizedBox.shrink', (
         tester,
       ) async {
-        when(
-          () => mockController.getLoadState(0),
-        ).thenReturn(LoadState.loading);
+        indexNotifiers[0] = ValueNotifier(
+          const VideoIndexState(loadState: LoadState.loading),
+        );
 
         await tester.pumpWidget(
           buildWidget(thumbnailUrl: 'https://invalid-url.com/thumb.jpg'),
@@ -208,11 +228,14 @@ void main() {
 
     group('ready state', () {
       setUp(() {
-        when(() => mockController.getLoadState(0)).thenReturn(LoadState.ready);
-        when(
-          () => mockController.getVideoController(0),
-        ).thenReturn(mockVideoController);
-        when(() => mockController.getPlayer(0)).thenReturn(mockPlayer);
+        // Set up notifier with ready state and mock controllers/player
+        indexNotifiers[0] = ValueNotifier(
+          VideoIndexState(
+            loadState: LoadState.ready,
+            videoController: mockVideoController,
+            player: mockPlayer,
+          ),
+        );
       });
 
       testWidgets('shows videoBuilder when LoadState is ready', (
@@ -255,7 +278,9 @@ void main() {
 
     group('error state', () {
       setUp(() {
-        when(() => mockController.getLoadState(0)).thenReturn(LoadState.error);
+        indexNotifiers[0] = ValueNotifier(
+          const VideoIndexState(loadState: LoadState.error),
+        );
       });
 
       testWidgets('shows default error when LoadState is error', (
@@ -313,11 +338,13 @@ void main() {
 
     group('tap handling', () {
       setUp(() {
-        when(() => mockController.getLoadState(0)).thenReturn(LoadState.ready);
-        when(
-          () => mockController.getVideoController(0),
-        ).thenReturn(mockVideoController);
-        when(() => mockController.getPlayer(0)).thenReturn(mockPlayer);
+        indexNotifiers[0] = ValueNotifier(
+          VideoIndexState(
+            loadState: LoadState.ready,
+            videoController: mockVideoController,
+            player: mockPlayer,
+          ),
+        );
       });
 
       testWidgets(
@@ -385,29 +412,54 @@ void main() {
       });
     });
 
-    group('ListenableBuilder', () {
-      testWidgets('rebuilds when controller notifies', (tester) async {
-        final listeners = <VoidCallback>[];
-
-        when(() => mockController.addListener(any())).thenAnswer((invocation) {
-          listeners.add(invocation.positionalArguments[0] as VoidCallback);
-        });
-
+    group('ValueListenableBuilder', () {
+      testWidgets('rebuilds when index notifier value changes', (tester) async {
+        // Start with loading state
         await tester.pumpWidget(buildWidget());
 
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-        when(() => mockController.getLoadState(0)).thenReturn(LoadState.ready);
-        when(
-          () => mockController.getVideoController(0),
-        ).thenReturn(mockVideoController);
-        when(() => mockController.getPlayer(0)).thenReturn(mockPlayer);
-
-        for (final listener in listeners) {
-          listener();
-        }
+        // Update notifier to ready state
+        indexNotifiers[0]!.value = VideoIndexState(
+          loadState: LoadState.ready,
+          videoController: mockVideoController,
+          player: mockPlayer,
+        );
         await tester.pump();
 
+        expect(find.byKey(const Key('video_widget')), findsOneWidget);
+      });
+
+      testWidgets('only rebuilds for its own index notifier', (tester) async {
+        // Set up notifiers for index 0 and 1
+        indexNotifiers[0] = ValueNotifier(const VideoIndexState());
+        indexNotifiers[1] = ValueNotifier(const VideoIndexState());
+
+        // Build widget for index 0
+        await tester.pumpWidget(buildWidget());
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        // Update notifier for index 1 (should NOT affect widget at index 0)
+        indexNotifiers[1]!.value = VideoIndexState(
+          loadState: LoadState.ready,
+          videoController: mockVideoController,
+          player: mockPlayer,
+        );
+        await tester.pump();
+
+        // Widget at index 0 should still show loading
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        // Now update notifier for index 0
+        indexNotifiers[0]!.value = VideoIndexState(
+          loadState: LoadState.ready,
+          videoController: mockVideoController,
+          player: mockPlayer,
+        );
+        await tester.pump();
+
+        // Widget at index 0 should now show video
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
       });
     });

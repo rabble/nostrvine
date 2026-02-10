@@ -3,9 +3,12 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:media_cache/media_cache.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
+import 'package:openvine/services/blossom_auth_service.dart';
+import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -25,6 +28,8 @@ import 'package:openvine/services/subscription_manager.dart';
   NostrClient,
   UserProfileService,
   SubscriptionManager,
+  BlossomAuthService,
+  MediaCacheManager,
 ])
 import 'test_provider_overrides.mocks.dart';
 
@@ -148,6 +153,36 @@ MockSubscriptionManager createMockSubscriptionManager() {
   return mockSub;
 }
 
+/// Creates a properly stubbed MockBlossomAuthService for testing
+///
+/// This mock avoids the 15-minute cleanup timer that the real service creates.
+MockBlossomAuthService createMockBlossomAuthService() {
+  final mockBlossom = MockBlossomAuthService();
+
+  // Stub common methods - use anyNamed for named parameters
+  when(
+    mockBlossom.createGetAuthHeader(
+      sha256Hash: anyNamed('sha256Hash'),
+      serverUrl: anyNamed('serverUrl'),
+    ),
+  ).thenAnswer((_) async => null);
+
+  return mockBlossom;
+}
+
+/// Creates a properly stubbed MockMediaCacheManager for testing
+MockMediaCacheManager createMockMediaCacheManager() {
+  final mockCache = MockMediaCacheManager();
+
+  // Stub common methods to return null (cache miss)
+  when(mockCache.getCachedFileSync(any)).thenReturn(null);
+  // Note: downloadFile is not stubbed because it returns non-nullable FileInfo.
+  // The FullscreenFeedBloc uses unawaited() for background caching, so this
+  // won't block tests. If a test needs it, stub with a real FileInfo mock.
+
+  return mockCache;
+}
+
 /// Standard provider overrides that fix most ProviderException failures
 List<dynamic> getStandardTestOverrides({
   SharedPreferences? mockSharedPreferences,
@@ -156,6 +191,8 @@ List<dynamic> getStandardTestOverrides({
   UserProfileService? mockUserProfileService,
   NostrClient? mockNostrService,
   SubscriptionManager? mockSubscriptionManager,
+  BlossomAuthService? mockBlossomAuthService,
+  MediaCacheManager? mockMediaCacheManager,
 }) {
   final mockPrefs = mockSharedPreferences ?? createMockSharedPreferences();
   final mockAuth = mockAuthService ?? createMockAuthService();
@@ -163,6 +200,8 @@ List<dynamic> getStandardTestOverrides({
   final mockProfile = mockUserProfileService ?? createMockUserProfileService();
   final mockNostr = mockNostrService ?? createMockNostrService();
   final mockSub = mockSubscriptionManager ?? createMockSubscriptionManager();
+  final mockBlossom = mockBlossomAuthService ?? createMockBlossomAuthService();
+  final mockCache = mockMediaCacheManager ?? createMockMediaCacheManager();
 
   return [
     // Override sharedPreferencesProvider which throws in production
@@ -173,6 +212,12 @@ List<dynamic> getStandardTestOverrides({
     // Future<List<String>> (fixes type errors during ProfileCacheService use).
     nostrServiceProvider.overrideWithValue(mockNostr),
     subscriptionManagerProvider.overrideWithValue(mockSub),
+
+    // Always override BlossomAuthService to avoid 15-minute cleanup timer
+    blossomAuthServiceProvider.overrideWithValue(mockBlossom),
+
+    // Always override MediaCacheManager for PooledFullscreenVideoFeedScreen
+    mediaCacheProvider.overrideWithValue(mockCache),
 
     // ONLY override other service providers if explicitly requested
     if (mockAuthService != null)
@@ -207,6 +252,8 @@ Widget testProviderScope({
   UserProfileService? mockUserProfileService,
   NostrClient? mockNostrService,
   SubscriptionManager? mockSubscriptionManager,
+  BlossomAuthService? mockBlossomAuthService,
+  MediaCacheManager? mockMediaCacheManager,
 }) {
   return ProviderScope(
     overrides: [
@@ -217,6 +264,8 @@ Widget testProviderScope({
         mockUserProfileService: mockUserProfileService,
         mockNostrService: mockNostrService,
         mockSubscriptionManager: mockSubscriptionManager,
+        mockBlossomAuthService: mockBlossomAuthService,
+        mockMediaCacheManager: mockMediaCacheManager,
       ),
       ...?additionalOverrides,
     ],
@@ -249,6 +298,8 @@ Widget testMaterialApp({
   UserProfileService? mockUserProfileService,
   NostrClient? mockNostrService,
   SubscriptionManager? mockSubscriptionManager,
+  BlossomAuthService? mockBlossomAuthService,
+  MediaCacheManager? mockMediaCacheManager,
   ThemeData? theme,
 }) {
   return testProviderScope(
@@ -259,6 +310,8 @@ Widget testMaterialApp({
     mockUserProfileService: mockUserProfileService,
     mockNostrService: mockNostrService,
     mockSubscriptionManager: mockSubscriptionManager,
+    mockBlossomAuthService: mockBlossomAuthService,
+    mockMediaCacheManager: mockMediaCacheManager,
     child: MaterialApp(
       home: home,
       routes: routes ?? {},

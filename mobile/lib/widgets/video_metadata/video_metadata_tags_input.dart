@@ -6,6 +6,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:divine_ui/divine_ui.dart';
 
 /// Input widget for adding and managing hashtags for video metadata.
@@ -64,6 +65,11 @@ class _VideoMetadataTagsInputState
 
     // Get the last tag
     final lastTag = tags.last;
+    Log.debug(
+      '#️⃣ Tag removed via backspace: $lastTag',
+      name: 'VideoMetadataTagsInput',
+      category: LogCategory.video,
+    );
 
     // Remove it from tags
     final newTags = tags.toSet()..remove(lastTag);
@@ -98,6 +104,14 @@ class _VideoMetadataTagsInputState
     // Merge with existing tags
     final oldTags = ref.read(videoEditorProvider).tags;
     final updatedTags = {...oldTags, ...newTags};
+    final addedTags = newTags.difference(oldTags);
+    if (addedTags.isNotEmpty) {
+      Log.debug(
+        '#️⃣ Tags added: ${addedTags.join(', ')} (total: ${updatedTags.length})',
+        name: 'VideoMetadataTagsInput',
+        category: LogCategory.video,
+      );
+    }
     ref.read(videoEditorProvider.notifier).updateMetadata(tags: updatedTags);
     _controller.clear();
     // Keep focus to prevent keyboard from closing (after rebuild).
@@ -206,6 +220,11 @@ class _TagChip extends ConsumerWidget {
 
     final resultTags = {...tags};
     resultTags.removeWhere((el) => el == tag);
+    Log.debug(
+      '#️⃣ Tag removed: $tag (remaining: ${resultTags.length})',
+      name: 'VideoMetadataTagsInput',
+      category: LogCategory.video,
+    );
 
     ref.read(videoEditorProvider.notifier).updateMetadata(tags: resultTags);
   }

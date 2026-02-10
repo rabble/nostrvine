@@ -13,6 +13,7 @@ import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.d
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker_sheet.dart';
@@ -38,6 +39,7 @@ class VideoEditorScreen extends StatefulWidget {
 
 class _VideoEditorScreenState extends State<VideoEditorScreen> {
   final _editorKey = GlobalKey<ProImageEditorState>();
+  final _removeAreaKey = GlobalKey();
 
   /// Manually managed instead of using [BlocProvider.create] so we can reuse
   /// it in contexts outside the widget tree (e.g., bottom sheets opened via
@@ -49,12 +51,27 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   @override
   void initState() {
     super.initState();
+    Log.info(
+      '🎨 Initialized',
+      name: 'VideoEditorScreen',
+      category: LogCategory.video,
+    );
     _stickerBloc = VideoEditorStickerBloc(onPrecacheStickers: _precacheStickers)
       ..add(const VideoEditorStickerLoad());
+    Log.debug(
+      '🎨 Sticker bloc created and loading stickers',
+      name: 'VideoEditorScreen',
+      category: LogCategory.video,
+    );
   }
 
   @override
   void dispose() {
+    Log.info(
+      '🎨 Disposed',
+      name: 'VideoEditorScreen',
+      category: LogCategory.video,
+    );
     _stickerBloc.close();
     super.dispose();
   }
@@ -62,6 +79,12 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   /// Precaches stickers for faster display.
   void _precacheStickers(List<StickerData> stickers) {
     if (!mounted) return;
+
+    Log.debug(
+      '🎨 Precaching ${stickers.length} stickers',
+      name: 'VideoEditorScreen',
+      category: LogCategory.video,
+    );
 
     final estimatedSize = MediaQuery.sizeOf(context) / 3;
 
@@ -99,8 +122,16 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     );
 
     if (sticker != null) {
+      Log.debug(
+        '🎨 Adding sticker layer: ${sticker.description}',
+        name: 'VideoEditorScreen',
+        category: LogCategory.video,
+      );
+      final screenWidth = MediaQuery.sizeOf(context).width;
+      final stickerWidth = screenWidth / 3;
+
       final layer = WidgetLayer(
-        width: 120,
+        width: stickerWidth,
         widget: Semantics(
           label: sticker.description,
           child: VideoEditorSticker(
@@ -130,6 +161,11 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     required VideoEditorTextBloc textBloc,
     TextLayer? layer,
   }) async {
+    Log.debug(
+      '🎨 Opening text editor (editing: ${layer != null})',
+      name: 'VideoEditorScreen',
+      category: LogCategory.video,
+    );
     mainBloc.add(const VideoEditorMainOpenSubEditor(.text));
 
     final result = await Navigator.push<TextLayer>(
@@ -168,6 +204,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
         builder: (context) {
           return VideoEditorScope(
             editorKey: _editorKey,
+            removeAreaKey: _removeAreaKey,
             onAddStickers: _addStickers,
             onAddEditTextLayer: ([layer]) {
               final mainBloc = context.read<VideoEditorMainBloc>();

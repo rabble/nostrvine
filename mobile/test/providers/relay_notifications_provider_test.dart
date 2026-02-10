@@ -619,7 +619,7 @@ void main() {
     });
 
     group('Refresh', () {
-      test('refresh resets pagination and reloads data', () async {
+      test('refresh fetches fresh data from API', () async {
         var callCount = 0;
         when(
           () => mockApiService.getNotifications(
@@ -645,14 +645,123 @@ void main() {
         await waitForLoadComplete(container);
         expect(callCount, 1);
 
-        // Refresh triggers invalidateSelf, so we need to wait again
+        // Refresh fetches fresh data without invalidating state
         await container.read(relayNotificationsProvider.notifier).refresh();
 
-        // Wait a bit for the refresh to trigger rebuild
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
         // Should have been called twice
         expect(callCount, 2);
+
+        // State should reflect the refreshed data
+        final state = container.read(relayNotificationsProvider);
+        final result = state.value!;
+        expect(result.notifications.length, 1);
+        expect(result.notifications[0].id, 'notif_call_2');
+        expect(result.unreadCount, 2);
+
+        container.dispose();
+      });
+
+      test('refresh preserves existing data until new data arrives', () async {
+        final refreshCompleter = Completer<NotificationsResponse>();
+        var callCount = 0;
+
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            return NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(id: 'original_notif'),
+              ],
+              unreadCount: 1,
+            );
+          }
+          // Second call (refresh) waits for completer
+          return refreshCompleter.future;
+        });
+
+        final container = createTestContainer();
+
+        await waitForLoadComplete(container);
+
+        // Start refresh (will block on completer)
+        final refreshFuture = container
+            .read(relayNotificationsProvider.notifier)
+            .refresh();
+
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // While refresh is in-flight, existing data should still be visible
+        final midState = container.read(relayNotificationsProvider);
+        expect(midState.value!.notifications.length, 1);
+        expect(midState.value!.notifications[0].id, 'original_notif');
+
+        // Complete the refresh
+        refreshCompleter.complete(
+          NotificationsResponse(
+            notifications: [createMockRelayNotification(id: 'refreshed_notif')],
+            unreadCount: 0,
+          ),
+        );
+
+        await refreshFuture;
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Now state should show refreshed data
+        final finalState = container.read(relayNotificationsProvider);
+        expect(finalState.value!.notifications.length, 1);
+        expect(finalState.value!.notifications[0].id, 'refreshed_notif');
+
+        container.dispose();
+      });
+
+      test('refresh keeps existing data on error', () async {
+        var callCount = 0;
+        when(
+          () => mockApiService.getNotifications(
+            pubkey: any(named: 'pubkey'),
+            types: any(named: 'types'),
+            unreadOnly: any(named: 'unreadOnly'),
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            return NotificationsResponse(
+              notifications: [
+                createMockRelayNotification(id: 'existing_notif'),
+              ],
+              unreadCount: 1,
+            );
+          }
+          throw Exception('Network error');
+        });
+
+        final container = createTestContainer();
+
+        await waitForLoadComplete(container);
+
+        // Refresh should fail but keep existing data
+        await container.read(relayNotificationsProvider.notifier).refresh();
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        final state = container.read(relayNotificationsProvider);
+        final result = state.value!;
+
+        // Existing notification should be preserved
+        expect(result.notifications.length, 1);
+        expect(result.notifications[0].id, 'existing_notif');
+        expect(result.error, contains('Network error'));
 
         container.dispose();
       });

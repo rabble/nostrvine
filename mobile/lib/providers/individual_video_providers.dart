@@ -9,7 +9,8 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:video_player/video_player.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/services/video_cache_manager.dart';
+import 'package:media_cache/media_cache.dart';
+import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/broken_video_tracker.dart'
     show BrokenVideoTracker;
 import 'package:openvine/services/bandwidth_tracker_service.dart';
@@ -53,16 +54,21 @@ final fallbackUrlCacheProvider = StateProvider<Map<String, String>>(
 const _blossomFallbackServer = 'https://media.divine.video';
 
 /// Track controllers that have been scheduled for disposal.
-/// This prevents race conditions where async callbacks try to use disposed controllers.
-/// Key: videoId, Value: true if disposal has been scheduled
-final _disposedControllersProvider = StateProvider<Set<String>>((ref) => {});
+/// This prevents race conditions where async callbacks try to use disposed
+/// controllers. Marked synchronously in `ref.onDispose` (before the deferred
+/// `controller.dispose()` microtask) so that widgets can check whether the
+/// native player is still alive before building [VideoPlayer].
+///
+/// Public so that widget-layer code (e.g. [_SafeVideoPlayer]) can read it
+/// via `ref.watch` / `ref.read`.
+final disposedControllersProvider = StateProvider<Set<String>>((ref) => {});
 
 /// Check if a video controller has been scheduled for disposal.
 /// Use this before any controller operation to prevent "No active player" crashes.
 /// Note: This function is available for widgets but the safe* helpers below
 /// are the preferred approach for most use cases.
 bool isControllerDisposed(Ref ref, String videoId) {
-  return ref.read(_disposedControllersProvider).contains(videoId);
+  return ref.read(disposedControllersProvider).contains(videoId);
 }
 
 /// Safe wrapper for async controller operations that may fail after disposal.
@@ -250,10 +256,14 @@ VideoPlayerController individualVideoController(
 
   // Riverpod lifecycle hooks for idiomatic cache behavior
   ref.onCancel(() {
-    // Last listener removed - start 15-second cache timeout
+    // Last listener removed - start cache timeout before disposal
+    // Android uses shorter timeout (3s) to prevent MediaCodec accumulation crash
+    // iOS/desktop use longer timeout (15s) for smoother scroll-back experience
     // Short timeout prevents OOM with high-resolution videos (4K = ~25MB/frame)
-    // 15 seconds is enough for quick scroll-back; re-init from cache is fast
-    cacheTimer = Timer(const Duration(seconds: 15), () {
+    final timeout = !kIsWeb && Platform.isAndroid
+        ? const Duration(seconds: 3)
+        : const Duration(seconds: 15);
+    cacheTimer = Timer(timeout, () {
       link.close(); // Allow autoDispose after timeout
     });
   });
@@ -262,6 +272,19 @@ VideoPlayerController individualVideoController(
     // New listener added - cancel the disposal timer
     cacheTimer?.cancel();
   });
+
+  // Clear the disposed flag for this video since we are creating a fresh
+  // controller (handles retries and scroll-back scenarios).
+  try {
+    final currentDisposed = ref.read(disposedControllersProvider);
+    if (currentDisposed.contains(params.videoId)) {
+      ref.read(disposedControllersProvider.notifier).state = {
+        ...currentDisposed,
+      }..remove(params.videoId);
+    }
+  } catch (_) {
+    // Ignore - provider may not be available during startup
+  }
 
   Log.info(
     '🎬 Creating VideoPlayerController for video ${params.videoId.length > 8 ? params.videoId : params.videoId}...',
@@ -335,12 +358,12 @@ VideoPlayerController individualVideoController(
     );
   } else {
     // On native platforms, use file caching
-    final videoCache = openVineVideoCache;
+    final videoCache = ref.read(mediaCacheProvider);
 
-    // Synchronous cache check - use getCachedVideoSync() which checks file existence without async
+    // Synchronous cache check - use getCachedFileSync() which checks file existence without async
     final cachedFile = isAgeVerificationRetry
         ? null
-        : videoCache.getCachedVideoSync(params.videoId);
+        : videoCache.getCachedFileSync(params.videoId);
 
     if (cachedFile != null && cachedFile.existsSync()) {
       // Use cached file!
@@ -400,7 +423,16 @@ VideoPlayerController individualVideoController(
   bool? _lastHasError;
 
   void stateChangeListener() {
-    final value = controller.value;
+    // Guard against platform callbacks firing after player disposal.
+    // AVFoundation/ExoPlayer may fire async callbacks after the Dart-side
+    // controller is invalidated via Riverpod, causing "No active player" errors.
+    final VideoPlayerValue value;
+    try {
+      value = controller.value;
+    } catch (e) {
+      if (_isDisposalError(e)) return;
+      rethrow;
+    }
 
     // Only log significant state changes, not every position update
     final isInitialized = value.isInitialized;
@@ -731,8 +763,9 @@ VideoPlayerController individualVideoController(
           // when the keepAlive timer fired during disposal. Just remove the cache;
           // user can retry manually or the provider will be recreated on next access.
           unawaited(
-            openVineVideoCache
-                .removeCorruptedVideo(params.videoId)
+            ref
+                .read(mediaCacheProvider)
+                .removeCachedFile(params.videoId)
                 .then((_) {
                   Log.info(
                     '🗑️ Removed corrupted cache for video $videoIdDisplay',
@@ -875,6 +908,25 @@ VideoPlayerController individualVideoController(
 
     // Remove state change listener before disposal
     controller.removeListener(stateChangeListener);
+
+    // Mark controller as disposed IMMEDIATELY (synchronously) so that
+    // any widget that rebuilds before the microtask runs can check this
+    // flag and avoid calling VideoPlayer with a stale controller.
+    // This prevents the "No active player with ID" crash (Crashlytics issue).
+    try {
+      final currentDisposed = ref.read(disposedControllersProvider);
+      ref.read(disposedControllersProvider.notifier).state = {
+        ...currentDisposed,
+        params.videoId,
+      };
+    } catch (e) {
+      // Provider may already be disposed - ignore since this is cleanup code
+      Log.debug(
+        'Could not mark controller as disposed: $e',
+        name: 'IndividualVideoController',
+        category: LogCategory.video,
+      );
+    }
 
     // Defer controller disposal to avoid triggering listener callbacks during lifecycle
     // This prevents "Cannot use Ref inside life-cycles" errors when listeners try to access providers
@@ -1061,10 +1113,10 @@ Future<void> _generateAuthHeadersAsync(
 /// Cache video with authentication if needed for NSFW content
 Future<dynamic> _cacheVideoWithAuth(
   Ref ref,
-  VideoCacheManager videoCache,
+  MediaCacheManager videoCache,
   VideoControllerParams params,
 ) async {
-  // Get tracker for broken video handling
+  // Get tracker for broken video handling (used at call site for error reporting)
   BrokenVideoTracker? tracker;
   try {
     tracker = await ref.read(brokenVideoTrackerProvider.future);
@@ -1146,12 +1198,19 @@ Future<dynamic> _cacheVideoWithAuth(
   // Cache video with optional auth headers
   // Use effectiveCacheUrl (original MP4) not videoUrl (may be HLS on Android)
   // HLS manifests can't be cached as single files
-  return videoCache.cacheVideo(
-    params.effectiveCacheUrl,
-    params.videoId,
-    brokenVideoTracker: tracker,
-    authHeaders: authHeaders,
-  );
+  try {
+    return await videoCache.cacheFile(
+      params.effectiveCacheUrl,
+      key: params.videoId,
+      authHeaders: authHeaders,
+    );
+  } catch (e) {
+    // If caching fails, mark video as broken for future reference
+    if (tracker != null) {
+      tracker.markVideoBroken(params.videoId, 'Cache download failed: $e');
+    }
+    rethrow;
+  }
 }
 
 /// Check if error indicates a 401 Unauthorized (likely NSFW content)

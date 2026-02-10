@@ -213,12 +213,14 @@ class VideoEditorSplitService {
         category: .video,
       );
 
-      await ProVideoEditor.instance.renderVideoToFile(outputPath, renderData);
-      // On newer devices, the split operation completes extremely fast. For
-      // that we add a short delay to ensure the progress animation shows
-      // to complete to the user. Without that it will look like a
-      // flickering issue.
-      await Future.delayed(Duration(milliseconds: 300));
+      await Future.wait([
+        ProVideoEditor.instance.renderVideoToFile(outputPath, renderData),
+        // On newer devices, the split operation completes extremely fast. For
+        // that we add a short delay to ensure the progress animation shows
+        // to complete to the user. Without that it will look like a
+        // flickering issue.
+        Future.delayed(Duration(milliseconds: 300)),
+      ]);
 
       Log.info(
         '✅ Render complete: ${clip.id}',
@@ -228,6 +230,14 @@ class VideoEditorSplitService {
 
       clip.processingCompleter?.complete(true);
       onClipRendered?.call(clip, EditorVideo.file(outputPath));
+    } on RenderCanceledException {
+      Log.info(
+        '🚫 Render cancelled: ${clip.id}',
+        name: 'VideoEditorSplitService',
+        category: .video,
+      );
+      clip.processingCompleter?.complete(false);
+      rethrow;
     } catch (e) {
       Log.error(
         '❌ Render failed for ${clip.id}: $e',

@@ -18,14 +18,12 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/follow_repository.dart';
-import 'package:openvine/repositories/username_repository.dart';
-import 'package:openvine/providers/video_repository_provider.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/api_service.dart';
-import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
+import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
@@ -43,11 +41,12 @@ import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/email_verification_listener.dart';
 import 'package:openvine/services/event_router.dart';
+import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
-import 'package:openvine/utils/search_utils.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/nip05_service.dart';
@@ -55,7 +54,6 @@ import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
-import 'package:openvine/services/email_verification_listener.dart';
 import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
@@ -73,14 +71,16 @@ import 'package:openvine/services/user_list_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/video_visibility_manager.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/web_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/search_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:permissions_service/permissions_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -373,6 +373,20 @@ GeoBlockingService geoBlockingService(Ref ref) {
   return GeoBlockingService();
 }
 
+/// Permissions service for checking and requesting OS permissions
+@riverpod
+PermissionsService permissionsService(Ref ref) {
+  return const PermissionHandlerPermissionsService();
+}
+
+/// Gallery save service for saving videos to device camera roll
+@riverpod
+GallerySaveService gallerySaveService(Ref ref) {
+  return GallerySaveService(
+    permissionsService: ref.watch(permissionsServiceProvider),
+  );
+}
+
 /// Secure key storage service (foundational service)
 @Riverpod(keepAlive: true)
 SecureKeyStorage secureKeyStorage(Ref ref) {
@@ -530,13 +544,6 @@ Nip05Service nip05Service(Ref ref) {
   return Nip05Service();
 }
 
-/// Username repository for availability checking
-@riverpod
-UsernameRepository usernameRepository(Ref ref) {
-  final nip05Service = ref.watch(nip05ServiceProvider);
-  return UsernameRepository(nip05Service);
-}
-
 /// Draft storage service for persisting vine drafts
 @riverpod
 Future<DraftStorageService> draftStorageService(Ref ref) async {
@@ -602,6 +609,11 @@ AuthState currentAuthState(Ref ref) {
 ///
 /// This prevents race conditions where auth state is 'authenticated' but
 /// the NostrClient hasn't yet rebuilt with the new keys.
+///
+/// NostrClient.initialize() runs asynchronously in a Future.microtask after
+/// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
+/// because it's the same object reference. When not ready but authenticated,
+/// we schedule brief retries to catch the async initialization.
 @Riverpod(keepAlive: true)
 bool isNostrReady(Ref ref) {
   final authService = ref.watch(authServiceProvider);
@@ -612,7 +624,31 @@ bool isNostrReady(Ref ref) {
   if (!authService.isAuthenticated) return false;
 
   final nostrClient = ref.watch(nostrServiceProvider);
-  return nostrClient.hasKeys;
+  final ready = nostrClient.hasKeys;
+
+  if (!ready) {
+    // NostrClient.initialize() runs asynchronously in a Future.microtask
+    // after NostrService.build() returns. Riverpod can't detect when
+    // hasKeys transitions because it's the same object reference.
+    // Schedule retries at increasing intervals to catch the transition.
+    var disposed = false;
+    ref.onDispose(() => disposed = true);
+
+    for (final delayMs in [100, 500, 2000]) {
+      Future.delayed(Duration(milliseconds: delayMs), () {
+        if (!disposed && nostrClient.hasKeys) {
+          Log.info(
+            'isNostrReady: NostrClient.hasKeys became true after ${delayMs}ms, invalidating',
+            name: 'isNostrReadyProvider',
+            category: LogCategory.system,
+          );
+          ref.invalidateSelf();
+        }
+      });
+    }
+  }
+
+  return ready;
 }
 
 /// Provider that sets Zendesk user identity when auth state changes
@@ -693,7 +729,7 @@ SubscriptionManager subscriptionManager(Ref ref) {
   return SubscriptionManager(nostrService);
 }
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
+/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager
 @Riverpod(keepAlive: true)
 VideoEventService videoEventService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
@@ -702,7 +738,6 @@ VideoEventService videoEventService(Ref ref) {
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
   final userProfileService = ref.watch(userProfileServiceProvider);
   final videoFilterBuilder = ref.watch(videoFilterBuilderProvider);
-  final videoRepository = ref.watch(videoRepositoryProvider);
   final db = ref.watch(databaseProvider);
   final eventRouter = EventRouter(db);
 
@@ -711,7 +746,6 @@ VideoEventService videoEventService(Ref ref) {
   final service = VideoEventService(
     nostrService,
     subscriptionManager: subscriptionManager,
-    videoRepository: videoRepository,
     userProfileService: userProfileService,
     eventRouter: eventRouter,
     videoFilterBuilder: videoFilterBuilder,
@@ -766,17 +800,19 @@ UserProfileService userProfileService(Ref ref) {
   return service;
 }
 
-/// Social service depends on Nostr service and Auth service
+/// Social service depends on Nostr service, Auth service, and Analytics API
 @Riverpod(keepAlive: true)
 SocialService socialService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
+  final analyticsApiService = ref.watch(analyticsApiServiceProvider);
 
   return SocialService(
     nostrService,
     authService,
     personalEventCache: personalEventCache,
+    analyticsApiService: analyticsApiService,
   );
 }
 
@@ -1322,6 +1358,19 @@ CommentsRepository commentsRepository(Ref ref) {
 // VIDEOS REPOSITORY
 // =============================================================================
 
+/// Provider for VideoLocalStorage instance (SQLite-backed)
+///
+/// Creates a DbVideoLocalStorage for caching video events locally.
+/// Used by VideosRepository for cache-first lookups.
+///
+/// Uses:
+/// - NostrEventsDao from databaseProvider (for SQLite storage)
+@Riverpod(keepAlive: true)
+VideoLocalStorage videoLocalStorage(Ref ref) {
+  final db = ref.watch(databaseProvider);
+  return DbVideoLocalStorage(dao: db.nostrEventsDao);
+}
+
 /// Provider for VideosRepository instance
 ///
 /// Creates a VideosRepository for loading video feeds with pagination.
@@ -1329,16 +1378,19 @@ CommentsRepository commentsRepository(Ref ref) {
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - VideoLocalStorage for cache-first lookups and caching results
 /// - ContentBlocklistService for filtering blocked/muted users
 /// - AgeVerificationService for filtering NSFW content based on user preference
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
+  final localStorage = ref.watch(videoLocalStorageProvider);
   final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
 
   return VideosRepository(
     nostrClient: nostrClient,
+    localStorage: localStorage,
     blockFilter: createBlocklistFilter(blocklistService),
     contentFilter: createNsfwFilter(ageVerificationService),
   );

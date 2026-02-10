@@ -243,5 +243,117 @@ void main() {
       // Total duration should account for all clips
       expect(state.totalDuration, equals(const Duration(seconds: 6)));
     });
+
+    group('clearClips', () {
+      test('should remove all clips without affecting files', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        notifier.addClip(
+          video: EditorVideo.file('/path/to/video1.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+        notifier.addClip(
+          video: EditorVideo.file('/path/to/video2.mp4'),
+          duration: const Duration(seconds: 3),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        expect(container.read(clipManagerProvider).clips.length, equals(2));
+
+        notifier.clearClips();
+
+        final state = container.read(clipManagerProvider);
+        expect(state.clips, isEmpty);
+        expect(state.hasClips, isFalse);
+      });
+
+      test(
+        'clearClips before addMultipleClips prevents clip duplication (draft restore)',
+        () {
+          final notifier = container.read(clipManagerProvider.notifier);
+
+          // Simulate initial clips already in manager
+          notifier.addClip(
+            video: EditorVideo.file('/path/to/existing1.mp4'),
+            duration: const Duration(seconds: 2),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+          notifier.addClip(
+            video: EditorVideo.file('/path/to/existing2.mp4'),
+            duration: const Duration(seconds: 3),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          );
+
+          expect(container.read(clipManagerProvider).clips.length, equals(2));
+
+          // Simulate draft restoration pattern:
+          // 1. Clear existing clips first
+          notifier.clearClips();
+
+          // 2. Add clips from draft
+          final draftClip1 = notifier.addClip(
+            video: EditorVideo.file('/path/to/draft1.mp4'),
+            duration: const Duration(seconds: 1),
+            targetAspectRatio: .square,
+            originalAspectRatio: 1,
+          );
+          final draftClip2 = notifier.addClip(
+            video: EditorVideo.file('/path/to/draft2.mp4'),
+            duration: const Duration(seconds: 2),
+            targetAspectRatio: .square,
+            originalAspectRatio: 1,
+          );
+
+          final state = container.read(clipManagerProvider);
+
+          // Should only have the 2 draft clips, not 4 (2 existing + 2 draft)
+          expect(
+            state.clips.length,
+            equals(2),
+            reason: 'Draft restore should replace clips, not append to them',
+          );
+
+          // Verify they are the correct clips
+          expect(state.clips[0].id, equals(draftClip1.id));
+          expect(state.clips[1].id, equals(draftClip2.id));
+          expect(state.totalDuration, equals(const Duration(seconds: 3)));
+        },
+      );
+
+      test('addMultipleClips without clearClips causes duplication', () {
+        final notifier = container.read(clipManagerProvider.notifier);
+
+        // Add initial clips
+        notifier.addClip(
+          video: EditorVideo.file('/path/to/existing.mp4'),
+          duration: const Duration(seconds: 2),
+          targetAspectRatio: .vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        expect(container.read(clipManagerProvider).clips.length, equals(1));
+
+        // Create clips to add (simulating draft clips)
+        notifier.addClip(
+          video: EditorVideo.file('/path/to/draft.mp4'),
+          duration: const Duration(seconds: 1),
+          targetAspectRatio: .square,
+          originalAspectRatio: 1,
+        );
+
+        // Without clearClips, we now have 2 clips
+        final state = container.read(clipManagerProvider);
+        expect(
+          state.clips.length,
+          equals(2),
+          reason: 'Without clearClips, clips are appended',
+        );
+      });
+    });
   });
 }

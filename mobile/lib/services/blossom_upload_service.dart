@@ -349,10 +349,27 @@ class BlossomUploadService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final responseData = response.data;
 
+        Log.debug(
+          'Server response data type: ${responseData.runtimeType}',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+        Log.debug(
+          'Server response data: $responseData',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
+
         if (responseData is Map) {
-          // Extract all URL fields from server response
+          // Extract all URL fields from server response.
           final url = responseData['url']?.toString();
           final fallbackUrl = responseData['fallbackUrl']?.toString();
+
+          Log.debug(
+            'Parsed response: url=$url, fallbackUrl=$fallbackUrl',
+            name: 'BlossomUploadService',
+            category: LogCategory.video,
+          );
           String? thumbnailUrl =
               responseData['thumbnail']?.toString() ?? fallbackUrl;
 
@@ -703,8 +720,10 @@ class BlossomUploadService {
           );
 
           if (result.success) {
+            // Use fallbackUrl if available, otherwise use url (server may return either)
+            String? correctedUrl = result.fallbackUrl ?? result.url;
+
             // Fix file extension if needed (server bug workaround)
-            String? correctedUrl = result.fallbackUrl;
             if (correctedUrl != null && correctedUrl.endsWith('.mp4')) {
               final extension = _getImageExtensionFromMimeType(mimeType);
               correctedUrl = correctedUrl.replaceAll(

@@ -10,7 +10,7 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/divine_icon_button.dart';
+import 'package:openvine/widgets/video_editor_icon_button.dart';
 
 class VideoClipEditorMoreButton extends ConsumerStatefulWidget {
   const VideoClipEditorMoreButton({super.key});
@@ -210,7 +210,7 @@ class _VideoEditorMoreButtonState
 
   @override
   Widget build(BuildContext context) {
-    return DivineIconButton(
+    return VideoEditorIconButton(
       backgroundColor: const Color(0x00000000),
       iconPath: 'assets/icon/more_horiz.svg',
       onTap: _showMoreOptions,

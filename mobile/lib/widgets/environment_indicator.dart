@@ -36,12 +36,13 @@ class EnvironmentBadge extends ConsumerWidget {
 
   String _getEnvironmentLabel(EnvironmentConfig environment) {
     switch (environment.environment) {
+      case AppEnvironment.poc:
+        return 'POC';
       case AppEnvironment.staging:
         return 'STG';
-      case AppEnvironment.dev:
-        return 'DEV';
+      case AppEnvironment.test:
+        return 'TEST';
       case AppEnvironment.production:
-      case AppEnvironment.productionNew:
         return '';
     }
   }

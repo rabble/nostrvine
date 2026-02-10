@@ -102,6 +102,7 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
       _controller = VideoFeedController(
         videos: widget.videos,
         pool: _effectivePool,
+        initialIndex: _currentIndex,
         preloadAhead: widget.preloadAhead,
         preloadBehind: widget.preloadBehind,
       );

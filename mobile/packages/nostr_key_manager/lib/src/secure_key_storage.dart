@@ -201,8 +201,8 @@ class SecureKeyStorage {
     _log.fine('Generating new secure Nostr key pair');
 
     try {
-      // Generate new secure key container
-      final keyContainer = SecureKeyContainer.generate();
+      // Generate new secure key container (runs in isolate to avoid ANR)
+      final keyContainer = await SecureKeyContainer.generate();
 
       _log.fine(
         '📱 Generated key for: ${_maskKey(keyContainer.npub)}',

@@ -10,6 +10,7 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:videos_repository/src/video_content_filter.dart';
 import 'package:videos_repository/src/video_event_filter.dart';
+import 'package:videos_repository/src/video_local_storage.dart';
 
 export 'package:models/src/nip71_video_kinds.dart' show NIP71VideoKinds;
 
@@ -27,6 +28,10 @@ const int _defaultLimit = 5;
 /// efficient video feed loading. Uses pagination-based loading (Futures)
 /// rather than real-time subscriptions (Streams).
 ///
+/// Optionally accepts a [VideoLocalStorage] for cache-first lookups.
+/// When provided, methods like [getVideosByIds] will check the cache first
+/// before querying relays.
+///
 /// Optionally accepts a [FunnelcakeApiClient] to fallback to REST API
 /// for videos not found on Nostr relays (e.g., videos from Explore that
 /// may not be on the app's configured relays).
@@ -36,15 +41,18 @@ class VideosRepository {
   /// {@macro videos_repository}
   const VideosRepository({
     required NostrClient nostrClient,
+    VideoLocalStorage? localStorage,
     BlockedVideoFilter? blockFilter,
     VideoContentFilter? contentFilter,
     FunnelcakeApiClient? funnelcakeApiClient,
   }) : _nostrClient = nostrClient,
+       _localStorage = localStorage,
        _blockFilter = blockFilter,
        _contentFilter = contentFilter,
        _funnelcakeApiClient = funnelcakeApiClient;
 
   final NostrClient _nostrClient;
+  final VideoLocalStorage? _localStorage;
   final BlockedVideoFilter? _blockFilter;
   final VideoContentFilter? _contentFilter;
   final FunnelcakeApiClient? _funnelcakeApiClient;
@@ -54,8 +62,15 @@ class VideosRepository {
   /// This is the "Home" feed mode - shows videos only from users the
   /// current user follows.
   ///
+  /// Strategy:
+  /// 1. If [userPubkey] is provided and Funnelcake API is available, tries
+  ///    the REST API first (faster, pre-computed feeds)
+  /// 2. Falls back to Nostr relay query with [authors] filter
+  ///
   /// Parameters:
   /// - [authors]: List of pubkeys to filter by (followed users)
+  /// - [userPubkey]: The current user's pubkey for Funnelcake API lookups.
+  ///   Required for API-first path; when null, goes directly to Nostr.
   /// - [limit]: Maximum number of videos to return (default 5)
   /// - [until]: Only return videos created before this Unix timestamp
   ///   (for pagination - pass `previousVideo.createdAt`)
@@ -65,11 +80,31 @@ class VideosRepository {
   /// or on error.
   Future<List<VideoEvent>> getHomeFeedVideos({
     required List<String> authors,
+    String? userPubkey,
     int limit = _defaultLimit,
     int? until,
   }) async {
     if (authors.isEmpty) return [];
 
+    // 1. Try Funnelcake API first (if user pubkey provided)
+    if (userPubkey != null &&
+        _funnelcakeApiClient != null &&
+        _funnelcakeApiClient.isAvailable) {
+      try {
+        final response = await _funnelcakeApiClient.getHomeFeed(
+          pubkey: userPubkey,
+          limit: limit,
+          before: until,
+        );
+
+        final videos = _transformVideoStats(response.videos);
+        if (videos.isNotEmpty) return videos;
+      } on FunnelcakeException {
+        // Fall through to Nostr
+      }
+    }
+
+    // 2. Nostr fallback
     final filter = Filter(
       kinds: [_videoKind],
       authors: authors,
@@ -117,6 +152,10 @@ class VideosRepository {
   /// This is the "New" feed mode - shows all public videos sorted by
   /// creation time.
   ///
+  /// Strategy:
+  /// 1. If Funnelcake API is available, tries the REST API first (faster)
+  /// 2. Falls back to Nostr relay query
+  ///
   /// Parameters:
   /// - [limit]: Maximum number of videos to return (default 5)
   /// - [until]: Only return videos created before this Unix timestamp
@@ -128,6 +167,22 @@ class VideosRepository {
     int limit = _defaultLimit,
     int? until,
   }) async {
+    // 1. Try Funnelcake API first
+    if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
+      try {
+        final videoStats = await _funnelcakeApiClient.getRecentVideos(
+          limit: limit,
+          before: until,
+        );
+
+        final videos = _transformVideoStats(videoStats);
+        if (videos.isNotEmpty) return videos;
+      } on FunnelcakeException {
+        // Fall through to Nostr
+      }
+    }
+
+    // 2. Nostr fallback
     final filter = Filter(
       kinds: [_videoKind],
       limit: limit,
@@ -145,8 +200,10 @@ class VideosRepository {
   /// engagement metrics (loops, likes, comments, reposts).
   ///
   /// Strategy:
-  /// 1. First tries NIP-50 `sort:hot` server-side sorting (if relay supports)
-  /// 2. Falls back to client-side sorting by engagement score if NIP-50
+  /// 1. If Funnelcake API is available, tries the REST API first (best
+  ///    engagement data from ClickHouse)
+  /// 2. Tries NIP-50 `sort:hot` server-side sorting (if relay supports)
+  /// 3. Falls back to client-side sorting by engagement score if NIP-50
   ///    returns empty (relay doesn't support NIP-50)
   ///
   /// Parameters:
@@ -164,7 +221,26 @@ class VideosRepository {
     int? until,
     int fetchMultiplier = 4,
   }) async {
-    // 1. Try NIP-50 server-side sorting first
+    // 1. Try Funnelcake API first (best engagement data)
+    if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
+      try {
+        final videoStats = await _funnelcakeApiClient.getTrendingVideos(
+          limit: limit,
+          before: until,
+        );
+
+        // Preserve API order (sorted by trending score)
+        final videos = _transformVideoStats(
+          videoStats,
+          sortByCreatedAt: false,
+        );
+        if (videos.isNotEmpty) return videos;
+      } on FunnelcakeException {
+        // Fall through to NIP-50
+      }
+    }
+
+    // 2. Try NIP-50 server-side sorting
     final nip50Filter = Filter(
       kinds: [_videoKind],
       limit: limit,
@@ -183,7 +259,7 @@ class VideosRepository {
       return _transformAndFilter(nip50Events, sortByCreatedAt: false);
     }
 
-    // 2. Fallback: relay doesn't support NIP-50, use client-side sorting
+    // 3. Fallback: relay doesn't support NIP-50, use client-side sorting
     // Fetch more videos than needed so we have a good pool to sort from
     final fetchLimit = limit * fetchMultiplier;
 
@@ -210,25 +286,57 @@ class VideosRepository {
   /// This is used for fetching videos that a user has liked (Kind 7 reactions
   /// reference videos by their event ID).
   ///
+  /// Implements cache-first lookup:
+  /// 1. Check local storage for cached events
+  /// 2. Query relays for missing events
+  /// 3. Optionally save fetched events to cache
+  ///
   /// Parameters:
   /// - [eventIds]: List of event IDs to fetch
+  /// - [cacheResults]: If true, saves fetched events to local storage.
+  ///   Defaults to false to avoid cache bloat from pagination.
+  ///   Set to true for first-page loads that should be cached.
   ///
   /// Returns a list of [VideoEvent] in the same order as [eventIds].
   /// Videos that couldn't be found or failed to parse are omitted.
-  Future<List<VideoEvent>> getVideosByIds(List<String> eventIds) async {
+  Future<List<VideoEvent>> getVideosByIds(
+    List<String> eventIds, {
+    bool cacheResults = false,
+  }) async {
     if (eventIds.isEmpty) return [];
 
-    final filter = Filter(
-      ids: eventIds,
-      kinds: NIP71VideoKinds.getAllVideoKinds(),
-    );
-
-    final events = await _nostrClient.queryEvents([filter]);
-
-    // Build a map for ordering
+    // Build a map for results
     final eventMap = <String, Event>{};
-    for (final event in events) {
-      eventMap[event.id] = event;
+
+    // 1. Check cache first (if available)
+    if (_localStorage != null) {
+      final cachedEvents = await _localStorage.getEventsByIds(eventIds);
+      for (final event in cachedEvents) {
+        eventMap[event.id] = event;
+      }
+    }
+
+    // 2. Find missing IDs and query relay
+    final missingIds = eventIds
+        .where((id) => !eventMap.containsKey(id))
+        .toList();
+
+    if (missingIds.isNotEmpty) {
+      final filter = Filter(
+        ids: missingIds,
+        kinds: NIP71VideoKinds.getAllVideoKinds(),
+      );
+
+      final relayEvents = await _nostrClient.queryEvents([filter]);
+
+      for (final event in relayEvents) {
+        eventMap[event.id] = event;
+      }
+
+      // 3. Optionally save fetched events to cache
+      if (cacheResults && _localStorage != null && relayEvents.isNotEmpty) {
+        await _localStorage.saveEventsBatch(relayEvents);
+      }
     }
 
     // Transform and filter, preserving input order
@@ -261,15 +369,20 @@ class VideosRepository {
   /// 2. For videos not found on relays, tries Funnelcake REST API fallback
   ///    (if configured) - useful for videos from Explore that may not be
   ///    on the app's configured relays
+  /// 3. Optionally saves fetched events to local storage
   ///
   /// Parameters:
   /// - [addressableIds]: List of addressable IDs in `kind:pubkey:d-tag` format
+  /// - [cacheResults]: If true, saves fetched events to local storage.
+  ///   Defaults to false to avoid cache bloat from pagination.
+  ///   Set to true for first-page loads that should be cached.
   ///
   /// Returns a list of [VideoEvent] in the same order as [addressableIds].
   /// Videos that couldn't be found or failed to parse are omitted.
   Future<List<VideoEvent>> getVideosByAddressableIds(
-    List<String> addressableIds,
-  ) async {
+    List<String> addressableIds, {
+    bool cacheResults = false,
+  }) async {
     if (addressableIds.isEmpty) return [];
 
     // Parse addressable IDs and build filters
@@ -307,6 +420,11 @@ class VideosRepository {
 
     final results = await Future.wait(futures);
     final events = results.expand((e) => e).toList();
+
+    // Optionally save fetched events to cache
+    if (cacheResults && _localStorage != null && events.isNotEmpty) {
+      await _localStorage.saveEventsBatch(events);
+    }
 
     // Build a map keyed by addressable ID for ordering
     final foundVideos = <String, VideoEvent>{};
@@ -398,6 +516,48 @@ class VideosRepository {
         // The video simply won't be included in the results.
       }
     }
+  }
+
+  /// Transforms [VideoStats] from Funnelcake API into filtered [VideoEvent]s.
+  ///
+  /// Converts each [VideoStats] to a [VideoEvent] via [VideoStats.toVideoEvent]
+  /// then applies the same filtering pipeline as [_transformAndFilter]:
+  /// - Block filter (pubkey blocklist)
+  /// - Video URL validation
+  /// - Expiration check (NIP-40)
+  /// - Content filter (NSFW, etc.)
+  ///
+  /// By default, sorts by creation time (newest first). Set [sortByCreatedAt]
+  /// to false to preserve the API's original order (e.g., trending sort).
+  List<VideoEvent> _transformVideoStats(
+    List<VideoStats> videoStatsList, {
+    bool sortByCreatedAt = true,
+  }) {
+    final videos = <VideoEvent>[];
+
+    for (final stats in videoStatsList) {
+      final video = stats.toVideoEvent();
+
+      // Block filter - check pubkey
+      if (_blockFilter?.call(video.pubkey) ?? false) continue;
+
+      // Skip videos without a playable URL
+      if (!video.hasVideo) continue;
+
+      // Skip expired videos (NIP-40)
+      if (video.isExpired) continue;
+
+      // Content filter - check parsed video (NSFW, etc.)
+      if (_contentFilter?.call(video) ?? false) continue;
+
+      videos.add(video);
+    }
+
+    if (sortByCreatedAt) {
+      videos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    }
+
+    return videos;
   }
 
   /// Attempts to parse an event into a VideoEvent and apply filters.

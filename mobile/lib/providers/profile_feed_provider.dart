@@ -54,8 +54,12 @@ class ProfileFeed extends _$ProfileFeed {
     List<VideoEvent> authorVideos = [];
 
     // Try REST API first if available (use centralized availability check)
+    // Use ref.read() instead of ref.watch() to prevent cascade rebuilds
+    // through userProfileService → videoEventService chain when funnelcake
+    // availability resolves. ProfileFeed is keepAlive, so cascade rebuilds
+    // create new instances and lose state.
     final funnelcakeAvailable =
-        ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
+        ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
     final analyticsService = ref.read(analyticsApiServiceProvider);
     if (funnelcakeAvailable) {
       Log.info(
@@ -129,17 +133,21 @@ class ProfileFeed extends _$ProfileFeed {
 
       videoEventService.addListener(checkStability);
 
-      // Also set a maximum wait time
-      Timer(const Duration(seconds: 3), () {
+      // Also set a maximum wait time (1.5s is sufficient since relay EOSE
+      // typically arrives in ~300ms; reduces wait for 0-video profiles)
+      Timer(const Duration(milliseconds: 1500), () {
         if (!completer.isCompleted) {
           completer.complete();
         }
       });
 
       // Trigger initial check
+      final waitStart = DateTime.now();
       checkStability();
 
       await completer.future;
+
+      final waitDuration = DateTime.now().difference(waitStart);
 
       // Clean up
       videoEventService.removeListener(checkStability);
@@ -150,6 +158,68 @@ class ProfileFeed extends _$ProfileFeed {
           .authorVideos(userId)
           .where((v) => !v.isRepost)
           .toList();
+
+      // If initial load returned 0 videos, retry once — but only if the wait
+      // hit the timeout ceiling. A fast completion with 0 results means the
+      // relay sent EOSE promptly with no events (user genuinely has no videos),
+      // so retrying the same subscription is pointless. We only retry when the
+      // timeout fired, which suggests a relay reconnect may have killed the
+      // subscription mid-load.
+      final hitTimeout = waitDuration.inMilliseconds >= 1400;
+      if (authorVideos.isEmpty && hitTimeout) {
+        Log.warning(
+          'ProfileFeed: Initial load returned 0 videos for user=$userId, '
+          'retrying once',
+          name: 'ProfileFeedProvider',
+          category: LogCategory.video,
+        );
+
+        await videoEventService.subscribeToUserVideos(userId, limit: 100);
+
+        // Wait for retry results with same stability pattern
+        final retryCompleter = Completer<void>();
+        int retryStableCount = 0;
+        Timer? retryStabilityTimer;
+
+        void checkRetryStability() {
+          final currentCount = videoEventService.authorVideos(userId).length;
+          if (currentCount != retryStableCount) {
+            retryStableCount = currentCount;
+            retryStabilityTimer?.cancel();
+            retryStabilityTimer = Timer(const Duration(milliseconds: 300), () {
+              if (!retryCompleter.isCompleted) {
+                retryCompleter.complete();
+              }
+            });
+          }
+        }
+
+        videoEventService.addListener(checkRetryStability);
+
+        Timer(const Duration(seconds: 2), () {
+          if (!retryCompleter.isCompleted) {
+            retryCompleter.complete();
+          }
+        });
+
+        checkRetryStability();
+        await retryCompleter.future;
+
+        videoEventService.removeListener(checkRetryStability);
+        retryStabilityTimer?.cancel();
+
+        authorVideos = videoEventService
+            .authorVideos(userId)
+            .where((v) => !v.isRepost)
+            .toList();
+
+        Log.info(
+          'ProfileFeed: Retry got ${authorVideos.length} videos for '
+          'user=$userId',
+          name: 'ProfileFeedProvider',
+          category: LogCategory.video,
+        );
+      }
 
       // Apply cached metadata to preserve engagement stats from previous REST API calls
       authorVideos = _applyMetadataCache(authorVideos);

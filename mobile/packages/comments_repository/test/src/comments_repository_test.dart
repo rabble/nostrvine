@@ -244,6 +244,119 @@ void main() {
         },
       );
 
+      test(
+        'queries by both E and A tags when rootAddressableId is provided',
+        () async {
+          const testAddressableId = '34236:$testRootAuthorPubkey:video-dtag';
+
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => []);
+
+          await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            rootAddressableId: testAddressableId,
+          );
+
+          // Should make 2 calls: one for E tag, one for A tag
+          final captured = verify(
+            () => mockNostrClient.queryEvents(captureAny()),
+          ).captured;
+
+          expect(captured.length, equals(2));
+
+          final filtersE = captured[0] as List<Filter>;
+          expect(
+            filtersE.first.uppercaseE,
+            contains(testRootEventId),
+          );
+
+          final filtersA = captured[1] as List<Filter>;
+          expect(
+            filtersA.first.uppercaseA,
+            contains(testAddressableId),
+          );
+        },
+      );
+
+      test(
+        'deduplicates comments found by both E and A tag queries',
+        () async {
+          const testAddressableId = '34236:$testRootAuthorPubkey:video-dtag';
+
+          final commentEvent = _createCommentEvent(
+            id: 'comment1',
+            content: 'Found by both queries',
+            pubkey: testUserPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+          );
+
+          // Both queries return the same event
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [commentEvent]);
+
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            rootAddressableId: testAddressableId,
+          );
+
+          // Should be deduplicated to 1 comment
+          expect(result.totalCount, equals(1));
+          expect(result.comments.length, equals(1));
+        },
+      );
+
+      test(
+        'parses comment with only A tag (no E tag) from other clients',
+        () async {
+          // Some clients may only use A tag for addressable events
+          final aTagOnlyComment = Event(
+            testUserPubkey,
+            _commentKind,
+            <List<String>>[
+              [
+                'A',
+                '34236:$testRootAuthorPubkey:video-dtag',
+                '',
+              ],
+              ['K', _testRootEventKind.toString()],
+              ['P', testRootAuthorPubkey],
+              [
+                'a',
+                '34236:$testRootAuthorPubkey:video-dtag',
+                '',
+              ],
+              ['k', _testRootEventKind.toString()],
+              ['p', testRootAuthorPubkey],
+            ],
+            'A-tag only comment',
+            createdAt: 1000,
+          )..id = 'a_tag_comment';
+
+          when(
+            () => mockNostrClient.queryEvents(any()),
+          ).thenAnswer((_) async => [aTagOnlyComment]);
+
+          final result = await repository.loadComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+          );
+
+          expect(result.totalCount, equals(1));
+          final comment = result.comments.first;
+          expect(comment.content, equals('A-tag only comment'));
+          // rootAuthorPubkey extracted from A tag addressable ID
+          expect(comment.rootAuthorPubkey, equals(testRootAuthorPubkey));
+          // Top-level comment (parent kind = root kind)
+          expect(comment.replyToEventId, isNull);
+        },
+      );
+
       test('throws LoadCommentsFailedException on error', () async {
         when(
           () => mockNostrClient.queryEvents(any()),
@@ -450,6 +563,131 @@ void main() {
         expect(lowercasePTags.first[1], equals(parentAuthorPubkey));
       });
 
+      test(
+        'posts top-level comment with A/a tags for addressable events',
+        () async {
+          Event? capturedEvent;
+          const testAddressableId = '34236:$testRootAuthorPubkey:my-video-dtag';
+
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+            inv,
+          ) async {
+            return capturedEvent = inv.positionalArguments.first as Event;
+          });
+
+          await repository.postComment(
+            content: 'Comment on addressable event',
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            rootEventAuthorPubkey: testRootAuthorPubkey,
+            rootAddressableId: testAddressableId,
+          );
+
+          expect(capturedEvent, isNotNull);
+
+          // Uppercase A tag = root scope (3 elements per NIP-22)
+          final uppercaseATags = capturedEvent!.tags
+              .cast<List<dynamic>>()
+              .where((t) => t[0] == 'A')
+              .toList();
+          expect(uppercaseATags.length, equals(1));
+          expect(uppercaseATags.first.length, equals(3));
+          expect(uppercaseATags.first[1], equals(testAddressableId));
+          expect(uppercaseATags.first[2], equals(''));
+
+          // Lowercase a tag = parent item (3 elements per NIP-22)
+          final lowercaseATags = capturedEvent!.tags
+              .cast<List<dynamic>>()
+              .where((t) => t[0] == 'a')
+              .toList();
+          expect(lowercaseATags.length, equals(1));
+          expect(lowercaseATags.first.length, equals(3));
+          expect(lowercaseATags.first[1], equals(testAddressableId));
+          expect(lowercaseATags.first[2], equals(''));
+        },
+      );
+
+      test(
+        'posts reply comment without lowercase a tag',
+        () async {
+          Event? capturedEvent;
+          const testAddressableId = '34236:$testRootAuthorPubkey:my-video-dtag';
+          const parentCommentId =
+              'eeeeeeeeeeeeeeeeeeee'
+              'eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee'
+              'eeeeeeeeeeee';
+          const parentAuthorPubkey =
+              'ffffffffffffffff'
+              'ffffffffffffffffffffffffffffffff'
+              'ffffffffffffffff';
+
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+            inv,
+          ) async {
+            return capturedEvent = inv.positionalArguments.first as Event;
+          });
+
+          await repository.postComment(
+            content: 'Reply to comment',
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            rootEventAuthorPubkey: testRootAuthorPubkey,
+            rootAddressableId: testAddressableId,
+            replyToEventId: parentCommentId,
+            replyToAuthorPubkey: parentAuthorPubkey,
+          );
+
+          expect(capturedEvent, isNotNull);
+
+          // Uppercase A tag should be present (root scope)
+          final uppercaseATags = capturedEvent!.tags
+              .cast<List<dynamic>>()
+              .where((t) => t[0] == 'A')
+              .toList();
+          expect(uppercaseATags.length, equals(1));
+
+          // Lowercase a tag should NOT be present (reply parent is comment,
+          // not addressable event)
+          final lowercaseATags = capturedEvent!.tags
+              .cast<List<dynamic>>()
+              .where((t) => t[0] == 'a')
+              .toList();
+          expect(lowercaseATags, isEmpty);
+        },
+      );
+
+      test(
+        'does not include A/a tags when rootAddressableId is null',
+        () async {
+          Event? capturedEvent;
+
+          when(() => mockNostrClient.publishEvent(any())).thenAnswer((
+            inv,
+          ) async {
+            return capturedEvent = inv.positionalArguments.first as Event;
+          });
+
+          await repository.postComment(
+            content: 'No addressable ID',
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            rootEventAuthorPubkey: testRootAuthorPubkey,
+          );
+
+          final uppercaseATags = capturedEvent!.tags
+              .cast<List<dynamic>>()
+              .where((t) => t[0] == 'A')
+              .toList();
+          final lowercaseATags = capturedEvent!.tags
+              .cast<List<dynamic>>()
+              .where((t) => t[0] == 'a')
+              .toList();
+
+          expect(uppercaseATags, isEmpty);
+          expect(lowercaseATags, isEmpty);
+        },
+      );
+
       test('returns created Comment', () async {
         when(() => mockNostrClient.publishEvent(any())).thenAnswer((inv) async {
           return inv.positionalArguments.first as Event
@@ -572,6 +810,57 @@ void main() {
         expect(filters.first.kinds, contains(_commentKind));
         expect(filters.first.uppercaseE, contains(testRootEventId));
       });
+
+      test(
+        'returns max of E and A tag counts when '
+        'rootAddressableId provided',
+        () async {
+          const testAddressableId =
+              '34236:$testRootAuthorPubkey'
+              ':video-dtag';
+
+          var callCount = 0;
+          when(() => mockNostrClient.countEvents(any())).thenAnswer((_) async {
+            callCount++;
+            // First call (E tag) returns 5, second call (A tag) returns 8
+            return CountResult(count: callCount == 1 ? 5 : 8);
+          });
+
+          final result = await repository.getCommentsCount(
+            testRootEventId,
+            rootAddressableId: testAddressableId,
+          );
+
+          // Should return the maximum of the two counts
+          expect(result, equals(8));
+
+          // Should make 2 calls
+          verify(() => mockNostrClient.countEvents(any())).called(2);
+        },
+      );
+
+      test(
+        'returns E tag count when higher than A tag count',
+        () async {
+          const testAddressableId =
+              '34236:$testRootAuthorPubkey'
+              ':video-dtag';
+
+          var callCount = 0;
+          when(() => mockNostrClient.countEvents(any())).thenAnswer((_) async {
+            callCount++;
+            // First call (E tag) returns 10, second call (A tag) returns 3
+            return CountResult(count: callCount == 1 ? 10 : 3);
+          });
+
+          final result = await repository.getCommentsCount(
+            testRootEventId,
+            rootAddressableId: testAddressableId,
+          );
+
+          expect(result, equals(10));
+        },
+      );
 
       test('throws CountCommentsFailedException on error', () async {
         when(

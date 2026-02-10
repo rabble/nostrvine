@@ -232,15 +232,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       tabName: tabName,
     );
 
-    // Lists tab - refresh lists when activated (last tab)
-    final listsTabIndex = _tabCount - 1; // Lists is always the last tab
-    if (index == listsTabIndex) {
-      Log.debug('🔄 Lists tab activated', category: LogCategory.video);
-      // Invalidate providers to refresh list data
-      ref.invalidate(userListsProvider);
-      ref.invalidate(curatedListsProvider);
-    }
-
     // Exit feed or hashtag mode when user switches tabs
     _resetToDefaultState();
   }
@@ -757,6 +748,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
           // MY LISTS and PEOPLE LISTS - Show immediately when data available
           allListsAsync.when(
+            skipLoadingOnRefresh: true,
             data: (data) {
               final userLists = data.userLists;
               final myLists = data.curatedLists.where((list) {

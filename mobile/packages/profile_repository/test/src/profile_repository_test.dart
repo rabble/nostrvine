@@ -604,7 +604,10 @@ void main() {
           when(
             () => mockFunnelcakeClient.searchProfiles(
               query: 'alice',
-              limit: 200,
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
             ),
           ).thenAnswer(
             (_) async => [
@@ -645,8 +648,13 @@ void main() {
           expect(result.any((p) => p.displayName == 'Alice WS'), isTrue);
 
           verify(
-            () =>
-                mockFunnelcakeClient.searchProfiles(query: 'alice', limit: 200),
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
           ).called(1);
           verify(
             () => mockNostrClient.queryUsers('alice', limit: 200),
@@ -681,6 +689,9 @@ void main() {
           () => mockFunnelcakeClient.searchProfiles(
             query: any(named: 'query'),
             limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
           ),
         );
         verify(() => mockNostrClient.queryUsers('test', limit: 200)).called(1);
@@ -692,7 +703,10 @@ void main() {
         when(
           () => mockFunnelcakeClient.searchProfiles(
             query: 'test',
-            limit: 200,
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
           ),
         ).thenThrow(Exception('REST API error'));
 
@@ -724,7 +738,10 @@ void main() {
         when(
           () => mockFunnelcakeClient.searchProfiles(
             query: 'alice',
-            limit: 200,
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+            sortBy: any(named: 'sortBy'),
+            hasVideos: any(named: 'hasVideos'),
           ),
         ).thenAnswer(
           (_) async => [
@@ -763,6 +780,108 @@ void main() {
         expect(result, hasLength(1));
         expect(result.first.displayName, equals('Alice REST'));
       });
+
+      test(
+        'skips WebSocket on paginated request (offset > 0)',
+        () async {
+          // Arrange
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              offset: 50,
+              sortBy: 'followers',
+              hasVideos: true,
+            ),
+          ).thenAnswer(
+            (_) async => [
+              ProfileSearchResult(
+                pubkey: 'a' * 64,
+                displayName: 'Alice Page 2',
+                createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              ),
+            ],
+          );
+
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          // Act
+          final result = await repoWithFunnelcake.searchUsers(
+            query: 'alice',
+            offset: 50,
+            sortBy: 'followers',
+            hasVideos: true,
+          );
+
+          // Assert
+          expect(result, hasLength(1));
+          expect(result.first.displayName, equals('Alice Page 2'));
+
+          // WebSocket should NOT have been called for offset > 0
+          verifyNever(
+            () => mockNostrClient.queryUsers(
+              any(),
+              limit: any(named: 'limit'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'skips client-side filter when sortBy is set',
+        () async {
+          // Arrange
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchProfiles(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+              sortBy: 'followers',
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              ProfileSearchResult(
+                pubkey: 'a' * 64,
+                displayName: 'Alice REST',
+                createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+              ),
+            ],
+          );
+
+          when(
+            () => mockNostrClient.queryUsers('alice', limit: 200),
+          ).thenAnswer((_) async => []);
+
+          var filterCalled = false;
+          final repoWithFunnelcake = ProfileRepository(
+            nostrClient: mockNostrClient,
+            userProfilesDao: mockUserProfilesDao,
+            httpClient: mockHttpClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            profileSearchFilter: (query, profiles) {
+              filterCalled = true;
+              return profiles;
+            },
+          );
+
+          // Act
+          await repoWithFunnelcake.searchUsers(
+            query: 'alice',
+            sortBy: 'followers',
+          );
+
+          // Assert - filter should NOT be called when sortBy is set
+          expect(filterCalled, isFalse);
+        },
+      );
     });
 
     group('exceptions', () {
@@ -960,6 +1079,209 @@ void main() {
       test('UsernameClaimError toString returns formatted message', () {
         const error = UsernameClaimError('test error');
         expect(error.toString(), equals('UsernameClaimError(test error)'));
+      });
+    });
+
+    group('checkUsernameAvailability', () {
+      test('returns UsernameAvailable when username not in '
+          'names map', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer(
+          (_) async => Response(
+            jsonEncode({
+              'names': {'existinguser': 'pubkey123'},
+            }),
+            200,
+          ),
+        );
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'newuser',
+        );
+
+        expect(result, equals(const UsernameAvailable()));
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=newuser',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('returns UsernameAvailable when names map is null', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer(
+          (_) async => Response(
+            jsonEncode({'relays': <String, dynamic>{}}),
+            200,
+          ),
+        );
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'testuser',
+        );
+
+        expect(result, equals(const UsernameAvailable()));
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=testuser',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('returns UsernameAvailable when names map is empty', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer(
+          (_) async => Response(
+            jsonEncode({'names': <String, dynamic>{}}),
+            200,
+          ),
+        );
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'testuser',
+        );
+
+        expect(result, equals(const UsernameAvailable()));
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=testuser',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('returns UsernameTaken when username exists in names map', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer(
+          (_) async => Response(
+            jsonEncode({
+              'names': {
+                'alice': 'pubkey1',
+                'bob': 'pubkey2',
+                'takenuser': 'pubkey3',
+              },
+            }),
+            200,
+          ),
+        );
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'takenuser',
+        );
+
+        expect(result, equals(const UsernameTaken()));
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=takenuser',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('returns UsernameCheckError when HTTP status is not 200', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer(
+          (_) async => Response('Server error', 500),
+        );
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'testuser',
+        );
+
+        expect(
+          result,
+          isA<UsernameCheckError>().having(
+            (e) => e.message,
+            'message',
+            'Server returned status 500',
+          ),
+        );
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=testuser',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('returns UsernameCheckError on network exception', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenThrow(Exception('Connection timeout'));
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'testuser',
+        );
+
+        expect(
+          result,
+          isA<UsernameCheckError>().having(
+            (e) => e.message,
+            'message',
+            'Network error: Exception: Connection timeout',
+          ),
+        );
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=testuser',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('returns UsernameCheckError on JSON parsing error', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer(
+          (_) async => Response('invalid json', 200),
+        );
+
+        final result = await profileRepository.checkUsernameAvailability(
+          username: 'testuser',
+        );
+
+        expect(
+          result,
+          isA<UsernameCheckError>().having(
+            (e) => e.message,
+            'message',
+            contains('Network error'),
+          ),
+        );
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=testuser',
+            ),
+          ),
+        ).called(1);
+      });
+    });
+
+    group('UsernameAvailabilityResult', () {
+      test('UsernameCheckError toString returns formatted message', () {
+        const error = UsernameCheckError('test error');
+        expect(error.toString(), equals('UsernameCheckError(test error)'));
       });
     });
   });

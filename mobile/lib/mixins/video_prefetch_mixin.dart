@@ -3,10 +3,11 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:media_cache/media_cache.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/individual_video_providers.dart';
-import 'package:openvine/services/video_cache_manager.dart';
+import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Mixin that provides video prefetching logic for PageView-based feeds
@@ -18,7 +19,7 @@ import 'package:openvine/utils/unified_logger.dart';
 /// ```dart
 /// class _MyFeedState extends State<MyFeed> with VideoPrefetchMixin {
 ///   @override
-///   VideoCacheManager get videoCacheManager => openVineVideoCache;
+///   MediaCacheManager get videoCacheManager => openVineMediaCache;
 ///
 ///   PageView.builder(
 ///     onPageChanged: (index) {
@@ -39,7 +40,7 @@ mixin VideoPrefetchMixin {
 
   /// Override this to provide the cache manager instance
   /// Default uses the global singleton
-  VideoCacheManager get videoCacheManager => openVineVideoCache;
+  MediaCacheManager get videoCacheManager => openVineMediaCache;
 
   /// Override this to customize throttle duration (useful for testing)
   int get prefetchThrottleSeconds => 2;
@@ -102,8 +103,10 @@ mixin VideoPrefetchMixin {
       return;
     }
 
-    final videoUrls = videosToPreFetch.map((v) => v.videoUrl!).toList();
-    final videoIds = videosToPreFetch.map((v) => v.id).toList();
+    // Convert to list of (url, key) records for preCacheFiles
+    final items = videosToPreFetch
+        .map((v) => (url: v.videoUrl!, key: v.id))
+        .toList();
 
     Log.info(
       '🎬 Prefetching ${videosToPreFetch.length} videos around index $currentIndex '
@@ -114,7 +117,7 @@ mixin VideoPrefetchMixin {
 
     // Fire and forget - don't block on prefetch
     try {
-      videoCacheManager.preCache(videoUrls, videoIds).catchError((error) {
+      videoCacheManager.preCacheFiles(items).catchError((error) {
         Log.error(
           '❌ Error prefetching videos: $error',
           name: 'VideoPrefetchMixin',

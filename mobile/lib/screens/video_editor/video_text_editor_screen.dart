@@ -8,6 +8,7 @@ import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.d
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_font_selector.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_overlay_controls.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_text_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_color_picker_sheet.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -27,6 +28,11 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
   @override
   void initState() {
     super.initState();
+    Log.info(
+      '✏️ Initialized (editing: ${widget.layer != null})',
+      name: 'VideoTextEditorScreen',
+      category: LogCategory.video,
+    );
     _initFromLayer();
   }
 
@@ -36,8 +42,19 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
     final bloc = context.read<VideoEditorTextBloc>();
 
     if (layer == null) {
+      Log.debug(
+        '✏️ Creating new text layer',
+        name: 'VideoTextEditorScreen',
+        category: LogCategory.video,
+      );
       return;
     }
+
+    Log.debug(
+      '✏️ Initializing from existing layer: "${layer.text}"',
+      name: 'VideoTextEditorScreen',
+      category: LogCategory.video,
+    );
 
     // Get the primary color based on the layer's color mode.
     final primaryColor = layer.colorMode == .background
@@ -95,103 +112,122 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
       ),
     );
 
-    return BlocBuilder<VideoEditorTextBloc, VideoEditorTextState>(
-      buildWhen: (previous, current) =>
-          previous.showFontSelector != current.showFontSelector ||
-          previous.showColorPicker != current.showColorPicker ||
-          previous.color != current.color,
-      builder: (context, state) {
-        final showBottomPanel = state.showFontSelector || state.showColorPicker;
+    return Stack(
+      children: [
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: MediaQuery.paddingOf(context).top,
+          child: ColoredBox(color: VideoEditorConstants.textEditorBackground),
+        ),
+        Positioned.fill(
+          child: BlocBuilder<VideoEditorTextBloc, VideoEditorTextState>(
+            buildWhen: (previous, current) =>
+                previous.showFontSelector != current.showFontSelector ||
+                previous.showColorPicker != current.showColorPicker ||
+                previous.color != current.color,
+            builder: (context, state) {
+              final showBottomPanel =
+                  state.showFontSelector || state.showColorPicker;
 
-        return Column(
-          children: [
-            // TextEditor with padding when panel is shown
-            Expanded(
-              child: TextEditor(
-                key: _textEditorKey,
-                layer: widget.layer,
-                theme: Theme.of(context),
-                heroTag: widget.layer?.id,
-                callbacks: ProImageEditorCallbacks(
-                  textEditorCallbacks: TextEditorCallbacks(
-                    onBackgroundModeChanged: (value) {
-                      context.read<VideoEditorTextBloc>().add(
-                        VideoEditorTextBackgroundStyleChanged(value),
-                      );
-                    },
-                    onTextAlignChanged: (value) {
-                      context.read<VideoEditorTextBloc>().add(
-                        VideoEditorTextAlignmentChanged(value),
-                      );
-                    },
-                  ),
-                ),
-                configs: ProImageEditorConfigs(
-                  i18n: I18n(textEditor: I18nTextEditor(inputHintText: '')),
-                  textEditor: TextEditorConfigs(
-                    style: TextEditorStyle(
-                      inputCursorColor: VineTheme.whiteText,
-                      inputTextFieldPadding: .only(left: 16, right: 48),
-                      background: VideoEditorConstants.textEditorBackground,
-                    ),
-                    resizeToAvoidBottomInset: false,
-                    minFontScale: VideoEditorConstants.minFontScale,
-                    maxFontScale: VideoEditorConstants.maxFontScale,
-                    initFontSize: VideoEditorConstants.baseFontSize,
-                    initFontScale: _getFontScale(fontSize),
-                    initialBackgroundColorMode: backgroundStyle,
-                    initialTextAlign: alignment,
-                    initialPrimaryColor: state.color,
-                    defaultTextStyle: VideoEditorConstants
-                        .textFonts[state.selectedFontIndex](),
-                    inputTextFieldAlign: _getInputAlignment(alignment),
-                    enableAutoOverflow: false,
-                    widgets: TextEditorWidgets(
-                      appBar: (_, _) => null,
-                      bottomBar: (_, _) => null,
-                      colorPicker: (_, _, _, _) => null,
-                      bodyItemsOverlay: (editor, rebuildStream) => [
-                        ReactiveWidget(
-                          stream: rebuildStream,
-                          builder: (_) => VideoTextEditorScope(
-                            editor: editor,
-                            child: const VideoEditorTextOverlayControls(),
+              return Column(
+                children: [
+                  // TextEditor with padding when panel is shown
+                  Expanded(
+                    child: TextEditor(
+                      key: _textEditorKey,
+                      layer: widget.layer,
+                      theme: Theme.of(context),
+                      heroTag: widget.layer?.id,
+                      callbacks: ProImageEditorCallbacks(
+                        textEditorCallbacks: TextEditorCallbacks(
+                          onBackgroundModeChanged: (value) {
+                            context.read<VideoEditorTextBloc>().add(
+                              VideoEditorTextBackgroundStyleChanged(value),
+                            );
+                          },
+                          onTextAlignChanged: (value) {
+                            context.read<VideoEditorTextBloc>().add(
+                              VideoEditorTextAlignmentChanged(value),
+                            );
+                          },
+                        ),
+                      ),
+                      configs: ProImageEditorConfigs(
+                        i18n: I18n(
+                          textEditor: I18nTextEditor(inputHintText: ''),
+                        ),
+                        textEditor: TextEditorConfigs(
+                          style: TextEditorStyle(
+                            inputCursorColor: VineTheme.whiteText,
+                            inputTextFieldPadding: .only(left: 16, right: 48),
+                            background:
+                                VideoEditorConstants.textEditorBackground,
+                          ),
+                          resizeToAvoidBottomInset: false,
+                          minFontScale: VideoEditorConstants.minFontScale,
+                          maxFontScale: VideoEditorConstants.maxFontScale,
+                          initFontSize: VideoEditorConstants.baseFontSize,
+                          initFontScale: _getFontScale(fontSize),
+                          initialBackgroundColorMode: backgroundStyle,
+                          initialTextAlign: alignment,
+                          initialPrimaryColor: state.color,
+                          defaultTextStyle: VideoEditorConstants
+                              .textFonts[state.selectedFontIndex](),
+                          inputTextFieldAlign: _getInputAlignment(alignment),
+                          enableAutoOverflow: false,
+                          widgets: TextEditorWidgets(
+                            appBar: (_, _) => null,
+                            bottomBar: (_, _) => null,
+                            colorPicker: (_, _, _, _) => null,
+                            bodyItemsOverlay: (editor, rebuildStream) => [
+                              ReactiveWidget(
+                                stream: rebuildStream,
+                                builder: (_) => VideoTextEditorScope(
+                                  editor: editor,
+                                  child: const VideoEditorTextOverlayControls(),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
-                      ],
+                      ),
                     ),
                   ),
-                ),
-              ),
-            ),
 
-            // Bottom panels (font selector / color picker)
-            _KeyboardHeightPanel(
-              showBottomPanel: showBottomPanel,
-              backgroundColor: VideoEditorConstants.textEditorBackground,
-              onKeyboardClosedWithoutPanel: () {
-                if (mounted) context.pop();
-              },
-              builder: (height) => state.showFontSelector
-                  ? VideoEditorTextInlineFontSelector.VideoEditorTextFontSelector(
-                      onFontSelected: (textStyle) {
-                        _textEditorKey.currentState?.setTextStyle(textStyle);
-                      },
-                    )
-                  : VideoEditorColorPickerSheet(
-                      height: height,
-                      selectedColor: state.color,
-                      onColorSelected: (color) {
-                        _textEditorKey.currentState?.primaryColor = color;
-                        context.read<VideoEditorTextBloc>().add(
-                          VideoEditorTextColorSelected(color),
-                        );
-                      },
-                    ),
-            ),
-          ],
-        );
-      },
+                  // Bottom panels (font selector / color picker)
+                  _KeyboardHeightPanel(
+                    showBottomPanel: showBottomPanel,
+                    backgroundColor: VideoEditorConstants.textEditorBackground,
+                    onKeyboardClosedWithoutPanel: () {
+                      if (mounted) context.pop();
+                    },
+                    builder: (height) => state.showFontSelector
+                        ? VideoEditorTextFontSelector(
+                            onFontSelected: (textStyle) {
+                              _textEditorKey.currentState?.setTextStyle(
+                                textStyle,
+                              );
+                            },
+                          )
+                        : VideoEditorColorPickerSheet(
+                            height: height,
+                            selectedColor: state.color,
+                            onColorSelected: (color) {
+                              _textEditorKey.currentState?.primaryColor = color;
+                              context.read<VideoEditorTextBloc>().add(
+                                VideoEditorTextColorSelected(color),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }
@@ -213,7 +249,8 @@ class _KeyboardHeightPanel extends StatefulWidget {
   State<_KeyboardHeightPanel> createState() => _KeyboardHeightPanelState();
 }
 
-class _KeyboardHeightPanelState extends State<_KeyboardHeightPanel> {
+class _KeyboardHeightPanelState extends State<_KeyboardHeightPanel>
+    with WidgetsBindingObserver {
   /// Minimum fallback height for the panel.
   static const double _minPanelHeight = 200.0;
 
@@ -223,42 +260,58 @@ class _KeyboardHeightPanelState extends State<_KeyboardHeightPanel> {
   /// Stores the last known keyboard height for smooth transitions.
   double _lastKeyboardHeight = 0.0;
 
-  /// Previous keyboard height to detect closing.
-  double _previousKeyboardHeight = 0.0;
+  /// Previous bottom inset to detect keyboard state changes.
+  double _lastInset = 0.0;
 
   /// Tracks if we already triggered the pop callback.
   bool _hasPopped = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeMetrics() {
+    final bottomInset = WidgetsBinding
+        .instance
+        .platformDispatcher
+        .views
+        .first
+        .viewInsets
+        .bottom;
+
+    if (_lastInset > _keyboardThreshold &&
+        bottomInset < _keyboardThreshold &&
+        !widget.showBottomPanel) {
+      _schedulePopIfNeeded();
+    }
+
+    _lastInset = bottomInset;
+  }
 
   /// Schedules a pop callback with delay if not already popped.
   void _schedulePopIfNeeded() {
     if (_hasPopped) return;
     _hasPopped = true;
-
-    /// The 150ms delay prevents double-pop issues: when close is triggered
-    /// elsewhere (e.g., a button), the keyboard also closes and could trigger
-    /// this callback. The delay combined with the `mounted` check ensures we
-    /// don't pop twice. Using `WidgetsBinding.instance.addPostFrameCallback`
-    /// was not reliable enough for this timing issue.
-    Future.delayed(const Duration(milliseconds: 150), () {
-      if (mounted) {
-        widget.onKeyboardClosedWithoutPanel?.call();
-      }
-    });
+    // Only pop if this screen is still the current route (prevents double-pop
+    // when pop() was already called elsewhere, e.g., by a button)
+    final route = ModalRoute.of(context);
+    if (route?.isCurrent == true) {
+      widget.onKeyboardClosedWithoutPanel?.call();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final keyboardHeight = MediaQuery.viewInsetsOf(context).bottom;
-
-    // Detect keyboard closing (was open, now closed) without a open panel.
-    // That handle the case when android users press the hardware back-button.
-    if (_previousKeyboardHeight > _keyboardThreshold &&
-        keyboardHeight < _keyboardThreshold &&
-        !widget.showBottomPanel) {
-      _schedulePopIfNeeded();
-    }
-
-    _previousKeyboardHeight = keyboardHeight;
 
     // Update last known keyboard height when keyboard is visible
     if (keyboardHeight > _lastKeyboardHeight) {
@@ -276,7 +329,8 @@ class _KeyboardHeightPanelState extends State<_KeyboardHeightPanel> {
       color: widget.backgroundColor,
       child: AnimatedSwitcher(
         duration: const Duration(milliseconds: 300),
-        switchInCurve: Curves.easeInOut,
+        switchInCurve: Curves.easeOutCubic,
+        switchOutCurve: Curves.easeInCubic,
         transitionBuilder: (child, animation) => SlideTransition(
           position: Tween<Offset>(
             begin: const Offset(0, 1),

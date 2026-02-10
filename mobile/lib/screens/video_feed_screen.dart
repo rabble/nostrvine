@@ -1,5 +1,7 @@
 // ABOUTME: TDD-driven video feed screen implementation with single source of truth
 // ABOUTME: Memory-efficient PageView with intelligent preloading and error boundaries
+// ABOUTME: Uses router-driven active video state (isVideoActiveProvider) - NOT PageController.page
+// ABOUTME: which is unreliable during scroll. URL updates in _onPageChanged trigger provider chain.
 
 import 'dart:async';
 import 'dart:io';
@@ -632,9 +634,12 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
         final isListOnly = feedState.listOnlyVideoIds.contains(video.id);
         final listSources = feedState.videoListSources[video.id];
 
-        // Use PageController as source of truth for active video
-        final currentPage = _pageController.page?.round() ?? _currentIndex;
-        final isActive = index == currentPage;
+        // Don't use isActiveOverride - let VideoFeedItem use router-driven
+        // isVideoActiveProvider which derives active state from URL.
+        // Using _pageController.page during itemBuilder is unreliable because
+        // it returns floats during scroll that .round() incorrectly.
+        // URL is updated in _onPageChanged via context.go(), which triggers
+        // the reactive provider chain correctly.
 
         return VideoFeedItem(
           key: ValueKey('video-${video.id}'),
@@ -646,7 +651,6 @@ class _VideoFeedScreenState extends ConsumerState<VideoFeedScreen>
               true, // Home feed only shows followed users
           showListAttribution: isListOnly,
           listSources: listSources,
-          isActiveOverride: isActive,
         );
       },
     );

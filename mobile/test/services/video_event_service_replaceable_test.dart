@@ -10,7 +10,6 @@ import 'package:models/models.dart' hide NIP71VideoKinds;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/repositories/video_repository.dart';
 
 @GenerateMocks([NostrClient, SubscriptionManager])
 import 'video_event_service_replaceable_test.mocks.dart';
@@ -31,7 +30,6 @@ void main() {
       service = VideoEventService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
-        videoRepository: VideoRepository(),
       );
     });
 
@@ -293,7 +291,6 @@ void main() {
       service = VideoEventService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
-        videoRepository: VideoRepository(),
       );
     });
 

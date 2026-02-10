@@ -786,7 +786,7 @@ void main() {
 
     group('VideoInteractionsSubscriptionRequested', () {
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'updates like status when stream emits with this event liked',
+        'updates isLiked without adjusting likeCount when stream emits liked',
         build: createBloc,
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
@@ -800,16 +800,18 @@ void main() {
         },
         wait: const Duration(milliseconds: 100),
         expect: () => [
+          // likeCount stays at 10 — count is only adjusted by _onLikeToggled
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             isLiked: true,
-            likeCount: 11,
+            likeCount: 10,
           ),
         ],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'updates like status when stream emits without this event',
+        'updates isLiked without adjusting likeCount when stream emits '
+        'unliked',
         build: createBloc,
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
@@ -823,16 +825,17 @@ void main() {
         },
         wait: const Duration(milliseconds: 100),
         expect: () => [
+          // likeCount stays at 10 — count is only adjusted by _onLikeToggled
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             isLiked: false,
-            likeCount: 9,
+            likeCount: 10,
           ),
         ],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'does not emit when status unchanged',
+        'does not emit when like status unchanged',
         build: createBloc,
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,

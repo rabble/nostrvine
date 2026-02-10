@@ -12,6 +12,7 @@ import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -198,6 +199,11 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
             ),
           );
         }
+
+        ScreenAnalyticsService().markDataLoaded(
+          'liked_videos',
+          dataMetrics: {'video_count': videos.length},
+        );
 
         // Determine target index from route context
         final safeIndex = widget.videoIndex.clamp(0, videos.length - 1);
