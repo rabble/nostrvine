@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 
 /// A text font with its style getter.
 typedef TextFont = TextStyle Function({double? fontSize, Color? color});
@@ -110,6 +111,165 @@ class VideoEditorConstants {
 
   /// Hero animation tag for the back button in the video editor.
   static const heroBackButtonId = 'Video-Editor-Back-Button';
+
+  /// List of filter presets sorted by popularity
+  static final filters = [
+    PresetFilters.none,
+
+    // Tier 1: Most popular filters
+    PresetFilters.clarendon,
+    PresetFilters.juno,
+    PresetFilters.ludwig,
+    PresetFilters.lark,
+    PresetFilters.gingham,
+
+    // Tier 2: Very popular
+    PresetFilters.valencia,
+    PresetFilters.xProII,
+    PresetFilters.loFi,
+    PresetFilters.amaro,
+    PresetFilters.hudson,
+
+    // Tier 3: Popular
+    PresetFilters.nashville,
+    PresetFilters.mayfair,
+    PresetFilters.rise,
+    PresetFilters.perpetua,
+    PresetFilters.aden,
+
+    // Tier 4: Vintage & artistic
+    PresetFilters.earlybird,
+    PresetFilters.f1977,
+    PresetFilters.kelvin,
+    PresetFilters.walden,
+    PresetFilters.toaster,
+
+    // Tier 5: Mood filters
+    PresetFilters.moon,
+    PresetFilters.inkwell,
+    PresetFilters.willow,
+    PresetFilters.slumber,
+    PresetFilters.reyes,
+
+    // Tier 6: Color boost
+    PresetFilters.hefe,
+    PresetFilters.sierra,
+    PresetFilters.sutro,
+    PresetFilters.brannan,
+    PresetFilters.maven,
+
+    // Tier 7: Specialty
+    PresetFilters.crema,
+    PresetFilters.ashby,
+    PresetFilters.charmes,
+    PresetFilters.helena,
+    PresetFilters.brooklyn,
+    PresetFilters.ginza,
+    PresetFilters.skyline,
+    PresetFilters.dogpatch,
+    PresetFilters.stinson,
+    PresetFilters.vesper,
+
+    // Essential filters
+    FilterModel(
+      name: 'Cinematic',
+      filters: [
+        ColorFilterAddons.colorOverlay(0, 140, 140, 0.08),
+        ColorFilterAddons.colorOverlay(255, 140, 50, 0.05),
+        ColorFilterAddons.contrast(0.1),
+        ColorFilterAddons.saturation(-0.1),
+      ],
+    ),
+    FilterModel(
+      name: 'Faded',
+      filters: [
+        ColorFilterAddons.contrast(-0.1),
+        ColorFilterAddons.brightness(0.08),
+        ColorFilterAddons.saturation(-0.15),
+      ],
+    ),
+    FilterModel(
+      name: 'Dramatic',
+      filters: [
+        ColorFilterAddons.contrast(0.25),
+        ColorFilterAddons.brightness(-0.05),
+        ColorFilterAddons.saturation(0.1),
+      ],
+    ),
+    FilterModel(
+      name: 'Dreamy',
+      filters: [
+        ColorFilterAddons.brightness(0.1),
+        ColorFilterAddons.saturation(-0.1),
+        ColorFilterAddons.contrast(-0.08),
+        ColorFilterAddons.colorOverlay(255, 220, 255, 0.05),
+      ],
+    ),
+    FilterModel(
+      name: 'Glow',
+      filters: [
+        ColorFilterAddons.brightness(0.12),
+        ColorFilterAddons.contrast(-0.05),
+        ColorFilterAddons.saturation(-0.05),
+      ],
+    ),
+    FilterModel(
+      name: 'Noir',
+      filters: [
+        ColorFilterAddons.grayscale(),
+        ColorFilterAddons.contrast(0.2),
+        ColorFilterAddons.brightness(-0.05),
+      ],
+    ),
+    FilterModel(
+      name: 'Vivid',
+      filters: [
+        ColorFilterAddons.saturation(0.4),
+        ColorFilterAddons.contrast(0.1),
+      ],
+    ),
+    FilterModel(
+      name: 'Muted',
+      filters: [
+        ColorFilterAddons.saturation(-0.3),
+        ColorFilterAddons.brightness(0.05),
+      ],
+    ),
+
+    // Simple color tints
+    FilterModel(
+      name: 'Ruby',
+      filters: [ColorFilterAddons.addictiveColor(50, 0, 0)],
+    ),
+    FilterModel(
+      name: 'Ocean',
+      filters: [ColorFilterAddons.addictiveColor(0, 0, 50)],
+    ),
+    FilterModel(
+      name: 'Forest',
+      filters: [ColorFilterAddons.addictiveColor(0, 40, 0)],
+    ),
+    FilterModel(
+      name: 'Sunset',
+      filters: [ColorFilterAddons.addictiveColor(60, 30, 0)],
+    ),
+    FilterModel(
+      name: 'Violet',
+      filters: [ColorFilterAddons.addictiveColor(40, 0, 50)],
+    ),
+    FilterModel(
+      name: 'Mint',
+      filters: [ColorFilterAddons.addictiveColor(0, 50, 40)],
+    ),
+    FilterModel(
+      name: 'Coral',
+      filters: [ColorFilterAddons.addictiveColor(50, 20, 10)],
+    ),
+    FilterModel(
+      name: 'Arctic',
+      filters: [ColorFilterAddons.addictiveColor(0, 30, 60)],
+    ),
+  ];
 }
 
 /// Constants for the video editor clip gallery layout and animations.
