@@ -95,7 +95,10 @@ MockUserProfileService createMockUserProfileService() {
 
   // Stub common methods
   when(mockProfile.getCachedProfile(any)).thenReturn(null);
+  when(mockProfile.hasProfile(any)).thenReturn(false);
+  when(mockProfile.shouldSkipProfileFetch(any)).thenReturn(false);
   when(mockProfile.fetchProfile(any)).thenAnswer((_) async => null);
+  when(mockProfile.fetchMultipleProfiles(any)).thenAnswer((_) async {});
 
   return mockProfile;
 }

@@ -6,9 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
+import 'package:openvine/models/user_profile.dart' as app_model;
+import 'package:openvine/services/user_profile_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 
 class _MockProfileRepository extends Mock implements ProfileRepository {}
+
+class _MockUserProfileService extends Mock implements UserProfileService {}
 
 void main() {
   group('UserSearchBloc', () {
@@ -487,6 +491,167 @@ void main() {
       );
     });
 
+    group('UserSearchProfilesEnriched', () {
+      late _MockUserProfileService mockProfileService;
+
+      setUp(() {
+        mockProfileService = _MockUserProfileService();
+        when(() => mockProfileService.hasProfile(any())).thenReturn(false);
+        when(
+          () => mockProfileService.shouldSkipProfileFetch(any()),
+        ).thenReturn(false);
+        when(
+          () => mockProfileService.fetchMultipleProfiles(any()),
+        ).thenAnswer((_) async {});
+      });
+
+      UserSearchBloc createBlocWithService() => UserSearchBloc(
+        profileRepository: mockProfileRepository,
+        userProfileService: mockProfileService,
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'enriches results with cached profile pictures',
+        setUp: () {
+          final pubkey = '${'a' * 64}';
+          when(() => mockProfileService.getCachedProfile(pubkey)).thenReturn(
+            app_model.UserProfile(
+              pubkey: pubkey,
+              displayName: 'Alice',
+              picture: 'https://example.com/alice.png',
+              createdAt: DateTime.now(),
+              eventId: '${'e' * 64}',
+              rawData: const {},
+            ),
+          );
+        },
+        build: createBlocWithService,
+        seed: () => UserSearchState(
+          status: UserSearchStatus.success,
+          query: 'alice',
+          results: [
+            UserProfile(
+              pubkey: '${'a' * 64}',
+              displayName: 'Alice',
+              createdAt: DateTime.now(),
+              eventId: 'event-${'a' * 64}',
+              rawData: const {'display_name': 'Alice'},
+            ),
+          ],
+          offset: 1,
+        ),
+        act: (bloc) => bloc.add(const UserSearchProfilesEnriched()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => [
+          isA<UserSearchState>()
+              .having((s) => s.status, 'status', UserSearchStatus.success)
+              .having(
+                (s) => s.results.first.picture,
+                'enriched picture',
+                'https://example.com/alice.png',
+              ),
+        ],
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'does not emit when no profiles were enriched',
+        setUp: () {
+          when(
+            () => mockProfileService.getCachedProfile(any()),
+          ).thenReturn(null);
+        },
+        build: createBlocWithService,
+        seed: () => UserSearchState(
+          status: UserSearchStatus.success,
+          query: 'alice',
+          results: [
+            UserProfile(
+              pubkey: '${'a' * 64}',
+              displayName: 'Alice',
+              createdAt: DateTime.now(),
+              eventId: 'event-${'a' * 64}',
+              rawData: const {'display_name': 'Alice'},
+            ),
+          ],
+          offset: 1,
+        ),
+        act: (bloc) => bloc.add(const UserSearchProfilesEnriched()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => <UserSearchState>[],
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'skips profiles that already have a picture',
+        setUp: () {
+          // Should never be called since profile already has picture
+          when(
+            () => mockProfileService.getCachedProfile(any()),
+          ).thenReturn(null);
+        },
+        build: createBlocWithService,
+        seed: () => UserSearchState(
+          status: UserSearchStatus.success,
+          query: 'alice',
+          results: [
+            UserProfile(
+              pubkey: '${'a' * 64}',
+              displayName: 'Alice',
+              picture: 'https://existing.com/pic.png',
+              createdAt: DateTime.now(),
+              eventId: 'event-${'a' * 64}',
+              rawData: const {'display_name': 'Alice'},
+            ),
+          ],
+          offset: 1,
+        ),
+        act: (bloc) => bloc.add(const UserSearchProfilesEnriched()),
+        wait: const Duration(milliseconds: 50),
+        expect: () => <UserSearchState>[],
+        verify: (_) {
+          verifyNever(() => mockProfileService.getCachedProfile('${'a' * 64}'));
+        },
+      );
+
+      blocTest<UserSearchBloc, UserSearchState>(
+        'triggers prefetch for results missing pictures after search',
+        setUp: () {
+          when(
+            () => mockProfileRepository.searchUsers(
+              query: 'alice',
+              limit: any(named: 'limit'),
+              sortBy: any(named: 'sortBy'),
+              hasVideos: any(named: 'hasVideos'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              UserProfile(
+                pubkey: '${'a' * 64}',
+                displayName: 'Alice',
+                createdAt: DateTime.now(),
+                eventId: 'event-${'a' * 64}',
+                rawData: const {'display_name': 'Alice'},
+              ),
+            ],
+          );
+        },
+        build: createBlocWithService,
+        act: (bloc) => bloc.add(const UserSearchQueryChanged('alice')),
+        wait: const Duration(milliseconds: 400),
+        verify: (_) {
+          verify(
+            () => mockProfileService.fetchMultipleProfiles(['${'a' * 64}']),
+          ).called(1);
+        },
+      );
+
+      test('removes listener on close', () async {
+        final bloc = createBlocWithService();
+        await bloc.close();
+
+        verify(() => mockProfileService.removeListener(any())).called(1);
+      });
+    });
+
     group('UserSearchState', () {
       test('copyWith creates copy with updated values', () {
         const state = UserSearchState();
@@ -545,6 +710,7 @@ void main() {
           1,
           true,
           false,
+          0,
         ]);
       });
     });
