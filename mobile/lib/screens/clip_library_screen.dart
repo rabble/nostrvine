@@ -20,6 +20,7 @@ import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/masonary_grid.dart';
 import 'package:openvine/widgets/video_clip/video_clip_preview_sheet.dart';
@@ -69,6 +70,11 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
   @override
   void initState() {
     super.initState();
+    Log.info(
+      '📚 ClipLibrary opened (selectionMode: ${widget.selectionMode})',
+      name: 'ClipLibraryScreen',
+      category: LogCategory.video,
+    );
     unawaited(_loadClips());
     unawaited(_loadDrafts());
 
@@ -85,6 +91,12 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
       final clipService = ref.read(clipLibraryServiceProvider);
       final clips = await clipService.getAllClips();
 
+      Log.debug(
+        '📚 Loaded ${clips.length} clips from library',
+        name: 'ClipLibraryScreen',
+        category: LogCategory.video,
+      );
+
       if (mounted) {
         setState(() {
           _clips = clips;
@@ -92,6 +104,11 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
         });
       }
     } catch (e) {
+      Log.error(
+        '📚 Failed to load clips: $e',
+        name: 'ClipLibraryScreen',
+        category: LogCategory.video,
+      );
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -114,12 +131,23 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
           )
           .toList();
 
+      Log.debug(
+        '📚 Loaded ${filteredDrafts.length} drafts',
+        name: 'ClipLibraryScreen',
+        category: LogCategory.video,
+      );
+
       if (mounted) {
         setState(() {
           _drafts = filteredDrafts;
         });
       }
     } catch (e) {
+      Log.error(
+        '📚 Failed to load drafts: $e',
+        name: 'ClipLibraryScreen',
+        category: LogCategory.video,
+      );
       // Silently fail - drafts will just be empty
     }
   }
@@ -204,6 +232,12 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
       final clipService = ref.read(clipLibraryServiceProvider);
       final deletedCount = _selectedClipIds.length;
 
+      Log.info(
+        '📚 Deleting $deletedCount clips',
+        name: 'ClipLibraryScreen',
+        category: LogCategory.video,
+      );
+
       for (final clipId in _selectedClipIds.toList()) {
         await clipService.deleteClip(clipId);
       }
@@ -263,6 +297,12 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
         .toList();
     if (selectedClips.isEmpty) return;
 
+    Log.info(
+      '📚 Creating video from ${selectedClips.length} selected clips',
+      name: 'ClipLibraryScreen',
+      category: LogCategory.video,
+    );
+
     // Add selected clips to ClipManager
     final clipManagerNotifier = ref.read(clipManagerProvider.notifier);
 
@@ -316,6 +356,11 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
   }
 
   Future<void> _openDraft(VineDraft draft) async {
+    Log.info(
+      '📚 Opening draft: ${draft.id}',
+      name: 'ClipLibraryScreen',
+      category: LogCategory.video,
+    );
     // Initialize editor with this draft
     await ref.read(videoEditorProvider.notifier).initialize(draftId: draft.id);
 
@@ -362,6 +407,11 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     );
 
     if (confirmed == true) {
+      Log.info(
+        '📚 Deleting draft: ${draft.id}',
+        name: 'ClipLibraryScreen',
+        category: LogCategory.video,
+      );
       final draftService = DraftStorageService();
       await draftService.deleteDraft(draft.id);
       await _loadDrafts();

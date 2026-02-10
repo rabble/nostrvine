@@ -68,6 +68,11 @@ class DraftStorageService {
   /// Save a draft to storage. If a draft with the same ID exists, it will be updated.
   /// When updating, orphaned clip files (video/thumbnail) from the old draft are deleted.
   Future<void> saveDraft(VineDraft draft) async {
+    Log.debug(
+      '💾 Saving draft: ${draft.id}',
+      name: 'DraftStorageService',
+      category: LogCategory.video,
+    );
     final drafts = await getAllDrafts();
 
     // Check if draft with same ID exists
@@ -187,6 +192,11 @@ class DraftStorageService {
 
       return drafts;
     } catch (e) {
+      Log.error(
+        '❌ Failed to load drafts: $e',
+        name: 'DraftStorageService',
+        category: LogCategory.video,
+      );
       // If storage is corrupted, return empty list
       return [];
     }
@@ -194,6 +204,11 @@ class DraftStorageService {
 
   /// Delete a draft by ID and remove associated video/thumbnail files
   Future<void> deleteDraft(String id) async {
+    Log.debug(
+      '🗑️ Deleting draft: $id',
+      name: 'DraftStorageService',
+      category: LogCategory.video,
+    );
     final drafts = await getAllDrafts();
     final draftIndex = drafts.indexWhere((draft) => draft.id == id);
 
@@ -214,6 +229,11 @@ class DraftStorageService {
 
   /// Clear all drafts from storage and delete associated files
   Future<void> clearAllDrafts() async {
+    Log.info(
+      '🧹 Clearing all drafts',
+      name: 'DraftStorageService',
+      category: LogCategory.video,
+    );
     final drafts = await getAllDrafts();
     final allClips = drafts.expand((draft) => draft.clips).toList();
 

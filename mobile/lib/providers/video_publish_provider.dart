@@ -59,6 +59,11 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   ///
   /// Clears recorder, editor, clip manager, sound selection, and publish state.
   void clearAll() {
+    Log.debug(
+      '🧹 Clearing all video providers',
+      name: 'VideoPublishNotifier',
+      category: LogCategory.video,
+    );
     ref.read(videoRecorderProvider.notifier).reset();
     ref.read(videoEditorProvider.notifier).reset();
     ref.read(clipManagerProvider.notifier).clearAll();

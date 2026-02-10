@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 part 'video_editor_draw_event.dart';
@@ -32,6 +33,11 @@ class VideoEditorDrawBloc
     VideoEditorDrawReset event,
     Emitter<VideoEditorDrawState> emit,
   ) {
+    Log.debug(
+      '✏️ Draw editor reset',
+      name: 'VideoEditorDrawBloc',
+      category: LogCategory.video,
+    );
     emit(state.copyWith(canUndo: false, canRedo: false));
   }
 
@@ -48,6 +54,11 @@ class VideoEditorDrawBloc
     VideoEditorDrawColorSelected event,
     Emitter<VideoEditorDrawState> emit,
   ) {
+    Log.debug(
+      '🎨 Draw color selected: #${event.color.toARGB32().toRadixString(16).padLeft(8, '0')}',
+      name: 'VideoEditorDrawBloc',
+      category: LogCategory.video,
+    );
     emit(state.copyWith(selectedColor: event.color));
   }
 
@@ -58,6 +69,12 @@ class VideoEditorDrawBloc
   ) {
     final tool = event.tool;
     final config = tool.config;
+
+    Log.debug(
+      '✏️ Draw tool selected: ${tool.name}',
+      name: 'VideoEditorDrawBloc',
+      category: LogCategory.video,
+    );
 
     emit(
       state.copyWith(
