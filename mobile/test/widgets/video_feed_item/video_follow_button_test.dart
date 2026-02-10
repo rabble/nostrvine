@@ -61,8 +61,9 @@ void main() {
         expect(find.byType(GestureDetector), findsOneWidget);
       });
 
-      testWidgets('has Follow semantic label when not following',
-          (tester) async {
+      testWidgets('has Follow semantic label when not following', (
+        tester,
+      ) async {
         when(() => mockMyFollowingBloc.state).thenReturn(
           const MyFollowingState(
             status: MyFollowingStatus.success,
@@ -93,8 +94,9 @@ void main() {
         expect(find.byType(GestureDetector), findsOneWidget);
       });
 
-      testWidgets('has Following semantic label when following',
-          (tester) async {
+      testWidgets('has Following semantic label when following', (
+        tester,
+      ) async {
         final otherPubkey = validPubkey('other');
         when(() => mockMyFollowingBloc.state).thenReturn(
           MyFollowingState(
