@@ -1076,29 +1076,6 @@ class VideoEventService extends ChangeNotifier {
             relayUrl: relayUrl,
             sortBy: sortBy,
           );
-          Log.info(
-            '🎯 SORT DEBUG: Requested server-side sorting by ${sortBy.fieldName}',
-            name: 'VideoEventService',
-            category: LogCategory.video,
-          );
-          Log.info(
-            '🎯 SORT DEBUG: Filter type is ${videoFilter.runtimeType}',
-            name: 'VideoEventService',
-            category: LogCategory.video,
-          );
-          final filterJson = videoFilter.toJson();
-          Log.info(
-            '🎯 SORT DEBUG: Filter JSON contains "sort" key: ${filterJson.containsKey("sort")}',
-            name: 'VideoEventService',
-            category: LogCategory.video,
-          );
-          if (filterJson.containsKey("sort")) {
-            Log.info(
-              '🎯 SORT DEBUG: Sort config: ${filterJson["sort"]}',
-              name: 'VideoEventService',
-              category: LogCategory.video,
-            );
-          }
         } catch (e) {
           Log.warning(
             'Failed to build sorted filter: $e. Using standard filter.',
@@ -1929,15 +1906,6 @@ class VideoEventService extends ChangeNotifier {
         );
         try {
           final videoEvent = VideoEvent.fromNostrEvent(event);
-
-          // 🎯 SORT DEBUG: Log loop count for discovery subscriptions
-          if (subscriptionType == SubscriptionType.discovery) {
-            Log.info(
-              '🎯 SORT DEBUG: Received discovery video with ${videoEvent.originalLoops ?? 0} loops (id: ${event.id})',
-              name: 'VideoEventService',
-              category: LogCategory.video,
-            );
-          }
 
           Log.verbose(
             'Parsed direct video: hasVideo=${videoEvent.hasVideo}, videoUrl=${videoEvent.videoUrl}',
