@@ -855,11 +855,7 @@ class VideoEvent {
   /// Get relative time string (e.g., "2 hours ago")
   String get relativeTime {
     final now = DateTime.now();
-    final publishedAtSeconds = int.tryParse(publishedAt ?? '');
-    final baseTimestamp = publishedAtSeconds != null
-        ? DateTime.fromMillisecondsSinceEpoch(publishedAtSeconds * 1000)
-        : timestamp;
-    final difference = now.difference(baseTimestamp);
+    final difference = now.difference(timestamp);
 
     if (difference.inMinutes < 1) {
       return 'now';

@@ -257,40 +257,27 @@ class ProfileFeed extends _$ProfileFeed {
     final currentVideos = state.asData?.value.videos;
     if (currentVideos == null || currentVideos.isEmpty) return incoming;
 
-    // Build multiple lookup keys because REST API responses can be inconsistent
+    // Build lookup keys because REST API responses can be inconsistent
     // about addressable identifiers (`d` tag / stableId).
+    //
+    // Known inconsistency:
+    // - Missing d-tags: Many relays don't include 'd' tags on NIP-71 addressable events
     String? stableKey(VideoEvent v) {
       final stableId = v.stableId;
       if (stableId.isEmpty) return null;
       return '${v.pubkey}:$stableId'.toLowerCase();
     }
 
-    String? shaKey(VideoEvent v) {
-      final sha = v.sha256;
-      if (sha == null || sha.isEmpty) return null;
-      return '${v.pubkey}:sha:$sha'.toLowerCase();
-    }
-
-    String? urlKey(VideoEvent v) {
-      final url = v.videoUrl;
-      if (url == null || url.isEmpty) return null;
-      return '${v.pubkey}:url:$url'.toLowerCase();
-    }
-
     final existingByKey = <String, VideoEvent>{};
     for (final v in currentVideos) {
-      for (final key in [stableKey(v), shaKey(v), urlKey(v)]) {
-        if (key != null) existingByKey[key] = v;
-      }
+      final key = stableKey(v);
+      if (key != null) existingByKey[key] = v;
     }
 
     return incoming.map((video) {
-      final existing =
-          (stableKey(video) != null
-              ? existingByKey[stableKey(video)!]
-              : null) ??
-          (shaKey(video) != null ? existingByKey[shaKey(video)!] : null) ??
-          (urlKey(video) != null ? existingByKey[urlKey(video)!] : null);
+      final existing = stableKey(video) != null
+          ? existingByKey[stableKey(video)!]
+          : null;
       if (existing == null) return video;
 
       // Funnelcake may return the latest replaceable event's created_at (edit time)

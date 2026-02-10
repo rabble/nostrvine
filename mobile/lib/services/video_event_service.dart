@@ -3660,6 +3660,21 @@ class VideoEventService extends ChangeNotifier {
     return null;
   }
 
+  /// Preserve original timestamp when updating video events
+  /// This maintains the original creation time for older events that may not have 'published_at'
+  VideoEvent _preserveOriginalTimestamp(
+    VideoEvent existingVideo,
+    VideoEvent updatedVideo,
+  ) {
+    return (existingVideo.publishedAt == null &&
+            updatedVideo.publishedAt == null)
+        ? updatedVideo.copyWith(
+            createdAt: existingVideo.createdAt,
+            timestamp: existingVideo.timestamp,
+          )
+        : updatedVideo;
+  }
+
   /// Check if an error is connection-related
   bool _isConnectionError(dynamic error) {
     final errorString = error.toString().toLowerCase();
@@ -4854,14 +4869,10 @@ class VideoEventService extends ChangeNotifier {
 
         // Preserve original post time when editing metadata.
         // This is important for older events that may not have 'published_at'.
-        final mergedVideo =
-            (existingVideo.publishedAt == null &&
-                updatedVideo.publishedAt == null)
-            ? updatedVideo.copyWith(
-                createdAt: existingVideo.createdAt,
-                timestamp: existingVideo.timestamp,
-              )
-            : updatedVideo;
+        final mergedVideo = _preserveOriginalTimestamp(
+          existingVideo,
+          updatedVideo,
+        );
 
         eventList[existingIndex] = mergedVideo;
         foundAny = true;
@@ -4887,14 +4898,10 @@ class VideoEventService extends ChangeNotifier {
       );
       if (bucketIndex != -1) {
         final existingVideo = authorBucket[bucketIndex];
-        final mergedVideo =
-            (existingVideo.publishedAt == null &&
-                updatedVideo.publishedAt == null)
-            ? updatedVideo.copyWith(
-                createdAt: existingVideo.createdAt,
-                timestamp: existingVideo.timestamp,
-              )
-            : updatedVideo;
+        final mergedVideo = _preserveOriginalTimestamp(
+          existingVideo,
+          updatedVideo,
+        );
         authorBucket[bucketIndex] = mergedVideo;
         foundAny = true;
       }
