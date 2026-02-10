@@ -50,50 +50,25 @@ class HomeScreenRouter extends ConsumerStatefulWidget {
   ConsumerState<HomeScreenRouter> createState() => _HomeScreenRouterState();
 }
 
-class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
-    with WidgetsBindingObserver {
+class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter> {
   late final StreamController<List<VideoEvent>> _videosController;
-  late final FullscreenFeedBloc _bloc;
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addObserver(this);
-
     _videosController = StreamController<List<VideoEvent>>();
 
     // Seed stream with current videos if available
-    final currentState = ref.read(homeFeedProvider);
-    final state = currentState.asData?.value;
+    final state = ref.read(homeFeedProvider).asData?.value;
     if (state != null && state.videos.isNotEmpty) {
       _videosController.add(state.videos);
     }
-
-    // Read initial index from URL
-    final pageCtx = ref.read(pageContextProvider).asData?.value;
-    final initialIndex = pageCtx?.videoIndex ?? 0;
-
-    _bloc = FullscreenFeedBloc(
-      videosStream: _videosController.stream,
-      initialIndex: initialIndex,
-      onLoadMore: () =>
-          ref.read(homePaginationControllerProvider).maybeLoadMore(),
-      mediaCache: ref.read(mediaCacheProvider),
-      blossomAuthService: ref.read(blossomAuthServiceProvider),
-    )..add(const FullscreenFeedStarted());
   }
 
   @override
   void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    _bloc.close();
     _videosController.close();
     super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    // Handled by _HomeFeedContent via appForegroundProvider
   }
 
   @override
@@ -106,18 +81,36 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
       }
     });
 
-    // Read page context to check if we're on the home route
+    return BlocProvider(
+      create: (_) => FullscreenFeedBloc(
+        videosStream: _videosController.stream,
+        initialIndex:
+            ref.read(pageContextProvider).asData?.value?.videoIndex ?? 0,
+        onLoadMore: () =>
+            ref.read(homePaginationControllerProvider).maybeLoadMore(),
+        mediaCache: ref.read(mediaCacheProvider),
+        blossomAuthService: ref.read(blossomAuthServiceProvider),
+      )..add(const FullscreenFeedStarted()),
+      child: const _HomeScreenView(),
+    );
+  }
+}
+
+/// View widget that handles route checking, loading/empty states,
+/// and renders the [_HomeFeedContent] when videos are available.
+class _HomeScreenView extends ConsumerWidget {
+  const _HomeScreenView();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
     final pageContext = ref.watch(pageContextProvider);
     final ctx = pageContext.asData?.value;
 
-    // Only handle home routes
     if (ctx == null || ctx.type != RouteType.home) {
       return const SizedBox.shrink();
     }
 
-    // Read feed state for loading/empty checks
-    final videosAsync = ref.watch(homeFeedProvider);
-    final feedState = videosAsync.asData?.value;
+    final feedState = ref.watch(homeFeedProvider).asData?.value;
 
     // Initial loading (no data yet)
     if (feedState == null ||
@@ -135,13 +128,10 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
       dataMetrics: {'video_count': feedState.videos.length},
     );
 
-    return BlocProvider<FullscreenFeedBloc>.value(
-      value: _bloc,
-      child: _HomeFeedContent(
-        urlIndex: (ctx.videoIndex ?? 0).clamp(0, feedState.videos.length - 1),
-        videoListSources: feedState.videoListSources,
-        listOnlyVideoIds: feedState.listOnlyVideoIds,
-      ),
+    return _HomeFeedContent(
+      urlIndex: (ctx.videoIndex ?? 0).clamp(0, feedState.videos.length - 1),
+      videoListSources: feedState.videoListSources,
+      listOnlyVideoIds: feedState.listOnlyVideoIds,
     );
   }
 }
