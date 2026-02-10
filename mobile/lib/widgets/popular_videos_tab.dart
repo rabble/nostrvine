@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/popular_videos_feed_provider.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
@@ -226,9 +226,9 @@ class _PopularVideosTrendingContentState
                   category: LogCategory.video,
                 );
                 context.push(
-                  FullscreenVideoFeedScreen.path,
-                  extra: FullscreenVideoFeedArgs(
-                    source: StaticFeedSource(videoList),
+                  PooledFullscreenVideoFeedScreen.path,
+                  extra: PooledFullscreenVideoFeedArgs(
+                    videosStream: Stream.value(videoList),
                     initialIndex: index,
                     contextTitle: 'Popular Videos',
                   ),

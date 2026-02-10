@@ -22,6 +22,7 @@ import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/feed/pooled_home_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
@@ -166,7 +167,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           return AppShell(currentIndex: current, child: child);
         },
         routes: [
-          // HOME tab subtree
+          // HOME tab subtree (using PooledHomeFeedScreen for testing)
           GoRoute(
             path: HomeScreenRouter.pathWithIndex,
             name: HomeScreenRouter.routeName,
@@ -175,7 +176,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
               child: Navigator(
                 key: NavigatorKeys.home,
                 onGenerateRoute: (r) => MaterialPageRoute(
-                  builder: (_) => const HomeScreenRouter(),
+                  builder: (_) => const PooledHomeFeedScreen(),
                   settings: const RouteSettings(
                     name: HomeScreenRouter.routeName,
                   ),
