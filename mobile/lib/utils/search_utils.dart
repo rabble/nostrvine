@@ -128,6 +128,15 @@ class SearchUtils {
       }
     }
 
+    // Search bio/about at lower priority than name fields
+    if (profile.about != null && profile.about!.isNotEmpty) {
+      final score = tokenMatch(queryLower, profile.about!) * 0.5;
+      if (score > bestScore) {
+        bestScore = score;
+        matchedField = 'about';
+      }
+    }
+
     if (queryLower.startsWith('npub')) {
       final npub = Nip19.encodePubKey(profile.pubkey).toLowerCase();
       if (npub.startsWith(queryLower)) {
