@@ -345,6 +345,9 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
   _i5.Future<_i6.Event?> sendLike(
     String? eventId, {
     String? content,
+    String? addressableId,
+    String? targetAuthorPubkey,
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) =>
@@ -354,6 +357,9 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
               [eventId],
               {
                 #content: content,
+                #addressableId: addressableId,
+                #targetAuthorPubkey: targetAuthorPubkey,
+                #targetKind: targetKind,
                 #tempRelays: tempRelays,
                 #targetRelays: targetRelays,
               },
@@ -495,6 +501,14 @@ class MockNostrClient extends _i1.Mock implements _i3.NostrClient {
             returnValue: _i5.Stream<_i6.Event>.empty(),
           )
           as _i5.Stream<_i6.Event>);
+
+  @override
+  _i5.Future<List<_i6.Event>> queryUsers(String? query, {int? limit}) =>
+      (super.noSuchMethod(
+            Invocation.method(#queryUsers, [query], {#limit: limit}),
+            returnValue: _i5.Future<List<_i6.Event>>.value(<_i6.Event>[]),
+          )
+          as _i5.Future<List<_i6.Event>>);
 
   @override
   _i5.Future<String?> createNip98AuthHeader({

@@ -1,5 +1,6 @@
 // ABOUTME: Repository for managing follow relationships (follow/unfollow)
 // ABOUTME: Single source of truth for follow data with in-memory cache, local storage, and API sync
+// ABOUTME: Supports offline queuing via callback injection
 
 // TODO(refactor): Extract this to packages/follow_repository once dependencies are resolved.
 // Currently blocked by app-level dependencies:
@@ -17,6 +18,13 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+/// Callback to check if the device is currently online
+typedef IsOnlineCallback = bool Function();
+
+/// Callback to queue an action for offline sync
+typedef QueueOfflineFollowCallback =
+    Future<void> Function({required bool isFollow, required String pubkey});
+
 /// Repository for managing follow relationships.
 /// Single source of truth for follow data.
 ///
@@ -30,11 +38,21 @@ class FollowRepository {
   FollowRepository({
     required NostrClient nostrClient,
     PersonalEventCacheService? personalEventCache,
+    IsOnlineCallback? isOnline,
+    QueueOfflineFollowCallback? queueOfflineAction,
   }) : _nostrClient = nostrClient,
-       _personalEventCache = personalEventCache;
+       _personalEventCache = personalEventCache,
+       _isOnline = isOnline,
+       _queueOfflineAction = queueOfflineAction;
 
   final NostrClient _nostrClient;
   final PersonalEventCacheService? _personalEventCache;
+
+  /// Callback to check if the device is online
+  final IsOnlineCallback? _isOnline;
+
+  /// Callback to queue actions for offline sync
+  final QueueOfflineFollowCallback? _queueOfflineAction;
 
   // BehaviorSubject replays last value to late subscribers, fixing race condition
   // where BLoC subscribes AFTER initial emission
@@ -95,31 +113,57 @@ class FollowRepository {
     return _fetchFollowers(pubkey);
   }
 
+  /// Timeout for fetching followers from relays
+  static const _fetchFollowersTimeout = Duration(seconds: 5);
+
   /// Fetch followers for a given pubkey from Nostr relays.
   ///
   /// Queries for Kind 3 (contact list) events that mention the target pubkey
   /// in their 'p' tags - these are users who follow the target.
+  ///
+  /// Returns empty list on timeout to prevent infinite loading.
   Future<List<String>> _fetchFollowers(String pubkey) async {
     if (pubkey.isEmpty) {
       return [];
     }
 
-    final events = await _nostrClient.queryEvents([
-      Filter(
-        kinds: const [3], // Contact lists
-        p: [pubkey], // Events that mention this pubkey
-      ),
-    ]);
+    try {
+      final events = await _nostrClient
+          .queryEvents([
+            Filter(
+              kinds: const [3], // Contact lists
+              p: [pubkey], // Events that mention this pubkey
+            ),
+          ])
+          .timeout(
+            _fetchFollowersTimeout,
+            onTimeout: () {
+              Log.warning(
+                'Followers query timed out for $pubkey',
+                name: 'FollowRepository',
+                category: LogCategory.system,
+              );
+              return <Event>[];
+            },
+          );
 
-    // Extract unique follower pubkeys (authors of events that follow target)
-    final followers = <String>[];
-    for (final event in events) {
-      if (!followers.contains(event.pubkey)) {
-        followers.add(event.pubkey);
+      // Extract unique follower pubkeys (authors of events that follow target)
+      final followers = <String>[];
+      for (final event in events) {
+        if (!followers.contains(event.pubkey)) {
+          followers.add(event.pubkey);
+        }
       }
-    }
 
-    return followers;
+      return followers;
+    } on TimeoutException {
+      Log.warning(
+        'Followers query timed out for $pubkey',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return [];
+    }
   }
 
   /// Toggle follow status for a user.
@@ -212,6 +256,21 @@ class FollowRepository {
     _followingPubkeys = [..._followingPubkeys, pubkey];
     _emitFollowingList();
 
+    // Check if offline and queue if needed
+    if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
+      await _queueOfflineAction(isFollow: true, pubkey: pubkey);
+
+      // Save to local storage for persistence
+      await _saveToLocalStorage();
+
+      Log.info(
+        'Queued follow action for offline sync: $pubkey',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
     try {
       // 2. Broadcast to network
       await _broadcastContactList();
@@ -236,6 +295,34 @@ class FollowRepository {
       );
       rethrow;
     }
+  }
+
+  /// Execute a follow action directly (for use by sync service).
+  ///
+  /// This method bypasses offline queuing and directly broadcasts to relays.
+  /// Used by PendingActionService to execute queued actions.
+  Future<void> executeFollowAction(String pubkey) async {
+    if (!_nostrClient.hasKeys) {
+      throw Exception('User not authenticated');
+    }
+
+    // Ensure pubkey is in the list (it should be from optimistic update)
+    if (!_followingPubkeys.contains(pubkey)) {
+      _followingPubkeys = [..._followingPubkeys, pubkey];
+      _emitFollowingList();
+    }
+
+    // Broadcast to network
+    await _broadcastContactList();
+
+    // Save to local storage
+    await _saveToLocalStorage();
+
+    Log.info(
+      'Executed follow action for: $pubkey',
+      name: 'FollowRepository',
+      category: LogCategory.system,
+    );
   }
 
   /// Unfollow a user
@@ -281,6 +368,21 @@ class FollowRepository {
     _followingPubkeys = _followingPubkeys.where((p) => p != pubkey).toList();
     _emitFollowingList();
 
+    // Check if offline and queue if needed
+    if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
+      await _queueOfflineAction(isFollow: false, pubkey: pubkey);
+
+      // Save to local storage for persistence
+      await _saveToLocalStorage();
+
+      Log.info(
+        'Queued unfollow action for offline sync: $pubkey',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return;
+    }
+
     try {
       // 2. Broadcast to network
       await _broadcastContactList();
@@ -304,6 +406,61 @@ class FollowRepository {
         category: LogCategory.system,
       );
       rethrow;
+    }
+  }
+
+  /// Execute an unfollow action directly (for use by sync service).
+  ///
+  /// This method bypasses offline queuing and directly broadcasts to relays.
+  /// Used by PendingActionService to execute queued actions.
+  Future<void> executeUnfollowAction(String pubkey) async {
+    if (!_nostrClient.hasKeys) {
+      throw Exception('User not authenticated');
+    }
+
+    // Ensure pubkey is removed from the list (it should be from optimistic update)
+    if (_followingPubkeys.contains(pubkey)) {
+      _followingPubkeys = _followingPubkeys.where((p) => p != pubkey).toList();
+      _emitFollowingList();
+    }
+
+    // Broadcast to network
+    await _broadcastContactList();
+
+    // Save to local storage
+    await _saveToLocalStorage();
+
+    Log.info(
+      'Executed unfollow action for: $pubkey',
+      name: 'FollowRepository',
+      category: LogCategory.system,
+    );
+  }
+
+  /// Merge follows from another contact list event (union merge for conflict resolution).
+  ///
+  /// Used when syncing offline actions - combines local follows with
+  /// any follows that were added on other devices while offline.
+  Future<void> mergeFollows(List<String> additionalPubkeys) async {
+    final merged = <String>{..._followingPubkeys, ...additionalPubkeys};
+
+    // Remove self if accidentally included
+    merged.remove(_nostrClient.publicKey);
+
+    if (merged.length != _followingPubkeys.length ||
+        !merged.every(_followingPubkeys.contains)) {
+      _followingPubkeys = merged.toList();
+      _emitFollowingList();
+
+      // Broadcast the merged list
+      await _broadcastContactList();
+      await _saveToLocalStorage();
+
+      Log.info(
+        'Merged contact lists: now following ${_followingPubkeys.length} users',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
     }
   }
 

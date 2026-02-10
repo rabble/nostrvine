@@ -2,6 +2,7 @@
 // ABOUTME: Coordinates between NostrClient for relay operations and
 // ABOUTME: RepostsLocalStorage for persistence. Handles Kind 16 reposts
 // ABOUTME: and Kind 5 deletions for repost/unrepost.
+// ABOUTME: Supports offline queuing via callback injection.
 
 import 'dart:async';
 
@@ -16,6 +17,18 @@ import 'package:rxdart/rxdart.dart';
 
 /// Default limit for fetching user reposts from relays.
 const _defaultRepostFetchLimit = 500;
+
+/// Callback to check if the device is currently online
+typedef IsOnlineCallback = bool Function();
+
+/// Callback to queue an action for offline sync
+typedef QueueOfflineRepostCallback =
+    Future<void> Function({
+      required bool isRepost,
+      required String addressableId,
+      required String originalAuthorPubkey,
+      String? eventId,
+    });
 
 /// Repository for managing user reposts (Kind 16 generic reposts) on videos.
 ///
@@ -45,14 +58,20 @@ class RepostsRepository {
   /// - [localStorage]: Optional local storage for persistence
   /// - [authStateStream]: Optional stream of authentication state
   /// - [isAuthenticated]: Initial authentication state
+  /// - [isOnline]: Optional callback to check connectivity status
+  /// - [queueOfflineAction]: Optional callback to queue actions when offline
   RepostsRepository({
     required NostrClient nostrClient,
     RepostsLocalStorage? localStorage,
     Stream<bool>? authStateStream,
     bool isAuthenticated = false,
+    IsOnlineCallback? isOnline,
+    QueueOfflineRepostCallback? queueOfflineAction,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
-       _isAuthenticated = isAuthenticated {
+       _isAuthenticated = isAuthenticated,
+       _isOnline = isOnline,
+       _queueOfflineAction = queueOfflineAction {
     // Listen to auth state changes if stream provided
     if (authStateStream != null) {
       _authSubscription = authStateStream.listen(_handleAuthChange);
@@ -62,6 +81,12 @@ class RepostsRepository {
   final NostrClient _nostrClient;
   final RepostsLocalStorage? _localStorage;
   StreamSubscription<bool>? _authSubscription;
+
+  /// Callback to check if the device is online
+  final IsOnlineCallback? _isOnline;
+
+  /// Callback to queue actions for offline sync
+  final QueueOfflineRepostCallback? _queueOfflineAction;
 
   /// Whether the user is currently authenticated.
   bool _isAuthenticated;
@@ -75,8 +100,18 @@ class RepostsRepository {
   /// Whether the repository has been initialized with data from storage.
   bool _isInitialized = false;
 
+  /// Whether [dispose] has been called.
+  ///
+  /// Once disposed, all stream emissions and auth-change handlers are no-ops.
+  bool _isDisposed = false;
+
   /// Emits the current set of reposted addressable IDs.
+  ///
+  /// Guards against emitting after [dispose] has been called or the controller
+  /// has been closed, which can happen if [clearCache] runs during or after
+  /// [dispose] (e.g. on logout).
   void _emitRepostedIds() {
+    if (_isDisposed || _repostedIdsController.isClosed) return;
     _repostedIdsController.add(_repostRecords.keys.toSet());
   }
 
@@ -173,6 +208,9 @@ class RepostsRepository {
   /// The repost event is broadcast to Nostr relays and the mapping
   /// is stored locally for later retrieval.
   ///
+  /// If the device is offline and offline queuing is enabled, the action
+  /// is queued for later sync and the UI should be updated optimistically.
+  ///
   /// Parameters:
   /// - [addressableId]: The addressable ID of the video (kind:pubkey:d-tag)
   /// - [originalAuthorPubkey]: The pubkey of the video's author
@@ -180,7 +218,8 @@ class RepostsRepository {
   ///   this allows relays to index the repost by `#e` tag, which is more
   ///   universally supported than `#a` tag.
   ///
-  /// Returns the repost event ID (needed for unreposts).
+  /// Returns the repost event ID (needed for unreposts), or a placeholder
+  /// ID if the action was queued for offline sync.
   ///
   /// Throws `RepostFailedException` if the operation fails.
   /// Throws `AlreadyRepostedException` if the video is already reposted.
@@ -195,6 +234,31 @@ class RepostsRepository {
     // Check if already reposted
     if (_repostRecords.containsKey(addressableId)) {
       throw AlreadyRepostedException(addressableId);
+    }
+
+    // Check if offline and queue if needed
+    if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
+      await _queueOfflineAction(
+        isRepost: true,
+        addressableId: addressableId,
+        originalAuthorPubkey: originalAuthorPubkey,
+        eventId: eventId,
+      );
+
+      // Create optimistic local record with placeholder ID
+      final placeholderId = 'pending_repost_$addressableId';
+      final record = RepostRecord(
+        addressableId: addressableId,
+        repostEventId: placeholderId,
+        originalAuthorPubkey: originalAuthorPubkey,
+        createdAt: DateTime.now(),
+      );
+
+      _repostRecords[addressableId] = record;
+      await _localStorage?.saveRepostRecord(record);
+      _emitRepostedIds();
+
+      return placeholderId;
     }
 
     // Create and publish Kind 16 generic repost event
@@ -224,10 +288,51 @@ class RepostsRepository {
     return sentEvent.id;
   }
 
+  /// Execute a repost action directly (for use by sync service).
+  ///
+  /// This method bypasses offline queuing and directly publishes to relays.
+  /// Used by PendingActionService to execute queued actions.
+  Future<String> executeRepostAction({
+    required String addressableId,
+    required String originalAuthorPubkey,
+    String? eventId,
+  }) async {
+    // Create and publish Kind 16 generic repost event
+    final sentEvent = await _nostrClient.sendGenericRepost(
+      addressableId: addressableId,
+      targetKind: EventKind.videoVertical,
+      authorPubkey: originalAuthorPubkey,
+      eventId: eventId,
+    );
+
+    if (sentEvent == null) {
+      throw const RepostFailedException('Failed to publish repost to relays');
+    }
+
+    // Update local record with real event ID if we have a placeholder
+    final existingRecord = _repostRecords[addressableId];
+    if (existingRecord != null &&
+        existingRecord.repostEventId.startsWith('pending_')) {
+      final record = RepostRecord(
+        addressableId: addressableId,
+        repostEventId: sentEvent.id,
+        originalAuthorPubkey: originalAuthorPubkey,
+        createdAt: existingRecord.createdAt,
+      );
+      _repostRecords[addressableId] = record;
+      await _localStorage?.saveRepostRecord(record);
+    }
+
+    return sentEvent.id;
+  }
+
   /// Unrepost a video.
   ///
   /// Creates and publishes a Kind 5 deletion event referencing the
   /// original repost event. Removes the repost record from local storage.
+  ///
+  /// If the device is offline and offline queuing is enabled, the action
+  /// is queued for later sync and the UI should be updated optimistically.
   ///
   /// Throws `UnrepostFailedException` if the operation fails.
   /// Throws `NotRepostedException` if the video is not currently reposted.
@@ -242,6 +347,67 @@ class RepostsRepository {
 
     if (record == null) {
       throw NotRepostedException(addressableId);
+    }
+
+    // Check if offline and queue if needed
+    if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
+      await _queueOfflineAction(
+        isRepost: false,
+        addressableId: addressableId,
+        originalAuthorPubkey: record.originalAuthorPubkey,
+      );
+
+      // Remove from cache and storage optimistically
+      _repostRecords.remove(addressableId);
+      await _localStorage?.deleteRepostRecord(addressableId);
+      _emitRepostedIds();
+
+      return;
+    }
+
+    // Skip publishing deletion if this was a pending repost that never synced
+    if (!record.repostEventId.startsWith('pending_')) {
+      // Publish Kind 5 deletion event via NostrClient
+      final deletionEvent = await _nostrClient.deleteEvent(
+        record.repostEventId,
+      );
+
+      if (deletionEvent == null) {
+        throw const UnrepostFailedException(
+          'Failed to publish unrepost deletion',
+        );
+      }
+    }
+
+    // Remove from cache and storage
+    _repostRecords.remove(addressableId);
+    await _localStorage?.deleteRepostRecord(addressableId);
+    _emitRepostedIds();
+  }
+
+  /// Execute an unrepost action directly (for use by sync service).
+  ///
+  /// This method bypasses offline queuing and directly publishes to relays.
+  /// Used by PendingActionService to execute queued actions.
+  Future<void> executeUnrepostAction(String addressableId) async {
+    // Try to get the record - it may not exist if the repost was also offline
+    var record = _repostRecords[addressableId];
+    if (record == null && _localStorage != null) {
+      record = await _localStorage.getRepostRecord(addressableId);
+    }
+
+    // If no record exists, the repost was never synced either, so we're done
+    if (record == null) {
+      return;
+    }
+
+    // Skip publishing if this was a pending repost
+    if (record.repostEventId.startsWith('pending_')) {
+      // Just clean up local storage
+      _repostRecords.remove(addressableId);
+      await _localStorage?.deleteRepostRecord(addressableId);
+      _emitRepostedIds();
+      return;
     }
 
     // Publish Kind 5 deletion event via NostrClient
@@ -503,6 +669,9 @@ class RepostsRepository {
   ///
   /// Used when logging out or clearing user data.
   /// Does not affect data on relays.
+  ///
+  /// Safe to call after [dispose] -- the cache is still cleared but no
+  /// stream emission is attempted.
   Future<void> clearCache() async {
     _repostRecords.clear();
     await _localStorage?.clearAll();
@@ -512,9 +681,13 @@ class RepostsRepository {
 
   /// Dispose of resources.
   ///
+  /// Cancels the auth subscription first so that no further auth-change
+  /// callbacks can fire, then closes the stream controller.
   /// Should be called when the repository is no longer needed.
   void dispose() {
+    _isDisposed = true;
     unawaited(_authSubscription?.cancel());
+    _authSubscription = null;
     unawaited(_repostedIdsController.close());
   }
 
@@ -523,6 +696,7 @@ class RepostsRepository {
   /// When user logs out, clears the cache.
   /// When user logs in, triggers a sync.
   void _handleAuthChange(bool isAuthenticated) {
+    if (_isDisposed) return;
     if (isAuthenticated == _isAuthenticated) return;
 
     _isAuthenticated = isAuthenticated;

@@ -30,7 +30,7 @@ class VideoEditorDrawItemIndicator extends StatelessWidget {
         duration: const Duration(milliseconds: 200),
         offset: Offset(itemFactor, 0),
         child: Container(
-          width: VideoEditorDrawConstants.itemWidth,
+          width: VideoEditorConstants.drawItemWidth,
           height: 4,
           color: VineTheme.primary,
         ),

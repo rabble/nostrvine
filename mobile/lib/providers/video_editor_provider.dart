@@ -17,11 +17,12 @@ import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
+import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 final videoEditorProvider =
     NotifierProvider<VideoEditorNotifier, VideoEditorProviderState>(
@@ -53,6 +54,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Get clips from clip manager.
   List<RecordingClip> get _clips => ref.read(clipManagerProvider).clips;
+
+  final _draftService = DraftStorageService();
 
   // === LIFECYCLE ===
 
@@ -516,7 +519,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       expireTime: state.expiration.value,
       selectedApproach: 'video',
       editorStateHistory: state.editorStateHistory,
-      editorEditingParameters: state.editorEditingParameters,
+      editorEditingParameters: state.editorEditingParameters?.toMap(),
     );
   }
 
@@ -540,7 +543,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   ///
   /// This stores the serialized editing parameters from ProImageEditor,
   /// enabling restoration of all applied effects when reopening a draft.
-  void updateEditorEditingParameters(Map<String, dynamic> editingParameters) {
+  void updateEditorEditingParameters(CompleteParameters editingParameters) {
     Log.debug(
       '🎨 Updated editor editing parameters',
       name: 'VideoEditorNotifier',
@@ -597,11 +600,8 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final draftService = DraftStorageService(prefs);
-
       final draft = getActiveDraft(isAutosave: true);
-      await draftService.saveDraft(draft);
+      await _draftService.saveDraft(draft);
 
       Log.info(
         '✅ Autosave completed - ${clipCount} clip(s), '
@@ -639,10 +639,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
 
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final draftService = DraftStorageService(prefs);
-
-      await draftService.saveDraft(getActiveDraft());
+      await _draftService.saveDraft(getActiveDraft());
 
       // Remove the autosaved draft
       await removeAutosavedDraft();
@@ -672,44 +669,87 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   ///
   /// Loads clips and metadata from the specified draft. If [draftId] is null,
   /// restores from [autoSaveId] to recover an autosaved session.
+  /// Invalid clips (missing video files) are automatically filtered out,
+  /// and missing thumbnails are regenerated.
   Future<void> restoreDraft([String? draftId]) async {
     draftId ??= VideoEditorConstants.autoSaveId;
     Log.info(
-      '🎬 Initializing video editor with draft ID: $draftId',
+      '🎬 Restoring draft: $draftId',
       name: 'VideoEditorNotifier',
-      category: .video,
+      category: LogCategory.video,
     );
-    final prefs = await SharedPreferences.getInstance();
-    final draftService = DraftStorageService(prefs);
-    final draft = await draftService.getDraftById(draftId);
-    if (draft != null) {
-      state = state.copyWith(
-        title: draft.title,
-        description: draft.description,
-        tags: draft.hashtags,
-        allowAudioReuse: draft.allowAudioReuse,
-        expiration: VideoMetadataExpiration.fromDuration(draft.expireTime),
-        editorStateHistory: draft.editorStateHistory,
-        editorEditingParameters: draft.editorEditingParameters,
-      );
-      _clipManager.addMultipleClips(draft.clips);
-      // We set the aspect ratio in the video recorder to match the clips,
-      // so the user can't mix them up.
-      ref
-          .read(videoRecorderProvider.notifier)
-          .setAspectRatio(draft.clips.first.targetAspectRatio);
-      Log.info(
-        '✅ Draft loaded with ${draft.clips.length} clip(s)',
-        name: 'VideoEditorNotifier',
-        category: .video,
-      );
-    } else {
+
+    final draft = await _draftService.getDraftById(draftId);
+    if (draft == null) {
       Log.warning(
-        '⚠️ Draft not found: $draftId',
+        '⚠️ Draft not found or has no valid clips: $draftId',
         name: 'VideoEditorNotifier',
-        category: .video,
+        category: LogCategory.video,
       );
+      return;
     }
+
+    // Regenerate missing thumbnails
+    final clipsWithThumbnails = <RecordingClip>[];
+    for (final clip in draft.clips) {
+      final thumbnailPath = clip.thumbnailPath;
+      final thumbnailExists =
+          thumbnailPath != null && File(thumbnailPath).existsSync();
+
+      if (thumbnailExists) {
+        clipsWithThumbnails.add(clip);
+        continue;
+      }
+
+      Log.info(
+        '🖼️ Regenerating thumbnail for clip ${clip.id}',
+        name: 'VideoEditorNotifier',
+        category: LogCategory.video,
+      );
+
+      final videoPath = clip.video.file!.path;
+      final result = await VideoThumbnailService.extractThumbnail(
+        videoPath: videoPath,
+        targetTimestamp: clip.thumbnailTimestamp,
+      );
+      if (result != null) {
+        clipsWithThumbnails.add(clip.copyWith(thumbnailPath: result.path));
+      } else {
+        Log.warning(
+          '⚠️ Failed to regenerate thumbnail for clip ${clip.id}',
+          name: 'VideoEditorNotifier',
+          category: LogCategory.video,
+        );
+        // Keep clip even without thumbnail
+        clipsWithThumbnails.add(clip);
+      }
+    }
+
+    // Clear existing clips before restoring to prevent duplication
+    _clipManager.clearClips();
+
+    state = state.copyWith(
+      title: draft.title,
+      description: draft.description,
+      tags: draft.hashtags,
+      allowAudioReuse: draft.allowAudioReuse,
+      expiration: VideoMetadataExpiration.fromDuration(draft.expireTime),
+      editorStateHistory: draft.editorStateHistory,
+      editorEditingParameters: CompleteParameters.fromMap(
+        draft.editorEditingParameters,
+      ),
+    );
+    _clipManager.addMultipleClips(clipsWithThumbnails);
+    // We set the aspect ratio in the video recorder to match the clips,
+    // so the user can't mix them up.
+    ref
+        .read(videoRecorderProvider.notifier)
+        .setAspectRatio(clipsWithThumbnails.first.targetAspectRatio);
+    Log.info(
+      '✅ Draft loaded with ${clipsWithThumbnails.length} clip(s)',
+      name: 'VideoEditorNotifier',
+      category: LogCategory.video,
+    );
   }
 
   /// Delete the autosaved draft from local storage.
@@ -718,9 +758,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// after successfully publishing a video.
   Future<void> removeAutosavedDraft() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final draftService = DraftStorageService(prefs);
-      await draftService.deleteDraft(VideoEditorConstants.autoSaveId);
+      await _draftService.deleteDraft(VideoEditorConstants.autoSaveId);
       Log.debug(
         '🗑️ Deleted autosaved draft',
         name: 'VideoEditorNotifier',
@@ -737,19 +775,27 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   // === RENDERING & PUBLISHING ===
 
+  /// Set the processing state.
+  ///
+  /// Use this to mark that video processing has started before calling
+  /// [startRenderVideo], or to reset the state after processing completes.
+  void setProcessing(bool isProcessing) {
+    if (state.isProcessing == isProcessing) return;
+    state = state.copyWith(isProcessing: isProcessing);
+  }
+
   /// Render all clips into final video and prepare for publishing.
   ///
   /// Combines all clips, applies audio settings, generates proofmode
   /// attestation, and creates the final rendered clip for publishing.
   Future<void> startRenderVideo() async {
-    if (state.isProcessing) return;
+    setProcessing(true);
 
     Log.info(
       '🎬 Starting final video render',
       name: 'VideoEditorNotifier',
       category: .video,
     );
-    state = state.copyWith(isProcessing: true);
 
     // Render video and get proofmode data
     final (outputPath, proofManifestJson) = await _renderVideo();
@@ -788,12 +834,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       originalAspectRatio: _clips.first.originalAspectRatio,
       targetAspectRatio: _clips.first.targetAspectRatio,
       thumbnailPath: _clips.first.thumbnailPath,
-    );
-
-    Log.info(
-      '📤 Navigating to publish screen',
-      name: 'VideoEditorNotifier',
-      category: .video,
     );
 
     state = state.copyWith(
@@ -879,6 +919,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         clips: _clips,
         aspectRatio: _clips.first.targetAspectRatio,
         enableAudio: !state.isMuted,
+        parameters: state.editorEditingParameters,
       );
       String? proofManifestJson;
 

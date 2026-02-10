@@ -31,13 +31,22 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
   bool _isImporting = false;
   bool _obscureKey = true;
 
+  /// Cached reference to auth service, since ref is invalid after unmount.
+  late final AuthService _authService;
+
+  @override
+  void initState() {
+    super.initState();
+    _authService = ref.read(authServiceProvider);
+  }
+
   @override
   void dispose() {
     _keyController.dispose();
 
-    // Clear any authentication errors when leaving this screen
-    // This prevents stale errors from being displayed on the welcome screen
-    ref.read(authServiceProvider).clearError();
+    // Clear any authentication errors when leaving this screen.
+    // Uses cached reference because Riverpod ref is invalid after unmount.
+    _authService.clearError();
 
     super.dispose();
   }

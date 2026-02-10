@@ -84,7 +84,12 @@ abstract class DivineCameraPlatform extends PlatformInterface {
   /// [maxDuration] optionally limits the recording duration.
   /// [useCache] if true, saves video to cache directory (temporary), otherwise
   /// saves to documents directory (permanent). Defaults to true.
-  Future<bool> startRecording({Duration? maxDuration, bool useCache = true}) {
+  /// [outputDirectory] specifies where to save the video.
+  Future<bool> startRecording({
+    Duration? maxDuration,
+    bool useCache = true,
+    String? outputDirectory,
+  }) {
     throw UnimplementedError('startRecording() has not been implemented.');
   }
 

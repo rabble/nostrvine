@@ -1,6 +1,8 @@
 // ABOUTME: BLoC for managing profile reposted videos grid
 // ABOUTME: Coordinates between RepostsRepository (for IDs) and VideosRepository
-// ABOUTME: (for video data). Falls back to REST API for videos not on Nostr relays.
+// ABOUTME: (cache-aware relay fetch with SQLite local storage)
+
+import 'dart:async';
 
 import 'package:equatable/equatable.dart';
 import 'package:flutter/foundation.dart';
@@ -9,7 +11,6 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_sdk/aid.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:videos_repository/videos_repository.dart';
@@ -25,11 +26,12 @@ const _pageSize = 18;
 /// Coordinates between:
 /// - [RepostsRepository]: Provides reposted addressable IDs (sync for own,
 ///   fetch for other)
-/// - [VideosRepository]: Fetches actual video data by addressable IDs
+/// - [VideosRepository]: Fetches video data with cache-first lookups via
+///   SQLite local storage. Automatically checks cache before relay queries.
 ///
 /// Handles:
 /// - Syncing repost records from RepostsRepository
-/// - Resolving addressable IDs to VideoEvents via VideosRepository
+/// - Resolving addressable IDs to VideoEvents with cache-first pattern
 /// - Filtering: excludes unsupported video formats
 /// - Listening for repost changes to update the list
 /// - Pagination: loads videos in batches of [_pageSize]
@@ -40,12 +42,10 @@ class ProfileRepostedVideosBloc
     required VideosRepository videosRepository,
     required String currentUserPubkey,
     String? targetUserPubkey,
-    AnalyticsApiService? analyticsApiService,
   }) : _repostsRepository = repostsRepository,
        _videosRepository = videosRepository,
        _currentUserPubkey = currentUserPubkey,
        _targetUserPubkey = targetUserPubkey,
-       _analyticsApiService = analyticsApiService,
        super(const ProfileRepostedVideosState()) {
     on<ProfileRepostedVideosSyncRequested>(_onSyncRequested);
     on<ProfileRepostedVideosSubscriptionRequested>(_onSubscriptionRequested);
@@ -55,11 +55,6 @@ class ProfileRepostedVideosBloc
   final RepostsRepository _repostsRepository;
   final VideosRepository _videosRepository;
   final String _currentUserPubkey;
-
-  /// Optional REST API service for fallback when videos aren't on Nostr relays.
-  /// This handles videos that came from Funnelcake (Explore page) and may not
-  /// be on the app's configured relays.
-  final AnalyticsApiService? _analyticsApiService;
 
   /// The pubkey of the user whose reposts to display.
   /// If null or same as current user, uses RepostsRepository sync.
@@ -72,6 +67,13 @@ class ProfileRepostedVideosBloc
 
   /// Handle sync request - syncs repost records from repository then loads
   /// videos.
+  ///
+  /// For own profile: Uses "show cached first, refresh in background" pattern:
+  /// 1. Load cached IDs from local storage (instant)
+  /// 2. Fetch videos for cached IDs and show immediately
+  /// 3. Sync from relay in background, update if new reposts found
+  ///
+  /// For other profiles: Fetch from relay (no cache available).
   Future<void> _onSyncRequested(
     ProfileRepostedVideosSyncRequested event,
     Emitter<ProfileRepostedVideosState> emit,
@@ -86,18 +88,30 @@ class ProfileRepostedVideosBloc
       category: LogCategory.video,
     );
 
+    // For other profiles, use the original flow (no cache available)
+    if (_isOtherUserProfile) {
+      await _syncOtherUserReposts(emit);
+      return;
+    }
+
+    // For own profile: show cached data first, then refresh in background
+    await _syncOwnProfileReposts(emit);
+  }
+
+  /// Sync reposts for other user's profile (no cache available).
+  Future<void> _syncOtherUserReposts(
+    Emitter<ProfileRepostedVideosState> emit,
+  ) async {
     emit(state.copyWith(status: ProfileRepostedVideosStatus.syncing));
 
     try {
-      // Get repost addressable IDs - either from repository (own) or relays
-      // (other)
-      final addressableIds = _isOtherUserProfile
-          ? await _repostsRepository.fetchUserReposts(_targetUserPubkey!)
-          : (await _repostsRepository.syncUserReposts()).orderedAddressableIds;
+      final addressableIds = await _repostsRepository.fetchUserReposts(
+        _targetUserPubkey!,
+      );
 
       Log.info(
-        'ProfileRepostedVideosBloc: Synced ${addressableIds.length} repost '
-        'addressable IDs',
+        'ProfileRepostedVideosBloc: Fetched ${addressableIds.length} repost '
+        'IDs for other user',
         name: 'ProfileRepostedVideosBloc',
         category: LogCategory.video,
       );
@@ -122,9 +136,8 @@ class ProfileRepostedVideosBloc
         ),
       );
 
-      // Fetch video data for the first page of addressable IDs
       final firstPageIds = addressableIds.take(_pageSize).toList();
-      final videos = await _fetchVideos(firstPageIds);
+      final videos = await _fetchVideos(firstPageIds, cacheResults: true);
 
       Log.info(
         'ProfileRepostedVideosBloc: Loaded ${videos.length} videos '
@@ -141,9 +154,9 @@ class ProfileRepostedVideosBloc
           clearError: true,
         ),
       );
-    } on SyncFailedException catch (e) {
+    } on FetchRepostsFailedException catch (e) {
       Log.error(
-        'ProfileRepostedVideosBloc: Sync failed - ${e.message}',
+        'ProfileRepostedVideosBloc: Fetch reposts failed - ${e.message}',
         name: 'ProfileRepostedVideosBloc',
         category: LogCategory.video,
       );
@@ -153,9 +166,141 @@ class ProfileRepostedVideosBloc
           error: ProfileRepostedVideosError.syncFailed,
         ),
       );
-    } on FetchRepostsFailedException catch (e) {
+    } catch (e) {
       Log.error(
-        'ProfileRepostedVideosBloc: Fetch reposts failed - ${e.message}',
+        'ProfileRepostedVideosBloc: Failed to load videos - $e',
+        name: 'ProfileRepostedVideosBloc',
+        category: LogCategory.video,
+      );
+      emit(
+        state.copyWith(
+          status: ProfileRepostedVideosStatus.failure,
+          error: ProfileRepostedVideosError.loadFailed,
+        ),
+      );
+    }
+  }
+
+  /// Sync reposts for own profile using "show cached first" pattern.
+  Future<void> _syncOwnProfileReposts(
+    Emitter<ProfileRepostedVideosState> emit,
+  ) async {
+    try {
+      // Step 1: Get cached IDs from local storage (instant - no relay)
+      final cachedIds = await _repostsRepository
+          .getOrderedRepostedAddressableIds();
+
+      Log.info(
+        'ProfileRepostedVideosBloc: Got ${cachedIds.length} cached repost IDs',
+        name: 'ProfileRepostedVideosBloc',
+        category: LogCategory.video,
+      );
+
+      // If we have cached data, load videos immediately
+      if (cachedIds.isNotEmpty) {
+        emit(
+          state.copyWith(
+            status: ProfileRepostedVideosStatus.loading,
+            repostedAddressableIds: cachedIds,
+          ),
+        );
+
+        // Fetch videos for cached IDs
+        final firstPageIds = cachedIds.take(_pageSize).toList();
+        final videos = await _fetchVideos(firstPageIds, cacheResults: true);
+
+        Log.info(
+          'ProfileRepostedVideosBloc: Loaded ${videos.length} videos from '
+          'cache (first page of ${cachedIds.length} total)',
+          name: 'ProfileRepostedVideosBloc',
+          category: LogCategory.video,
+        );
+
+        emit(
+          state.copyWith(
+            status: ProfileRepostedVideosStatus.success,
+            videos: videos,
+            hasMoreContent: cachedIds.length > _pageSize,
+            clearError: true,
+          ),
+        );
+
+        // Step 2: Sync from relay in background (fire and forget)
+        // The subscription handler will update the list if new reposts are found
+        unawaited(
+          _repostsRepository
+              .syncUserReposts()
+              .then((_) {
+                Log.debug(
+                  'ProfileRepostedVideosBloc: Background relay sync completed',
+                  name: 'ProfileRepostedVideosBloc',
+                  category: LogCategory.video,
+                );
+              })
+              .catchError((e) {
+                Log.warning(
+                  'ProfileRepostedVideosBloc: Background sync failed - $e',
+                  name: 'ProfileRepostedVideosBloc',
+                  category: LogCategory.video,
+                );
+              }),
+        );
+      } else {
+        // No cached data - need to sync from relay (show loading state)
+        emit(state.copyWith(status: ProfileRepostedVideosStatus.syncing));
+
+        final syncResult = await _repostsRepository.syncUserReposts();
+        final addressableIds = syncResult.orderedAddressableIds;
+
+        Log.info(
+          'ProfileRepostedVideosBloc: Synced ${addressableIds.length} repost '
+          'IDs from relay (no cache)',
+          name: 'ProfileRepostedVideosBloc',
+          category: LogCategory.video,
+        );
+
+        if (addressableIds.isEmpty) {
+          emit(
+            state.copyWith(
+              status: ProfileRepostedVideosStatus.success,
+              videos: [],
+              repostedAddressableIds: [],
+              hasMoreContent: false,
+              clearError: true,
+            ),
+          );
+          return;
+        }
+
+        emit(
+          state.copyWith(
+            status: ProfileRepostedVideosStatus.loading,
+            repostedAddressableIds: addressableIds,
+          ),
+        );
+
+        final firstPageIds = addressableIds.take(_pageSize).toList();
+        final videos = await _fetchVideos(firstPageIds, cacheResults: true);
+
+        Log.info(
+          'ProfileRepostedVideosBloc: Loaded ${videos.length} videos '
+          '(first page of ${addressableIds.length} total)',
+          name: 'ProfileRepostedVideosBloc',
+          category: LogCategory.video,
+        );
+
+        emit(
+          state.copyWith(
+            status: ProfileRepostedVideosStatus.success,
+            videos: videos,
+            hasMoreContent: addressableIds.length > _pageSize,
+            clearError: true,
+          ),
+        );
+      }
+    } on SyncFailedException catch (e) {
+      Log.error(
+        'ProfileRepostedVideosBloc: Sync failed - ${e.message}',
         name: 'ProfileRepostedVideosBloc',
         category: LogCategory.video,
       );
@@ -315,102 +460,39 @@ class ProfileRepostedVideosBloc
 
   /// Fetch videos for the given addressable IDs.
   ///
-  /// Strategy:
-  /// 1. First try Nostr relays via VideosRepository
-  /// 2. For videos not found, try REST API as fallback (for videos from Explore
-  ///    that may not be on the app's configured Nostr relays)
+  /// Uses [VideosRepository.getVideosByAddressableIds] which:
+  /// 1. Queries Nostr relays for the videos
+  /// 2. Falls back to Funnelcake API for videos not found on relays
+  /// 3. Optionally saves fetched events to local storage
   ///
-  /// The repository handles:
-  /// - Fetching from Nostr relays
-  /// - Filtering out invalid/expired videos
-  /// - Preserving order based on input IDs
-  Future<List<VideoEvent>> _fetchVideos(List<String> addressableIds) async {
-    // First, try Nostr relays
-    final nostrVideos = await _videosRepository.getVideosByAddressableIds(
+  /// When [cacheResults] is true, videos fetched from relay are saved to
+  /// local storage for future cache hits. Only use for first page loads
+  /// to avoid bloating the cache.
+  ///
+  /// Returns videos in the same order as [addressableIds], excluding:
+  /// - Videos not found in cache or relay
+  /// - Unsupported video formats (WebM on iOS/macOS)
+  Future<List<VideoEvent>> _fetchVideos(
+    List<String> addressableIds, {
+    bool cacheResults = false,
+  }) async {
+    if (addressableIds.isEmpty) return [];
+
+    // VideosRepository handles relay + Funnelcake fallback internally
+    final videos = await _videosRepository.getVideosByAddressableIds(
       addressableIds,
+      cacheResults: cacheResults,
     );
 
-    // Build map of found videos by addressable ID
-    final foundVideos = <String, VideoEvent>{};
-    for (final video in nostrVideos) {
-      final addressableId = _computeAddressableId(video);
-      if (addressableId != null) {
-        foundVideos[addressableId] = video;
-      }
-    }
+    Log.debug(
+      'ProfileRepostedVideosBloc: Fetched ${videos.length}/${addressableIds.length} '
+      'videos (cacheResults: $cacheResults)',
+      name: 'ProfileRepostedVideosBloc',
+      category: LogCategory.video,
+    );
 
-    // Find which IDs weren't found on Nostr
-    final missingIds = addressableIds
-        .where((id) => !foundVideos.containsKey(id))
-        .toList();
-
-    // Try REST API fallback for missing videos
-    if (missingIds.isNotEmpty && _analyticsApiService != null) {
-      Log.info(
-        'ProfileRepostedVideosBloc: ${missingIds.length} videos not found on '
-        'Nostr, trying REST API fallback',
-        name: 'ProfileRepostedVideosBloc',
-        category: LogCategory.video,
-      );
-
-      // Group missing IDs by pubkey to batch queries
-      final missingByPubkey = <String, List<String>>{};
-      for (final addressableId in missingIds) {
-        final parsed = AId.fromString(addressableId);
-        if (parsed != null) {
-          missingByPubkey.putIfAbsent(parsed.pubkey, () => []).add(parsed.dTag);
-        }
-      }
-
-      // Query REST API for each author's videos
-      for (final entry in missingByPubkey.entries) {
-        final pubkey = entry.key;
-        final dTags = entry.value.toSet();
-
-        try {
-          // Fetch videos by author from REST API
-          final authorVideos = await _analyticsApiService.getVideosByAuthor(
-            pubkey: pubkey,
-            limit: 100,
-          );
-
-          // Find videos matching our d-tags
-          for (final video in authorVideos) {
-            if (video.vineId != null && dTags.contains(video.vineId)) {
-              final videoAddressableId = _computeAddressableId(video);
-              if (videoAddressableId != null &&
-                  video.isSupportedOnCurrentPlatform) {
-                foundVideos[videoAddressableId] = video;
-                Log.info(
-                  'ProfileRepostedVideosBloc: Found video via REST API '
-                  '(author query)',
-                  name: 'ProfileRepostedVideosBloc',
-                  category: LogCategory.video,
-                );
-              }
-            }
-          }
-        } catch (e) {
-          Log.warning(
-            'ProfileRepostedVideosBloc: REST API author query failed for '
-            '$pubkey: $e',
-            name: 'ProfileRepostedVideosBloc',
-            category: LogCategory.video,
-          );
-        }
-      }
-    }
-
-    // Build result list preserving original order
-    final result = <VideoEvent>[];
-    for (final id in addressableIds) {
-      final video = foundVideos[id];
-      if (video != null && video.isSupportedOnCurrentPlatform) {
-        result.add(video);
-      }
-    }
-
-    return result;
+    // Filter unsupported formats
+    return videos.where((v) => v.isSupportedOnCurrentPlatform).toList();
   }
 
   /// Compute the addressable ID for a video event.

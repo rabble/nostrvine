@@ -55,7 +55,7 @@ void main() {
       final json = draft.toJson();
       expect(json['proofManifestJson'], proofJson);
 
-      final deserialized = VineDraft.fromJson(json);
+      final deserialized = VineDraft.fromJson(json, '/path/to');
       expect(deserialized.hasProofMode, true);
       expect(deserialized.nativeProof, isNotNull);
       expect(deserialized.nativeProof!.videoHash, 'abc123def456');
@@ -85,7 +85,7 @@ void main() {
 
       // Verify JSON serialization handles null
       final json = draft.toJson();
-      final deserialized = VineDraft.fromJson(json);
+      final deserialized = VineDraft.fromJson(json, '/path/to');
       expect(deserialized.hasProofMode, false);
       expect(deserialized.nativeProof, null);
     });
@@ -93,7 +93,7 @@ void main() {
     test('should migrate old drafts without proofManifestJson gracefully', () {
       final json = {
         'id': 'old_draft',
-        'videoFilePath': '/path/to/video.mp4',
+        'videoFilePath': 'video.mp4',
         'title': 'Old Draft',
         'description': 'From before ProofMode',
         'hashtags': ['old'],
@@ -106,7 +106,7 @@ void main() {
         // proofManifestJson missing
       };
 
-      final draft = VineDraft.fromJson(json);
+      final draft = VineDraft.fromJson(json, '/path/to');
 
       expect(draft.hasProofMode, false);
       expect(draft.nativeProof, null);

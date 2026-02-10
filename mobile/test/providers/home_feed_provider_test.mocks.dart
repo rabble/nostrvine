@@ -309,6 +309,12 @@ class MockVideoEventService extends _i1.Mock implements _i4.VideoEventService {
           as List<_i5.VideoEvent>);
 
   @override
+  void removeVideoCompletely(String? videoId) => super.noSuchMethod(
+    Invocation.method(#removeVideoCompletely, [videoId]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   void removeVideoFromAuthorList(String? authorPubkey, String? videoId) =>
       super.noSuchMethod(
         Invocation.method(#removeVideoFromAuthorList, [authorPubkey, videoId]),
@@ -1169,6 +1175,9 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
   _i12.Future<_i11.Event?> sendLike(
     String? eventId, {
     String? content,
+    String? addressableId,
+    String? targetAuthorPubkey,
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) =>
@@ -1178,6 +1187,9 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
               [eventId],
               {
                 #content: content,
+                #addressableId: addressableId,
+                #targetAuthorPubkey: targetAuthorPubkey,
+                #targetKind: targetKind,
                 #tempRelays: tempRelays,
                 #targetRelays: targetRelays,
               },
@@ -1319,6 +1331,14 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
             returnValue: _i12.Stream<_i11.Event>.empty(),
           )
           as _i12.Stream<_i11.Event>);
+
+  @override
+  _i12.Future<List<_i11.Event>> queryUsers(String? query, {int? limit}) =>
+      (super.noSuchMethod(
+            Invocation.method(#queryUsers, [query], {#limit: limit}),
+            returnValue: _i12.Future<List<_i11.Event>>.value(<_i11.Event>[]),
+          )
+          as _i12.Future<List<_i11.Event>>);
 
   @override
   _i12.Future<String?> createNip98AuthHeader({
@@ -1568,6 +1588,22 @@ class MockAnalyticsApiService extends _i1.Mock
             ),
           )
           as _i12.Future<List<_i5.VideoEvent>>);
+
+  @override
+  _i12.Future<List<Map<String, dynamic>>> searchProfiles({
+    required String? query,
+    int? limit = 50,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#searchProfiles, [], {
+              #query: query,
+              #limit: limit,
+            }),
+            returnValue: _i12.Future<List<Map<String, dynamic>>>.value(
+              <Map<String, dynamic>>[],
+            ),
+          )
+          as _i12.Future<List<Map<String, dynamic>>>);
 
   @override
   _i12.Future<_i3.VideoStats?> getVideoStats(String? eventId) =>

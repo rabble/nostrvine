@@ -12,13 +12,11 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('ClipLibraryScreen', () {
-    late SharedPreferences prefs;
     late ClipLibraryService clipService;
 
     setUp(() async {
       SharedPreferences.setMockInitialValues({});
-      prefs = await SharedPreferences.getInstance();
-      clipService = ClipLibraryService(prefs);
+      clipService = ClipLibraryService();
     });
 
     Widget buildTestWidget() {
@@ -34,7 +32,7 @@ void main() {
       await tester.pumpWidget(buildTestWidget());
       await tester.pumpAndSettle();
 
-      expect(find.text('No Clips Yet'), findsOneWidget);
+      expect(find.text('Library Empty'), findsOneWidget);
       expect(find.text('Record a Video'), findsOneWidget);
     });
 

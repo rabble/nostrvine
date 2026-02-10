@@ -682,6 +682,89 @@ void main() {
       });
 
       test(
+        'filters by uppercase A tags (NIP-22 root addressable event reference)',
+        () async {
+          const addressableId = '34236:$testPubkey:unique_video_dtag_123';
+          // NIP-22 comment referencing a video via A tag
+          final commentWithA = createEvent(
+            kind: 1111,
+            tags: [
+              ['A', addressableId, ''], // Uppercase A = root addressable scope
+              ['K', '34236'],
+            ],
+            content: 'Comment via A tag',
+            createdAt: 1000,
+          );
+          // Comment referencing a different addressable event
+          final commentOtherA = createEvent(
+            kind: 1111,
+            tags: [
+              ['A', '34236:$testPubkey2:other_dtag', ''],
+              ['K', '34236'],
+            ],
+            content: 'Other addressable comment',
+            createdAt: 2000,
+          );
+          // Event with lowercase a tag (not uppercase A)
+          final lowercaseAEvent = createEvent(
+            kind: 1111,
+            tags: [
+              ['a', addressableId, ''],
+            ],
+            content: 'Lowercase a tag event',
+            createdAt: 3000,
+          );
+
+          await dao.upsertEventsBatch(
+            [commentWithA, commentOtherA, lowercaseAEvent],
+          );
+
+          final results = await dao.getEventsByFilter(
+            Filter(uppercaseA: [addressableId]),
+          );
+
+          expect(results.length, equals(1));
+          expect(results.first.id, equals(commentWithA.id));
+          expect(results.first.content, equals('Comment via A tag'));
+        },
+      );
+
+      test(
+        'combines uppercaseA and kinds filters for NIP-22 comments',
+        () async {
+          const addressableId = '34236:$testPubkey:video_dtag_456';
+          // Kind 1111 comment with A tag
+          final comment = createEvent(
+            kind: 1111,
+            tags: [
+              ['A', addressableId, ''],
+              ['K', '34236'],
+            ],
+            content: 'Comment on video',
+            createdAt: 1000,
+          );
+          // Non-comment event with same A tag (different kind)
+          final nonComment = createEvent(
+            kind: 7,
+            tags: [
+              ['A', addressableId, ''],
+            ],
+            content: '+',
+            createdAt: 2000,
+          );
+
+          await dao.upsertEventsBatch([comment, nonComment]);
+
+          final results = await dao.getEventsByFilter(
+            Filter(kinds: [1111], uppercaseA: [addressableId]),
+          );
+
+          expect(results.length, equals(1));
+          expect(results.first.id, equals(comment.id));
+        },
+      );
+
+      test(
         'combines uppercaseE and uppercaseK filters for NIP-22 comments',
         () async {
           const rootEventId = 'specific_video_id';

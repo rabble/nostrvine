@@ -9,7 +9,8 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:video_player/video_player.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/services/video_cache_manager.dart';
+import 'package:media_cache/media_cache.dart';
+import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/broken_video_tracker.dart'
     show BrokenVideoTracker;
 import 'package:openvine/services/bandwidth_tracker_service.dart';
@@ -53,16 +54,21 @@ final fallbackUrlCacheProvider = StateProvider<Map<String, String>>(
 const _blossomFallbackServer = 'https://media.divine.video';
 
 /// Track controllers that have been scheduled for disposal.
-/// This prevents race conditions where async callbacks try to use disposed controllers.
-/// Key: videoId, Value: true if disposal has been scheduled
-final _disposedControllersProvider = StateProvider<Set<String>>((ref) => {});
+/// This prevents race conditions where async callbacks try to use disposed
+/// controllers. Marked synchronously in `ref.onDispose` (before the deferred
+/// `controller.dispose()` microtask) so that widgets can check whether the
+/// native player is still alive before building [VideoPlayer].
+///
+/// Public so that widget-layer code (e.g. [_SafeVideoPlayer]) can read it
+/// via `ref.watch` / `ref.read`.
+final disposedControllersProvider = StateProvider<Set<String>>((ref) => {});
 
 /// Check if a video controller has been scheduled for disposal.
 /// Use this before any controller operation to prevent "No active player" crashes.
 /// Note: This function is available for widgets but the safe* helpers below
 /// are the preferred approach for most use cases.
 bool isControllerDisposed(Ref ref, String videoId) {
-  return ref.read(_disposedControllersProvider).contains(videoId);
+  return ref.read(disposedControllersProvider).contains(videoId);
 }
 
 /// Safe wrapper for async controller operations that may fail after disposal.
@@ -250,10 +256,14 @@ VideoPlayerController individualVideoController(
 
   // Riverpod lifecycle hooks for idiomatic cache behavior
   ref.onCancel(() {
-    // Last listener removed - start 15-second cache timeout
+    // Last listener removed - start cache timeout before disposal
+    // Android uses shorter timeout (3s) to prevent MediaCodec accumulation crash
+    // iOS/desktop use longer timeout (15s) for smoother scroll-back experience
     // Short timeout prevents OOM with high-resolution videos (4K = ~25MB/frame)
-    // 15 seconds is enough for quick scroll-back; re-init from cache is fast
-    cacheTimer = Timer(const Duration(seconds: 15), () {
+    final timeout = !kIsWeb && Platform.isAndroid
+        ? const Duration(seconds: 3)
+        : const Duration(seconds: 15);
+    cacheTimer = Timer(timeout, () {
       link.close(); // Allow autoDispose after timeout
     });
   });
@@ -262,6 +272,19 @@ VideoPlayerController individualVideoController(
     // New listener added - cancel the disposal timer
     cacheTimer?.cancel();
   });
+
+  // Clear the disposed flag for this video since we are creating a fresh
+  // controller (handles retries and scroll-back scenarios).
+  try {
+    final currentDisposed = ref.read(disposedControllersProvider);
+    if (currentDisposed.contains(params.videoId)) {
+      ref.read(disposedControllersProvider.notifier).state = {
+        ...currentDisposed,
+      }..remove(params.videoId);
+    }
+  } catch (_) {
+    // Ignore - provider may not be available during startup
+  }
 
   Log.info(
     '🎬 Creating VideoPlayerController for video ${params.videoId.length > 8 ? params.videoId : params.videoId}...',
@@ -335,12 +358,12 @@ VideoPlayerController individualVideoController(
     );
   } else {
     // On native platforms, use file caching
-    final videoCache = openVineVideoCache;
+    final videoCache = ref.read(mediaCacheProvider);
 
-    // Synchronous cache check - use getCachedVideoSync() which checks file existence without async
+    // Synchronous cache check - use getCachedFileSync() which checks file existence without async
     final cachedFile = isAgeVerificationRetry
         ? null
-        : videoCache.getCachedVideoSync(params.videoId);
+        : videoCache.getCachedFileSync(params.videoId);
 
     if (cachedFile != null && cachedFile.existsSync()) {
       // Use cached file!
@@ -400,7 +423,16 @@ VideoPlayerController individualVideoController(
   bool? _lastHasError;
 
   void stateChangeListener() {
-    final value = controller.value;
+    // Guard against platform callbacks firing after player disposal.
+    // AVFoundation/ExoPlayer may fire async callbacks after the Dart-side
+    // controller is invalidated via Riverpod, causing "No active player" errors.
+    final VideoPlayerValue value;
+    try {
+      value = controller.value;
+    } catch (e) {
+      if (_isDisposalError(e)) return;
+      rethrow;
+    }
 
     // Only log significant state changes, not every position update
     final isInitialized = value.isInitialized;
@@ -530,11 +562,21 @@ VideoPlayerController individualVideoController(
             name: 'IndividualVideoController',
             category: LogCategory.video,
           );
-          ref.read(ageVerificationRetryProvider.notifier).update((state) {
-            final newState = {...state};
-            newState.remove(params.videoId);
-            return newState;
-          });
+          // Wrap in try-catch to avoid "Cannot use Ref inside life-cycles" crashes
+          // when this callback runs during provider disposal from keepAlive timer
+          try {
+            ref.read(ageVerificationRetryProvider.notifier).update((state) {
+              final newState = {...state};
+              newState.remove(params.videoId);
+              return newState;
+            });
+          } catch (e) {
+            Log.debug(
+              '⚠️ Could not clear age verification retry flag: $e',
+              name: 'IndividualVideoController',
+              category: LogCategory.video,
+            );
+          }
         }
 
         // Set looping for Vine-like behavior
@@ -610,11 +652,21 @@ VideoPlayerController individualVideoController(
             name: 'IndividualVideoController',
             category: LogCategory.video,
           );
-          ref.read(ageVerificationRetryProvider.notifier).update((state) {
-            final newState = {...state};
-            newState.remove(params.videoId);
-            return newState;
-          });
+          // Wrap in try-catch to avoid "Cannot use Ref inside life-cycles" crashes
+          // when this callback runs during provider disposal from keepAlive timer
+          try {
+            ref.read(ageVerificationRetryProvider.notifier).update((state) {
+              final newState = {...state};
+              newState.remove(params.videoId);
+              return newState;
+            });
+          } catch (e) {
+            Log.debug(
+              '⚠️ Could not clear age verification retry flag: $e',
+              name: 'IndividualVideoController',
+              category: LogCategory.video,
+            );
+          }
         }
 
         // Enhanced error logging with full Nostr event details
@@ -706,120 +758,141 @@ VideoPlayerController individualVideoController(
           // Cancel loop enforcement timer before invalidating to prevent race condition
           loopEnforcementTimer?.cancel();
 
-          // Remove corrupted cache file and invalidate provider to trigger retry
-          openVineVideoCache
-              .removeCorruptedVideo(params.videoId)
-              .then((_) {
-                if (ref.mounted) {
+          // Remove corrupted cache file - DON'T invalidate from async callback
+          // The invalidateSelf() was causing "Cannot use Ref inside life-cycles" crashes
+          // when the keepAlive timer fired during disposal. Just remove the cache;
+          // user can retry manually or the provider will be recreated on next access.
+          unawaited(
+            ref
+                .read(mediaCacheProvider)
+                .removeCachedFile(params.videoId)
+                .then((_) {
                   Log.info(
-                    '🔄 Invalidating provider to retry download for video $videoIdDisplay...',
+                    '🗑️ Removed corrupted cache for video $videoIdDisplay',
                     name: 'IndividualVideoController',
                     category: LogCategory.video,
                   );
-                  ref.invalidateSelf();
-                }
-              })
-              .catchError((removeError) {
-                Log.error(
-                  '❌ Failed to remove corrupted cache: $removeError',
+                })
+                .catchError((removeError) {
+                  Log.error(
+                    '❌ Failed to remove corrupted cache: $removeError',
+                    name: 'IndividualVideoController',
+                    category: LogCategory.video,
+                  );
+                }),
+          );
+        } else if (_isCodecError(errorMessage) &&
+            !kIsWeb &&
+            Platform.isAndroid) {
+          // Android codec error - try HLS fallback with H.264 Baseline Profile
+          // IMPORTANT: Read all provider state SYNCHRONOUSLY before any async work
+          // to avoid "Cannot use Ref inside life-cycles" crashes when keepAlive timer fires
+          try {
+            final currentFallbackCache = ref.read(fallbackUrlCacheProvider);
+            final alreadyUsedFallback = currentFallbackCache.containsKey(
+              params.videoId,
+            );
+
+            if (!alreadyUsedFallback && params.videoEvent is VideoEvent) {
+              // Cast to VideoEvent to use the extension method
+              final videoEvent = params.videoEvent as VideoEvent;
+              final hlsFallback = videoEvent.getHlsFallbackUrl();
+
+              if (hlsFallback != null) {
+                // Store HLS URL as fallback for retry
+                final newCache = {...currentFallbackCache};
+                newCache[params.videoId] = hlsFallback;
+                ref.read(fallbackUrlCacheProvider.notifier).state = newCache;
+
+                Log.info(
+                  '📱 Android codec error - stored HLS fallback for retry: $hlsFallback',
                   name: 'IndividualVideoController',
                   category: LogCategory.video,
                 );
-              });
-        } else if (_isCodecError(errorMessage) &&
-            !kIsWeb &&
-            Platform.isAndroid &&
-            ref.mounted) {
-          // Android codec error - try HLS fallback with H.264 Baseline Profile
-          final currentFallbackCache = ref.read(fallbackUrlCacheProvider);
-          final alreadyUsedFallback = currentFallbackCache.containsKey(
-            params.videoId,
-          );
 
-          if (!alreadyUsedFallback && params.videoEvent is VideoEvent) {
-            // Cast to VideoEvent to use the extension method
-            final videoEvent = params.videoEvent as VideoEvent;
-            final hlsFallback = videoEvent.getHlsFallbackUrl();
-
-            if (hlsFallback != null) {
-              // Store HLS URL as fallback for retry
-              final newCache = {...currentFallbackCache};
-              newCache[params.videoId] = hlsFallback;
-              ref.read(fallbackUrlCacheProvider.notifier).state = newCache;
-
-              Log.info(
-                '📱 Android codec error - stored HLS fallback for retry: $hlsFallback',
-                name: 'IndividualVideoController',
-                category: LogCategory.video,
-              );
-
-              // Cancel loop timer and invalidate to trigger retry with HLS
-              loopEnforcementTimer?.cancel();
-              if (ref.mounted) {
-                ref.invalidateSelf();
-              }
-              return;
-            } else {
-              Log.warning(
-                '📱 Android codec error but no HLS fallback available (non-Divine video)',
-                name: 'IndividualVideoController',
-                category: LogCategory.video,
-              );
-            }
-          }
-        } else if (_isVideoError(errorMessage) && ref.mounted) {
-          // Check if we can try a fallback URL before marking as broken
-          final currentFallbackCache = ref.read(fallbackUrlCacheProvider);
-          final alreadyUsedFallback = currentFallbackCache.containsKey(
-            params.videoId,
-          );
-
-          if (!alreadyUsedFallback) {
-            // Try to generate a fallback URL using sha256
-            String? sha256;
-            if (params.videoEvent != null) {
-              final videoEvent = params.videoEvent as dynamic;
-              sha256 = videoEvent.sha256 as String?;
-            }
-            // Also try extracting from URL
-            sha256 ??= _extractSha256FromUrl(params.videoUrl);
-
-            if (sha256 != null && sha256.isNotEmpty) {
-              // Store fallback URL for retry
-              final fallbackUrl = '$_blossomFallbackServer/$sha256';
-              final newCache = {...currentFallbackCache};
-              newCache[params.videoId] = fallbackUrl;
-              ref.read(fallbackUrlCacheProvider.notifier).state = newCache;
-
-              Log.info(
-                '🔄 Stored fallback URL for video $videoIdDisplay: $fallbackUrl',
-                name: 'IndividualVideoController',
-                category: LogCategory.video,
-              );
-              // Don't mark as broken - let retry use the fallback
-              return;
-            }
-          }
-
-          // No fallback available or already tried - mark video as broken
-          ref
-              .read(brokenVideoTrackerProvider.future)
-              .then((tracker) {
-                // Double-check still mounted before marking broken
-                if (ref.mounted) {
-                  tracker.markVideoBroken(
-                    params.videoId,
-                    'Playback initialization failed: $errorMessage',
-                  );
-                }
-              })
-              .catchError((trackerError) {
+                // Cancel loop timer - provider will be recreated on next access
+                loopEnforcementTimer?.cancel();
+                return;
+              } else {
                 Log.warning(
-                  'Failed to mark video as broken: $trackerError',
+                  '📱 Android codec error but no HLS fallback available (non-Divine video)',
                   name: 'IndividualVideoController',
-                  category: LogCategory.system,
+                  category: LogCategory.video,
                 );
-              });
+              }
+            }
+          } catch (e) {
+            // Provider may be disposed - ignore since this is error handling
+            Log.debug(
+              '⚠️ Could not set HLS fallback (provider likely disposed): $e',
+              name: 'IndividualVideoController',
+              category: LogCategory.video,
+            );
+          }
+        } else if (_isVideoError(errorMessage)) {
+          // Check if we can try a fallback URL before marking as broken
+          // IMPORTANT: All ref operations must be synchronous and wrapped in try-catch
+          // to avoid "Cannot use Ref inside life-cycles" crashes
+          try {
+            final currentFallbackCache = ref.read(fallbackUrlCacheProvider);
+            final alreadyUsedFallback = currentFallbackCache.containsKey(
+              params.videoId,
+            );
+
+            if (!alreadyUsedFallback) {
+              // Try to generate a fallback URL using sha256
+              String? sha256;
+              if (params.videoEvent != null) {
+                final videoEvent = params.videoEvent as dynamic;
+                sha256 = videoEvent.sha256 as String?;
+              }
+              // Also try extracting from URL
+              sha256 ??= _extractSha256FromUrl(params.videoUrl);
+
+              if (sha256 != null && sha256.isNotEmpty) {
+                // Store fallback URL for retry
+                final fallbackUrl = '$_blossomFallbackServer/$sha256';
+                final newCache = {...currentFallbackCache};
+                newCache[params.videoId] = fallbackUrl;
+                ref.read(fallbackUrlCacheProvider.notifier).state = newCache;
+
+                Log.info(
+                  '🔄 Stored fallback URL for video $videoIdDisplay: $fallbackUrl',
+                  name: 'IndividualVideoController',
+                  category: LogCategory.video,
+                );
+                // Don't mark as broken - let retry use the fallback
+                return;
+              }
+            }
+
+            // No fallback available or already tried - mark video as broken
+            // Get tracker synchronously, then mark broken in fire-and-forget manner
+            final trackerFuture = ref.read(brokenVideoTrackerProvider.future);
+            unawaited(
+              trackerFuture
+                  .then((tracker) {
+                    tracker.markVideoBroken(
+                      params.videoId,
+                      'Playback initialization failed: $errorMessage',
+                    );
+                  })
+                  .catchError((trackerError) {
+                    Log.warning(
+                      'Failed to mark video as broken: $trackerError',
+                      name: 'IndividualVideoController',
+                      category: LogCategory.system,
+                    );
+                  }),
+            );
+          } catch (e) {
+            // Provider may be disposed - ignore since this is error handling
+            Log.debug(
+              '⚠️ Could not handle video error (provider likely disposed): $e',
+              name: 'IndividualVideoController',
+              category: LogCategory.video,
+            );
+          }
         }
       });
 
@@ -835,6 +908,25 @@ VideoPlayerController individualVideoController(
 
     // Remove state change listener before disposal
     controller.removeListener(stateChangeListener);
+
+    // Mark controller as disposed IMMEDIATELY (synchronously) so that
+    // any widget that rebuilds before the microtask runs can check this
+    // flag and avoid calling VideoPlayer with a stale controller.
+    // This prevents the "No active player with ID" crash (Crashlytics issue).
+    try {
+      final currentDisposed = ref.read(disposedControllersProvider);
+      ref.read(disposedControllersProvider.notifier).state = {
+        ...currentDisposed,
+        params.videoId,
+      };
+    } catch (e) {
+      // Provider may already be disposed - ignore since this is cleanup code
+      Log.debug(
+        'Could not mark controller as disposed: $e',
+        name: 'IndividualVideoController',
+        category: LogCategory.video,
+      );
+    }
 
     // Defer controller disposal to avoid triggering listener callbacks during lifecycle
     // This prevents "Cannot use Ref inside life-cycles" errors when listeners try to access providers
@@ -1021,10 +1113,10 @@ Future<void> _generateAuthHeadersAsync(
 /// Cache video with authentication if needed for NSFW content
 Future<dynamic> _cacheVideoWithAuth(
   Ref ref,
-  VideoCacheManager videoCache,
+  MediaCacheManager videoCache,
   VideoControllerParams params,
 ) async {
-  // Get tracker for broken video handling
+  // Get tracker for broken video handling (used at call site for error reporting)
   BrokenVideoTracker? tracker;
   try {
     tracker = await ref.read(brokenVideoTrackerProvider.future);
@@ -1106,12 +1198,19 @@ Future<dynamic> _cacheVideoWithAuth(
   // Cache video with optional auth headers
   // Use effectiveCacheUrl (original MP4) not videoUrl (may be HLS on Android)
   // HLS manifests can't be cached as single files
-  return videoCache.cacheVideo(
-    params.effectiveCacheUrl,
-    params.videoId,
-    brokenVideoTracker: tracker,
-    authHeaders: authHeaders,
-  );
+  try {
+    return await videoCache.cacheFile(
+      params.effectiveCacheUrl,
+      key: params.videoId,
+      authHeaders: authHeaders,
+    );
+  } catch (e) {
+    // If caching fails, mark video as broken for future reference
+    if (tracker != null) {
+      tracker.markVideoBroken(params.videoId, 'Cache download failed: $e');
+    }
+    rethrow;
+  }
 }
 
 /// Check if error indicates a 401 Unauthorized (likely NSFW content)

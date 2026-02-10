@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/services/nostr_service_factory.dart';
-import 'package:openvine/repositories/video_repository.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -50,13 +49,12 @@ void main() {
 
     setUp(() async {
       // Create real services
-      final keyContainer = SecureKeyContainer.generate();
+      final keyContainer = await SecureKeyContainer.generate();
       nostrService = NostrServiceFactory.create(keyContainer: keyContainer);
       subscriptionManager = SubscriptionManager(nostrService);
       videoEventService = VideoEventService(
         nostrService,
         subscriptionManager: subscriptionManager,
-        videoRepository: VideoRepository(),
       );
 
       // Initialize and connect to real relay

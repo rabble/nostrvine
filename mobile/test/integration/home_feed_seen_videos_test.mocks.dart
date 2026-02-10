@@ -290,6 +290,12 @@ class MockVideoEventService extends _i1.Mock implements _i3.VideoEventService {
           as List<_i4.VideoEvent>);
 
   @override
+  void removeVideoCompletely(String? videoId) => super.noSuchMethod(
+    Invocation.method(#removeVideoCompletely, [videoId]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   void removeVideoFromAuthorList(String? authorPubkey, String? videoId) =>
       super.noSuchMethod(
         Invocation.method(#removeVideoFromAuthorList, [authorPubkey, videoId]),
@@ -1150,6 +1156,9 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
   _i11.Future<_i10.Event?> sendLike(
     String? eventId, {
     String? content,
+    String? addressableId,
+    String? targetAuthorPubkey,
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) =>
@@ -1159,6 +1168,9 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
               [eventId],
               {
                 #content: content,
+                #addressableId: addressableId,
+                #targetAuthorPubkey: targetAuthorPubkey,
+                #targetKind: targetKind,
                 #tempRelays: tempRelays,
                 #targetRelays: targetRelays,
               },
@@ -1302,6 +1314,14 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
           as _i11.Stream<_i10.Event>);
 
   @override
+  _i11.Future<List<_i10.Event>> queryUsers(String? query, {int? limit}) =>
+      (super.noSuchMethod(
+            Invocation.method(#queryUsers, [query], {#limit: limit}),
+            returnValue: _i11.Future<List<_i10.Event>>.value(<_i10.Event>[]),
+          )
+          as _i11.Future<List<_i10.Event>>);
+
+  @override
   _i11.Future<String?> createNip98AuthHeader({
     required String? url,
     required String? method,
@@ -1422,9 +1442,36 @@ class MockFollowRepository extends _i1.Mock implements _i15.FollowRepository {
           as _i11.Future<void>);
 
   @override
+  _i11.Future<void> executeFollowAction(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#executeFollowAction, [pubkey]),
+            returnValue: _i11.Future<void>.value(),
+            returnValueForMissingStub: _i11.Future<void>.value(),
+          )
+          as _i11.Future<void>);
+
+  @override
   _i11.Future<void> unfollow(String? pubkey) =>
       (super.noSuchMethod(
             Invocation.method(#unfollow, [pubkey]),
+            returnValue: _i11.Future<void>.value(),
+            returnValueForMissingStub: _i11.Future<void>.value(),
+          )
+          as _i11.Future<void>);
+
+  @override
+  _i11.Future<void> executeUnfollowAction(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#executeUnfollowAction, [pubkey]),
+            returnValue: _i11.Future<void>.value(),
+            returnValueForMissingStub: _i11.Future<void>.value(),
+          )
+          as _i11.Future<void>);
+
+  @override
+  _i11.Future<void> mergeFollows(List<String>? additionalPubkeys) =>
+      (super.noSuchMethod(
+            Invocation.method(#mergeFollows, [additionalPubkeys]),
             returnValue: _i11.Future<void>.value(),
             returnValueForMissingStub: _i11.Future<void>.value(),
           )

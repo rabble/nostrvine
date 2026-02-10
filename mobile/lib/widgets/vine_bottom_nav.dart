@@ -2,20 +2,21 @@
 // ABOUTME: Provides consistent bottom nav across screens with/without shell
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:divine_ui/divine_ui.dart';
-import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
-import 'package:openvine/router/last_tab_position_provider.dart';
-import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/providers/relay_notifications_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/notification_badge.dart';
 
 /// Shared bottom navigation bar used by AppShell and standalone profile screens.
 class VineBottomNav extends ConsumerWidget {
@@ -56,10 +57,21 @@ class VineBottomNav extends ConsumerWidget {
     }
 
     // Navigate to last position in that tab
+    if (tabIndex == 3) {
+      // Navigate to own profile grid mode using actual npub (matches AppShell behavior).
+      // When already on /profile/{npub}, GoRouter sees the same URL and no-ops.
+      final authService = ref.read(authServiceProvider);
+      final hex = authService.currentPublicKeyHex;
+      if (hex != null) {
+        final npub = NostrKeyUtils.encodePubKey(hex);
+        context.go(ProfileScreenRouter.pathForNpub(npub));
+      }
+      return;
+    }
+
     return switch (tabIndex) {
       1 => context.go(ExploreScreen.path),
       2 => context.go(NotificationsScreen.pathForIndex(lastIndex ?? 0)),
-      3 => context.go(ProfileScreenRouter.pathForIndex('me', lastIndex ?? 0)),
       _ => context.go(HomeScreenRouter.pathForIndex(lastIndex ?? 0)),
     };
   }
@@ -138,12 +150,15 @@ class VineBottomNav extends ConsumerWidget {
                 context.push(VideoRecorderScreen.path);
               },
             ),
-            _buildTabButton(
-              context,
-              ref,
-              'assets/icon/bell.svg',
-              2,
-              'notifications_tab',
+            NotificationBadge(
+              count: ref.watch(relayNotificationUnreadCountProvider),
+              child: _buildTabButton(
+                context,
+                ref,
+                'assets/icon/bell.svg',
+                2,
+                'notifications_tab',
+              ),
             ),
             _buildTabButton(
               context,
@@ -167,44 +182,30 @@ class _CameraButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<BackgroundPublishBloc, BackgroundPublishState>(
-      builder: (context, state) {
-        final isDisabled = state.hasUploadInProgress;
-
-        return Semantics(
-          identifier: 'camera_button',
-          button: true,
-          label: isDisabled ? 'Camera disabled during upload' : 'Open camera',
-          child: GestureDetector(
-            onTap: isDisabled ? null : onTap,
-            child: Opacity(
-              opacity: isDisabled ? 0.5 : 1.0,
-              child: Container(
-                width: 72,
-                height: 48,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  color: isDisabled
-                      ? VineTheme.tabIconInactive
-                      : VineTheme.cameraButtonGreen,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: SvgPicture.asset(
-                  'assets/icon/retro-camera.svg',
-                  width: 32,
-                  height: 32,
-                  colorFilter: isDisabled
-                      ? const ColorFilter.mode(Colors.grey, BlendMode.srcIn)
-                      : null,
-                ),
-              ),
+    return Semantics(
+      identifier: 'camera_button',
+      button: true,
+      label: 'Open camera',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Opacity(
+          opacity: 1.0,
+          child: Container(
+            width: 72,
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+            decoration: BoxDecoration(
+              color: VineTheme.cameraButtonGreen,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: SvgPicture.asset(
+              'assets/icon/retro-camera.svg',
+              width: 32,
+              height: 32,
             ),
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }

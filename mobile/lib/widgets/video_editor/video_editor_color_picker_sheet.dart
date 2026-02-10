@@ -5,71 +5,121 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/widgets/video_editor/video_editor_blurred_panel.dart';
 
 /// Bottom sheet for color selection with iOS-style blurred background.
 class VideoEditorColorPickerSheet extends StatelessWidget {
   const VideoEditorColorPickerSheet({
+    super.key,
     required this.selectedColor,
     required this.onColorSelected,
+    this.height,
   });
 
   final Color selectedColor;
   final ValueChanged<Color> onColorSelected;
 
+  /// Optional height constraint for inline display (e.g., replacing keyboard).
+  final double? height;
+
+  /// Minimum size for color buttons. Items may grow larger to fill space.
+  static const double _minItemSize = 40;
+
+  /// Spacing between items.
+  static const double _crossAxisSpacing = 10;
+
+  /// Spacing between rows.
+  static const double _mainAxisSpacing = 22;
+
+  /// Horizontal padding.
+  static const double _horizontalPadding = 20;
+
   void _openColorPicker() {
     // TODO(@hm21): implement color-picker when the design is ready.
   }
 
+  /// Finds the best crossAxisCount that evenly divides [itemCount].
+  ///
+  /// Searches from [maxCount] down to [minCount] to find an even divisor.
+  /// This prefers more items per row (closer to min size) while ensuring
+  /// all rows have equal item counts.
+  int _findBestCrossAxisCount({
+    required int itemCount,
+    required double width,
+    int minCount = 4,
+  }) {
+    // Calculate max items that fit per row at minimum size
+    final availableWidth = width - (_horizontalPadding * 2);
+    final itemWithSpacing = _minItemSize + _crossAxisSpacing;
+    final maxCount = ((availableWidth + _crossAxisSpacing) / itemWithSpacing)
+        .floor()
+        .clamp(1, 10);
+
+    for (int count = maxCount; count >= minCount; count--) {
+      if (itemCount % count == 0) return count;
+    }
+    // No even divisor found - use maxCount (last row will be partial)
+    return maxCount;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: const .vertical(top: .circular(27)),
-      child: BackdropFilter(
-        filter: .blur(sigmaX: 30, sigmaY: 30),
-        child: DecoratedBox(
-          decoration: const BoxDecoration(
-            color: Color(0xFF0D0D0D),
-            backgroundBlendMode: .lighten,
-          ),
-          child: DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Color.fromRGBO(38, 38, 38, .9),
-              backgroundBlendMode: .luminosity,
-            ),
-            child: Padding(
-              padding: const .fromLTRB(20, 25, 20, 32),
-              child: GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                  maxCrossAxisExtent: 44,
-                  mainAxisSpacing: 22,
-                  crossAxisSpacing: 14,
-                  childAspectRatio: 1,
-                ),
-                itemBuilder: (context, index) {
-                  final isColorPicker = index == 0;
-                  final color = isColorPicker
-                      ? Colors.white
-                      : VideoEditorConstants.colors[index - 1];
-                  final isSelected = color == selectedColor;
+    final itemCount = VideoEditorConstants.colors.length + 1;
 
-                  return _ColorButton(
-                    color: color,
-                    isSelected: isSelected,
-                    isColorPicker: isColorPicker,
-                    onTap: () => isColorPicker
-                        ? _openColorPicker()
-                        : onColorSelected(color),
-                  );
-                },
-                itemCount: VideoEditorConstants.colors.length + 1,
+    Widget content = VideoEditorBlurredPanel(
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // Find best count that evenly divides items (items grow to fill)
+          final crossAxisCount = _findBestCrossAxisCount(
+            itemCount: itemCount,
+            width: constraints.maxWidth,
+          );
+
+          return SingleChildScrollView(
+            child: GridView.builder(
+              padding: const .fromLTRB(
+                _horizontalPadding,
+                25,
+                _horizontalPadding,
+                32,
               ),
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount,
+                mainAxisSpacing: _mainAxisSpacing,
+                crossAxisSpacing: _crossAxisSpacing,
+                childAspectRatio: 1,
+              ),
+              itemBuilder: (context, index) {
+                final isColorPicker = index == 0;
+                final color = isColorPicker
+                    ? Colors.white
+                    : VideoEditorConstants.colors[index - 1];
+                final isSelected = color == selectedColor;
+
+                return _ColorButton(
+                  color: color,
+                  isSelected: isSelected,
+                  isColorPicker: isColorPicker,
+                  onTap: () => isColorPicker
+                      ? _openColorPicker()
+                      : onColorSelected(color),
+                );
+              },
+              itemCount: itemCount,
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
+
+    // Wrap with SizedBox if height is specified (inline mode)
+    if (height != null) {
+      content = SizedBox(height: height, child: content);
+    }
+
+    return content;
   }
 }
 
@@ -108,9 +158,7 @@ class _ColorButton extends StatelessWidget {
       button: true,
       child: GestureDetector(
         onTap: onTap,
-        child: Container(
-          width: 44,
-          height: 44,
+        child: DecoratedBox(
           decoration: BoxDecoration(
             borderRadius: .circular(16),
             border: isSelected
@@ -121,25 +169,30 @@ class _ColorButton extends StatelessWidget {
                   )
                 : null,
           ),
-          padding: isSelected ? const .all(2) : null,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: color,
-              borderRadius: .circular(isSelected ? 14 : 16),
-              border: isSelected
-                  ? null
-                  : .all(color: VineTheme.onSurface, width: 2),
+          child: Padding(
+            padding: isSelected ? const EdgeInsets.all(2) : EdgeInsets.zero,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(isSelected ? 14 : 16),
+                border: isSelected
+                    ? null
+                    : Border.all(color: VineTheme.onSurface, width: 2),
+              ),
+              child: isColorPicker
+                  ? Center(
+                      child: SvgPicture.asset(
+                        'assets/icon/paint_brush.svg',
+                        colorFilter: const ColorFilter.mode(
+                          Color(0xFF00452D),
+                          BlendMode.srcIn,
+                        ),
+                        width: 28,
+                        height: 28,
+                      ),
+                    )
+                  : null,
             ),
-            child: isColorPicker
-                ? Center(
-                    child: SvgPicture.asset(
-                      'assets/icon/paint_brush.svg',
-                      colorFilter: const .mode(Color(0xFF00452D), .srcIn),
-                      width: 28,
-                      height: 28,
-                    ),
-                  )
-                : null,
           ),
         ),
       ),

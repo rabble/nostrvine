@@ -496,6 +496,9 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
   _i4.Future<_i7.Event?> sendLike(
     String? eventId, {
     String? content,
+    String? addressableId,
+    String? targetAuthorPubkey,
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) =>
@@ -505,6 +508,9 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
               [eventId],
               {
                 #content: content,
+                #addressableId: addressableId,
+                #targetAuthorPubkey: targetAuthorPubkey,
+                #targetKind: targetKind,
                 #tempRelays: tempRelays,
                 #targetRelays: targetRelays,
               },
@@ -646,6 +652,14 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
             returnValue: _i4.Stream<_i7.Event>.empty(),
           )
           as _i4.Stream<_i7.Event>);
+
+  @override
+  _i4.Future<List<_i7.Event>> queryUsers(String? query, {int? limit}) =>
+      (super.noSuchMethod(
+            Invocation.method(#queryUsers, [query], {#limit: limit}),
+            returnValue: _i4.Future<List<_i7.Event>>.value(<_i7.Event>[]),
+          )
+          as _i4.Future<List<_i7.Event>>);
 
   @override
   _i4.Future<String?> createNip98AuthHeader({
@@ -921,6 +935,12 @@ class MockVideoEventService extends _i1.Mock implements _i8.VideoEventService {
             returnValue: <_i9.VideoEvent>[],
           )
           as List<_i9.VideoEvent>);
+
+  @override
+  void removeVideoCompletely(String? videoId) => super.noSuchMethod(
+    Invocation.method(#removeVideoCompletely, [videoId]),
+    returnValueForMissingStub: null,
+  );
 
   @override
   void removeVideoFromAuthorList(String? authorPubkey, String? videoId) =>

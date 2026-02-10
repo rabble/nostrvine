@@ -2,8 +2,10 @@
 // ABOUTME: Coordinates between NostrClient for relay operations and
 // ABOUTME: LikesLocalStorage for persistence. Handles Kind 7 reactions
 // ABOUTME: and Kind 5 deletions for likes/unlikes.
+// ABOUTME: Supports offline queuing via callback injection.
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:likes_repository/src/exceptions.dart';
 import 'package:likes_repository/src/likes_local_storage.dart';
@@ -18,6 +20,19 @@ const _defaultReactionFetchLimit = 500;
 
 /// NIP-25 reaction content for a like.
 const _likeContent = '+';
+
+/// Callback to check if the device is currently online
+typedef IsOnlineCallback = bool Function();
+
+/// Callback to queue an action for offline sync
+typedef QueueOfflineActionCallback =
+    Future<void> Function({
+      required bool isLike,
+      required String eventId,
+      required String authorPubkey,
+      String? addressableId,
+      int? targetKind,
+    });
 
 /// Repository for managing user likes (Kind 7 reactions) on Nostr events.
 ///
@@ -48,14 +63,20 @@ class LikesRepository {
   /// - [authStateStream]: Optional stream of authentication state
   /// (true=authenticated)
   /// - [isAuthenticated]: Initial authentication state
+  /// - [isOnline]: Optional callback to check connectivity status
+  /// - [queueOfflineAction]: Optional callback to queue actions when offline
   LikesRepository({
     required NostrClient nostrClient,
     LikesLocalStorage? localStorage,
     Stream<bool>? authStateStream,
     bool isAuthenticated = false,
+    IsOnlineCallback? isOnline,
+    QueueOfflineActionCallback? queueOfflineAction,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
-       _isAuthenticated = isAuthenticated {
+       _isAuthenticated = isAuthenticated,
+       _isOnline = isOnline,
+       _queueOfflineAction = queueOfflineAction {
     // Listen to auth state changes if stream provided
     if (authStateStream != null) {
       _authSubscription = authStateStream.listen(_handleAuthChange);
@@ -65,6 +86,12 @@ class LikesRepository {
   final NostrClient _nostrClient;
   final LikesLocalStorage? _localStorage;
   StreamSubscription<bool>? _authSubscription;
+
+  /// Callback to check if the device is online
+  final IsOnlineCallback? _isOnline;
+
+  /// Callback to queue actions for offline sync
+  final QueueOfflineActionCallback? _queueOfflineAction;
 
   /// Whether the user is currently authenticated.
   bool _isAuthenticated;
@@ -78,8 +105,18 @@ class LikesRepository {
   /// Whether the repository has been initialized with data from storage.
   bool _isInitialized = false;
 
+  /// Whether [dispose] has been called.
+  ///
+  /// Once disposed, all stream emissions and auth-change handlers are no-ops.
+  bool _isDisposed = false;
+
   /// Emits the current set of liked event IDs.
+  ///
+  /// Guards against emitting after [dispose] has been called or the controller
+  /// has been closed, which can happen if [clearCache] runs during or after
+  /// [dispose] (e.g. on logout).
   void _emitLikedIds() {
+    if (_isDisposed || _likedIdsController.isClosed) return;
     _likedIdsController.add(_likeRecords.keys.toSet());
   }
 
@@ -131,13 +168,27 @@ class LikesRepository {
   /// The reaction event is broadcast to Nostr relays and the mapping
   /// is stored locally for later retrieval.
   ///
-  /// Returns the reaction event ID (needed for unlikes).
+  /// If the device is offline and offline queuing is enabled, the action
+  /// is queued for later sync and the UI should be updated optimistically.
+  ///
+  /// Parameters:
+  /// - [eventId]: The event ID to like (required)
+  /// - [authorPubkey]: The pubkey of the event author (required)
+  /// - [addressableId]: Optional addressable ID for Kind 30000+ events
+  ///   (format: "kind:pubkey:d-tag"). When provided, adds an 'a' tag for
+  ///   better discoverability of likes on addressable events like videos.
+  /// - [targetKind]: Optional kind of the event being liked (e.g., 34236)
+  ///
+  /// Returns the reaction event ID (needed for unlikes), or a placeholder
+  /// ID if the action was queued for offline sync.
   ///
   /// Throws `LikeFailedException` if the operation fails.
   /// Throws `AlreadyLikedException` if the event is already liked.
   Future<String> likeEvent({
     required String eventId,
     required String authorPubkey,
+    String? addressableId,
+    int? targetKind,
   }) async {
     await _ensureInitialized();
 
@@ -146,10 +197,38 @@ class LikesRepository {
       throw AlreadyLikedException(eventId);
     }
 
+    // Check if offline and queue if needed
+    if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
+      await _queueOfflineAction(
+        isLike: true,
+        eventId: eventId,
+        authorPubkey: authorPubkey,
+        addressableId: addressableId,
+        targetKind: targetKind,
+      );
+
+      // Create optimistic local record with placeholder ID
+      final placeholderId = 'pending_like_$eventId';
+      final record = LikeRecord(
+        targetEventId: eventId,
+        reactionEventId: placeholderId,
+        createdAt: DateTime.now(),
+      );
+
+      _likeRecords[eventId] = record;
+      await _localStorage?.saveLikeRecord(record);
+      _emitLikedIds();
+
+      return placeholderId;
+    }
+
     // Publish Kind 7 reaction event via NostrClient
     final reactionEvent = await _nostrClient.sendLike(
       eventId,
       content: _likeContent,
+      addressableId: addressableId,
+      targetAuthorPubkey: authorPubkey,
+      targetKind: targetKind,
     );
 
     if (reactionEvent == null) {
@@ -170,10 +249,52 @@ class LikesRepository {
     return reactionEvent.id;
   }
 
+  /// Execute a like action directly (for use by sync service).
+  ///
+  /// This method bypasses offline queuing and directly publishes to relays.
+  /// Used by PendingActionService to execute queued actions.
+  Future<String> executeLikeAction({
+    required String eventId,
+    required String authorPubkey,
+    String? addressableId,
+    int? targetKind,
+  }) async {
+    // Publish Kind 7 reaction event via NostrClient
+    final reactionEvent = await _nostrClient.sendLike(
+      eventId,
+      content: _likeContent,
+      addressableId: addressableId,
+      targetAuthorPubkey: authorPubkey,
+      targetKind: targetKind,
+    );
+
+    if (reactionEvent == null) {
+      throw const LikeFailedException('Failed to publish like reaction');
+    }
+
+    // Update local record with real event ID if we have a placeholder
+    final existingRecord = _likeRecords[eventId];
+    if (existingRecord != null &&
+        existingRecord.reactionEventId.startsWith('pending_')) {
+      final record = LikeRecord(
+        targetEventId: eventId,
+        reactionEventId: reactionEvent.id,
+        createdAt: existingRecord.createdAt,
+      );
+      _likeRecords[eventId] = record;
+      await _localStorage?.saveLikeRecord(record);
+    }
+
+    return reactionEvent.id;
+  }
+
   /// Unlike an event.
   ///
   /// Creates and publishes a Kind 5 deletion event referencing the
   /// original reaction event. Removes the like record from local storage.
+  ///
+  /// If the device is offline and offline queuing is enabled, the action
+  /// is queued for later sync and the UI should be updated optimistically.
   ///
   /// Throws `UnlikeFailedException` if the operation fails.
   /// Throws `NotLikedException` if the event is not currently liked.
@@ -189,6 +310,65 @@ class LikesRepository {
 
     if (record == null) {
       throw NotLikedException(eventId);
+    }
+
+    // Check if offline and queue if needed
+    if (_isOnline != null && !_isOnline() && _queueOfflineAction != null) {
+      await _queueOfflineAction(
+        isLike: false,
+        eventId: eventId,
+        authorPubkey: '', // Not needed for unlike
+      );
+
+      // Remove from cache and storage optimistically
+      _likeRecords.remove(eventId);
+      await _localStorage?.deleteLikeRecord(eventId);
+      _emitLikedIds();
+
+      return;
+    }
+
+    // Skip publishing deletion if this was a pending like that never synced
+    if (!record.reactionEventId.startsWith('pending_')) {
+      // Publish Kind 5 deletion event via NostrClient
+      final deletionEvent = await _nostrClient.deleteEvent(
+        record.reactionEventId,
+      );
+
+      if (deletionEvent == null) {
+        throw const UnlikeFailedException('Failed to publish unlike deletion');
+      }
+    }
+
+    // Remove from cache and storage
+    _likeRecords.remove(eventId);
+    await _localStorage?.deleteLikeRecord(eventId);
+    _emitLikedIds();
+  }
+
+  /// Execute an unlike action directly (for use by sync service).
+  ///
+  /// This method bypasses offline queuing and directly publishes to relays.
+  /// Used by PendingActionService to execute queued actions.
+  Future<void> executeUnlikeAction(String eventId) async {
+    // Try to get the record - it may not exist if the like was also offline
+    var record = _likeRecords[eventId];
+    if (record == null && _localStorage != null) {
+      record = await _localStorage.getLikeRecord(eventId);
+    }
+
+    // If no record exists, the like was never synced either, so we're done
+    if (record == null) {
+      return;
+    }
+
+    // Skip publishing if this was a pending like
+    if (record.reactionEventId.startsWith('pending_')) {
+      // Just clean up local storage
+      _likeRecords.remove(eventId);
+      await _localStorage?.deleteLikeRecord(eventId);
+      _emitLikedIds();
+      return;
     }
 
     // Publish Kind 5 deletion event via NostrClient
@@ -211,11 +391,21 @@ class LikesRepository {
   /// If the event is not liked, likes it and returns `true`.
   /// If the event is liked, unlikes it and returns `false`.
   ///
+  /// Parameters:
+  /// - [eventId]: The event ID to toggle like on (required)
+  /// - [authorPubkey]: The pubkey of the event author (required)
+  /// - [addressableId]: Optional addressable ID for Kind 30000+ events
+  ///   (format: "kind:pubkey:d-tag"). When provided, adds an 'a' tag for
+  ///   better discoverability of likes on addressable events like videos.
+  /// - [targetKind]: Optional kind of the event being liked (e.g., 34236)
+  ///
   /// This is a convenience method that combines [isLiked], [likeEvent],
   /// and [unlikeEvent].
   Future<bool> toggleLike({
     required String eventId,
     required String authorPubkey,
+    String? addressableId,
+    int? targetKind,
   }) async {
     await _ensureInitialized();
 
@@ -229,7 +419,12 @@ class LikesRepository {
       await unlikeEvent(eventId);
       return false;
     } else {
-      await likeEvent(eventId: eventId, authorPubkey: authorPubkey);
+      await likeEvent(
+        eventId: eventId,
+        authorPubkey: authorPubkey,
+        addressableId: addressableId,
+        targetKind: targetKind,
+      );
       return true;
     }
   }
@@ -237,15 +432,35 @@ class LikesRepository {
   /// Get the like count for an event.
   ///
   /// Queries relays for the count of Kind 7 reactions on the event.
+  /// When [addressableId] is provided, queries by both 'e' and 'a' tags
+  /// and returns the maximum count (since relays may index differently).
+  ///
   /// Note: This counts all likes, not just the current user's.
-  Future<int> getLikeCount(String eventId) async {
+  Future<int> getLikeCount(String eventId, {String? addressableId}) async {
     // Query relays for count of Kind 7 reactions on this event
-    final filter = Filter(
+    final filterByE = Filter(
       kinds: const [EventKind.reaction],
       e: [eventId],
     );
 
-    final result = await _nostrClient.countEvents([filter]);
+    // If addressable ID provided, query by both e and a tags
+    if (addressableId != null && addressableId.isNotEmpty) {
+      final filterByA = Filter(
+        kinds: const [EventKind.reaction],
+        a: [addressableId],
+      );
+
+      // Query both filters in parallel and return the maximum count
+      // Some relays may index by e-tag, others by a-tag
+      final results = await Future.wait([
+        _nostrClient.countEvents([filterByE]),
+        _nostrClient.countEvents([filterByA]),
+      ]);
+
+      return max(results[0].count, results[1].count);
+    }
+
+    final result = await _nostrClient.countEvents([filterByE]);
     return result.count;
   }
 
@@ -255,31 +470,40 @@ class LikesRepository {
   /// This is more efficient than calling [getLikeCount] multiple times
   /// as it sends a single request with multiple event IDs in the filter.
   ///
+  /// Parameters:
+  /// - [eventIds]: List of event IDs to get counts for
+  /// - [addressableIds]: Optional map of event ID to addressable ID for
+  ///   Kind 30000+ events. When provided, also queries by 'a' tag and
+  ///   merges results (taking max count per event).
+  ///
   /// Returns a map of event ID to like count. Events with zero likes
   /// are included with a count of 0.
   ///
   /// Note: This counts all likes, not just the current user's.
-  Future<Map<String, int>> getLikeCounts(List<String> eventIds) async {
+  Future<Map<String, int>> getLikeCounts(
+    List<String> eventIds, {
+    Map<String, String>? addressableIds,
+  }) async {
     if (eventIds.isEmpty) return {};
 
     // Query relays for count of Kind 7 reactions on all events at once
     // Using a single filter with multiple event IDs in the 'e' array
-    final filter = Filter(
+    final filterByE = Filter(
       kinds: const [EventKind.reaction],
       e: eventIds,
     );
 
     // NIP-45 COUNT with multiple event IDs returns total count, not per-event
     // So we need to fall back to querying events and counting client-side
-    final events = await _nostrClient.queryEvents([filter]);
+    final eventsByE = await _nostrClient.queryEvents([filterByE]);
 
-    // Count reactions per target event
+    // Count reactions per target event from e-tag query
     final counts = <String, int>{};
     for (final eventId in eventIds) {
       counts[eventId] = 0;
     }
 
-    for (final event in events) {
+    for (final event in eventsByE) {
       // Find the 'e' tag that references the target event
       for (final tag in event.tags) {
         if (tag is List && tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
@@ -288,6 +512,49 @@ class LikesRepository {
             counts[targetId] = counts[targetId]! + 1;
           }
         }
+      }
+    }
+
+    // If addressable IDs provided, also query by a-tag and merge results
+    if (addressableIds != null && addressableIds.isNotEmpty) {
+      final aTagValues = addressableIds.values.toList();
+      final filterByA = Filter(
+        kinds: const [EventKind.reaction],
+        a: aTagValues,
+      );
+
+      final eventsByA = await _nostrClient.queryEvents([filterByA]);
+
+      // Create reverse lookup: addressableId -> eventId
+      final aTagToEventId = <String, String>{};
+      for (final entry in addressableIds.entries) {
+        aTagToEventId[entry.value] = entry.key;
+      }
+
+      // Count reactions from a-tag query
+      final countsFromA = <String, int>{};
+      for (final eventId in eventIds) {
+        countsFromA[eventId] = 0;
+      }
+
+      for (final event in eventsByA) {
+        for (final tag in event.tags) {
+          if (tag is List &&
+              tag.isNotEmpty &&
+              tag[0] == 'a' &&
+              tag.length > 1) {
+            final aTagValue = tag[1] as String;
+            final eventId = aTagToEventId[aTagValue];
+            if (eventId != null && countsFromA.containsKey(eventId)) {
+              countsFromA[eventId] = countsFromA[eventId]! + 1;
+            }
+          }
+        }
+      }
+
+      // Merge counts, taking maximum for each event
+      for (final eventId in eventIds) {
+        counts[eventId] = max(counts[eventId]!, countsFromA[eventId] ?? 0);
       }
     }
 
@@ -488,6 +755,9 @@ class LikesRepository {
   ///
   /// Used when logging out or clearing user data.
   /// Does not affect data on relays.
+  ///
+  /// Safe to call after [dispose] -- the cache is still cleared but no
+  /// stream emission is attempted.
   Future<void> clearCache() async {
     _likeRecords.clear();
     await _localStorage?.clearAll();
@@ -497,9 +767,13 @@ class LikesRepository {
 
   /// Dispose of resources.
   ///
+  /// Cancels the auth subscription first so that no further auth-change
+  /// callbacks can fire, then closes the stream controller.
   /// Should be called when the repository is no longer needed.
   void dispose() {
+    _isDisposed = true;
     unawaited(_authSubscription?.cancel());
+    _authSubscription = null;
     unawaited(_likedIdsController.close());
   }
 
@@ -508,6 +782,7 @@ class LikesRepository {
   /// When user logs out, clears the cache.
   /// When user logs in, triggers a sync.
   void _handleAuthChange(bool isAuthenticated) {
+    if (_isDisposed) return;
     if (isAuthenticated == _isAuthenticated) return;
 
     _isAuthenticated = isAuthenticated;

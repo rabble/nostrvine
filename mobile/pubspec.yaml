@@ -27,6 +27,7 @@ workspace:
   - packages/divine_ui
   - packages/db_client
   - packages/divine_camera
+  - packages/funnelcake_api_client
   - packages/keycast_flutter
   - packages/likes_repository
   - packages/media_cache
@@ -58,6 +59,7 @@ dependencies:
   flutter_riverpod: ^3.0.0
   riverpod_annotation: ^3.0.0
   flutter_bloc: ^9.0.0
+  bloc_concurrency: ^0.3.0
   freezed_annotation: ^3.0.0
   json_annotation: ^4.9.0
   rxdart: ^0.28.0
@@ -84,6 +86,7 @@ dependencies:
   visibility_detector: ^0.4.0+2 # Detect widget visibility for proper video control
   image: ^4.1.7 # Image processing for GIF generation
   image_picker: ^1.2.0 # For selecting images from gallery or camera
+  gal: ^2.3.2 # Save videos to device photo gallery
   file_selector: ^1.0.4 # For desktop file selection (macOS, Windows, Linux)
 
   # Cloud services (removed cloudinary_public - using Blossom instead)
@@ -113,22 +116,17 @@ dependencies:
 
   # Nostr SDK - Local package for comprehensive Nostr support
   nostr_sdk:
-    path: packages/nostr_sdk
 
   # Nostr Key Manager - Secure key management with hardware-backed storage
   nostr_key_manager:
-    path: packages/nostr_key_manager
 
   keycast_flutter:
-    path: packages/keycast_flutter
 
   # Videos Repository - Video feed data layer
   videos_repository:
-    path: packages/videos_repository
 
   # Divine UI - Shared UI components
   divine_ui:
-    path: packages/divine_ui
 
   # Logging
   logging: ^1.2.0
@@ -154,13 +152,26 @@ dependencies:
   convert: ^3.1.2
   just_audio: ^0.10.5
   audio_session: ^0.2.2
-  pro_video_editor: ^1.4.0
-  pro_image_editor: ^11.18.4
+  pro_video_editor: ^1.4.2
+  pro_image_editor: ^11.22.1
   linked_scroll_controller: ^0.2.0
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7
   sensors_plus: ^7.0.0
+  media_kit: ^1.2.6
+  media_kit_libs_video: ^1.0.7
+  # Temporary override to include texture rotation fix
+  # https://github.com/media-kit/media-kit/issues/627
+  # Will be removed once the fix is merged and released
+  media_kit_video:
+    git:
+      url: https://github.com/divinevideo/media-kit
+      ref: fix/texture-rotation
+      path: media_kit_video
+  stream_transform: ^2.1.1
   flutter_staggered_grid_view: ^0.7.0
+  qr_flutter: ^4.1.0
+
 
 dependency_overrides:
   device_info_plus: ^10.1.2

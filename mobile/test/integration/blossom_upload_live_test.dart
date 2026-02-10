@@ -45,7 +45,7 @@ void main() {
 
       // Create real services for live testing using the factory pattern
       // Generate a test key container for live testing
-      final keyContainer = SecureKeyContainer.generate();
+      final keyContainer = await SecureKeyContainer.generate();
       print('Generated test keys: ${keyContainer.publicKeyHex}...');
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
@@ -87,6 +87,7 @@ void main() {
         title: 'Blossom Integration Test',
         description: 'Test upload from Flutter integration test',
         hashtags: ['test', 'integration'],
+        proofManifestJson: null,
         onProgress: (progress) {
           print('📊 Upload progress: ${(progress * 100).toStringAsFixed(1)}%');
         },
@@ -130,6 +131,9 @@ void main() {
           videoFile: testVideoFile,
           nostrPubkey: authService.currentPublicKeyHex!,
           title: 'Auth Test',
+          description: null,
+          hashtags: null,
+          proofManifestJson: null,
         );
 
         // Should not get "unauthorized" error anymore
@@ -165,6 +169,9 @@ void main() {
         videoFile: testVideoFile,
         nostrPubkey: authService.currentPublicKeyHex!,
         title: 'Production Fallback Test',
+        description: null,
+        hashtags: null,
+        proofManifestJson: null,
       );
 
       if (result.success) {

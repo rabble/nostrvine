@@ -9,6 +9,7 @@ import 'package:file_selector/file_selector.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -17,8 +18,6 @@ import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
 import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/providers/username_notifier.dart';
-import 'package:openvine/state/username_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
@@ -91,6 +90,7 @@ class _ProfileSetupScreenViewState
   File? _selectedImage;
   String? _uploadedImageUrl;
   String? _initialUsername;
+  Color? _selectedProfileColor;
 
   @override
   void initState() {
@@ -146,13 +146,29 @@ class _ProfileSetupScreenViewState
               _pictureController.text = profile.picture ?? '';
 
               // Extract username from NIP-05 if present
-              if (profile.nip05 != null &&
-                  (profile.nip05!.endsWith('@divine.video') ||
-                      profile.nip05!.endsWith('@openvine.co'))) {
-                final username = profile.nip05!.split('@')[0];
-                _nip05Controller.text = username;
-                _initialUsername = username;
+              // Support both new subdomain format and legacy formats
+              if (profile.nip05 != null) {
+                String? username;
+                // New subdomain format: _@username.divine.video
+                final subdomainMatch = RegExp(
+                  r'^_@([a-z0-9\-_.]+)\.divine\.video$',
+                ).firstMatch(profile.nip05!);
+                if (subdomainMatch != null) {
+                  username = subdomainMatch.group(1);
+                }
+                // Old format: username@divine.video or username@openvine.co
+                else if (profile.nip05!.endsWith('@divine.video') ||
+                    profile.nip05!.endsWith('@openvine.co')) {
+                  username = profile.nip05!.split('@')[0];
+                }
+                if (username != null) {
+                  _nip05Controller.text = username;
+                  _initialUsername = username;
+                }
               }
+
+              // Load profile color from banner field
+              _selectedProfileColor = profile.profileBackgroundColor;
             });
 
             Log.info(
@@ -214,9 +230,6 @@ class _ProfileSetupScreenViewState
 
   @override
   Widget build(BuildContext context) {
-    // TODO(refactor): Migrate usernameProvider to ProfileEditorBloc with
-    // debounced username validation
-    final usernameState = ref.watch(usernameProvider);
     final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
 
     return BlocConsumer<ProfileEditorBloc, ProfileEditorState>(
@@ -313,11 +326,6 @@ class _ProfileSetupScreenViewState
             ref.invalidate(fetchUserProfileProvider(currentPubkey));
             ref.invalidate(userProfileReactiveProvider(currentPubkey));
           }
-          // Re-check username so indicator shows current state (e.g., "taken")
-          final username = _nip05Controller.text.trim();
-          if (username.isNotEmpty) {
-            ref.read(usernameProvider.notifier).checkAvailability(username);
-          }
           switch (state.error) {
             case ProfileEditorError.usernameTaken:
               ScaffoldMessenger.of(context).showSnackBar(
@@ -330,13 +338,20 @@ class _ProfileSetupScreenViewState
                 ),
               );
             case ProfileEditorError.usernameReserved:
-              final username = usernameState.username;
+              final username = state.username;
               showDialog<void>(
                 context: context,
                 builder: (context) => UsernameReservedDialog(username),
-              ).then((_) {
-                ref.read(usernameProvider.notifier).setReserved(username);
-              });
+              );
+            case ProfileEditorError.claimFailed:
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: const Text(
+                    'Failed to claim username. Please try again.',
+                  ),
+                  backgroundColor: Colors.red[700],
+                ),
+              );
             case ProfileEditorError.publishFailed:
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
@@ -896,7 +911,7 @@ class _ProfileSetupScreenViewState
                                   prefixStyle: VineTheme.bodyLargeFont(
                                     color: VineTheme.onSurfaceMuted,
                                   ),
-                                  suffixText: '@divine.video',
+                                  suffixText: '.divine.video',
                                   suffixStyle: VineTheme.bodyLargeFont(
                                     color: VineTheme.onSurfaceMuted,
                                   ),
@@ -905,32 +920,43 @@ class _ProfileSetupScreenViewState
                                 textInputAction: TextInputAction.next,
                                 onFieldSubmitted: (_) =>
                                     FocusScope.of(context).nextFocus(),
-                                onChanged: (value) => ref
-                                    .read(usernameProvider.notifier)
-                                    .onUsernameChanged(value),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return null; // Optional field
-                                  }
-
-                                  final regex = RegExp(
-                                    r'^[a-z0-9\-_.]+$',
-                                    caseSensitive: false,
-                                  );
-                                  if (!regex.hasMatch(value)) {
-                                    return 'Username can only contain letters, numbers, dash, underscore, and dot';
-                                  }
-                                  if (value.length < kMinUsernameLength) {
-                                    return 'Username must be at least $kMinUsernameLength characters';
-                                  }
-                                  if (value.length > kMaxUsernameLength) {
-                                    return 'Username must be $kMaxUsernameLength characters or less';
-                                  }
-                                  return null;
-                                },
+                                onChanged: (value) => context
+                                    .read<ProfileEditorBloc>()
+                                    .add(UsernameChanged(value)),
                               ),
                               // Username status indicators
-                              UsernameStatusIndicator(state: usernameState),
+                              BlocBuilder<
+                                ProfileEditorBloc,
+                                ProfileEditorState
+                              >(
+                                builder: (context, state) =>
+                                    UsernameStatusIndicator(
+                                      status: state.usernameStatus,
+                                      error: state.usernameError,
+                                    ),
+                              ),
+
+                              const SizedBox(height: 24),
+
+                              // Profile Color (optional)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16),
+                                child: Text(
+                                  'Profile Color (Optional)',
+                                  style: VineTheme.labelMediumFont(
+                                    color: VineTheme.onSurfaceMuted,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              _ProfileColorPicker(
+                                selectedColor: _selectedProfileColor,
+                                onColorChanged: (color) {
+                                  setState(() {
+                                    _selectedProfileColor = color;
+                                  });
+                                },
+                              ),
                             ],
                           ),
                         ),
@@ -988,25 +1014,37 @@ class _ProfileSetupScreenViewState
                   ),
                   const SizedBox(width: 16),
                   if (pubkey != null)
-                    Expanded(
-                      child: _SaveButton(
-                        canSave:
+                    BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
+                      builder: (context, blocState) {
+                        // Presentation logic: enable save button when form is valid
+                        // and username validation state allows it
+                        final username = _nip05Controller.text.trim();
+                        final canSave =
                             _isFormValid &&
-                            (_nip05Controller.text.trim().isEmpty ||
-                                usernameState.isAvailable ||
-                                _nip05Controller.text.trim() ==
-                                    _initialUsername) &&
-                            !usernameState.isChecking,
-                        onSave: () => context.read<ProfileEditorBloc>().add(
-                          ProfileSaved(
-                            pubkey: pubkey,
-                            displayName: _nameController.text,
-                            about: _bioController.text,
-                            username: _nip05Controller.text,
-                            picture: _pictureController.text,
+                            (username.isEmpty ||
+                                blocState.usernameStatus ==
+                                    UsernameStatus.available ||
+                                username == _initialUsername) &&
+                            blocState.usernameStatus != UsernameStatus.checking;
+
+                        return Expanded(
+                          child: _SaveButton(
+                            canSave: canSave,
+                            onSave: () => context.read<ProfileEditorBloc>().add(
+                              ProfileSaved(
+                                pubkey: pubkey,
+                                displayName: _nameController.text,
+                                about: _bioController.text,
+                                username: _nip05Controller.text,
+                                picture: _pictureController.text,
+                                banner: _selectedProfileColor != null
+                                    ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
+                                    : null,
+                              ),
+                            ),
                           ),
-                        ),
-                      ),
+                        );
+                      },
                     ),
                 ],
               ),
@@ -1419,39 +1457,35 @@ class _ProfileSetupScreenViewState
 
 /// Displays username availability status (checking, available, taken, reserved, error)
 class UsernameStatusIndicator extends StatelessWidget {
-  const UsernameStatusIndicator({required this.state, super.key});
+  const UsernameStatusIndicator({required this.status, this.error, super.key});
 
-  final UsernameState state;
+  final UsernameStatus status;
+  final UsernameValidationError? error;
 
   @override
   Widget build(BuildContext context) {
-    if (state.status == UsernameCheckStatus.idle || state.username.isEmpty) {
-      return const SizedBox.shrink();
+    String? errorText;
+    if (error != null) {
+      errorText = switch (error) {
+        UsernameValidationError.invalidFormat =>
+          'Only letters, numbers, -, _, and . are allowed',
+        UsernameValidationError.invalidLength =>
+          'Username must be 3-20 characters',
+        UsernameValidationError.networkError =>
+          'Could not check availability. Please try again.',
+        null => null,
+      };
     }
-
-    if (state.isChecking) {
-      return const _UsernameCheckingIndicator();
-    }
-
-    if (state.isAvailable) {
-      return const _UsernameAvailableIndicator();
-    }
-
-    if (state.isTaken) {
-      return const _UsernameTakenIndicator();
-    }
-
-    if (state.isReserved) {
-      return _UsernameReservedIndicator();
-    }
-
-    if (state.hasError) {
-      return _UsernameErrorIndicator(
-        message: state.errorMessage ?? 'Failed to check availability',
-      );
-    }
-
-    return const SizedBox.shrink();
+    return switch (status) {
+      UsernameStatus.idle => const SizedBox.shrink(),
+      UsernameStatus.checking => const _UsernameCheckingIndicator(),
+      UsernameStatus.available => const _UsernameAvailableIndicator(),
+      UsernameStatus.taken => const _UsernameTakenIndicator(),
+      UsernameStatus.reserved => _UsernameReservedIndicator(),
+      UsernameStatus.error => _UsernameErrorIndicator(
+        message: errorText ?? 'Failed to check availability',
+      ),
+    };
   }
 }
 
@@ -1677,5 +1711,178 @@ class UsernameReservedDialog extends StatelessWidget {
         ),
       ],
     );
+  }
+}
+
+/// Color picker widget for selecting profile background color.
+class _ProfileColorPicker extends StatelessWidget {
+  const _ProfileColorPicker({
+    required this.selectedColor,
+    required this.onColorChanged,
+  });
+
+  final Color? selectedColor;
+  final ValueChanged<Color?> onColorChanged;
+
+  // Preset colors from VineTheme brand accent palette
+  static const _presetColors = [
+    VineTheme.vineGreen, // Green (brand primary)
+    VineTheme.accentBlue, // Blue
+    VineTheme.accentPurple, // Purple
+    VineTheme.likeRed, // Red
+    VineTheme.accentOrange, // Orange
+    VineTheme.accentLime, // Lime
+    VineTheme.accentPink, // Pink
+    VineTheme.accentViolet, // Violet
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Preset color swatches
+        Wrap(
+          spacing: 12,
+          runSpacing: 12,
+          children: [
+            // "No color" option
+            _ColorSwatch(
+              color: null,
+              isSelected: selectedColor == null,
+              onTap: () => onColorChanged(null),
+            ),
+            // Preset colors
+            for (final color in _presetColors)
+              _ColorSwatch(
+                color: color,
+                isSelected: selectedColor == color,
+                onTap: () => onColorChanged(color),
+              ),
+            // Custom color picker
+            _CustomColorButton(
+              currentColor: selectedColor,
+              onColorPicked: onColorChanged,
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Individual color swatch button.
+class _ColorSwatch extends StatelessWidget {
+  const _ColorSwatch({
+    required this.color,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final Color? color;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          color: color ?? VineTheme.surfaceContainer,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: isSelected ? Colors.white : Colors.transparent,
+            width: 3,
+          ),
+        ),
+        child: color == null
+            ? const Icon(Icons.block, color: VineTheme.onSurfaceMuted, size: 20)
+            : isSelected
+            ? const Icon(Icons.check, color: Colors.white, size: 20)
+            : null,
+      ),
+    );
+  }
+}
+
+/// Button to open custom color picker dialog.
+class _CustomColorButton extends StatelessWidget {
+  const _CustomColorButton({
+    required this.currentColor,
+    required this.onColorPicked,
+  });
+
+  final Color? currentColor;
+  final ValueChanged<Color?> onColorPicked;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => _showColorPicker(context),
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Colors.red, Colors.orange, Colors.yellow, Colors.green],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
+        child: const Icon(Icons.colorize, color: Colors.white, size: 20),
+      ),
+    );
+  }
+
+  Future<void> _showColorPicker(BuildContext context) async {
+    Color pickerColor = currentColor ?? VineTheme.vineGreen;
+
+    final result = await showDialog<Color>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: VineTheme.cardBackground,
+        title: const Text(
+          'Pick a color',
+          style: TextStyle(color: VineTheme.whiteText),
+        ),
+        content: SingleChildScrollView(
+          child: ColorPicker(
+            pickerColor: pickerColor,
+            onColorChanged: (color) => pickerColor = color,
+            enableAlpha: false,
+            displayThumbColor: true,
+            pickerAreaHeightPercent: 0.8,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(color: VineTheme.onSurfaceMuted),
+            ),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(pickerColor),
+            child: const Text(
+              'Select',
+              style: TextStyle(color: VineTheme.vineGreen),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (result != null) {
+      onColorPicked(result);
+    }
   }
 }

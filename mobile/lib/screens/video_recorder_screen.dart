@@ -20,7 +20,6 @@ import 'package:openvine/widgets/video_recorder/video_recorder_countdown_overlay
 import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_segment_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_top_bar.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 /// Video recorder screen with camera preview and recording controls.
 class VideoRecorderScreen extends ConsumerStatefulWidget {
@@ -90,19 +89,18 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     Log.debug(
       '📹 Checking for autosaved changes',
       name: 'VideoRecorderScreen',
-      category: .video,
+      category: LogCategory.video,
     );
 
-    final prefs = await SharedPreferences.getInstance();
-    final draftService = DraftStorageService(prefs);
+    final draftService = DraftStorageService();
     final draft = await draftService.getDraftById(
       VideoEditorConstants.autoSaveId,
     );
     if (draft != null && draft.clips.isNotEmpty) {
       Log.info(
-        '📹 Found autosaved draft with ${draft.clips.length} clip(s)',
+        '📹 Found valid autosaved draft',
         name: 'VideoRecorderScreen',
-        category: .video,
+        category: LogCategory.video,
       );
       await VineBottomSheet.show(
         context: context,
@@ -113,9 +111,9 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
       );
     } else {
       Log.debug(
-        '📹 No autosaved draft found',
+        '📹 No valid autosaved draft found',
         name: 'VideoRecorderScreen',
-        category: .video,
+        category: LogCategory.video,
       );
     }
   }

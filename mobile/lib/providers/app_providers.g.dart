@@ -30,7 +30,7 @@ final class ConnectionStatusServiceProvider
         argument: null,
         retry: null,
         name: r'connectionStatusServiceProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -59,7 +59,63 @@ final class ConnectionStatusServiceProvider
 }
 
 String _$connectionStatusServiceHash() =>
-    r'996c945a4e09628f52d45da659e79a2529d58bcb';
+    r'30fc9602e77f81edd6e26b19f6e36e0c82a02353';
+
+/// Pending action service for offline sync of social actions
+/// Returns null when not authenticated (no userPubkey available)
+
+@ProviderFor(pendingActionService)
+const pendingActionServiceProvider = PendingActionServiceProvider._();
+
+/// Pending action service for offline sync of social actions
+/// Returns null when not authenticated (no userPubkey available)
+
+final class PendingActionServiceProvider
+    extends
+        $FunctionalProvider<
+          PendingActionService?,
+          PendingActionService?,
+          PendingActionService?
+        >
+    with $Provider<PendingActionService?> {
+  /// Pending action service for offline sync of social actions
+  /// Returns null when not authenticated (no userPubkey available)
+  const PendingActionServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'pendingActionServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$pendingActionServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<PendingActionService?> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  PendingActionService? create(Ref ref) {
+    return pendingActionService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(PendingActionService? value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<PendingActionService?>(value),
+    );
+  }
+}
+
+String _$pendingActionServiceHash() =>
+    r'67a3a30b8cc1072263ce47f4e2bb3c34fa876fa1';
 
 /// Relay capability service for detecting NIP-11 divine extensions
 
@@ -760,6 +816,112 @@ final class GeoBlockingServiceProvider
 
 String _$geoBlockingServiceHash() =>
     r'0475466204746fb8b4c6dd614847e3853d360d12';
+
+/// Permissions service for checking and requesting OS permissions
+
+@ProviderFor(permissionsService)
+const permissionsServiceProvider = PermissionsServiceProvider._();
+
+/// Permissions service for checking and requesting OS permissions
+
+final class PermissionsServiceProvider
+    extends
+        $FunctionalProvider<
+          PermissionsService,
+          PermissionsService,
+          PermissionsService
+        >
+    with $Provider<PermissionsService> {
+  /// Permissions service for checking and requesting OS permissions
+  const PermissionsServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'permissionsServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$permissionsServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<PermissionsService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  PermissionsService create(Ref ref) {
+    return permissionsService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(PermissionsService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<PermissionsService>(value),
+    );
+  }
+}
+
+String _$permissionsServiceHash() =>
+    r'7212219b8e720fe0fcd19ae7e9313e2c5c5be1d5';
+
+/// Gallery save service for saving videos to device camera roll
+
+@ProviderFor(gallerySaveService)
+const gallerySaveServiceProvider = GallerySaveServiceProvider._();
+
+/// Gallery save service for saving videos to device camera roll
+
+final class GallerySaveServiceProvider
+    extends
+        $FunctionalProvider<
+          GallerySaveService,
+          GallerySaveService,
+          GallerySaveService
+        >
+    with $Provider<GallerySaveService> {
+  /// Gallery save service for saving videos to device camera roll
+  const GallerySaveServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'gallerySaveServiceProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$gallerySaveServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<GallerySaveService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  GallerySaveService create(Ref ref) {
+    return gallerySaveService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(GallerySaveService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<GallerySaveService>(value),
+    );
+  }
+}
+
+String _$gallerySaveServiceHash() =>
+    r'8d7d0ea856c9bbd1923895e6878e351ea8f9524d';
 
 /// Secure key storage service (foundational service)
 
@@ -1609,59 +1771,6 @@ final class Nip05ServiceProvider
 
 String _$nip05ServiceHash() => r'b7f7e1471a3783305bf1070cb64f1b95c4bdb516';
 
-/// Username repository for availability checking
-
-@ProviderFor(usernameRepository)
-const usernameRepositoryProvider = UsernameRepositoryProvider._();
-
-/// Username repository for availability checking
-
-final class UsernameRepositoryProvider
-    extends
-        $FunctionalProvider<
-          UsernameRepository,
-          UsernameRepository,
-          UsernameRepository
-        >
-    with $Provider<UsernameRepository> {
-  /// Username repository for availability checking
-  const UsernameRepositoryProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'usernameRepositoryProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$usernameRepositoryHash();
-
-  @$internal
-  @override
-  $ProviderElement<UsernameRepository> $createElement(
-    $ProviderPointer pointer,
-  ) => $ProviderElement(pointer);
-
-  @override
-  UsernameRepository create(Ref ref) {
-    return usernameRepository(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(UsernameRepository value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<UsernameRepository>(value),
-    );
-  }
-}
-
-String _$usernameRepositoryHash() =>
-    r'd8dd9d65a89158d8f22672ae325b528e65164e14';
-
 /// Draft storage service for persisting vine drafts
 
 @ProviderFor(draftStorageService)
@@ -1707,7 +1816,7 @@ final class DraftStorageServiceProvider
 }
 
 String _$draftStorageServiceHash() =>
-    r'33f3e00de2b933fffa49823e6eef306ed15f04cb';
+    r'7261c841e01e1a1792419ccc2600e52a417ac927';
 
 /// Clip library service for persisting individual video clips
 
@@ -1760,7 +1869,7 @@ final class ClipLibraryServiceProvider
 }
 
 String _$clipLibraryServiceHash() =>
-    r'b979f5ba3eb3437f096e14abbe5492905a3cd82d';
+    r'71785151c732f9cb8a095b2a80466fb28ee7b575';
 
 /// Authentication service
 
@@ -1866,6 +1975,11 @@ String _$currentAuthStateHash() => r'41c987ffc8f661555bab3ebec9078180411f66eb';
 ///
 /// This prevents race conditions where auth state is 'authenticated' but
 /// the NostrClient hasn't yet rebuilt with the new keys.
+///
+/// NostrClient.initialize() runs asynchronously in a Future.microtask after
+/// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
+/// because it's the same object reference. When not ready but authenticated,
+/// we schedule brief retries to catch the async initialization.
 
 @ProviderFor(isNostrReady)
 const isNostrReadyProvider = IsNostrReadyProvider._();
@@ -1876,6 +1990,11 @@ const isNostrReadyProvider = IsNostrReadyProvider._();
 ///
 /// This prevents race conditions where auth state is 'authenticated' but
 /// the NostrClient hasn't yet rebuilt with the new keys.
+///
+/// NostrClient.initialize() runs asynchronously in a Future.microtask after
+/// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
+/// because it's the same object reference. When not ready but authenticated,
+/// we schedule brief retries to catch the async initialization.
 
 final class IsNostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
     with $Provider<bool> {
@@ -1885,6 +2004,11 @@ final class IsNostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
   ///
   /// This prevents race conditions where auth state is 'authenticated' but
   /// the NostrClient hasn't yet rebuilt with the new keys.
+  ///
+  /// NostrClient.initialize() runs asynchronously in a Future.microtask after
+  /// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
+  /// because it's the same object reference. When not ready but authenticated,
+  /// we schedule brief retries to catch the async initialization.
   const IsNostrReadyProvider._()
     : super(
         from: null,
@@ -1918,7 +2042,7 @@ final class IsNostrReadyProvider extends $FunctionalProvider<bool, bool, bool>
   }
 }
 
-String _$isNostrReadyHash() => r'555da82d3449835978ad9d745e478332f179c4f5';
+String _$isNostrReadyHash() => r'ea9cfcc9e19612778d785043dbe87d4259ddea0a';
 
 /// Provider that sets Zendesk user identity when auth state changes
 /// Watch this provider at app startup to keep Zendesk identity in sync with auth
@@ -2079,12 +2203,12 @@ final class SubscriptionManagerProvider
 String _$subscriptionManagerHash() =>
     r'b65a6978927d3004c6f841e0b80075f9db9645d2';
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
+/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager
 
 @ProviderFor(videoEventService)
 const videoEventServiceProvider = VideoEventServiceProvider._();
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
+/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager
 
 final class VideoEventServiceProvider
     extends
@@ -2094,7 +2218,7 @@ final class VideoEventServiceProvider
           VideoEventService
         >
     with $Provider<VideoEventService> {
-  /// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
+  /// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager
   const VideoEventServiceProvider._()
     : super(
         from: null,
@@ -2129,7 +2253,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'912579edfca6f3157a2c1d999b09f17f96358077';
+String _$videoEventServiceHash() => r'2e58eabbb8807979c479042abb7adc1bbb3bfade';
 
 /// Hashtag service depends on Video event service and cache service
 
@@ -2230,17 +2354,17 @@ final class UserProfileServiceProvider
 String _$userProfileServiceHash() =>
     r'c794efc557e51b13c9cf3ff59fd3f56f1582cbd0';
 
-/// Social service depends on Nostr service and Auth service
+/// Social service depends on Nostr service, Auth service, and Analytics API
 
 @ProviderFor(socialService)
 const socialServiceProvider = SocialServiceProvider._();
 
-/// Social service depends on Nostr service and Auth service
+/// Social service depends on Nostr service, Auth service, and Analytics API
 
 final class SocialServiceProvider
     extends $FunctionalProvider<SocialService, SocialService, SocialService>
     with $Provider<SocialService> {
-  /// Social service depends on Nostr service and Auth service
+  /// Social service depends on Nostr service, Auth service, and Analytics API
   const SocialServiceProvider._()
     : super(
         from: null,
@@ -2274,7 +2398,7 @@ final class SocialServiceProvider
   }
 }
 
-String _$socialServiceHash() => r'5b4d5751d3f2ef22c9ee2610cda1c4e70b2302a7';
+String _$socialServiceHash() => r'f3e43d187c9560fd9db5fe9925238eeb18048fff';
 
 /// Provider for FollowRepository instance
 ///
@@ -2347,7 +2471,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'97f26591526d0afb776def48904f4562a5338d42';
+String _$followRepositoryHash() => r'4da90451c0432828d297f3ba7350cc00873b6e7e';
 
 /// Provider for ProfileRepository instance
 ///
@@ -2356,6 +2480,7 @@ String _$followRepositoryHash() => r'97f26591526d0afb776def48904f4562a5338d42';
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - FunnelcakeApiClient for fast REST-based profile search
 
 @ProviderFor(profileRepository)
 const profileRepositoryProvider = ProfileRepositoryProvider._();
@@ -2367,6 +2492,7 @@ const profileRepositoryProvider = ProfileRepositoryProvider._();
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - FunnelcakeApiClient for fast REST-based profile search
 
 final class ProfileRepositoryProvider
     extends
@@ -2383,6 +2509,7 @@ final class ProfileRepositoryProvider
   ///
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
+  /// - FunnelcakeApiClient for fast REST-based profile search
   const ProfileRepositoryProvider._()
     : super(
         from: null,
@@ -2417,7 +2544,7 @@ final class ProfileRepositoryProvider
   }
 }
 
-String _$profileRepositoryHash() => r'0454d90570f71f0bae362a0e84d9d61cce253f93';
+String _$profileRepositoryHash() => r'ce501a057cafb7d267a2f28f45a2e4940017fe57';
 
 /// Enhanced notification service with Nostr integration (lazy loaded)
 
@@ -3614,6 +3741,76 @@ final class CommentsRepositoryProvider
 String _$commentsRepositoryHash() =>
     r'0f9ae0f15ebfc8ccb85e8ae3e2e251527271f334';
 
+/// Provider for VideoLocalStorage instance (SQLite-backed)
+///
+/// Creates a DbVideoLocalStorage for caching video events locally.
+/// Used by VideosRepository for cache-first lookups.
+///
+/// Uses:
+/// - NostrEventsDao from databaseProvider (for SQLite storage)
+
+@ProviderFor(videoLocalStorage)
+const videoLocalStorageProvider = VideoLocalStorageProvider._();
+
+/// Provider for VideoLocalStorage instance (SQLite-backed)
+///
+/// Creates a DbVideoLocalStorage for caching video events locally.
+/// Used by VideosRepository for cache-first lookups.
+///
+/// Uses:
+/// - NostrEventsDao from databaseProvider (for SQLite storage)
+
+final class VideoLocalStorageProvider
+    extends
+        $FunctionalProvider<
+          VideoLocalStorage,
+          VideoLocalStorage,
+          VideoLocalStorage
+        >
+    with $Provider<VideoLocalStorage> {
+  /// Provider for VideoLocalStorage instance (SQLite-backed)
+  ///
+  /// Creates a DbVideoLocalStorage for caching video events locally.
+  /// Used by VideosRepository for cache-first lookups.
+  ///
+  /// Uses:
+  /// - NostrEventsDao from databaseProvider (for SQLite storage)
+  const VideoLocalStorageProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'videoLocalStorageProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$videoLocalStorageHash();
+
+  @$internal
+  @override
+  $ProviderElement<VideoLocalStorage> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  VideoLocalStorage create(Ref ref) {
+    return videoLocalStorage(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(VideoLocalStorage value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<VideoLocalStorage>(value),
+    );
+  }
+}
+
+String _$videoLocalStorageHash() => r'0be44203ec8edf59105a013aae374c07637a3ba0';
+
 /// Provider for VideosRepository instance
 ///
 /// Creates a VideosRepository for loading video feeds with pagination.
@@ -3621,6 +3818,7 @@ String _$commentsRepositoryHash() =>
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - VideoLocalStorage for cache-first lookups and caching results
 /// - ContentBlocklistService for filtering blocked/muted users
 /// - AgeVerificationService for filtering NSFW content based on user preference
 
@@ -3634,6 +3832,7 @@ const videosRepositoryProvider = VideosRepositoryProvider._();
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - VideoLocalStorage for cache-first lookups and caching results
 /// - ContentBlocklistService for filtering blocked/muted users
 /// - AgeVerificationService for filtering NSFW content based on user preference
 
@@ -3652,6 +3851,7 @@ final class VideosRepositoryProvider
   ///
   /// Uses:
   /// - NostrClient from nostrServiceProvider (for relay communication)
+  /// - VideoLocalStorage for cache-first lookups and caching results
   /// - ContentBlocklistService for filtering blocked/muted users
   /// - AgeVerificationService for filtering NSFW content based on user preference
   const VideosRepositoryProvider._()
@@ -3687,7 +3887,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'3e9ad46c21e9eee2a019898e4048a86871afab53';
+String _$videosRepositoryHash() => r'b21ecf459b7186280630e67d72b5c27a3e73edd0';
 
 /// Provider for LikesRepository instance
 ///
@@ -3755,7 +3955,7 @@ final class LikesRepositoryProvider
   }
 }
 
-String _$likesRepositoryHash() => r'22888a04bfa6cff194c104b5be555fdf22062e40';
+String _$likesRepositoryHash() => r'9376994f8bb85d89e5356830c093f4b3673a3368';
 
 /// Provider for RepostsRepository instance
 ///
@@ -3828,4 +4028,4 @@ final class RepostsRepositoryProvider
   }
 }
 
-String _$repostsRepositoryHash() => r'5676fc10ff4d2bb059f3348f3f3d8a77a14826f4';
+String _$repostsRepositoryHash() => r'66177802944101f3bdf06e338e3730047ddda2cd';

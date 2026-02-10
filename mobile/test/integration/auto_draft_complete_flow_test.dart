@@ -1,6 +1,7 @@
 // ABOUTME: Integration test for complete auto-draft flow from recording to publish
 // ABOUTME: Validates end-to-end behavior: record → auto-draft → edit → publish → retry
 
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/vine_draft.dart';
@@ -10,10 +11,34 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   group('Auto-draft complete flow integration', () {
+    setUp(() {
+      TestWidgetsFlutterBinding.ensureInitialized();
+
+      // Mock path provider for getApplicationDocumentsDirectory
+      const MethodChannel pathProviderChannel = MethodChannel(
+        'plugins.flutter.io/path_provider',
+      );
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(pathProviderChannel, (
+            MethodCall methodCall,
+          ) async {
+            switch (methodCall.method) {
+              case 'getTemporaryDirectory':
+                return '/tmp';
+              case 'getApplicationDocumentsDirectory':
+                return '/tmp/documents';
+              case 'getApplicationSupportDirectory':
+                return '/tmp/support';
+              default:
+                return null;
+            }
+          });
+    });
+
     test('record → auto-draft → edit → publish flow', () async {
       SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final draftStorage = DraftStorageService(prefs);
+      final draftStorage = DraftStorageService();
 
       // Simulate recording completion with auto-draft
       // (This test documents the expected flow)
@@ -71,8 +96,7 @@ void main() {
 
     test('record → auto-draft → failed publish → retry flow', () async {
       SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      final draftStorage = DraftStorageService(prefs);
+      final draftStorage = DraftStorageService();
 
       // 1. Auto-draft created
       final draft = VineDraft.create(

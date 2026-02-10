@@ -44,11 +44,11 @@ class VideoEditorDrawItemButton extends StatelessWidget {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeInOut,
-          width: VideoEditorDrawConstants.itemWidth,
+          width: VideoEditorConstants.drawItemWidth,
           padding: const .only(top: 12),
           transform: .translationValues(0, isSelected ? 0 : 18, 0),
           child: CustomPaint(
-            size: Size(VideoEditorDrawConstants.itemWidth, height),
+            size: Size(VideoEditorConstants.drawItemWidth, height),
             painter: painter,
           ),
         ),

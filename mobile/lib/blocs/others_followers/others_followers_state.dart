@@ -24,6 +24,7 @@ final class OthersFollowersState extends Equatable {
     this.status = OthersFollowersStatus.initial,
     this.followersPubkeys = const [],
     this.targetPubkey,
+    this.lastFetchedAt,
   });
 
   /// The current status of the followers list
@@ -35,19 +36,38 @@ final class OthersFollowersState extends Equatable {
   /// The pubkey whose followers list is being viewed (for retry)
   final String? targetPubkey;
 
+  /// When the followers list was last fetched from relays
+  final DateTime? lastFetchedAt;
+
+  /// Cache TTL - data older than this is considered stale
+  static const cacheTtl = Duration(seconds: 30);
+
+  /// Check if the cached data is stale and should be re-fetched
+  bool get isStale {
+    if (lastFetchedAt == null) return true;
+    return DateTime.now().difference(lastFetchedAt!) > cacheTtl;
+  }
+
   /// Create a copy with updated values
   OthersFollowersState copyWith({
     OthersFollowersStatus? status,
     List<String>? followersPubkeys,
     String? targetPubkey,
+    DateTime? lastFetchedAt,
   }) {
     return OthersFollowersState(
       status: status ?? this.status,
       followersPubkeys: followersPubkeys ?? this.followersPubkeys,
       targetPubkey: targetPubkey ?? this.targetPubkey,
+      lastFetchedAt: lastFetchedAt ?? this.lastFetchedAt,
     );
   }
 
   @override
-  List<Object?> get props => [status, followersPubkeys, targetPubkey];
+  List<Object?> get props => [
+    status,
+    followersPubkeys,
+    targetPubkey,
+    lastFetchedAt,
+  ];
 }

@@ -1,6 +1,8 @@
 // ABOUTME: Grid widget displaying user's videos on profile page
 // ABOUTME: Shows 3-column grid with thumbnails, handles empty state and navigation
 
+import 'dart:io';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -35,11 +37,19 @@ class ProfileVideosGrid extends ConsumerWidget {
   const ProfileVideosGrid({
     required this.videos,
     required this.userIdHex,
+    this.isLoading = false,
+    this.errorMessage,
     super.key,
   });
 
   final List<VideoEvent> videos;
   final String userIdHex;
+
+  /// Whether videos are currently being loaded.
+  final bool isLoading;
+
+  /// Error message if video loading failed.
+  final String? errorMessage;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,7 +63,14 @@ class ProfileVideosGrid extends ConsumerWidget {
       ...videos.map(_GridVideoEventEntry.new),
     ];
 
+    if (errorMessage != null && allVideos.isEmpty) {
+      return _ProfileVideosErrorState(errorMessage: errorMessage!);
+    }
+
     if (allVideos.isEmpty) {
+      if (isLoading) {
+        return const _ProfileVideosLoadingState();
+      }
       return _ProfileVideosEmptyState(
         userIdHex: userIdHex,
         isOwnProfile:
@@ -75,10 +92,6 @@ class ProfileVideosGrid extends ConsumerWidget {
               childAspectRatio: 1,
             ),
             delegate: SliverChildBuilderDelegate((context, index) {
-              if (index >= videos.length) {
-                return const _VideoGridLoadingTile();
-              }
-
               final videoEntry = allVideos[index];
               return switch (videoEntry) {
                 _GridUploadingVideoEntry uploadEntry => _VideoGridUploadingTile(
@@ -155,40 +168,37 @@ class _ProfileVideosEmptyState extends StatelessWidget {
   );
 }
 
-/// Loading tile shown while more videos are being fetched
-class _VideoGridLoadingTile extends StatelessWidget {
-  const _VideoGridLoadingTile();
-
-  @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      color: VineTheme.cardBackground,
-      borderRadius: BorderRadius.circular(4),
-    ),
-    child: const Center(
-      child: CircularProgressIndicator(
-        color: VineTheme.vineGreen,
-        strokeWidth: 2,
-      ),
-    ),
-  );
-}
-
 class _VideoGridUploadingTile extends StatelessWidget {
   const _VideoGridUploadingTile({required this.backgroundUpload});
 
   final BackgroundUpload backgroundUpload;
 
   @override
-  Widget build(BuildContext context) => DecoratedBox(
-    decoration: BoxDecoration(
-      color: VineTheme.cardBackground,
+  Widget build(BuildContext context) {
+    final thumbnailPath =
+        backgroundUpload.draft.clips.firstOrNull?.thumbnailPath;
+
+    return ClipRRect(
       borderRadius: BorderRadius.circular(4),
-    ),
-    child: Center(
-      child: PartialCircleSpinner(progress: backgroundUpload.progress),
-    ),
-  );
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          if (thumbnailPath != null)
+            Image.file(
+              File(thumbnailPath),
+              fit: BoxFit.cover,
+              errorBuilder: (_, __, ___) => const _ThumbnailPlaceholder(),
+            )
+          else
+            const _ThumbnailPlaceholder(),
+          const ColoredBox(color: Color(0x66000000)),
+          Center(
+            child: PartialCircleSpinner(progress: backgroundUpload.progress),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 /// Individual video tile in the grid
@@ -211,17 +221,16 @@ class _VideoGridTile extends StatelessWidget {
         'videoId=${videoEvent.id}',
         category: LogCategory.video,
       );
-      // Use ProfileFeedSource for reactive updates when loadMore fetches new videos
+      // Use FullscreenVideoFeedScreen with ProfileFeedSource for
+      // reactive updates when loadMore fetches new videos
+      // TODO(migration): Migrate to PooledFullscreenVideoFeedScreen once
+      // ProfileVideosBloc is created
       context.push(
         FullscreenVideoFeedScreen.path,
         extra: FullscreenVideoFeedArgs(
           source: ProfileFeedSource(userIdHex),
           initialIndex: index,
         ),
-      );
-      Log.info(
-        '✅ ProfileVideosGrid: Called pushVideoFeed with ProfileFeedSource($userIdHex) at index $index',
-        category: LogCategory.video,
       );
     },
     child: ClipRRect(
@@ -252,6 +261,72 @@ class _VideoThumbnail extends StatelessWidget {
     }
     return const _ThumbnailPlaceholder();
   }
+}
+
+/// Loading state shown while videos are being fetched.
+class _ProfileVideosLoadingState extends StatelessWidget {
+  const _ProfileVideosLoadingState();
+
+  @override
+  Widget build(BuildContext context) => const CustomScrollView(
+    slivers: [
+      SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: VineTheme.vineGreen),
+              SizedBox(height: 16),
+              Text(
+                'Loading videos...',
+                style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+/// Error state shown when video loading fails.
+class _ProfileVideosErrorState extends StatelessWidget {
+  const _ProfileVideosErrorState({required this.errorMessage});
+
+  final String errorMessage;
+
+  @override
+  Widget build(BuildContext context) => CustomScrollView(
+    slivers: [
+      SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: VineTheme.secondaryText,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Error: $errorMessage',
+                style: const TextStyle(
+                  color: VineTheme.primaryText,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  );
 }
 
 /// Flat color placeholder for thumbnails

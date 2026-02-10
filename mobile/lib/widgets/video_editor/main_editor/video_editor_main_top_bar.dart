@@ -1,12 +1,15 @@
 // ABOUTME: Top toolbar for the video editor with navigation and history controls.
 // ABOUTME: Contains close, undo, redo, and done buttons with BLoC integration.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
+import 'package:openvine/widgets/video_editor/main_editor/video_editor_layer_reorder_sheet.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 
 /// Top action bar for the video editor.
 ///
@@ -14,6 +17,31 @@ import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dar
 /// reactively enable/disable undo and redo based on editor state.
 class VideoEditorMainTopBar extends StatelessWidget {
   const VideoEditorMainTopBar({super.key});
+
+  Future<void> _reorderLayers(BuildContext context, List<Layer> layers) async {
+    await VineBottomSheet.show<void>(
+      context: context,
+      expanded: false,
+      scrollable: false,
+      isScrollControlled: true,
+      // TODO(l10n): Replace with context.l10n when localization is added.
+      title: const Text('Layers'),
+      body: VideoEditorLayerReorderSheet(
+        layers: layers,
+        onReorder: (oldIndex, newIndex) {
+          final scope = VideoEditorScope.of(context);
+          assert(
+            scope.editor != null,
+            'Editor must be active to reorder layers',
+          );
+          scope.editor!.moveLayerListPosition(
+            oldIndex: oldIndex,
+            newIndex: newIndex,
+          );
+        },
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,10 +54,13 @@ class VideoEditorMainTopBar extends StatelessWidget {
               BlocSelector<
                 VideoEditorMainBloc,
                 VideoEditorMainState,
-                ({bool canUndo, bool canRedo})
+                ({bool canUndo, bool canRedo, List<Layer> layers})
               >(
-                selector: (state) =>
-                    (canUndo: state.canUndo, canRedo: state.canRedo),
+                selector: (state) => (
+                  canUndo: state.canUndo,
+                  canRedo: state.canRedo,
+                  layers: state.layers,
+                ),
                 builder: (context, state) {
                   final scope = VideoEditorScope.of(context);
 
@@ -37,6 +68,7 @@ class VideoEditorMainTopBar extends StatelessWidget {
                     spacing: 8,
                     children: [
                       _IconButton(
+                        // TODO(l10n): Replace with context.l10n when localization is added.
                         semanticsLabel: 'Close',
                         iconPath: 'assets/icon/CaretLeft.svg',
                         onTap: () {
@@ -50,6 +82,7 @@ class VideoEditorMainTopBar extends StatelessWidget {
                       ),
                       const Spacer(),
                       _IconButton(
+                        // TODO(l10n): Replace with context.l10n when localization is added.
                         semanticsLabel: 'Undo',
                         iconPath: 'assets/icon/arrow_arc_left.svg',
                         onTap: state.canUndo
@@ -57,6 +90,7 @@ class VideoEditorMainTopBar extends StatelessWidget {
                             : null,
                       ),
                       _IconButton(
+                        // TODO(l10n): Replace with context.l10n when localization is added.
                         semanticsLabel: 'Redo',
                         iconPath: 'assets/icon/arrow_arc_right.svg',
                         onTap: state.canRedo
@@ -64,8 +98,19 @@ class VideoEditorMainTopBar extends StatelessWidget {
                             : null,
                       ),
                       const Spacer(),
-                      // TODO(@hm21): replace with done button.
                       _IconButton(
+                        // TODO(l10n): Replace with context.l10n when localization is added.
+                        semanticsLabel: 'Reorder',
+                        iconPath: 'assets/icon/stack_simple.svg',
+                        onTap: state.layers.length > 1
+                            ? () => _reorderLayers(
+                                context,
+                                scope.editor?.activeLayers ?? state.layers,
+                              )
+                            : null,
+                      ),
+                      _IconButton(
+                        // TODO(l10n): Replace with context.l10n when localization is added.
                         semanticsLabel: 'Done',
                         iconPath: 'assets/icon/Check.svg',
                         onTap: () => scope.editor?.doneEditing(),

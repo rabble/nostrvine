@@ -32,4 +32,22 @@ abstract class PermissionsService {
   /// Returns `true` if the settings page was opened successfully,
   /// `false` otherwise.
   Future<bool> openAppSettings();
+
+  /// Checks the current status of the gallery/photo library write permission.
+  ///
+  /// On iOS 14+, this checks for `.addOnly` permission (sufficient for saving).
+  /// On Android 10 and below, this checks for `WRITE_EXTERNAL_STORAGE`.
+  /// On Android 11+, no permission is needed
+  /// (returns [PermissionStatus.granted]).
+  Future<PermissionStatus> checkGalleryStatus();
+
+  /// Requests gallery/photo library write permission from the OS.
+  ///
+  /// On iOS, this requests `.addOnly` permission (sufficient for saving media).
+  /// On Android 10 and below, this requests `WRITE_EXTERNAL_STORAGE`.
+  /// On Android 11+, no permission is needed
+  /// (returns [PermissionStatus.granted]).
+  ///
+  /// Returns the resulting [PermissionStatus] after the request completes.
+  Future<PermissionStatus> requestGalleryPermission();
 }

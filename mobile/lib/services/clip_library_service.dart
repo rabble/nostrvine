@@ -5,13 +5,61 @@ import 'dart:convert';
 
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/services/file_cleanup_service.dart';
+import 'package:openvine/utils/android_path_migration.dart';
+import 'package:openvine/utils/path_resolver.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ClipLibraryService {
-  ClipLibraryService(this._prefs);
+  ClipLibraryService();
 
-  final SharedPreferences _prefs;
+  SharedPreferences? _prefs;
   static const String _storageKey = 'clip_library';
+
+  Future<SharedPreferences> get _prefsAsync async =>
+      _prefs ??= await SharedPreferences.getInstance();
+
+  /// Migrate clips from old Android /files/ path to /app_flutter/
+  Future<void> migrateOldClips() async {
+    final prefs = await _prefsAsync;
+    final String? jsonString = prefs.getString(_storageKey);
+    if (jsonString == null || jsonString.isEmpty) return;
+
+    final documentsPath = await getDocumentsPath();
+    final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
+
+    // Parse with useOriginalPath to get the raw paths from JSON
+    final clipsWithOriginalPaths = jsonList
+        .map(
+          (json) => SavedClip.fromJson(
+            json as Map<String, dynamic>,
+            documentsPath,
+            useOriginalPath: true,
+          ),
+        )
+        .toList();
+
+    // Collect all file paths that need migration
+    final pathsToMigrate = <String?>[
+      for (final clip in clipsWithOriginalPaths) ...[
+        clip.filePath,
+        clip.thumbnailPath,
+      ],
+    ];
+
+    // Run the migration
+    final migrated = await migrateAndroidPaths(
+      documentsPath: documentsPath,
+      filePaths: pathsToMigrate,
+    );
+
+    if (migrated) {
+      Log.info(
+        '📂 Migrated clips from old Android paths',
+        name: 'ClipLibraryService',
+      );
+    }
+  }
 
   /// Save a clip to the library. Updates existing clip if ID matches.
   Future<void> saveClip(SavedClip clip) async {
@@ -31,15 +79,21 @@ class ClipLibraryService {
   /// Get all clips from the library, sorted by creation date (newest first)
   Future<List<SavedClip>> getAllClips() async {
     try {
-      final String? jsonString = _prefs.getString(_storageKey);
+      final prefs = await _prefsAsync;
+      final String? jsonString = prefs.getString(_storageKey);
 
       if (jsonString == null || jsonString.isEmpty) {
         return [];
       }
 
+      final documentsPath = await getDocumentsPath();
       final List<dynamic> jsonList = json.decode(jsonString) as List<dynamic>;
+
       final clips = jsonList
-          .map((json) => SavedClip.fromJson(json as Map<String, dynamic>))
+          .map(
+            (json) =>
+                SavedClip.fromJson(json as Map<String, dynamic>, documentsPath),
+          )
           .toList();
 
       // Sort by creation date, newest first
@@ -87,7 +141,8 @@ class ClipLibraryService {
     final clips = await getAllClips();
 
     // Clear storage first, then delete files (so reference check sees updated state)
-    await _prefs.remove(_storageKey);
+    final prefs = await _prefsAsync;
+    await prefs.remove(_storageKey);
 
     // Delete files only if not referenced by drafts
     await FileCleanupService.deleteSavedClipsFiles(clips);
@@ -95,9 +150,10 @@ class ClipLibraryService {
 
   /// Internal helper to save clips list to storage
   Future<void> _saveClips(List<SavedClip> clips) async {
+    final prefs = await _prefsAsync;
     final jsonList = clips.map((clip) => clip.toJson()).toList();
     final jsonString = json.encode(jsonList);
-    await _prefs.setString(_storageKey, jsonString);
+    await prefs.setString(_storageKey, jsonString);
   }
 
   /// Get all clips grouped by session ID

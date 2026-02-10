@@ -67,7 +67,9 @@ void main() {
             value: mockBloc,
             child: VideoEditorScope(
               editorKey: editorKey,
+              removeAreaKey: GlobalKey(),
               onAddStickers: () {},
+              onAddEditTextLayer: ([layer]) async => null,
               child: const SizedBox(
                 width: 400,
                 height: 600,

@@ -46,7 +46,8 @@ class _VideoClipPreviewSheetState extends State<VideoClipPreviewSheet> {
   /// Updates [_isInitialized] when complete.
   Future<void> _initializePlayer() async {
     final file = File(widget.clip.filePath);
-    if (!await file.exists()) {
+    if (!file.existsSync()) {
+      context.pop();
       return;
     }
 

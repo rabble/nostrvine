@@ -54,7 +54,8 @@ class CameraController: NSObject {
     private var minZoom: CGFloat = 1.0
     private var maxZoom: CGFloat = 1.0
     private var currentZoom: CGFloat = 1.0
-    private var aspectRatio: CGFloat = 16.0 / 9.0
+    // Portrait-Modus: 9:16, e.g: 1080x1920
+    private var aspectRatio: CGFloat = 9.0 / 16.0
     
     private var hasFrontCamera: Bool = false
     private var hasBackCamera: Bool = false
@@ -328,9 +329,9 @@ class CameraController: NSObject {
         // This is the actual camera sensor output size
         let dimensions = CMVideoFormatDescriptionGetDimensions(device.activeFormat.formatDescription)
         // dimensions.width is the longer side (landscape), height is shorter
-        // We return width/height which gives us the landscape aspect ratio (e.g., 1.78 for 16:9)
-        aspectRatio = CGFloat(dimensions.width) / CGFloat(dimensions.height)
-        print("Camera aspect ratio: \(aspectRatio) from dimensions: \(dimensions.width)x\(dimensions.height)")
+        // For portrait mode, we swap to get 9:16 ratio
+        aspectRatio = CGFloat(dimensions.height) / CGFloat(dimensions.width)
+        print("Camera aspect ratio (portrait): \(aspectRatio) from dimensions: \(dimensions.height)x\(dimensions.width)")
     }
     
     /// Switches to a different camera lens.
@@ -650,8 +651,9 @@ class CameraController: NSObject {
     /// - Parameters:
     ///   - maxDurationMs: Optional maximum duration in milliseconds. Recording stops automatically when reached.
     ///   - useCache: If true, saves video to temporary directory. If false, saves to documents directory (permanent).
+    ///   - outputDirectory: If provided, saves video to this directory (overrides useCache when false).
     ///   - completion: Callback with error message if failed, nil if successful.
-    func startRecording(maxDurationMs: Int?, useCache: Bool = true, completion: @escaping (String?) -> Void) {
+    func startRecording(maxDurationMs: Int?, useCache: Bool = true, outputDirectory: String? = nil, completion: @escaping (String?) -> Void) {
         if isRecording {
             completion("Already recording")
             return
@@ -662,16 +664,18 @@ class CameraController: NSObject {
         videoOutputQueue.async { [weak self] in
             guard let self = self else { return }
             
-            // Create output file - use temporary or documents directory based on useCache parameter
+            // Create output file - use cache, provided directory, or default to documents directory
             let outputDir: URL
-            if useCache {
+            if let customDir = outputDirectory {
+                outputDir = URL(fileURLWithPath: customDir)
+            } else if useCache {
                 outputDir = FileManager.default.temporaryDirectory
             } else {
                 let paths = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)
                 outputDir = paths[0]
             }
-            let timestamp = ISO8601DateFormatter().string(from: Date())
-                .replacingOccurrences(of: ":", with: "-")
+            // Use milliseconds timestamp for shorter, sortable, and unique filenames
+            let timestamp = Int64(Date().timeIntervalSince1970 * 1000)
             let outputURL = outputDir.appendingPathComponent("VID_\(timestamp).mp4")
             self.currentRecordingURL = outputURL
             

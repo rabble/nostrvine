@@ -1,224 +1,568 @@
-import 'dart:io';
+// ABOUTME: Tests for VideoPoolProvider widget
+// ABOUTME: Validates pool and feed controller access via InheritedWidget
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
-import 'package:video_player/video_player.dart';
 
-class MockVideoPlayerController extends Mock implements VideoPlayerController {}
+import '../helpers/test_helpers.dart';
 
-class MockVideoPlayerValue extends Mock implements VideoPlayerValue {}
+class _FakeMedia extends Fake implements Media {}
 
-Future<VideoPlayerController?> createMockController(
-  String videoUrl, {
-  File? cachedFile,
-}) async {
-  final controller = MockVideoPlayerController();
-  final value = MockVideoPlayerValue();
-
-  when(() => value.isInitialized).thenReturn(true);
-  when(() => value.isPlaying).thenReturn(false);
-  when(() => controller.value).thenReturn(value);
-  when(controller.dispose).thenAnswer((_) async {});
-  when(controller.pause).thenAnswer((_) async {});
-  when(controller.play).thenAnswer((_) async {});
-  when(() => controller.setLooping(any())).thenAnswer((_) async {});
-
-  return controller;
+void _setUpFallbacks() {
+  registerFallbackValue(_FakeMedia());
+  registerFallbackValue(Duration.zero);
+  registerFallbackValue(PlaylistMode.single);
 }
 
 void main() {
-  tearDown(() async {
-    await VideoControllerPoolManager.reset();
-  });
+  setUpAll(_setUpFallbacks);
 
   group('VideoPoolProvider', () {
-    testWidgets('provides pool to descendants via of()', (tester) async {
-      await VideoControllerPoolManager.initialize(
-        poolSize: 3,
-        controllerFactory: createMockController,
+    late TestablePlayerPool pool;
+
+    setUp(() {
+      pool = TestablePlayerPool(
+        mockPlayerFactory: (_) => createMockPooledPlayer(),
       );
+    });
 
-      VideoControllerPoolManager? capturedPool;
+    tearDown(() async {
+      await pool.dispose();
+      await PlayerPool.reset();
+    });
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: VideoPoolProvider(
-            pool: VideoControllerPoolManager.instance,
-            child: Builder(
+    group('constructor', () {
+      testWidgets('creates with only child', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: VideoPoolProvider(child: Text('Child')),
+          ),
+        );
+
+        expect(find.text('Child'), findsOneWidget);
+      });
+
+      testWidgets('creates with pool', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              pool: pool,
+              child: const Text('Child'),
+            ),
+          ),
+        );
+
+        expect(find.text('Child'), findsOneWidget);
+      });
+
+      testWidgets('creates with feedController', (tester) async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              feedController: controller,
+              child: const Text('Child'),
+            ),
+          ),
+        );
+
+        expect(find.text('Child'), findsOneWidget);
+
+        controller.dispose();
+      });
+
+      testWidgets('creates with both pool and feedController', (tester) async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+        );
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              pool: pool,
+              feedController: controller,
+              child: const Text('Child'),
+            ),
+          ),
+        );
+
+        expect(find.text('Child'), findsOneWidget);
+
+        controller.dispose();
+      });
+    });
+
+    group('poolOf', () {
+      testWidgets('returns pool from provider', (tester) async {
+        PlayerPool? foundPool;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              pool: pool,
+              child: Builder(
+                builder: (context) {
+                  foundPool = VideoPoolProvider.poolOf(context);
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(foundPool, equals(pool));
+      });
+
+      testWidgets('returns PlayerPool.instance when no provider', (
+        tester,
+      ) async {
+        await PlayerPool.init();
+        PlayerPool? foundPool;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
               builder: (context) {
-                capturedPool = VideoPoolProvider.of(context);
+                foundPool = VideoPoolProvider.poolOf(context);
                 return const SizedBox();
               },
             ),
           ),
-        ),
+        );
+
+        expect(foundPool, equals(PlayerPool.instance));
+      });
+
+      testWidgets(
+        'returns PlayerPool.instance when provider has no pool',
+        (tester) async {
+          await PlayerPool.init();
+          PlayerPool? foundPool;
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: VideoPoolProvider(
+                child: Builder(
+                  builder: (context) {
+                    foundPool = VideoPoolProvider.poolOf(context);
+                    return const SizedBox();
+                  },
+                ),
+              ),
+            ),
+          );
+
+          expect(foundPool, equals(PlayerPool.instance));
+        },
       );
 
-      expect(capturedPool, isNotNull);
-      expect(capturedPool, equals(VideoControllerPoolManager.instance));
-    });
+      testWidgets('finds nearest ancestor provider', (tester) async {
+        final innerPool = TestablePlayerPool(
+          mockPlayerFactory: (_) => createMockPooledPlayer(),
+        );
+        PlayerPool? foundPool;
 
-    testWidgets('of() falls back to singleton when no provider', (
-      tester,
-    ) async {
-      await VideoControllerPoolManager.initialize(
-        poolSize: 3,
-        controllerFactory: createMockController,
-      );
-
-      VideoControllerPoolManager? capturedPool;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) {
-              capturedPool = VideoPoolProvider.of(context);
-              return const SizedBox();
-            },
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              pool: pool,
+              child: VideoPoolProvider(
+                pool: innerPool,
+                child: Builder(
+                  builder: (context) {
+                    foundPool = VideoPoolProvider.poolOf(context);
+                    return const SizedBox();
+                  },
+                ),
+              ),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(capturedPool, isNotNull);
-      expect(capturedPool, equals(VideoControllerPoolManager.instance));
+        expect(foundPool, equals(innerPool));
+
+        await innerPool.dispose();
+      });
     });
 
-    testWidgets('of() throws when no provider and singleton not initialized', (
-      tester,
-    ) async {
-      // Don't initialize the singleton
+    group('feedOf', () {
+      testWidgets('returns feedController from provider', (tester) async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+        );
+        VideoFeedController? foundController;
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) {
-              expect(
-                () => VideoPoolProvider.of(context),
-                throwsStateError,
-              );
-              return const SizedBox();
-            },
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              feedController: controller,
+              child: Builder(
+                builder: (context) {
+                  foundController = VideoPoolProvider.feedOf(context);
+                  return const SizedBox();
+                },
+              ),
+            ),
           ),
-        ),
-      );
-    });
+        );
 
-    testWidgets('maybeOf() returns pool from provider', (tester) async {
-      await VideoControllerPoolManager.initialize(
-        poolSize: 3,
-        controllerFactory: createMockController,
-      );
+        expect(foundController, equals(controller));
 
-      VideoControllerPoolManager? capturedPool;
+        controller.dispose();
+      });
 
-      await tester.pumpWidget(
-        MaterialApp(
-          home: VideoPoolProvider(
-            pool: VideoControllerPoolManager.instance,
-            child: Builder(
+      testWidgets('throws StateError when no provider', (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
               builder: (context) {
-                capturedPool = VideoPoolProvider.maybeOf(context);
+                expect(
+                  () => VideoPoolProvider.feedOf(context),
+                  throwsA(
+                    isA<StateError>().having(
+                      (e) => e.message,
+                      'message',
+                      contains('No VideoPoolProvider with feedController'),
+                    ),
+                  ),
+                );
                 return const SizedBox();
               },
             ),
           ),
-        ),
+        );
+      });
+
+      testWidgets(
+        'throws StateError when provider has no feedController',
+        (tester) async {
+          await tester.pumpWidget(
+            MaterialApp(
+              home: VideoPoolProvider(
+                pool: pool,
+                child: Builder(
+                  builder: (context) {
+                    expect(
+                      () => VideoPoolProvider.feedOf(context),
+                      throwsA(isA<StateError>()),
+                    );
+                    return const SizedBox();
+                  },
+                ),
+              ),
+            ),
+          );
+        },
       );
 
-      expect(capturedPool, isNotNull);
-      expect(capturedPool, equals(VideoControllerPoolManager.instance));
-    });
+      testWidgets('finds nearest ancestor provider', (tester) async {
+        final outerController = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+        );
+        final innerController = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+        );
+        VideoFeedController? foundController;
 
-    testWidgets('maybeOf() falls back to singleton when no provider', (
-      tester,
-    ) async {
-      await VideoControllerPoolManager.initialize(
-        poolSize: 3,
-        controllerFactory: createMockController,
-      );
-
-      VideoControllerPoolManager? capturedPool;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) {
-              capturedPool = VideoPoolProvider.maybeOf(context);
-              return const SizedBox();
-            },
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              feedController: outerController,
+              child: VideoPoolProvider(
+                feedController: innerController,
+                child: Builder(
+                  builder: (context) {
+                    foundController = VideoPoolProvider.feedOf(context);
+                    return const SizedBox();
+                  },
+                ),
+              ),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(capturedPool, isNotNull);
-      expect(capturedPool, equals(VideoControllerPoolManager.instance));
+        expect(foundController, equals(innerController));
+
+        outerController.dispose();
+        innerController.dispose();
+      });
     });
 
-    testWidgets('maybeOf() returns null when no provider and not initialized', (
-      tester,
-    ) async {
-      // Don't initialize the singleton
+    group('maybePoolOf', () {
+      testWidgets('returns pool when available', (tester) async {
+        PlayerPool? foundPool;
 
-      VideoControllerPoolManager? capturedPool;
-      var builderCalled = false;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Builder(
-            builder: (context) {
-              builderCalled = true;
-              capturedPool = VideoPoolProvider.maybeOf(context);
-              return const SizedBox();
-            },
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              pool: pool,
+              child: Builder(
+                builder: (context) {
+                  foundPool = VideoPoolProvider.maybePoolOf(context);
+                  return const SizedBox();
+                },
+              ),
+            ),
           ),
-        ),
-      );
+        );
 
-      expect(builderCalled, isTrue);
-      expect(capturedPool, isNull);
+        expect(foundPool, equals(pool));
+      });
+
+      testWidgets('returns null when no provider', (tester) async {
+        PlayerPool? foundPool;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) {
+                foundPool = VideoPoolProvider.maybePoolOf(context);
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+
+        expect(foundPool, isNull);
+      });
+
+      testWidgets('returns null when provider has no pool', (tester) async {
+        PlayerPool? foundPool;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              child: Builder(
+                builder: (context) {
+                  foundPool = VideoPoolProvider.maybePoolOf(context);
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(foundPool, isNull);
+      });
     });
 
-    testWidgets('updateShouldNotify returns true when pool changes', (
-      tester,
-    ) async {
-      await VideoControllerPoolManager.initialize(
-        poolSize: 2,
-        controllerFactory: createMockController,
+    group('maybeFeedOf', () {
+      testWidgets('returns feedController when available', (tester) async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+        );
+        VideoFeedController? foundController;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              feedController: controller,
+              child: Builder(
+                builder: (context) {
+                  foundController = VideoPoolProvider.maybeFeedOf(context);
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(foundController, equals(controller));
+
+        controller.dispose();
+      });
+
+      testWidgets('returns null when no provider', (tester) async {
+        VideoFeedController? foundController;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Builder(
+              builder: (context) {
+                foundController = VideoPoolProvider.maybeFeedOf(context);
+                return const SizedBox();
+              },
+            ),
+          ),
+        );
+
+        expect(foundController, isNull);
+      });
+
+      testWidgets(
+        'returns null when provider has no feedController',
+        (tester) async {
+          VideoFeedController? foundController;
+
+          await tester.pumpWidget(
+            MaterialApp(
+              home: VideoPoolProvider(
+                pool: pool,
+                child: Builder(
+                  builder: (context) {
+                    foundController = VideoPoolProvider.maybeFeedOf(context);
+                    return const SizedBox();
+                  },
+                ),
+              ),
+            ),
+          );
+
+          expect(foundController, isNull);
+        },
       );
-
-      final pool1 = VideoControllerPoolManager.instance;
-
-      await VideoControllerPoolManager.initialize(
-        poolSize: 4,
-        controllerFactory: createMockController,
-      );
-
-      final pool2 = VideoControllerPoolManager.instance;
-
-      expect(pool1, isNot(equals(pool2)));
-
-      final provider1 = VideoPoolProvider(pool: pool1, child: const SizedBox());
-      final provider2 = VideoPoolProvider(pool: pool2, child: const SizedBox());
-
-      expect(provider2.updateShouldNotify(provider1), isTrue);
     });
 
-    testWidgets('updateShouldNotify returns false when pool is same', (
-      tester,
-    ) async {
-      await VideoControllerPoolManager.initialize(
-        poolSize: 3,
-        controllerFactory: createMockController,
-      );
+    group('updateShouldNotify', () {
+      testWidgets('returns true when pool changes', (tester) async {
+        var buildCount = 0;
+        final newPool = TestablePlayerPool(
+          mockPlayerFactory: (_) => createMockPooledPlayer(),
+        );
 
-      final pool = VideoControllerPoolManager.instance;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              pool: pool,
+              child: Builder(
+                builder: (context) {
+                  buildCount++;
+                  VideoPoolProvider.maybePoolOf(context);
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ),
+        );
 
-      final provider1 = VideoPoolProvider(pool: pool, child: const SizedBox());
-      final provider2 = VideoPoolProvider(pool: pool, child: const SizedBox());
+        expect(buildCount, equals(1));
 
-      expect(provider2.updateShouldNotify(provider1), isFalse);
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              pool: newPool,
+              child: Builder(
+                builder: (context) {
+                  buildCount++;
+                  VideoPoolProvider.maybePoolOf(context);
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(buildCount, equals(2));
+
+        await newPool.dispose();
+      });
+
+      testWidgets('returns true when feedController changes', (tester) async {
+        final controller1 = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+        );
+        final controller2 = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+        );
+        var buildCount = 0;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              feedController: controller1,
+              child: Builder(
+                builder: (context) {
+                  buildCount++;
+                  VideoPoolProvider.maybeFeedOf(context);
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(buildCount, equals(1));
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              feedController: controller2,
+              child: Builder(
+                builder: (context) {
+                  buildCount++;
+                  VideoPoolProvider.maybeFeedOf(context);
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(buildCount, equals(2));
+
+        controller1.dispose();
+        controller2.dispose();
+      });
+
+      testWidgets('returns false when neither changes', (tester) async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(),
+          pool: pool,
+        );
+        var buildCount = 0;
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              pool: pool,
+              feedController: controller,
+              child: Builder(
+                builder: (context) {
+                  buildCount++;
+                  VideoPoolProvider.maybePoolOf(context);
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ),
+        );
+
+        expect(buildCount, equals(1));
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: VideoPoolProvider(
+              pool: pool,
+              feedController: controller,
+              child: Builder(
+                builder: (context) {
+                  buildCount++;
+                  VideoPoolProvider.maybePoolOf(context);
+                  return const SizedBox();
+                },
+              ),
+            ),
+          ),
+        );
+
+        // Builder always rebuilds, but updateShouldNotify returns false
+        expect(buildCount, equals(2));
+
+        controller.dispose();
+      });
     });
   });
 }

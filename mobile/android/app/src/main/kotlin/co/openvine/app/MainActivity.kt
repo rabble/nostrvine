@@ -1,5 +1,6 @@
 package co.openvine.app
 
+import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.util.Log
@@ -29,10 +30,14 @@ class MainActivity : FlutterActivity() {
 
     private var navigationChannel: MethodChannel? = null
     private var backCallback: OnBackInvokedCallback? = null
+    @Volatile private var isActivityDestroyed = false
     private val PROOFMODE_CHANNEL = "org.openvine/proofmode"
     private val ZENDESK_CHANNEL = "com.openvine/zendesk_support"
     private val PROOFMODE_TAG = "OpenVineProofMode"
     private val ZENDESK_TAG = "OpenVineZendesk"
+
+    // NIP-55 Android Signer plugin
+    private var nostrSignerPlugin: NostrSignerPlugin? = null
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         try {
@@ -61,10 +66,28 @@ class MainActivity : FlutterActivity() {
 
         // Set up navigation channel for back button handling
         setupNavigationChannel(flutterEngine)
+
+        // Set up NIP-55 Android Signer plugin
+        nostrSignerPlugin = NostrSignerPlugin(this, flutterEngine)
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        // Forward activity result to NIP-55 signer plugin
+        if (nostrSignerPlugin?.onActivityResult(requestCode, resultCode, data) == true) {
+            return
+        }
+        super.onActivityResult(requestCode, resultCode, data)
     }
 
     override fun onBackPressed() {
         Log.d(NAV_TAG, "onBackPressed() called")
+
+        // Guard against platform channel calls after activity destruction
+        if (isActivityDestroyed || isFinishing) {
+            super.onBackPressed()
+            return
+        }
 
         // Notify Flutter about back button press via MethodChannel
         navigationChannel?.invokeMethod("onBackPressed", null, object : MethodChannel.Result {
@@ -109,6 +132,13 @@ class MainActivity : FlutterActivity() {
     }
 
     private fun handleBackPress() {
+        // Guard against platform channel calls after activity destruction.
+        // FlutterJNI may not be attached to native after onDestroy.
+        if (isActivityDestroyed || isFinishing) {
+            finish()
+            return
+        }
+
         // Notify Flutter about back button press via MethodChannel
         navigationChannel?.invokeMethod("onBackPressed", null, object : MethodChannel.Result {
             override fun success(result: Any?) {
@@ -133,6 +163,7 @@ class MainActivity : FlutterActivity() {
     }
 
     override fun onDestroy() {
+        isActivityDestroyed = true
         super.onDestroy()
         // Unregister callback when activity is destroyed
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU && backCallback != null) {
@@ -249,6 +280,13 @@ class MainActivity : FlutterActivity() {
 
                 "showNewTicket" -> {
                     try {
+                        // Guard against launching when activity is finishing/destroyed
+                        // which causes Theme.AppCompat crashes
+                        if (isFinishing || isDestroyed) {
+                            result.error("ACTIVITY_DESTROYED", "Activity is not available", null)
+                            return@setMethodCallHandler
+                        }
+
                         // Note: Zendesk Android SDK v5.1.2 does not support pre-filling
                         // subject/tags in RequestActivity. Users must fill these in the UI.
                         // This is a known limitation of the Android SDK vs iOS SDK.
@@ -268,6 +306,12 @@ class MainActivity : FlutterActivity() {
 
                 "showTicketList" -> {
                     try {
+                        // Guard against launching when activity is finishing/destroyed
+                        if (isFinishing || isDestroyed) {
+                            result.error("ACTIVITY_DESTROYED", "Activity is not available", null)
+                            return@setMethodCallHandler
+                        }
+
                         Log.d(ZENDESK_TAG, "Showing ticket list screen")
 
                         // Launch Zendesk request list activity

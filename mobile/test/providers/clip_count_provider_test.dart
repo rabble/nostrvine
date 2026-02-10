@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/saved_clip.dart';
@@ -19,12 +20,35 @@ void main() {
     late List<File> tempFiles;
 
     setUp(() async {
-      SharedPreferences.setMockInitialValues({});
-      final prefs = await SharedPreferences.getInstance();
-      clipService = ClipLibraryService(prefs);
+      TestWidgetsFlutterBinding.ensureInitialized();
 
+      // Create temp directory first so we can use its path in mock
       tempDir = await Directory.systemTemp.createTemp('clip_test_');
       tempFiles = [];
+
+      // Mock path provider to return our temp directory
+      const MethodChannel pathProviderChannel = MethodChannel(
+        'plugins.flutter.io/path_provider',
+      );
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(pathProviderChannel, (
+            MethodCall methodCall,
+          ) async {
+            switch (methodCall.method) {
+              case 'getTemporaryDirectory':
+                return tempDir.path;
+              case 'getApplicationDocumentsDirectory':
+                return tempDir.path;
+              case 'getApplicationSupportDirectory':
+                return tempDir.path;
+              default:
+                return null;
+            }
+          });
+
+      SharedPreferences.setMockInitialValues({});
+      clipService = ClipLibraryService();
 
       container = ProviderContainer(
         overrides: [

@@ -1,14 +1,17 @@
 // ABOUTME: Screen for viewing a specific video by ID (from deep links)
 // ABOUTME: Fetches video from Nostr and displays it in full-screen player
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/screens/video_feed_screen.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 class VideoDetailScreen extends ConsumerStatefulWidget {
@@ -67,6 +70,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
             _video = video;
             _isLoading = false;
           });
+          ScreenAnalyticsService().markDataLoaded('video_detail');
         }
         return;
       }
@@ -93,6 +97,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
             _video = fetchedVideo;
             _isLoading = false;
           });
+          ScreenAnalyticsService().markDataLoaded('video_detail');
         }
       } else {
         Log.warning(
@@ -178,7 +183,11 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
           backgroundColor: Colors.transparent,
           elevation: 0,
           leading: IconButton(
-            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            icon: const Icon(
+              Icons.arrow_back,
+              color: Colors.white,
+              semanticLabel: 'Close video player',
+            ),
             onPressed: context.pop,
           ),
         ),
@@ -191,7 +200,11 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
       );
     }
 
-    // Display video in full-screen player (with navigation disabled to preserve /video/:id route)
-    return VideoFeedScreen(startingVideo: _video!, disableNavigation: true);
+    // Display video in full-screen pooled player
+    return PooledFullscreenVideoFeedScreen(
+      videosStream: Stream.value([_video!]),
+      initialIndex: 0,
+      contextTitle: 'Shared Video',
+    );
   }
 }

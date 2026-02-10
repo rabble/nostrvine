@@ -58,7 +58,10 @@ class MockCameraService extends CameraService {
   }
 
   @override
-  Future<bool> startRecording({Duration? maxDuration}) async {
+  Future<bool> startRecording({
+    Duration? maxDuration,
+    String? outputDirectory,
+  }) async {
     _isRecording = true;
     return true;
   }

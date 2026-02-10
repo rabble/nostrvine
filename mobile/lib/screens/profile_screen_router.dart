@@ -16,13 +16,14 @@ import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
-import 'package:openvine/router/page_context_provider.dart';
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
@@ -176,6 +177,12 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       final environment = ref.watch(currentEnvironmentProvider);
       final userIdHex = ref.read(authServiceProvider).currentPublicKeyHex;
 
+      // Watch profile for profile color
+      final profileAsync = userIdHex != null
+          ? ref.watch(fetchUserProfileProvider(userIdHex))
+          : null;
+      final profileColor = profileAsync?.value?.profileBackgroundColor;
+
       return Scaffold(
         backgroundColor: Colors.black,
         onDrawerChanged: (isOpen) {
@@ -188,7 +195,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
           leadingWidth: 80,
           centerTitle: false,
           titleSpacing: 0,
-          backgroundColor: getEnvironmentAppBarColor(environment),
+          backgroundColor:
+              profileColor ?? getEnvironmentAppBarColor(environment),
           leading: Builder(
             builder: (context) => IconButton(
               key: const Key('menu-icon-button'),
@@ -373,6 +381,27 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
       scrollable: false,
       children: [
         InkWell(
+          onTap: () => Navigator.of(context).pop('edit'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                SvgPicture.asset(
+                  'assets/icon/content-controls/pencil.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: const ColorFilter.mode(
+                    VineTheme.whiteText,
+                    BlendMode.srcIn,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Text('Edit profile', style: VineTheme.titleMediumFont()),
+              ],
+            ),
+          ),
+        ),
+        InkWell(
           onTap: () => Navigator.of(context).pop('share'),
           child: Padding(
             padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
@@ -422,7 +451,9 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     if (!mounted) return;
 
-    if (result == 'share') {
+    if (result == 'edit') {
+      _editProfile();
+    } else if (result == 'share') {
       await _shareProfile(userIdHex);
     } else if (result == 'copy_npub') {
       await _copyNpub(userIdHex);
@@ -598,6 +629,15 @@ class _ProfileDataView extends ConsumerWidget {
 
     // Get profile stats
     final profileStatsAsync = ref.watch(fetchProfileStatsProvider(userIdHex));
+
+    if (videosAsync is AsyncData) {
+      ScreenAnalyticsService().markDataLoaded(
+        'own_profile',
+        dataMetrics: {
+          'video_count': videosAsync.asData?.value.videos.length ?? 0,
+        },
+      );
+    }
 
     return BlocListener<BackgroundPublishBloc, BackgroundPublishState>(
       listenWhen: (previous, current) {

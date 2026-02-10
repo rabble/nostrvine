@@ -9,7 +9,6 @@ import 'package:mockito/mockito.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/repositories/video_repository.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -64,7 +63,6 @@ void main() {
       videoEventService = VideoEventService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
-        videoRepository: VideoRepository(),
       );
       videoEventService.setBlocklistService(blocklistService);
     });

@@ -10,10 +10,16 @@ sealed class OthersFollowersEvent {
 
 /// Request to load another user's followers list.
 final class OthersFollowersListLoadRequested extends OthersFollowersEvent {
-  const OthersFollowersListLoadRequested(this.targetPubkey);
+  const OthersFollowersListLoadRequested(
+    this.targetPubkey, {
+    this.forceRefresh = false,
+  });
 
   /// The public key of the user whose followers list to load
   final String targetPubkey;
+
+  /// If true, bypasses cache staleness check and always fetches from relays
+  final bool forceRefresh;
 }
 
 /// Optimistically increment follower count when current user follows.

@@ -27,6 +27,9 @@ void main() {
       SharedPreferences.setMockInitialValues({});
       sharedPreferences = await SharedPreferences.getInstance();
       mockAuthService = MockAuthService();
+
+      // Default stub for hasSavedKeys - called in WelcomeScreen.initState
+      when(mockAuthService.hasSavedKeys()).thenAnswer((_) async => false);
     });
 
     testWidgets('shows loading indicator when auth state is checking', (

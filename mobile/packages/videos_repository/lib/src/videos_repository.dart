@@ -4,11 +4,13 @@
 // ABOUTME: Returns Future<List<VideoEvent>>, not streams -
 // ABOUTME: loading is pagination-based.
 
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:videos_repository/src/video_content_filter.dart';
 import 'package:videos_repository/src/video_event_filter.dart';
+import 'package:videos_repository/src/video_local_storage.dart';
 
 export 'package:models/src/nip71_video_kinds.dart' show NIP71VideoKinds;
 
@@ -26,20 +28,34 @@ const int _defaultLimit = 5;
 /// efficient video feed loading. Uses pagination-based loading (Futures)
 /// rather than real-time subscriptions (Streams).
 ///
+/// Optionally accepts a [VideoLocalStorage] for cache-first lookups.
+/// When provided, methods like [getVideosByIds] will check the cache first
+/// before querying relays.
+///
+/// Optionally accepts a [FunnelcakeApiClient] to fallback to REST API
+/// for videos not found on Nostr relays (e.g., videos from Explore that
+/// may not be on the app's configured relays).
+///
 /// {@endtemplate}
 class VideosRepository {
   /// {@macro videos_repository}
   const VideosRepository({
     required NostrClient nostrClient,
+    VideoLocalStorage? localStorage,
     BlockedVideoFilter? blockFilter,
     VideoContentFilter? contentFilter,
+    FunnelcakeApiClient? funnelcakeApiClient,
   }) : _nostrClient = nostrClient,
+       _localStorage = localStorage,
        _blockFilter = blockFilter,
-       _contentFilter = contentFilter;
+       _contentFilter = contentFilter,
+       _funnelcakeApiClient = funnelcakeApiClient;
 
   final NostrClient _nostrClient;
+  final VideoLocalStorage? _localStorage;
   final BlockedVideoFilter? _blockFilter;
   final VideoContentFilter? _contentFilter;
+  final FunnelcakeApiClient? _funnelcakeApiClient;
 
   /// Fetches videos from followed users for the home feed.
   ///
@@ -202,25 +218,57 @@ class VideosRepository {
   /// This is used for fetching videos that a user has liked (Kind 7 reactions
   /// reference videos by their event ID).
   ///
+  /// Implements cache-first lookup:
+  /// 1. Check local storage for cached events
+  /// 2. Query relays for missing events
+  /// 3. Optionally save fetched events to cache
+  ///
   /// Parameters:
   /// - [eventIds]: List of event IDs to fetch
+  /// - [cacheResults]: If true, saves fetched events to local storage.
+  ///   Defaults to false to avoid cache bloat from pagination.
+  ///   Set to true for first-page loads that should be cached.
   ///
   /// Returns a list of [VideoEvent] in the same order as [eventIds].
   /// Videos that couldn't be found or failed to parse are omitted.
-  Future<List<VideoEvent>> getVideosByIds(List<String> eventIds) async {
+  Future<List<VideoEvent>> getVideosByIds(
+    List<String> eventIds, {
+    bool cacheResults = false,
+  }) async {
     if (eventIds.isEmpty) return [];
 
-    final filter = Filter(
-      ids: eventIds,
-      kinds: NIP71VideoKinds.getAllVideoKinds(),
-    );
-
-    final events = await _nostrClient.queryEvents([filter]);
-
-    // Build a map for ordering
+    // Build a map for results
     final eventMap = <String, Event>{};
-    for (final event in events) {
-      eventMap[event.id] = event;
+
+    // 1. Check cache first (if available)
+    if (_localStorage != null) {
+      final cachedEvents = await _localStorage.getEventsByIds(eventIds);
+      for (final event in cachedEvents) {
+        eventMap[event.id] = event;
+      }
+    }
+
+    // 2. Find missing IDs and query relay
+    final missingIds = eventIds
+        .where((id) => !eventMap.containsKey(id))
+        .toList();
+
+    if (missingIds.isNotEmpty) {
+      final filter = Filter(
+        ids: missingIds,
+        kinds: NIP71VideoKinds.getAllVideoKinds(),
+      );
+
+      final relayEvents = await _nostrClient.queryEvents([filter]);
+
+      for (final event in relayEvents) {
+        eventMap[event.id] = event;
+      }
+
+      // 3. Optionally save fetched events to cache
+      if (cacheResults && _localStorage != null && relayEvents.isNotEmpty) {
+        await _localStorage.saveEventsBatch(relayEvents);
+      }
     }
 
     // Transform and filter, preserving input order
@@ -248,14 +296,25 @@ class VideosRepository {
   /// This is used for fetching videos that a user has reposted (Kind 16
   /// generic reposts reference addressable events via the 'a' tag).
   ///
+  /// Strategy:
+  /// 1. First tries Nostr relays via NostrClient
+  /// 2. For videos not found on relays, tries Funnelcake REST API fallback
+  ///    (if configured) - useful for videos from Explore that may not be
+  ///    on the app's configured relays
+  /// 3. Optionally saves fetched events to local storage
+  ///
   /// Parameters:
   /// - [addressableIds]: List of addressable IDs in `kind:pubkey:d-tag` format
+  /// - [cacheResults]: If true, saves fetched events to local storage.
+  ///   Defaults to false to avoid cache bloat from pagination.
+  ///   Set to true for first-page loads that should be cached.
   ///
   /// Returns a list of [VideoEvent] in the same order as [addressableIds].
   /// Videos that couldn't be found or failed to parse are omitted.
   Future<List<VideoEvent>> getVideosByAddressableIds(
-    List<String> addressableIds,
-  ) async {
+    List<String> addressableIds, {
+    bool cacheResults = false,
+  }) async {
     if (addressableIds.isEmpty) return [];
 
     // Parse addressable IDs and build filters
@@ -294,29 +353,101 @@ class VideosRepository {
     final results = await Future.wait(futures);
     final events = results.expand((e) => e).toList();
 
+    // Optionally save fetched events to cache
+    if (cacheResults && _localStorage != null && events.isNotEmpty) {
+      await _localStorage.saveEventsBatch(events);
+    }
+
     // Build a map keyed by addressable ID for ordering
-    final eventMap = <String, Event>{};
+    final foundVideos = <String, VideoEvent>{};
     for (final event in events) {
       final dTag = event.dTagValue;
       if (dTag.isNotEmpty) {
         final addressableId = '${event.kind}:${event.pubkey}:$dTag';
-        eventMap[addressableId] = event;
+        final video = _tryParseAndFilter(event);
+        if (video != null) {
+          foundVideos[addressableId] = video;
+        }
       }
     }
 
-    // Transform and filter, preserving input order
+    // Find which IDs weren't found on Nostr
+    final missingIds = addressableIds
+        .where((id) => !foundVideos.containsKey(id))
+        .toList();
+
+    // Try Funnelcake API fallback for missing videos
+    if (missingIds.isNotEmpty &&
+        _funnelcakeApiClient != null &&
+        _funnelcakeApiClient.isAvailable) {
+      await _fetchMissingVideosFromFunnelcake(missingIds, foundVideos);
+    }
+
+    // Build result list preserving original order
     final videos = <VideoEvent>[];
     for (final addressableId in addressableIds) {
-      final event = eventMap[addressableId];
-      if (event == null) continue;
-
-      final video = _tryParseAndFilter(event);
+      final video = foundVideos[addressableId];
       if (video != null) {
         videos.add(video);
       }
     }
 
     return videos;
+  }
+
+  /// Fetches missing videos from Funnelcake API and adds them to [foundVideos].
+  ///
+  /// Groups missing IDs by author pubkey to batch API requests.
+  Future<void> _fetchMissingVideosFromFunnelcake(
+    List<String> missingIds,
+    Map<String, VideoEvent> foundVideos,
+  ) async {
+    // Group missing IDs by pubkey to batch queries
+    final missingByPubkey = <String, List<String>>{};
+    for (final addressableId in missingIds) {
+      final parsed = AId.fromString(addressableId);
+      if (parsed != null) {
+        missingByPubkey.putIfAbsent(parsed.pubkey, () => []).add(parsed.dTag);
+      }
+    }
+
+    // Query Funnelcake API for each author's videos
+    for (final entry in missingByPubkey.entries) {
+      final pubkey = entry.key;
+      final dTags = entry.value.toSet();
+
+      try {
+        // Fetch videos by author from Funnelcake API
+        final authorVideoStats = await _funnelcakeApiClient!.getVideosByAuthor(
+          pubkey: pubkey,
+          limit: 100,
+        );
+
+        // Find videos matching our d-tags and convert to VideoEvent
+        for (final videoStats in authorVideoStats) {
+          final video = videoStats.toVideoEvent();
+          if (video.vineId != null && dTags.contains(video.vineId)) {
+            final videoAddressableId = AId(
+              kind: EventKind.videoVertical,
+              pubkey: video.pubkey,
+              dTag: video.vineId!,
+            ).toAString();
+
+            // Apply content filter if configured
+            if (_blockFilter?.call(video.pubkey) ?? false) continue;
+            if (!video.hasVideo) continue;
+            if (video.isExpired) continue;
+            if (_contentFilter?.call(video) ?? false) continue;
+
+            foundVideos[videoAddressableId] = video;
+          }
+        }
+      } on FunnelcakeException {
+        // Silently ignore Funnelcake API failures - this is a fallback,
+        // so we don't want to fail the whole operation if it doesn't work.
+        // The video simply won't be included in the results.
+      }
+    }
   }
 
   /// Attempts to parse an event into a VideoEvent and apply filters.

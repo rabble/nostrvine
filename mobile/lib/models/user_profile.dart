@@ -2,6 +2,8 @@
 // ABOUTME: Represents user information like display name, avatar, bio, and social links
 
 import 'dart:convert';
+import 'dart:ui';
+
 import 'package:hive_ce/hive.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -141,10 +143,11 @@ class UserProfile {
 
   /// Get the best available display name
   String get bestDisplayName {
-    if (displayName?.isNotEmpty == true) return displayName!;
-    if (name?.isNotEmpty == true) return name!;
-    // Fallback to truncated npub (e.g., "npub1abc...xyz")
-    return truncatedNpub;
+    if (displayName?.isNotEmpty ?? false) return displayName!;
+    if (name?.isNotEmpty ?? false) return name!;
+    // Fallback to truncated pubkey
+    if (pubkey.length <= 16) return pubkey;
+    return '${pubkey.substring(0, 8)}...${pubkey.substring(pubkey.length - 6)}';
   }
 
   /// Similar to bestDisplayName. Use when you have default place holder text
@@ -238,6 +241,58 @@ class UserProfile {
 
   /// Get location data if available
   String? get location => rawData['location'] as String?;
+
+  /// Check if the banner field contains a hex color (used by imported Viners)
+  /// rather than a URL to a banner image.
+  ///
+  /// Vine profiles stored their profile tile color in the banner field as
+  /// hex values like "0x33ccbf" or "#33ccbf".
+  bool get hasProfileBackgroundColor {
+    if (banner == null || banner!.isEmpty) return false;
+    // Banner URLs start with http/https, colors start with 0x or #
+    return banner!.startsWith('0x') || banner!.startsWith('#');
+  }
+
+  /// Check if the banner field contains an actual banner image URL
+  bool get hasBannerImage {
+    if (banner == null || banner!.isEmpty) return false;
+    return banner!.startsWith('http');
+  }
+
+  /// Get the profile background color from the banner field (for imported Viners).
+  ///
+  /// Returns null if banner is not a hex color (e.g., if it's a URL).
+  /// Supports formats: "0x33ccbf", "#33ccbf", "33ccbf"
+  Color? get profileBackgroundColor {
+    if (banner == null || banner!.isEmpty) return null;
+
+    String hexString = banner!;
+
+    // Remove 0x prefix if present
+    if (hexString.startsWith('0x')) {
+      hexString = hexString.substring(2);
+    }
+    // Remove # prefix if present
+    else if (hexString.startsWith('#')) {
+      hexString = hexString.substring(1);
+    }
+    // If it looks like a URL, it's not a color
+    else if (hexString.startsWith('http')) {
+      return null;
+    }
+
+    // Validate hex string (should be 6 characters for RGB)
+    if (hexString.length != 6) return null;
+
+    // Try to parse the hex color
+    try {
+      final colorValue = int.parse(hexString, radix: 16);
+      // Add full opacity (0xFF) to the color
+      return Color(0xFF000000 | colorValue);
+    } catch (_) {
+      return null;
+    }
+  }
 
   /// Convert profile to JSON
   Map<String, dynamic> toJson() => {

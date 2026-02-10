@@ -16,6 +16,7 @@ final class ProfileSaved extends ProfileEditorEvent {
     this.about,
     this.username,
     this.picture,
+    this.banner,
   });
 
   /// User's public key in hex format.
@@ -27,14 +28,25 @@ final class ProfileSaved extends ProfileEditorEvent {
   /// Bio/about text (optional).
   final String? about;
 
-  /// Username to claim as `username@divine.video` (optional).
+  /// Username to claim as `_@username.divine.video` (optional).
   final String? username;
 
   /// Profile picture URL (optional).
   final String? picture;
+
+  /// Banner field - can be a hex color (e.g., "0x33ccbf") or URL (optional).
+  final String? banner;
 }
 
 /// Confirmation to proceed with saving profile despite warnings.
 final class ProfileSaveConfirmed extends ProfileEditorEvent {
   const ProfileSaveConfirmed();
+}
+
+/// Event triggered when username text changes.
+final class UsernameChanged extends ProfileEditorEvent {
+  const UsernameChanged(this.username);
+
+  /// The new username value from the text field.
+  final String username;
 }

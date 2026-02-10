@@ -233,6 +233,11 @@ class NostrClient {
     final sentEvent = await _nostr.sendEvent(
       event,
       targetRelays: targetRelays,
+      // Also pass as tempRelays so the SDK creates temporary connections
+      // to target relays not already in the connected pool. Without this,
+      // targetRelays only filters the existing pool and the event could
+      // be sent to zero relays.
+      tempRelays: targetRelays,
     );
 
     if (sentEvent == null) {
@@ -649,16 +654,31 @@ class NostrClient {
 
   /// Sends a like reaction to an event
   ///
+  /// Parameters:
+  /// - [eventId]: The event ID being liked (required)
+  /// - [content]: Reaction content, defaults to '+' for likes
+  /// - [addressableId]: Optional addressable ID for Kind 30000+ events
+  ///   (format: "kind:pubkey:d-tag"). When provided, adds an 'a' tag for
+  ///   better discoverability of likes on addressable events.
+  /// - [targetAuthorPubkey]: Optional pubkey of the liked event's author
+  /// - [targetKind]: Optional kind of the event being liked (e.g., 34236)
+  ///
   /// Successfully sent events are cached locally with 1-day expiry.
   Future<Event?> sendLike(
     String eventId, {
     String? content,
+    String? addressableId,
+    String? targetAuthorPubkey,
+    int? targetKind,
     List<String>? tempRelays,
     List<String>? targetRelays,
   }) async {
     final likeEvent = await _nostr.sendLike(
       eventId,
+      pubkey: targetAuthorPubkey,
       content: content,
+      addressableId: addressableId,
+      targetKind: targetKind,
       tempRelays: tempRelays,
       targetRelays: targetRelays,
     );
@@ -872,6 +892,26 @@ class NostrClient {
     );
 
     return subscribe([filter], tempRelays: _nip50SearchRelays);
+  }
+
+  /// Queries for user profiles using NIP-50 search
+  ///
+  /// Returns a list of profile events (kind 0) matching the search query.
+  /// Uses NIP-50 search parameter for full-text search on compatible relays.
+  ///
+  /// Unlike [searchUsers], this returns a Future that completes once,
+  /// making it suitable for one-time search operations.
+  Future<List<Event>> queryUsers(
+    String query, {
+    int? limit,
+  }) {
+    final filter = Filter(
+      kinds: const [EventKind.metadata],
+      limit: limit ?? 100,
+      search: query,
+    );
+
+    return queryEvents([filter]);
   }
 
   /// Creates a NIP-98 HTTP authentication header.

@@ -18,14 +18,12 @@ import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/repositories/follow_repository.dart';
-import 'package:openvine/repositories/username_repository.dart';
-import 'package:openvine/providers/video_repository_provider.dart';
 import 'package:openvine/services/account_deletion_service.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/analytics_service.dart';
 import 'package:openvine/services/api_service.dart';
-import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
+import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
@@ -43,7 +41,9 @@ import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/services/curation_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/email_verification_listener.dart';
 import 'package:openvine/services/event_router.dart';
+import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/geo_blocking_service.dart';
 import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
@@ -54,8 +54,8 @@ import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
 import 'package:openvine/services/nsfw_content_filter.dart';
-import 'package:openvine/services/email_verification_listener.dart';
 import 'package:openvine/services/password_reset_listener.dart';
+import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';
@@ -71,14 +71,16 @@ import 'package:openvine/services/user_list_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/services/video_event_service.dart';
-import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/services/video_sharing_service.dart';
 import 'package:openvine/services/video_visibility_manager.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/web_auth_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/utils/search_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:permissions_service/permissions_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 import 'package:reposts_repository/reposts_repository.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -91,9 +93,48 @@ part 'app_providers.g.dart';
 // =============================================================================
 
 /// Connection status service for monitoring network connectivity
-@riverpod
+@Riverpod(keepAlive: true)
 ConnectionStatusService connectionStatusService(Ref ref) {
-  return ConnectionStatusService();
+  final service = ConnectionStatusService();
+  ref.onDispose(service.dispose);
+  return service;
+}
+
+/// Pending action service for offline sync of social actions
+/// Returns null when not authenticated (no userPubkey available)
+@Riverpod(keepAlive: true)
+PendingActionService? pendingActionService(Ref ref) {
+  final connectionStatusService = ref.watch(connectionStatusServiceProvider);
+  final authService = ref.watch(authServiceProvider);
+
+  // Watch auth state to rebuild when authentication changes
+  ref.watch(currentAuthStateProvider);
+
+  // Need authenticated user for DAO operations
+  final userPubkey = authService.currentPublicKeyHex;
+  if (userPubkey == null) {
+    return null;
+  }
+
+  final db = ref.watch(databaseProvider);
+
+  final service = PendingActionService(
+    connectionStatusService: connectionStatusService,
+    pendingActionsDao: db.pendingActionsDao,
+    userPubkey: userPubkey,
+  );
+
+  // Initialize asynchronously
+  service.initialize().catchError((e) {
+    Log.error(
+      'Failed to initialize PendingActionService',
+      name: 'AppProviders',
+      error: e,
+    );
+  });
+
+  ref.onDispose(service.dispose);
+  return service;
 }
 
 /// Relay capability service for detecting NIP-11 divine extensions
@@ -332,6 +373,20 @@ GeoBlockingService geoBlockingService(Ref ref) {
   return GeoBlockingService();
 }
 
+/// Permissions service for checking and requesting OS permissions
+@riverpod
+PermissionsService permissionsService(Ref ref) {
+  return const PermissionHandlerPermissionsService();
+}
+
+/// Gallery save service for saving videos to device camera roll
+@riverpod
+GallerySaveService gallerySaveService(Ref ref) {
+  return GallerySaveService(
+    permissionsService: ref.watch(permissionsServiceProvider),
+  );
+}
+
 /// Secure key storage service (foundational service)
 @Riverpod(keepAlive: true)
 SecureKeyStorage secureKeyStorage(Ref ref) {
@@ -489,25 +544,16 @@ Nip05Service nip05Service(Ref ref) {
   return Nip05Service();
 }
 
-/// Username repository for availability checking
-@riverpod
-UsernameRepository usernameRepository(Ref ref) {
-  final nip05Service = ref.watch(nip05ServiceProvider);
-  return UsernameRepository(nip05Service);
-}
-
 /// Draft storage service for persisting vine drafts
 @riverpod
 Future<DraftStorageService> draftStorageService(Ref ref) async {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return DraftStorageService(prefs);
+  return DraftStorageService();
 }
 
 /// Clip library service for persisting individual video clips
 @riverpod
 ClipLibraryService clipLibraryService(Ref ref) {
-  final prefs = ref.watch(sharedPreferencesProvider);
-  return ClipLibraryService(prefs);
+  return ClipLibraryService();
 }
 
 // (Removed duplicate legacy provider for StreamUploadService)
@@ -563,6 +609,11 @@ AuthState currentAuthState(Ref ref) {
 ///
 /// This prevents race conditions where auth state is 'authenticated' but
 /// the NostrClient hasn't yet rebuilt with the new keys.
+///
+/// NostrClient.initialize() runs asynchronously in a Future.microtask after
+/// NostrService.build() returns. Riverpod can't detect when hasKeys transitions
+/// because it's the same object reference. When not ready but authenticated,
+/// we schedule brief retries to catch the async initialization.
 @Riverpod(keepAlive: true)
 bool isNostrReady(Ref ref) {
   final authService = ref.watch(authServiceProvider);
@@ -573,7 +624,31 @@ bool isNostrReady(Ref ref) {
   if (!authService.isAuthenticated) return false;
 
   final nostrClient = ref.watch(nostrServiceProvider);
-  return nostrClient.hasKeys;
+  final ready = nostrClient.hasKeys;
+
+  if (!ready) {
+    // NostrClient.initialize() runs asynchronously in a Future.microtask
+    // after NostrService.build() returns. Riverpod can't detect when
+    // hasKeys transitions because it's the same object reference.
+    // Schedule retries at increasing intervals to catch the transition.
+    var disposed = false;
+    ref.onDispose(() => disposed = true);
+
+    for (final delayMs in [100, 500, 2000]) {
+      Future.delayed(Duration(milliseconds: delayMs), () {
+        if (!disposed && nostrClient.hasKeys) {
+          Log.info(
+            'isNostrReady: NostrClient.hasKeys became true after ${delayMs}ms, invalidating',
+            name: 'isNostrReadyProvider',
+            category: LogCategory.system,
+          );
+          ref.invalidateSelf();
+        }
+      });
+    }
+  }
+
+  return ready;
 }
 
 /// Provider that sets Zendesk user identity when auth state changes
@@ -654,7 +729,7 @@ SubscriptionManager subscriptionManager(Ref ref) {
   return SubscriptionManager(nostrService);
 }
 
-/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, SubscriptionManager, and VideoRepository
+/// Video event service depends on Nostr, SeenVideos, Blocklist, AgeVerification, and SubscriptionManager
 @Riverpod(keepAlive: true)
 VideoEventService videoEventService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
@@ -663,7 +738,6 @@ VideoEventService videoEventService(Ref ref) {
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
   final userProfileService = ref.watch(userProfileServiceProvider);
   final videoFilterBuilder = ref.watch(videoFilterBuilderProvider);
-  final videoRepository = ref.watch(videoRepositoryProvider);
   final db = ref.watch(databaseProvider);
   final eventRouter = EventRouter(db);
 
@@ -672,7 +746,6 @@ VideoEventService videoEventService(Ref ref) {
   final service = VideoEventService(
     nostrService,
     subscriptionManager: subscriptionManager,
-    videoRepository: videoRepository,
     userProfileService: userProfileService,
     eventRouter: eventRouter,
     videoFilterBuilder: videoFilterBuilder,
@@ -727,17 +800,19 @@ UserProfileService userProfileService(Ref ref) {
   return service;
 }
 
-/// Social service depends on Nostr service and Auth service
+/// Social service depends on Nostr service, Auth service, and Analytics API
 @Riverpod(keepAlive: true)
 SocialService socialService(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final authService = ref.watch(authServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
+  final analyticsApiService = ref.watch(analyticsApiServiceProvider);
 
   return SocialService(
     nostrService,
     authService,
     personalEventCache: personalEventCache,
+    analyticsApiService: analyticsApiService,
   );
 }
 
@@ -762,10 +837,37 @@ FollowRepository? followRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
   final personalEventCache = ref.watch(personalEventCacheServiceProvider);
 
+  // Get connection status and pending action service for offline support
+  final connectionStatus = ref.watch(connectionStatusServiceProvider);
+  final pendingActionService = ref.watch(pendingActionServiceProvider);
+
   final repository = FollowRepository(
     nostrClient: nostrClient,
     personalEventCache: personalEventCache,
+    isOnline: () => connectionStatus.isOnline,
+    queueOfflineAction: pendingActionService != null
+        ? ({required bool isFollow, required String pubkey}) async {
+            await pendingActionService.queueAction(
+              type: isFollow
+                  ? PendingActionType.follow
+                  : PendingActionType.unfollow,
+              targetId: pubkey,
+            );
+          }
+        : null,
   );
+
+  // Register executors with pending action service for sync
+  if (pendingActionService != null) {
+    pendingActionService.registerExecutor(
+      PendingActionType.follow,
+      (action) => repository.executeFollowAction(action.targetId),
+    );
+    pendingActionService.registerExecutor(
+      PendingActionType.unfollow,
+      (action) => repository.executeUnfollowAction(action.targetId),
+    );
+  }
 
   // Initialize asynchronously
   repository.initialize().catchError((e) {
@@ -788,6 +890,7 @@ FollowRepository? followRepository(Ref ref) {
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - FunnelcakeApiClient for fast REST-based profile search
 @Riverpod(keepAlive: true)
 ProfileRepository? profileRepository(Ref ref) {
   // Return null if NostrClient is not ready yet
@@ -800,11 +903,17 @@ ProfileRepository? profileRepository(Ref ref) {
 
   final nostrClient = ref.watch(nostrServiceProvider);
   final userProfilesDao = ref.watch(databaseProvider).userProfilesDao;
+  final blocklistService = ref.watch(contentBlocklistServiceProvider);
+  final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
 
   return ProfileRepository(
     nostrClient: nostrClient,
     userProfilesDao: userProfilesDao,
     httpClient: Client(),
+    funnelcakeApiClient: funnelcakeClient,
+    userBlockFilter: blocklistService.shouldFilterFromFeeds,
+    profileSearchFilter: (query, profiles) =>
+        SearchUtils.searchProfiles(query, profiles, minScore: 0.3, limit: 50),
   );
 }
 
@@ -1249,6 +1358,19 @@ CommentsRepository commentsRepository(Ref ref) {
 // VIDEOS REPOSITORY
 // =============================================================================
 
+/// Provider for VideoLocalStorage instance (SQLite-backed)
+///
+/// Creates a DbVideoLocalStorage for caching video events locally.
+/// Used by VideosRepository for cache-first lookups.
+///
+/// Uses:
+/// - NostrEventsDao from databaseProvider (for SQLite storage)
+@Riverpod(keepAlive: true)
+VideoLocalStorage videoLocalStorage(Ref ref) {
+  final db = ref.watch(databaseProvider);
+  return DbVideoLocalStorage(dao: db.nostrEventsDao);
+}
+
 /// Provider for VideosRepository instance
 ///
 /// Creates a VideosRepository for loading video feeds with pagination.
@@ -1256,16 +1378,19 @@ CommentsRepository commentsRepository(Ref ref) {
 ///
 /// Uses:
 /// - NostrClient from nostrServiceProvider (for relay communication)
+/// - VideoLocalStorage for cache-first lookups and caching results
 /// - ContentBlocklistService for filtering blocked/muted users
 /// - AgeVerificationService for filtering NSFW content based on user preference
 @Riverpod(keepAlive: true)
 VideosRepository videosRepository(Ref ref) {
   final nostrClient = ref.watch(nostrServiceProvider);
+  final localStorage = ref.watch(videoLocalStorageProvider);
   final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
 
   return VideosRepository(
     nostrClient: nostrClient,
+    localStorage: localStorage,
     blockFilter: createBlocklistFilter(blocklistService),
     contentFilter: createNsfwFilter(ageVerificationService),
   );
@@ -1312,12 +1437,51 @@ LikesRepository likesRepository(Ref ref) {
     (state) => state == AuthState.authenticated,
   );
 
+  // Get connection status and pending action service for offline support
+  final connectionStatus = ref.watch(connectionStatusServiceProvider);
+  final pendingActionService = ref.watch(pendingActionServiceProvider);
+
   final repository = LikesRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
     authStateStream: authBoolStream,
     isAuthenticated: isAuthenticated,
+    isOnline: () => connectionStatus.isOnline,
+    queueOfflineAction: pendingActionService != null
+        ? ({
+            required bool isLike,
+            required String eventId,
+            required String authorPubkey,
+            String? addressableId,
+            int? targetKind,
+          }) async {
+            await pendingActionService.queueAction(
+              type: isLike ? PendingActionType.like : PendingActionType.unlike,
+              targetId: eventId,
+              authorPubkey: authorPubkey,
+              addressableId: addressableId,
+              targetKind: targetKind,
+            );
+          }
+        : null,
   );
+
+  // Register executors with pending action service for sync
+  if (pendingActionService != null) {
+    pendingActionService.registerExecutor(
+      PendingActionType.like,
+      (action) => repository.executeLikeAction(
+        eventId: action.targetId,
+        authorPubkey: action.authorPubkey ?? '',
+        addressableId: action.addressableId,
+        targetKind: action.targetKind,
+      ),
+    );
+    pendingActionService.registerExecutor(
+      PendingActionType.unlike,
+      (action) => repository.executeUnlikeAction(action.targetId),
+    );
+  }
 
   ref.onDispose(repository.dispose);
 
@@ -1360,12 +1524,51 @@ RepostsRepository repostsRepository(Ref ref) {
     (state) => state == AuthState.authenticated,
   );
 
+  // Get connection status and pending action service for offline support
+  final connectionStatus = ref.watch(connectionStatusServiceProvider);
+  final pendingActionService = ref.watch(pendingActionServiceProvider);
+
   final repository = RepostsRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
     authStateStream: authBoolStream,
     isAuthenticated: isAuthenticated,
+    isOnline: () => connectionStatus.isOnline,
+    queueOfflineAction: pendingActionService != null
+        ? ({
+            required bool isRepost,
+            required String addressableId,
+            required String originalAuthorPubkey,
+            String? eventId,
+          }) async {
+            await pendingActionService.queueAction(
+              type: isRepost
+                  ? PendingActionType.repost
+                  : PendingActionType.unrepost,
+              targetId: addressableId,
+              authorPubkey: originalAuthorPubkey,
+              addressableId: addressableId,
+            );
+          }
+        : null,
   );
+
+  // Register executors with pending action service for sync
+  if (pendingActionService != null) {
+    pendingActionService.registerExecutor(
+      PendingActionType.repost,
+      (action) => repository.executeRepostAction(
+        addressableId: action.addressableId ?? action.targetId,
+        originalAuthorPubkey: action.authorPubkey ?? '',
+      ),
+    );
+    pendingActionService.registerExecutor(
+      PendingActionType.unrepost,
+      (action) => repository.executeUnrepostAction(
+        action.addressableId ?? action.targetId,
+      ),
+    );
+  }
 
   ref.onDispose(repository.dispose);
 

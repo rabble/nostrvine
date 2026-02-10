@@ -1,9 +1,17 @@
-import 'dart:ui';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+/// A text font with its style getter.
+typedef TextFont = TextStyle Function({double? fontSize, Color? color});
 
 /// Constants for the video editor feature.
 class VideoEditorConstants {
   /// Key used to identify autosaved drafts in storage.
   static String autoSaveId = 'draft_autosave';
+
+  /// Prefix key used to identify drafts being published in storage.
+  static String publishPrefixId = 'draft_publish';
 
   /// Maximum number of tags allowed per video.
   static int tagLimit = 1 << 30; // ~1 billion
@@ -17,8 +25,10 @@ class VideoEditorConstants {
   /// Default time offset for extracting video thumbnails.
   static const defaultThumbnailExtractTime = Duration(milliseconds: 200);
 
+  /// Primary accent color used in the video editor UI.
   static const primaryColor = Color(0xFFFFF140);
 
+  /// Available colors for text overlays.
   static const colors = [
     Color(0xFFF9F7F6),
     Color(0xFF000000),
@@ -51,10 +61,55 @@ class VideoEditorConstants {
     Color(0xFF272F0E),
     Color(0xFF363313),
   ];
-}
 
-class VideoEditorDrawConstants {
-  static double itemWidth = 48.0;
+  /// Available text fonts for text overlays.
+  static const List<TextFont> textFonts = [
+    GoogleFonts.inter,
+    GoogleFonts.bricolageGrotesque,
+    GoogleFonts.montserrat,
+    GoogleFonts.anonymousPro,
+    GoogleFonts.caveat,
+    GoogleFonts.crimsonText,
+    GoogleFonts.ibmPlexMono,
+    GoogleFonts.pacifico,
+    GoogleFonts.playfairDisplay,
+    GoogleFonts.bebasNeue,
+    GoogleFonts.poppins,
+    GoogleFonts.lobster,
+    GoogleFonts.oswald,
+    GoogleFonts.dancingScript,
+    GoogleFonts.permanentMarker,
+    GoogleFonts.comfortaa,
+  ];
+
+  /// Width of drawing tool items in the draw editor toolbar.
+  static double drawItemWidth = 48.0;
+
+  /// Base font size in pixels for text overlays.
+  static const double baseFontSize = 24.0;
+
+  /// Minimum font scale multiplier for text overlays.
+  static const double minFontScale = 0.5;
+
+  /// Maximum font scale multiplier for text overlays.
+  static const double maxFontScale = 4.0;
+
+  /// Background color for the text editor overlay.
+  static const Color textEditorBackground = Color(0x9B000000);
+
+  static const uiOverlayStyle = SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.light,
+    systemNavigationBarIconBrightness: Brightness.light,
+    statusBarBrightness: Brightness.dark,
+    systemNavigationBarColor: Color(0xFF000000),
+  );
+
+  /// Height of the bottom action bar in the video editor.
+  static const double bottomBarHeight = 90;
+
+  /// Hero animation tag for the back button in the video editor.
+  static const heroBackButtonId = 'Video-Editor-Back-Button';
 }
 
 /// Constants for the video editor clip gallery layout and animations.

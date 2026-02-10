@@ -43,7 +43,6 @@ import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/utils/log_batcher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/services/repost_resolver.dart';
-import 'package:openvine/repositories/video_repository.dart';
 
 /// Pagination state for tracking cursor position and loading status per subscription
 class PaginationState {
@@ -121,12 +120,10 @@ class VideoEventService extends ChangeNotifier {
   VideoEventService(
     this._nostrService, {
     required SubscriptionManager subscriptionManager,
-    required VideoRepository videoRepository,
     UserProfileService? userProfileService,
     EventRouter? eventRouter,
     VideoFilterBuilder? videoFilterBuilder,
   }) : _subscriptionManager = subscriptionManager,
-       _videoRepository = videoRepository,
        _userProfileService = userProfileService,
        _eventRouter = eventRouter,
        _videoFilterBuilder = videoFilterBuilder {
@@ -134,7 +131,6 @@ class VideoEventService extends ChangeNotifier {
     _initializeRepostResolver();
   }
   final NostrClient _nostrService;
-  final VideoRepository _videoRepository;
   late final RepostResolver _repostResolver;
   final UserProfileService? _userProfileService;
   final EventRouter? _eventRouter;
@@ -443,11 +439,6 @@ class VideoEventService extends ChangeNotifier {
   /// Find cached video by event ID across all subscription lists
   /// Uses case-insensitive matching for consistency with normalized IDs
   VideoEvent? _findCachedVideoById(String eventId) {
-    // First try VideoRepository for centralized lookup
-    final repoMatch = _videoRepository.getVideoById(eventId);
-    if (repoMatch != null) return repoMatch;
-
-    // Fall back to event lists for backward compatibility
     final normalizedId = eventId.toLowerCase();
     for (final events in _eventLists.values) {
       final match = events
@@ -637,19 +628,58 @@ class VideoEventService extends ChangeNotifier {
     return result;
   }
 
-  /// Remove a video from an author's cached list (optimistic deletion)
-  /// This is called after successfully publishing a NIP-09 delete event
-  void removeVideoFromAuthorList(String authorPubkey, String videoId) {
-    // Remove from author bucket
-    final authorBucket = _authorBuckets[authorPubkey];
-    if (authorBucket != null) {
-      final initialCount = authorBucket.length;
-      authorBucket.removeWhere((video) => video.id == videoId);
-      final removedCount = initialCount - authorBucket.length;
+  /// Remove a video from ALL data structures (comprehensive deletion)
+  ///
+  /// This method removes the video from:
+  /// - `_eventLists` (all subscription types: homeFeed, discovery, etc.)
+  /// - `_authorBuckets` (used by profile feeds)
+  /// - `_hashtagBuckets` (used by hashtag feeds)
+  /// - Marks as locally deleted to prevent pagination resurrection
+  ///
+  /// This mirrors the `updateVideoEvent()` pattern for comprehensive state updates.
+  /// Call this after successfully publishing a NIP-09 delete event.
+  void removeVideoCompletely(String videoId) {
+    var removedCount = 0;
 
-      if (removedCount > 0) {
-        Log.info(
-          'Removed video $videoId from author $authorPubkey bucket (${authorBucket.length} remaining)',
+    // Remove from all subscription types (mirrors updateVideoEvent pattern)
+    for (final entry in _eventLists.entries) {
+      final initialLength = entry.value.length;
+      entry.value.removeWhere((video) => video.id == videoId);
+      final removed = initialLength - entry.value.length;
+      if (removed > 0) {
+        removedCount += removed;
+        Log.debug(
+          'Removed video $videoId from ${entry.key} (${entry.value.length} remaining)',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+        );
+      }
+    }
+
+    // Remove from all author buckets
+    for (final entry in _authorBuckets.entries) {
+      final initialLength = entry.value.length;
+      entry.value.removeWhere((video) => video.id == videoId);
+      final removed = initialLength - entry.value.length;
+      if (removed > 0) {
+        removedCount += removed;
+        Log.debug(
+          'Removed video $videoId from author bucket ${entry.key}',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+        );
+      }
+    }
+
+    // Remove from all hashtag buckets
+    for (final entry in _hashtagBuckets.entries) {
+      final initialLength = entry.value.length;
+      entry.value.removeWhere((video) => video.id == videoId);
+      final removed = initialLength - entry.value.length;
+      if (removed > 0) {
+        removedCount += removed;
+        Log.debug(
+          'Removed video $videoId from hashtag bucket ${entry.key}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -658,22 +688,38 @@ class VideoEventService extends ChangeNotifier {
 
     // Mark as locally deleted to prevent pagination resurrection
     _locallyDeletedVideoIds.add(videoId);
-    Log.info(
-      'Marked video $videoId as locally deleted',
-      name: 'VideoEventService',
-      category: LogCategory.video,
-    );
 
-    // Notify listeners to update UI immediately (optimistic update)
-    notifyListeners();
+    if (removedCount > 0) {
+      Log.info(
+        'Removed video $videoId from $removedCount location(s) across all feeds',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+      // Notify listeners to update UI immediately (optimistic update)
+      notifyListeners();
+    } else {
+      Log.info(
+        'Video $videoId marked as deleted (was not in any active feeds)',
+        name: 'VideoEventService',
+        category: LogCategory.video,
+      );
+    }
+  }
+
+  /// Remove a video from an author's cached list (optimistic deletion)
+  ///
+  /// @Deprecated: Use [removeVideoCompletely] instead for comprehensive removal
+  /// from all data structures. This method only removes from author buckets.
+  @Deprecated('Use removeVideoCompletely() instead for comprehensive removal')
+  void removeVideoFromAuthorList(String authorPubkey, String videoId) {
+    // Delegate to comprehensive removal
+    removeVideoCompletely(videoId);
   }
 
   /// Check if a video has been locally deleted
   /// Used to filter out deleted videos from pagination results
   bool isVideoLocallyDeleted(String videoId) {
-    // Delegate to VideoRepository for centralized tracking
-    return _videoRepository.isVideoLocallyDeleted(videoId) ||
-        _locallyDeletedVideoIds.contains(videoId);
+    return _locallyDeletedVideoIds.contains(videoId);
   }
 
   /// Query for all users who have reposted a specific video
@@ -1021,9 +1067,13 @@ class VideoEventService extends ChangeNotifier {
         );
       } else if (sortBy != null && _videoFilterBuilder != null) {
         try {
+          // Use connected relay for capability check, fallback to default
+          final relayUrl = _nostrService.connectedRelays.isNotEmpty
+              ? _nostrService.connectedRelays.first
+              : AppConstants.defaultRelayUrl;
           videoFilter = await _videoFilterBuilder.buildFilter(
             baseFilter: baseVideoFilter,
-            relayUrl: AppConstants.defaultRelayUrl,
+            relayUrl: relayUrl,
             sortBy: sortBy,
           );
           Log.info(
@@ -2782,17 +2832,23 @@ class VideoEventService extends ChangeNotifier {
     );
   }
 
-  /// Reset all persistent subscriptions and resubscribe.
+  /// Resubscribe to persistent feeds when relay set changes.
   ///
-  /// Used when the relay set changes (relays added/removed) to ensure feeds
-  /// reflect data from the new relay configuration. Ephemeral subscriptions
-  /// (search, hashtag, profile) are cancelled but not auto-resubscribed;
-  /// user navigation will trigger fresh ones.
+  /// Used when the relay set changes (relays added/removed). This method
+  /// cancels existing subscriptions and resubscribes, but PRESERVES existing
+  /// events in memory. New events from the updated relay set will be merged
+  /// in via normal deduplication.
+  ///
+  /// This avoids jarring UX where temporary relay changes (e.g., indexer
+  /// queries for profile fallback) would wipe the user's feed.
+  ///
+  /// Ephemeral subscriptions (search, hashtag, profile) are cancelled but
+  /// not auto-resubscribed; user navigation will trigger fresh ones.
   Future<void> resetAndResubscribeAll() async {
     if (_isDisposed) return;
 
     Log.info(
-      'Relay set changed - resetting and resubscribing all persistent feeds',
+      'Relay set changed - resubscribing to persistent feeds (preserving existing events)',
       name: 'VideoEventService',
       category: LogCategory.video,
     );
@@ -2810,26 +2866,21 @@ class VideoEventService extends ChangeNotifier {
             _subscriptionParams[SubscriptionType.discovery]!,
           )
         : null;
+    final profileParams = _subscriptionParams[SubscriptionType.profile] != null
+        ? Map<String, dynamic>.from(
+            _subscriptionParams[SubscriptionType.profile]!,
+          )
+        : null;
 
     // Cancel all subscriptions
     await unsubscribeFromVideoFeed();
 
-    // Clear all event lists
-    clearVideoEvents();
+    // IMPORTANT: Do NOT clear existing event lists - existing events are still
+    // valid and should be preserved. New events from the updated relay set will
+    // be merged in via normal deduplication. Clearing events causes jarring UX
+    // when temporary relay changes (e.g., indexer queries) trigger this method.
 
-    // Reset pagination states
-    for (final state in _paginationStates.values) {
-      state.reset();
-    }
-
-    // Clear bucket caches
-    _hashtagBuckets.clear();
-    _authorBuckets.clear();
-
-    // Notify listeners so providers react (emit empty → loading transition)
-    notifyListeners();
-
-    // Re-subscribe to discovery feed
+    // Re-subscribe to discovery feed (will merge new events with existing)
     if (discoveryParams != null) {
       await subscribeToVideoFeed(
         subscriptionType: SubscriptionType.discovery,
@@ -2848,6 +2899,20 @@ class VideoEventService extends ChangeNotifier {
           authors,
           limit: homeFeedParams['limit'] as int? ?? 100,
           sortBy: homeFeedParams['sortBy'] as VideoSortField?,
+          force: true,
+        );
+      }
+    }
+
+    // Re-subscribe to active profile feed if one was active
+    if (profileParams != null) {
+      final authors = profileParams['authors'] as List<String>?;
+      if (authors != null && authors.isNotEmpty) {
+        await subscribeToVideoFeed(
+          subscriptionType: SubscriptionType.profile,
+          authors: authors,
+          limit: profileParams['limit'] as int? ?? 100,
+          includeReposts: profileParams['includeReposts'] as bool? ?? true,
           force: true,
         );
       }
@@ -3830,7 +3895,6 @@ class VideoEventService extends ChangeNotifier {
     }
 
     // Check for duplicates within this subscription type using case-insensitive comparison
-    // Use VideoRepository for centralized deduplication with normalized IDs
     final normalizedId = videoEvent.id.toLowerCase();
     final existingIndex = eventList.indexWhere(
       (existing) => existing.id.toLowerCase() == normalizedId,
@@ -3840,14 +3904,6 @@ class VideoEventService extends ChangeNotifier {
       _logDuplicateVideoEventsAggregated();
       return; // Don't add duplicate events
     }
-
-    // Add to VideoRepository for centralized storage with normalized IDs
-    // This enables write-time deduplication and case-insensitive lookups
-    _videoRepository.addVideo(
-      videoEvent,
-      subscriptionType: subscriptionType,
-      isHistorical: isHistorical,
-    );
 
     // Fetch profile for video author if not already cached
     // This uses existing WebSocket connection with REQ command

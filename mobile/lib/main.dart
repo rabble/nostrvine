@@ -25,11 +25,8 @@ import 'package:openvine/providers/deep_link_provider.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/router/app_router.dart';
-import 'package:openvine/router/last_tab_position_provider.dart';
-import 'package:openvine/router/page_context_provider.dart';
-import 'package:openvine/router/route_normalization_provider.dart';
-import 'package:openvine/router/tab_history_provider.dart';
+
+import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/home_screen_router.dart';
@@ -48,7 +45,7 @@ import 'package:openvine/services/seed_data_preload_service.dart';
 import 'package:openvine/services/seed_media_preload_service.dart';
 import 'package:openvine/services/startup_performance_service.dart';
 import 'package:openvine/services/bandwidth_tracker_service.dart';
-import 'package:openvine/services/video_cache_manager.dart';
+import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:openvine/utils/log_message_batcher.dart';
@@ -222,7 +219,7 @@ Future<void> _startOpenVineApp() async {
       'Initializing video cache manifest',
     );
     try {
-      await openVineVideoCache.initialize();
+      await initializeMediaCache();
       StartupPerformanceService.instance.completePhase('video_cache');
     } catch (e) {
       Log.error(
@@ -349,21 +346,32 @@ Future<void> _startOpenVineApp() async {
   };
 
   // Configure global error widget builder for user-friendly error display
-  // IMPORTANT: Use only the most basic widgets - even Text requires directionality context
-  // This is only for early startup errors before MaterialApp is ready
+  // Wrap in Directionality to enable Text widgets even before MaterialApp is ready
   ErrorWidget.builder = (FlutterErrorDetails details) {
-    // Use only basic Container and Decoration - no Text widgets at all
-    return Container(
-      color: const Color(0xFF1A1A1A),
-      child: const Center(
-        child: SizedBox(
-          width: 100,
-          height: 100,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.orange,
-              borderRadius: BorderRadius.all(Radius.circular(8)),
-            ),
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: Container(
+        color: VineTheme.backgroundColor,
+        child: const Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                color: VineTheme.accentOrange,
+                size: 48,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Oops, something went wrong',
+                style: TextStyle(
+                  color: VineTheme.whiteText,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  decoration: TextDecoration.none,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -387,6 +395,36 @@ Future<void> _startOpenVineApp() async {
         'Known Flutter framework keyboard issue (ignoring): ${details.exception}',
         name: 'Main',
       );
+      return;
+    }
+
+    // Downgrade "No active player with ID" errors from FATAL to non-fatal.
+    // This is a known race condition where the native video player
+    // (AVFoundation/ExoPlayer) is disposed during tab switches or feed
+    // scrolling, but the Flutter VideoPlayer widget still tries to rebuild
+    // with the stale player ID. The primary defense is _SafeVideoPlayer
+    // in video_feed_item.dart, but this catch handles any cases that slip
+    // through (e.g. timing gaps).
+    final errorStr = details.exception.toString();
+    if (errorStr.contains('No active player with ID') ||
+        (errorStr.contains('Bad state') && errorStr.contains('player'))) {
+      Log.warning(
+        'Video player disposed race condition (non-fatal): '
+        '${details.exception}',
+        name: 'Main',
+      );
+      // Record as non-fatal in Crashlytics (if available) instead of
+      // letting it propagate as a fatal crash.
+      try {
+        FirebaseCrashlytics.instance.recordError(
+          details.exception,
+          details.stack,
+          reason: 'Video player disposed race condition',
+        );
+      } catch (_) {}
+      // Still show the error widget (dark placeholder) but don't report
+      // as fatal.
+      FlutterError.presentError(details);
       return;
     }
 
@@ -477,6 +515,25 @@ Future<void> _startOpenVineApp() async {
 
   Log.info('divine starting...', name: 'Main');
   Log.info('Log level: ${UnifiedLogger.currentLevel.name}', name: 'Main');
+  // Configure audio session for media playback
+  // This ensures audio plays even when iOS mute switch is on
+  final session = await AudioSession.instance;
+  await session.configure(
+    const AudioSessionConfiguration(
+      avAudioSessionCategory: AVAudioSessionCategory.playback,
+      avAudioSessionMode: AVAudioSessionMode.moviePlayback,
+      androidAudioAttributes: AndroidAudioAttributes(
+        contentType: AndroidAudioContentType.movie,
+        usage: AndroidAudioUsage.media,
+      ),
+    ),
+  );
+
+  // Initialize MediaKit for pooled_video_player (uses media_kit internally)
+  MediaKit.ensureInitialized();
+
+  // Initialize the player pool singleton
+  await PlayerPool.init();
 
   runApp(
     UncontrolledProviderScope(container: container, child: const DivineApp()),
@@ -501,17 +558,11 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
   );
 
   // Initialize auth service
+  // NOTE: NostrService (relay connections) is initialized lazily in AuthService
+  // when user actually authenticates, to avoid blocking startup for unauthenticated users
   await container.read(authServiceProvider).initialize();
   Log.info(
     '[INIT] ✅ AuthService initialized',
-    name: 'Main',
-    category: LogCategory.system,
-  );
-
-  // Initialize nostr service (depends on auth)
-  await container.read(nostrServiceProvider).initialize();
-  Log.info(
-    '[INIT] ✅ NostrService initialized',
     name: 'Main',
     category: LogCategory.system,
   );
@@ -536,14 +587,6 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
   await container.read(uploadManagerProvider).initialize();
   Log.info(
     '[INIT] ✅ UploadManager initialized',
-    name: 'Main',
-    category: LogCategory.system,
-  );
-
-  final poolManager = await VideoControllerPoolManager.initialize();
-  Log.info(
-    '[INIT] ✅ VideoControllerPoolManager initialized '
-    '(poolSize: ${poolManager.poolSize})',
     name: 'Main',
     category: LogCategory.system,
   );
@@ -739,7 +782,12 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                   category: LogCategory.ui,
                 );
                 try {
-                  router.go(targetPath);
+                  // Skip if already showing this video (getInitialLink
+                  // and uriLinkStream can both fire for the same URL).
+                  if (currentLocation == targetPath) break;
+                  // Push (not go) so the home route stays underneath,
+                  // allowing back navigation to return to the main screen.
+                  router.push(targetPath);
                   Log.info(
                     '✅ Navigation completed to: $targetPath',
                     name: 'DeepLinkHandler',
@@ -1062,14 +1110,12 @@ class _DivineAppState extends ConsumerState<DivineApp> {
     Future<VideoPublishService> createPublishService({
       required OnProgressChanged onProgress,
     }) async {
-      final prefs = await SharedPreferences.getInstance();
-
       return VideoPublishService(
         uploadManager: ref.read(uploadManagerProvider),
         authService: ref.read(authServiceProvider),
         videoEventPublisher: ref.read(videoEventPublisherProvider),
         blossomService: ref.read(blossomUploadServiceProvider),
-        draftService: DraftStorageService(prefs),
+        draftService: DraftStorageService(),
         onProgressChanged:
             ({required String draftId, required double progress}) {
               onProgress(draftId: draftId, progress: progress);

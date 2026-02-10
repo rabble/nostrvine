@@ -35,7 +35,9 @@ class VideoDescriptionOverlay extends StatelessWidget {
             explicitChildNodes: true,
             label: 'Video description',
             child: ClickableHashtagText(
-              text: video.content.isNotEmpty ? video.content : video.title!,
+              text: video.content.isNotEmpty
+                  ? video.content
+                  : video.title ?? '',
               style: const TextStyle(
                 color: Colors.white,
                 fontSize: 16,

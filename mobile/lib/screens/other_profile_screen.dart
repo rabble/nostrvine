@@ -1,4 +1,4 @@
-// ABOUTME: Fullscreen profile screen for viewing other users (no bottom nav)
+// ABOUTME: Profile screen for viewing other users with bottom navigation
 // ABOUTME: Pushed on stack from video feeds, profiles, search results, etc.
 
 import 'package:flutter/material.dart';
@@ -14,11 +14,11 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
-import 'package:openvine/widgets/profile/profile_loading_view.dart';
 
 /// Fullscreen profile screen for viewing other users' profiles.
 ///
@@ -267,10 +267,21 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     // Watch profile reactively to get display name for AppBar
     // Use hint as fallback for users without Kind 0 profiles (e.g., classic Viners)
     final profileAsync = ref.watch(userProfileReactiveProvider(userIdHex));
+    final profile = profileAsync.value;
     final displayName =
-        profileAsync.value?.bestDisplayName ??
-        widget.displayNameHint ??
-        'Profile';
+        profile?.bestDisplayName ?? widget.displayNameHint ?? 'Profile';
+
+    // Get profile color for Vine-style colored header
+    final profileColor = profile?.profileBackgroundColor;
+
+    if (videosAsync is AsyncData && profileAsync is AsyncData) {
+      ScreenAnalyticsService().markDataLoaded(
+        'other_profile',
+        dataMetrics: {
+          'video_count': videosAsync.asData?.value.videos.length ?? 0,
+        },
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -281,7 +292,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
         leadingWidth: 80,
         centerTitle: false,
         titleSpacing: 0,
-        backgroundColor: VineTheme.navGreen,
+        backgroundColor: profileColor ?? VineTheme.navGreen,
         leading: IconButton(
           padding: EdgeInsets.zero,
           constraints: const BoxConstraints(),
@@ -377,27 +388,22 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           ),
         ],
       ),
-      body: switch (videosAsync) {
-        AsyncLoading() => const ProfileLoadingView(),
-        AsyncError(:final error) => Center(
-          child: Text(
-            'Error: $error',
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-        AsyncData(:final value) => ProfileGridView(
-          userIdHex: userIdHex,
-          isOwnProfile: false,
-          displayName: displayName,
-          videos: value.videos,
-          profileStatsAsync: profileStatsAsync,
-          scrollController: _scrollController,
-          onBlockedTap: _showUnblockConfirmation,
-          displayNameHint: widget.displayNameHint,
-          avatarUrlHint: widget.avatarUrlHint,
-          refreshNotifier: _refreshNotifier,
-        ),
-      },
+      body: ProfileGridView(
+        userIdHex: userIdHex,
+        isOwnProfile: false,
+        displayName: displayName,
+        videos: videosAsync.asData?.value.videos ?? [],
+        profileStatsAsync: profileStatsAsync,
+        scrollController: _scrollController,
+        onBlockedTap: _showUnblockConfirmation,
+        displayNameHint: widget.displayNameHint,
+        avatarUrlHint: widget.avatarUrlHint,
+        refreshNotifier: _refreshNotifier,
+        isLoadingVideos: videosAsync is AsyncLoading,
+        videoLoadError: videosAsync is AsyncError
+            ? (videosAsync as AsyncError).error.toString()
+            : null,
+      ),
     );
   }
 }

@@ -7,7 +7,6 @@ import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -407,6 +406,12 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
         reason: DeleteReason.personalChoice,
       );
 
+      // Remove video from local feeds after successful deletion
+      if (result.success) {
+        final videoEventService = ref.read(videoEventServiceProvider);
+        videoEventService.removeVideoCompletely(video.id);
+      }
+
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -464,66 +469,61 @@ class _VideoItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => onVideoTap(displayedVideos, index),
-      onLongPress: onLongPress,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(4),
-        child: Stack(
-          children: [
-            _VideoThumbnail(video: video),
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 0,
-              child: _VideoInfoSection(video: video),
-            ),
-            if (isInSubscribedList)
+    return Semantics(
+      identifier: 'video_thumbnail_$index',
+      label: 'Video thumbnail ${index + 1}',
+      button: true,
+      child: GestureDetector(
+        onTap: () => onVideoTap(displayedVideos, index),
+        onLongPress: onLongPress,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: Stack(
+            children: [
+              _VideoThumbnail(video: video),
               Positioned(
-                top: 6,
-                left: 6,
-                child: Container(
-                  padding: const EdgeInsets.all(4),
-                  decoration: BoxDecoration(
-                    color: VineTheme.vineGreen.withValues(alpha: 0.9),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: const Icon(
-                    Icons.collections,
-                    size: 14,
-                    color: Colors.white,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                child: _VideoInfoSection(video: video, index: index),
+              ),
+              if (isInSubscribedList)
+                Positioned(
+                  top: 6,
+                  left: 6,
+                  child: Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: VineTheme.vineGreen.withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Icon(
+                      Icons.collections,
+                      size: 14,
+                      color: Colors.white,
+                    ),
                   ),
                 ),
-              ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-class _VideoInfoSection extends ConsumerWidget {
-  const _VideoInfoSection({required this.video});
+class _VideoInfoSection extends StatelessWidget {
+  const _VideoInfoSection({required this.video, required this.index});
 
   final VideoEvent video;
+  final int index;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final hasDescription = (video.title ?? video.content).isNotEmpty;
 
-    // Check if user has a real display name (not just truncated npub)
-    final profileAsync = ref.watch(userProfileReactiveProvider(video.pubkey));
-    final profile = profileAsync.value;
-    final hasUsername =
-        profile != null &&
-        ((profile.displayName?.isNotEmpty ?? false) ||
-            (profile.name?.isNotEmpty ?? false));
-
-    // Don't render info section if neither username nor description exist
-    if (!hasUsername && !hasDescription) {
-      return const SizedBox.shrink();
-    }
-
+    // Always show the info section with username (using bestDisplayName fallback)
+    // UserName.fromPubKey handles fallback to truncated npub when no profile name
     return Container(
       padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8, top: 50),
       decoration: const BoxDecoration(
@@ -538,8 +538,14 @@ class _VideoInfoSection extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         spacing: 0,
         children: [
-          if (hasUsername)
-            UserName.fromPubKey(
+          // Always show username - UserName.fromPubKey uses bestDisplayName
+          // which falls back to truncated npub when no profile name is set
+          Semantics(
+            identifier: 'video_thumbnail_author_$index',
+            container: true,
+            explicitChildNodes: true,
+            label: 'Video author: ${video.authorName ?? ''}',
+            child: UserName.fromPubKey(
               video.pubkey,
               embeddedName: video.authorName,
               maxLines: 1,
@@ -553,25 +559,32 @@ class _VideoInfoSection extends ConsumerWidget {
                 ],
               ),
             ),
+          ),
           if (hasDescription)
-            Text(
-              video.title ?? video.content,
-              style: const TextStyle(
-                fontFamily: 'Inter',
-                color: Colors.white,
-                fontSize: 14,
-                height: 20 / 14,
-                letterSpacing: 0.25,
-                shadows: [
-                  Shadow(
-                    offset: Offset(0, 1),
-                    blurRadius: 2,
-                    color: Color(0x26000000),
-                  ),
-                ],
+            Semantics(
+              identifier: 'video_thumbnail_description_$index',
+              container: true,
+              explicitChildNodes: true,
+              label: 'Video description: ${video.title ?? video.content}',
+              child: Text(
+                video.title ?? video.content,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  color: Colors.white,
+                  fontSize: 14,
+                  height: 20 / 14,
+                  letterSpacing: 0.25,
+                  shadows: [
+                    Shadow(
+                      offset: Offset(0, 1),
+                      blurRadius: 2,
+                      color: Color(0x26000000),
+                    ),
+                  ],
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
         ],
       ),

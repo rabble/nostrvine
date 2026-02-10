@@ -34,7 +34,9 @@ void main() {
         home: Scaffold(
           body: VideoEditorScope(
             editorKey: GlobalKey(),
+            removeAreaKey: GlobalKey(),
             onAddStickers: () {},
+            onAddEditTextLayer: ([layer]) async => null,
             child: BlocProvider<VideoEditorDrawBloc>.value(
               value: mockBloc,
               child: const SizedBox(

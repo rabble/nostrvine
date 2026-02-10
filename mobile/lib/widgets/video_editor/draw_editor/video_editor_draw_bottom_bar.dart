@@ -29,6 +29,7 @@ class VideoEditorDrawBottomBar extends StatelessWidget {
     await showModalBottomSheet<void>(
       context: context,
       backgroundColor: Colors.transparent,
+      isScrollControlled: true,
       builder: (context) => VideoEditorColorPickerSheet(
         selectedColor: state.selectedColor,
         onColorSelected: (color) {
@@ -52,7 +53,9 @@ class VideoEditorDrawBottomBar extends StatelessWidget {
       paintEditor
         ..setMode(config.mode)
         ..setOpacity(config.opacity)
-        ..setStrokeWidth(config.strokeWidth);
+        ..setStrokeWidth(
+          config.strokeWidth * MediaQuery.devicePixelRatioOf(context),
+        );
     }
   }
 
