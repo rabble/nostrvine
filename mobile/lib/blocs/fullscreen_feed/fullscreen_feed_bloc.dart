@@ -8,6 +8,7 @@ import 'dart:ui' show VoidCallback;
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:media_cache/media_cache.dart';
+import 'package:meta/meta.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/services/blossom_auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -15,6 +16,12 @@ import 'package:pooled_video_player/pooled_video_player.dart';
 
 part 'fullscreen_feed_event.dart';
 part 'fullscreen_feed_state.dart';
+
+/// Factory function for creating a [VideoFeedController].
+///
+/// Used for dependency injection in tests.
+typedef VideoFeedControllerFactory =
+    VideoFeedController Function(List<VideoItem> videos, int initialIndex);
 
 /// Maximum playback duration before looping back to start.
 ///
@@ -50,10 +57,14 @@ class FullscreenFeedBloc
     required MediaCacheManager mediaCache,
     VoidCallback? onLoadMore,
     BlossomAuthService? blossomAuthService,
+    PlayerPool? playerPool,
+    @visibleForTesting VideoFeedControllerFactory? controllerFactory,
   }) : _videosStream = videosStream,
        _onLoadMore = onLoadMore,
        _mediaCache = mediaCache,
        _blossomAuthService = blossomAuthService,
+       _playerPool = playerPool,
+       _controllerFactory = controllerFactory,
        super(FullscreenFeedState(currentIndex: initialIndex)) {
     on<FullscreenFeedStarted>(_onStarted);
     on<FullscreenFeedVideosUpdated>(_onVideosUpdated);
@@ -62,12 +73,27 @@ class FullscreenFeedBloc
     on<FullscreenFeedVideoCacheStarted>(_onVideoCacheStarted);
     on<FullscreenFeedPositionUpdated>(_onPositionUpdated);
     on<FullscreenFeedSeekCommandHandled>(_onSeekCommandHandled);
+    on<FullscreenFeedActiveChanged>(_onActiveChanged);
   }
 
   final Stream<List<VideoEvent>> _videosStream;
   final VoidCallback? _onLoadMore;
   final MediaCacheManager _mediaCache;
   final BlossomAuthService? _blossomAuthService;
+  final PlayerPool? _playerPool;
+  final VideoFeedControllerFactory? _controllerFactory;
+
+  VideoFeedController? _controller;
+  List<VideoItem>? _lastPooledVideos;
+
+  /// The managed [VideoFeedController], if the BLoC owns the controller.
+  ///
+  /// Non-null only when [playerPool] or [controllerFactory] was provided.
+  VideoFeedController? get controller => _controller;
+
+  /// Whether this BLoC manages the [VideoFeedController] lifecycle.
+  bool get isControllerManaged =>
+      _playerPool != null || _controllerFactory != null;
 
   /// Handle feed started - subscribe to the videos stream using emit.forEach.
   ///
@@ -99,12 +125,15 @@ class FullscreenFeedBloc
             ? 0
             : state.currentIndex.clamp(0, resolvedVideos.length - 1);
 
-        return state.copyWith(
+        final newState = state.copyWith(
           status: FullscreenFeedStatus.ready,
           videos: resolvedVideos,
           currentIndex: clampedIndex,
           isLoadingMore: false,
         );
+
+        _initializeOrUpdateController(newState);
+        return newState;
       },
       onError: (error, stackTrace) {
         Log.error(
@@ -138,14 +167,15 @@ class FullscreenFeedBloc
         ? 0
         : state.currentIndex.clamp(0, resolvedVideos.length - 1);
 
-    emit(
-      state.copyWith(
-        status: FullscreenFeedStatus.ready,
-        videos: resolvedVideos,
-        currentIndex: clampedIndex,
-        isLoadingMore: false,
-      ),
+    final newState = state.copyWith(
+      status: FullscreenFeedStatus.ready,
+      videos: resolvedVideos,
+      currentIndex: clampedIndex,
+      isLoadingMore: false,
     );
+
+    _initializeOrUpdateController(newState);
+    emit(newState);
   }
 
   /// Resolves cache paths for a list of videos.
@@ -273,23 +303,35 @@ class FullscreenFeedBloc
 
   /// Handle position update - check for loop enforcement.
   ///
-  /// When the playback position exceeds [maxPlaybackDuration], emits a
-  /// [SeekCommand] for the widget to execute (seek back to zero).
+  /// When the playback position exceeds [maxPlaybackDuration], seeks back to
+  /// zero. If the BLoC manages the controller, seeks directly. Otherwise emits
+  /// a [SeekCommand] for the widget to execute.
   void _onPositionUpdated(
     FullscreenFeedPositionUpdated event,
     Emitter<FullscreenFeedState> emit,
   ) {
     if (event.position >= maxPlaybackDuration) {
       Log.debug(
-        'FullscreenFeedBloc: Loop enforcement at ${event.position.inMilliseconds}ms',
+        'FullscreenFeedBloc: Loop enforcement at '
+        '${event.position.inMilliseconds}ms',
         name: 'FullscreenFeedBloc',
         category: LogCategory.video,
       );
-      emit(
-        state.copyWith(
-          seekCommand: SeekCommand(index: event.index, position: Duration.zero),
-        ),
-      );
+
+      if (_controller != null) {
+        // BLoC manages controller - seek directly.
+        _controller!.seek(Duration.zero);
+      } else {
+        // Widget manages controller - emit SeekCommand for widget to execute.
+        emit(
+          state.copyWith(
+            seekCommand: SeekCommand(
+              index: event.index,
+              position: Duration.zero,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -299,5 +341,75 @@ class FullscreenFeedBloc
     Emitter<FullscreenFeedState> emit,
   ) {
     emit(state.copyWith(clearSeekCommand: true));
+  }
+
+  /// Handle active state change (e.g. overlay visibility).
+  void _onActiveChanged(
+    FullscreenFeedActiveChanged event,
+    Emitter<FullscreenFeedState> emit,
+  ) {
+    _controller?.setActive(active: event.isActive);
+  }
+
+  /// Initializes the managed controller or updates it with new videos.
+  ///
+  /// No-op when the BLoC does not manage a controller (legacy mode).
+  void _initializeOrUpdateController(FullscreenFeedState newState) {
+    if (!isControllerManaged) return;
+
+    if (_controller == null && newState.hasPooledVideos) {
+      _controller = _createManagedController(
+        newState.pooledVideos,
+        newState.currentIndex,
+      );
+      _lastPooledVideos = newState.pooledVideos;
+      return;
+    }
+
+    final controller = _controller;
+    final lastVideos = _lastPooledVideos;
+    if (controller == null || lastVideos == null) return;
+
+    final newVideos = newState.pooledVideos
+        .where((v) => !lastVideos.any((old) => old.id == v.id))
+        .toList();
+
+    if (newVideos.isNotEmpty) {
+      controller.addVideos(newVideos);
+    }
+    _lastPooledVideos = newState.pooledVideos;
+  }
+
+  /// Creates a [VideoFeedController] owned by this BLoC.
+  ///
+  /// Uses [_controllerFactory] if provided (for testing), otherwise creates
+  /// a controller with [_playerPool] and hooks wired to dispatch events.
+  VideoFeedController _createManagedController(
+    List<VideoItem> videos,
+    int initialIndex,
+  ) {
+    final factory = _controllerFactory;
+    if (factory != null) return factory(videos, initialIndex);
+
+    return VideoFeedController(
+      videos: videos,
+      pool: _playerPool!,
+      initialIndex: initialIndex,
+      onVideoReady: (index, player) {
+        if (isClosed) return;
+        add(FullscreenFeedVideoCacheStarted(index: index));
+      },
+      positionCallback: (index, position) {
+        if (isClosed) return;
+        add(FullscreenFeedPositionUpdated(index: index, position: position));
+      },
+      positionCallbackInterval: const Duration(milliseconds: 100),
+    );
+  }
+
+  @override
+  Future<void> close() {
+    _controller?.dispose();
+    return super.close();
   }
 }

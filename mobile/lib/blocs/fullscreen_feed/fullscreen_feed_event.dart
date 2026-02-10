@@ -94,3 +94,17 @@ final class FullscreenFeedSeekCommandHandled extends FullscreenFeedEvent {
   @override
   List<Object?> get props => [];
 }
+
+/// Dispatched when the feed's active state changes (e.g. overlay visibility).
+///
+/// When the BLoC manages the [VideoFeedController], this event toggles
+/// the controller's active state to pause/resume playback.
+final class FullscreenFeedActiveChanged extends FullscreenFeedEvent {
+  const FullscreenFeedActiveChanged({required this.isActive});
+
+  /// Whether the feed should be active (playing).
+  final bool isActive;
+
+  @override
+  List<Object?> get props => [isActive];
+}

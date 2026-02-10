@@ -48,15 +48,21 @@ class HomeScreenRouter extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
       create: (_) {
+        final initialIndex = ref
+            .read(pageContextProvider)
+            .asData
+            ?.value
+            .videoIndex;
+
         final bloc = FullscreenFeedBloc(
-          initialIndex:
-              ref.read(pageContextProvider).asData?.value.videoIndex ?? 0,
-          onLoadMore: ref.read(homePaginationControllerProvider).maybeLoadMore,
-          mediaCache: ref.read(mediaCacheProvider),
+          initialIndex: initialIndex ?? 0,
           blossomAuthService: ref.read(blossomAuthServiceProvider),
+          mediaCache: ref.read(mediaCacheProvider),
+          onLoadMore: ref.read(homePaginationControllerProvider).maybeLoadMore,
+          playerPool: PlayerPool.instance,
         );
 
-        // Seed BLoC with current videos if available.
+        // Seed bloc with current videos if available.
         final state = ref.read(homeFeedProvider).asData?.value;
         if (state != null && state.videos.isNotEmpty) {
           bloc.add(FullscreenFeedVideosUpdated(state.videos));
@@ -64,32 +70,32 @@ class HomeScreenRouter extends ConsumerWidget {
 
         return bloc;
       },
-      child: const _HomeScreenView(),
+      child: const HomeScreenView(),
     );
   }
 }
 
 /// View widget that handles route checking, loading/empty states,
 /// and renders the [_HomeFeedContent] when videos are available.
-class _HomeScreenView extends ConsumerWidget {
-  const _HomeScreenView();
+class HomeScreenView extends ConsumerWidget {
+  const HomeScreenView();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Bridge: push homeFeedProvider updates to the BLoC via events.
     ref.listen<AsyncValue<VideoFeedState>>(homeFeedProvider, (_, next) {
       final state = next.asData?.value;
-      if (state != null) {
-        context.read<FullscreenFeedBloc>().add(
-          FullscreenFeedVideosUpdated(state.videos),
-        );
-      }
+      if (state == null) return;
+
+      context.read<FullscreenFeedBloc>().add(
+        FullscreenFeedVideosUpdated(state.videos),
+      );
     });
 
     final pageContext = ref.watch(pageContextProvider);
-    final ctx = pageContext.asData?.value;
+    final routeContext = pageContext.asData?.value;
 
-    if (ctx == null || ctx.type != RouteType.home) {
+    if (routeContext == null || routeContext.type != RouteType.home) {
       return const SizedBox.shrink();
     }
 
@@ -112,18 +118,22 @@ class _HomeScreenView extends ConsumerWidget {
     );
 
     return _HomeFeedContent(
-      urlIndex: (ctx.videoIndex ?? 0).clamp(0, feedState.videos.length - 1),
+      urlIndex: (routeContext.videoIndex ?? 0).clamp(
+        0,
+        feedState.videos.length - 1,
+      ),
       videoListSources: feedState.videoListSources,
       listOnlyVideoIds: feedState.listOnlyVideoIds,
     );
   }
 }
 
-/// Content widget that manages [VideoFeedController] and renders
-/// [PooledVideoFeed].
+/// Content widget that renders [PooledVideoFeed] using the BLoC-managed
+/// [VideoFeedController].
 ///
-/// Follows the same pattern as [FullscreenFeedContent] from
-/// `pooled_fullscreen_video_feed_screen.dart`.
+/// The [FullscreenFeedBloc] owns the controller lifecycle (creation, video
+/// updates, seek, disposal). This widget only handles UI concerns: overlay
+/// visibility, URL routing, pagination triggers, and profile prefetching.
 class _HomeFeedContent extends ConsumerStatefulWidget {
   const _HomeFeedContent({
     required this.urlIndex,
@@ -140,81 +150,7 @@ class _HomeFeedContent extends ConsumerStatefulWidget {
 }
 
 class _HomeFeedContentState extends ConsumerState<_HomeFeedContent> {
-  VideoFeedController? _controller;
-  List<VideoItem>? _lastPooledVideos;
   int? _lastPrefetchIndex;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    _initializeControllerIfNeeded();
-  }
-
-  @override
-  void dispose() {
-    _controller?.dispose();
-    super.dispose();
-  }
-
-  void _initializeControllerIfNeeded({bool triggerRebuild = false}) {
-    if (_controller != null) return;
-
-    final state = context.read<FullscreenFeedBloc>().state;
-    if (!state.hasPooledVideos) return;
-
-    _controller = _createController(state.pooledVideos, state.currentIndex);
-    _lastPooledVideos = state.pooledVideos;
-
-    if (triggerRebuild) setState(() {});
-  }
-
-  void _handleVideosChanged(FullscreenFeedState state) {
-    final controller = _controller;
-    if (controller == null || _lastPooledVideos == null) return;
-
-    final newVideos = state.pooledVideos
-        .where((v) => !_lastPooledVideos!.any((old) => old.id == v.id))
-        .toList();
-
-    if (newVideos.isNotEmpty) {
-      controller.addVideos(newVideos);
-    }
-    _lastPooledVideos = state.pooledVideos;
-  }
-
-  void _handleSeekCommand(SeekCommand command) {
-    final controller = _controller;
-    if (controller == null) return;
-
-    controller.seek(command.position);
-    context.read<FullscreenFeedBloc>().add(
-      const FullscreenFeedSeekCommandHandled(),
-    );
-  }
-
-  VideoFeedController _createController(
-    List<VideoItem> videos,
-    int initialIndex,
-  ) {
-    return VideoFeedController(
-      videos: videos,
-      pool: PlayerPool.instance,
-      initialIndex: initialIndex,
-      onVideoReady: (index, player) {
-        if (!mounted) return;
-        context.read<FullscreenFeedBloc>().add(
-          FullscreenFeedVideoCacheStarted(index: index),
-        );
-      },
-      positionCallback: (index, position) {
-        if (!mounted) return;
-        context.read<FullscreenFeedBloc>().add(
-          FullscreenFeedPositionUpdated(index: index, position: position),
-        );
-      },
-      positionCallbackInterval: const Duration(milliseconds: 100),
-    );
-  }
 
   /// Prefetch user profiles for adjacent videos.
   void _prefetchProfiles(int index, List<VideoEvent> videos) {
@@ -243,100 +179,78 @@ class _HomeFeedContentState extends ConsumerState<_HomeFeedContent> {
 
   @override
   Widget build(BuildContext context) {
-    // Pause/resume based on overlay visibility
-    final hasOverlay = ref.watch(hasVisibleOverlayProvider);
-    _controller?.setActive(active: !hasOverlay);
+    // Bridge overlay visibility to the BLoC-managed controller.
+    ref.listen<bool>(hasVisibleOverlayProvider, (_, hasOverlay) {
+      context.read<FullscreenFeedBloc>().add(
+        FullscreenFeedActiveChanged(isActive: !hasOverlay),
+      );
+    });
 
-    return MultiBlocListener(
-      listeners: [
-        // Initialize controller when videos first become available
-        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
-          listenWhen: (prev, curr) =>
-              !prev.hasPooledVideos && curr.hasPooledVideos,
-          listener: (context, state) =>
-              _initializeControllerIfNeeded(triggerRebuild: true),
-        ),
-        // Handle new videos from pagination
-        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
-          listenWhen: (prev, curr) => prev.videos.length != curr.videos.length,
-          listener: (context, state) => _handleVideosChanged(state),
-        ),
-        // Handle seek commands (loop enforcement)
-        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
-          listenWhen: (prev, curr) =>
-              curr.seekCommand != null && prev.seekCommand != curr.seekCommand,
-          listener: (context, state) {
-            final command = state.seekCommand;
-            if (command != null) {
-              _handleSeekCommand(command);
-            }
-          },
-        ),
-      ],
-      child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
-        builder: (context, state) {
-          if (!state.hasPooledVideos) {
-            return const Center(child: BrandedLoadingIndicator(size: 80));
-          }
+    return BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
+      builder: (context, state) {
+        if (!state.hasPooledVideos) {
+          return const Center(child: BrandedLoadingIndicator(size: 80));
+        }
 
-          return RefreshIndicator(
-            color: VineTheme.onPrimary,
-            backgroundColor: VineTheme.vineGreen,
-            semanticsLabel: 'searching for more videos',
-            onRefresh: () => ref.read(homeRefreshControllerProvider).refresh(),
-            child: PooledVideoFeed(
-              key: const Key('home-video-page-view'),
-              videos: state.pooledVideos,
-              controller: _controller,
-              initialIndex: state.currentIndex,
-              onActiveVideoChanged: (video, index) {
-                // Update BLoC index
-                context.read<FullscreenFeedBloc>().add(
-                  FullscreenFeedIndexChanged(index),
-                );
+        final bloc = context.read<FullscreenFeedBloc>();
 
-                // Update URL for router integration
-                if (index != widget.urlIndex) {
-                  context.go(HomeScreenRouter.pathForIndex(index));
-                }
+        return RefreshIndicator(
+          color: VineTheme.onPrimary,
+          backgroundColor: VineTheme.vineGreen,
+          semanticsLabel: 'searching for more videos',
+          onRefresh: () => ref.read(homeRefreshControllerProvider).refresh(),
+          child: PooledVideoFeed(
+            key: const Key('home-video-page-view'),
+            videos: state.pooledVideos,
+            controller: bloc.controller,
+            initialIndex: state.currentIndex,
+            onActiveVideoChanged: (video, index) {
+              // Update BLoC index
+              context.read<FullscreenFeedBloc>().add(
+                FullscreenFeedIndexChanged(index),
+              );
 
-                // Trigger pagination near end
-                if (index >= state.videos.length - 2) {
-                  ref.read(homePaginationControllerProvider).maybeLoadMore();
-                }
+              // Update URL for router integration
+              if (index != widget.urlIndex) {
+                context.go(HomeScreenRouter.pathForIndex(index));
+              }
 
-                // Prefetch profiles for adjacent videos
-                _prefetchProfiles(index, state.videos);
-
-                Log.debug(
-                  'Page changed to index $index '
-                  '(${state.videos[index].id})',
-                  name: 'HomeScreenRouter',
-                  category: LogCategory.video,
-                );
-              },
-              onNearEnd: (_) {
+              // Trigger pagination near end
+              if (index >= state.videos.length - 2) {
                 ref.read(homePaginationControllerProvider).maybeLoadMore();
-              },
-              nearEndThreshold: 2,
-              itemBuilder: (context, video, index, {required isActive}) {
-                final originalEvent = state.videos[index];
-                final listSources = widget.videoListSources[originalEvent.id];
+              }
 
-                return _PooledHomeFeedItem(
-                  video: originalEvent,
-                  index: index,
-                  isActive: isActive,
-                  hideFollowButtonIfFollowing: true,
-                  listSources: listSources,
-                  showListAttribution:
-                      listSources != null && listSources.isNotEmpty,
-                );
-              },
-            ),
-          );
-        },
-      ),
+              // Prefetch profiles for adjacent videos
+              _prefetchProfiles(index, state.videos);
+
+              Log.debug(
+                'Page changed to index $index '
+                '(${state.videos[index].id})',
+                name: 'HomeScreenRouter',
+                category: LogCategory.video,
+              );
+            },
+            onNearEnd: (_) {
+              ref.read(homePaginationControllerProvider).maybeLoadMore();
+            },
+            nearEndThreshold: 2,
+            itemBuilder: (context, video, index, {required isActive}) {
+              final originalEvent = state.videos[index];
+              final listSources = widget.videoListSources[originalEvent.id];
+
+              return _PooledHomeFeedItem(
+                video: originalEvent,
+                index: index,
+                isActive: isActive,
+                hideFollowButtonIfFollowing: true,
+                listSources: listSources,
+                showListAttribution:
+                    listSources != null && listSources.isNotEmpty,
+              );
+            },
+          ),
+        );
+      },
     );
   }
 }

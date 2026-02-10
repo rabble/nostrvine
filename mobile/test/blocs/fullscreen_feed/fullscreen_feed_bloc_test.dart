@@ -13,6 +13,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/services/blossom_auth_service.dart';
+import 'package:pooled_video_player/pooled_video_player.dart';
 
 class MockFileInfo extends Mock implements FileInfo {}
 
@@ -21,6 +22,8 @@ class MockMediaCacheManager extends Mock implements MediaCacheManager {}
 class MockBlossomAuthService extends Mock implements BlossomAuthService {}
 
 class MockFile extends Mock implements File {}
+
+class _MockVideoFeedController extends Mock implements VideoFeedController {}
 
 void main() {
   group('FullscreenFeedBloc', () {
@@ -480,9 +483,8 @@ void main() {
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'emits ready state with videos',
         build: createBloc,
-        act: (bloc) => bloc.add(
-          FullscreenFeedVideosUpdated([createTestVideo('video1')]),
-        ),
+        act: (bloc) =>
+            bloc.add(FullscreenFeedVideosUpdated([createTestVideo('video1')])),
         expect: () => [
           isA<FullscreenFeedState>()
               .having((s) => s.status, 'status', FullscreenFeedStatus.ready)
@@ -501,9 +503,8 @@ void main() {
           ).thenReturn(mockFile);
         },
         build: createBloc,
-        act: (bloc) => bloc.add(
-          FullscreenFeedVideosUpdated([createTestVideo('video1')]),
-        ),
+        act: (bloc) =>
+            bloc.add(FullscreenFeedVideosUpdated([createTestVideo('video1')])),
         expect: () => [
           isA<FullscreenFeedState>().having(
             (s) => s.videos.first.videoUrl,
@@ -516,9 +517,8 @@ void main() {
       blocTest<FullscreenFeedBloc, FullscreenFeedState>(
         'keeps original URL when video is not cached',
         build: createBloc,
-        act: (bloc) => bloc.add(
-          FullscreenFeedVideosUpdated([createTestVideo('video1')]),
-        ),
+        act: (bloc) =>
+            bloc.add(FullscreenFeedVideosUpdated([createTestVideo('video1')])),
         expect: () => [
           isA<FullscreenFeedState>().having(
             (s) => s.videos.first.videoUrl,
@@ -565,9 +565,8 @@ void main() {
         'resets isLoadingMore to false',
         build: createBloc,
         seed: () => const FullscreenFeedState(isLoadingMore: true),
-        act: (bloc) => bloc.add(
-          FullscreenFeedVideosUpdated([createTestVideo('video1')]),
-        ),
+        act: (bloc) =>
+            bloc.add(FullscreenFeedVideosUpdated([createTestVideo('video1')])),
         expect: () => [
           isA<FullscreenFeedState>().having(
             (s) => s.isLoadingMore,
@@ -581,9 +580,7 @@ void main() {
         'replaces videos on subsequent updates',
         build: createBloc,
         act: (bloc) async {
-          bloc.add(
-            FullscreenFeedVideosUpdated([createTestVideo('video1')]),
-          );
+          bloc.add(FullscreenFeedVideosUpdated([createTestVideo('video1')]));
           await Future<void>.delayed(Duration.zero);
           bloc.add(
             FullscreenFeedVideosUpdated([
@@ -853,6 +850,182 @@ void main() {
           ),
         ],
       );
+    });
+
+    group('FullscreenFeedActiveChanged', () {
+      test('props contains isActive', () {
+        const event = FullscreenFeedActiveChanged(isActive: true);
+        expect(event.props, [true]);
+      });
+
+      test('calls setActive on managed controller', () async {
+        final mockController = _MockVideoFeedController();
+
+        final bloc = FullscreenFeedBloc(
+          initialIndex: 0,
+          mediaCache: mockMediaCache,
+          controllerFactory: (videos, index) => mockController,
+        );
+
+        // Seed videos to trigger controller creation.
+        bloc.add(FullscreenFeedVideosUpdated([createTestVideo('video1')]));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        bloc.add(const FullscreenFeedActiveChanged(isActive: false));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verify(() => mockController.setActive(active: false)).called(1);
+        await bloc.close();
+      });
+
+      test('does nothing when controller is not managed', () async {
+        final bloc = createBloc();
+
+        bloc.add(const FullscreenFeedActiveChanged(isActive: false));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // No error thrown - graceful no-op.
+        await bloc.close();
+      });
+    });
+
+    group('controller management', () {
+      test('isControllerManaged is false by default', () {
+        final bloc = createBloc();
+        expect(bloc.isControllerManaged, isFalse);
+        expect(bloc.controller, isNull);
+        bloc.close();
+      });
+
+      test(
+        'isControllerManaged is true when controllerFactory is provided',
+        () {
+          final bloc = FullscreenFeedBloc(
+            initialIndex: 0,
+            mediaCache: mockMediaCache,
+            controllerFactory: (videos, index) => _MockVideoFeedController(),
+          );
+          expect(bloc.isControllerManaged, isTrue);
+          bloc.close();
+        },
+      );
+
+      test('creates controller when videos arrive via '
+          '$FullscreenFeedVideosUpdated', () async {
+        final mockController = _MockVideoFeedController();
+
+        final bloc = FullscreenFeedBloc(
+          initialIndex: 0,
+          mediaCache: mockMediaCache,
+          controllerFactory: (videos, index) => mockController,
+        );
+
+        expect(bloc.controller, isNull);
+
+        bloc.add(FullscreenFeedVideosUpdated([createTestVideo('video1')]));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        expect(bloc.controller, equals(mockController));
+        await bloc.close();
+      });
+
+      test('calls addVideos on controller for new videos', () async {
+        final mockController = _MockVideoFeedController();
+
+        final bloc = FullscreenFeedBloc(
+          initialIndex: 0,
+          mediaCache: mockMediaCache,
+          controllerFactory: (videos, index) => mockController,
+        );
+
+        // Initial videos create the controller.
+        bloc.add(FullscreenFeedVideosUpdated([createTestVideo('video1')]));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        // Subsequent update with new videos should call addVideos.
+        bloc.add(
+          FullscreenFeedVideosUpdated([
+            createTestVideo('video1'),
+            createTestVideo('video2'),
+          ]),
+        );
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        verify(
+          () => mockController.addVideos(any(that: hasLength(1))),
+        ).called(1);
+        await bloc.close();
+      });
+
+      test(
+        'seeks directly on controller instead of emitting SeekCommand',
+        () async {
+          registerFallbackValue(Duration.zero);
+          final mockController = _MockVideoFeedController();
+          when(() => mockController.seek(any())).thenAnswer((_) async {});
+
+          final bloc = FullscreenFeedBloc(
+            initialIndex: 0,
+            mediaCache: mockMediaCache,
+            controllerFactory: (videos, index) => mockController,
+          );
+
+          // Create controller.
+          bloc.add(FullscreenFeedVideosUpdated([createTestVideo('video1')]));
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Trigger loop enforcement.
+          bloc.add(
+            const FullscreenFeedPositionUpdated(
+              index: 0,
+              position: Duration(seconds: 7),
+            ),
+          );
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          verify(() => mockController.seek(Duration.zero)).called(1);
+          expect(bloc.state.seekCommand, isNull);
+          await bloc.close();
+        },
+      );
+
+      test('disposes controller on close', () async {
+        final mockController = _MockVideoFeedController();
+
+        final bloc = FullscreenFeedBloc(
+          initialIndex: 0,
+          mediaCache: mockMediaCache,
+          controllerFactory: (videos, index) => mockController,
+        );
+
+        // Create controller.
+        bloc.add(FullscreenFeedVideosUpdated([createTestVideo('video1')]));
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        await bloc.close();
+
+        verify(() => mockController.dispose()).called(1);
+      });
+
+      test('creates controller when videos arrive via stream', () async {
+        final mockController = _MockVideoFeedController();
+
+        final bloc = FullscreenFeedBloc(
+          videosStream: videosController.stream,
+          initialIndex: 0,
+          mediaCache: mockMediaCache,
+          controllerFactory: (videos, index) => mockController,
+        );
+
+        bloc.add(const FullscreenFeedStarted());
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+
+        videosController.add([createTestVideo('video1')]);
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        expect(bloc.controller, equals(mockController));
+        await bloc.close();
+      });
     });
   });
 }
