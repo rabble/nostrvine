@@ -395,7 +395,7 @@ class CameraMacOSService extends CameraService {
       await _configureAudioSessionForRecording();
 
       final baseDir = await getDocumentsPath();
-      final recordingsDir = Directory(p.join(baseDir, 'recordings'));
+      final recordingsDir = Directory(baseDir);
       if (!recordingsDir.existsSync()) {
         await recordingsDir.create(recursive: true);
       }
