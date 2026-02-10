@@ -1,24 +1,36 @@
-// ABOUTME: Router-driven HomeScreen implementation (clean room)
-// ABOUTME: Pure presentation with no lifecycle mutations - URL is source of truth
+// ABOUTME: Router-driven HomeScreen using pooled_video_player
+// ABOUTME: Bridges homeFeedProvider (Riverpod) to FullscreenFeedBloc for playback
+// ABOUTME: Uses PooledVideoFeed for managed player pool and preloading
 
+import 'dart:async';
+
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
-import 'package:openvine/mixins/page_controller_sync_mixin.dart';
-import 'package:openvine/mixins/video_prefetch_mixin.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
+import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/home_screen_controllers.dart';
-import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/state/video_feed_state.dart';
+import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:pooled_video_player/pooled_video_player.dart';
 
-/// Router-driven HomeScreen - PageView syncs with URL bidirectionally
+/// Router-driven HomeScreen using pooled video player.
+///
+/// Bridges [homeFeedProvider] (Riverpod data source) to
+/// [FullscreenFeedBloc] (playback management) via a stream.
 class HomeScreenRouter extends ConsumerStatefulWidget {
   /// Route name for this screen.
   static const routeName = 'home';
@@ -39,28 +51,130 @@ class HomeScreenRouter extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
-    with VideoPrefetchMixin, PageControllerSyncMixin, AsyncValueUIHelpersMixin {
-  PageController? _controller;
-  int? _lastUrlIndex;
-  int? _lastPrefetchIndex;
+    with WidgetsBindingObserver {
+  late final StreamController<List<VideoEvent>> _videosController;
+  late final FullscreenFeedBloc _bloc;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
-    final videosAsync = ref.read(videosForHomeRouteProvider);
+    _videosController = StreamController<List<VideoEvent>>();
 
-    // Pre-initialize controllers on next frame (don't redirect - respect URL)
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Initial build pre initialization
-      videosAsync.whenData((state) {
-        preInitializeControllers(
-          ref: ref,
-          currentIndex: 0,
-          videos: state.videos,
-        );
-      });
+    // Seed stream with current videos if available
+    final currentState = ref.read(homeFeedProvider);
+    final state = currentState.asData?.value;
+    if (state != null && state.videos.isNotEmpty) {
+      _videosController.add(state.videos);
+    }
+
+    // Read initial index from URL
+    final pageCtx = ref.read(pageContextProvider).asData?.value;
+    final initialIndex = pageCtx?.videoIndex ?? 0;
+
+    _bloc = FullscreenFeedBloc(
+      videosStream: _videosController.stream,
+      initialIndex: initialIndex,
+      onLoadMore: () =>
+          ref.read(homePaginationControllerProvider).maybeLoadMore(),
+      mediaCache: ref.read(mediaCacheProvider),
+      blossomAuthService: ref.read(blossomAuthServiceProvider),
+    )..add(const FullscreenFeedStarted());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _bloc.close();
+    _videosController.close();
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Handled by _HomeFeedContent via appForegroundProvider
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Bridge: push homeFeedProvider updates into the BLoC's stream
+    ref.listen<AsyncValue<VideoFeedState>>(homeFeedProvider, (_, next) {
+      final state = next.asData?.value;
+      if (state != null) {
+        _videosController.add(state.videos);
+      }
     });
+
+    // Read page context to check if we're on the home route
+    final pageContext = ref.watch(pageContextProvider);
+    final ctx = pageContext.asData?.value;
+
+    // Only handle home routes
+    if (ctx == null || ctx.type != RouteType.home) {
+      return const SizedBox.shrink();
+    }
+
+    // Read feed state for loading/empty checks
+    final videosAsync = ref.watch(homeFeedProvider);
+    final feedState = videosAsync.asData?.value;
+
+    // Initial loading (no data yet)
+    if (feedState == null ||
+        (feedState.lastUpdated == null && feedState.videos.isEmpty)) {
+      return const Center(child: BrandedLoadingIndicator(size: 80));
+    }
+
+    // Empty state
+    if (feedState.videos.isEmpty) {
+      return const _EmptyHomeFeed();
+    }
+
+    ScreenAnalyticsService().markDataLoaded(
+      'home_feed',
+      dataMetrics: {'video_count': feedState.videos.length},
+    );
+
+    return BlocProvider<FullscreenFeedBloc>.value(
+      value: _bloc,
+      child: _HomeFeedContent(
+        urlIndex: (ctx.videoIndex ?? 0).clamp(0, feedState.videos.length - 1),
+        videoListSources: feedState.videoListSources,
+        listOnlyVideoIds: feedState.listOnlyVideoIds,
+      ),
+    );
+  }
+}
+
+/// Content widget that manages [VideoFeedController] and renders
+/// [PooledVideoFeed].
+///
+/// Follows the same pattern as [FullscreenFeedContent] from
+/// `pooled_fullscreen_video_feed_screen.dart`.
+class _HomeFeedContent extends ConsumerStatefulWidget {
+  const _HomeFeedContent({
+    required this.urlIndex,
+    required this.videoListSources,
+    required this.listOnlyVideoIds,
+  });
+
+  final int urlIndex;
+  final Map<String, Set<String>> videoListSources;
+  final Set<String> listOnlyVideoIds;
+
+  @override
+  ConsumerState<_HomeFeedContent> createState() => _HomeFeedContentState();
+}
+
+class _HomeFeedContentState extends ConsumerState<_HomeFeedContent> {
+  VideoFeedController? _controller;
+  List<VideoItem>? _lastPooledVideos;
+  int? _lastPrefetchIndex;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _initializeControllerIfNeeded();
   }
 
   @override
@@ -69,235 +183,388 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
     super.dispose();
   }
 
-  static int _buildCount = 0;
-  static DateTime? _lastBuildTime;
+  void _initializeControllerIfNeeded({bool triggerRebuild = false}) {
+    if (_controller != null) return;
+
+    final state = context.read<FullscreenFeedBloc>().state;
+    if (!state.hasPooledVideos) return;
+
+    _controller = _createController(state.pooledVideos, state.currentIndex);
+    _lastPooledVideos = state.pooledVideos;
+
+    if (triggerRebuild) setState(() {});
+  }
+
+  void _handleVideosChanged(FullscreenFeedState state) {
+    final controller = _controller;
+    if (controller == null || _lastPooledVideos == null) return;
+
+    final newVideos = state.pooledVideos
+        .where((v) => !_lastPooledVideos!.any((old) => old.id == v.id))
+        .toList();
+
+    if (newVideos.isNotEmpty) {
+      controller.addVideos(newVideos);
+    }
+    _lastPooledVideos = state.pooledVideos;
+  }
+
+  void _handleSeekCommand(SeekCommand command) {
+    final controller = _controller;
+    if (controller == null) return;
+
+    controller.seek(command.position);
+    context.read<FullscreenFeedBloc>().add(
+      const FullscreenFeedSeekCommandHandled(),
+    );
+  }
+
+  VideoFeedController _createController(
+    List<VideoItem> videos,
+    int initialIndex,
+  ) {
+    return VideoFeedController(
+      videos: videos,
+      pool: PlayerPool.instance,
+      initialIndex: initialIndex,
+      onVideoReady: (index, player) {
+        if (!mounted) return;
+        context.read<FullscreenFeedBloc>().add(
+          FullscreenFeedVideoCacheStarted(index: index),
+        );
+      },
+      positionCallback: (index, position) {
+        if (!mounted) return;
+        context.read<FullscreenFeedBloc>().add(
+          FullscreenFeedPositionUpdated(index: index, position: position),
+        );
+      },
+      positionCallbackInterval: const Duration(milliseconds: 100),
+    );
+  }
+
+  /// Prefetch user profiles for adjacent videos.
+  void _prefetchProfiles(int index, List<VideoEvent> videos) {
+    if (index == _lastPrefetchIndex) return;
+    _lastPrefetchIndex = index;
+
+    final safeIndex = index.clamp(0, videos.length - 1);
+    final pubkeys = <String>[];
+
+    if (safeIndex > 0) {
+      pubkeys.add(videos[safeIndex - 1].pubkey);
+    }
+    if (safeIndex < videos.length - 1) {
+      pubkeys.add(videos[safeIndex + 1].pubkey);
+    }
+
+    if (pubkeys.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref
+            .read(userProfileProvider.notifier)
+            .prefetchProfilesImmediately(pubkeys);
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    _buildCount++;
-    final now = DateTime.now();
-    final timeSinceLastBuild = _lastBuildTime != null
-        ? now.difference(_lastBuildTime!).inMilliseconds
-        : null;
-    if (timeSinceLastBuild != null && timeSinceLastBuild < 100) {
-      Log.warning(
-        '⚠️ HomeScreenRouter: RAPID REBUILD #$_buildCount! Only ${timeSinceLastBuild}ms since last build',
-        name: 'HomeScreenRouter',
-        category: LogCategory.video,
-      );
-    }
-    _lastBuildTime = now;
+    // Pause/resume based on overlay visibility
+    final hasOverlay = ref.watch(hasVisibleOverlayProvider);
+    _controller?.setActive(active: !hasOverlay);
 
-    // Read derived context from router
-    final pageContext = ref.watch(pageContextProvider);
-
-    return buildAsyncUI(
-      pageContext,
-      onData: (ctx) {
-        // Only handle home routes - if we get here with wrong route, don't redirect
-        // Just return empty container and let GoRouter handle the correct widget
-        // This prevents redirect loops when navigating away from home
-        if (ctx.type != RouteType.home) {
-          return const SizedBox.shrink();
-        }
-
-        int urlIndex = 0;
-
-        // Determine target index from route context
-
-        // Get video data from home feed
-        final videosAsync = ref.watch(videosForHomeRouteProvider);
-
-        return buildAsyncUI(
-          videosAsync,
-          onData: (state) {
-            final videos = state.videos;
-
-            if (state.lastUpdated == null && state.videos.isEmpty) {
-              return const Center(child: BrandedLoadingIndicator(size: 80));
+    return MultiBlocListener(
+      listeners: [
+        // Initialize controller when videos first become available
+        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+          listenWhen: (prev, curr) =>
+              !prev.hasPooledVideos && curr.hasPooledVideos,
+          listener: (context, state) =>
+              _initializeControllerIfNeeded(triggerRebuild: true),
+        ),
+        // Handle new videos from pagination
+        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+          listenWhen: (prev, curr) => prev.videos.length != curr.videos.length,
+          listener: (context, state) => _handleVideosChanged(state),
+        ),
+        // Handle seek commands (loop enforcement)
+        BlocListener<FullscreenFeedBloc, FullscreenFeedState>(
+          listenWhen: (prev, curr) =>
+              curr.seekCommand != null && prev.seekCommand != curr.seekCommand,
+          listener: (context, state) {
+            final command = state.seekCommand;
+            if (command != null) {
+              _handleSeekCommand(command);
             }
-
-            if (videos.isEmpty) {
-              // Handle empty videos case - no clamp needed
-              urlIndex = 0;
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.people_outline,
-                        size: 80,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Your Home Feed is Empty',
-                        style: TextStyle(
-                          fontSize: 22,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Follow creators to see their videos here',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 32),
-                      ElevatedButton.icon(
-                        onPressed: () => context.go(ExploreScreen.path),
-                        icon: const Icon(Icons.explore),
-                        label: const Text('Explore Videos'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-
-            ScreenAnalyticsService().markDataLoaded(
-              'home_feed',
-              dataMetrics: {'video_count': videos.length},
-            );
-
-            // Determine target index from route context (index-based routing)
-            urlIndex = (ctx.videoIndex ?? 0).clamp(0, videos.length - 1);
-
-            final itemCount = videos.length;
-
-            // Initialize controller once with URL index
-            if (_controller == null) {
-              final safeIndex = urlIndex.clamp(0, itemCount - 1);
-              _controller = PageController(initialPage: safeIndex);
-              _lastUrlIndex = safeIndex;
-            }
-
-            // Sync controller when URL changes externally (back/forward/deeplink)
-            final shouldSyncNow = shouldSync(
-              urlIndex: urlIndex,
-              lastUrlIndex: _lastUrlIndex,
-              controller: _controller,
-              targetIndex: urlIndex.clamp(0, itemCount - 1),
-            );
-
-            if (shouldSyncNow) {
-              Log.debug(
-                '🔄 SYNCING PageController: urlIndex=$urlIndex, lastUrlIndex=$_lastUrlIndex, currentPage=${_controller?.page?.round()}',
-                name: 'HomeScreenRouter',
-                category: LogCategory.video,
-              );
-              _lastUrlIndex = urlIndex;
-              syncPageController(
-                controller: _controller!,
-                targetIndex: urlIndex,
-                itemCount: itemCount,
-              );
-            }
-
-            // Prefetch profiles for adjacent videos (±1 index) only when URL index changes
-            if (urlIndex != _lastPrefetchIndex) {
-              _lastPrefetchIndex = urlIndex;
-              final safeIndex = urlIndex.clamp(0, itemCount - 1);
-              final pubkeysToPrefetech = <String>[];
-
-              // Prefetch previous video's profile
-              if (safeIndex > 0) {
-                pubkeysToPrefetech.add(videos[safeIndex - 1].pubkey);
-              }
-
-              // Prefetch next video's profile
-              if (safeIndex < itemCount - 1) {
-                pubkeysToPrefetech.add(videos[safeIndex + 1].pubkey);
-              }
-
-              // Schedule prefetch for next frame to avoid doing work during build
-              if (pubkeysToPrefetech.isNotEmpty) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (!mounted) return;
-                  ref
-                      .read(userProfileProvider.notifier)
-                      .prefetchProfilesImmediately(pubkeysToPrefetech);
-                });
-              }
-            }
-
-            return RefreshIndicator(
-              color: VineTheme.onPrimary,
-              backgroundColor: VineTheme.vineGreen,
-              semanticsLabel: 'searching for more videos',
-              onRefresh: () =>
-                  ref.read(homeRefreshControllerProvider).refresh(),
-              child: PageView.builder(
-                key: const Key('home-video-page-view'),
-                itemCount: videos.length,
-                controller: _controller,
-                scrollDirection: Axis.vertical,
-                onPageChanged: (newIndex) {
-                  // Guard: only navigate if URL doesn't match
-                  if (newIndex != urlIndex) {
-                    context.go(HomeScreenRouter.pathForIndex(newIndex));
-                  }
-
-                  // Trigger pagination near end
-                  if (newIndex >= itemCount - 2) {
-                    ref.read(homePaginationControllerProvider).maybeLoadMore();
-                  }
-
-                  // Prefetch videos around current index
-                  checkForPrefetch(currentIndex: newIndex, videos: videos);
-
-                  // Pre-initialize controllers for adjacent videos
-                  preInitializeControllers(
-                    ref: ref,
-                    currentIndex: newIndex,
-                    videos: videos,
-                  );
-
-                  // Dispose controllers outside the keep range to free memory
-                  disposeControllersOutsideRange(
-                    ref: ref,
-                    currentIndex: newIndex,
-                    videos: videos,
-                  );
-
-                  Log.debug(
-                    '📄 Page changed to index $newIndex (${videos[newIndex].id}...)',
-                    name: 'HomeScreenRouter',
-                    category: LogCategory.video,
-                  );
-                },
-                itemBuilder: (context, index) {
-                  // Use PageController as source of truth for active video,
-                  // not URL index. This prevents race conditions when videos
-                  // reorder and URL update is pending.
-                  final currentPage = _controller?.page?.round() ?? urlIndex;
-                  final isActive = index == currentPage;
-
-                  return VideoFeedItem(
-                    key: ValueKey('video-${videos[index].id}'),
-                    video: videos[index],
-                    index: index,
-                    hasBottomNavigation: false,
-                    contextTitle: '', // Home feed has no context title
-                    hideFollowButtonIfFollowing:
-                        true, // Home feed only shows followed users
-                    isActiveOverride: isActive,
-                  );
-                },
-              ),
-            );
           },
-        );
-      },
+        ),
+      ],
+      child: BlocBuilder<FullscreenFeedBloc, FullscreenFeedState>(
+        builder: (context, state) {
+          if (!state.hasPooledVideos) {
+            return const Center(child: BrandedLoadingIndicator(size: 80));
+          }
+
+          return RefreshIndicator(
+            color: VineTheme.onPrimary,
+            backgroundColor: VineTheme.vineGreen,
+            semanticsLabel: 'searching for more videos',
+            onRefresh: () => ref.read(homeRefreshControllerProvider).refresh(),
+            child: PooledVideoFeed(
+              key: const Key('home-video-page-view'),
+              videos: state.pooledVideos,
+              controller: _controller,
+              initialIndex: state.currentIndex,
+              onActiveVideoChanged: (video, index) {
+                // Update BLoC index
+                context.read<FullscreenFeedBloc>().add(
+                  FullscreenFeedIndexChanged(index),
+                );
+
+                // Update URL for router integration
+                if (index != widget.urlIndex) {
+                  context.go(HomeScreenRouter.pathForIndex(index));
+                }
+
+                // Trigger pagination near end
+                if (index >= state.videos.length - 2) {
+                  ref.read(homePaginationControllerProvider).maybeLoadMore();
+                }
+
+                // Prefetch profiles for adjacent videos
+                _prefetchProfiles(index, state.videos);
+
+                Log.debug(
+                  'Page changed to index $index '
+                  '(${state.videos[index].id})',
+                  name: 'HomeScreenRouter',
+                  category: LogCategory.video,
+                );
+              },
+              onNearEnd: (_) {
+                ref.read(homePaginationControllerProvider).maybeLoadMore();
+              },
+              nearEndThreshold: 2,
+              itemBuilder: (context, video, index, {required isActive}) {
+                final originalEvent = state.videos[index];
+                final listSources = widget.videoListSources[originalEvent.id];
+
+                return _PooledHomeFeedItem(
+                  video: originalEvent,
+                  index: index,
+                  isActive: isActive,
+                  hideFollowButtonIfFollowing: true,
+                  listSources: listSources,
+                  showListAttribution:
+                      listSources != null && listSources.isNotEmpty,
+                );
+              },
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _PooledHomeFeedItem extends ConsumerWidget {
+  const _PooledHomeFeedItem({
+    required this.video,
+    required this.index,
+    required this.isActive,
+    this.hideFollowButtonIfFollowing = false,
+    this.listSources,
+    this.showListAttribution = false,
+  });
+
+  final VideoEvent video;
+  final int index;
+  final bool isActive;
+  final bool hideFollowButtonIfFollowing;
+  final Set<String>? listSources;
+  final bool showListAttribution;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final likesRepository = ref.read(likesRepositoryProvider);
+    final commentsRepository = ref.read(commentsRepositoryProvider);
+    final repostsRepository = ref.read(repostsRepositoryProvider);
+
+    final addressableId = video.addressableId;
+
+    return BlocProvider<VideoInteractionsBloc>(
+      create: (_) =>
+          VideoInteractionsBloc(
+              eventId: video.id,
+              authorPubkey: video.pubkey,
+              likesRepository: likesRepository,
+              commentsRepository: commentsRepository,
+              repostsRepository: repostsRepository,
+              addressableId: addressableId,
+            )
+            ..add(const VideoInteractionsSubscriptionRequested())
+            ..add(const VideoInteractionsFetchRequested()),
+      child: _PooledHomeFeedItemContent(
+        video: video,
+        index: index,
+        isActive: isActive,
+        hideFollowButtonIfFollowing: hideFollowButtonIfFollowing,
+        listSources: listSources,
+        showListAttribution: showListAttribution,
+      ),
+    );
+  }
+}
+
+class _PooledHomeFeedItemContent extends StatelessWidget {
+  const _PooledHomeFeedItemContent({
+    required this.video,
+    required this.index,
+    required this.isActive,
+    this.hideFollowButtonIfFollowing = false,
+    this.listSources,
+    this.showListAttribution = false,
+  });
+
+  final VideoEvent video;
+  final int index;
+  final bool isActive;
+  final bool hideFollowButtonIfFollowing;
+  final Set<String>? listSources;
+  final bool showListAttribution;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPortrait = video.dimensions != null ? video.isPortrait : true;
+
+    return ColoredBox(
+      color: Colors.black,
+      child: PooledVideoPlayer(
+        index: index,
+        thumbnailUrl: video.thumbnailUrl,
+        enableTapToPause: isActive,
+        videoBuilder: (context, videoController, player) => _FittedVideoPlayer(
+          videoController: videoController,
+          isPortrait: isPortrait,
+        ),
+        loadingBuilder: (context) => _VideoLoadingPlaceholder(
+          thumbnailUrl: video.thumbnailUrl,
+          isPortrait: isPortrait,
+        ),
+        overlayBuilder: (context, videoController, player) =>
+            VideoOverlayActions(
+              video: video,
+              isVisible: isActive,
+              isActive: isActive,
+              hasBottomNavigation: false,
+              contextTitle: '',
+              hideFollowButtonIfFollowing: hideFollowButtonIfFollowing,
+              listSources: listSources,
+              showListAttribution: showListAttribution,
+            ),
+      ),
+    );
+  }
+}
+
+class _FittedVideoPlayer extends StatelessWidget {
+  const _FittedVideoPlayer({
+    required this.videoController,
+    this.isPortrait = true,
+  });
+
+  final VideoController videoController;
+  final bool isPortrait;
+
+  @override
+  Widget build(BuildContext context) {
+    final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
+
+    return Video(
+      controller: videoController,
+      fit: boxFit,
+      filterQuality: FilterQuality.high,
+      controls: NoVideoControls,
+    );
+  }
+}
+
+class _VideoLoadingPlaceholder extends StatelessWidget {
+  const _VideoLoadingPlaceholder({this.thumbnailUrl, this.isPortrait = true});
+
+  final String? thumbnailUrl;
+  final bool isPortrait;
+
+  @override
+  Widget build(BuildContext context) {
+    final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
+    final url = thumbnailUrl;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (url != null && url.isNotEmpty)
+          Image.network(
+            url,
+            fit: boxFit,
+            alignment: Alignment.center,
+            errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black),
+          )
+        else
+          const ColoredBox(color: Colors.black),
+        const Center(child: BrandedLoadingIndicator(size: 60)),
+      ],
+    );
+  }
+}
+
+class _EmptyHomeFeed extends StatelessWidget {
+  const _EmptyHomeFeed();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.people_outline,
+              size: 80,
+              color: VineTheme.secondaryText,
+            ),
+            const SizedBox(height: 24),
+            Text(
+              'Your Home Feed is Empty',
+              style: TextStyle(
+                fontSize: 22,
+                color: VineTheme.whiteText,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              'Follow creators to see their videos here',
+              style: TextStyle(fontSize: 16, color: VineTheme.secondaryText),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => context.go(ExploreScreen.path),
+              icon: const Icon(Icons.explore),
+              label: const Text('Explore Videos'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
