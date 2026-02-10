@@ -1387,12 +1387,14 @@ VideosRepository videosRepository(Ref ref) {
   final localStorage = ref.watch(videoLocalStorageProvider);
   final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final ageVerificationService = ref.watch(ageVerificationServiceProvider);
+  final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
 
   return VideosRepository(
     nostrClient: nostrClient,
     localStorage: localStorage,
     blockFilter: createBlocklistFilter(blocklistService),
     contentFilter: createNsfwFilter(ageVerificationService),
+    funnelcakeApiClient: funnelcakeClient,
   );
 }
 

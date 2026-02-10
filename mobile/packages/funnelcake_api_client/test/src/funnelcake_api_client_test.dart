@@ -676,6 +676,253 @@ void main() {
       });
     });
 
+    group('searchVideos', () {
+      const validVideoResponse =
+          '''
+[
+  {
+    "event_id": "abc123def456",
+    "pubkey": "$testPubkey",
+    "created_at": 1700000000,
+    "kind": 34236,
+    "d_tag": "test-video-1",
+    "hashtag": "cats",
+    "title": "Test Video",
+    "thumbnail": "https://example.com/thumb.jpg",
+    "author_name": "Test Author",
+    "author_avatar": "https://example.com/avatar.jpg"
+  }
+]
+''';
+
+      test('returns videos on successful response', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(validVideoResponse, 200),
+        );
+
+        final videos = await client.searchVideos(tag: 'cats');
+
+        expect(videos, hasLength(1));
+        expect(videos.first.eventId, equals('abc123def456'));
+        expect(videos.first.title, equals('Test Video'));
+        expect(videos.first.pubkey, equals(testPubkey));
+        expect(videos.first.dTag, equals('test-video-1'));
+        expect(
+          videos.first.addressableId,
+          equals('34236:$testPubkey:test-video-1'),
+        );
+      });
+
+      test('constructs correct URL with default params', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.searchVideos(tag: 'cats');
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.path, equals('/api/search'));
+        expect(uri.queryParameters['tag'], equals('cats'));
+        expect(uri.queryParameters['limit'], equals('50'));
+        expect(uri.queryParameters.containsKey('offset'), isFalse);
+      });
+
+      test('lowercases and trims the tag', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.searchVideos(tag: '  Cats  ');
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['tag'], equals('cats'));
+      });
+
+      test('includes offset when greater than zero', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.searchVideos(tag: 'cats', limit: 25, offset: 50);
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['limit'], equals('25'));
+        expect(uri.queryParameters['offset'], equals('50'));
+      });
+
+      test('filters out videos with empty eventId', () async {
+        const responseWithEmptyId =
+            '''
+[
+  {
+    "event_id": "",
+    "pubkey": "$testPubkey",
+    "created_at": 1700000000,
+    "kind": 34236,
+    "d_tag": "test",
+    "hashtag": "cats",
+    "title": "Invalid Video",
+    "thumbnail": "https://example.com/thumb.jpg"
+  }
+]
+''';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(responseWithEmptyId, 200),
+        );
+
+        final videos = await client.searchVideos(tag: 'cats');
+
+        expect(videos, isEmpty);
+      });
+
+      test('filters out videos with empty dTag', () async {
+        const responseWithEmptyDTag =
+            '''
+[
+  {
+    "event_id": "abc123",
+    "pubkey": "$testPubkey",
+    "created_at": 1700000000,
+    "kind": 34236,
+    "d_tag": "",
+    "hashtag": "cats",
+    "title": "Invalid Video",
+    "thumbnail": "https://example.com/thumb.jpg"
+  }
+]
+''';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(responseWithEmptyDTag, 200),
+        );
+
+        final videos = await client.searchVideos(tag: 'cats');
+
+        expect(videos, isEmpty);
+      });
+
+      test(
+        'throws FunnelcakeNotConfiguredException when not available',
+        () {
+          final emptyClient = FunnelcakeApiClient(
+            baseUrl: '',
+            httpClient: mockHttpClient,
+          );
+
+          expect(
+            () => emptyClient.searchVideos(tag: 'cats'),
+            throwsA(isA<FunnelcakeNotConfiguredException>()),
+          );
+
+          emptyClient.dispose();
+        },
+      );
+
+      test('throws FunnelcakeException when tag is empty', () {
+        expect(
+          () => client.searchVideos(tag: ''),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Tag cannot be empty'),
+            ),
+          ),
+        );
+      });
+
+      test('throws FunnelcakeException when tag is only whitespace', () {
+        expect(
+          () => client.searchVideos(tag: '   '),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Tag cannot be empty'),
+            ),
+          ),
+        );
+      });
+
+      test(
+        'throws FunnelcakeApiException on error status codes',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response('Internal Server Error', 500),
+          );
+
+          expect(
+            () => client.searchVideos(tag: 'cats'),
+            throwsA(
+              isA<FunnelcakeApiException>().having(
+                (e) => e.statusCode,
+                'statusCode',
+                equals(500),
+              ),
+            ),
+          );
+        },
+      );
+
+      test('throws FunnelcakeTimeoutException on timeout', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => throw TimeoutException('Request timed out'),
+        );
+
+        expect(
+          () => client.searchVideos(tag: 'cats'),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+      });
+
+      test('throws FunnelcakeException on network error', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenThrow(Exception('Network error'));
+
+        expect(
+          () => client.searchVideos(tag: 'cats'),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Failed to search videos by tag'),
+            ),
+          ),
+        );
+      });
+    });
+
     group('dispose', () {
       test('does not close externally provided httpClient', () {
         client.dispose();

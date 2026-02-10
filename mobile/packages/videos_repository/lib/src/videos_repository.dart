@@ -450,6 +450,69 @@ class VideosRepository {
     }
   }
 
+  /// Fetches videos by hashtag.
+  ///
+  /// Strategy:
+  /// 1. Try Funnelcake REST API first (fast, pre-sorted by popularity)
+  /// 2. Fall back to Nostr relay query via `#t` tag filter if Funnelcake
+  ///    is not available or fails
+  ///
+  /// Parameters:
+  /// - [tag]: The hashtag to search for (without #)
+  /// - [limit]: Maximum number of videos to return (default 50)
+  /// - [offset]: Number of results to skip for Funnelcake pagination
+  ///   (ignored for relay fallback)
+  /// - [until]: Only return videos created before this Unix timestamp
+  ///   (for Nostr relay cursor-based pagination)
+  ///
+  /// Returns a list of [VideoEvent]. When served by Funnelcake, videos
+  /// are sorted by engagement/popularity (API order is preserved).
+  /// When falling back to relay, videos are sorted by creation time.
+  Future<List<VideoEvent>> getVideosByHashtag({
+    required String tag,
+    int limit = 50,
+    int offset = 0,
+    int? until,
+  }) async {
+    // 1. Try Funnelcake REST API first
+    if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
+      try {
+        final searchResults = await _funnelcakeApiClient.searchVideos(
+          tag: tag,
+          limit: limit,
+          offset: offset,
+        );
+
+        if (searchResults.isEmpty) return [];
+
+        // Pre-filter blocked pubkeys before relay lookup
+        final filteredResults = searchResults.where((result) {
+          return !(_blockFilter?.call(result.pubkey) ?? false);
+        }).toList();
+
+        if (filteredResults.isEmpty) return [];
+
+        // Return stub VideoEvents from search metadata (fast path).
+        // These have thumbnails and titles but no videoUrl — suitable
+        // for grid display.
+        return filteredResults.map((r) => r.toVideoEvent()).toList();
+      } on FunnelcakeException {
+        // Funnelcake failed — fall through to relay query
+      }
+    }
+
+    // 2. Fallback: query Nostr relays using #t tag filter
+    final filter = Filter(
+      kinds: [_videoKind],
+      t: [tag.toLowerCase()],
+      limit: limit,
+      until: until,
+    );
+
+    final events = await _nostrClient.queryEvents([filter]);
+    return _transformAndFilter(events);
+  }
+
   /// Attempts to parse an event into a VideoEvent and apply filters.
   ///
   /// Returns the [VideoEvent] if it passes all filters, or null if:

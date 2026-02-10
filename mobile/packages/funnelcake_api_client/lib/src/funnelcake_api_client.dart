@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:funnelcake_api_client/src/exceptions.dart';
+import 'package:funnelcake_api_client/src/video_search_result.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:models/models.dart' show ProfileSearchResult, VideoStats;
@@ -214,6 +215,87 @@ class FunnelcakeApiClient {
       rethrow;
     } catch (e) {
       throw FunnelcakeException('Failed to search profiles: $e');
+    }
+  }
+
+  /// Searches for videos by hashtag.
+  ///
+  /// [tag] is the hashtag to search for (without #).
+  /// [limit] is the maximum number of videos to return (defaults to 50).
+  /// [offset] is the number of results to skip for pagination (defaults to 0).
+  ///
+  /// Returns a list of [VideoSearchResult] objects in API order
+  /// (typically sorted by engagement). These results contain metadata
+  /// suitable for grid display — use [VideoSearchResult.toVideoEvent]
+  /// to convert to stub `VideoEvent` objects for the UI.
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeException] if the tag is empty.
+  /// - [FunnelcakeApiException] if the request fails with a non-success status.
+  /// - [FunnelcakeTimeoutException] if the request times out.
+  /// - [FunnelcakeException] for other errors.
+  Future<List<VideoSearchResult>> searchVideos({
+    required String tag,
+    int limit = 50,
+    int offset = 0,
+  }) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    final trimmedTag = tag.trim();
+    if (trimmedTag.isEmpty) {
+      throw const FunnelcakeException('Tag cannot be empty');
+    }
+
+    final queryParams = <String, String>{
+      'tag': trimmedTag.toLowerCase(),
+      'limit': limit.toString(),
+    };
+    if (offset > 0) {
+      queryParams['offset'] = offset.toString();
+    }
+
+    final uri = Uri.parse(
+      '$_baseUrl/api/search',
+    ).replace(queryParameters: queryParams);
+
+    try {
+      final response = await _httpClient
+          .get(
+            uri,
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List<dynamic>;
+
+        return data
+            .map(
+              (v) => VideoSearchResult.fromJson(v as Map<String, dynamic>),
+            )
+            .where(
+              (v) => v.eventId.isNotEmpty && v.dTag.isNotEmpty,
+            )
+            .toList();
+      } else {
+        throw FunnelcakeApiException(
+          message: 'Failed to search videos by tag',
+          statusCode: response.statusCode,
+          url: uri.toString(),
+        );
+      }
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to search videos by tag: $e');
     }
   }
 

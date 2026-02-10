@@ -759,6 +759,376 @@ void main() {
       );
     });
 
+    group('getVideosByHashtag', () {
+      late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+      setUp(() {
+        mockFunnelcakeClient = MockFunnelcakeApiClient();
+      });
+
+      test(
+        'returns stub videos from Funnelcake without relay lookup',
+        () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchVideos(
+              tag: any(named: 'tag'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createSearchResult(
+                eventId: 'video-1',
+                pubkey: 'pubkey-1',
+                dTag: 'dtag-1',
+                title: 'First Video',
+              ),
+              _createSearchResult(
+                eventId: 'video-2',
+                pubkey: 'pubkey-2',
+                dTag: 'dtag-2',
+                title: 'Second Video',
+              ),
+            ],
+          );
+
+          final repositoryWithFunnelcake = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithFunnelcake.getVideosByHashtag(
+            tag: 'cats',
+          );
+
+          expect(result, hasLength(2));
+          expect(result[0].id, equals('video-1'));
+          expect(result[0].vineId, equals('dtag-1'));
+          expect(result[0].title, equals('First Video'));
+          // Stubs have no videoUrl
+          expect(result[0].videoUrl, isNull);
+          // No relay calls made
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
+
+      test('passes correct parameters to Funnelcake', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.searchVideos(
+            tag: any(named: 'tag'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async => <VideoSearchResult>[]);
+
+        final repositoryWithFunnelcake = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        await repositoryWithFunnelcake.getVideosByHashtag(
+          tag: 'funny',
+          limit: 25,
+          offset: 10,
+        );
+
+        verify(
+          () => mockFunnelcakeClient.searchVideos(
+            tag: 'funny',
+            limit: 25,
+            offset: 10,
+          ),
+        ).called(1);
+      });
+
+      test(
+        'falls back to relay when Funnelcake throws exception',
+        () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchVideos(
+              tag: any(named: 'tag'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenThrow(
+            const FunnelcakeException('API error'),
+          );
+
+          final event = _createVideoEvent(
+            id: 'relay-video',
+            pubkey: 'relay-pubkey',
+            videoUrl: 'https://example.com/relay-video.mp4',
+            createdAt: 1704067200,
+            hashtags: ['cats'],
+          );
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [event],
+          );
+
+          final repositoryWithFunnelcake = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithFunnelcake.getVideosByHashtag(
+            tag: 'cats',
+          );
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('relay-video'));
+          verify(() => mockNostrClient.queryEvents(any())).called(1);
+        },
+      );
+
+      test(
+        'falls back to relay when Funnelcake client is null',
+        () async {
+          final event = _createVideoEvent(
+            id: 'relay-video',
+            pubkey: 'relay-pubkey',
+            videoUrl: 'https://example.com/relay-video.mp4',
+            createdAt: 1704067200,
+            hashtags: ['funny'],
+          );
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [event],
+          );
+
+          // Default repository has no Funnelcake client
+          final result = await repository.getVideosByHashtag(
+            tag: 'funny',
+          );
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('relay-video'));
+        },
+      );
+
+      test(
+        'falls back to relay when Funnelcake isAvailable is false',
+        () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
+
+          final event = _createVideoEvent(
+            id: 'relay-video',
+            pubkey: 'relay-pubkey',
+            videoUrl: 'https://example.com/relay-video.mp4',
+            createdAt: 1704067200,
+            hashtags: ['dogs'],
+          );
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [event],
+          );
+
+          final repositoryWithFunnelcake = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithFunnelcake.getVideosByHashtag(
+            tag: 'dogs',
+          );
+
+          expect(result, hasLength(1));
+          verifyNever(
+            () => mockFunnelcakeClient.searchVideos(
+              tag: any(named: 'tag'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          );
+        },
+      );
+
+      test('relay fallback uses correct filter with #t tag', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => <Event>[],
+        );
+
+        await repository.getVideosByHashtag(
+          tag: 'Music',
+          limit: 30,
+          until: 1704067200,
+        );
+
+        final captured =
+            verify(
+                  () => mockNostrClient.queryEvents(captureAny()),
+                ).captured.single
+                as List<Filter>;
+
+        expect(captured, hasLength(1));
+        final filter = captured.first;
+        expect(filter.kinds, contains(EventKind.videoVertical));
+        expect(filter.t, equals(['music']));
+        expect(filter.limit, equals(30));
+        expect(filter.until, equals(1704067200));
+      });
+
+      test(
+        'pre-filters blocked pubkeys from stubs',
+        () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchVideos(
+              tag: any(named: 'tag'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createSearchResult(
+                eventId: 'blocked-video',
+                pubkey: 'blocked-pubkey',
+                dTag: 'dtag-1',
+              ),
+              _createSearchResult(
+                eventId: 'allowed-video',
+                pubkey: 'allowed-pubkey',
+                dTag: 'dtag-2',
+              ),
+            ],
+          );
+
+          final blockFilter = TestContentFilter(
+            blockedPubkeys: {'blocked-pubkey'},
+          );
+
+          final repositoryWithFilter = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            blockFilter: blockFilter.call,
+          );
+
+          final result = await repositoryWithFilter.getVideosByHashtag(
+            tag: 'cats',
+          );
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('allowed-video'));
+          // No relay calls — stubs returned directly
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
+
+      test(
+        'returns empty when all search results are blocked',
+        () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchVideos(
+              tag: any(named: 'tag'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createSearchResult(
+                eventId: 'blocked-video',
+                pubkey: 'blocked-pubkey',
+                dTag: 'dtag-1',
+              ),
+            ],
+          );
+
+          final blockFilter = TestContentFilter(
+            blockedPubkeys: {'blocked-pubkey'},
+          );
+
+          final repositoryWithFilter = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            blockFilter: blockFilter.call,
+          );
+
+          final result = await repositoryWithFilter.getVideosByHashtag(
+            tag: 'cats',
+          );
+
+          expect(result, isEmpty);
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
+
+      test('returns empty list when no results from any source', () async {
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.searchVideos(
+            tag: any(named: 'tag'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async => <VideoSearchResult>[]);
+
+        final repositoryWithFunnelcake = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+        );
+
+        final result = await repositoryWithFunnelcake.getVideosByHashtag(
+          tag: 'nonexistent',
+        );
+
+        expect(result, isEmpty);
+        verifyNever(() => mockNostrClient.queryEvents(any()));
+      });
+
+      test(
+        'preserves Funnelcake API order (engagement-sorted)',
+        () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.searchVideos(
+              tag: any(named: 'tag'),
+              limit: any(named: 'limit'),
+              offset: any(named: 'offset'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createSearchResult(
+                eventId: 'most-popular',
+                pubkey: 'pubkey-1',
+                dTag: 'dtag-1',
+              ),
+              _createSearchResult(
+                eventId: 'less-popular',
+                pubkey: 'pubkey-2',
+                dTag: 'dtag-2',
+              ),
+              _createSearchResult(
+                eventId: 'least-popular',
+                pubkey: 'pubkey-3',
+                dTag: 'dtag-3',
+              ),
+            ],
+          );
+
+          final repositoryWithFunnelcake = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithFunnelcake.getVideosByHashtag(
+            tag: 'trending',
+          );
+
+          // Stubs preserve Funnelcake search order
+          expect(result, hasLength(3));
+          expect(result[0].vineId, equals('dtag-1'));
+          expect(result[1].vineId, equals('dtag-2'));
+          expect(result[2].vineId, equals('dtag-3'));
+          // No relay calls — stubs returned directly
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        },
+      );
+    });
+
     group('content filtering', () {
       test('filters out videos from blocked pubkeys', () async {
         const blockedPubkey = 'blocked-user-pubkey';
@@ -2369,5 +2739,24 @@ VideoStats _createVideoStats({
     reposts: 0,
     engagementScore: 0,
     loops: loops,
+  );
+}
+
+/// Creates a mock VideoSearchResult for testing hashtag search.
+VideoSearchResult _createSearchResult({
+  required String eventId,
+  required String pubkey,
+  required String dTag,
+  String? title,
+  String? hashtag,
+}) {
+  return VideoSearchResult(
+    eventId: eventId,
+    pubkey: pubkey,
+    kind: EventKind.videoVertical,
+    dTag: dTag,
+    createdAt: 1704067200,
+    title: title ?? 'Test Video',
+    hashtag: hashtag,
   );
 }
