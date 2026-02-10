@@ -203,6 +203,7 @@ class _FullscreenFeedContentState extends State<FullscreenFeedContent> {
     return VideoFeedController(
       videos: videos,
       pool: PlayerPool.instance,
+      initialIndex: initialIndex,
       // Hook: Dispatch event for background caching when video is ready
       onVideoReady: (index, player) {
         if (!mounted) return;
