@@ -2,6 +2,7 @@
 // ABOUTME: Orchestrates BLoC providers, sticker precaching, and editor canvas.
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -48,10 +49,19 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   /// [VineBottomSheet.show]).
   late final VideoEditorStickerBloc _stickerBloc;
 
+  /// Body size notifier, updated by [_CanvasFitter].
+  final _bodySizeNotifier = ValueNotifier<Size>(Size.zero);
+
   ProImageEditorState? get _editor => _editorKey.currentState;
 
   RecordingClip get _clip =>
       ref.watch(clipManagerProvider.select((s) => s.clips.first));
+
+  /// FittedBox scale factor between bodySize and renderSize.
+  double get _fittedBoxScale => VideoEditorScope.calculateFittedBoxScale(
+    _bodySizeNotifier.value,
+    _clip.originalAspectRatio,
+  );
 
   @override
   void initState() {
@@ -63,6 +73,7 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   @override
   void dispose() {
     _stickerBloc.close();
+    _bodySizeNotifier.dispose();
     super.dispose();
   }
 
@@ -106,8 +117,9 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     );
 
     if (sticker != null) {
-      final screenWidth = MediaQuery.sizeOf(context).width;
-      final stickerWidth = screenWidth / 3 * _clip.originalAspectRatio;
+      // 1/3 of screen width, converted to render coordinates
+      final bodySize = _bodySizeNotifier.value;
+      final stickerWidth = min(300.0, (bodySize.width / 3) / _fittedBoxScale);
 
       final layer = WidgetLayer(
         width: stickerWidth,
@@ -161,42 +173,52 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     textBloc.add(const VideoEditorTextClosePanels());
     mainBloc.add(const VideoEditorMainSubEditorClosed());
 
-    return result?.copyWith(
-      scale: layer == null ? _clip.originalAspectRatio : null,
-    );
+    if (result == null || layer != null) return result;
+
+    return result.copyWith(scale: 1 / _fittedBoxScale);
   }
 
   @override
   Widget build(BuildContext context) {
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider(create: (_) => VideoEditorMainBloc()),
-        BlocProvider.value(value: _stickerBloc),
-        BlocProvider(create: (_) => VideoEditorFilterBloc()),
-        BlocProvider(create: (_) => VideoEditorDrawBloc()),
-        BlocProvider(create: (_) => VideoEditorTextBloc()),
-      ],
-      child: Builder(
-        builder: (context) {
-          return VideoEditorScope(
-            editorKey: _editorKey,
-            removeAreaKey: _removeAreaKey,
-            originalClipAspectRatio: _clip.originalAspectRatio,
-            onAddStickers: _addStickers,
-            onAddEditTextLayer: ([layer]) {
-              final mainBloc = context.read<VideoEditorMainBloc>();
-              final textBloc = context.read<VideoEditorTextBloc>();
+    return Row(
+      crossAxisAlignment: .center,
+      mainAxisAlignment: .center,
+      children: [
+        SizedBox(
+          width: 410,
+          child: MultiBlocProvider(
+            providers: [
+              BlocProvider(create: (_) => VideoEditorMainBloc()),
+              BlocProvider.value(value: _stickerBloc),
+              BlocProvider(create: (_) => VideoEditorFilterBloc()),
+              BlocProvider(create: (_) => VideoEditorDrawBloc()),
+              BlocProvider(create: (_) => VideoEditorTextBloc()),
+            ],
+            child: Builder(
+              builder: (context) {
+                return VideoEditorScope(
+                  editorKey: _editorKey,
+                  removeAreaKey: _removeAreaKey,
+                  originalClipAspectRatio: _clip.originalAspectRatio,
+                  bodySizeNotifier: _bodySizeNotifier,
+                  onAddStickers: _addStickers,
+                  onAddEditTextLayer: ([layer]) {
+                    final mainBloc = context.read<VideoEditorMainBloc>();
+                    final textBloc = context.read<VideoEditorTextBloc>();
 
-              return _addEditTextLayer(
-                mainBloc: mainBloc,
-                textBloc: textBloc,
-                layer: layer,
-              );
-            },
-            child: const VideoEditorScaffold(),
-          );
-        },
-      ),
+                    return _addEditTextLayer(
+                      mainBloc: mainBloc,
+                      textBloc: textBloc,
+                      layer: layer,
+                    );
+                  },
+                  child: const VideoEditorScaffold(),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

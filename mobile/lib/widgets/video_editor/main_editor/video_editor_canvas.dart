@@ -270,6 +270,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           ),
         ),
         paintEditor: PaintEditorConfigs(
+          eraserSize:
+              DrawToolType.eraser.config.strokeWidth / scope.fittedBoxScale / 2,
           safeArea: const EditorSafeArea.none(),
           widgets: PaintEditorWidgets(
             appBar: (_, _) => null,
@@ -287,7 +289,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         ),
         helperLines: HelperLineConfigs(
           style: HelperLineStyle(
-            strokeWidth: 1.25 * scope.originalClipAspectRatio,
+            // 1.25 is the pro_image_editor default; we divide by fittedBoxScale
+            // to compensate for the FittedBox transformation.
+            strokeWidth: 1.25 / scope.fittedBoxScale,
             horizontalColor: VideoEditorConstants.primaryColor,
             verticalColor: VideoEditorConstants.primaryColor,
             rotateColor: VideoEditorConstants.primaryColor,
@@ -376,9 +380,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             // Sync editor with current BLoC state
             paintEditor
               ?..setColor(drawState.selectedColor)
-              ..setStrokeWidth(
-                drawState.strokeWidth * scope.originalClipAspectRatio,
-              )
+              ..setStrokeWidth(drawState.strokeWidth / scope.fittedBoxScale)
               ..setOpacity(drawState.opacity)
               ..setMode(drawState.mode);
           },
@@ -462,6 +464,7 @@ class _CanvasFitter extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final clip = ref.watch(clipManagerProvider.select((s) => s.clips.first));
+    final scope = VideoEditorScope.of(context);
 
     return LayoutBuilder(
       builder: (_, constraints) {
@@ -471,6 +474,9 @@ class _CanvasFitter extends ConsumerWidget {
         // depending on which dimension is reached first
         final height = min(bodySize.width, bodySize.height);
         final renderSize = Size(height * clip.originalAspectRatio, height);
+
+        // Notify parent about body size
+        scope.bodySizeNotifier.value = bodySize;
 
         return FittedBox(
           fit: .cover,
