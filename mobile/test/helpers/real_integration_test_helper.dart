@@ -29,7 +29,7 @@ class RealIntegrationTestHelper {
     await setupTestEnvironment();
 
     // Generate a test key container
-    final keyContainer = SecureKeyContainer.generate();
+    final keyContainer = await SecureKeyContainer.generate();
 
     final nostrService = NostrServiceFactory.create(keyContainer: keyContainer);
     await nostrService.initialize();

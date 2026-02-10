@@ -4,6 +4,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 
 /// Immutable state model for the video editor.
 ///
@@ -35,7 +36,7 @@ class VideoEditorProviderState {
     this.metadataLimitReached = false,
     this.finalRenderedClip,
     this.editorStateHistory = const {},
-    this.editorEditingParameters = const {},
+    this.editorEditingParameters,
     GlobalKey? deleteButtonKey,
   }) : deleteButtonKey = deleteButtonKey ?? GlobalKey();
 
@@ -107,7 +108,7 @@ class VideoEditorProviderState {
   final Map<String, dynamic> editorStateHistory;
 
   /// Serialized editing parameters (filters, drawings, etc.) from ProImageEditor.
-  final Map<String, dynamic> editorEditingParameters;
+  final CompleteParameters? editorEditingParameters;
 
   /// Whether the video is valid and ready to be posted.
   ///
@@ -143,7 +144,7 @@ class VideoEditorProviderState {
     bool? metadataLimitReached,
     RecordingClip? finalRenderedClip,
     Map<String, dynamic>? editorStateHistory,
-    Map<String, dynamic>? editorEditingParameters,
+    CompleteParameters? editorEditingParameters,
   }) {
     return VideoEditorProviderState(
       currentClipIndex: currentClipIndex ?? this.currentClipIndex,

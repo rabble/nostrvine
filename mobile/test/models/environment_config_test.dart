@@ -41,26 +41,28 @@ void main() {
     });
 
     group('apiBaseUrl', () {
-      test('poc returns poc API', () {
+      // apiBaseUrl is derived from relayUrl by converting wss:// to https://
+      // This ensures the API URL always matches the relay being used
+      test('poc derives from relay URL', () {
         final config = EnvironmentConfig(environment: AppEnvironment.poc);
-        expect(config.apiBaseUrl, 'https://api.poc.dvines.org');
+        expect(config.apiBaseUrl, 'https://relay.poc.dvines.org');
       });
 
-      test('staging returns staging API', () {
+      test('staging derives from relay URL', () {
         final config = EnvironmentConfig(environment: AppEnvironment.staging);
-        expect(config.apiBaseUrl, 'https://api.staging.dvines.org');
+        expect(config.apiBaseUrl, 'https://relay.staging.dvines.org');
       });
 
-      test('test returns test API', () {
+      test('test derives from relay URL', () {
         final config = EnvironmentConfig(environment: AppEnvironment.test);
-        expect(config.apiBaseUrl, 'https://api.test.dvines.org');
+        expect(config.apiBaseUrl, 'https://relay.test.dvines.org');
       });
 
-      test('production returns divine.video API', () {
+      test('production derives from relay URL', () {
         final config = EnvironmentConfig(
           environment: AppEnvironment.production,
         );
-        expect(config.apiBaseUrl, 'https://api.divine.video');
+        expect(config.apiBaseUrl, 'https://relay.divine.video');
       });
     });
 

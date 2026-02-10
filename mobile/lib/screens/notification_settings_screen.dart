@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:divine_ui/divine_ui.dart';
 
 class NotificationSettingsScreen extends ConsumerStatefulWidget {
@@ -191,49 +191,24 @@ class _NotificationSettingsScreenState
             _buildSectionHeader('Actions'),
             const SizedBox(height: 8),
 
-            Builder(
-              builder: (context) {
-                final service = ref.watch(notificationServiceEnhancedProvider);
-                return Column(
-                  children: [
-                    _buildActionCard(
-                      icon: Icons.check_circle,
-                      iconColor: VineTheme.vineGreenLight,
-                      title: 'Mark All as Read',
-                      subtitle: 'Mark all notifications as read',
-                      onTap: () async {
-                        await service.markAllAsRead();
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('All notifications marked as read'),
-                              duration: Duration(seconds: 2),
-                              backgroundColor: VineTheme.vineGreen,
-                            ),
-                          );
-                        }
-                      },
+            _buildActionCard(
+              icon: Icons.check_circle,
+              iconColor: VineTheme.vineGreenLight,
+              title: 'Mark All as Read',
+              subtitle: 'Mark all notifications as read',
+              onTap: () async {
+                await ref
+                    .read(relayNotificationsProvider.notifier)
+                    .markAllAsRead();
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('All notifications marked as read'),
+                      duration: Duration(seconds: 2),
+                      backgroundColor: VineTheme.vineGreen,
                     ),
-                    _buildActionCard(
-                      icon: Icons.delete_sweep,
-                      iconColor: VineTheme.likeRed,
-                      title: 'Clear Old Notifications',
-                      subtitle: 'Remove notifications older than 30 days',
-                      onTap: () async {
-                        await service.clearOlderThan(const Duration(days: 30));
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Old notifications cleared'),
-                              duration: Duration(seconds: 2),
-                              backgroundColor: VineTheme.vineGreen,
-                            ),
-                          );
-                        }
-                      },
-                    ),
-                  ],
-                );
+                  );
+                }
               },
             ),
 

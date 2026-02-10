@@ -2,14 +2,12 @@
 // ABOUTME: Header title uses Bricolage Grotesque font, camera button in bottom nav
 
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/vine_drawer.dart';
@@ -564,58 +562,37 @@ class AppShell extends ConsumerWidget {
                 'explore_tab',
               ),
               // Camera button in center of bottom nav
-              BlocBuilder<BackgroundPublishBloc, BackgroundPublishState>(
-                builder: (context, state) {
-                  final isDisabled = state.hasUploadInProgress;
-
-                  return Semantics(
-                    identifier: 'camera_button',
-                    button: true,
-                    label: isDisabled
-                        ? 'Camera disabled during upload'
-                        : 'Open camera',
-                    child: GestureDetector(
-                      onTap: isDisabled
-                          ? null
-                          : () {
-                              Log.info(
-                                '👆 User tapped camera button',
-                                name: 'Navigation',
-                                category: LogCategory.ui,
-                              );
-                              context.push(VideoRecorderScreen.path);
-                            },
-                      child: Opacity(
-                        opacity: isDisabled ? 0.5 : 1.0,
-                        child: Container(
-                          width: 72,
-                          height: 48,
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 20,
-                            vertical: 8,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isDisabled
-                                ? VineTheme.tabIconInactive
-                                : VineTheme.cameraButtonGreen,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: SvgPicture.asset(
-                            'assets/icon/retro-camera.svg',
-                            width: 32,
-                            height: 32,
-                            colorFilter: isDisabled
-                                ? const ColorFilter.mode(
-                                    Colors.grey,
-                                    BlendMode.srcIn,
-                                  )
-                                : null,
-                          ),
-                        ),
-                      ),
+              Semantics(
+                identifier: 'camera_button',
+                button: true,
+                label: 'Open camera',
+                child: GestureDetector(
+                  onTap: () {
+                    Log.info(
+                      '👆 User tapped camera button',
+                      name: 'Navigation',
+                      category: LogCategory.ui,
+                    );
+                    context.push(VideoRecorderScreen.path);
+                  },
+                  child: Container(
+                    width: 72,
+                    height: 48,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 8,
                     ),
-                  );
-                },
+                    decoration: BoxDecoration(
+                      color: VineTheme.cameraButtonGreen,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: SvgPicture.asset(
+                      'assets/icon/retro-camera.svg',
+                      width: 32,
+                      height: 32,
+                    ),
+                  ),
+                ),
               ),
               _buildTabButton(
                 context,

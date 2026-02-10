@@ -234,7 +234,7 @@ void main() {
         await tester.pump();
 
         // Font selector should not be visible
-        expect(find.byType(VideoEditorTextInlineFontSelector), findsNothing);
+        expect(find.byType(VideoEditorTextFontSelector), findsNothing);
       });
 
       testWidgets('does not show color picker by default', (tester) async {

@@ -49,6 +49,31 @@ VideoItem createTestVideo({
   return VideoItem(id: id, url: url);
 }
 
+/// Creates a list of HLS test [VideoItem]s with .m3u8 URLs.
+///
+/// Simulates Divine video streaming URLs for testing HLS support.
+List<VideoItem> createHlsTestVideos({int count = 5}) {
+  return List.generate(
+    count,
+    (i) => VideoItem(
+      id: 'hls_video_$i',
+      url: 'https://media.divine.video/hash$i/hls/master.m3u8',
+    ),
+  );
+}
+
+/// Creates a single HLS test [VideoItem] with .m3u8 URL.
+VideoItem createHlsTestVideo({
+  String id = 'hls_video',
+  String hash = 'abc123',
+  String quality = 'master',
+}) {
+  return VideoItem(
+    id: id,
+    url: 'https://media.divine.video/$hash/hls/$quality.m3u8',
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Mock Player Setup
 // ---------------------------------------------------------------------------

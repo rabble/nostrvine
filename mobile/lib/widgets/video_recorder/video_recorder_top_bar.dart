@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/divine_icon_button.dart';
+import 'package:openvine/widgets/video_editor_icon_button.dart';
 
 /// Top bar with close button, segment bar, and forward button.
 class VideoRecorderTopBar extends ConsumerWidget {
@@ -44,7 +44,7 @@ class VideoRecorderTopBar extends ConsumerWidget {
                     mainAxisAlignment: .spaceBetween,
                     children: [
                       // Close button
-                      DivineIconButton(
+                      VideoEditorIconButton(
                         backgroundColor: Color(0x26000000),
                         // TODO(l10n): Replace with context.l10n when localization is added.
                         semanticLabel: 'Close video recorder',

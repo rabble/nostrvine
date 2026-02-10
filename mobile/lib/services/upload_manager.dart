@@ -20,6 +20,8 @@ import 'package:openvine/services/upload_initialization_helper.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/async_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path/path.dart' as path;
+import 'package:path_provider/path_provider.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -298,7 +300,17 @@ class UploadManager {
     if (draft.clips.length == 1) {
       videoFilePath = await draft.clips.first.video.safeFilePath();
     } else {
-      videoFilePath = '';
+      final tempDir = await getTemporaryDirectory();
+      videoFilePath = path.join(
+        tempDir.path,
+        'merged_${DateTime.now().microsecondsSinceEpoch}.mp4',
+      );
+      Log.info(
+        '🎬 Merging ${draft.clips.length} clips into single video '
+        '(unexpected: clips should be pre-merged at this point)...',
+        name: 'UploadManager',
+        category: .video,
+      );
       await ProVideoEditor.instance.renderVideoToFile(
         videoFilePath,
         VideoRenderData(
@@ -309,13 +321,30 @@ class UploadManager {
           shouldOptimizeForNetworkUse: true,
         ),
       );
+      Log.info(
+        '✅ Video merge completed: $videoFilePath',
+        name: 'UploadManager',
+        category: .video,
+      );
     }
 
-    if (videoDuration == null) {
+    int? videoWidth;
+    int? videoHeight;
+
+    try {
       final meta = await ProVideoEditor.instance.getMetadata(
         EditorVideo.file(videoFilePath),
       );
-      videoDuration = meta.duration;
+      videoDuration ??= meta.duration;
+      final resolution = meta.resolution;
+      videoWidth = resolution.width.round();
+      videoHeight = resolution.height.round();
+    } catch (e) {
+      Log.warning(
+        '⚠️ Could not extract video metadata: $e',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
     }
 
     return _startUploadInternal(
@@ -324,6 +353,8 @@ class UploadManager {
       title: draft.title,
       description: draft.description,
       hashtags: draft.hashtags.toList(),
+      videoWidth: videoWidth,
+      videoHeight: videoHeight,
       videoDuration: videoDuration,
       proofManifestJson: draft.proofManifestJson,
       onProgress: onProgress,

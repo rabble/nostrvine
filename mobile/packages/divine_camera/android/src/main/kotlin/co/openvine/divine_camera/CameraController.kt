@@ -109,9 +109,10 @@ class CameraController(
     private var minZoom: Float = 1.0f
     private var maxZoom: Float = 1.0f
     private var currentZoom: Float = 1.0f
-    private var aspectRatio: Float = 16f / 9f
-    private var videoWidth: Int = 1920
-    private var videoHeight: Int = 1080
+    // Portrait-Modus: 9:16, 1080x1920
+    private var aspectRatio: Float = 9f / 16f
+    private var videoWidth: Int = 1080
+    private var videoHeight: Int = 1920
 
     private var hasFrontCamera: Boolean = false
     private var hasBackCamera: Boolean = false
@@ -137,7 +138,7 @@ class CameraController(
         enableScreenFlash: Boolean = true,
         callback: (Map<String, Any>?, String?) -> Unit
     ) {
-        Log.d(TAG, "Initializing camera with lens: $lens, quality: $quality, enableScreenFlash: $enableScreenFlash")
+        Log.d(TAG, "Initializing camera with lens: $lens, quality: $quality, enableScreenFlash: $enableScreenFlash (portrait mode 1080x1920)")
 
         screenFlashFeatureEnabled = enableScreenFlash
 
@@ -204,69 +205,6 @@ class CameraController(
     }
 
     /**
-     * Gets the best aspect ratio for the current camera based on sensor size.
-     * Returns RATIO_4_3 or RATIO_16_9 depending on which is closer to the sensor's native ratio.
-     */
-    private fun getBestAspectRatio(): Int {
-        try {
-            val cameraManager = context.getSystemService(Context.CAMERA_SERVICE) as CameraManager
-            val targetFacing = if (currentLens == CameraSelector.LENS_FACING_FRONT) {
-                CameraCharacteristics.LENS_FACING_FRONT
-            } else {
-                CameraCharacteristics.LENS_FACING_BACK
-            }
-
-            for (cameraId in cameraManager.cameraIdList) {
-                val characteristics = cameraManager.getCameraCharacteristics(cameraId)
-                val facing = characteristics.get(CameraCharacteristics.LENS_FACING)
-
-                if (facing == targetFacing) {
-                    // Get the sensor size
-                    val sensorSize =
-                        characteristics.get(CameraCharacteristics.SENSOR_INFO_ACTIVE_ARRAY_SIZE)
-                    if (sensorSize != null) {
-                        val sensorWidth = sensorSize.width().toFloat()
-                        val sensorHeight = sensorSize.height().toFloat()
-                        val sensorRatio = sensorWidth / sensorHeight
-
-                        Log.d(
-                            TAG,
-                            "Sensor size: ${sensorSize.width()}x${sensorSize.height()}, ratio: $sensorRatio"
-                        )
-
-                        // Compare to 4:3 (1.333) and 16:9 (1.777)
-                        val ratio4_3 = 4f / 3f  // 1.333
-                        val ratio16_9 = 16f / 9f // 1.777
-
-                        val diff4_3 = kotlin.math.abs(sensorRatio - ratio4_3)
-                        val diff16_9 = kotlin.math.abs(sensorRatio - ratio16_9)
-
-                        return if (diff4_3 < diff16_9) {
-                            Log.d(
-                                TAG,
-                                "Using 4:3 aspect ratio (closer to sensor ratio $sensorRatio)"
-                            )
-                            AspectRatio.RATIO_4_3
-                        } else {
-                            Log.d(
-                                TAG,
-                                "Using 16:9 aspect ratio (closer to sensor ratio $sensorRatio)"
-                            )
-                            AspectRatio.RATIO_16_9
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error getting sensor aspect ratio", e)
-        }
-
-        // Default to 16:9 if we can't determine the sensor ratio
-        Log.d(TAG, "Using default 16:9 aspect ratio")
-        return AspectRatio.RATIO_16_9
-    }
-
-    /**
      * Creates a Preview with Camera2Interop for exposure monitoring.
      * Uses CaptureCallback to track ISO and exposure time for auto-flash.
      */
@@ -329,8 +267,8 @@ class CameraController(
                 .requireLensFacing(currentLens)
                 .build()
 
-            // Get the best aspect ratio based on the camera sensor
-            val targetAspectRatio = getBestAspectRatio()
+            // Fixed 16:9 aspect ratio for portrait mode (9:16)
+            val targetAspectRatio = AspectRatio.RATIO_16_9
 
             // Build preview with Camera2Interop for exposure monitoring
             preview = buildPreviewWithExposureMonitoring(targetAspectRatio)
@@ -348,9 +286,9 @@ class CameraController(
                     "Surface provider called with resolution: ${videoWidth}x${videoHeight}"
                 )
 
-                // Update aspect ratio and video dimensions based on actual camera resolution
-                aspectRatio = videoWidth.toFloat() / videoHeight.toFloat()
-                Log.d(TAG, "Aspect ratio set to: $aspectRatio, video dimensions: ${videoWidth}x${videoHeight}")
+                // Update aspect ratio for portrait mode (height/width gives 9:16 ratio)
+                aspectRatio = videoHeight.toFloat() / videoWidth.toFloat()
+                Log.d(TAG, "Aspect ratio set to: $aspectRatio (portrait), video dimensions: ${videoWidth}x${videoHeight}")
 
                 // Set the buffer size to match camera resolution
                 flutterSurfaceTexture?.setDefaultBufferSize(videoWidth, videoHeight)
@@ -481,8 +419,8 @@ class CameraController(
                 .requireLensFacing(currentLens)
                 .build()
 
-            // Get aspect ratio for this camera
-            val targetAspectRatio = getBestAspectRatio()
+            // Fixed 16:9 aspect ratio for portrait mode (9:16)
+            val targetAspectRatio = AspectRatio.RATIO_16_9
 
             // Build preview with Camera2Interop for exposure monitoring
             preview = buildPreviewWithExposureMonitoring(targetAspectRatio)
@@ -497,7 +435,8 @@ class CameraController(
                     "Switch: Surface provider called with resolution: ${videoWidth}x${videoHeight}"
                 )
 
-                aspectRatio = videoWidth.toFloat() / videoHeight.toFloat()
+                // Update aspect ratio for portrait mode (height/width gives 9:16 ratio)
+                aspectRatio = videoHeight.toFloat() / videoWidth.toFloat()
 
                 // Update buffer size for new camera resolution
                 flutterSurfaceTexture?.setDefaultBufferSize(videoWidth, videoHeight)

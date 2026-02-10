@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 part 'video_editor_filter_event.dart';
@@ -36,6 +37,11 @@ class VideoEditorFilterBloc
     VideoEditorFilterSelected event,
     Emitter<VideoEditorFilterState> emit,
   ) {
+    Log.debug(
+      '🎨 Filter selected: ${event.filter.name}',
+      name: 'VideoEditorFilterBloc',
+      category: LogCategory.video,
+    );
     emit(state.copyWith(selectedFilter: event.filter));
   }
 

@@ -139,5 +139,26 @@ void main() {
       expect(result, isTrue);
       verify(() => mockService.openAppSettings()).called(1);
     });
+
+    test('can mock gallery permission methods', () async {
+      when(
+        () => mockService.checkGalleryStatus(),
+      ).thenAnswer((_) async => PermissionStatus.canRequest);
+      when(
+        () => mockService.requestGalleryPermission(),
+      ).thenAnswer((_) async => PermissionStatus.granted);
+
+      expect(
+        await mockService.checkGalleryStatus(),
+        PermissionStatus.canRequest,
+      );
+      expect(
+        await mockService.requestGalleryPermission(),
+        PermissionStatus.granted,
+      );
+
+      verify(() => mockService.checkGalleryStatus()).called(1);
+      verify(() => mockService.requestGalleryPermission()).called(1);
+    });
   });
 }

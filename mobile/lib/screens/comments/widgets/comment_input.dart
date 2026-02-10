@@ -1,8 +1,10 @@
 // ABOUTME: Main comment input widget at bottom of comments sheet
 // ABOUTME: Text field with send button for posting new top-level comments
 
-import 'package:flutter/material.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/material.dart';
+import 'package:openvine/blocs/comments/comments_bloc.dart';
+import 'package:openvine/screens/comments/widgets/mention_overlay.dart';
 
 /// Input widget for posting new top-level comments.
 ///
@@ -21,6 +23,9 @@ class CommentInput extends StatefulWidget {
     this.replyToDisplayName,
     this.onCancelReply,
     this.focusNode,
+    this.mentionSuggestions = const [],
+    this.onMentionQuery,
+    this.onMentionSelected,
     super.key,
   });
 
@@ -45,6 +50,15 @@ class CommentInput extends StatefulWidget {
   /// Focus node for the text field to allow programmatic focus.
   final FocusNode? focusNode;
 
+  /// Mention suggestions for autocomplete overlay.
+  final List<MentionSuggestion> mentionSuggestions;
+
+  /// Callback fired with the query text after '@'.
+  final ValueChanged<String>? onMentionQuery;
+
+  /// Callback fired with (npub, displayName) when a mention is selected.
+  final void Function(String npub, String displayName)? onMentionSelected;
+
   @override
   State<CommentInput> createState() => _CommentInputState();
 }
@@ -65,7 +79,55 @@ class _CommentInputState extends State<CommentInput> {
         _hasText = hasText;
       });
     }
+
+    // Detect @mention query
+    _detectMentionQuery(text);
+
     widget.onChanged?.call(text);
+  }
+
+  void _detectMentionQuery(String text) {
+    final cursorPos = widget.controller.selection.baseOffset;
+    if (cursorPos < 0) return;
+
+    // Find the last @ before cursor
+    final textBeforeCursor = text.substring(0, cursorPos);
+    final atIndex = textBeforeCursor.lastIndexOf('@');
+
+    if (atIndex >= 0) {
+      // Check there's no space between @ and cursor (query is continuous)
+      final query = textBeforeCursor.substring(atIndex + 1);
+      if (!query.contains(' ') && !query.contains('\n')) {
+        widget.onMentionQuery?.call(query);
+        return;
+      }
+    }
+
+    // No active mention query
+    widget.onMentionQuery?.call('');
+  }
+
+  void _handleMentionSelected(String npub, String displayName) {
+    final text = widget.controller.text;
+    final cursorPos = widget.controller.selection.baseOffset;
+    if (cursorPos < 0) return;
+
+    final textBeforeCursor = text.substring(0, cursorPos);
+    final atIndex = textBeforeCursor.lastIndexOf('@');
+    if (atIndex < 0) return;
+
+    // Replace @query with @displayName (human-readable)
+    // The BLoC will convert @displayName -> nostr:npub on submit
+    final mention = '@$displayName ';
+    final newText =
+        text.substring(0, atIndex) + mention + text.substring(cursorPos);
+    widget.controller.text = newText;
+    widget.controller.selection = TextSelection.collapsed(
+      offset: atIndex + mention.length,
+    );
+
+    widget.onMentionSelected?.call(npub, displayName);
+    widget.onChanged?.call(newText);
   }
 
   @override
@@ -77,53 +139,64 @@ class _CommentInputState extends State<CommentInput> {
 
     final isReplying = widget.replyToDisplayName != null;
 
-    return Container(
-      padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
-        top: 16,
-        bottom: bottomPadding,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: VineTheme.iconButtonBackground,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        constraints: BoxConstraints(minHeight: 48),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Flexible(
-                    child: _CommentTextField(
-                      controller: widget.controller,
-                      focusNode: widget.focusNode,
-                      isReplying: isReplying,
-                      onChanged: _handleTextChanged,
-                    ),
-                  ),
-                  if (isReplying)
-                    _ReplyIndicator(
-                      displayName: widget.replyToDisplayName!,
-                      onCancel: widget.onCancelReply!,
-                    ),
-                ],
-              ),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Mention overlay (shows above input when suggestions available)
+        if (widget.mentionSuggestions.isNotEmpty)
+          MentionOverlay(
+            suggestions: widget.mentionSuggestions,
+            onSelect: _handleMentionSelected,
+          ),
+        // Input container
+        Container(
+          padding: EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 16,
+            bottom: bottomPadding,
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              color: VineTheme.iconButtonBackground,
+              borderRadius: BorderRadius.circular(20),
             ),
-
-            if (_hasText) ...[
-              const SizedBox(width: 8),
-              _SendButton(
-                isPosting: widget.isPosting,
-                onSubmit: widget.onSubmit,
-              ),
-            ],
-          ],
+            constraints: BoxConstraints(minHeight: 48),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Flexible(
+                        child: _CommentTextField(
+                          controller: widget.controller,
+                          focusNode: widget.focusNode,
+                          isReplying: isReplying,
+                          onChanged: _handleTextChanged,
+                        ),
+                      ),
+                      if (isReplying)
+                        _ReplyIndicator(
+                          displayName: widget.replyToDisplayName!,
+                          onCancel: widget.onCancelReply!,
+                        ),
+                    ],
+                  ),
+                ),
+                if (_hasText) ...[
+                  const SizedBox(width: 8),
+                  _SendButton(
+                    isPosting: widget.isPosting,
+                    onSubmit: widget.onSubmit,
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 }
