@@ -45,7 +45,7 @@ class VideoFeedController extends ChangeNotifier {
     this.mediaSourceResolver,
     this.onVideoReady,
     this.positionCallback,
-    this.positionCallbackInterval = const Duration(milliseconds: 200),
+    this.positionCallbackInterval = const Duration(milliseconds: 250),
   }) : pool = pool ?? PlayerPool.instance,
        _videos = List.from(videos),
        _currentIndex = initialIndex.clamp(
@@ -136,7 +136,7 @@ class VideoFeedController extends ChangeNotifier {
   /// Get a [ValueNotifier] for the state of a specific video index.
   ///
   /// This allows widgets to listen only to changes for their specific index,
-  /// avoiding unnecessary rebuilds when other videos' states change.
+  /// avoiding unnecessary rebuilds when other videos states change.
   ///
   /// The notifier is created lazily and cached for the lifetime of the
   /// controller.
