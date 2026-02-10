@@ -501,6 +501,11 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Set video expiration time option.
   void setExpiration(VideoMetadataExpiration expiration) {
+    Log.debug(
+      '⏰ Set expiration: ${expiration.name}',
+      name: 'VideoEditorNotifier',
+      category: .video,
+    );
     state = state.copyWith(expiration: expiration);
     triggerAutosave();
   }

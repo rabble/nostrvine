@@ -8,6 +8,7 @@ import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.d
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_font_selector.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_overlay_controls.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_text_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_color_picker_sheet.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -27,6 +28,11 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
   @override
   void initState() {
     super.initState();
+    Log.info(
+      '✏️ Initialized (editing: ${widget.layer != null})',
+      name: 'VideoTextEditorScreen',
+      category: LogCategory.video,
+    );
     _initFromLayer();
   }
 
@@ -36,8 +42,19 @@ class _VideoTextEditorScreenState extends State<VideoTextEditorScreen> {
     final bloc = context.read<VideoEditorTextBloc>();
 
     if (layer == null) {
+      Log.debug(
+        '✏️ Creating new text layer',
+        name: 'VideoTextEditorScreen',
+        category: LogCategory.video,
+      );
       return;
     }
+
+    Log.debug(
+      '✏️ Initializing from existing layer: "${layer.text}"',
+      name: 'VideoTextEditorScreen',
+      category: LogCategory.video,
+    );
 
     // Get the primary color based on the layer's color mode.
     final primaryColor = layer.colorMode == .background

@@ -63,6 +63,11 @@ class ClipLibraryService {
 
   /// Save a clip to the library. Updates existing clip if ID matches.
   Future<void> saveClip(SavedClip clip) async {
+    Log.debug(
+      '💾 Saving clip to library: ${clip.id}',
+      name: 'ClipLibraryService',
+      category: LogCategory.video,
+    );
     final clips = await getAllClips();
 
     final existingIndex = clips.indexWhere((c) => c.id == clip.id);
@@ -101,6 +106,11 @@ class ClipLibraryService {
 
       return clips;
     } catch (e) {
+      Log.error(
+        '❌ Failed to load clips: $e',
+        name: 'ClipLibraryService',
+        category: LogCategory.video,
+      );
       // If storage is corrupted, return empty list
       return [];
     }
@@ -118,6 +128,11 @@ class ClipLibraryService {
 
   /// Delete a clip by ID and remove associated files if not referenced
   Future<void> deleteClip(String id) async {
+    Log.debug(
+      '🗑️ Deleting clip from library: $id',
+      name: 'ClipLibraryService',
+      category: LogCategory.video,
+    );
     final clips = await getAllClips();
     final clipIndex = clips.indexWhere((clip) => clip.id == id);
 
@@ -138,6 +153,11 @@ class ClipLibraryService {
 
   /// Clear all clips from the library and delete associated files
   Future<void> clearAllClips() async {
+    Log.info(
+      '🧹 Clearing all clips from library',
+      name: 'ClipLibraryService',
+      category: LogCategory.video,
+    );
     final clips = await getAllClips();
 
     // Clear storage first, then delete files (so reference check sees updated state)

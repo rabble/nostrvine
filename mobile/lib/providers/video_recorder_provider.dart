@@ -591,6 +591,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   /// Pauses camera lifecycle, navigates to editor, and resumes camera on
   /// return.
   Future<void> openVideoEditor(BuildContext context) async {
+    Log.info(
+      '📹 Opening video editor - disposing camera',
+      name: 'VideoRecorderNotifier',
+      category: .video,
+    );
     await Future.wait([
       context.push(VideoClipEditorScreen.path),
       // We delay camera dispose so that the screen animation can finish
@@ -602,6 +607,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     ]);
     if (!context.mounted) return;
 
+    Log.info(
+      '📹 Returned from editor - reinitializing camera',
+      name: 'VideoRecorderNotifier',
+      category: .video,
+    );
     await _cameraService.initialize();
   }
 

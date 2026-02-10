@@ -9,6 +9,7 @@ export 'src/controllers/player_pool.dart' show PlayerPool, PooledPlayer;
 export 'src/controllers/video_feed_controller.dart';
 
 // Models
+export 'src/models/video_index_state.dart';
 export 'src/models/video_item.dart';
 export 'src/models/video_pool_config.dart';
 

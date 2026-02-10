@@ -73,6 +73,653 @@ void main() {
       });
     });
 
+    group('getTrendingVideos', () {
+      const validResponseBody =
+          '''
+[
+  {
+    "id": "abc123def456",
+    "pubkey": "$testPubkey",
+    "created_at": 1700000000,
+    "kind": 34236,
+    "d_tag": "trending-1",
+    "title": "Trending Video",
+    "content": "A trending video",
+    "thumbnail": "https://example.com/thumb.jpg",
+    "video_url": "https://example.com/video.mp4",
+    "reactions": 500,
+    "comments": 50,
+    "reposts": 25,
+    "engagement_score": 575,
+    "trending_score": 9.5
+  }
+]
+''';
+
+      test('returns videos on successful response', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(validResponseBody, 200),
+        );
+
+        final videos = await client.getTrendingVideos();
+
+        expect(videos, hasLength(1));
+        expect(videos.first.id, equals('abc123def456'));
+        expect(videos.first.title, equals('Trending Video'));
+        expect(videos.first.reactions, equals(500));
+      });
+
+      test('constructs correct URL with sort=trending', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.getTrendingVideos();
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.path, equals('/api/videos'));
+        expect(uri.queryParameters['sort'], equals('trending'));
+        expect(uri.queryParameters['limit'], equals('50'));
+      });
+
+      test('includes before parameter when provided', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.getTrendingVideos(before: 1700000000);
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['before'], equals('1700000000'));
+      });
+
+      test('constructs correct URL with custom limit', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.getTrendingVideos(limit: 25);
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['limit'], equals('25'));
+      });
+
+      test('filters out videos with empty id', () async {
+        const responseWithEmptyId =
+            '''
+[
+  {
+    "id": "",
+    "pubkey": "$testPubkey",
+    "created_at": 1700000000,
+    "kind": 34236,
+    "d_tag": "test",
+    "title": "Invalid",
+    "thumbnail": "https://example.com/thumb.jpg",
+    "video_url": "https://example.com/video.mp4",
+    "reactions": 0,
+    "comments": 0,
+    "reposts": 0,
+    "engagement_score": 0
+  }
+]
+''';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(responseWithEmptyId, 200),
+        );
+
+        final videos = await client.getTrendingVideos();
+
+        expect(videos, isEmpty);
+      });
+
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
+
+        expect(
+          emptyClient.getTrendingVideos,
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
+
+        emptyClient.dispose();
+      });
+
+      test(
+        'throws FunnelcakeApiException on error status codes',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response('Internal Server Error', 500),
+          );
+
+          expect(
+            () => client.getTrendingVideos(),
+            throwsA(
+              isA<FunnelcakeApiException>().having(
+                (e) => e.statusCode,
+                'statusCode',
+                equals(500),
+              ),
+            ),
+          );
+        },
+      );
+
+      test('throws FunnelcakeTimeoutException on timeout', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => throw TimeoutException('Request timed out'),
+        );
+
+        expect(
+          () => client.getTrendingVideos(),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+      });
+
+      test('throws FunnelcakeException on network error', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenThrow(Exception('Network error'));
+
+        expect(
+          () => client.getTrendingVideos(),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Failed to fetch trending videos'),
+            ),
+          ),
+        );
+      });
+    });
+
+    group('getRecentVideos', () {
+      const validResponseBody =
+          '''
+[
+  {
+    "id": "recent123",
+    "pubkey": "$testPubkey",
+    "created_at": 1700000000,
+    "kind": 34236,
+    "d_tag": "recent-1",
+    "title": "Recent Video",
+    "content": "A recent video",
+    "thumbnail": "https://example.com/thumb.jpg",
+    "video_url": "https://example.com/video.mp4",
+    "reactions": 10,
+    "comments": 2,
+    "reposts": 1,
+    "engagement_score": 13
+  }
+]
+''';
+
+      test('returns videos on successful response', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(validResponseBody, 200),
+        );
+
+        final videos = await client.getRecentVideos();
+
+        expect(videos, hasLength(1));
+        expect(videos.first.id, equals('recent123'));
+        expect(videos.first.title, equals('Recent Video'));
+      });
+
+      test('constructs correct URL with sort=recent', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.getRecentVideos();
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.path, equals('/api/videos'));
+        expect(uri.queryParameters['sort'], equals('recent'));
+        expect(uri.queryParameters['limit'], equals('50'));
+      });
+
+      test('includes before parameter when provided', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.getRecentVideos(before: 1700000000);
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['before'], equals('1700000000'));
+      });
+
+      test('constructs correct URL with custom limit', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.getRecentVideos(limit: 10);
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['limit'], equals('10'));
+      });
+
+      test('filters out videos with empty videoUrl', () async {
+        const responseWithEmptyUrl =
+            '''
+[
+  {
+    "id": "abc123",
+    "pubkey": "$testPubkey",
+    "created_at": 1700000000,
+    "kind": 34236,
+    "d_tag": "test",
+    "title": "Invalid",
+    "thumbnail": "https://example.com/thumb.jpg",
+    "video_url": "",
+    "reactions": 0,
+    "comments": 0,
+    "reposts": 0,
+    "engagement_score": 0
+  }
+]
+''';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(responseWithEmptyUrl, 200),
+        );
+
+        final videos = await client.getRecentVideos();
+
+        expect(videos, isEmpty);
+      });
+
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
+
+        expect(
+          emptyClient.getRecentVideos,
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
+
+        emptyClient.dispose();
+      });
+
+      test(
+        'throws FunnelcakeApiException on error status codes',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response('Internal Server Error', 500),
+          );
+
+          expect(
+            () => client.getRecentVideos(),
+            throwsA(
+              isA<FunnelcakeApiException>().having(
+                (e) => e.statusCode,
+                'statusCode',
+                equals(500),
+              ),
+            ),
+          );
+        },
+      );
+
+      test('throws FunnelcakeTimeoutException on timeout', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => throw TimeoutException('Request timed out'),
+        );
+
+        expect(
+          () => client.getRecentVideos(),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+      });
+
+      test('throws FunnelcakeException on network error', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenThrow(Exception('Network error'));
+
+        expect(
+          () => client.getRecentVideos(),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Failed to fetch recent videos'),
+            ),
+          ),
+        );
+      });
+    });
+
+    group('getHomeFeed', () {
+      const validFeedResponse =
+          '''
+{
+  "videos": [
+    {
+      "id": "feed123",
+      "pubkey": "$testPubkey",
+      "created_at": 1700000000,
+      "kind": 34236,
+      "d_tag": "feed-1",
+      "title": "Feed Video",
+      "content": "A feed video",
+      "thumbnail": "https://example.com/thumb.jpg",
+      "video_url": "https://example.com/video.mp4",
+      "reactions": 42,
+      "comments": 5,
+      "reposts": 3,
+      "engagement_score": 50
+    }
+  ],
+  "next_cursor": "1699999000",
+  "has_more": true
+}
+''';
+
+      test('returns feed response on successful response', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(validFeedResponse, 200),
+        );
+
+        final result = await client.getHomeFeed(pubkey: testPubkey);
+
+        expect(result.videos, hasLength(1));
+        expect(result.videos.first.id, equals('feed123'));
+        expect(result.nextCursor, equals(1699999000));
+        expect(result.hasMore, isTrue);
+      });
+
+      test('constructs correct URL with default params', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(
+            '{"videos": [], "has_more": false}',
+            200,
+          ),
+        );
+
+        await client.getHomeFeed(pubkey: testPubkey);
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.path, equals('/api/users/$testPubkey/feed'));
+        expect(uri.queryParameters['limit'], equals('50'));
+        expect(uri.queryParameters['sort'], equals('recent'));
+        expect(uri.queryParameters.containsKey('before'), isFalse);
+      });
+
+      test('includes before and sort params when provided', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(
+            '{"videos": [], "has_more": false}',
+            200,
+          ),
+        );
+
+        await client.getHomeFeed(
+          pubkey: testPubkey,
+          sort: 'trending',
+          before: 1700000000,
+        );
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['sort'], equals('trending'));
+        expect(uri.queryParameters['before'], equals('1700000000'));
+      });
+
+      test('parses next_cursor as string', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(
+            '{"videos": [], "next_cursor": "1699999000", "has_more": true}',
+            200,
+          ),
+        );
+
+        final result = await client.getHomeFeed(pubkey: testPubkey);
+
+        expect(result.nextCursor, equals(1699999000));
+        expect(result.hasMore, isTrue);
+      });
+
+      test('parses next_cursor as int', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(
+            '{"videos": [], "next_cursor": 1699999000, "has_more": true}',
+            200,
+          ),
+        );
+
+        final result = await client.getHomeFeed(pubkey: testPubkey);
+
+        expect(result.nextCursor, equals(1699999000));
+      });
+
+      test('handles null next_cursor', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(
+            '{"videos": [], "has_more": false}',
+            200,
+          ),
+        );
+
+        final result = await client.getHomeFeed(pubkey: testPubkey);
+
+        expect(result.nextCursor, isNull);
+        expect(result.hasMore, isFalse);
+      });
+
+      test('filters out videos with empty id or videoUrl', () async {
+        const responseWithInvalid =
+            '''
+{
+  "videos": [
+    {
+      "id": "",
+      "pubkey": "$testPubkey",
+      "created_at": 1700000000,
+      "kind": 34236,
+      "d_tag": "test",
+      "title": "Invalid",
+      "thumbnail": "https://example.com/thumb.jpg",
+      "video_url": "https://example.com/video.mp4",
+      "reactions": 0,
+      "comments": 0,
+      "reposts": 0,
+      "engagement_score": 0
+    }
+  ],
+  "has_more": false
+}
+''';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(responseWithInvalid, 200),
+        );
+
+        final result = await client.getHomeFeed(pubkey: testPubkey);
+
+        expect(result.videos, isEmpty);
+      });
+
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
+
+        expect(
+          () => emptyClient.getHomeFeed(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
+
+        emptyClient.dispose();
+      });
+
+      test('throws FunnelcakeException when pubkey is empty', () {
+        expect(
+          () => client.getHomeFeed(pubkey: ''),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Pubkey cannot be empty'),
+            ),
+          ),
+        );
+      });
+
+      test('throws FunnelcakeNotFoundException on 404', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('Not found', 404),
+        );
+
+        expect(
+          () => client.getHomeFeed(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeNotFoundException>()),
+        );
+      });
+
+      test(
+        'throws FunnelcakeApiException on other error status codes',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response('Internal Server Error', 500),
+          );
+
+          expect(
+            () => client.getHomeFeed(pubkey: testPubkey),
+            throwsA(
+              isA<FunnelcakeApiException>().having(
+                (e) => e.statusCode,
+                'statusCode',
+                equals(500),
+              ),
+            ),
+          );
+        },
+      );
+
+      test('throws FunnelcakeTimeoutException on timeout', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => throw TimeoutException('Request timed out'),
+        );
+
+        expect(
+          () => client.getHomeFeed(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+      });
+
+      test('throws FunnelcakeException on network error', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenThrow(Exception('Network error'));
+
+        expect(
+          () => client.getHomeFeed(pubkey: testPubkey),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Failed to fetch home feed'),
+            ),
+          ),
+        );
+      });
+    });
+
     group('getVideosByAuthor', () {
       const validResponseBody =
           '''

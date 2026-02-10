@@ -990,7 +990,7 @@ void main() {
         await errorPool.dispose();
       });
 
-      test('notifies listeners when loading error occurs', () async {
+      test('notifies index notifier when loading error occurs', () async {
         final errorPool = TestablePlayerPool(
           maxPlayers: 10,
           mockPlayerFactory: (url) {
@@ -1003,12 +1003,16 @@ void main() {
           pool: errorPool,
         );
 
+        // Get index notifier before error occurs
+        final indexNotifier = controller.getIndexNotifier(0);
+
         var notifyCount = 0;
-        controller.addListener(() => notifyCount++);
+        indexNotifier.addListener(() => notifyCount++);
 
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
         expect(notifyCount, greaterThan(0));
+        expect(indexNotifier.value.loadState, LoadState.error);
 
         controller.dispose();
         await errorPool.dispose();
