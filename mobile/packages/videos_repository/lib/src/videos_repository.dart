@@ -520,7 +520,7 @@ class VideosRepository {
 
   /// Transforms [VideoStats] from Funnelcake API into filtered [VideoEvent]s.
   ///
-  /// Converts each [VideoStats] to a [VideoEvent] via [VideoStats.toVideoEvent],
+  /// Converts each [VideoStats] to a [VideoEvent] via [VideoStats.toVideoEvent]
   /// then applies the same filtering pipeline as [_transformAndFilter]:
   /// - Block filter (pubkey blocklist)
   /// - Video URL validation
