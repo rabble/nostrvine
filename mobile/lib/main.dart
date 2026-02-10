@@ -567,26 +567,14 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
     category: LogCategory.system,
   );
 
-  // Initialize seen videos service
-  await container.read(seenVideosServiceProvider).initialize();
+  // Initialize independent services in parallel
+  await Future.wait([
+    container.read(seenVideosServiceProvider).initialize(),
+    bandwidthTracker.initialize(),
+    container.read(uploadManagerProvider).initialize(),
+  ]);
   Log.info(
-    '[INIT] ✅ SeenVideosService initialized',
-    name: 'Main',
-    category: LogCategory.system,
-  );
-
-  // Initialize bandwidth tracker for adaptive quality selection
-  await bandwidthTracker.initialize();
-  Log.info(
-    '[INIT] ✅ BandwidthTracker initialized',
-    name: 'Main',
-    category: LogCategory.system,
-  );
-
-  // Initialize upload manager
-  await container.read(uploadManagerProvider).initialize();
-  Log.info(
-    '[INIT] ✅ UploadManager initialized',
+    '[INIT] ✅ SeenVideosService, BandwidthTracker, UploadManager initialized',
     name: 'Main',
     category: LogCategory.system,
   );
