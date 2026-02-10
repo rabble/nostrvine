@@ -345,13 +345,14 @@ class VideoFeedController extends ChangeNotifier {
       final video = _videos[index];
       final pooledPlayer = await pool.getPlayer(video.url);
 
+      // Store immediately so _releasePlayer can clean it up if we abort
+      _loadedPlayers[index] = pooledPlayer;
+
       // Check if still needed after async operation
       if (_isDisposed || !_isIndexInPreloadWindow(index)) {
-        _loadingIndices.remove(index);
+        _releasePlayer(index);
         return;
       }
-
-      _loadedPlayers[index] = pooledPlayer;
 
       // Reset player state before loading new media
       // This ensures clean state when reusing players from pool
@@ -367,7 +368,7 @@ class VideoFeedController extends ChangeNotifier {
 
       // Check again after more async operations
       if (_isDisposed || !_isIndexInPreloadWindow(index)) {
-        _loadingIndices.remove(index);
+        _releasePlayer(index);
         return;
       }
 
