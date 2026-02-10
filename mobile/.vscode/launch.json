@@ -5,8 +5,7 @@
       "name": "Flutter: Run",
       "type": "dart",
       "request": "launch",
-      "program": "lib/main.dart",
-      "args": ["-d", "00008110-0004283602D0201E"]
+      "program": "lib/main.dart"
     },
     
   ]
