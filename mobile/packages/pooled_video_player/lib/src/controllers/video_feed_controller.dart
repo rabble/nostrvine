@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
 import 'package:pooled_video_player/src/controllers/player_pool.dart';
+import 'package:pooled_video_player/src/models/video_index_state.dart';
 import 'package:pooled_video_player/src/models/video_item.dart';
 import 'package:pooled_video_player/src/models/video_pool_config.dart';
 
@@ -44,7 +45,7 @@ class VideoFeedController extends ChangeNotifier {
     this.mediaSourceResolver,
     this.onVideoReady,
     this.positionCallback,
-    this.positionCallbackInterval = const Duration(milliseconds: 200),
+    this.positionCallbackInterval = const Duration(milliseconds: 250),
   }) : pool = pool ?? PlayerPool.instance,
        _videos = List.from(videos),
        _currentIndex = initialIndex.clamp(
@@ -107,6 +108,9 @@ class VideoFeedController extends ChangeNotifier {
   final Set<int> _loadingIndices = {};
   final Map<int, Timer> _positionTimers = {};
 
+  // Index-specific notifiers for granular widget updates
+  final Map<int, ValueNotifier<VideoIndexState>> _indexNotifiers = {};
+
   /// Currently visible video index.
   int get currentIndex => _currentIndex;
 
@@ -128,6 +132,38 @@ class VideoFeedController extends ChangeNotifier {
 
   /// Whether the video at the given index is ready.
   bool isVideoReady(int index) => _loadStates[index] == LoadState.ready;
+
+  /// Get a [ValueNotifier] for the state of a specific video index.
+  ///
+  /// This allows widgets to listen only to changes for their specific index,
+  /// avoiding unnecessary rebuilds when other videos states change.
+  ///
+  /// The notifier is created lazily and cached for the lifetime of the
+  /// controller.
+  ValueNotifier<VideoIndexState> getIndexNotifier(int index) {
+    return _indexNotifiers.putIfAbsent(
+      index,
+      () => ValueNotifier(
+        VideoIndexState(
+          loadState: _loadStates[index] ?? LoadState.none,
+          videoController: _loadedPlayers[index]?.videoController,
+          player: _loadedPlayers[index]?.player,
+        ),
+      ),
+    );
+  }
+
+  /// Notifies the specific index's notifier of state changes.
+  void _notifyIndex(int index) {
+    final notifier = _indexNotifiers[index];
+    if (notifier != null) {
+      notifier.value = VideoIndexState(
+        loadState: _loadStates[index] ?? LoadState.none,
+        videoController: _loadedPlayers[index]?.videoController,
+        player: _loadedPlayers[index]?.player,
+      );
+    }
+  }
 
   void _initialize() {
     if (_videos.isEmpty) return;
@@ -276,7 +312,7 @@ class VideoFeedController extends ChangeNotifier {
 
     _loadingIndices.add(index);
     _loadStates[index] = LoadState.loading;
-    notifyListeners();
+    _notifyIndex(index);
 
     try {
       final video = _videos[index];
@@ -317,7 +353,7 @@ class VideoFeedController extends ChangeNotifier {
       debugPrint('PooledVideoPlayer: Failed to load video at index $index: $e');
       if (!_isDisposed) {
         _loadStates[index] = LoadState.error;
-        notifyListeners();
+        _notifyIndex(index);
       }
     } finally {
       _loadingIndices.remove(index);
@@ -351,7 +387,7 @@ class VideoFeedController extends ChangeNotifier {
     unawaited(_bufferSubscriptions[index]?.cancel());
     _bufferSubscriptions.remove(index);
 
-    notifyListeners();
+    _notifyIndex(index);
   }
 
   void _playVideo(int index) {
@@ -398,6 +434,7 @@ class VideoFeedController extends ChangeNotifier {
     _loadedPlayers.remove(index);
     _loadStates.remove(index);
     _loadingIndices.remove(index);
+    _notifyIndex(index);
   }
 
   @override
@@ -424,6 +461,12 @@ class VideoFeedController extends ChangeNotifier {
       unawaited(subscription.cancel());
     }
     _bufferSubscriptions.clear();
+
+    // Dispose index notifiers
+    for (final notifier in _indexNotifiers.values) {
+      notifier.dispose();
+    }
+    _indexNotifiers.clear();
 
     // Clear state
     _loadedPlayers.clear();
