@@ -107,6 +107,10 @@ class VideoFeedController extends ChangeNotifier {
   final Map<int, StreamSubscription<bool>> _bufferSubscriptions = {};
   final Set<int> _loadingIndices = {};
   final Map<int, Timer> _positionTimers = {};
+  final Map<int, Timer> _bufferTimeoutTimers = {};
+
+  /// Timeout duration for buffering before marking as error.
+  static const _bufferTimeout = Duration(seconds: 10);
 
   // Index-specific notifiers for granular widget updates
   final Map<int, ValueNotifier<VideoIndexState>> _indexNotifiers = {};
@@ -345,9 +349,51 @@ class VideoFeedController extends ChangeNotifier {
       await pooledPlayer.player.setVolume(0);
       await pooledPlayer.player.play();
 
-      // Check if already buffered
+      // Check if already buffered (immediate check)
       if (!pooledPlayer.player.state.buffering) {
         _onBufferReady(index);
+      } else {
+        // Start timeout timer with periodic buffer state polling
+        // This catches race conditions where the stream event is missed
+        _bufferTimeoutTimers[index]?.cancel();
+        final startTime = DateTime.now();
+        _bufferTimeoutTimers[index] = Timer.periodic(
+          const Duration(seconds: 1),
+          (timer) {
+            if (_isDisposed || _loadStates[index] != LoadState.loading) {
+              timer.cancel();
+              _bufferTimeoutTimers.remove(index);
+              return;
+            }
+
+            final player = _loadedPlayers[index]?.player;
+            if (player == null) {
+              timer.cancel();
+              _bufferTimeoutTimers.remove(index);
+              return;
+            }
+
+            // Fallback: check buffer state directly
+            // (catches missed stream events due to race condition)
+            if (!player.state.buffering) {
+              timer.cancel();
+              _bufferTimeoutTimers.remove(index);
+              _onBufferReady(index);
+              return;
+            }
+
+            // Timeout: mark as error after _bufferTimeout
+            if (DateTime.now().difference(startTime) >= _bufferTimeout) {
+              timer.cancel();
+              _bufferTimeoutTimers.remove(index);
+              debugPrint(
+                'PooledVideoPlayer: Buffer timeout at index $index',
+              );
+              _loadStates[index] = LoadState.error;
+              _notifyIndex(index);
+            }
+          },
+        );
       }
     } on Exception catch (e) {
       debugPrint('PooledVideoPlayer: Failed to load video at index $index: $e');
@@ -368,6 +414,10 @@ class VideoFeedController extends ChangeNotifier {
     if (player == null) return;
 
     _loadStates[index] = LoadState.ready;
+
+    // Cancel buffer timeout timer
+    _bufferTimeoutTimers[index]?.cancel();
+    _bufferTimeoutTimers.remove(index);
 
     // Call onVideoReady hook
     onVideoReady?.call(index, player);
@@ -429,6 +479,8 @@ class VideoFeedController extends ChangeNotifier {
 
   void _releasePlayer(int index) {
     _stopPositionTimer(index);
+    _bufferTimeoutTimers[index]?.cancel();
+    _bufferTimeoutTimers.remove(index);
     unawaited(_bufferSubscriptions[index]?.cancel());
     _bufferSubscriptions.remove(index);
     _loadedPlayers.remove(index);
@@ -455,6 +507,12 @@ class VideoFeedController extends ChangeNotifier {
       timer.cancel();
     }
     _positionTimers.clear();
+
+    // Cancel all buffer timeout timers
+    for (final timer in _bufferTimeoutTimers.values) {
+      timer.cancel();
+    }
+    _bufferTimeoutTimers.clear();
 
     // Cancel all subscriptions
     for (final subscription in _bufferSubscriptions.values) {
