@@ -205,7 +205,7 @@ void main() {
         );
 
         expect(
-          () => emptyClient.getTrendingVideos(),
+          emptyClient.getTrendingVideos,
           throwsA(isA<FunnelcakeNotConfiguredException>()),
         );
 
@@ -395,7 +395,7 @@ void main() {
         );
 
         expect(
-          () => emptyClient.getRecentVideos(),
+          emptyClient.getRecentVideos,
           throwsA(isA<FunnelcakeNotConfiguredException>()),
         );
 
