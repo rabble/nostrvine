@@ -35,6 +35,7 @@ class MockAuthService implements AuthService {
     required String content,
     List<List<String>>? tags,
     String? biometricPrompt,
+    int? createdAt,
   }) async {
     final event = Event(_keychain.public, kind, tags ?? [], content);
     event.sign(_keychain.private);

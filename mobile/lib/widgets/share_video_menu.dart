@@ -2524,11 +2524,14 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       tags.add(['client', 'diVine']);
 
       // Create and sign the updated event
+      // Use original created_at + 1 so relays treat this as a replacement
+      // while preserving the video's chronological position in feeds.
       final content = _descriptionController.text.trim();
       final event = await authService.createAndSignEvent(
         kind: NIP71VideoKinds.addressableShortVideo, // Kind 34236
         content: content,
         tags: tags,
+        createdAt: widget.video.createdAt + 1,
       );
 
       if (event == null) {
