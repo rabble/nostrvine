@@ -23,6 +23,7 @@ class VideoFeedPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final videosRepository = ref.read(videosRepositoryProvider);
     final followRepository = ref.read(followRepositoryProvider);
+    final authService = ref.read(authServiceProvider);
 
     // Show loading until NostrClient has keys
     if (followRepository == null) {
@@ -33,6 +34,7 @@ class VideoFeedPage extends ConsumerWidget {
       create: (_) => VideoFeedBloc(
         videosRepository: videosRepository,
         followRepository: followRepository,
+        userPubkey: authService.currentPublicKeyHex,
       )..add(const VideoFeedStarted(mode: FeedMode.latest)),
       child: const VideoFeedView(),
     );

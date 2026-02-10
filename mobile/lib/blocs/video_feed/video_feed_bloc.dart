@@ -28,8 +28,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   VideoFeedBloc({
     required VideosRepository videosRepository,
     required FollowRepository followRepository,
+    String? userPubkey,
   }) : _videosRepository = videosRepository,
        _followRepository = followRepository,
+       _userPubkey = userPubkey,
        super(const VideoFeedState()) {
     on<VideoFeedStarted>(_onStarted);
     on<VideoFeedModeChanged>(_onModeChanged);
@@ -39,6 +41,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
 
   final VideosRepository _videosRepository;
   final FollowRepository _followRepository;
+  final String? _userPubkey;
 
   /// Handle feed started event.
   Future<void> _onStarted(
@@ -195,6 +198,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
         final authors = _followRepository.followingPubkeys;
         return _videosRepository.getHomeFeedVideos(
           authors: authors,
+          userPubkey: _userPubkey,
           limit: _pageSize,
           until: until,
         );

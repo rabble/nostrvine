@@ -1,6 +1,8 @@
 // ABOUTME: Popular Videos tab widget showing trending videos sorted by loop count
 // ABOUTME: Uses REST API (sort=loops) with Nostr fallback for accurate loop-based sorting
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,6 +19,7 @@ import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/trending_hashtags_section.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Tab widget displaying popular/trending videos sorted by loop count.
 ///
@@ -198,8 +201,28 @@ class _PopularVideosTrendingContent extends ConsumerStatefulWidget {
 class _PopularVideosTrendingContentState
     extends ConsumerState<_PopularVideosTrendingContent>
     with ScrollToHideMixin {
+  late final StreamController<List<VideoEvent>> _videosStreamController;
+
+  @override
+  void initState() {
+    super.initState();
+    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
+  }
+
+  @override
+  void dispose() {
+    _videosStreamController.close();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Listen to provider changes and push to stream for fullscreen updates
+    ref.listen(popularVideosFeedProvider, (previous, next) {
+      if (next.hasValue && next.value != null) {
+        _videosStreamController.add(next.value!.videos);
+      }
+    });
     final hashtags = TopHashtagsService.instance.getTopHashtags(limit: 20);
 
     measureHeaderHeight();
@@ -228,8 +251,14 @@ class _PopularVideosTrendingContentState
                 context.push(
                   PooledFullscreenVideoFeedScreen.path,
                   extra: PooledFullscreenVideoFeedArgs(
-                    videosStream: Stream.value(videoList),
+                    // Use startWith to ensure initial videos are delivered
+                    // before FullscreenFeedBloc subscribes to the stream
+                    videosStream: _videosStreamController.stream.startWith(
+                      videoList,
+                    ),
                     initialIndex: index,
+                    onLoadMore: () =>
+                        ref.read(popularVideosFeedProvider.notifier).loadMore(),
                     contextTitle: 'Popular Videos',
                   ),
                 );
