@@ -6,16 +6,17 @@ env:
 - evalScript: ${output.FULL_COMMENT = COMMENT + " on " + new Date().toISOString().replace('T',' ').split('.')[0]}
 
 #TC to comment a video,
-# given the user is logged in in the app,
+# given the user is logged in in the app in the Explore/New tab,
 # Comment the video with description VIDEO_TITLE
 #Steps:
-# 1. Open specific video VIDEO_TITLE
+# 1. Open 1st video of the New grid: Validate video playback
 # 2. Tap on Comment to Open the comments modal: Validate Comments section is displayed
 # 3. Input comment FULL_COMMENT and tap send: Validate comment is displayed with "now" as timestamp.
 # 4. Close the comments section: Validate playback screen is displayed
 
-# 1. Open specific video VIDEO_TITLE
-#- runFlow: ../utils/openSpecificVideo.yaml
+# 1. Open 1st video of the New grid
+- tapOn:
+    id: video_thumbnail_0
 
 # 2. Tap on Comment to Open the comments modal: Validate Comments section is displayed
 - tapOn:
@@ -26,15 +27,11 @@ env:
 - tapOn:
     id: comment_text_field
 - inputText: ${output.FULL_COMMENT}
-#- runFlow: ../utils/hideKeyboard.yaml #if displayed, hide the keyboard
 - tapOn:
     id: send_comment_button
 - assertVisible: ${FULL_COMMENT}
 - waitForAnimationToEnd
-- assertVisible: |-
-    now
-     • 
-    You
+- assertVisible: "now\n • \nYou.*"
 
 # 4. Close the comments section: Validate playback screen is displayed
 - swipe:

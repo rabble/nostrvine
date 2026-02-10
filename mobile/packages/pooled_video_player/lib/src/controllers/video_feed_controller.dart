@@ -45,7 +45,7 @@ class VideoFeedController extends ChangeNotifier {
     this.mediaSourceResolver,
     this.onVideoReady,
     this.positionCallback,
-    this.positionCallbackInterval = const Duration(milliseconds: 200),
+    this.positionCallbackInterval = const Duration(milliseconds: 250),
   }) : pool = pool ?? PlayerPool.instance,
        _videos = List.from(videos),
        _currentIndex = initialIndex.clamp(

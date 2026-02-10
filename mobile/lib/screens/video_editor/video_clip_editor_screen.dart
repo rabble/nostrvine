@@ -5,6 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_clip_editor/gallery/video_editor_clip_gallery.dart';
 import 'package:openvine/widgets/video_clip_editor/video_clip_editor_bottom_bar.dart';
@@ -49,16 +50,35 @@ class _VideoClipEditorScreenState extends ConsumerState<VideoClipEditorScreen> {
   @override
   void initState() {
     super.initState();
+    Log.info(
+      '🎬 Initialized (draftId: ${widget.draftId}, fromLibrary: ${widget.fromLibrary})',
+      name: 'VideoClipEditorScreen',
+      category: LogCategory.video,
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (!mounted) return;
+
+      Log.debug(
+        '🎬 Initializing video editor provider',
+        name: 'VideoClipEditorScreen',
+        category: LogCategory.video,
+      );
 
       await ref
           .read(videoEditorProvider.notifier)
           .initialize(draftId: widget.draftId);
 
-      setState(() {
-        _isLoadingDraft = false;
-      });
+      Log.info(
+        '🎬 Video editor initialized successfully',
+        name: 'VideoClipEditorScreen',
+        category: LogCategory.video,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isLoadingDraft = false;
+        });
+      }
     });
   }
 

@@ -2,86 +2,8 @@
 // ABOUTME: Displays animated stat values with loading states
 
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/string_utils.dart';
-
-/// Stats row showing total loops and likes for a profile
-class ProfileStatsRowWidget extends StatelessWidget {
-  const ProfileStatsRowWidget({required this.profileStatsAsync, super.key});
-
-  final AsyncValue<ProfileStats> profileStatsAsync;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.symmetric(horizontal: 24),
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      color: VineTheme.cardBackground,
-      borderRadius: BorderRadius.circular(12),
-      boxShadow: [
-        BoxShadow(
-          color: Colors.black.withValues(alpha: 0.1),
-          blurRadius: 4,
-          offset: const Offset(0, 2),
-        ),
-      ],
-    ),
-    child: Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-      children: [
-        _ProfileStatValue(
-          count: profileStatsAsync.value?.totalViews ?? 0,
-          label: 'Known Loops',
-          isLoading: profileStatsAsync.isLoading,
-        ),
-        _ProfileStatValue(
-          count: profileStatsAsync.value?.totalLikes ?? 0,
-          label: 'Known Likes',
-          isLoading: profileStatsAsync.isLoading,
-        ),
-      ],
-    ),
-  );
-}
-
-/// Private widget for displaying a single stat value with animated loading state
-class _ProfileStatValue extends StatelessWidget {
-  const _ProfileStatValue({
-    required this.count,
-    required this.label,
-    required this.isLoading,
-  });
-
-  final int count;
-  final String label;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
-        child: isLoading
-            ? Text(
-                '—',
-                style: VineTheme.titleSmallFont(
-                  color: VineTheme.onSurfaceMuted,
-                ),
-              )
-            : Text(
-                StringUtils.formatCompactNumber(count),
-                style: VineTheme.titleSmallFont(),
-              ),
-      ),
-      Text(
-        label,
-        style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceMuted),
-      ),
-    ],
-  );
-}
 
 /// Individual stat column widget for videos/followers/following counts
 class ProfileStatColumn extends StatelessWidget {
@@ -126,7 +48,10 @@ class ProfileStatColumn extends StatelessWidget {
       return InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(8),
-        child: Padding(padding: const EdgeInsets.all(8.0), child: column),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: column,
+        ),
       );
     }
 
