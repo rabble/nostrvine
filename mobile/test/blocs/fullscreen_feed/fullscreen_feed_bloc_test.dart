@@ -462,10 +462,150 @@ void main() {
         },
       );
 
+      test('FullscreenFeedVideosUpdated props contains videos', () {
+        final video = createTestVideo('video1');
+        final event = FullscreenFeedVideosUpdated([video]);
+        expect(event.props, [
+          [video],
+        ]);
+      });
+
       test('FullscreenFeedSeekCommandHandled props is empty', () {
         const event = FullscreenFeedSeekCommandHandled();
         expect(event.props, isEmpty);
       });
+    });
+
+    group('FullscreenFeedVideosUpdated', () {
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'emits ready state with videos',
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          FullscreenFeedVideosUpdated([createTestVideo('video1')]),
+        ),
+        expect: () => [
+          isA<FullscreenFeedState>()
+              .having((s) => s.status, 'status', FullscreenFeedStatus.ready)
+              .having((s) => s.videos.length, 'videos count', 1)
+              .having((s) => s.videos.first.id, 'first video id', 'video1'),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'resolves cached file paths',
+        setUp: () {
+          final mockFile = MockFile();
+          when(() => mockFile.path).thenReturn('/cached/video1.mp4');
+          when(
+            () => mockMediaCache.getCachedFileSync('video1'),
+          ).thenReturn(mockFile);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          FullscreenFeedVideosUpdated([createTestVideo('video1')]),
+        ),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.videos.first.videoUrl,
+            'resolved video URL',
+            '/cached/video1.mp4',
+          ),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'keeps original URL when video is not cached',
+        build: createBloc,
+        act: (bloc) => bloc.add(
+          FullscreenFeedVideosUpdated([createTestVideo('video1')]),
+        ),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.videos.first.videoUrl,
+            'original video URL',
+            'https://example.com/video_video1.mp4',
+          ),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'clamps currentIndex to valid range',
+        build: createBloc,
+        seed: () => const FullscreenFeedState(currentIndex: 10),
+        act: (bloc) => bloc.add(
+          FullscreenFeedVideosUpdated([
+            createTestVideo('video1'),
+            createTestVideo('video2'),
+          ]),
+        ),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.currentIndex,
+            'currentIndex',
+            1,
+          ),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'sets index to 0 when video list is empty',
+        build: createBloc,
+        seed: () => const FullscreenFeedState(currentIndex: 5),
+        act: (bloc) => bloc.add(const FullscreenFeedVideosUpdated([])),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.currentIndex,
+            'currentIndex',
+            0,
+          ),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'resets isLoadingMore to false',
+        build: createBloc,
+        seed: () => const FullscreenFeedState(isLoadingMore: true),
+        act: (bloc) => bloc.add(
+          FullscreenFeedVideosUpdated([createTestVideo('video1')]),
+        ),
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            false,
+          ),
+        ],
+      );
+
+      blocTest<FullscreenFeedBloc, FullscreenFeedState>(
+        'replaces videos on subsequent updates',
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(
+            FullscreenFeedVideosUpdated([createTestVideo('video1')]),
+          );
+          await Future<void>.delayed(Duration.zero);
+          bloc.add(
+            FullscreenFeedVideosUpdated([
+              createTestVideo('video1'),
+              createTestVideo('video2'),
+              createTestVideo('video3'),
+            ]),
+          );
+        },
+        expect: () => [
+          isA<FullscreenFeedState>().having(
+            (s) => s.videos.length,
+            'videos count',
+            1,
+          ),
+          isA<FullscreenFeedState>().having(
+            (s) => s.videos.length,
+            'videos count',
+            3,
+          ),
+        ],
+      );
     });
 
     group('cache resolution', () {

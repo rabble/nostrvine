@@ -2,8 +2,6 @@
 // ABOUTME: Bridges homeFeedProvider (Riverpod) to FullscreenFeedBloc for playback
 // ABOUTME: Uses PooledVideoFeed for managed player pool and preloading
 
-import 'dart:async';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -30,8 +28,8 @@ import 'package:pooled_video_player/pooled_video_player.dart';
 /// Router-driven HomeScreen using pooled video player.
 ///
 /// Bridges [homeFeedProvider] (Riverpod data source) to
-/// [FullscreenFeedBloc] (playback management) via a stream.
-class HomeScreenRouter extends ConsumerStatefulWidget {
+/// [FullscreenFeedBloc] (playback management) via events.
+class HomeScreenRouter extends ConsumerWidget {
   /// Route name for this screen.
   static const routeName = 'home';
 
@@ -47,50 +45,25 @@ class HomeScreenRouter extends ConsumerStatefulWidget {
   const HomeScreenRouter({super.key});
 
   @override
-  ConsumerState<HomeScreenRouter> createState() => _HomeScreenRouterState();
-}
-
-class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter> {
-  late final StreamController<List<VideoEvent>> _videosController;
-
-  @override
-  void initState() {
-    super.initState();
-    _videosController = StreamController<List<VideoEvent>>();
-
-    // Seed stream with current videos if available
-    final state = ref.read(homeFeedProvider).asData?.value;
-    if (state != null && state.videos.isNotEmpty) {
-      _videosController.add(state.videos);
-    }
-  }
-
-  @override
-  void dispose() {
-    _videosController.close();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // Bridge: push homeFeedProvider updates into the BLoC's stream
-    ref.listen<AsyncValue<VideoFeedState>>(homeFeedProvider, (_, next) {
-      final state = next.asData?.value;
-      if (state != null) {
-        _videosController.add(state.videos);
-      }
-    });
-
+  Widget build(BuildContext context, WidgetRef ref) {
     return BlocProvider(
-      create: (_) => FullscreenFeedBloc(
-        videosStream: _videosController.stream,
-        initialIndex:
-            ref.read(pageContextProvider).asData?.value?.videoIndex ?? 0,
-        onLoadMore: () =>
-            ref.read(homePaginationControllerProvider).maybeLoadMore(),
-        mediaCache: ref.read(mediaCacheProvider),
-        blossomAuthService: ref.read(blossomAuthServiceProvider),
-      )..add(const FullscreenFeedStarted()),
+      create: (_) {
+        final bloc = FullscreenFeedBloc(
+          initialIndex:
+              ref.read(pageContextProvider).asData?.value.videoIndex ?? 0,
+          onLoadMore: ref.read(homePaginationControllerProvider).maybeLoadMore,
+          mediaCache: ref.read(mediaCacheProvider),
+          blossomAuthService: ref.read(blossomAuthServiceProvider),
+        );
+
+        // Seed BLoC with current videos if available.
+        final state = ref.read(homeFeedProvider).asData?.value;
+        if (state != null && state.videos.isNotEmpty) {
+          bloc.add(FullscreenFeedVideosUpdated(state.videos));
+        }
+
+        return bloc;
+      },
       child: const _HomeScreenView(),
     );
   }
@@ -103,6 +76,16 @@ class _HomeScreenView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Bridge: push homeFeedProvider updates to the BLoC via events.
+    ref.listen<AsyncValue<VideoFeedState>>(homeFeedProvider, (_, next) {
+      final state = next.asData?.value;
+      if (state != null) {
+        context.read<FullscreenFeedBloc>().add(
+          FullscreenFeedVideosUpdated(state.videos),
+        );
+      }
+    });
+
     final pageContext = ref.watch(pageContextProvider);
     final ctx = pageContext.asData?.value;
 

@@ -45,7 +45,7 @@ const maxPlaybackDuration = Duration(seconds: 6);
 class FullscreenFeedBloc
     extends Bloc<FullscreenFeedEvent, FullscreenFeedState> {
   FullscreenFeedBloc({
-    required Stream<List<VideoEvent>> videosStream,
+    Stream<List<VideoEvent>> videosStream = const Stream.empty(),
     required int initialIndex,
     required MediaCacheManager mediaCache,
     VoidCallback? onLoadMore,
@@ -56,6 +56,7 @@ class FullscreenFeedBloc
        _blossomAuthService = blossomAuthService,
        super(FullscreenFeedState(currentIndex: initialIndex)) {
     on<FullscreenFeedStarted>(_onStarted);
+    on<FullscreenFeedVideosUpdated>(_onVideosUpdated);
     on<FullscreenFeedLoadMoreRequested>(_onLoadMoreRequested);
     on<FullscreenFeedIndexChanged>(_onIndexChanged);
     on<FullscreenFeedVideoCacheStarted>(_onVideoCacheStarted);
@@ -114,6 +115,36 @@ class FullscreenFeedBloc
         // Return current state to keep showing existing videos
         return state;
       },
+    );
+  }
+
+  /// Handle videos updated from an external source.
+  ///
+  /// Resolves cache paths and emits the updated video list, same as
+  /// [_onStarted]'s `onData` but triggered via a discrete event.
+  void _onVideosUpdated(
+    FullscreenFeedVideosUpdated event,
+    Emitter<FullscreenFeedState> emit,
+  ) {
+    Log.debug(
+      'FullscreenFeedBloc: Videos updated, count=${event.videos.length}',
+      name: 'FullscreenFeedBloc',
+      category: LogCategory.video,
+    );
+
+    final resolvedVideos = _resolveCachePaths(event.videos);
+
+    final clampedIndex = resolvedVideos.isEmpty
+        ? 0
+        : state.currentIndex.clamp(0, resolvedVideos.length - 1);
+
+    emit(
+      state.copyWith(
+        status: FullscreenFeedStatus.ready,
+        videos: resolvedVideos,
+        currentIndex: clampedIndex,
+        isLoadingMore: false,
+      ),
     );
   }
 

@@ -71,6 +71,20 @@ final class FullscreenFeedPositionUpdated extends FullscreenFeedEvent {
   List<Object?> get props => [index, position];
 }
 
+/// Videos updated from an external source (e.g. Riverpod provider).
+///
+/// Used when the video list is pushed to the BLoC via events rather than
+/// a stream subscription (see [FullscreenFeedStarted]).
+final class FullscreenFeedVideosUpdated extends FullscreenFeedEvent {
+  const FullscreenFeedVideosUpdated(this.videos);
+
+  /// The updated list of videos.
+  final List<VideoEvent> videos;
+
+  @override
+  List<Object?> get props => [videos];
+}
+
 /// Dispatched after widget executes a seek command.
 ///
 /// Clears the seek command from state.
