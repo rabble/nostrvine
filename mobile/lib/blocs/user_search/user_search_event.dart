@@ -31,8 +31,3 @@ final class UserSearchCleared extends UserSearchEvent {
 final class UserSearchLoadMore extends UserSearchEvent {
   const UserSearchLoadMore();
 }
-
-/// Internal event: profile cache was updated, enrich results with pictures
-final class UserSearchProfilesEnriched extends UserSearchEvent {
-  const UserSearchProfilesEnriched();
-}

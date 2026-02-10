@@ -27,7 +27,6 @@ final class UserSearchState extends Equatable {
     this.offset = 0,
     this.hasMore = false,
     this.isLoadingMore = false,
-    this.profileVersion = 0,
   });
 
   /// The current status of the search
@@ -48,11 +47,6 @@ final class UserSearchState extends Equatable {
   /// Whether a "load more" request is in progress
   final bool isLoadingMore;
 
-  /// Monotonically increasing counter bumped when profile pictures are
-  /// enriched. Required because [UserProfile.==] only compares pubkey and
-  /// eventId, so Equatable would otherwise treat enriched results as equal.
-  final int profileVersion;
-
   /// Create a copy with updated values
   UserSearchState copyWith({
     UserSearchStatus? status,
@@ -61,7 +55,6 @@ final class UserSearchState extends Equatable {
     int? offset,
     bool? hasMore,
     bool? isLoadingMore,
-    int? profileVersion,
   }) {
     return UserSearchState(
       status: status ?? this.status,
@@ -70,7 +63,6 @@ final class UserSearchState extends Equatable {
       offset: offset ?? this.offset,
       hasMore: hasMore ?? this.hasMore,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
-      profileVersion: profileVersion ?? this.profileVersion,
     );
   }
 
@@ -82,6 +74,5 @@ final class UserSearchState extends Equatable {
     offset,
     hasMore,
     isLoadingMore,
-    profileVersion,
   ];
 }

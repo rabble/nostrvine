@@ -3,6 +3,7 @@
 // ABOUTME: Throws ProfilePublishFailedException on publish failure.
 
 import 'dart:convert';
+import 'dart:developer' as developer;
 
 import 'package:db_client/db_client.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
@@ -63,12 +64,30 @@ class ProfileRepository {
   /// Returns `null` if no profile exists for the given pubkey.
   Future<UserProfile?> getProfile({required String pubkey}) async {
     final cachedProfile = await _userProfilesDao.getProfile(pubkey);
-    if (cachedProfile != null) return cachedProfile;
+    if (cachedProfile != null) {
+      developer.log(
+        'Cache hit for $pubkey: '
+        'picture=${cachedProfile.picture ?? "null"}',
+        name: 'ProfileRepository.getProfile',
+      );
+      return cachedProfile;
+    }
 
     final profileEvent = await _nostrClient.fetchProfile(pubkey);
-    if (profileEvent == null) return null;
+    if (profileEvent == null) {
+      developer.log(
+        'No profile found for $pubkey (cache miss + relay miss)',
+        name: 'ProfileRepository.getProfile',
+      );
+      return null;
+    }
 
     final profile = UserProfile.fromNostrEvent(profileEvent);
+    developer.log(
+      'Fetched from relay and caching: ${profile.bestDisplayName}, '
+      'picture=${profile.picture ?? "null"}',
+      name: 'ProfileRepository.getProfile',
+    );
     await _userProfilesDao.upsertProfile(profile);
     return profile;
   }
@@ -236,8 +255,17 @@ class ProfileRepository {
         for (final result in restResults) {
           resultMap[result.pubkey] = result.toUserProfile();
         }
-      } on Exception {
-        // Continue to WebSocket search on failure
+        final withPic = restResults.where((r) => r.picture != null).length;
+        developer.log(
+          'Phase 1 (REST): ${restResults.length} results, '
+          '$withPic with picture',
+          name: 'ProfileRepository.searchUsers',
+        );
+      } on Exception catch (e) {
+        developer.log(
+          'Phase 1 (REST) failed: $e',
+          name: 'ProfileRepository.searchUsers',
+        );
       }
     }
 
@@ -250,12 +278,22 @@ class ProfileRepository {
         // Don't overwrite REST results - they may have more complete data
         resultMap.putIfAbsent(profile.pubkey, () => profile);
       }
+      final wsProfiles = resultMap.values.toList();
+      final wsWithPic = wsProfiles.where((p) => p.picture != null).length;
+      developer.log(
+        'Phase 2 (WS): ${events.length} events, '
+        'merged total: ${wsProfiles.length}, $wsWithPic with picture',
+        name: 'ProfileRepository.searchUsers',
+      );
     }
 
     final profiles = resultMap.values.toList();
 
+    // Enrich profiles from local SQLite cache (fill in missing pictures, etc.)
+    final enrichedProfiles = await _enrichFromCache(profiles);
+
     // Filter out blocked users
-    final unblockedProfiles = profiles.where((profile) {
+    final unblockedProfiles = enrichedProfiles.where((profile) {
       return !(_userBlockFilter?.call(profile.pubkey) ?? false);
     }).toList();
 
@@ -273,5 +311,55 @@ class ProfileRepository {
     return unblockedProfiles.where((profile) {
       return profile.bestDisplayName.toLowerCase().contains(queryLower);
     }).toList();
+  }
+
+  /// Enriches search results from the local SQLite cache.
+  ///
+  /// For each profile, fills in null fields (picture, about, etc.) from
+  /// the cached version without overwriting data from search results.
+  Future<List<UserProfile>> _enrichFromCache(
+    List<UserProfile> profiles,
+  ) async {
+    final enriched = <UserProfile>[];
+    var cacheHits = 0;
+    var pictureEnriched = 0;
+    for (final profile in profiles) {
+      final cached = await _userProfilesDao.getProfile(profile.pubkey);
+      if (cached == null) {
+        enriched.add(profile);
+        continue;
+      }
+      cacheHits++;
+      final hadPicture = profile.picture != null;
+      final cachedHasPicture = cached.picture != null;
+      final willEnrichPicture = !hadPicture && cachedHasPicture;
+      if (willEnrichPicture) pictureEnriched++;
+      developer.log(
+        'Cache hit for ${profile.bestDisplayName}: '
+        'search picture=${profile.picture ?? "null"}, '
+        'cached picture=${cached.picture ?? "null"}, '
+        'will enrich=$willEnrichPicture',
+        name: 'ProfileRepository._enrichFromCache',
+      );
+      enriched.add(
+        profile.copyWith(
+          name: profile.name ?? cached.name,
+          displayName: profile.displayName ?? cached.displayName,
+          about: profile.about ?? cached.about,
+          picture: profile.picture ?? cached.picture,
+          banner: profile.banner ?? cached.banner,
+          website: profile.website ?? cached.website,
+          nip05: profile.nip05 ?? cached.nip05,
+          lud16: profile.lud16 ?? cached.lud16,
+          lud06: profile.lud06 ?? cached.lud06,
+        ),
+      );
+    }
+    developer.log(
+      'Enrichment summary: ${profiles.length} profiles, '
+      '$cacheHits cache hits, $pictureEnriched pictures enriched',
+      name: 'ProfileRepository._enrichFromCache',
+    );
+    return enriched;
   }
 }
