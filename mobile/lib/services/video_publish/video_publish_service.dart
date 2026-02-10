@@ -89,7 +89,10 @@ class VideoPublishService {
 
       // Verify user is fully authenticated
       if (!authService.isAuthenticated) {
-        Log.warning('⚠️ User not authenticated, cannot publish', category: .video);
+        Log.warning(
+          '⚠️ User not authenticated, cannot publish',
+          category: .video,
+        );
         // TODO(l10n): Replace with context.l10n when localization is added.
         return const PublishError('Please sign in to publish videos.');
       }
@@ -280,6 +283,7 @@ class VideoPublishService {
   Future<PublishResult> retryUpload(VineDraft draft) async {
     if (_backgroundUploadId == null) {
       Log.warning('⚠️ No background upload to retry', category: .video);
+
       /// TODO(l10n): Replace with context.l10n when localization is added.
       return const PublishError('No upload to retry.');
     }
