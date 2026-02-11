@@ -27,18 +27,13 @@ Future<void> showSaveOriginalSheet({
         top: Radius.circular(VineTheme.bottomSheetBorderRadius),
       ),
     ),
-    builder: (sheetContext) => _SaveOriginalProgressSheet(
-      video: video,
-      ref: ref,
-    ),
+    builder: (sheetContext) =>
+        _SaveOriginalProgressSheet(video: video, ref: ref),
   );
 }
 
 class _SaveOriginalProgressSheet extends StatefulWidget {
-  const _SaveOriginalProgressSheet({
-    required this.video,
-    required this.ref,
-  });
+  const _SaveOriginalProgressSheet({required this.video, required this.ref});
 
   final VideoEvent video;
   final WidgetRef ref;
@@ -141,8 +136,7 @@ class _SaveOriginalProgressSheetState
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Done',
-                style:
-                    VineTheme.labelLargeFont(color: VineTheme.secondaryText),
+                style: VineTheme.labelLargeFont(color: VineTheme.secondaryText),
               ),
             ),
           ] else if (_result is WatermarkDownloadPermissionDenied) ...[
@@ -152,10 +146,7 @@ class _SaveOriginalProgressSheetState
               size: 48,
             ),
             const SizedBox(height: 16),
-            Text(
-              'Photos Access Needed',
-              style: VineTheme.titleMediumFont(),
-            ),
+            Text('Photos Access Needed', style: VineTheme.titleMediumFont()),
             const SizedBox(height: 8),
             Text(
               'To save videos, allow Photos access in Settings.',
@@ -180,8 +171,7 @@ class _SaveOriginalProgressSheetState
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Not Now',
-                style:
-                    VineTheme.labelLargeFont(color: VineTheme.secondaryText),
+                style: VineTheme.labelLargeFont(color: VineTheme.secondaryText),
               ),
             ),
           ] else if (_result is WatermarkDownloadFailure) ...[
@@ -199,8 +189,7 @@ class _SaveOriginalProgressSheetState
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
                 'Dismiss',
-                style:
-                    VineTheme.labelLargeFont(color: VineTheme.secondaryText),
+                style: VineTheme.labelLargeFont(color: VineTheme.secondaryText),
               ),
             ),
           ],
@@ -217,8 +206,7 @@ class _SaveOriginalProgressSheetState
   };
 
   String get _stageDescription => switch (_stage) {
-    OriginalSaveStage.downloading =>
-      'Fetching the video from the network...',
+    OriginalSaveStage.downloading => 'Fetching the video from the network...',
     OriginalSaveStage.saving =>
       'Saving the original video to your camera roll...',
   };

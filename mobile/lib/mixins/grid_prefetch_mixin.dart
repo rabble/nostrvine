@@ -55,10 +55,8 @@ mixin GridPrefetchMixin<T extends StatefulWidget> on State<T> {
   void prefetchAroundIndex(int index, List<VideoEvent> videos) {
     if (!_shouldPrefetch) return;
 
-    final start =
-        (index - AppConstants.preloadBefore).clamp(0, videos.length);
-    final end =
-        (index + AppConstants.preloadAfter + 1).clamp(0, videos.length);
+    final start = (index - AppConstants.preloadBefore).clamp(0, videos.length);
+    final end = (index + AppConstants.preloadAfter + 1).clamp(0, videos.length);
 
     final items = <({String url, String key})>[];
 
