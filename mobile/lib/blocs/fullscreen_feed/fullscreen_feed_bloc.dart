@@ -52,18 +52,18 @@ const maxPlaybackDuration = Duration(seconds: 6);
 class FullscreenFeedBloc
     extends Bloc<FullscreenFeedEvent, FullscreenFeedState> {
   FullscreenFeedBloc({
-    Stream<List<VideoEvent>> videosStream = const Stream.empty(),
     required int initialIndex,
     required MediaCacheManager mediaCache,
+    PlayerPool? playerPool,
     VoidCallback? onLoadMore,
     BlossomAuthService? blossomAuthService,
-    PlayerPool? playerPool,
+    Stream<List<VideoEvent>> videosStream = const Stream.empty(),
     @visibleForTesting VideoFeedControllerFactory? controllerFactory,
   }) : _videosStream = videosStream,
-       _onLoadMore = onLoadMore,
        _mediaCache = mediaCache,
-       _blossomAuthService = blossomAuthService,
        _playerPool = playerPool,
+       _onLoadMore = onLoadMore,
+       _blossomAuthService = blossomAuthService,
        _controllerFactory = controllerFactory,
        super(FullscreenFeedState(currentIndex: initialIndex)) {
     on<FullscreenFeedStarted>(_onStarted);
@@ -83,17 +83,10 @@ class FullscreenFeedBloc
   final PlayerPool? _playerPool;
   final VideoFeedControllerFactory? _controllerFactory;
 
-  VideoFeedController? _controller;
-  List<VideoItem>? _lastPooledVideos;
-
-  /// The managed [VideoFeedController], if the BLoC owns the controller.
-  ///
-  /// Non-null only when [playerPool] or [controllerFactory] was provided.
-  VideoFeedController? get controller => _controller;
-
-  /// Whether this BLoC manages the [VideoFeedController] lifecycle.
-  bool get isControllerManaged =>
-      _playerPool != null || _controllerFactory != null;
+  /// Whether this BLoC is configured to manage a [VideoFeedController].
+  bool get _canManageController {
+    return _playerPool != null || _controllerFactory != null;
+  }
 
   /// Handle feed started - subscribe to the videos stream using emit.forEach.
   ///
@@ -132,8 +125,7 @@ class FullscreenFeedBloc
           isLoadingMore: false,
         );
 
-        _initializeOrUpdateController(newState);
-        return newState;
+        return _updateController(newState);
       },
       onError: (error, stackTrace) {
         Log.error(
@@ -174,8 +166,7 @@ class FullscreenFeedBloc
       isLoadingMore: false,
     );
 
-    _initializeOrUpdateController(newState);
-    emit(newState);
+    emit(_updateController(newState));
   }
 
   /// Resolves cache paths for a list of videos.
@@ -185,15 +176,15 @@ class FullscreenFeedBloc
   List<VideoEvent> _resolveCachePaths(List<VideoEvent> videos) {
     return videos.map((video) {
       final cachedFile = _mediaCache.getCachedFileSync(video.id);
-      if (cachedFile != null) {
-        Log.debug(
-          'FullscreenFeedBloc: Cache hit for video ${video.id}',
-          name: 'FullscreenFeedBloc',
-          category: LogCategory.video,
-        );
-        return video.copyWith(videoUrl: cachedFile.path);
-      }
-      return video;
+      if (cachedFile == null) return video;
+
+      Log.debug(
+        'FullscreenFeedBloc: Cache hit for video ${video.id}',
+        name: 'FullscreenFeedBloc',
+        category: LogCategory.video,
+      );
+
+      return video.copyWith(videoUrl: cachedFile.path);
     }).toList();
   }
 
@@ -281,24 +272,28 @@ class FullscreenFeedBloc
     }
 
     // Cache in background (fire and forget)
-    unawaited(
-      _mediaCache
-          .downloadFile(videoUrl, key: video.id, authHeaders: authHeaders)
-          .then((_) {
-            Log.debug(
-              'FullscreenFeedBloc: Successfully cached video ${video.id}',
-              name: 'FullscreenFeedBloc',
-              category: LogCategory.video,
-            );
-          })
-          .catchError((Object error) {
-            Log.error(
-              'FullscreenFeedBloc: Failed to cache video ${video.id}: $error',
-              name: 'FullscreenFeedBloc',
-              category: LogCategory.video,
-            );
-          }),
-    );
+
+    try {
+      unawaited(
+        _mediaCache.downloadFile(
+          videoUrl,
+          key: video.id,
+          authHeaders: authHeaders,
+        ),
+      );
+
+      Log.debug(
+        'FullscreenFeedBloc: Successfully cached video ${video.id}',
+        name: 'FullscreenFeedBloc',
+        category: LogCategory.video,
+      );
+    } catch (error) {
+      Log.error(
+        'FullscreenFeedBloc: Failed to cache video ${video.id}: $error',
+        name: 'FullscreenFeedBloc',
+        category: LogCategory.video,
+      );
+    }
   }
 
   /// Handle position update - check for loop enforcement.
@@ -318,12 +313,10 @@ class FullscreenFeedBloc
         category: LogCategory.video,
       );
 
-      if (_controller != null) {
-        // BLoC manages controller - seek directly.
-        _controller!.seek(Duration.zero);
-      } else {
-        // Widget manages controller - emit SeekCommand for widget to execute.
-        emit(
+      final controller = state.controller;
+
+      if (controller == null) {
+        return emit(
           state.copyWith(
             seekCommand: SeekCommand(
               index: event.index,
@@ -332,6 +325,8 @@ class FullscreenFeedBloc
           ),
         );
       }
+
+      controller.seek(Duration.zero);
     }
   }
 
@@ -348,36 +343,41 @@ class FullscreenFeedBloc
     FullscreenFeedActiveChanged event,
     Emitter<FullscreenFeedState> emit,
   ) {
-    _controller?.setActive(active: event.isActive);
+    state.controller?.setActive(active: event.isActive);
   }
 
   /// Initializes the managed controller or updates it with new videos.
   ///
-  /// No-op when the BLoC does not manage a controller (legacy mode).
-  void _initializeOrUpdateController(FullscreenFeedState newState) {
-    if (!isControllerManaged) return;
+  /// Returns [newState] with controller and lastPooledVideos set.
+  /// No-op (returns [newState] unchanged) when the BLoC is not configured to
+  /// manage a controller.
+  FullscreenFeedState _updateController(FullscreenFeedState newState) {
+    if (!_canManageController) return newState;
 
-    if (_controller == null && newState.hasPooledVideos) {
-      _controller = _createManagedController(
+    if (newState.controller == null && newState.hasPooledVideos) {
+      final controller = _createManagedController(
         newState.pooledVideos,
         newState.currentIndex,
       );
-      _lastPooledVideos = newState.pooledVideos;
-      return;
+      return newState.copyWith(
+        controller: controller,
+        lastPooledVideos: newState.pooledVideos,
+      );
     }
 
-    final controller = _controller;
-    final lastVideos = _lastPooledVideos;
-    if (controller == null || lastVideos == null) return;
+    final controller = newState.controller;
+    final lastVideos = newState.lastPooledVideos;
+    if (controller == null || lastVideos == null) return newState;
 
-    final newVideos = newState.pooledVideos
+    final addedVideos = newState.pooledVideos
         .where((v) => !lastVideos.any((old) => old.id == v.id))
         .toList();
 
-    if (newVideos.isNotEmpty) {
-      controller.addVideos(newVideos);
+    if (addedVideos.isNotEmpty) {
+      controller.addVideos(addedVideos);
     }
-    _lastPooledVideos = newState.pooledVideos;
+
+    return newState.copyWith(lastPooledVideos: newState.pooledVideos);
   }
 
   /// Creates a [VideoFeedController] owned by this BLoC.
@@ -409,7 +409,7 @@ class FullscreenFeedBloc
 
   @override
   Future<void> close() {
-    _controller?.dispose();
+    state.controller?.dispose();
     return super.close();
   }
 }

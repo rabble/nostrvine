@@ -40,6 +40,8 @@ final class FullscreenFeedState extends Equatable {
     this.currentIndex = 0,
     this.isLoadingMore = false,
     this.seekCommand,
+    this.controller,
+    this.lastPooledVideos,
   });
 
   /// The current status.
@@ -59,6 +61,19 @@ final class FullscreenFeedState extends Equatable {
   /// When not null, widget should execute the seek operation and dispatch
   /// [FullscreenFeedSeekCommandHandled] to clear this.
   final SeekCommand? seekCommand;
+
+  /// The managed [VideoFeedController], if the BLoC owns the controller.
+  ///
+  /// Non-null only when [PlayerPool] or [VideoFeedControllerFactory] was
+  /// provided to the BLoC.
+  final VideoFeedController? controller;
+
+  /// The last set of pooled videos used to detect new videos for controller
+  /// updates.
+  final List<VideoItem>? lastPooledVideos;
+
+  /// Whether this state has a managed [VideoFeedController].
+  bool get isControllerManaged => controller != null;
 
   /// The current video, if available.
   VideoEvent? get currentVideo =>
@@ -89,6 +104,8 @@ final class FullscreenFeedState extends Equatable {
     bool? isLoadingMore,
     SeekCommand? seekCommand,
     bool clearSeekCommand = false,
+    VideoFeedController? controller,
+    List<VideoItem>? lastPooledVideos,
   }) {
     return FullscreenFeedState(
       status: status ?? this.status,
@@ -96,6 +113,8 @@ final class FullscreenFeedState extends Equatable {
       currentIndex: currentIndex ?? this.currentIndex,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       seekCommand: clearSeekCommand ? null : (seekCommand ?? this.seekCommand),
+      controller: controller ?? this.controller,
+      lastPooledVideos: lastPooledVideos ?? this.lastPooledVideos,
     );
   }
 
@@ -106,5 +125,7 @@ final class FullscreenFeedState extends Equatable {
     currentIndex,
     isLoadingMore,
     seekCommand,
+    controller,
+    lastPooledVideos,
   ];
 }

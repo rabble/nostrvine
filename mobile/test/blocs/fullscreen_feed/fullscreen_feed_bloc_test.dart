@@ -181,6 +181,8 @@ void main() {
           2,
           true,
           seekCommand,
+          null, // controller
+          null, // lastPooledVideos
         ]);
       });
 
@@ -890,22 +892,12 @@ void main() {
     });
 
     group('controller management', () {
-      test('isControllerManaged is false by default', () {
-        final bloc = createBloc();
-        expect(bloc.isControllerManaged, isFalse);
-        expect(bloc.controller, isNull);
-        bloc.close();
-      });
-
       test(
-        'isControllerManaged is true when controllerFactory is provided',
+        'controller is null and isControllerManaged is false by default',
         () {
-          final bloc = FullscreenFeedBloc(
-            initialIndex: 0,
-            mediaCache: mockMediaCache,
-            controllerFactory: (videos, index) => _MockVideoFeedController(),
-          );
-          expect(bloc.isControllerManaged, isTrue);
+          final bloc = createBloc();
+          expect(bloc.state.controller, isNull);
+          expect(bloc.state.isControllerManaged, isFalse);
           bloc.close();
         },
       );
@@ -920,12 +912,14 @@ void main() {
           controllerFactory: (videos, index) => mockController,
         );
 
-        expect(bloc.controller, isNull);
+        expect(bloc.state.controller, isNull);
+        expect(bloc.state.isControllerManaged, isFalse);
 
         bloc.add(FullscreenFeedVideosUpdated([createTestVideo('video1')]));
         await Future<void>.delayed(const Duration(milliseconds: 50));
 
-        expect(bloc.controller, equals(mockController));
+        expect(bloc.state.controller, equals(mockController));
+        expect(bloc.state.isControllerManaged, isTrue);
         await bloc.close();
       });
 
@@ -1023,7 +1017,7 @@ void main() {
         videosController.add([createTestVideo('video1')]);
         await Future<void>.delayed(const Duration(milliseconds: 100));
 
-        expect(bloc.controller, equals(mockController));
+        expect(bloc.state.controller, equals(mockController));
         await bloc.close();
       });
     });

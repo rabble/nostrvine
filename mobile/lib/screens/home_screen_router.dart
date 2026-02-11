@@ -192,8 +192,6 @@ class _HomeFeedContentState extends ConsumerState<_HomeFeedContent> {
           return const Center(child: BrandedLoadingIndicator(size: 80));
         }
 
-        final bloc = context.read<FullscreenFeedBloc>();
-
         return RefreshIndicator(
           color: VineTheme.onPrimary,
           backgroundColor: VineTheme.vineGreen,
@@ -202,7 +200,7 @@ class _HomeFeedContentState extends ConsumerState<_HomeFeedContent> {
           child: PooledVideoFeed(
             key: const Key('home-video-page-view'),
             videos: state.pooledVideos,
-            controller: bloc.controller,
+            controller: state.controller,
             initialIndex: state.currentIndex,
             onActiveVideoChanged: (video, index) {
               // Update BLoC index
