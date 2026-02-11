@@ -1,5 +1,5 @@
 // ABOUTME: Generates transparent PNG watermark overlays for video exports
-// ABOUTME: Draws the diVine logo + username + URL at bottom-right with 60% opacity
+// ABOUTME: Draws the diVine wordmark + @username.divine.video at bottom-right
 
 import 'dart:ui' as ui;
 
@@ -7,103 +7,94 @@ import 'package:flutter/services.dart';
 
 /// Generates a transparent PNG watermark overlay for video exports.
 ///
-/// The watermark includes the diVine logo, @username, and "divine.video" URL
+/// The watermark includes the diVine wordmark and `@username.divine.video`
 /// positioned in the bottom-right corner at 60% opacity.
 class WatermarkImageGenerator {
   WatermarkImageGenerator._();
 
-  static const _logoAssetPath = 'assets/icon/White on transparent.png';
+  static const _wordmarkAssetPath = 'assets/icon/divine_wordmark.png';
   static const _watermarkOpacity = 0.6;
   static const _margin = 16.0;
 
   /// Generates a transparent PNG watermark image at the given resolution.
   ///
   /// The watermark includes:
-  /// - diVine logo (from assets) in bottom-right corner
-  /// - @username text below the logo
-  /// - "divine.video" URL text below username
-  /// All at ~60% opacity, sized to ~10% of video width.
+  /// - diVine wordmark (from assets) in bottom-right corner
+  /// - `@username.divine.video` text below the wordmark
+  /// All at ~60% opacity, sized to ~15% of video width.
   ///
   /// Returns PNG bytes ([Uint8List]) suitable for use as an image overlay.
   ///
-  /// Throws [WatermarkGenerationException] if the logo asset cannot be loaded
-  /// or image encoding fails.
+  /// Throws [WatermarkGenerationException] if the wordmark asset cannot be
+  /// loaded or image encoding fails.
   static Future<Uint8List> generateWatermark({
     required int videoWidth,
     required int videoHeight,
     required String username,
   }) async {
-    final logoImage = await _loadLogoImage();
+    final wordmarkImage = await _loadWordmarkImage();
 
     try {
       final recorder = ui.PictureRecorder();
       final canvas = ui.Canvas(recorder);
 
-      final logoSize = videoWidth * 0.10;
-      final fontSize = logoSize * 0.22;
-      final smallFontSize = fontSize * 0.85;
+      final wordmarkWidth = videoWidth * 0.15;
+      final fontSize = wordmarkWidth * 0.14;
 
-      // Draw username text
-      final usernameParagraph = _buildParagraph(
-        '@$username',
+      // Build the single-line text: @username.divine.video
+      // Available width = from left margin to right margin
+      final maxTextWidth = videoWidth - 2 * _margin;
+      final textParagraph = _buildParagraph(
+        '@$username.divine.video',
         fontSize,
-        logoSize * 1.5,
+        maxTextWidth,
       );
-      usernameParagraph.layout(ui.ParagraphConstraints(width: logoSize * 1.5));
+      textParagraph.layout(ui.ParagraphConstraints(width: maxTextWidth));
 
-      // Draw URL text
-      final urlParagraph = _buildParagraph(
-        'divine.video',
-        smallFontSize,
-        logoSize * 1.5,
-      );
-      urlParagraph.layout(ui.ParagraphConstraints(width: logoSize * 1.5));
+      // Calculate wordmark draw size preserving aspect ratio
+      final wordmarkAspectRatio = wordmarkImage.width / wordmarkImage.height;
+      final wordmarkDrawWidth = wordmarkWidth;
+      final wordmarkDrawHeight = wordmarkDrawWidth / wordmarkAspectRatio;
 
-      // Calculate total block height: logo + gap + username + gap + url
+      // Calculate total block height: wordmark + gap + text
       final gap = fontSize * 0.3;
-      final totalHeight =
-          logoSize + gap + usernameParagraph.height + gap + urlParagraph.height;
+      final totalHeight = wordmarkDrawHeight + gap + textParagraph.height;
 
       // Position the block in the bottom-right corner
       final blockRight = videoWidth - _margin;
       final blockBottom = videoHeight - _margin;
       final blockTop = blockBottom - totalHeight;
 
-      // Draw logo - right-aligned within the block
-      final logoPaint = ui.Paint()
+      // Draw wordmark - right-aligned
+      final wordmarkPaint = ui.Paint()
         ..color = ui.Color.fromRGBO(255, 255, 255, _watermarkOpacity);
 
-      final logoAspectRatio = logoImage.width / logoImage.height;
-      final logoDrawWidth = logoSize;
-      final logoDrawHeight = logoDrawWidth / logoAspectRatio;
-
-      final logoLeft = blockRight - logoDrawWidth;
-      final logoTop = blockTop;
+      final wordmarkLeft = blockRight - wordmarkDrawWidth;
+      final wordmarkTop = blockTop;
 
       canvas.drawImageRect(
-        logoImage,
+        wordmarkImage,
         ui.Rect.fromLTWH(
           0,
           0,
-          logoImage.width.toDouble(),
-          logoImage.height.toDouble(),
+          wordmarkImage.width.toDouble(),
+          wordmarkImage.height.toDouble(),
         ),
-        ui.Rect.fromLTWH(logoLeft, logoTop, logoDrawWidth, logoDrawHeight),
-        logoPaint,
+        ui.Rect.fromLTWH(
+          wordmarkLeft,
+          wordmarkTop,
+          wordmarkDrawWidth,
+          wordmarkDrawHeight,
+        ),
+        wordmarkPaint,
       );
 
-      // Draw username text - right-aligned below logo
-      final usernameTop = logoTop + logoDrawHeight + gap;
-      final usernameLeft = blockRight - usernameParagraph.maxIntrinsicWidth;
-      canvas.drawParagraph(
-        usernameParagraph,
-        ui.Offset(usernameLeft, usernameTop),
-      );
-
-      // Draw URL text - right-aligned below username
-      final urlTop = usernameTop + usernameParagraph.height + gap;
-      final urlLeft = blockRight - urlParagraph.maxIntrinsicWidth;
-      canvas.drawParagraph(urlParagraph, ui.Offset(urlLeft, urlTop));
+      // Draw @username.divine.video - right-aligned below wordmark
+      // Position paragraph box so its right edge aligns with blockRight.
+      // Text is right-aligned within the box, so it stays flush right.
+      final textTop = wordmarkTop + wordmarkDrawHeight + gap;
+      final textLeft = blockRight - maxTextWidth;
+      canvas.drawParagraph(textParagraph, ui.Offset(textLeft, textTop));
 
       // Convert to image
       final picture = recorder.endRecording();
@@ -118,20 +109,20 @@ class WatermarkImageGenerator {
 
       return byteData.buffer.asUint8List();
     } finally {
-      logoImage.dispose();
+      wordmarkImage.dispose();
     }
   }
 
-  /// Loads the diVine logo from app assets.
-  static Future<ui.Image> _loadLogoImage() async {
+  /// Loads the diVine wordmark from app assets.
+  static Future<ui.Image> _loadWordmarkImage() async {
     try {
-      final data = await rootBundle.load(_logoAssetPath);
+      final data = await rootBundle.load(_wordmarkAssetPath);
       final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
       final frame = await codec.getNextFrame();
       codec.dispose();
       return frame.image;
     } catch (e) {
-      throw WatermarkGenerationException('Failed to load logo asset: $e');
+      throw WatermarkGenerationException('Failed to load wordmark asset: $e');
     }
   }
 

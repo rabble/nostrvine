@@ -107,6 +107,48 @@ class _SaveForLaterButton extends ConsumerWidget {
     bool saveSuccess = true;
 
     try {
+      // 1. Get video path and save to gallery FIRST (before draft save deletes
+      // the original file)
+      final videoPath = await recordingClips.first.video.safeFilePath();
+      final gallerySaveService = ref.read(gallerySaveServiceProvider);
+      final galleryResult = await gallerySaveService.saveVideoToGallery(
+        EditorVideo.file(videoPath),
+      );
+
+      gallerySaveMessage = switch (galleryResult) {
+        GallerySaveSuccess() => 'Saved to camera roll',
+        GallerySavePermissionDenied() => 'Camera roll: permission denied',
+        GallerySaveFailure(:final reason) => 'Camera roll: $reason',
+      };
+
+      // 2. Save each clip to the clip library for the Clips tab
+      // (must happen before saveAsDraft which may delete files)
+      final clipLibraryService = ref.read(clipLibraryServiceProvider);
+      final sessionId = 'save_${DateTime.now().millisecondsSinceEpoch}';
+
+      for (final clip in recordingClips) {
+        final clipPath = await clip.video.safeFilePath();
+        final savedClip = SavedClip(
+          id: 'clip_${DateTime.now().microsecondsSinceEpoch}_${clip.id}',
+          filePath: clipPath,
+          thumbnailPath: clip.thumbnailPath,
+          duration: clip.duration,
+          createdAt: DateTime.now(),
+          aspectRatio: clip.targetAspectRatio.name,
+          sessionId: sessionId,
+        );
+
+        await clipLibraryService.saveClip(savedClip);
+
+        Log.info(
+          'Saved clip to library: ${savedClip.id}',
+          name: '_SaveForLaterButton',
+          category: LogCategory.video,
+        );
+      }
+
+      // 3. Save as draft (with metadata) for the Drafts tab
+      // Note: This may delete original files, so it must happen LAST
       final draftSuccess = await ref
           .read(videoEditorProvider.notifier)
           .saveAsDraft();

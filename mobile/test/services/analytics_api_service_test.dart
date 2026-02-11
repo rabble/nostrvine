@@ -557,7 +557,7 @@ void main() {
       ]);
 
       final mockClient = MockClient((request) async {
-        expect(request.url.path, '/api/search');
+        expect(request.url.path, '/api/videos');
         expect(request.url.queryParameters['tag'], 'nostr');
         return http.Response(mockResponse, 200);
       });

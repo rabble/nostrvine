@@ -25,6 +25,15 @@ enum WatermarkDownloadStage {
   saving,
 }
 
+/// Progress stages for saving original video (no watermark).
+enum OriginalSaveStage {
+  /// Downloading/caching the video file.
+  downloading,
+
+  /// Saving the video to gallery.
+  saving,
+}
+
 /// Result of a watermark download operation.
 sealed class WatermarkDownloadResult {
   const WatermarkDownloadResult();
@@ -46,6 +55,12 @@ class WatermarkDownloadFailure extends WatermarkDownloadResult {
 
   /// Human-readable failure reason.
   final String reason;
+}
+
+/// Gallery permission was denied — UI should offer to open Settings.
+class WatermarkDownloadPermissionDenied extends WatermarkDownloadResult {
+  /// Creates a [WatermarkDownloadPermissionDenied].
+  const WatermarkDownloadPermissionDenied();
 }
 
 /// Service that downloads a video, applies a diVine watermark, and saves
@@ -89,8 +104,20 @@ class WatermarkDownloadService {
       // Stage 2: Generate watermark and render onto video
       onProgress(WatermarkDownloadStage.watermarking);
 
-      final videoWidth = video.width ?? 1080;
-      final videoHeight = video.height ?? 1920;
+      // Read actual video dimensions from the file (not from Nostr metadata,
+      // which may be missing or wrong — e.g. a square video defaults to
+      // 1080x1920 and causes black letterboxing).
+      final metadata = await ProVideoEditor.instance.getMetadata(
+        EditorVideo.file(videoFile),
+      );
+      final videoWidth = metadata.resolution.width.round();
+      final videoHeight = metadata.resolution.height.round();
+
+      Log.debug(
+        'Video dimensions from file: ${videoWidth}x$videoHeight',
+        name: _logName,
+        category: LogCategory.video,
+      );
 
       final watermarkBytes = await WatermarkImageGenerator.generateWatermark(
         videoWidth: videoWidth,
@@ -117,6 +144,9 @@ class WatermarkDownloadService {
         EditorVideo.file(File(tempOutputPath)),
       );
 
+      if (saveResult is GallerySavePermissionDenied) {
+        return const WatermarkDownloadPermissionDenied();
+      }
       if (saveResult is GallerySaveFailure) {
         return WatermarkDownloadFailure(
           'Gallery save failed: ${saveResult.reason}',
@@ -140,6 +170,58 @@ class WatermarkDownloadService {
     } catch (e) {
       Log.warning(
         'Watermark download failed: $e',
+        name: _logName,
+        category: LogCategory.video,
+      );
+      return WatermarkDownloadFailure('Unexpected error: $e');
+    }
+  }
+
+  /// Downloads the original video (no watermark) and saves to gallery.
+  ///
+  /// [video] is the video event to download.
+  /// [onProgress] is called as the operation moves through stages.
+  ///
+  /// Returns a [WatermarkDownloadResult] indicating success or failure.
+  Future<WatermarkDownloadResult> downloadOriginal({
+    required VideoEvent video,
+    required ValueChanged<OriginalSaveStage> onProgress,
+  }) async {
+    try {
+      // Stage 1: Download / cache the video file
+      onProgress(OriginalSaveStage.downloading);
+
+      final videoFile = await _getVideoFile(video);
+      if (videoFile == null) {
+        return const WatermarkDownloadFailure('Could not download video file');
+      }
+
+      // Stage 2: Save directly to gallery (no watermark)
+      onProgress(OriginalSaveStage.saving);
+
+      final saveResult = await _gallerySaveService.saveVideoToGallery(
+        EditorVideo.file(videoFile),
+      );
+
+      if (saveResult is GallerySavePermissionDenied) {
+        return const WatermarkDownloadPermissionDenied();
+      }
+      if (saveResult is GallerySaveFailure) {
+        return WatermarkDownloadFailure(
+          'Gallery save failed: ${saveResult.reason}',
+        );
+      }
+
+      Log.info(
+        'Original video saved to gallery',
+        name: _logName,
+        category: LogCategory.video,
+      );
+
+      return WatermarkDownloadSuccess(videoFile.path);
+    } catch (e) {
+      Log.warning(
+        'Original video save failed: $e',
         name: _logName,
         category: LogCategory.video,
       );

@@ -9,17 +9,51 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.dart';
+import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Grid widget displaying user's collab videos.
 ///
 /// Requires [ProfileCollabVideosBloc] to be provided in the widget tree.
-class ProfileCollabsGrid extends StatelessWidget {
+class ProfileCollabsGrid extends StatefulWidget {
   const ProfileCollabsGrid({required this.isOwnProfile, super.key});
 
   /// Whether this is the current user's own profile.
   final bool isOwnProfile;
+
+  @override
+  State<ProfileCollabsGrid> createState() => _ProfileCollabsGridState();
+}
+
+class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
+    with GridPrefetchMixin {
+  List<VideoEvent>? _lastPrefetchedVideos;
+
+  void _prefetchIfNeeded(List<VideoEvent> videos) {
+    if (videos.isEmpty || videos == _lastPrefetchedVideos) return;
+    _lastPrefetchedVideos = videos;
+    prefetchGridVideos(videos);
+  }
+
+  void _onVideoTapped(int index, List<VideoEvent> allVideos) {
+    Log.info(
+      'ProfileCollabsGrid TAP: gridIndex=$index, '
+      'videoId=${allVideos[index].id}',
+      category: LogCategory.video,
+    );
+
+    // Pre-warm adjacent videos before navigation
+    prefetchAroundIndex(index, allVideos);
+
+    context.push(
+      FullscreenVideoFeedScreen.path,
+      extra: FullscreenVideoFeedArgs(
+        source: StaticFeedSource(allVideos),
+        initialIndex: index,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -44,8 +78,11 @@ class ProfileCollabsGrid extends StatelessWidget {
         final collabVideos = state.videos;
 
         if (collabVideos.isEmpty) {
-          return _CollabsEmptyState(isOwnProfile: isOwnProfile);
+          return _CollabsEmptyState(isOwnProfile: widget.isOwnProfile);
         }
+
+        // Prefetch visible grid videos
+        _prefetchIfNeeded(collabVideos);
 
         return NotificationListener<ScrollNotification>(
           onNotification: (notification) {
@@ -84,7 +121,7 @@ class ProfileCollabsGrid extends StatelessWidget {
                     return _CollabGridTile(
                       videoEvent: videoEvent,
                       index: index,
-                      allVideos: collabVideos,
+                      onTap: () => _onVideoTapped(index, collabVideos),
                     );
                   }, childCount: collabVideos.length),
                 ),
@@ -163,30 +200,16 @@ class _CollabGridTile extends StatelessWidget {
   const _CollabGridTile({
     required this.videoEvent,
     required this.index,
-    required this.allVideos,
+    required this.onTap,
   });
 
   final VideoEvent videoEvent;
   final int index;
-  final List<VideoEvent> allVideos;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-    onTap: () {
-      Log.info(
-        'ProfileCollabsGrid TAP: gridIndex=$index, '
-        'videoId=${videoEvent.id}',
-        category: LogCategory.video,
-      );
-
-      context.push(
-        FullscreenVideoFeedScreen.path,
-        extra: FullscreenVideoFeedArgs(
-          source: StaticFeedSource(allVideos),
-          initialIndex: index,
-        ),
-      );
-    },
+    onTap: onTap,
     child: ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: DecoratedBox(

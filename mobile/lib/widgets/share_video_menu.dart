@@ -32,6 +32,7 @@ import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
+import 'package:openvine/widgets/save_original_progress_sheet.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 
 // TODO(any): Move this to a reusable widget
@@ -439,11 +440,24 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
 
       const SizedBox(height: 8),
 
+      // Save original video (no watermark) — own content only
+      if (_isUserOwnContent()) ...[
+        _buildActionTile(
+          icon: Icons.save_alt,
+          title: 'Save to Gallery',
+          subtitle: 'Save original video to camera roll',
+          onTap: () => _saveOriginal(context),
+        ),
+        const SizedBox(height: 8),
+      ],
+
       // Save video with watermark
       _buildActionTile(
         icon: Icons.download,
-        title: 'Save Video',
-        subtitle: 'Download with diVine watermark',
+        title: _isUserOwnContent() ? 'Save with Watermark' : 'Save Video',
+        subtitle: _isUserOwnContent()
+            ? 'Download with diVine watermark'
+            : 'Save video to camera roll',
         onTap: () => _saveWithWatermark(context),
       ),
 
@@ -935,6 +949,15 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
   }
 
   /// Save video with diVine watermark overlay
+  Future<void> _saveOriginal(BuildContext ctx) async {
+    // Close the share menu first
+    _safePop(ctx);
+
+    if (!ctx.mounted) return;
+
+    await showSaveOriginalSheet(context: ctx, ref: ref, video: widget.video);
+  }
+
   Future<void> _saveWithWatermark(BuildContext ctx) async {
     // Close the share menu first
     _safePop(ctx);
