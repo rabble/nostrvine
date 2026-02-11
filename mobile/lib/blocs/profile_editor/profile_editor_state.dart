@@ -83,6 +83,7 @@ final class ProfileEditorState extends Equatable {
     this.error,
     this.pendingEvent,
     this.username = '',
+    this.initialUsername,
     this.usernameStatus = UsernameStatus.idle,
     this.usernameError,
     this.reservedUsernames = const {},
@@ -100,6 +101,9 @@ final class ProfileEditorState extends Equatable {
   /// Current username being edited.
   final String username;
 
+  /// The user's existing claimed username, set once at BLoC creation.
+  final String? initialUsername;
+
   /// Status of username validation.
   final UsernameStatus usernameStatus;
 
@@ -109,12 +113,25 @@ final class ProfileEditorState extends Equatable {
   /// Cache of reserved usernames (403 responses from claim API).
   final Set<String> reservedUsernames;
 
+  /// Whether the username state allows saving the profile.
+  bool get isUsernameSaveReady {
+    if (usernameStatus == UsernameStatus.checking) return false;
+    if (username.isEmpty) return true;
+    if (usernameStatus == UsernameStatus.available) return true;
+    if (initialUsername != null &&
+        username.toLowerCase() == initialUsername!.toLowerCase()) {
+      return true;
+    }
+    return false;
+  }
+
   /// Creates a copy with updated values.
   ProfileEditorState copyWith({
     ProfileEditorStatus? status,
     ProfileEditorError? error,
     ProfileSaved? pendingEvent,
     String? username,
+    String? initialUsername,
     UsernameStatus? usernameStatus,
     UsernameValidationError? usernameError,
     Set<String>? reservedUsernames,
@@ -124,6 +141,7 @@ final class ProfileEditorState extends Equatable {
       error: error,
       pendingEvent: pendingEvent,
       username: username ?? this.username,
+      initialUsername: initialUsername ?? this.initialUsername,
       usernameStatus: usernameStatus ?? this.usernameStatus,
       usernameError: usernameError,
       reservedUsernames: reservedUsernames ?? this.reservedUsernames,
@@ -136,6 +154,7 @@ final class ProfileEditorState extends Equatable {
     error,
     pendingEvent,
     username,
+    initialUsername,
     usernameStatus,
     usernameError,
   ];

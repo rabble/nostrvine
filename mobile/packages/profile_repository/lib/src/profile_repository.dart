@@ -100,7 +100,10 @@ class ProfileRepository {
     String? banner,
     UserProfile? currentProfile,
   }) async {
-    final nip05 = username != null ? '_@$username.divine.video' : null;
+    final normalizedUsername = username?.toLowerCase();
+    final nip05 = normalizedUsername != null
+        ? '_@$normalizedUsername.divine.video'
+        : null;
 
     final profileContent = {
       if (currentProfile != null) ...currentProfile.rawData,

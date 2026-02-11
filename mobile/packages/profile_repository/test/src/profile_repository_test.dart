@@ -214,6 +214,22 @@ void main() {
         ).called(1);
       });
 
+      test('normalizes username to lowercase in nip05', () async {
+        await profileRepository.saveProfileEvent(
+          displayName: 'Test',
+          username: 'Alice',
+        );
+
+        verify(
+          () => mockNostrClient.sendProfile(
+            profileContent: {
+              'display_name': 'Test',
+              'nip05': '_@alice.divine.video',
+            },
+          ),
+        ).called(1);
+      });
+
       test('omits null optional fields', () async {
         await profileRepository.saveProfileEvent(displayName: 'Only Name');
 
@@ -1098,6 +1114,40 @@ void main() {
           );
 
           verifyNever(() => mockHttpClient.post(any()));
+        },
+      );
+
+      test(
+        'sends lowercase username in payload for mixed-case input',
+        () async {
+          final expectedPayload = jsonEncode({'name': 'testuser'});
+          when(
+            () => mockNostrClient.createNip98AuthHeader(
+              url: any(named: 'url'),
+              method: any(named: 'method'),
+              payload: any(named: 'payload'),
+            ),
+          ).thenAnswer((_) => Future.value('authHeader'));
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) => Future.value(Response('body', 200)));
+
+          final result = await profileRepository.claimUsername(
+            username: 'TestUser',
+          );
+
+          expect(result, equals(const UsernameClaimSuccess()));
+          verify(
+            () => mockHttpClient.post(
+              Uri.parse('https://names.divine.video/api/username/claim'),
+              headers: any(named: 'headers'),
+              body: expectedPayload,
+            ),
+          ).called(1);
         },
       );
     });

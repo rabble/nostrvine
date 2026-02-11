@@ -44,6 +44,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
        _userProfileService = userProfileService,
        _hasExistingProfile = hasExistingProfile,
        super(const ProfileEditorState()) {
+    on<InitialUsernameSet>(_onInitialUsernameSet);
     on<ProfileSaved>(_onProfileSaved);
     on<ProfileSaveConfirmed>(_onProfileSaveConfirmed);
     on<UsernameChanged>(
@@ -55,6 +56,13 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   final ProfileRepository _profileRepository;
   final UserProfileService _userProfileService;
   final bool _hasExistingProfile;
+
+  void _onInitialUsernameSet(
+    InitialUsernameSet event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(state.copyWith(initialUsername: event.username));
+  }
 
   Future<void> _onProfileSaved(
     ProfileSaved event,
@@ -145,6 +153,19 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         state.copyWith(
           username: username,
           usernameStatus: UsernameStatus.reserved,
+          usernameError: null,
+        ),
+      );
+      return;
+    }
+
+    // Skip API check if username matches the user's own claimed username
+    final initial = state.initialUsername;
+    if (initial != null && username == initial.toLowerCase()) {
+      emit(
+        state.copyWith(
+          username: username,
+          usernameStatus: UsernameStatus.idle,
           usernameError: null,
         ),
       );
