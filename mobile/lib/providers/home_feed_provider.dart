@@ -10,6 +10,7 @@ import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/state/video_feed_state.dart';
@@ -175,11 +176,15 @@ class HomeFeed extends _$HomeFeed {
         );
 
         if (feedResult.videos.isNotEmpty) {
+          final enrichedVideos = await _enrichVideosWithBulkStats(
+            feedResult.videos,
+          );
+
           _usingRestApi = true;
           _restApiSucceededOnce = true;
           _nextCursor = feedResult.nextCursor;
           _hasMoreFromApi = feedResult.hasMore;
-          followingVideosFromSource = feedResult.videos;
+          followingVideosFromSource = enrichedVideos;
 
           Log.info(
             '✅ HomeFeed: Got ${feedResult.videos.length} videos from REST API, '
@@ -825,11 +830,16 @@ class HomeFeed extends _$HomeFeed {
         if (!ref.mounted) return;
 
         if (feedResult.videos.isNotEmpty) {
+          final enrichedVideos = await _enrichVideosWithBulkStats(
+            feedResult.videos,
+          );
+          if (!ref.mounted) return;
+
           // Deduplicate and merge (case-insensitive for Nostr IDs)
           final existingIds = currentState.videos
               .map((v) => v.id.toLowerCase())
               .toSet();
-          final newVideos = feedResult.videos
+          final newVideos = enrichedVideos
               .where((v) => !existingIds.contains(v.id.toLowerCase()))
               .where((v) => v.isSupportedOnCurrentPlatform)
               .toList();
@@ -974,11 +984,16 @@ class HomeFeed extends _$HomeFeed {
       if (!ref.mounted) return;
 
       if (feedResult.videos.isNotEmpty) {
+        final enrichedVideos = await _enrichVideosWithBulkStats(
+          feedResult.videos,
+        );
+        if (!ref.mounted) return;
+
         _usingRestApi = true;
         _nextCursor = feedResult.nextCursor;
         _hasMoreFromApi = feedResult.hasMore;
 
-        var videos = feedResult.videos
+        var videos = enrichedVideos
             .where((v) => v.isSupportedOnCurrentPlatform)
             .toList();
 

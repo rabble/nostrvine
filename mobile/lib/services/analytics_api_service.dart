@@ -31,6 +31,7 @@ class VideoStats {
   final int engagementScore;
   final double? trendingScore;
   final int? loops; // Original loop count for classic Vines
+  final int? views; // Live/new views from Funnelcake analytics
 
   VideoStats({
     required this.id,
@@ -53,6 +54,7 @@ class VideoStats {
     required this.engagementScore,
     this.trendingScore,
     this.loops,
+    this.views,
   });
 
   factory VideoStats.fromJson(Map<String, dynamic> json) {
@@ -253,6 +255,7 @@ class VideoStats {
       trendingScore: (statsData['trending_score'] ?? json['trending_score'])
           ?.toDouble(),
       loops: loops,
+      views: views,
     );
   }
 
@@ -435,6 +438,7 @@ class BulkVideoStatsEntry {
   final int comments;
   final int reposts;
   final int? loops;
+  final int? views;
 
   const BulkVideoStatsEntry({
     required this.eventId,
@@ -442,6 +446,7 @@ class BulkVideoStatsEntry {
     required this.comments,
     required this.reposts,
     this.loops,
+    this.views,
   });
 
   factory BulkVideoStatsEntry.fromJson(Map<String, dynamic> json) {
