@@ -331,6 +331,7 @@ void main() {
                 onSetupProfile: () {},
                 onEditProfile: () {},
                 onOpenClips: () {},
+                onOpenAnalytics: () {},
               ),
             ),
           ),

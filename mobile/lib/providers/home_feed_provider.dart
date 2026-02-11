@@ -700,6 +700,68 @@ class HomeFeed extends _$HomeFeed {
     }
   }
 
+  Future<List<VideoEvent>> _enrichVideosWithBulkStats(
+    List<VideoEvent> videos,
+  ) async {
+    if (videos.isEmpty) return videos;
+
+    final analyticsService = ref.read(analyticsApiServiceProvider);
+    final videoIds = videos.map((video) => video.id).toList();
+
+    final statsByEventId = await analyticsService.getBulkVideoStats(videoIds);
+    final viewsByEventId = await analyticsService.getBulkVideoViews(
+      videoIds,
+      maxVideos: 20,
+    );
+    if (statsByEventId.isEmpty && viewsByEventId.isEmpty) return videos;
+
+    final statsByIdLower = <String, BulkVideoStatsEntry>{
+      for (final entry in statsByEventId.entries)
+        entry.key.toLowerCase(): entry.value,
+    };
+    final viewsByIdLower = <String, int>{
+      for (final entry in viewsByEventId.entries)
+        entry.key.toLowerCase(): entry.value,
+    };
+
+    var withViews = 0;
+    var withLoops = 0;
+    for (final views in viewsByIdLower.values) {
+      if (views > 0) withViews++;
+    }
+    for (final entry in statsByIdLower.values) {
+      if ((entry.loops ?? 0) > 0) withLoops++;
+    }
+    Log.info(
+      'HomeFeed stats enrichment: stats=${statsByIdLower.length}, '
+      'viewSamples=${viewsByIdLower.length}, views>0=$withViews, loops>0=$withLoops',
+      name: 'HomeFeedProvider',
+      category: LogCategory.video,
+    );
+
+    return videos.map((video) {
+      final stats = statsByIdLower[video.id.toLowerCase()];
+      final existingViews = int.tryParse(video.rawTags['views'] ?? '');
+      final mergedLoops = stats?.loops ?? video.originalLoops;
+      final mergedViews =
+          viewsByIdLower[video.id.toLowerCase()] ??
+          stats?.views ??
+          existingViews;
+      final hasSameLoops = mergedLoops == video.originalLoops;
+      final hasSameViews = mergedViews == existingViews;
+      if (hasSameLoops && hasSameViews) return video;
+
+      return video.copyWith(
+        originalLoops: mergedLoops,
+        rawTags: {
+          ...video.rawTags,
+          if (mergedLoops != null) 'loops': mergedLoops.toString(),
+          if (mergedViews != null) 'views': mergedViews.toString(),
+        },
+      );
+    }).toList();
+  }
+
   /// Load more historical events from followed authors
   Future<void> loadMore() async {
     final currentState = await future;

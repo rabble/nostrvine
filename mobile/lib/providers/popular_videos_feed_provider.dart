@@ -9,6 +9,7 @@ import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
+import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -125,6 +126,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         }
 
         if (apiVideos.isNotEmpty) {
+          apiVideos = await _enrichVideosWithStats(apiVideos);
           _usingRestApi = true;
           _nextCursor = _getOldestTimestamp(apiVideos);
 
@@ -251,16 +253,19 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         if (!ref.mounted) return;
 
         if (apiVideos.isNotEmpty) {
+          final enrichedVideos = await _enrichVideosWithStats(apiVideos);
+          if (!ref.mounted) return;
+
           // Case-insensitive deduplication for Nostr IDs
           final existingIds = currentState.videos
               .map((v) => v.id.toLowerCase())
               .toSet();
-          final newVideos = apiVideos
+          final newVideos = enrichedVideos
               .where((v) => !existingIds.contains(v.id.toLowerCase()))
               .where((v) => v.isSupportedOnCurrentPlatform)
               .toList();
 
-          _nextCursor = _getOldestTimestamp(apiVideos);
+          _nextCursor = _getOldestTimestamp(enrichedVideos);
 
           if (newVideos.isNotEmpty) {
             // Enrich REST API videos with Nostr tags for ProofMode badge
@@ -276,7 +281,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
               VideoFeedState(
                 videos: allVideos,
                 hasMoreContent:
-                    apiVideos.length >= AppConstants.paginationBatchSize,
+                    enrichedVideos.length >= AppConstants.paginationBatchSize,
                 isLoadingMore: false,
                 lastUpdated: DateTime.now(),
               ),
@@ -285,7 +290,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
             state = AsyncData(
               currentState.copyWith(
                 hasMoreContent:
-                    apiVideos.length >= AppConstants.paginationBatchSize,
+                    enrichedVideos.length >= AppConstants.paginationBatchSize,
                 isLoadingMore: false,
               ),
             );
@@ -336,9 +341,12 @@ class PopularVideosFeed extends _$PopularVideosFeed {
         if (!ref.mounted) return;
 
         if (apiVideos.isNotEmpty) {
-          _nextCursor = _getOldestTimestamp(apiVideos);
+          final statsEnriched = await _enrichVideosWithStats(apiVideos);
+          if (!ref.mounted) return;
 
-          final filteredVideos = apiVideos
+          _nextCursor = _getOldestTimestamp(statsEnriched);
+
+          final filteredVideos = statsEnriched
               .where((v) => v.isSupportedOnCurrentPlatform)
               .toList();
 
@@ -349,7 +357,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
             VideoFeedState(
               videos: enrichedVideos,
               hasMoreContent:
-                  apiVideos.length >= AppConstants.paginationBatchSize,
+                  statsEnriched.length >= AppConstants.paginationBatchSize,
               isLoadingMore: false,
               lastUpdated: DateTime.now(),
             ),
@@ -445,5 +453,73 @@ class PopularVideosFeed extends _$PopularVideosFeed {
       );
       return videos;
     }
+  }
+
+  Future<List<VideoEvent>> _enrichVideosWithStats(
+    List<VideoEvent> videos,
+  ) async {
+    if (videos.isEmpty) return videos;
+
+    final analyticsService = ref.read(analyticsApiServiceProvider);
+    final videoIds = videos.map((video) => video.id).toList();
+
+    final statsByEventId = await analyticsService.getBulkVideoStats(videoIds);
+    final viewsByEventId = await analyticsService.getBulkVideoViews(
+      videoIds,
+      maxVideos: 20,
+    );
+
+    if (statsByEventId.isEmpty && viewsByEventId.isEmpty) {
+      return videos;
+    }
+
+    final statsByIdLower = <String, BulkVideoStatsEntry>{
+      for (final entry in statsByEventId.entries)
+        entry.key.toLowerCase(): entry.value,
+    };
+    final viewsByIdLower = <String, int>{
+      for (final entry in viewsByEventId.entries)
+        entry.key.toLowerCase(): entry.value,
+    };
+
+    var withViews = 0;
+    var withLoops = 0;
+    for (final views in viewsByIdLower.values) {
+      if (views > 0) withViews++;
+    }
+    for (final entry in statsByIdLower.values) {
+      if ((entry.loops ?? 0) > 0) withLoops++;
+    }
+    Log.info(
+      'PopularVideosFeed enrichment: stats=${statsByIdLower.length}, '
+      'viewSamples=${viewsByIdLower.length}, views>0=$withViews, loops>0=$withLoops',
+      name: 'PopularVideosFeedProvider',
+      category: LogCategory.video,
+    );
+
+    return videos.map((video) {
+      final stats = statsByIdLower[video.id.toLowerCase()];
+      final existingViews = int.tryParse(video.rawTags['views'] ?? '');
+      final mergedLoops = stats?.loops ?? video.originalLoops;
+      final mergedViews =
+          viewsByIdLower[video.id.toLowerCase()] ??
+          stats?.views ??
+          existingViews;
+      final hasSameLoops = mergedLoops == video.originalLoops;
+      final hasSameViews = mergedViews == existingViews;
+
+      if (hasSameLoops && hasSameViews) {
+        return video;
+      }
+
+      return video.copyWith(
+        originalLoops: mergedLoops,
+        rawTags: {
+          ...video.rawTags,
+          if (mergedLoops != null) 'loops': mergedLoops.toString(),
+          if (mergedViews != null) 'views': mergedViews.toString(),
+        },
+      );
+    }).toList();
   }
 }

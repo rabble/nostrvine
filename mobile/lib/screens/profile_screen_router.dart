@@ -19,6 +19,7 @@ import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -169,6 +170,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         onSetupProfile: _setupProfile,
         onEditProfile: _editProfile,
         onOpenClips: _openClips,
+        onOpenAnalytics: _openAnalytics,
         refreshNotifier: _refreshNotifier,
       ),
     };
@@ -376,6 +378,15 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     context.push(ClipLibraryScreen.clipsPath);
   }
 
+  void _openAnalytics() {
+    final rootContext = NavigatorKeys.root.currentContext;
+    if (rootContext != null) {
+      GoRouter.of(rootContext).pushNamed(CreatorAnalyticsScreen.routeName);
+      return;
+    }
+    context.pushNamed(CreatorAnalyticsScreen.routeName);
+  }
+
   Future<void> _more(String userIdHex) async {
     final result = await VineBottomSheet.show<String>(
       context: context,
@@ -398,6 +409,19 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 ),
                 const SizedBox(width: 16),
                 Text('Edit profile', style: VineTheme.titleMediumFont()),
+              ],
+            ),
+          ),
+        ),
+        InkWell(
+          onTap: () => Navigator.of(context).pop('analytics'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                const Icon(Icons.analytics_outlined, size: 24),
+                const SizedBox(width: 16),
+                Text('Creator analytics', style: VineTheme.titleMediumFont()),
               ],
             ),
           ),
@@ -454,6 +478,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     if (result == 'edit') {
       _editProfile();
+    } else if (result == 'analytics') {
+      _openAnalytics();
     } else if (result == 'share') {
       await _shareProfile(userIdHex);
     } else if (result == 'copy_npub') {
@@ -482,6 +508,7 @@ class _ProfileContentView extends ConsumerWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
+    required this.onOpenAnalytics,
     required this.refreshNotifier,
   });
 
@@ -491,6 +518,7 @@ class _ProfileContentView extends ConsumerWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
+  final VoidCallback onOpenAnalytics;
   final ValueNotifier<int> refreshNotifier;
 
   @override
@@ -551,6 +579,7 @@ class _ProfileContentView extends ConsumerWidget {
       onSetupProfile: onSetupProfile,
       onEditProfile: onEditProfile,
       onOpenClips: onOpenClips,
+      onOpenAnalytics: onOpenAnalytics,
       refreshNotifier: refreshNotifier,
     );
   }
@@ -608,6 +637,7 @@ class _ProfileDataView extends ConsumerWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
+    required this.onOpenAnalytics,
     required this.refreshNotifier,
     this.displayName,
   });
@@ -621,6 +651,7 @@ class _ProfileDataView extends ConsumerWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
+  final VoidCallback onOpenAnalytics;
   final ValueNotifier<int> refreshNotifier;
 
   @override
@@ -671,6 +702,7 @@ class _ProfileDataView extends ConsumerWidget {
           onSetupProfile: onSetupProfile,
           onEditProfile: onEditProfile,
           onOpenClips: onOpenClips,
+          onOpenAnalytics: onOpenAnalytics,
           refreshNotifier: refreshNotifier,
         ),
       },
@@ -693,6 +725,7 @@ class ProfileViewSwitcher extends StatelessWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
+    required this.onOpenAnalytics,
     this.refreshNotifier,
     this.displayName,
     super.key,
@@ -709,6 +742,7 @@ class ProfileViewSwitcher extends StatelessWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
+  final VoidCallback onOpenAnalytics;
 
   /// Optional notifier to trigger BLoC refresh when its value changes.
   final ValueNotifier<int>? refreshNotifier;
@@ -743,6 +777,7 @@ class ProfileViewSwitcher extends StatelessWidget {
             onSetupProfile: onSetupProfile,
             onEditProfile: onEditProfile,
             onOpenClips: onOpenClips,
+            onOpenAnalytics: onOpenAnalytics,
             refreshNotifier: refreshNotifier,
           );
 
