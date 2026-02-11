@@ -1024,7 +1024,8 @@ class _ProfileSetupScreenViewState
                             (username.isEmpty ||
                                 blocState.usernameStatus ==
                                     UsernameStatus.available ||
-                                username == _initialUsername) &&
+                                username.toLowerCase() ==
+                                    _initialUsername?.toLowerCase()) &&
                             blocState.usernameStatus != UsernameStatus.checking;
 
                         return Expanded(
@@ -1468,7 +1469,7 @@ class UsernameStatusIndicator extends StatelessWidget {
     if (error != null) {
       errorText = switch (error) {
         UsernameValidationError.invalidFormat =>
-          'Only letters, numbers, -, _, and . are allowed',
+          'Only lowercase letters, numbers, -, _, and . are allowed',
         UsernameValidationError.invalidLength =>
           'Username must be 3-20 characters',
         UsernameValidationError.networkError =>

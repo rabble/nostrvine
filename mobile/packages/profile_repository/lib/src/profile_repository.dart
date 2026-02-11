@@ -83,6 +83,11 @@ class ProfileRepository {
 
   /// Publishes profile metadata to Nostr relays and updates the local cache.
   ///
+  /// When [username] is provided, the repository constructs the NIP-05
+  /// identifier (`_@<username>.divine.video`) internally. When [username] is
+  /// `null` and a [currentProfile] is supplied, the existing NIP-05 value is
+  /// preserved from `currentProfile.rawData`.
+  ///
   /// After successful publish, the profile is cached locally for immediate
   /// subsequent reads.
   ///
@@ -90,11 +95,13 @@ class ProfileRepository {
   Future<UserProfile> saveProfileEvent({
     required String displayName,
     String? about,
-    String? nip05,
+    String? username,
     String? picture,
     String? banner,
     UserProfile? currentProfile,
   }) async {
+    final nip05 = username != null ? '_@$username.divine.video' : null;
+
     final profileContent = {
       if (currentProfile != null) ...currentProfile.rawData,
       'display_name': displayName,
@@ -129,8 +136,9 @@ class ProfileRepository {
   Future<UsernameClaimResult> claimUsername({
     required String username,
   }) async {
+    final normalizedUsername = username.toLowerCase();
     final payload = jsonEncode({
-      'name': username,
+      'name': normalizedUsername,
     });
     final authHeader = await _nostrClient.createNip98AuthHeader(
       url: _usernameClaimUrl,
@@ -178,9 +186,12 @@ class ProfileRepository {
   Future<UsernameAvailabilityResult> checkUsernameAvailability({
     required String username,
   }) async {
+    // NIP-05 local parts are lowercase-only (a-z0-9-_.) per spec;
+    // normalize user input to match.
+    final normalizedUsername = username.toLowerCase();
     try {
       final response = await _httpClient.get(
-        Uri.parse('$_nip05LookupUrl?name=$username'),
+        Uri.parse('$_nip05LookupUrl?name=$normalizedUsername'),
       );
 
       if (response.statusCode == 200) {
@@ -188,7 +199,8 @@ class ProfileRepository {
         final names = data['names'] as Map<String, dynamic>?;
 
         // Username is available if not in the names map
-        final isAvailable = names == null || !names.containsKey(username);
+        final isAvailable =
+            names == null || !names.containsKey(normalizedUsername);
 
         return isAvailable ? const UsernameAvailable() : const UsernameTaken();
       } else {

@@ -20,8 +20,9 @@ const _minUsernameLength = 3;
 /// Maximum username length.
 const _maxUsernameLength = 20;
 
-/// Username format: letters, numbers, hyphens, underscores, periods.
-final _usernamePattern = RegExp(r'^[a-zA-Z0-9._-]+$');
+/// Username format: lowercase letters, numbers, hyphens, underscores, periods.
+/// NIP-05 local parts are lowercase-only (a-z0-9-_.) per spec.
+final _usernamePattern = RegExp(r'^[a-z0-9._-]+$');
 
 /// Debounce duration for username validation
 const _debounceDuration = Duration(milliseconds: 500);
@@ -211,7 +212,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     final currentProfile = await _profileRepository.getCachedProfile(
       pubkey: event.pubkey,
     );
-    final nip05 = username != null ? '_@$username.divine.video' : null;
 
     Log.info(
       '📝 saveProfile: displayName=$displayName, '
@@ -225,7 +225,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       savedProfile = await _profileRepository.saveProfileEvent(
         displayName: displayName,
         about: about,
-        nip05: nip05,
+        username: username,
         picture: picture,
         banner: banner,
         currentProfile: currentProfile,
@@ -288,7 +288,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       final rolledBack = await _profileRepository.saveProfileEvent(
         displayName: displayName,
         about: about,
-        nip05: currentProfile?.nip05,
         picture: picture,
         banner: banner,
         currentProfile: currentProfile,

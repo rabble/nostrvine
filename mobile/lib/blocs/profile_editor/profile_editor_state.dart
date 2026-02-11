@@ -65,7 +65,8 @@ enum UsernameStatus {
 enum UsernameValidationError {
   /// Username contains invalid characters.
   ///
-  /// Valid characters: letters, numbers, hyphens, underscores, periods.
+  /// Valid characters: lowercase letters, numbers, hyphens, underscores,
+  /// periods. Per NIP-05, local parts are lowercase-only (a-z0-9-_.).
   invalidFormat,
 
   /// Username length is outside allowed range (3-20 characters).

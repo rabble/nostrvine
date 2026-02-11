@@ -167,7 +167,7 @@ void main() {
             jsonEncode({
               'display_name': 'New Name',
               'about': 'New bio',
-              'nip05': 'new@example.com',
+              'nip05': '_@newuser.divine.video',
               'picture': 'https://example.com/new.png',
             }),
           );
@@ -175,13 +175,13 @@ void main() {
           final profile = await profileRepository.saveProfileEvent(
             displayName: 'New Name',
             about: 'New bio',
-            nip05: 'new@example.com',
+            username: 'newuser',
             picture: 'https://example.com/new.png',
           );
 
           expect(profile.displayName, equals('New Name'));
           expect(profile.about, equals('New bio'));
-          expect(profile.nip05, equals('new@example.com'));
+          expect(profile.nip05, equals('_@newuser.divine.video'));
           expect(profile.picture, equals('https://example.com/new.png'));
 
           verify(
@@ -189,7 +189,7 @@ void main() {
               profileContent: {
                 'display_name': 'New Name',
                 'about': 'New bio',
-                'nip05': 'new@example.com',
+                'nip05': '_@newuser.divine.video',
                 'picture': 'https://example.com/new.png',
               },
             ),
@@ -197,6 +197,22 @@ void main() {
           verify(() => mockUserProfilesDao.upsertProfile(profile)).called(1);
         },
       );
+
+      test('constructs nip05 identifier from username', () async {
+        await profileRepository.saveProfileEvent(
+          displayName: 'Test',
+          username: 'alice',
+        );
+
+        verify(
+          () => mockNostrClient.sendProfile(
+            profileContent: {
+              'display_name': 'Test',
+              'nip05': '_@alice.divine.video',
+            },
+          ),
+        ).called(1);
+      });
 
       test('omits null optional fields', () async {
         await profileRepository.saveProfileEvent(displayName: 'Only Name');
@@ -283,7 +299,7 @@ void main() {
 
           await profileRepository.saveProfileEvent(
             displayName: 'New Name',
-            nip05: 'new@example.com',
+            username: 'newuser',
             about: 'New bio',
             currentProfile: currentProfile,
           );
@@ -292,7 +308,7 @@ void main() {
             () => mockNostrClient.sendProfile(
               profileContent: {
                 'display_name': 'New Name',
-                'nip05': 'new@example.com',
+                'nip05': '_@newuser.divine.video',
                 'about': 'New bio',
               },
             ),
@@ -1277,6 +1293,75 @@ void main() {
             'message',
             contains('Network error'),
           ),
+        );
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=testuser',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test(
+        'returns UsernameTaken when username differs only in case',
+        () async {
+          when(
+            () => mockHttpClient.get(any()),
+          ).thenAnswer(
+            (_) async => Response(
+              jsonEncode({
+                'names': {'alice': 'pubkey1'},
+              }),
+              200,
+            ),
+          );
+
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'Alice',
+          );
+
+          expect(result, equals(const UsernameTaken()));
+        },
+      );
+
+      test(
+        'returns UsernameTaken for all-caps input when lowercase exists',
+        () async {
+          when(
+            () => mockHttpClient.get(any()),
+          ).thenAnswer(
+            (_) async => Response(
+              jsonEncode({
+                'names': {'alice': 'pubkey1'},
+              }),
+              200,
+            ),
+          );
+
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'ALICE',
+          );
+
+          expect(result, equals(const UsernameTaken()));
+        },
+      );
+
+      test('sends lowercase username in query parameter', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer(
+          (_) async => Response(
+            jsonEncode({
+              'names': {'testuser': 'pubkey1'},
+            }),
+            200,
+          ),
+        );
+
+        await profileRepository.checkUsernameAvailability(
+          username: 'TestUser',
         );
 
         verify(
