@@ -246,15 +246,13 @@ class HomeFeed extends _$HomeFeed {
         followingSubscription.cancel();
       });
     } else if (!_usingRestApi) {
-      // Neither REST API nor Nostr available yet - return loading state
       Log.info(
         '🏠 HomeFeed: Waiting for FollowRepository (NostrClient not ready) '
-        'and REST API unavailable',
+        'and REST API unavailable - keeping provider alive for rebuild',
         name: 'HomeFeedProvider',
         category: LogCategory.video,
       );
       stopAutoRefresh();
-      keepAliveLink.close();
       return const VideoFeedState(
         videos: [],
         hasMoreContent: false,

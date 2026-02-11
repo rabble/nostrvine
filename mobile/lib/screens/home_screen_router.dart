@@ -43,6 +43,8 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
   PageController? _controller;
   int? _lastUrlIndex;
   int? _lastPrefetchIndex;
+  DateTime? _initialLoadStartTime;
+  static const _loadingTimeoutSeconds = 5;
 
   @override
   void initState() {
@@ -93,6 +95,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
 
     return buildAsyncUI(
       pageContext,
+      onLoading: () => const Center(child: BrandedLoadingIndicator(size: 80)),
       onData: (ctx) {
         // Only handle home routes - if we get here with wrong route, don't redirect
         // Just return empty container and let GoRouter handle the correct widget
@@ -110,58 +113,27 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
 
         return buildAsyncUI(
           videosAsync,
+          onLoading: () =>
+              const Center(child: BrandedLoadingIndicator(size: 80)),
           onData: (state) {
             final videos = state.videos;
 
             if (state.lastUpdated == null && state.videos.isEmpty) {
+              _initialLoadStartTime ??= DateTime.now();
+              final elapsed = DateTime.now()
+                  .difference(_initialLoadStartTime!)
+                  .inSeconds;
+              if (elapsed >= _loadingTimeoutSeconds) {
+                _initialLoadStartTime = null;
+                return const _EmptyHomeFeed();
+              }
               return const Center(child: BrandedLoadingIndicator(size: 80));
             }
+            _initialLoadStartTime = null;
 
             if (videos.isEmpty) {
-              // Handle empty videos case - no clamp needed
               urlIndex = 0;
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32.0),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.people_outline,
-                        size: 80,
-                        color: Colors.grey,
-                      ),
-                      const SizedBox(height: 24),
-                      const Text(
-                        'Your Home Feed is Empty',
-                        style: TextStyle(
-                          fontSize: 22,
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'Follow creators to see their videos here',
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 32),
-                      ElevatedButton.icon(
-                        onPressed: () => context.go(ExploreScreen.path),
-                        icon: const Icon(Icons.explore),
-                        label: const Text('Explore Videos'),
-                        style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 24,
-                            vertical: 12,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+              return const _EmptyHomeFeed();
             }
 
             ScreenAnalyticsService().markDataLoaded(
@@ -298,6 +270,52 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
           },
         );
       },
+    );
+  }
+}
+
+class _EmptyHomeFeed extends StatelessWidget {
+  const _EmptyHomeFeed();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.people_outline, size: 80, color: Colors.grey),
+            const SizedBox(height: 24),
+            const Text(
+              'Your Home Feed is Empty',
+              style: TextStyle(
+                fontSize: 22,
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Follow creators to see their videos here',
+              style: TextStyle(fontSize: 16, color: Colors.grey),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 32),
+            ElevatedButton.icon(
+              onPressed: () => context.go(ExploreScreen.path),
+              icon: const Icon(Icons.explore),
+              label: const Text('Explore Videos'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

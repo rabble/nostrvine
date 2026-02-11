@@ -141,6 +141,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
         // If TOS is accepted but user is not authenticated, redirect to welcome
         if (authState == AuthState.unauthenticated) {
+          _hasNavigated = false;
           Log.debug(
             'Not authenticated, redirecting to ${WelcomeScreen.path}',
             name: 'AppRouter',
