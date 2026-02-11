@@ -50,6 +50,14 @@ class _PooledHomeFeedScreenState extends ConsumerState<PooledHomeFeedScreen>
     with WidgetsBindingObserver {
   bool _isActive = true;
 
+  // Cache last known videos to prevent destroying the video feed content
+  // during provider refresh cycles. The home feed provider emits an
+  // intermediate empty state at the start of each build() which would
+  // otherwise tear down and recreate the VideoFeedController, creating
+  // multiple native video textures simultaneously (crashes iOS).
+  List<VideoEvent>? _lastKnownVideos;
+  bool _lastHasMoreContent = false;
+
   @override
   void initState() {
     super.initState();
@@ -90,28 +98,49 @@ class _PooledHomeFeedScreenState extends ConsumerState<PooledHomeFeedScreen>
     setState(() => _isActive = active);
   }
 
-  bool _isFollowingAnyone() {
-    final followRepository = ref.read(followRepositoryProvider);
-    return (followRepository?.followingCount ?? 0) > 0;
-  }
-
   @override
   Widget build(BuildContext context) {
     final feedAsync = ref.watch(homeFeedProvider);
+    final onLoadMore = ref.read(homeFeedProvider.notifier).loadMore;
 
     return feedAsync.when(
-      loading: () => const _HomeFeedLoadingState(),
+      loading: () {
+        // Keep showing cached content during provider refresh
+        final cached = _lastKnownVideos;
+        if (cached != null && cached.isNotEmpty) {
+          return _PooledHomeFeedContent(
+            videos: cached,
+            isActive: _isActive,
+            hasMoreContent: _lastHasMoreContent,
+            onLoadMore: onLoadMore,
+          );
+        }
+        return const _HomeFeedLoadingState();
+      },
       error: (error, _) => _HomeFeedErrorState(
         error: error.toString(),
         onRetry: () => ref.invalidate(homeFeedProvider),
       ),
       data: (feedState) {
         if (feedState.videos.isEmpty && feedState.isInitialLoad) {
+          // Keep showing cached content during provider rebuild
+          final cached = _lastKnownVideos;
+          if (cached != null && cached.isNotEmpty) {
+            return _PooledHomeFeedContent(
+              videos: cached,
+              isActive: _isActive,
+              hasMoreContent: _lastHasMoreContent,
+              onLoadMore: onLoadMore,
+            );
+          }
           return const _HomeFeedLoadingState();
         }
 
         if (feedState.videos.isEmpty) {
-          return _HomeFeedEmptyState(isFollowingAnyone: _isFollowingAnyone());
+          _lastKnownVideos = null;
+          final followRepository = ref.read(followRepositoryProvider);
+          final isFollowing = (followRepository?.followingCount ?? 0) > 0;
+          return _HomeFeedEmptyState(isFollowingAnyone: isFollowing);
         }
 
         final videosWithUrl = feedState.videos
@@ -119,14 +148,21 @@ class _PooledHomeFeedScreenState extends ConsumerState<PooledHomeFeedScreen>
             .toList();
 
         if (videosWithUrl.isEmpty) {
-          return _HomeFeedEmptyState(isFollowingAnyone: _isFollowingAnyone());
+          _lastKnownVideos = null;
+          final followRepository = ref.read(followRepositoryProvider);
+          final isFollowing = (followRepository?.followingCount ?? 0) > 0;
+          return _HomeFeedEmptyState(isFollowingAnyone: isFollowing);
         }
+
+        // Cache for future refresh cycles
+        _lastKnownVideos = videosWithUrl;
+        _lastHasMoreContent = feedState.hasMoreContent;
 
         return _PooledHomeFeedContent(
           videos: videosWithUrl,
           isActive: _isActive,
           hasMoreContent: feedState.hasMoreContent,
-          onLoadMore: () => ref.read(homeFeedProvider.notifier).loadMore(),
+          onLoadMore: onLoadMore,
         );
       },
     );
@@ -217,9 +253,13 @@ class _PooledHomeFeedContentState extends State<_PooledHomeFeedContent> {
   }
 
   void _onActiveVideoChanged(VideoItem video, int index) {
-    setState(() => _currentIndex = index);
-    // Update URL for tab-based active state
-    context.go(HomeScreenRouter.pathForIndex(index));
+    // Track current index for controller re-initialization if the widget
+    // is recreated (e.g., after provider refresh cycle). No setState needed —
+    // PooledVideoFeed manages its own scroll state internally, and calling
+    // setState here would trigger an unnecessary parent rebuild that creates
+    // a second PooledVideoFeedState.build() per scroll. The fullscreen feed
+    // avoids this by dispatching a BLoC event instead.
+    _currentIndex = index;
   }
 
   void _onNearEnd(int index) {
