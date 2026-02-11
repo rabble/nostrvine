@@ -11,7 +11,6 @@ import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/state/video_feed_state.dart';
 
 void main() {
@@ -20,24 +19,24 @@ void main() {
     final now = DateTime.now();
     final nowUnix = now.millisecondsSinceEpoch ~/ 1000;
 
-    final mockHomeVideos = [
+    final mockSearchVideos = [
       VideoEvent(
-        id: 'home-video-0',
+        id: 'search-video-0',
         pubkey: 'pubkey-1',
         createdAt: nowUnix,
-        content: 'Home Video 0',
+        content: 'Search Video 0',
         timestamp: now,
-        title: 'Home Video 0',
-        videoUrl: 'https://example.com/home0.mp4',
+        title: 'Search Video 0',
+        videoUrl: 'https://example.com/search0.mp4',
       ),
       VideoEvent(
-        id: 'home-video-1',
+        id: 'search-video-1',
         pubkey: 'pubkey-2',
         createdAt: nowUnix,
-        content: 'Home Video 1',
+        content: 'Search Video 1',
         timestamp: now,
-        title: 'Home Video 1',
-        videoUrl: 'https://example.com/home1.mp4',
+        title: 'Search Video 1',
+        videoUrl: 'https://example.com/search1.mp4',
       ),
     ];
 
@@ -73,64 +72,6 @@ void main() {
             routerLocationStreamProvider.overrideWith(
               (ref) => locationController.stream,
             ),
-            videosForHomeRouteProvider.overrideWith((ref) {
-              return AsyncValue.data(
-                VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
-              );
-            }),
-            appForegroundProvider.overrideWith((ref) => Stream.value(true)),
-          ],
-        );
-
-        // Track active video changes
-        final activeVideoIds = <String?>[];
-        container.listen(activeVideoIdProvider, (previous, next) {
-          print('ACTIVE VIDEO: $previous → $next');
-          activeVideoIds.add(next);
-        }, fireImmediately: true);
-
-        container.listen(
-          pageContextProvider,
-          (_, __) {},
-          fireImmediately: true,
-        );
-
-        // Start at home video 0
-        locationController.add(HomeScreenRouter.pathForIndex(0));
-        await pumpEventQueue();
-
-        expect(container.read(activeVideoIdProvider), equals('home-video-0'));
-        expect(activeVideoIds.last, equals('home-video-0'));
-
-        // Navigate to explore grid (no index)
-        locationController.add(ExploreScreen.path);
-        await pumpEventQueue();
-
-        // Active video should be null (grid mode)
-        expect(container.read(activeVideoIdProvider), isNull);
-        expect(activeVideoIds.last, isNull);
-
-        locationController.close();
-        container.dispose();
-      },
-    );
-
-    test(
-      'activeVideoId changes when navigating between different feeds',
-      () async {
-        // Verify that navigating from home to explore changes active video
-        final locationController = StreamController<String>();
-
-        final container = ProviderContainer(
-          overrides: [
-            routerLocationStreamProvider.overrideWith(
-              (ref) => locationController.stream,
-            ),
-            videosForHomeRouteProvider.overrideWith((ref) {
-              return AsyncValue.data(
-                VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
-              );
-            }),
             videosForExploreRouteProvider.overrideWith((ref) {
               return AsyncValue.data(
                 VideoFeedState(
@@ -156,33 +97,97 @@ void main() {
           fireImmediately: true,
         );
 
-        // Start at home video 0
-        locationController.add(HomeScreenRouter.pathForIndex(0));
-        await pumpEventQueue();
-
-        expect(container.read(activeVideoIdProvider), equals('home-video-0'));
-
-        // Navigate to explore video 0
+        // Start at explore video 0
         locationController.add(ExploreScreen.pathForIndex(0));
         await pumpEventQueue();
 
-        // Active video should change to explore-video-0
         expect(
           container.read(activeVideoIdProvider),
           equals('explore-video-0'),
         );
-        expect(activeVideoIds, contains('explore-video-0'));
+        expect(activeVideoIds.last, equals('explore-video-0'));
 
-        // Verify home video is no longer active
-        final isHomeVideoActive = container.read(
-          isVideoActiveProvider('home-video-0'),
+        // Navigate to explore grid (no index)
+        locationController.add(ExploreScreen.path);
+        await pumpEventQueue();
+
+        // Active video should be null (grid mode)
+        expect(container.read(activeVideoIdProvider), isNull);
+        expect(activeVideoIds.last, isNull);
+
+        locationController.close();
+        container.dispose();
+      },
+    );
+
+    test(
+      'activeVideoId changes when navigating between different feeds',
+      () async {
+        // Verify that navigating from explore to search changes active video
+        final locationController = StreamController<String>();
+
+        final container = ProviderContainer(
+          overrides: [
+            routerLocationStreamProvider.overrideWith(
+              (ref) => locationController.stream,
+            ),
+            videosForExploreRouteProvider.overrideWith((ref) {
+              return AsyncValue.data(
+                VideoFeedState(
+                  videos: mockExploreVideos,
+                  hasMoreContent: false,
+                ),
+              );
+            }),
+            videosForSearchRouteProvider.overrideWith((ref) {
+              return AsyncValue.data(
+                VideoFeedState(videos: mockSearchVideos, hasMoreContent: false),
+              );
+            }),
+            appForegroundProvider.overrideWith((ref) => Stream.value(true)),
+          ],
         );
+
+        // Track active video changes
+        final activeVideoIds = <String?>[];
+        container.listen(activeVideoIdProvider, (previous, next) {
+          print('ACTIVE VIDEO: $previous → $next');
+          activeVideoIds.add(next);
+        }, fireImmediately: true);
+
+        container.listen(
+          pageContextProvider,
+          (_, __) {},
+          fireImmediately: true,
+        );
+
+        // Start at explore video 0
+        locationController.add(ExploreScreen.pathForIndex(0));
+        await pumpEventQueue();
+
+        expect(
+          container.read(activeVideoIdProvider),
+          equals('explore-video-0'),
+        );
+
+        // Navigate to search video 0
+        locationController.add('/search/0');
+        await pumpEventQueue();
+
+        // Active video should change to search-video-0
+        expect(container.read(activeVideoIdProvider), equals('search-video-0'));
+        expect(activeVideoIds, contains('search-video-0'));
+
+        // Verify explore video is no longer active
         final isExploreVideoActive = container.read(
           isVideoActiveProvider('explore-video-0'),
         );
+        final isSearchVideoActive = container.read(
+          isVideoActiveProvider('search-video-0'),
+        );
 
-        expect(isHomeVideoActive, isFalse);
-        expect(isExploreVideoActive, isTrue);
+        expect(isExploreVideoActive, isFalse);
+        expect(isSearchVideoActive, isTrue);
 
         locationController.close();
         container.dispose();
@@ -199,9 +204,9 @@ void main() {
           routerLocationStreamProvider.overrideWith(
             (ref) => locationController.stream,
           ),
-          videosForHomeRouteProvider.overrideWith((ref) {
+          videosForExploreRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
-              VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
+              VideoFeedState(videos: mockExploreVideos, hasMoreContent: false),
             );
           }),
           appForegroundProvider.overrideWith(
@@ -221,11 +226,11 @@ void main() {
 
       // Start with app in foreground and video playing
       lifecycleController.add(true);
-      locationController.add(HomeScreenRouter.pathForIndex(0));
+      locationController.add(ExploreScreen.pathForIndex(0));
       await pumpEventQueue();
 
-      expect(container.read(activeVideoIdProvider), equals('home-video-0'));
-      expect(activeVideoIds.last, equals('home-video-0'));
+      expect(container.read(activeVideoIdProvider), equals('explore-video-0'));
+      expect(activeVideoIds.last, equals('explore-video-0'));
 
       // Background the app
       lifecycleController.add(false);
@@ -240,8 +245,8 @@ void main() {
       await pumpEventQueue();
 
       // Video should become active again
-      expect(container.read(activeVideoIdProvider), equals('home-video-0'));
-      expect(activeVideoIds.last, equals('home-video-0'));
+      expect(container.read(activeVideoIdProvider), equals('explore-video-0'));
+      expect(activeVideoIds.last, equals('explore-video-0'));
 
       lifecycleController.close();
       locationController.close();
@@ -257,9 +262,9 @@ void main() {
           routerLocationStreamProvider.overrideWith(
             (ref) => locationController.stream,
           ),
-          videosForHomeRouteProvider.overrideWith((ref) {
+          videosForExploreRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
-              VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
+              VideoFeedState(videos: mockExploreVideos, hasMoreContent: false),
             );
           }),
           appForegroundProvider.overrideWith((ref) => Stream.value(true)),
@@ -275,27 +280,27 @@ void main() {
 
       container.listen(pageContextProvider, (_, __) {}, fireImmediately: true);
 
-      // Start at home video 0
-      locationController.add(HomeScreenRouter.pathForIndex(0));
+      // Start at explore video 0
+      locationController.add(ExploreScreen.pathForIndex(0));
       await pumpEventQueue();
 
-      expect(container.read(activeVideoIdProvider), equals('home-video-0'));
-      expect(container.read(isVideoActiveProvider('home-video-0')), isTrue);
-      expect(container.read(isVideoActiveProvider('home-video-1')), isFalse);
+      expect(container.read(activeVideoIdProvider), equals('explore-video-0'));
+      expect(container.read(isVideoActiveProvider('explore-video-0')), isTrue);
+      expect(container.read(isVideoActiveProvider('explore-video-1')), isFalse);
 
-      // Swipe to home video 1
-      locationController.add(HomeScreenRouter.pathForIndex(1));
+      // Swipe to explore video 1
+      locationController.add(ExploreScreen.pathForIndex(1));
       await pumpEventQueue();
 
       // Active video should change
-      expect(container.read(activeVideoIdProvider), equals('home-video-1'));
-      expect(container.read(isVideoActiveProvider('home-video-0')), isFalse);
-      expect(container.read(isVideoActiveProvider('home-video-1')), isTrue);
+      expect(container.read(activeVideoIdProvider), equals('explore-video-1'));
+      expect(container.read(isVideoActiveProvider('explore-video-0')), isFalse);
+      expect(container.read(isVideoActiveProvider('explore-video-1')), isTrue);
 
       // Verify we saw both videos in the active video stream
       expect(
         activeVideoIds,
-        containsAllInOrder(['home-video-0', 'home-video-1']),
+        containsAllInOrder(['explore-video-0', 'explore-video-1']),
       );
 
       locationController.close();
@@ -314,9 +319,12 @@ void main() {
             routerLocationStreamProvider.overrideWith(
               (ref) => locationController.stream,
             ),
-            videosForHomeRouteProvider.overrideWith((ref) {
+            videosForExploreRouteProvider.overrideWith((ref) {
               return AsyncValue.data(
-                VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
+                VideoFeedState(
+                  videos: mockExploreVideos,
+                  hasMoreContent: false,
+                ),
               );
             }),
             // Lifecycle provider stream but don't emit value yet
@@ -340,7 +348,7 @@ void main() {
         );
 
         // Navigate to video without lifecycle being ready
-        locationController.add(HomeScreenRouter.pathForIndex(0));
+        locationController.add(ExploreScreen.pathForIndex(0));
         await pumpEventQueue();
 
         // Should be null because lifecycle provider hasn't emitted (defensive default)
@@ -351,7 +359,10 @@ void main() {
         await pumpEventQueue();
 
         // Now video should be active
-        expect(container.read(activeVideoIdProvider), equals('home-video-0'));
+        expect(
+          container.read(activeVideoIdProvider),
+          equals('explore-video-0'),
+        );
 
         lifecycleController.close();
         locationController.close();

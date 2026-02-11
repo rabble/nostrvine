@@ -388,8 +388,10 @@ class FullscreenFeedBloc
     List<VideoItem> videos,
     int initialIndex,
   ) {
-    final factory = _controllerFactory;
-    if (factory != null) return factory(videos, initialIndex);
+    final controllerFactory = _controllerFactory;
+    if (controllerFactory != null) {
+      return controllerFactory(videos, initialIndex);
+    }
 
     return VideoFeedController(
       videos: videos,

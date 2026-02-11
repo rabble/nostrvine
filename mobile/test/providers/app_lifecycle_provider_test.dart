@@ -41,15 +41,15 @@ void main() {
         // Foreground true
         appForegroundProvider.overrideWithValue(const AsyncValue.data(true)),
 
-        // URL context: home index 1
+        // URL context: explore index 1
         pageContextProvider.overrideWithValue(
           const AsyncValue.data(
-            RouteContext(type: RouteType.home, videoIndex: 1),
+            RouteContext(type: RouteType.explore, videoIndex: 1),
           ),
         ),
 
         // Feed (two items)
-        videosForHomeRouteProvider.overrideWith((ref) {
+        videosForExploreRouteProvider.overrideWith((ref) {
           return AsyncValue.data(
             VideoFeedState(
               videos: mockVideos,
@@ -88,15 +88,15 @@ void main() {
         // Foreground FALSE - backgrounded
         appForegroundProvider.overrideWithValue(const AsyncValue.data(false)),
 
-        // URL context: home index 0
+        // URL context: explore index 0
         pageContextProvider.overrideWithValue(
           const AsyncValue.data(
-            RouteContext(type: RouteType.home, videoIndex: 0),
+            RouteContext(type: RouteType.explore, videoIndex: 0),
           ),
         ),
 
         // Feed (one item)
-        videosForHomeRouteProvider.overrideWith((ref) {
+        videosForExploreRouteProvider.overrideWith((ref) {
           return AsyncValue.data(
             VideoFeedState(
               videos: mockVideos,

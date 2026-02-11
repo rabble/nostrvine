@@ -138,10 +138,10 @@ void main() {
             ),
             pageContextProvider.overrideWithValue(
               const AsyncValue.data(
-                RouteContext(type: RouteType.home, videoIndex: 0),
+                RouteContext(type: RouteType.explore, videoIndex: 0),
               ),
             ),
-            videosForHomeRouteProvider.overrideWith((ref) {
+            videosForExploreRouteProvider.overrideWith((ref) {
               return AsyncValue.data(
                 VideoFeedState(
                   videos: mockVideos,
@@ -165,10 +165,10 @@ void main() {
           appForegroundProvider.overrideWithValue(const AsyncValue.data(true)),
           pageContextProvider.overrideWithValue(
             const AsyncValue.data(
-              RouteContext(type: RouteType.home, videoIndex: 0),
+              RouteContext(type: RouteType.explore, videoIndex: 0),
             ),
           ),
-          videosForHomeRouteProvider.overrideWith((ref) {
+          videosForExploreRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
               VideoFeedState(
                 videos: mockVideos,
@@ -192,10 +192,10 @@ void main() {
           appForegroundProvider.overrideWithValue(const AsyncValue.data(true)),
           pageContextProvider.overrideWithValue(
             const AsyncValue.data(
-              RouteContext(type: RouteType.home, videoIndex: 0),
+              RouteContext(type: RouteType.explore, videoIndex: 0),
             ),
           ),
-          videosForHomeRouteProvider.overrideWith((ref) {
+          videosForExploreRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
               VideoFeedState(
                 videos: mockVideos,
@@ -219,10 +219,10 @@ void main() {
           appForegroundProvider.overrideWithValue(const AsyncValue.data(true)),
           pageContextProvider.overrideWithValue(
             const AsyncValue.data(
-              RouteContext(type: RouteType.home, videoIndex: 0),
+              RouteContext(type: RouteType.explore, videoIndex: 0),
             ),
           ),
-          videosForHomeRouteProvider.overrideWith((ref) {
+          videosForExploreRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
               VideoFeedState(
                 videos: mockVideos,
