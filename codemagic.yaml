@@ -98,7 +98,7 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
     integrations:
-      app_store_connect: Developer Portal
+      app_store_connect: API key for Codemagic
     inputs:
       DEFAULT_ENV:
         description: Default environment for fresh app installs
@@ -227,7 +227,7 @@ workflows:
     max_build_duration: 60
     instance_type: mac_mini_m2
     integrations:
-      app_store_connect: Developer Portal
+      app_store_connect: API key for Codemagic
     inputs:
       DEFAULT_ENV:
         description: Default environment for fresh app installs
