@@ -38,6 +38,9 @@ class CameraController: NSObject {
     private var originalBrightness: CGFloat?
     private var screenFlashFeatureEnabled: Bool = true
     
+    // Whether to mirror front camera video output
+    private var mirrorFrontCameraOutput: Bool = true
+    
     // Auto flash mode - checks brightness once when recording starts
     private var isAutoFlashMode: Bool = false
     private var autoFlashTorchEnabled: Bool = false
@@ -103,9 +106,10 @@ class CameraController: NSObject {
     private var videoQualityPreset: AVCaptureSession.Preset = .high
     
     /// Initializes the camera with the specified lens and video quality.
-    func initialize(lens: String, videoQuality: String, enableScreenFlash: Bool = true, completion: @escaping ([String: Any]?, String?) -> Void) {
+    func initialize(lens: String, videoQuality: String, enableScreenFlash: Bool = true, mirrorFrontCameraOutput: Bool = true, completion: @escaping ([String: Any]?, String?) -> Void) {
         currentLens = lens == "front" ? .front : .back
         screenFlashFeatureEnabled = enableScreenFlash
+        self.mirrorFrontCameraOutput = mirrorFrontCameraOutput
         
         // Fallback to available camera if requested camera is not available
         if currentLens == .front && !hasFrontCamera && hasBackCamera {
@@ -712,7 +716,16 @@ class CameraController: NSObject {
                 
                 let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
                 videoInput.expectsMediaDataInRealTime = true
-                // No transform needed - the video connection is already set to portrait orientation
+                
+                // For front camera: Apply horizontal flip transform based on mirrorFrontCameraOutput setting
+                // When mirrorFrontCameraOutput is false, we flip the video to un-mirror it
+                // (since preview is always mirrored for selfie mode)
+                if self.currentLens == .front && !self.mirrorFrontCameraOutput {
+                    // Horizontal flip: scale x by -1 and translate to keep frame in bounds
+                    var transform = CGAffineTransform(scaleX: -1, y: 1)
+                    transform = transform.translatedBy(x: CGFloat(-videoWidth), y: 0)
+                    videoInput.transform = transform
+                }
                 
                 // Create pixel buffer adaptor - use the actual frame dimensions (before portrait rotation)
                 let sourcePixelBufferAttributes: [String: Any] = [

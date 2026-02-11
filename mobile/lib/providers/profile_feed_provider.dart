@@ -321,6 +321,50 @@ class ProfileFeed extends _$ProfileFeed {
     );
   }
 
+  List<VideoEvent> _mergeStableTimestampsFromCurrentState(
+    List<VideoEvent> incoming,
+  ) {
+    final currentVideos = state.asData?.value.videos;
+    if (currentVideos == null || currentVideos.isEmpty) return incoming;
+
+    // Build lookup keys because REST API responses can be inconsistent
+    // about addressable identifiers (`d` tag / stableId).
+    //
+    // Known inconsistency:
+    // - Missing d-tags: Many relays don't include 'd' tags on NIP-71 addressable events
+    String? stableKey(VideoEvent v) {
+      final stableId = v.stableId;
+      if (stableId.isEmpty) return null;
+      return '${v.pubkey}:$stableId'.toLowerCase();
+    }
+
+    final existingByKey = <String, VideoEvent>{};
+    for (final v in currentVideos) {
+      final key = stableKey(v);
+      if (key != null) existingByKey[key] = v;
+    }
+
+    return incoming.map((video) {
+      final existing = stableKey(video) != null
+          ? existingByKey[stableKey(video)!]
+          : null;
+      if (existing == null) return video;
+
+      // Funnelcake may return the latest replaceable event's created_at (edit time)
+      // and may omit published_at. Preserve existing timestamps when published_at
+      // isn't present to avoid resetting relative time to "now" after refresh.
+      final hasPublishedAt =
+          video.publishedAt != null && video.publishedAt!.isNotEmpty;
+      if (hasPublishedAt) return video;
+
+      return video.copyWith(
+        createdAt: existing.createdAt,
+        timestamp: existing.timestamp,
+        publishedAt: existing.publishedAt,
+      );
+    }).toList();
+  }
+
   /// Optimistically add a newly published video to the profile feed state.
   /// This is called when the user publishes a new video to ensure instant feedback
   /// without waiting for Funnelcake REST API to index the event.
@@ -352,6 +396,23 @@ class ProfileFeed extends _$ProfileFeed {
     if (existingIds.contains(newVideo.id.toLowerCase())) {
       Log.debug(
         'ProfileFeed: Video ${newVideo.id} already in state, skipping optimistic add',
+        name: 'ProfileFeedProvider',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    // Also deduplicate replaceable/addressable videos by stable identity.
+    // Editing metadata republishes a new event id for the same (pubkey, d-tag),
+    // so id-based dedupe is insufficient and would create a duplicate entry.
+    final newStableKey = '${newVideo.pubkey}:${newVideo.stableId}'
+        .toLowerCase();
+    final existingStableKeys = currentState.videos
+        .map((v) => '${v.pubkey}:${v.stableId}'.toLowerCase())
+        .toSet();
+    if (existingStableKeys.contains(newStableKey)) {
+      Log.debug(
+        'ProfileFeed: Video ${newVideo.id} matches existing stableId=${newVideo.stableId}, skipping optimistic add',
         name: 'ProfileFeedProvider',
         category: LogCategory.video,
       );
@@ -390,7 +451,9 @@ class ProfileFeed extends _$ProfileFeed {
 
       if (apiVideos.isNotEmpty) {
         // Filter out reposts
-        final authorVideos = apiVideos.where((v) => !v.isRepost).toList();
+        var authorVideos = apiVideos.where((v) => !v.isRepost).toList();
+
+        authorVideos = _mergeStableTimestampsFromCurrentState(authorVideos);
 
         // Update metadata cache with fresh data
         _cacheVideoMetadata(authorVideos);
@@ -639,7 +702,9 @@ class ProfileFeed extends _$ProfileFeed {
           _nextCursor = _getOldestTimestamp(apiVideos);
 
           // Filter out reposts
-          final authorVideos = apiVideos.where((v) => !v.isRepost).toList();
+          var authorVideos = apiVideos.where((v) => !v.isRepost).toList();
+
+          authorVideos = _mergeStableTimestampsFromCurrentState(authorVideos);
 
           // Cache metadata for future Nostr fallbacks
           _cacheVideoMetadata(authorVideos);
