@@ -14,7 +14,7 @@ import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -77,13 +77,6 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     );
     unawaited(_loadClips());
     unawaited(_loadDrafts());
-
-    if (!widget.selectionMode) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ref.read(clipManagerProvider.notifier).clearAll();
-      });
-    }
   }
 
   Future<void> _loadClips() async {
@@ -122,14 +115,16 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
       final draftService = DraftStorageService();
       final drafts = await draftService.getAllDrafts();
 
-      // Filter out autosave and already published drafts
-      final filteredDrafts = drafts
-          .where(
-            (d) =>
-                d.id != VideoEditorConstants.autoSaveId &&
-                d.publishStatus != PublishStatus.published,
-          )
-          .toList();
+      // Filter out autosave and already published drafts, sort by newest first
+      final filteredDrafts =
+          drafts
+              .where(
+                (d) =>
+                    d.id != VideoEditorConstants.autoSaveId &&
+                    d.publishStatus != PublishStatus.published,
+              )
+              .toList()
+            ..sort((a, b) => b.lastModified.compareTo(a.lastModified));
 
       Log.debug(
         '📚 Loaded ${filteredDrafts.length} drafts',
@@ -305,10 +300,11 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
 
     // Add selected clips to ClipManager
     final clipManagerNotifier = ref.read(clipManagerProvider.notifier);
+    final videoPublishNotifier = ref.read(videoPublishProvider.notifier);
 
     if (!widget.selectionMode) {
-      // Clear existing clips first
-      clipManagerNotifier.clearAll();
+      // Clear cached/autosaved values.
+      await videoPublishNotifier.clearAll();
     }
 
     // Add each selected clip
@@ -361,15 +357,15 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
       name: 'ClipLibraryScreen',
       category: LogCategory.video,
     );
-    // Initialize editor with this draft
-    await ref.read(videoEditorProvider.notifier).initialize(draftId: draft.id);
+    final videoPublishNotifier = ref.read(videoPublishProvider.notifier);
+    await videoPublishNotifier.clearAll();
 
     if (!mounted) return;
 
-    // Navigate to editor
+    // Navigate to editor with draftId as path parameter
     await context.push(
-      VideoClipEditorScreen.path,
-      extra: {'fromLibrary': true, 'draftId': draft.id},
+      '${VideoClipEditorScreen.path}/${draft.id}',
+      extra: {'fromLibrary': true},
     );
 
     // Reload drafts after returning

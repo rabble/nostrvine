@@ -513,10 +513,14 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   }
 
   /// Create a VineDraft from the rendered clip with metadata.
-  VineDraft getActiveDraft({bool isAutosave = false}) {
+  VineDraft getActiveDraft({
+    bool isAutosave = false,
+    bool enforceSeparatedClips = false,
+  }) {
     return VineDraft.create(
       id: isAutosave ? VideoEditorConstants.autoSaveId : draftId,
-      clips: state.finalRenderedClip == null || isAutosave
+      clips:
+          state.finalRenderedClip == null || isAutosave || enforceSeparatedClips
           ? _clips
           : [state.finalRenderedClip!],
       title: state.title,
@@ -646,7 +650,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
 
     try {
-      await _draftService.saveDraft(getActiveDraft());
+      await _draftService.saveDraft(
+        getActiveDraft(enforceSeparatedClips: true),
+      );
 
       // Remove the autosaved draft
       await removeAutosavedDraft();

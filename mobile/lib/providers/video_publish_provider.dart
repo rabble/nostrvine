@@ -58,17 +58,30 @@ class VideoPublishNotifier extends Notifier<VideoPublishProviderState> {
   /// Resets all video-related providers.
   ///
   /// Clears recorder, editor, clip manager, sound selection, and publish state.
-  void clearAll() {
+  Future<void> clearAll() async {
     Log.debug(
       '🧹 Clearing all video providers',
       name: 'VideoPublishNotifier',
       category: LogCategory.video,
     );
-    ref.read(videoRecorderProvider.notifier).reset();
-    ref.read(videoEditorProvider.notifier).reset();
-    ref.read(clipManagerProvider.notifier).clearAll();
-    ref.read(selectedSoundProvider.notifier).clear();
-    reset();
+    try {
+      ref.read(videoRecorderProvider.notifier).reset();
+      ref.read(selectedSoundProvider.notifier).clear();
+      reset();
+
+      await Future.wait([
+        ref.read(clipManagerProvider.notifier).clearAll(),
+        ref.read(videoEditorProvider.notifier).reset(),
+      ]);
+    } catch (error, stackTrace) {
+      Log.error(
+        '❌ Failed to clear video providers: $error',
+        name: 'VideoPublishNotifier',
+        category: LogCategory.video,
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   /// Resumes any pending publish drafts that were interrupted.
