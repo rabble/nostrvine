@@ -1570,6 +1570,64 @@ void main() {
           isNot(equals(LoadState.none)),
         );
       });
+
+      test(
+        'recovers when pool evicts a player the controller references',
+        () async {
+          // Track all created mock players so we can simulate eviction
+          final createdMocks = <String, _MockPooledPlayer>{};
+          final evictablePool = TestablePlayerPool(
+            maxPlayers: 10,
+            mockPlayerFactory: (url) {
+              final setup = createMockPlayerSetup();
+              final mockPooledPlayer = _MockPooledPlayer();
+              when(() => mockPooledPlayer.player).thenReturn(setup.player);
+              when(
+                () => mockPooledPlayer.videoController,
+              ).thenReturn(createMockVideoController());
+              when(() => mockPooledPlayer.isDisposed).thenReturn(false);
+              when(mockPooledPlayer.dispose).thenAnswer((_) async {});
+              createdMocks[url] = mockPooledPlayer;
+              return mockPooledPlayer;
+            },
+          );
+          addTearDown(evictablePool.dispose);
+
+          final videos = createTestVideos(count: 5);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: evictablePool,
+            preloadAhead: 1,
+            preloadBehind: 0,
+          );
+          addTearDown(controller.dispose);
+
+          // Wait for initial load (indices 0, 1)
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+          expect(controller.getLoadState(0), isNot(equals(LoadState.none)));
+
+          // Simulate pool eviction: mark the player for video 0 as disposed
+          final video0Mock = createdMocks[videos[0].url]!;
+          when(() => video0Mock.isDisposed).thenReturn(true);
+
+          // Scroll away so index 0 leaves the preload window
+          controller.onPageChanged(3);
+          await Future<void>.delayed(const Duration(milliseconds: 300));
+
+          // Index 0 should be cleaned up (outside window + disposed)
+          expect(controller.getLoadState(0), equals(LoadState.none));
+
+          // Scroll back to index 0
+          controller.onPageChanged(0);
+          await Future<void>.delayed(const Duration(milliseconds: 300));
+
+          // Index 0 should be reloading (not stuck in stale state)
+          expect(
+            controller.getLoadState(0),
+            isNot(equals(LoadState.none)),
+          );
+        },
+      );
     });
 
     group('buffer timeout', () {

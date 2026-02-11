@@ -190,6 +190,12 @@ class VideoFeedController extends ChangeNotifier {
     // Pause old video immediately
     _pauseVideo(oldIndex);
 
+    // Clean up stale player reference before deciding to play or load.
+    // The pool may have evicted this player to make room for another.
+    if (_isPlayerDisposed(index)) {
+      _releasePlayer(index);
+    }
+
     // Play new video if ready, or start loading it immediately
     if (_isActive && !_isPaused && isVideoReady(index)) {
       _playVideo(index);
@@ -310,9 +316,9 @@ class VideoFeedController extends ChangeNotifier {
       }
     }
 
-    // Release players outside window
+    // Release players outside window and clean up stale players
     for (final idx in _loadedPlayers.keys.toList()) {
-      if (!toKeep.contains(idx)) {
+      if (!toKeep.contains(idx) || _isPlayerDisposed(idx)) {
         _releasePlayer(idx);
       }
     }
@@ -478,6 +484,14 @@ class VideoFeedController extends ChangeNotifier {
   }
 
   void _playVideo(int index) {
+    // Check if the native player was disposed externally (e.g., pool eviction).
+    // If so, clear stale state and reload.
+    if (_isPlayerDisposed(index)) {
+      _releasePlayer(index);
+      unawaited(_loadPlayer(index));
+      return;
+    }
+
     final player = _loadedPlayers[index]?.player;
     if (player != null && !player.state.playing) {
       unawaited(player.setVolume(100));
@@ -512,6 +526,13 @@ class VideoFeedController extends ChangeNotifier {
   void _stopPositionTimer(int index) {
     _positionTimers[index]?.cancel();
     _positionTimers.remove(index);
+  }
+
+  /// Whether the player at [index] was disposed externally (e.g., pool
+  /// eviction) while the controller still holds a reference to it.
+  bool _isPlayerDisposed(int index) {
+    final pooledPlayer = _loadedPlayers[index];
+    return pooledPlayer != null && pooledPlayer.isDisposed;
   }
 
   void _releasePlayer(int index) {
