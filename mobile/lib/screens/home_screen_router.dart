@@ -43,8 +43,6 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
   PageController? _controller;
   int? _lastUrlIndex;
   int? _lastPrefetchIndex;
-  DateTime? _initialLoadStartTime;
-  static const _loadingTimeoutSeconds = 5;
 
   @override
   void initState() {
@@ -119,17 +117,8 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
             final videos = state.videos;
 
             if (state.lastUpdated == null && state.videos.isEmpty) {
-              _initialLoadStartTime ??= DateTime.now();
-              final elapsed = DateTime.now()
-                  .difference(_initialLoadStartTime!)
-                  .inSeconds;
-              if (elapsed >= _loadingTimeoutSeconds) {
-                _initialLoadStartTime = null;
-                return const _EmptyHomeFeed();
-              }
               return const Center(child: BrandedLoadingIndicator(size: 80));
             }
-            _initialLoadStartTime = null;
 
             if (videos.isEmpty) {
               urlIndex = 0;
