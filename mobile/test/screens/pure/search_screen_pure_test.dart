@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mockito/mockito.dart' as mockito;
 import 'package:models/models.dart';
@@ -11,7 +12,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
-import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -22,7 +22,7 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 class _MockContentBlocklistService extends Mock
     implements ContentBlocklistService {}
 
-class _MockHashtagService extends Mock implements HashtagService {}
+class _MockHashtagRepository extends Mock implements HashtagRepository {}
 
 class _FakeVideoEventService extends ChangeNotifier
     implements VideoEventService {
@@ -54,13 +54,13 @@ void main() {
     late _MockProfileRepository mockProfileRepository;
     late _MockContentBlocklistService mockBlocklistService;
     late _FakeVideoEventService fakeVideoEventService;
-    late _MockHashtagService mockHashtagService;
+    late _MockHashtagRepository mockHashtagRepository;
 
     setUp(() {
       mockProfileRepository = _MockProfileRepository();
       mockBlocklistService = _MockContentBlocklistService();
       fakeVideoEventService = _FakeVideoEventService();
-      mockHashtagService = _MockHashtagService();
+      mockHashtagRepository = _MockHashtagRepository();
 
       when(
         () => mockBlocklistService.shouldFilterFromFeeds(any()),
@@ -75,9 +75,13 @@ void main() {
         ),
       ).thenAnswer((_) async => <UserProfile>[]);
 
-      // Default HashtagService stubs
-      when(() => mockHashtagService.refreshHashtagStats()).thenReturn(null);
-      when(() => mockHashtagService.searchHashtags(any())).thenReturn([]);
+      // Default HashtagRepository stub
+      when(
+        () => mockHashtagRepository.searchHashtags(
+          query: any(named: 'query'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => []);
     });
 
     Widget createTestWidget({List<VideoEvent>? videos}) {
@@ -102,7 +106,7 @@ void main() {
           contentBlocklistServiceProvider.overrideWithValue(
             mockBlocklistService,
           ),
-          hashtagServiceProvider.overrideWithValue(mockHashtagService),
+          hashtagRepositoryProvider.overrideWithValue(mockHashtagRepository),
           pageContextProvider.overrideWith((ref) {
             return Stream.value(const RouteContext(type: RouteType.search));
           }),
@@ -144,10 +148,11 @@ void main() {
           ),
         ];
 
-        // Stub HashtagService to return 'flutter' for this query
+        // Stub HashtagRepository to return 'flutter' for this query
         when(
-          () => mockHashtagService.searchHashtags('flutter'),
-        ).thenReturn(['flutter']);
+          () =>
+              mockHashtagRepository.searchHashtags(query: 'flutter', limit: 20),
+        ).thenAnswer((_) async => ['flutter']);
 
         await tester.pumpWidget(createTestWidget(videos: testVideos));
 

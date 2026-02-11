@@ -1510,6 +1510,247 @@ void main() {
       });
     });
 
+    group('searchHashtags', () {
+      const validHashtagResponse = '''
+[
+  {"hashtag": "bitcoin", "video_count": 156},
+  {"hashtag": "nostr", "video_count": 89}
+]
+''';
+
+      test('returns hashtags on successful response', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(validHashtagResponse, 200),
+        );
+
+        final hashtags = await client.searchHashtags(query: 'bit');
+
+        expect(hashtags, hasLength(2));
+        expect(hashtags.first, equals('bitcoin'));
+        expect(hashtags.last, equals('nostr'));
+      });
+
+      test('parses response using tag field as fallback', () async {
+        const tagFieldResponse = '''
+[
+  {"tag": "bitcoin", "score": 95.2}
+]
+''';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(tagFieldResponse, 200),
+        );
+
+        final hashtags = await client.searchHashtags(query: 'bit');
+
+        expect(hashtags, equals(['bitcoin']));
+      });
+
+      test('handles plain string response format', () async {
+        const stringResponse = '["bitcoin", "nostr"]';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(stringResponse, 200),
+        );
+
+        final hashtags = await client.searchHashtags(query: 'bit');
+
+        expect(hashtags, equals(['bitcoin', 'nostr']));
+      });
+
+      test('constructs correct URL with query parameter', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.searchHashtags(query: 'bitcoin');
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.path, equals('/api/hashtags/trending'));
+        expect(uri.queryParameters['q'], equals('bitcoin'));
+        expect(uri.queryParameters['limit'], equals('20'));
+      });
+
+      test(
+        'constructs correct URL without query when query is null',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response('[]', 200),
+          );
+
+          await client.searchHashtags();
+
+          final captured = verify(
+            () => mockHttpClient.get(
+              captureAny(),
+              headers: any(named: 'headers'),
+            ),
+          ).captured;
+
+          final uri = captured.first as Uri;
+          expect(uri.queryParameters.containsKey('q'), isFalse);
+          expect(uri.queryParameters['limit'], equals('20'));
+        },
+      );
+
+      test(
+        'constructs correct URL without query when query is empty',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response('[]', 200),
+          );
+
+          await client.searchHashtags(query: '');
+
+          final captured = verify(
+            () => mockHttpClient.get(
+              captureAny(),
+              headers: any(named: 'headers'),
+            ),
+          ).captured;
+
+          final uri = captured.first as Uri;
+          expect(uri.queryParameters.containsKey('q'), isFalse);
+        },
+      );
+
+      test('passes query through without normalization', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.searchHashtags(query: 'Bitcoin');
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['q'], equals('Bitcoin'));
+      });
+
+      test('constructs correct URL with custom limit', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.searchHashtags(query: 'test', limit: 50);
+
+        final captured = verify(
+          () =>
+              mockHttpClient.get(captureAny(), headers: any(named: 'headers')),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['limit'], equals('50'));
+      });
+
+      test('filters out empty hashtag names', () async {
+        const responseWithEmpty = '''
+[
+  {"hashtag": "bitcoin"},
+  {"hashtag": ""},
+  {"hashtag": "nostr"}
+]
+''';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(responseWithEmpty, 200),
+        );
+
+        final hashtags = await client.searchHashtags(query: 'test');
+
+        expect(hashtags, equals(['bitcoin', 'nostr']));
+      });
+
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
+
+        expect(
+          () => emptyClient.searchHashtags(query: 'test'),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
+
+        emptyClient.dispose();
+      });
+
+      test(
+        'throws FunnelcakeApiException on error status codes',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response('Internal Server Error', 500),
+          );
+
+          expect(
+            () => client.searchHashtags(query: 'test'),
+            throwsA(
+              isA<FunnelcakeApiException>().having(
+                (e) => e.statusCode,
+                'statusCode',
+                equals(500),
+              ),
+            ),
+          );
+        },
+      );
+
+      test('throws FunnelcakeTimeoutException on timeout', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => throw TimeoutException('Request timed out'),
+        );
+
+        expect(
+          () => client.searchHashtags(query: 'test'),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+      });
+
+      test('throws FunnelcakeException on network error', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenThrow(Exception('Network error'));
+
+        expect(
+          () => client.searchHashtags(query: 'test'),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Failed to search hashtags'),
+            ),
+          ),
+        );
+      });
+    });
+
     group('dispose', () {
       test('does not close externally provided httpClient', () {
         client.dispose();

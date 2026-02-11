@@ -1,11 +1,10 @@
-// ABOUTME: BLoC for searching hashtags via HashtagService and TopHashtagsService.
-// ABOUTME: Merges results from live video stats and curated top 1000 hashtags.
+// ABOUTME: BLoC for searching hashtags via HashtagRepository (Funnelcake API).
+// ABOUTME: Debounces queries and delegates to server-side hashtag search.
 
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:openvine/services/hashtag_service.dart';
-import 'package:openvine/services/top_hashtags_service.dart';
+import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:stream_transform/stream_transform.dart';
 
 part 'hashtag_search_event.dart';
@@ -24,21 +23,15 @@ EventTransformer<E> _debounceRestartable<E>() {
   };
 }
 
-/// BLoC for searching hashtags.
+/// BLoC for searching hashtags via the Funnelcake API.
 ///
-/// Merges results from two sources:
-/// - [HashtagService]: live hashtag statistics from loaded video events
-/// - [TopHashtagsService]: curated top 1000 popular hashtags
-///
-/// HashtagService results are prioritized, then TopHashtagsService fills
-/// in additional matches not already found.
+/// Delegates search to [HashtagRepository] which calls the server-side
+/// hashtag search endpoint. Results are sorted by popularity/trending
+/// on the server.
 class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
-  HashtagSearchBloc({
-    required HashtagService hashtagService,
-    required TopHashtagsService topHashtagsService,
-  }) : _hashtagService = hashtagService,
-       _topHashtagsService = topHashtagsService,
-       super(const HashtagSearchState()) {
+  HashtagSearchBloc({required HashtagRepository hashtagRepository})
+    : _hashtagRepository = hashtagRepository,
+      super(const HashtagSearchState()) {
     on<HashtagSearchQueryChanged>(
       _onQueryChanged,
       transformer: _debounceRestartable(),
@@ -46,14 +39,13 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
     on<HashtagSearchCleared>(_onCleared);
   }
 
-  final HashtagService _hashtagService;
-  final TopHashtagsService _topHashtagsService;
+  final HashtagRepository _hashtagRepository;
 
-  void _onQueryChanged(
+  Future<void> _onQueryChanged(
     HashtagSearchQueryChanged event,
     Emitter<HashtagSearchState> emit,
-  ) {
-    final query = event.query.trim();
+  ) async {
+    final query = event.query.trim().toLowerCase();
 
     // Empty query resets to initial state
     if (query.isEmpty) {
@@ -64,32 +56,10 @@ class HashtagSearchBloc extends Bloc<HashtagSearchEvent, HashtagSearchState> {
     emit(state.copyWith(status: HashtagSearchStatus.loading, query: query));
 
     try {
-      // Refresh stats to include any recently loaded videos
-      _hashtagService.refreshHashtagStats();
-
-      // Get results from both sources
-      final liveResults = _hashtagService.searchHashtags(query);
-      final curatedResults = _topHashtagsService.searchHashtags(query);
-
-      // Merge: live results first, then curated for uncovered ones
-      final seen = <String>{};
-      final merged = <String>[];
-
-      for (final hashtag in liveResults) {
-        final lower = hashtag.toLowerCase();
-        if (seen.add(lower)) {
-          merged.add(hashtag);
-        }
-      }
-
-      for (final hashtag in curatedResults) {
-        final lower = hashtag.toLowerCase();
-        if (seen.add(lower)) {
-          merged.add(hashtag);
-        }
-      }
-
-      final results = merged.take(_maxResults).toList();
+      final results = await _hashtagRepository.searchHashtags(
+        query: query,
+        limit: _maxResults,
+      );
 
       emit(
         state.copyWith(status: HashtagSearchStatus.success, results: results),

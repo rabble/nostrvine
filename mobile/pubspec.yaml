@@ -28,6 +28,7 @@ workspace:
   - packages/db_client
   - packages/divine_camera
   - packages/funnelcake_api_client
+  - packages/hashtag_repository
   - packages/keycast_flutter
   - packages/likes_repository
   - packages/media_cache
@@ -125,6 +126,9 @@ dependencies:
   nostr_key_manager:
 
   keycast_flutter:
+
+  # Hashtag Repository - Hashtag search data layer
+  hashtag_repository:
 
   # Videos Repository - Video feed data layer
   videos_repository:

@@ -89,8 +89,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       profileRepository: ref.read(profileRepositoryProvider)!,
     );
     _hashtagSearchBloc = HashtagSearchBloc(
-      hashtagService: ref.read(hashtagServiceProvider),
-      topHashtagsService: TopHashtagsService.instance,
+      hashtagRepository: ref.read(hashtagRepositoryProvider),
     );
     _searchController.addListener(_onSearchChanged);
 

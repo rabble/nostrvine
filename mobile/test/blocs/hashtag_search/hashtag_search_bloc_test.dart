@@ -1,41 +1,33 @@
-// ABOUTME: Tests for HashtagSearchBloc - hashtag search via HashtagService
-// ABOUTME: Tests loading states, error handling, debouncing, and result merging
+// ABOUTME: Tests for HashtagSearchBloc - hashtag search via HashtagRepository.
+// ABOUTME: Tests loading states, error handling, debouncing, and API delegation.
 
 import 'package:bloc_test/bloc_test.dart';
+import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
-import 'package:openvine/services/hashtag_service.dart';
-import 'package:openvine/services/top_hashtags_service.dart';
 
-class _MockHashtagService extends Mock implements HashtagService {}
-
-class _MockTopHashtagsService extends Mock implements TopHashtagsService {}
+class _MockHashtagRepository extends Mock implements HashtagRepository {}
 
 void main() {
   group(HashtagSearchBloc, () {
-    late _MockHashtagService mockHashtagService;
-    late _MockTopHashtagsService mockTopHashtagsService;
+    late _MockHashtagRepository mockHashtagRepository;
 
     setUp(() {
-      mockHashtagService = _MockHashtagService();
-      mockTopHashtagsService = _MockTopHashtagsService();
+      mockHashtagRepository = _MockHashtagRepository();
 
-      // Default stubs
-      when(() => mockHashtagService.refreshHashtagStats()).thenReturn(null);
-      when(() => mockHashtagService.searchHashtags(any())).thenReturn([]);
+      // Default stub
       when(
-        () => mockTopHashtagsService.searchHashtags(
-          any(),
+        () => mockHashtagRepository.searchHashtags(
+          query: any(named: 'query'),
           limit: any(named: 'limit'),
         ),
-      ).thenReturn([]);
+      ).thenAnswer((_) async => []);
     });
 
-    HashtagSearchBloc createBloc() => HashtagSearchBloc(
-      hashtagService: mockHashtagService,
-      topHashtagsService: mockTopHashtagsService,
-    );
+    HashtagSearchBloc createBloc() =>
+        HashtagSearchBloc(hashtagRepository: mockHashtagRepository);
 
     test('initial state is correct', () {
       final bloc = createBloc();
@@ -53,14 +45,9 @@ void main() {
         'emits [loading, success] when search succeeds',
         setUp: () {
           when(
-            () => mockHashtagService.searchHashtags('music'),
-          ).thenReturn(['music', 'musician']);
-          when(
-            () => mockTopHashtagsService.searchHashtags(
-              'music',
-              limit: any(named: 'limit'),
-            ),
-          ).thenReturn(['music', 'musicvideo']);
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'music', limit: 20),
+          ).thenAnswer((_) async => ['music', 'musician', 'musicvideo']);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const HashtagSearchQueryChanged('music')),
@@ -77,83 +64,37 @@ void main() {
           ),
         ],
         verify: (_) {
-          verify(() => mockHashtagService.refreshHashtagStats()).called(1);
-          verify(() => mockHashtagService.searchHashtags('music')).called(1);
           verify(
-            () => mockTopHashtagsService.searchHashtags(
-              'music',
-              limit: any(named: 'limit'),
-            ),
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'music', limit: 20),
           ).called(1);
         },
       );
 
       blocTest<HashtagSearchBloc, HashtagSearchState>(
-        'prioritizes HashtagService results over TopHashtagsService',
-        setUp: () {
-          when(
-            () => mockHashtagService.searchHashtags('art'),
-          ).thenReturn(['art', 'artist']);
-          when(
-            () => mockTopHashtagsService.searchHashtags(
-              'art',
-              limit: any(named: 'limit'),
-            ),
-          ).thenReturn(['art', 'artistic', 'artshow']);
-        },
+        'emits [loading, success] with empty results when no matches',
         build: createBloc,
-        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('art')),
+        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('zzzzz')),
         wait: debounceDuration,
         expect: () => [
           const HashtagSearchState(
             status: HashtagSearchStatus.loading,
-            query: 'art',
+            query: 'zzzzz',
           ),
           const HashtagSearchState(
             status: HashtagSearchStatus.success,
-            query: 'art',
-            // 'art' deduplicated, live results first
-            results: ['art', 'artist', 'artistic', 'artshow'],
+            query: 'zzzzz',
           ),
         ],
       );
 
       blocTest<HashtagSearchBloc, HashtagSearchState>(
-        'deduplicates results case-insensitively',
+        'emits [loading, failure] when repository throws',
         setUp: () {
           when(
-            () => mockHashtagService.searchHashtags('bitcoin'),
-          ).thenReturn(['Bitcoin', 'bitcoin']);
-          when(
-            () => mockTopHashtagsService.searchHashtags(
-              'bitcoin',
-              limit: any(named: 'limit'),
-            ),
-          ).thenReturn(['BITCOIN', 'bitcoinmining']);
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('bitcoin')),
-        wait: debounceDuration,
-        expect: () => [
-          const HashtagSearchState(
-            status: HashtagSearchStatus.loading,
-            query: 'bitcoin',
-          ),
-          const HashtagSearchState(
-            status: HashtagSearchStatus.success,
-            query: 'bitcoin',
-            // Only first occurrence of each kept
-            results: ['Bitcoin', 'bitcoinmining'],
-          ),
-        ],
-      );
-
-      blocTest<HashtagSearchBloc, HashtagSearchState>(
-        'emits [loading, failure] when search throws',
-        setUp: () {
-          when(
-            () => mockHashtagService.searchHashtags('error'),
-          ).thenThrow(Exception('search failed'));
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'error', limit: 20),
+          ).thenThrow(const FunnelcakeException('search failed'));
         },
         build: createBloc,
         act: (bloc) => bloc.add(const HashtagSearchQueryChanged('error')),
@@ -171,13 +112,41 @@ void main() {
       );
 
       blocTest<HashtagSearchBloc, HashtagSearchState>(
+        'emits [loading, failure] when repository throws timeout',
+        setUp: () {
+          when(
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'slow', limit: 20),
+          ).thenThrow(const FunnelcakeTimeoutException());
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('slow')),
+        wait: debounceDuration,
+        expect: () => [
+          const HashtagSearchState(
+            status: HashtagSearchStatus.loading,
+            query: 'slow',
+          ),
+          const HashtagSearchState(
+            status: HashtagSearchStatus.failure,
+            query: 'slow',
+          ),
+        ],
+      );
+
+      blocTest<HashtagSearchBloc, HashtagSearchState>(
         'emits initial state when query is empty',
         build: createBloc,
         act: (bloc) => bloc.add(const HashtagSearchQueryChanged('')),
         wait: debounceDuration,
         expect: () => [const HashtagSearchState()],
         verify: (_) {
-          verifyNever(() => mockHashtagService.searchHashtags(any()));
+          verifyNever(
+            () => mockHashtagRepository.searchHashtags(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+            ),
+          );
         },
       );
 
@@ -188,25 +157,25 @@ void main() {
         wait: debounceDuration,
         expect: () => [const HashtagSearchState()],
         verify: (_) {
-          verifyNever(() => mockHashtagService.searchHashtags(any()));
+          verifyNever(
+            () => mockHashtagRepository.searchHashtags(
+              query: any(named: 'query'),
+              limit: any(named: 'limit'),
+            ),
+          );
         },
       );
 
       blocTest<HashtagSearchBloc, HashtagSearchState>(
-        'trims whitespace from query',
+        'normalizes query by trimming and lowercasing',
         setUp: () {
           when(
-            () => mockHashtagService.searchHashtags('cats'),
-          ).thenReturn(['cats']);
-          when(
-            () => mockTopHashtagsService.searchHashtags(
-              'cats',
-              limit: any(named: 'limit'),
-            ),
-          ).thenReturn([]);
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'cats', limit: 20),
+          ).thenAnswer((_) async => ['cats']);
         },
         build: createBloc,
-        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('  cats  ')),
+        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('  CATS  ')),
         wait: debounceDuration,
         expect: () => [
           const HashtagSearchState(
@@ -220,39 +189,20 @@ void main() {
           ),
         ],
         verify: (_) {
-          verify(() => mockHashtagService.searchHashtags('cats')).called(1);
+          verify(
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'cats', limit: 20),
+          ).called(1);
         },
-      );
-
-      blocTest<HashtagSearchBloc, HashtagSearchState>(
-        'returns empty results when no hashtags match',
-        build: createBloc,
-        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('zzzzz')),
-        wait: debounceDuration,
-        expect: () => [
-          const HashtagSearchState(
-            status: HashtagSearchStatus.loading,
-            query: 'zzzzz',
-          ),
-          const HashtagSearchState(
-            status: HashtagSearchStatus.success,
-            query: 'zzzzz',
-          ),
-        ],
       );
 
       blocTest<HashtagSearchBloc, HashtagSearchState>(
         'debounces rapid query changes and only processes final query',
         setUp: () {
           when(
-            () => mockHashtagService.searchHashtags('final'),
-          ).thenReturn(['finalize']);
-          when(
-            () => mockTopHashtagsService.searchHashtags(
-              'final',
-              limit: any(named: 'limit'),
-            ),
-          ).thenReturn([]);
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'final', limit: 20),
+          ).thenAnswer((_) async => ['finalize']);
         },
         build: createBloc,
         act: (bloc) {
@@ -277,30 +227,34 @@ void main() {
         ],
         verify: (_) {
           // Only the final query should be processed due to debounce
-          verify(() => mockHashtagService.searchHashtags('final')).called(1);
-          verifyNever(() => mockHashtagService.searchHashtags('f'));
-          verifyNever(() => mockHashtagService.searchHashtags('fi'));
-          verifyNever(() => mockHashtagService.searchHashtags('fin'));
-          verifyNever(() => mockHashtagService.searchHashtags('fina'));
-        },
-      );
-
-      blocTest<HashtagSearchBloc, HashtagSearchState>(
-        'refreshes hashtag stats before searching',
-        setUp: () {
-          when(() => mockHashtagService.searchHashtags('test')).thenReturn([]);
-          when(
-            () => mockTopHashtagsService.searchHashtags(
-              'test',
+          verify(
+            () =>
+                mockHashtagRepository.searchHashtags(query: 'final', limit: 20),
+          ).called(1);
+          verifyNever(
+            () => mockHashtagRepository.searchHashtags(
+              query: 'f',
               limit: any(named: 'limit'),
             ),
-          ).thenReturn([]);
-        },
-        build: createBloc,
-        act: (bloc) => bloc.add(const HashtagSearchQueryChanged('test')),
-        wait: debounceDuration,
-        verify: (_) {
-          verify(() => mockHashtagService.refreshHashtagStats()).called(1);
+          );
+          verifyNever(
+            () => mockHashtagRepository.searchHashtags(
+              query: 'fi',
+              limit: any(named: 'limit'),
+            ),
+          );
+          verifyNever(
+            () => mockHashtagRepository.searchHashtags(
+              query: 'fin',
+              limit: any(named: 'limit'),
+            ),
+          );
+          verifyNever(
+            () => mockHashtagRepository.searchHashtags(
+              query: 'fina',
+              limit: any(named: 'limit'),
+            ),
+          );
         },
       );
     });
