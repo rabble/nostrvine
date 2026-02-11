@@ -1593,6 +1593,22 @@ class MockAnalyticsApiService extends _i1.Mock
           as _i14.Future<List<_i7.VideoEvent>>);
 
   @override
+  _i14.Future<List<_i7.VideoEvent>> getClassicVideosByHashtag({
+    required String? hashtag,
+    int? limit = 50,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#getClassicVideosByHashtag, [], {
+              #hashtag: hashtag,
+              #limit: limit,
+            }),
+            returnValue: _i14.Future<List<_i7.VideoEvent>>.value(
+              <_i7.VideoEvent>[],
+            ),
+          )
+          as _i14.Future<List<_i7.VideoEvent>>);
+
+  @override
   _i14.Future<List<_i7.VideoEvent>> searchVideos({
     required String? query,
     int? limit = 50,

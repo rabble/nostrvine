@@ -1174,6 +1174,62 @@ class VideoEventPublisher {
     }
   }
 
+  /// Republish a video event with an added text-track tag for subtitles.
+  ///
+  /// Takes the existing video event's original tags, adds a text-track tag
+  /// referencing the subtitle event, and publishes the updated event.
+  /// Returns true if publishing succeeded.
+  Future<bool> republishWithSubtitles({
+    required VideoEvent existingEvent,
+    required String textTrackRef,
+    String textTrackLang = 'en',
+  }) async {
+    // Start from the original Nostr event tags
+    final tags = existingEvent.nostrEventTags
+        .where((t) => t.isNotEmpty && t.first != 'text-track')
+        .map((t) => List<String>.from(t))
+        .toList();
+
+    // Add the new text-track tag
+    tags.add([
+      'text-track',
+      textTrackRef,
+      'wss://relay.divine.video',
+      'captions',
+      textTrackLang,
+    ]);
+
+    // Sign the updated event
+    final event = await _authService?.createAndSignEvent(
+      kind: NIP71VideoKinds.getPreferredAddressableKind(),
+      content: existingEvent.content,
+      tags: tags,
+    );
+
+    if (event == null) {
+      Log.error(
+        'Failed to sign republished event with subtitles',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return false;
+    }
+
+    // Optimistically update local cache
+    try {
+      _videoEventService?.addVideoEvent(VideoEvent.fromNostrEvent(event));
+    } catch (e) {
+      Log.warning(
+        'Failed to update local cache after subtitle republish: $e',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+    }
+
+    // Publish to relays
+    return _publishEventToNostr(event);
+  }
+
   void dispose() {
     Log.debug(
       'Disposing VideoEventPublisher',

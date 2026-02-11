@@ -60,6 +60,9 @@ class VideoEvent {
     this.collaboratorPubkeys = const [],
     this.inspiredByVideo,
     this.inspiredByNpub,
+    this.nostrEventTags = const [],
+    this.textTrackRef,
+    this.textTrackContent,
   });
 
   /// Create VideoEvent from Nostr event
@@ -119,6 +122,7 @@ class VideoEvent {
     String? audioEventRelay;
     final collaboratorPubkeys = <String>[];
     InspiredByInfo? inspiredByVideo;
+    String? textTrackRef;
 
     // Parse event tags according to NIP-71
     // Handle both List<String> and List<dynamic>
@@ -431,6 +435,13 @@ class VideoEvent {
                   : null,
             );
           }
+        case 'text-track':
+          // Subtitle/caption track reference
+          // Format: ['text-track', '<coords-or-url>', '<relay>', 'captions',
+          //          '<lang>']
+          if (tagValue.isNotEmpty) {
+            textTrackRef ??= tagValue;
+          }
         default:
           // POSTEL'S LAW: Check if any unknown tag contains a valid video URL
           if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
@@ -604,6 +615,12 @@ class VideoEvent {
       collaboratorPubkeys: collaboratorPubkeys,
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: inspiredByNpub,
+      nostrEventTags: event.tags
+          .map(
+            (t) => (t as List).map((e) => e.toString()).toList(),
+          )
+          .toList(),
+      textTrackRef: textTrackRef,
     );
   }
   final String id;
@@ -677,6 +694,23 @@ class VideoEvent {
   /// NIP-27 npub reference in content
   /// (Inspired By a person, not a specific video).
   final String? inspiredByNpub;
+
+  /// Original event tags as List<List<String>> for republishing.
+  /// Preserved from the Nostr event so we can rebuild the event with new tags.
+  @JsonKey(includeToJson: false, includeFromJson: false)
+  final List<List<String>> nostrEventTags;
+
+  /// Addressable coordinates or URL for text-track subtitle reference.
+  /// Format: "39307:<pubkey>:subtitles:<video-d-tag>" or HTTP URL.
+  final String? textTrackRef;
+
+  /// Embedded VTT content from funnelcake REST API (skips relay fetch).
+  final String? textTrackContent;
+
+  /// Whether this video has subtitle/caption data available.
+  bool get hasSubtitles =>
+      (textTrackRef != null && textTrackRef!.isNotEmpty) ||
+      (textTrackContent != null && textTrackContent!.isNotEmpty);
 
   /// Whether this video has collaborators.
   bool get hasCollaborators => collaboratorPubkeys.isNotEmpty;
@@ -1035,6 +1069,9 @@ class VideoEvent {
     List<String>? collaboratorPubkeys,
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,
+    List<List<String>>? nostrEventTags,
+    String? textTrackRef,
+    String? textTrackContent,
   }) => VideoEvent(
     id: id ?? this.id,
     pubkey: pubkey ?? this.pubkey,
@@ -1076,6 +1113,9 @@ class VideoEvent {
     collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
     inspiredByVideo: inspiredByVideo ?? this.inspiredByVideo,
     inspiredByNpub: inspiredByNpub ?? this.inspiredByNpub,
+    nostrEventTags: nostrEventTags ?? this.nostrEventTags,
+    textTrackRef: textTrackRef ?? this.textTrackRef,
+    textTrackContent: textTrackContent ?? this.textTrackContent,
   );
 
   @override

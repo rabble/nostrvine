@@ -46,10 +46,12 @@ import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
+import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
@@ -1123,6 +1125,22 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                   ),
                                 ),
                               ),
+                            // Subtitle overlay
+                            if (isActive && video.hasSubtitles)
+                              Consumer(
+                                builder: (context, ref, _) {
+                                  final visibilityMap = ref.watch(
+                                    subtitleVisibilityProvider,
+                                  );
+                                  final subtitlesVisible =
+                                      visibilityMap[video.id] ?? false;
+                                  return SubtitleOverlay(
+                                    video: video,
+                                    positionMs: value.position.inMilliseconds,
+                                    visible: subtitlesVisible,
+                                  );
+                                },
+                              ),
                           ],
                         ),
                       ),
@@ -1683,6 +1701,11 @@ class VideoOverlayActions extends ConsumerWidget {
                       ),
                     ),
                   ),
+
+                  const SizedBox(height: 4),
+
+                  // CC (subtitles) button
+                  CcActionButton(video: video),
 
                   const SizedBox(height: 4),
 

@@ -1,6 +1,7 @@
 // ABOUTME: Barrel file for video feed item action widgets.
 // ABOUTME: Exports all action buttons used in the video overlay.
 
+export 'cc_action_button.dart';
 export 'comment_action_button.dart';
 export 'like_action_button.dart';
 export 'repost_action_button.dart';
