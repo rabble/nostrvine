@@ -527,11 +527,8 @@ class FunnelcakeApiClient {
 
     final queryParams = <String, String>{
       'limit': limit.toString(),
+      if (query != null && query.isNotEmpty) 'q': query,
     };
-
-    if (query != null && query.isNotEmpty) {
-      queryParams['q'] = query;
-    }
 
     final uri = Uri.parse(
       '$_baseUrl/api/hashtags/trending',
