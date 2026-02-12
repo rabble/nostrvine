@@ -4,6 +4,9 @@
 import 'package:models/models.dart';
 import 'package:nostr_sdk/nip19/nip19.dart';
 
+/// Priority multiplier for bio/about field matches (lower than name fields).
+const double kBioSearchPriorityMultiplier = 0.5;
+
 /// Result of a fuzzy search match with relevance score
 class SearchMatch<T> {
   const SearchMatch({
@@ -125,6 +128,16 @@ class SearchUtils {
       if (score > bestScore) {
         bestScore = score * 0.9;
         matchedField = 'nip05';
+      }
+    }
+
+    // Search bio/about at lower priority than name fields
+    if (profile.about != null && profile.about!.isNotEmpty) {
+      final score =
+          tokenMatch(queryLower, profile.about!) * kBioSearchPriorityMultiplier;
+      if (score > bestScore) {
+        bestScore = score;
+        matchedField = 'about';
       }
     }
 

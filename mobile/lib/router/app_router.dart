@@ -141,6 +141,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
         // If TOS is accepted but user is not authenticated, redirect to welcome
         if (authState == AuthState.unauthenticated) {
+          _hasNavigated = false;
           Log.debug(
             'Not authenticated, redirecting to ${WelcomeScreen.path}',
             name: 'AppRouter',
@@ -745,9 +746,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           // The draft ID is optional if the user wants to continue editing
           // the draft.
           final draftId = st.pathParameters['draftId'];
+          final extra = st.extra as Map<String, dynamic>?;
+          final fromLibrary = extra?['fromLibrary'] as bool? ?? false;
 
           return VideoClipEditorScreen(
             draftId: draftId == null || draftId.isEmpty ? null : draftId,
+            fromLibrary: fromLibrary,
           );
         },
       ),

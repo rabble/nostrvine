@@ -89,7 +89,7 @@ final class ProfileFeedProvider
   }
 }
 
-String _$profileFeedHash() => r'bcf0081ba23a169da17366803e788c9a59100902';
+String _$profileFeedHash() => r'8f85ad120f071875a145cc0c412a85fe165f81c4';
 
 /// Profile feed provider - shows videos for a specific user with pagination
 ///
