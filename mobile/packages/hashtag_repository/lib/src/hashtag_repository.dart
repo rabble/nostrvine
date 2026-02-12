@@ -29,7 +29,7 @@ class HashtagRepository {
   Future<List<String>> searchHashtags({
     String? query,
     int limit = 20,
-  }) async {
+  }) {
     return _funnelcakeApiClient.searchHashtags(
       query: query,
       limit: limit,
