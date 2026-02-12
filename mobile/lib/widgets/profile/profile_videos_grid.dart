@@ -53,12 +53,15 @@ class ProfileVideosGrid extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isOwnProfile =
+        ref.read(authServiceProvider).currentPublicKeyHex == userIdHex;
     final backgroundPublish = context.watch<BackgroundPublishBloc>();
 
     final allVideos = [
-      ...backgroundPublish.state.uploads
-          .where((upload) => upload.result == null)
-          .map(_GridUploadingVideoEntry.new),
+      if (isOwnProfile)
+        ...backgroundPublish.state.uploads
+            .where((upload) => upload.result == null)
+            .map(_GridUploadingVideoEntry.new),
 
       ...videos.map(_GridVideoEventEntry.new),
     ];
