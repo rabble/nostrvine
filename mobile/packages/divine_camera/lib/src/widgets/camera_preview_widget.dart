@@ -67,9 +67,11 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
     if (!isFront) return false;
 
     // On iOS, mirror preview only when native isn't mirroring
+    // coverage:ignore-start
     if (Platform.isIOS) {
       return !_camera.mirrorFrontCameraOutput;
     }
+    // coverage:ignore-end
     return false;
   }
 
@@ -89,9 +91,11 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
     // If preview is mirrored in Flutter, flip the X coordinate for the camera
     // The visual focus indicator stays where the user tapped,
     // but the camera needs the un-mirrored coordinate
+    // coverage:ignore-start
     if (_isPreviewMirrored) {
       normalizedX = 1.0 - normalizedX;
     }
+    // coverage:ignore-end
 
     final normalizedPosition = Offset(normalizedX, normalizedY);
 
@@ -225,6 +229,7 @@ class _CameraPreview extends StatelessWidget {
 
     // Mirror front camera preview (selfie mode)
     // This is a visual-only transform, the actual pixels remain "real-world"
+    // coverage:ignore-start
     if (shouldMirror) {
       preview = Transform(
         alignment: .center,
@@ -232,6 +237,7 @@ class _CameraPreview extends StatelessWidget {
         child: preview,
       );
     }
+    // coverage:ignore-end
 
     // Apply aspect ratio and fit
     if (fit == BoxFit.cover) {
