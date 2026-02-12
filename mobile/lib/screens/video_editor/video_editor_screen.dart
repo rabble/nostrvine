@@ -180,45 +180,36 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: .center,
-      mainAxisAlignment: .center,
-      children: [
-        SizedBox(
-          width: 410,
-          child: MultiBlocProvider(
-            providers: [
-              BlocProvider(create: (_) => VideoEditorMainBloc()),
-              BlocProvider.value(value: _stickerBloc),
-              BlocProvider(create: (_) => VideoEditorFilterBloc()),
-              BlocProvider(create: (_) => VideoEditorDrawBloc()),
-              BlocProvider(create: (_) => VideoEditorTextBloc()),
-            ],
-            child: Builder(
-              builder: (context) {
-                return VideoEditorScope(
-                  editorKey: _editorKey,
-                  removeAreaKey: _removeAreaKey,
-                  originalClipAspectRatio: _clip.originalAspectRatio,
-                  bodySizeNotifier: _bodySizeNotifier,
-                  onAddStickers: _addStickers,
-                  onAddEditTextLayer: ([layer]) {
-                    final mainBloc = context.read<VideoEditorMainBloc>();
-                    final textBloc = context.read<VideoEditorTextBloc>();
-
-                    return _addEditTextLayer(
-                      mainBloc: mainBloc,
-                      textBloc: textBloc,
-                      layer: layer,
-                    );
-                  },
-                  child: const VideoEditorScaffold(),
-                );
-              },
-            ),
-          ),
-        ),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(create: (_) => VideoEditorMainBloc()),
+        BlocProvider.value(value: _stickerBloc),
+        BlocProvider(create: (_) => VideoEditorFilterBloc()),
+        BlocProvider(create: (_) => VideoEditorDrawBloc()),
+        BlocProvider(create: (_) => VideoEditorTextBloc()),
       ],
+      child: Builder(
+        builder: (context) {
+          return VideoEditorScope(
+            editorKey: _editorKey,
+            removeAreaKey: _removeAreaKey,
+            originalClipAspectRatio: _clip.originalAspectRatio,
+            bodySizeNotifier: _bodySizeNotifier,
+            onAddStickers: _addStickers,
+            onAddEditTextLayer: ([layer]) {
+              final mainBloc = context.read<VideoEditorMainBloc>();
+              final textBloc = context.read<VideoEditorTextBloc>();
+
+              return _addEditTextLayer(
+                mainBloc: mainBloc,
+                textBloc: textBloc,
+                layer: layer,
+              );
+            },
+            child: const VideoEditorScaffold(),
+          );
+        },
+      ),
     );
   }
 }

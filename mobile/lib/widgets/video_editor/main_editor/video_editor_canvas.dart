@@ -14,6 +14,7 @@ import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.d
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
@@ -420,8 +421,7 @@ class _VideoSetupLoadingIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final useFullSize =
-        targetAspectRatio == .vertical && (kIsWeb || !Platform.isMacOS);
+    final useFullSize = targetAspectRatio.useFullScreenForSize(bodySize);
 
     // Calculate the scale factor that FittedBox.cover applies
     final scale = max(
@@ -433,26 +433,37 @@ class _VideoSetupLoadingIndicator extends StatelessWidget {
     final size = bodySize / scale;
     final radius = Radius.circular(32 / scale);
 
-    return Center(
-      child: ClipRRect(
-        borderRadius: .vertical(
-          top: useFullSize ? Radius.zero : radius,
-          bottom: radius,
+    if (useFullSize) {
+      // Cover mode: show the visible portion of bodySize
+      return Center(
+        child: ClipRRect(
+          borderRadius: BorderRadius.vertical(bottom: radius),
+          child: SizedBox.fromSize(
+            size: size,
+            child: VideoEditorThumbnail(contentSize: size),
+          ),
         ),
-        child: useFullSize
-            ? SizedBox.fromSize(
-                size: size,
-                child: VideoEditorThumbnail(contentSize: size),
-              )
-            : SizedBox(
-                width: size.shortestSide,
-                height: size.shortestSide / targetAspectRatio.value,
-                child: VideoEditorThumbnail(
-                  contentSize: .square(size.shortestSide),
-                ),
-              ),
-      ),
-    );
+      );
+    } else {
+      // Contain mode: the visible area is targetAspectRatio fitted in renderSize
+      final containSize = Size(
+        renderSize.height * targetAspectRatio.value,
+        renderSize.height,
+      );
+      final containRadius = Radius.circular(
+        32 * containSize.width / bodySize.width,
+      );
+
+      return Center(
+        child: ClipRRect(
+          borderRadius: BorderRadius.all(containRadius),
+          child: SizedBox.fromSize(
+            size: containSize,
+            child: VideoEditorThumbnail(contentSize: containSize),
+          ),
+        ),
+      );
+    }
   }
 }
 
@@ -470,6 +481,10 @@ class _CanvasFitter extends ConsumerWidget {
       builder: (_, constraints) {
         final bodySize = constraints.biggest;
 
+        final useFullSize = clip.targetAspectRatio.useFullScreenForSize(
+          bodySize,
+        );
+
         // Height is constrained by maxWidth or maxHeight,
         // depending on which dimension is reached first
         final height = min(bodySize.width, bodySize.height);
@@ -478,21 +493,48 @@ class _CanvasFitter extends ConsumerWidget {
         // Notify parent about body size
         scope.bodySizeNotifier.value = bodySize;
 
-        return FittedBox(
-          fit: .cover,
-          child: SizedBox.fromSize(
-            size: renderSize,
-            // Wraps sub-editors in a nested Navigator so they open within
-            // the fitted aspect-ratio area instead of full-screen, since
-            // cropping hasn't been applied yet.
-            child: Navigator(
-              clipBehavior: .none,
-              onGenerateRoute: (_) => PageRouteBuilder(
-                pageBuilder: (_, _, _) => builder(bodySize, renderSize),
-              ),
+        // The child content (ProImageEditor with originalAspectRatio)
+        final child = SizedBox.fromSize(
+          size: renderSize,
+          // Wraps sub-editors in a nested Navigator so they open within
+          // the fitted aspect-ratio area instead of full-screen, since
+          // cropping hasn't been applied yet.
+          child: Navigator(
+            clipBehavior: Clip.none,
+            onGenerateRoute: (_) => PageRouteBuilder(
+              pageBuilder: (_, _, _) => builder(bodySize, renderSize),
             ),
           ),
         );
+
+        if (useFullSize) {
+          // Cover mode: fill entire bodySize with the original aspect ratio
+          return FittedBox(fit: BoxFit.cover, child: child);
+        } else {
+          // Contain mode: fit targetAspectRatio within bodySize,
+          // then cover that area with the original aspect ratio
+          final Size targetSize;
+          if (bodySize.aspectRatio > clip.targetAspectRatio.value) {
+            // Body is wider, height is limiting
+            targetSize = Size(
+              bodySize.height * clip.targetAspectRatio.value,
+              bodySize.height,
+            );
+          } else {
+            // Body is narrower, width is limiting
+            targetSize = Size(
+              bodySize.width,
+              bodySize.width / clip.targetAspectRatio.value,
+            );
+          }
+
+          return Center(
+            child: SizedBox.fromSize(
+              size: targetSize,
+              child: FittedBox(fit: BoxFit.cover, child: child),
+            ),
+          );
+        }
       },
     );
   }
