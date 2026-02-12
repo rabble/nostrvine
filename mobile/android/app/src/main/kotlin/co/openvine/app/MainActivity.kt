@@ -187,15 +187,19 @@ class MainActivity : FlutterActivity() {
         var fileCert = File(context.filesDir.parent + "/app_flutter","$keyAlias.cert")
 
         CoroutineScope(Dispatchers.IO).launch {
-            C2PAIdentityManager(this@MainActivity).createHardwareSigner(
-                keyAlias,
-                C2PAIdentityManager.TSA_DIGICERT,
-                fileCert.canonicalPath
-            )
+            try {
+                C2PAIdentityManager(this@MainActivity).createHardwareSigner(
+                    keyAlias,
+                    C2PAIdentityManager.TSA_DIGICERT,
+                    fileCert.canonicalPath
+                )
 
-            fileCert = File(fileCert.canonicalPath)
-            if (fileCert.exists())
-                Log.d("DiVine","Success: " + fileCert.canonicalPath)
+                fileCert = File(fileCert.canonicalPath)
+                if (fileCert.exists())
+                    Log.d("DiVine","Success: " + fileCert.canonicalPath)
+            } catch (e: Exception) {
+                Log.e("DiVine", "C2PA hardware signer init failed: ${e.message}")
+            }
         }
     }
 

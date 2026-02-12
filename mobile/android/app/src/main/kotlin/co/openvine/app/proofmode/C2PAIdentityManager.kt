@@ -105,8 +105,8 @@ class C2PAIdentityManager(private val context: Context) {
             try {
                 StrongBoxSigner.createKey(config)
             } catch (e: Exception) {
-             //   Timber.d( "StrongBox key creation failed, falling back to hardware-backed key")
-                createKeystoreKey(keyAlias, true)
+             //   Timber.d( "StrongBox key creation failed, falling back to software-backed key")
+                createKeystoreKey(keyAlias, false)
             }
             // Get certificate chain from signing server
             certChain = enrollHardwareKeyCertificate(keyAlias)
