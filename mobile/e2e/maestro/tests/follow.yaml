@@ -20,38 +20,35 @@ tags:
     id: explore_tab
     delay: 100
 - waitForAnimationToEnd
+- runFlow: ../asserts/assertExploreNew.yaml
 
-- runFlow: ../asserts/assertExplore.yaml
 
 # 2. Tap on the first video of the grid and follow the user VIDEO_USER and set VIDEO_DESCRIPTION. Expected: Following is displayed
 - tapOn:
-    id: play_button
-    index: 0
+    id: video_thumbnail_0
 - tapOn: #Pause the video
     point: 50%,50%
 - runFlow: "../asserts/assertVideoPaused.yaml"
-#once added IDs by devs tap follow and validate
 - assertVisible: Follow
 #Follow VIDEO_USER
-- tapOn: Follow
-- assertVisible: Following
+- tapOn:
+    id: follow_button
 # Extract the text from the video description
 - copyTextFrom:
     id: video_description
 - evalScript: |
-    env.video_description = maestro.copiedText;  # Assign copied text to the variable
+    env.VIDEO_DESCRIPTION = maestro.copiedText;  # Assign copied text to the variable
 # TO-DO: Extract the text from the username
+
+
 # 3. Browse to the home screen: VIDEO_USER videos are displayed validated thru username
-- tapOn:
-    point: 4%,8%
+- tapOn: Close video player
 - doubleTapOn:
     id: home_tab
     delay: 100
 - assertVisible:
-    text: ${VIDEO_USER}
+    text: ${VIDEO_DESCRIPTION}
     optional: true
-#TO-DO: assert once ID added
-- assertVisible: Following
 
 # 4. Tap on profile: validate 1 following user
 - doubleTapOn:

@@ -80,6 +80,25 @@ class RelayNotifications extends _$RelayNotifications {
   Timer? _autoRefreshTimer;
   static const _autoRefreshInterval = Duration(minutes: 5);
 
+  void _startAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = Timer(_autoRefreshInterval, () {
+      Log.info(
+        'RelayNotifications: Auto-refresh triggered',
+        name: 'RelayNotificationsProvider',
+        category: LogCategory.system,
+      );
+      if (ref.mounted) {
+        refresh();
+      }
+    });
+  }
+
+  void _stopAutoRefresh() {
+    _autoRefreshTimer?.cancel();
+    _autoRefreshTimer = null;
+  }
+
   @override
   Future<NotificationFeedState> build() async {
     // Reset pagination state at start of build
@@ -95,26 +114,6 @@ class RelayNotifications extends _$RelayNotifications {
       category: LogCategory.system,
     );
 
-    // Timer lifecycle management
-    void startAutoRefresh() {
-      _autoRefreshTimer?.cancel();
-      _autoRefreshTimer = Timer(_autoRefreshInterval, () {
-        Log.info(
-          'RelayNotifications: Auto-refresh triggered',
-          name: 'RelayNotificationsProvider',
-          category: LogCategory.system,
-        );
-        if (ref.mounted) {
-          ref.invalidateSelf();
-        }
-      });
-    }
-
-    void stopAutoRefresh() {
-      _autoRefreshTimer?.cancel();
-      _autoRefreshTimer = null;
-    }
-
     // Start timer when provider is first watched or resumed
     ref.onResume(() {
       Log.debug(
@@ -122,7 +121,7 @@ class RelayNotifications extends _$RelayNotifications {
         name: 'RelayNotificationsProvider',
         category: LogCategory.system,
       );
-      startAutoRefresh();
+      _startAutoRefresh();
     });
 
     // Pause timer when all listeners detach
@@ -132,7 +131,7 @@ class RelayNotifications extends _$RelayNotifications {
         name: 'RelayNotificationsProvider',
         category: LogCategory.system,
       );
-      stopAutoRefresh();
+      _stopAutoRefresh();
     });
 
     // Clean up timer on dispose
@@ -142,11 +141,11 @@ class RelayNotifications extends _$RelayNotifications {
         name: 'RelayNotificationsProvider',
         category: LogCategory.system,
       );
-      stopAutoRefresh();
+      _stopAutoRefresh();
     });
 
     // Start timer immediately for first build
-    startAutoRefresh();
+    _startAutoRefresh();
 
     // Get current user pubkey
     final authService = ref.read(authServiceProvider);
@@ -386,14 +385,81 @@ class RelayNotifications extends _$RelayNotifications {
     );
   }
 
-  /// Refresh notifications from the API
+  /// Refresh notifications from the API.
+  ///
+  /// Fetches fresh data while preserving existing notifications on screen
+  /// until the new data arrives. This prevents a flash of empty state
+  /// during pull-to-refresh.
   Future<void> refresh() async {
     Log.info(
       'RelayNotifications: Refreshing',
       name: 'RelayNotificationsProvider',
       category: LogCategory.system,
     );
-    ref.invalidateSelf();
+
+    final currentState = await future;
+    if (!ref.mounted) return;
+
+    // Reset pagination state
+    _nextCursor = null;
+    _hasMoreFromApi = true;
+
+    final authService = ref.read(authServiceProvider);
+    final currentUserPubkey = authService.currentPublicKeyHex;
+
+    if (currentUserPubkey == null || !authService.isAuthenticated) return;
+
+    final apiService = ref.read(relayNotificationApiServiceProvider);
+    if (!apiService.isAvailable) return;
+
+    try {
+      final response = await apiService.getNotifications(
+        pubkey: currentUserPubkey,
+        limit: 50,
+      );
+
+      if (!ref.mounted) return;
+
+      _nextCursor = response.nextCursor;
+      _hasMoreFromApi = response.hasMore;
+
+      final enrichedNotifications = await _enrichNotifications(
+        response.notifications,
+      );
+
+      if (!ref.mounted) return;
+
+      Log.info(
+        'RelayNotifications: Refreshed with '
+        '${enrichedNotifications.length} notifications, '
+        'unread: ${response.unreadCount}, hasMore: ${response.hasMore}',
+        name: 'RelayNotificationsProvider',
+        category: LogCategory.system,
+      );
+
+      state = AsyncData(
+        NotificationFeedState(
+          notifications: enrichedNotifications,
+          unreadCount: response.unreadCount,
+          hasMoreContent: response.hasMore,
+          isInitialLoad: false,
+          lastUpdated: DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      Log.error(
+        'RelayNotifications: Error refreshing: $e',
+        name: 'RelayNotificationsProvider',
+        category: LogCategory.system,
+      );
+      // Keep existing data on error
+      if (ref.mounted) {
+        state = AsyncData(currentState.copyWith(error: e.toString()));
+      }
+    }
+
+    // Restart auto-refresh timer
+    _startAutoRefresh();
   }
 
   /// Mark a single notification as read

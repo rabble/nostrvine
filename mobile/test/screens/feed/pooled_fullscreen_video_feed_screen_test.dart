@@ -339,9 +339,11 @@ void main() {
 
     group('hook wiring', () {
       late MockVideoFeedController mockController;
+      late Map<int, ValueNotifier<VideoIndexState>> indexNotifiers;
 
       setUp(() {
         mockController = MockVideoFeedController();
+        indexNotifiers = <int, ValueNotifier<VideoIndexState>>{};
 
         // Pre-configure the mock controller with all required stubs
         when(() => mockController.videos).thenReturn([]);
@@ -369,6 +371,15 @@ void main() {
         when(() => mockController.addListener(any())).thenReturn(null);
         when(() => mockController.removeListener(any())).thenReturn(null);
         when(mockController.dispose).thenReturn(null);
+
+        // Mock getIndexNotifier to return a ValueNotifier for each index
+        when(() => mockController.getIndexNotifier(any())).thenAnswer((inv) {
+          final index = inv.positionalArguments[0] as int;
+          return indexNotifiers.putIfAbsent(
+            index,
+            () => ValueNotifier(const VideoIndexState()),
+          );
+        });
       });
 
       testWidgets('controller factory is called with correct videos', (

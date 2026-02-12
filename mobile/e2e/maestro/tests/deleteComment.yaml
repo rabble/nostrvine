@@ -1,62 +1,38 @@
 appId: co.openvine.app
-env:
-  VIDEO_TITLE: "when you jammin to JB" # Setting the video title parameter
-  VIDEO_USER: "FunnyVines"
-  VIDEO_DESCRIPTION: "When you jammin to JB too hard and you grab a hot mic. " # Setting the video description parameter
-  COMMENT: "Boring automated comment"
-  FULL_COMMENT: "Automated comment  on 2026-01-28 14:28:11"
 ---
 #TC to comment a video and delete the comment just posted,
-# given the user is logged in in the app,,
-# Comment the video with description VIDEO_TITLE and delete it afterwards
+# given the user is logged in in the app, and with the just commented video opened,
+# delete the comment in video
 #Steps:
-# 1. Open specific video VIDEO_TITLE
-# 2. Tap on Comment: Validate Comments section is displayed
-# 3. Input comment COMMENT and tap send: Validate comment is displayed with "now" as timestamp.
-# 4. Tap on the 3 dots menu next to the comment: Validate delete modal displayed
-# 5. Tap on "Delete Comment": Validate Confirmation modal is displayed
-# 6. Tap on Delete: The comments section is displayed without the deleted comment
-# 7. Close the comments section: Validate playback screen is displayed
+# 1. Open the comments of the video: Comments modal is displayed and the just posted comment is there
+# 2. Long press on *You: The Options modal is displayed
+# 3. Tap on "Delete": Comments modal closed and the comment is not present
+# 4. Close the comments modal and browse back
 
-# 1. Open specific video VIDEO_TITLE
-- runFlow: ../utils/openSpecificVideo.yaml
-
-# 2. Tap on Comment: Validate Comments section is displayed
+# 1. Open the comments of the video: Comments modal is displayed and the just posted comment is there
 - tapOn:
     id: comments_button
 - runFlow: "../asserts/assertCommentsModal.yaml"
+- assertVisible:
+    text: ".*•.*You.*"
 
-# 3. Input comment COMMENT with current timestamp: Validate comment is displayed with "now" as timestamp
-- tapOn: Add a comment...
-- evalScript: ${output.runId = new Date().toISOString().replace('T',' ').split('.')[0]}
-- inputText: ${COMMENT} on ${output.runId}
-#Send comment
-- runFlow: ../utils/hideKeyboard.yaml #if displayed, hide the keyboard
-- tapOn:
-    id: send_comment_button
-- assertVisible: ${COMMENT} on ${output.runId}
-
-# 4. Tap on the 3 dots menu next to the comment: Validate delete modal displayed
-- tapOn:
-    id: comment_options_button
-- runFlow: ../asserts/assertCommentsOptions.yaml
-
-# 5. Long press on the comment posted: Validate Confirmation modal is displayed
-#- longPressOn: ${FULL_COMMENT}
-#- longPressOn: |- #    ^\d{1}m ago$
+# 2. Long press on *You: The Options modal is displayed
 - longPressOn:
-    point: 50%,40%
-- runFlow: ../asserts/assertCommentsOptions.yaml
+    text: ".*•.*You.*"
+- runFlow: "../asserts/assertCommentsOptions.yaml"
 
-# 6. Tap on Delete: The comments section is displayed without the deleted comment
+# 3. Tap on "Delete": Comments modal closed and the comment is not present
 - tapOn:
     id: delete_comment_option
-- assertNotVisible: ${FULL_COMMENT}
+- tapOn: Delete comment
 
-# 7. Close the comments section: Validate playback screen is displayed
-# 4. Close the comments section: Validate playback screen is displayed
+- runFlow: "../asserts/assertCommentsModal.yaml"
+- assertNotVisible:
+    text: ".*•.*You"
+
+# 4. Close the comments modal and browse back
 - swipe:
     from:
       text: "\\d+\\sComments?" # Matches one or more digits followed by " Comment" or " Comments"
     direction: DOWN
-- runFlow: ../asserts/assertVideoPlayback.yaml
+- tapOn: Close video player

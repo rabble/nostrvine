@@ -73,6 +73,9 @@ class CameraController(
     private var isScreenFlashEnabled: Boolean = false
     private var screenFlashFeatureEnabled: Boolean = true
 
+    // Whether to mirror front camera video output
+    private var mirrorFrontCameraOutput: Boolean = true
+
     // Auto flash mode - checks brightness once when recording starts
     private var isAutoFlashMode: Boolean = false
     private var autoFlashTorchEnabled: Boolean = false
@@ -136,11 +139,13 @@ class CameraController(
         lens: String,
         quality: String,
         enableScreenFlash: Boolean = true,
+        mirrorFrontCameraOutput: Boolean = true,
         callback: (Map<String, Any>?, String?) -> Unit
     ) {
-        Log.d(TAG, "Initializing camera with lens: $lens, quality: $quality, enableScreenFlash: $enableScreenFlash (portrait mode 1080x1920)")
+        Log.d(TAG, "Initializing camera with lens: $lens, quality: $quality, enableScreenFlash: $enableScreenFlash, mirrorFrontCameraOutput: $mirrorFrontCameraOutput (portrait mode 1080x1920)")
 
         screenFlashFeatureEnabled = enableScreenFlash
+        this.mirrorFrontCameraOutput = mirrorFrontCameraOutput
 
         currentLens = if (lens == "front") {
             CameraSelector.LENS_FACING_FRONT
@@ -335,9 +340,10 @@ class CameraController(
                 .setExecutor(cameraExecutor)
                 .build()
 
+            // Mirror front camera video output based on mirrorFrontCameraOutput setting
             videoCapture = VideoCapture.Builder(recorder)
                 .setMirrorMode(
-                    if (currentLens == CameraSelector.LENS_FACING_FRONT)
+                    if (mirrorFrontCameraOutput && currentLens == CameraSelector.LENS_FACING_FRONT)
                         MirrorMode.MIRROR_MODE_ON_FRONT_ONLY
                     else
                         MirrorMode.MIRROR_MODE_OFF
@@ -475,9 +481,10 @@ class CameraController(
                 .setExecutor(cameraExecutor)
                 .build()
 
+            // Mirror front camera video output based on mirrorFrontCameraOutput setting
             videoCapture = VideoCapture.Builder(recorder)
                 .setMirrorMode(
-                    if (currentLens == CameraSelector.LENS_FACING_FRONT)
+                    if (mirrorFrontCameraOutput && currentLens == CameraSelector.LENS_FACING_FRONT)
                         MirrorMode.MIRROR_MODE_ON_FRONT_ONLY
                     else
                         MirrorMode.MIRROR_MODE_OFF

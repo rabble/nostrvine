@@ -1,10 +1,15 @@
 package co.openvine.app
 
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.security.keystore.KeyGenParameterSpec
+import android.security.keystore.KeyProperties
 import android.util.Log
 import android.window.OnBackInvokedCallback
+import co.openvine.app.proofmode.C2PAIdentityManager
+import co.openvine.app.proofmode.HardwareAttestationNotarizationProvider
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -21,6 +26,14 @@ import zendesk.support.CreateRequest
 import zendesk.support.Request
 import com.zendesk.service.ZendeskCallback
 import com.zendesk.service.ErrorResponse
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
+import org.witness.proofmode.notarization.NotarizationProvider
+import java.security.KeyPairGenerator
+import java.security.KeyStore
+import java.security.cert.X509Certificate
 
 class MainActivity : FlutterActivity() {
     companion object {
@@ -170,8 +183,36 @@ class MainActivity : FlutterActivity() {
             onBackInvokedDispatcher.unregisterOnBackInvokedCallback(backCallback!!)
         }
     }
+    private fun initC2PA () {
+        var keyAlias = "c2pa_signing_divine";
+        var fileCert = File(context.filesDir.parent + "/app_flutter","$keyAlias.cert")
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                C2PAIdentityManager(this@MainActivity).createHardwareSigner(
+                    keyAlias,
+                    C2PAIdentityManager.TSA_DIGICERT,
+                    fileCert.canonicalPath
+                )
+
+                fileCert = File(fileCert.canonicalPath)
+                if (fileCert.exists())
+                    Log.d(PROOFMODE_TAG, "C2PA signer init success: " + fileCert.canonicalPath)
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                Log.e(PROOFMODE_TAG, "C2PA hardware signer init failed", e)
+            }
+        }
+    }
 
     private fun setupProofModeChannel(flutterEngine: FlutterEngine) {
+
+        initC2PA()
+
+        //add custom notarization for Android Hardware Attestation
+        ProofMode.addNotarizationProvider(this, HardwareAttestationNotarizationProvider(this))
+
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, PROOFMODE_CHANNEL).setMethodCallHandler { call, result ->
             when (call.method) {
                 "generateProof" -> {
@@ -203,6 +244,9 @@ class MainActivity : FlutterActivity() {
                         }
 
                         Log.d(PROOFMODE_TAG, "Proof generated successfully: $proofHash")
+
+
+
                         result.success(proofHash)
                     } catch (e: Exception) {
                         Log.e(PROOFMODE_TAG, "Failed to generate proof", e)
@@ -241,6 +285,8 @@ class MainActivity : FlutterActivity() {
             }
         }
     }
+
+
 
     private fun setupZendeskChannel(flutterEngine: FlutterEngine) {
         MethodChannel(flutterEngine.dartExecutor.binaryMessenger, ZENDESK_CHANNEL).setMethodCallHandler { call, result ->

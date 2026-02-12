@@ -109,7 +109,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
                 : null,
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+            padding: const EdgeInsets.fromLTRB(24, 20, 0, 16),
             child: Column(
               children: [
                 // Setup profile banner for new users with default names

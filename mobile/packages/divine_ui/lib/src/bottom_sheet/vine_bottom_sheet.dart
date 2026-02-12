@@ -128,6 +128,7 @@ class VineBottomSheet extends StatelessWidget {
         isScrollControlled: true,
         useSafeArea: true,
         backgroundColor: Colors.transparent,
+        elevation: 0,
         builder: (_) => DraggableScrollableSheet(
           initialChildSize: initialChildSize,
           minChildSize: minChildSize,
@@ -153,6 +154,7 @@ class VineBottomSheet extends StatelessWidget {
         isScrollControlled: isScrollControlled ?? expanded,
         useSafeArea: true,
         backgroundColor: Colors.transparent,
+        elevation: 0,
         builder: (_) => VineBottomSheet(
           scrollable: false,
           title: title,

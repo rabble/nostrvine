@@ -89,6 +89,10 @@ class VideoPublishService {
 
       // Verify user is fully authenticated
       if (!authService.isAuthenticated) {
+        Log.warning(
+          '⚠️ User not authenticated, cannot publish',
+          category: .video,
+        );
         // TODO(l10n): Replace with context.l10n when localization is added.
         return const PublishError('Please sign in to publish videos.');
       }
@@ -97,12 +101,17 @@ class VideoPublishService {
       // Use existing upload if available, otherwise start new upload
       final pendingUpload = await _getOrCreateUpload(pubkey, draft);
       if (pendingUpload == null) {
+        Log.error('❌ Upload creation failed', category: .video);
         // TODO(l10n): Replace with context.l10n when localization is added.
         return const PublishError('Failed to upload video. Please try again.');
       }
 
       // Check if upload failed
       if (pendingUpload.status == .failed) {
+        Log.error(
+          '❌ Upload status is failed: ${pendingUpload.errorMessage}',
+          category: .video,
+        );
         return await _handleUploadError(
           Exception(pendingUpload.errorMessage ?? 'Upload failed'),
           StackTrace.current,
@@ -126,6 +135,7 @@ class VideoPublishService {
       );
 
       if (!published) {
+        Log.error('❌ Failed to publish Nostr event', category: .video);
         return await _handleUploadError(
           Exception('Failed to publish Nostr event'),
           StackTrace.current,
@@ -135,6 +145,7 @@ class VideoPublishService {
 
       // Success: delete draft
       await draftService.deleteDraft(draft.id);
+      Log.debug('🗑️ Deleted publish draft: ${draft.id}', category: .video);
 
       Log.info('📝 Published successfully', category: .video);
       return const PublishSuccess();
@@ -168,6 +179,11 @@ class VideoPublishService {
   Future<PublishError?> _handleActiveUpload(String draftId) async {
     final upload = uploadManager.getUpload(_backgroundUploadId!);
     if (upload == null) return null;
+
+    Log.debug(
+      '📤 Checking active upload: ${upload.id}, status: ${upload.status}',
+      category: .video,
+    );
 
     // If already ready, continue
     if (upload.status == .readyToPublish) return null;
@@ -266,10 +282,13 @@ class VideoPublishService {
   /// Retry a failed upload and continue publishing.
   Future<PublishResult> retryUpload(VineDraft draft) async {
     if (_backgroundUploadId == null) {
+      Log.warning('⚠️ No background upload to retry', category: .video);
+
       /// TODO(l10n): Replace with context.l10n when localization is added.
       return const PublishError('No upload to retry.');
     }
 
+    Log.info('🔄 Retrying upload: $_backgroundUploadId', category: .video);
     try {
       await uploadManager.retryUpload(_backgroundUploadId!);
       final success = await _pollUploadProgress(draft.id, _backgroundUploadId!);

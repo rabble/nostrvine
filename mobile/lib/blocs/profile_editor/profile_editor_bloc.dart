@@ -208,7 +208,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         : event.picture;
     final banner = (event.banner?.trim().isEmpty ?? true) ? null : event.banner;
 
-    final currentProfile = await _profileRepository.getProfile(
+    final currentProfile = await _profileRepository.getCachedProfile(
       pubkey: event.pubkey,
     );
     final nip05 = username != null ? '_@$username.divine.video' : null;

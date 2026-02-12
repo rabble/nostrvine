@@ -24,6 +24,7 @@ import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:video_player/video_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 /// The main canvas area for the video editor.
@@ -94,11 +95,21 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   @override
   void initState() {
     super.initState();
+    Log.info(
+      '🎬 Canvas initialized',
+      name: 'VideoEditorCanvas',
+      category: LogCategory.video,
+    );
     _initializePlayer();
   }
 
   @override
   void dispose() {
+    Log.info(
+      '🎬 Canvas disposed',
+      name: 'VideoEditorCanvas',
+      category: LogCategory.video,
+    );
     _videoPlayer?.dispose();
     _isPlayerReadyNotifier.dispose();
     ProVideoEditor.instance.cancel(_renderTaskId);
@@ -108,6 +119,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   Future<void> _initializePlayer() async {
     final clips = ref.read(clipManagerProvider).clips;
 
+    Log.debug(
+      '🎬 Initializing video player',
+      name: 'VideoEditorCanvas',
+      category: LogCategory.video,
+    );
     _proVideoController = ProVideoController(
       videoPlayer: ValueListenableBuilder(
         valueListenable: _isPlayerReadyNotifier,
@@ -149,6 +165,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     await _videoPlayer!.play();
     if (!mounted) return;
     _isPlayerReadyNotifier.value = true;
+    Log.info(
+      '🎬 Video player ready',
+      name: 'VideoEditorCanvas',
+      category: LogCategory.video,
+    );
   }
 
   /// Syncs the main-editor capabilities from the main editor to the bloc.
@@ -198,12 +219,21 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   ///
   /// Precaches the generated image overlay and triggers video rendering.
   Future<void> _handleEditorComplete(CompleteParameters parameters) async {
+    Log.info(
+      '🎬 Editor complete - starting render (image size: ${parameters.image.length} bytes)',
+      name: 'VideoEditorCanvas',
+      category: LogCategory.video,
+    );
     final notifier = ref.read(videoEditorProvider.notifier);
     if (parameters.image.isNotEmpty) {
       try {
         await precacheImage(MemoryImage(parameters.image), context);
-      } catch (_) {
-        // Ignore precache errors - rendering will still work
+      } catch (e) {
+        Log.warning(
+          '🎬 Precache failed, continuing anyway: $e',
+          name: 'VideoEditorCanvas',
+          category: LogCategory.video,
+        );
       }
     }
     notifier.updateEditorEditingParameters(parameters);
@@ -215,6 +245,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   /// Pauses video, marks processing state, navigates to metadata screen,
   /// and resumes video when returning.
   Future<void> _handleDone() async {
+    Log.info(
+      '🎬 Done pressed - navigating to metadata screen',
+      name: 'VideoEditorCanvas',
+      category: LogCategory.video,
+    );
     _videoPlayer?.pause();
     ref.read(videoEditorProvider.notifier).setProcessing(true);
     await context.push(VideoMetadataScreen.path);
@@ -323,13 +358,30 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             _syncMainCapabilities(scope, bloc);
           },
           onDone: _handleDone,
-          onImportHistoryStart: (state, import) => _isImportingHistory = true,
+          onImportHistoryStart: (state, import) {
+            Log.debug(
+              '🎬 Importing history started',
+              name: 'VideoEditorCanvas',
+              category: LogCategory.video,
+            );
+            _isImportingHistory = true;
+          },
           onImportHistoryEnd: (state, import) {
+            Log.debug(
+              '🎬 Importing history completed',
+              name: 'VideoEditorCanvas',
+              category: LogCategory.video,
+            );
             _isImportingHistory = false;
             _syncMainCapabilities(scope, bloc);
           },
           onStateHistoryChange: (_, _) => _onStateHistoryChange(scope, bloc),
           onOpenSubEditor: (editorMode) {
+            Log.debug(
+              '🎬 Opening sub-editor: $editorMode',
+              name: 'VideoEditorCanvas',
+              category: LogCategory.video,
+            );
             final SubEditorType? subEditorType = switch (editorMode) {
               .paint => .draw,
               .text => .text,
@@ -341,9 +393,20 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               bloc.add(VideoEditorMainOpenSubEditor(subEditorType));
             }
           },
-          onStartCloseSubEditor: (_) =>
-              bloc.add(const VideoEditorMainSubEditorClosed()),
+          onStartCloseSubEditor: (_) {
+            Log.debug(
+              '🎬 Closing sub-editor',
+              name: 'VideoEditorCanvas',
+              category: LogCategory.video,
+            );
+            bloc.add(const VideoEditorMainSubEditorClosed());
+          },
           onScaleStart: (_) {
+            Log.debug(
+              '🎬 Layer interaction started',
+              name: 'VideoEditorCanvas',
+              category: LogCategory.video,
+            );
             bloc.add(const VideoEditorLayerInteractionStarted());
             _selectedLayer = scope.editor?.selectedLayer;
           },
@@ -357,6 +420,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           onScaleEnd: (_) {
             if (_isLayerBeingTransformed) {
               if (bloc.state.isLayerOverRemoveArea) {
+                Log.debug(
+                  '🎬 Layer removed via drag',
+                  name: 'VideoEditorCanvas',
+                  category: LogCategory.video,
+                );
                 scope.editor?.activeLayers.remove(_selectedLayer!);
               }
 
@@ -366,8 +434,22 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
             bloc.add(const VideoEditorLayerInteractionEnded());
           },
-          onAddLayer: (layer) => _syncMainCapabilities(scope, bloc),
-          onRemoveLayer: (layer) => _syncMainCapabilities(scope, bloc),
+          onAddLayer: (layer) {
+            Log.debug(
+              '🎬 Layer added: ${layer.runtimeType}',
+              name: 'VideoEditorCanvas',
+              category: LogCategory.video,
+            );
+            _syncMainCapabilities(scope, bloc);
+          },
+          onRemoveLayer: (layer) {
+            Log.debug(
+              '🎬 Layer removed: ${layer.runtimeType}',
+              name: 'VideoEditorCanvas',
+              category: LogCategory.video,
+            );
+            _syncMainCapabilities(scope, bloc);
+          },
           onCreateTextLayer: scope.onAddEditTextLayer,
           onEditTextLayer: scope.onAddEditTextLayer,
         ),

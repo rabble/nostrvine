@@ -2,6 +2,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/text_editor/video_editor_text_extensions.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
@@ -43,6 +44,11 @@ class VideoEditorTextBloc
     VideoEditorTextFontSelected event,
     Emitter<VideoEditorTextState> emit,
   ) {
+    Log.debug(
+      '✏️ Text font selected: index ${event.fontIndex}',
+      name: 'VideoEditorTextBloc',
+      category: LogCategory.video,
+    );
     emit(state.copyWith(selectedFontIndex: event.fontIndex));
   }
 
@@ -51,6 +57,11 @@ class VideoEditorTextBloc
     VideoEditorTextAlignmentChanged event,
     Emitter<VideoEditorTextState> emit,
   ) {
+    Log.debug(
+      '✏️ Text alignment changed: ${event.alignment}',
+      name: 'VideoEditorTextBloc',
+      category: LogCategory.video,
+    );
     emit(state.copyWith(alignment: event.alignment));
   }
 
@@ -59,6 +70,11 @@ class VideoEditorTextBloc
     VideoEditorTextColorSelected event,
     Emitter<VideoEditorTextState> emit,
   ) {
+    Log.debug(
+      '🎨 Text color selected: #${event.color.toARGB32().toRadixString(16).padLeft(8, '0')}',
+      name: 'VideoEditorTextBloc',
+      category: LogCategory.video,
+    );
     emit(state.copyWith(color: event.color));
   }
 
@@ -126,6 +142,11 @@ class VideoEditorTextBloc
     VideoEditorTextInitFromLayer event,
     Emitter<VideoEditorTextState> emit,
   ) {
+    Log.debug(
+      '✏️ Text initialized from layer: "${event.text}"',
+      name: 'VideoEditorTextBloc',
+      category: LogCategory.video,
+    );
     emit(
       VideoEditorTextState(
         text: event.text,

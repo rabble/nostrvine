@@ -270,6 +270,13 @@ class VideoEditorRenderService {
       }
 
       onComplete(true);
+    } on RenderCanceledException {
+      Log.info(
+        '🚫 Clip duration limit cancelled',
+        name: 'VideoEditorRenderService',
+        category: .video,
+      );
+      onComplete(false);
     } catch (e, stack) {
       Log.error(
         '❌ Failed to limit clip duration: $e',

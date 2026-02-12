@@ -17,6 +17,7 @@ import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.d
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker.dart';
 import 'package:openvine/widgets/video_editor/sticker_editor/video_editor_sticker_sheet.dart';
@@ -66,12 +67,27 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   @override
   void initState() {
     super.initState();
+    Log.info(
+      '🎨 Initialized',
+      name: 'VideoEditorScreen',
+      category: LogCategory.video,
+    );
     _stickerBloc = VideoEditorStickerBloc(onPrecacheStickers: _precacheStickers)
       ..add(const VideoEditorStickerLoad());
+    Log.debug(
+      '🎨 Sticker bloc created and loading stickers',
+      name: 'VideoEditorScreen',
+      category: LogCategory.video,
+    );
   }
 
   @override
   void dispose() {
+    Log.info(
+      '🎨 Disposed',
+      name: 'VideoEditorScreen',
+      category: LogCategory.video,
+    );
     _stickerBloc.close();
     _bodySizeNotifier.dispose();
     super.dispose();
@@ -80,6 +96,12 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   /// Precaches stickers for faster display.
   void _precacheStickers(List<StickerData> stickers) {
     if (!mounted) return;
+
+    Log.debug(
+      '🎨 Precaching ${stickers.length} stickers',
+      name: 'VideoEditorScreen',
+      category: LogCategory.video,
+    );
 
     final estimatedSize = MediaQuery.sizeOf(context) / 3;
 
@@ -117,6 +139,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     );
 
     if (sticker != null) {
+      Log.debug(
+        '🎨 Adding sticker layer: ${sticker.description}',
+        name: 'VideoEditorScreen',
+        category: LogCategory.video,
+      );
       // 1/3 of screen width, converted to render coordinates
       final bodySize = _bodySizeNotifier.value;
       final stickerWidth = min(300.0, (bodySize.width / 3) / _fittedBoxScale);
@@ -152,6 +179,11 @@ class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
     required VideoEditorTextBloc textBloc,
     TextLayer? layer,
   }) async {
+    Log.debug(
+      '🎨 Opening text editor (editing: ${layer != null})',
+      name: 'VideoEditorScreen',
+      category: LogCategory.video,
+    );
     mainBloc.add(const VideoEditorMainOpenSubEditor(.text));
 
     final result = await Navigator.push<TextLayer>(

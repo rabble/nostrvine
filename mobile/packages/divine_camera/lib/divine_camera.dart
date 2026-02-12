@@ -64,11 +64,19 @@ class DivineCamera {
   /// [videoQuality] specifies the video recording quality (default: FHD/1080p).
   /// [enableScreenFlash] enables using screen brightness as flash for
   /// front camera (default: true).
+  /// [mirrorFrontCameraOutput] controls whether the front camera video output
+  /// is horizontally mirrored.
+  /// When `true`, the recorded video appears
+  /// as a mirror image (like the preview).
+  /// When `false`, the video shows the real-world orientation (non-mirrored).
+  /// The preview is always mirrored.
+  ///
   /// Returns the initialized camera state.
   Future<CameraState> initialize({
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     bool enableScreenFlash = true,
+    bool mirrorFrontCameraOutput = false,
   }) async {
     // Register auto-stop callback with platform
     _platform.onRecordingAutoStopped = _handleAutoStop;
@@ -77,6 +85,7 @@ class DivineCamera {
       lens: lens,
       videoQuality: videoQuality,
       enableScreenFlash: enableScreenFlash,
+      mirrorFrontCameraOutput: mirrorFrontCameraOutput,
     );
     _notifyStateChanged();
     return _state;
