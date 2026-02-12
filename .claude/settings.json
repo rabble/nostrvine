@@ -25,6 +25,17 @@
             "statusMessage": "Checking VineTheme compliance..."
           }
         ]
+      },
+      {
+        "matcher": "Bash(git commit:*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-commit-build-runner.sh",
+            "timeout": 120000,
+            "statusMessage": "Running build_runner for staged files..."
+          }
+        ]
       }
     ],
     "PostToolUse": [
@@ -42,12 +53,6 @@
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-analyze.sh",
             "timeout": 60000,
             "statusMessage": "Analyzing code..."
-          },
-          {
-            "type": "command",
-            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-build-runner.sh",
-            "timeout": 120000,
-            "statusMessage": "Running build_runner..."
           }
         ]
       }
