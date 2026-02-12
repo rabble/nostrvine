@@ -5,7 +5,6 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
-import 'package:openvine/models/user_profile.dart' as app_models;
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -20,8 +19,9 @@ const _minUsernameLength = 3;
 /// Maximum username length.
 const _maxUsernameLength = 20;
 
-/// Username format: letters, numbers, hyphens, underscores, periods.
-final _usernamePattern = RegExp(r'^[a-zA-Z0-9._-]+$');
+/// Username format: lowercase letters, numbers, hyphens, underscores, periods.
+/// NIP-05 local parts are lowercase-only (a-z0-9-_.) per spec.
+final _usernamePattern = RegExp(r'^[a-z0-9._-]+$');
 
 /// Debounce duration for username validation
 const _debounceDuration = Duration(milliseconds: 500);
@@ -43,6 +43,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
        _userProfileService = userProfileService,
        _hasExistingProfile = hasExistingProfile,
        super(const ProfileEditorState()) {
+    on<InitialUsernameSet>(_onInitialUsernameSet);
     on<ProfileSaved>(_onProfileSaved);
     on<ProfileSaveConfirmed>(_onProfileSaveConfirmed);
     on<UsernameChanged>(
@@ -54,6 +55,13 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
   final ProfileRepository _profileRepository;
   final UserProfileService _userProfileService;
   final bool _hasExistingProfile;
+
+  void _onInitialUsernameSet(
+    InitialUsernameSet event,
+    Emitter<ProfileEditorState> emit,
+  ) {
+    emit(state.copyWith(initialUsername: event.username));
+  }
 
   Future<void> _onProfileSaved(
     ProfileSaved event,
@@ -150,6 +158,19 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       return;
     }
 
+    // Skip API check if username matches the user's own claimed username
+    final initial = state.initialUsername;
+    if (initial != null && username == initial.toLowerCase()) {
+      emit(
+        state.copyWith(
+          username: username,
+          usernameStatus: UsernameStatus.idle,
+          usernameError: null,
+        ),
+      );
+      return;
+    }
+
     emit(
       state.copyWith(
         username: username,
@@ -211,7 +232,6 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
     final currentProfile = await _profileRepository.getCachedProfile(
       pubkey: event.pubkey,
     );
-    final nip05 = username != null ? '_@$username.divine.video' : null;
 
     Log.info(
       '📝 saveProfile: displayName=$displayName, '
@@ -225,7 +245,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       savedProfile = await _profileRepository.saveProfileEvent(
         displayName: displayName,
         about: about,
-        nip05: nip05,
+        username: username,
         picture: picture,
         banner: banner,
         currentProfile: currentProfile,
@@ -236,8 +256,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       );
       // TODO(Josh-Sanford): Move cache into ProfileRepository and remove
       // UserProfileService dependency
-      final appProfile = app_models.UserProfile.fromJson(savedProfile.toJson());
-      await _userProfileService.updateCachedProfile(appProfile);
+      await _userProfileService.updateCachedProfile(savedProfile);
     } catch (error) {
       Log.error('Failed to publish profile: $error', name: 'ProfileEditorBloc');
       emit(
@@ -288,13 +307,11 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       final rolledBack = await _profileRepository.saveProfileEvent(
         displayName: displayName,
         about: about,
-        nip05: currentProfile?.nip05,
         picture: picture,
         banner: banner,
         currentProfile: currentProfile,
       );
-      final appProfile = app_models.UserProfile.fromJson(rolledBack.toJson());
-      await _userProfileService.updateCachedProfile(appProfile);
+      await _userProfileService.updateCachedProfile(rolledBack);
       Log.info('📝 Rollback complete', name: 'ProfileEditorBloc');
     } catch (e) {
       Log.error('Rollback failed: $e', name: 'ProfileEditorBloc');

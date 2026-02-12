@@ -23,14 +23,12 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:likes_repository/likes_repository.dart';
-import 'package:models/models.dart'
-    hide LogCategory, NIP71VideoKinds, UserProfile;
+import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/nip71_migration.dart';
-import 'package:openvine/models/user_profile.dart';
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';

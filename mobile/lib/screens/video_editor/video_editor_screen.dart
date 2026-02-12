@@ -2,16 +2,20 @@
 // ABOUTME: Orchestrates BLoC providers, sticker precaching, and editor canvas.
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' show StickerData;
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
 import 'package:openvine/blocs/video_editor/text_editor/video_editor_text_bloc.dart';
+import 'package:openvine/models/recording_clip.dart';
+import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/screens/video_editor/video_text_editor_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
@@ -24,7 +28,7 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 ///
 /// Manages the [VideoEditorMainBloc] and [VideoEditorStickerBloc] lifecycle,
 /// precaches sticker images, and coordinates the editor canvas with toolbars.
-class VideoEditorScreen extends StatefulWidget {
+class VideoEditorScreen extends ConsumerStatefulWidget {
   const VideoEditorScreen({super.key});
 
   /// Route name for this screen.
@@ -34,10 +38,10 @@ class VideoEditorScreen extends StatefulWidget {
   static const path = '/video-editor';
 
   @override
-  State<VideoEditorScreen> createState() => _VideoEditorScreenState();
+  ConsumerState<VideoEditorScreen> createState() => _VideoEditorScreenState();
 }
 
-class _VideoEditorScreenState extends State<VideoEditorScreen> {
+class _VideoEditorScreenState extends ConsumerState<VideoEditorScreen> {
   final _editorKey = GlobalKey<ProImageEditorState>();
   final _removeAreaKey = GlobalKey();
 
@@ -46,7 +50,19 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
   /// [VineBottomSheet.show]).
   late final VideoEditorStickerBloc _stickerBloc;
 
+  /// Body size notifier, updated by [_CanvasFitter].
+  final _bodySizeNotifier = ValueNotifier<Size>(Size.zero);
+
   ProImageEditorState? get _editor => _editorKey.currentState;
+
+  RecordingClip get _clip =>
+      ref.watch(clipManagerProvider.select((s) => s.clips.first));
+
+  /// FittedBox scale factor between bodySize and renderSize.
+  double get _fittedBoxScale => VideoEditorScope.calculateFittedBoxScale(
+    _bodySizeNotifier.value,
+    _clip.originalAspectRatio,
+  );
 
   @override
   void initState() {
@@ -73,6 +89,7 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
       category: LogCategory.video,
     );
     _stickerBloc.close();
+    _bodySizeNotifier.dispose();
     super.dispose();
   }
 
@@ -127,8 +144,9 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
         name: 'VideoEditorScreen',
         category: LogCategory.video,
       );
-      final screenWidth = MediaQuery.sizeOf(context).width;
-      final stickerWidth = screenWidth / 3;
+      // 1/3 of screen width, converted to render coordinates
+      final bodySize = _bodySizeNotifier.value;
+      final stickerWidth = min(300.0, (bodySize.width / 3) / _fittedBoxScale);
 
       final layer = WidgetLayer(
         width: stickerWidth,
@@ -187,7 +205,9 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
     textBloc.add(const VideoEditorTextClosePanels());
     mainBloc.add(const VideoEditorMainSubEditorClosed());
 
-    return result;
+    if (result == null || layer != null) return result;
+
+    return result.copyWith(scale: 1 / _fittedBoxScale);
   }
 
   @override
@@ -205,6 +225,8 @@ class _VideoEditorScreenState extends State<VideoEditorScreen> {
           return VideoEditorScope(
             editorKey: _editorKey,
             removeAreaKey: _removeAreaKey,
+            originalClipAspectRatio: _clip.originalAspectRatio,
+            bodySizeNotifier: _bodySizeNotifier,
             onAddStickers: _addStickers,
             onAddEditTextLayer: ([layer]) {
               final mainBloc = context.read<VideoEditorMainBloc>();

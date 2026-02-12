@@ -5,3 +5,7 @@ name: Divine Smoke regression test
 
 - runFlow: ../flows/likeFlow.yaml
 - runFlow: ../flows/commentFlow.yaml
+
+#Account management tests
+
+- runFlow: ../flows/loginEmailPwd.yaml

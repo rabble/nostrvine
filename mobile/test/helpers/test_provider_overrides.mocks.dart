@@ -16,10 +16,10 @@ import 'package:keycast_flutter/keycast_flutter.dart' as _i17;
 import 'package:media_cache/src/media_cache_manager.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i15;
+import 'package:models/models.dart' as _i19;
 import 'package:nostr_client/nostr_client.dart' as _i4;
 import 'package:nostr_sdk/filter.dart' as _i18;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i3;
-import 'package:openvine/models/user_profile.dart' as _i19;
 import 'package:openvine/services/auth_service.dart' as _i2;
 import 'package:openvine/services/blossom_auth_service.dart' as _i23;
 import 'package:openvine/services/blossom_server_discovery_service.dart'

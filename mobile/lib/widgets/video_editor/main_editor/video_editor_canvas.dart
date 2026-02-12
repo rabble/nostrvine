@@ -1,15 +1,19 @@
 // ABOUTME: Canvas widget wrapping ProImageEditor for the video editor.
 // ABOUTME: Handles layer manipulation callbacks and editor configuration.
 
+import 'dart:math';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/blocs/video_editor/draw_editor/video_editor_draw_bloc.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/blocs/video_editor/main_editor/video_editor_main_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
@@ -27,31 +31,26 @@ import 'package:pro_image_editor/pro_image_editor.dart';
 ///
 /// Wraps [ProImageEditor] and configures it for video editing with custom
 /// styling and callbacks that dispatch events to [VideoEditorMainBloc].
-class VideoEditorCanvas extends ConsumerStatefulWidget {
+class VideoEditorCanvas extends StatefulWidget {
   /// Creates a [VideoEditorCanvas].
   const VideoEditorCanvas({super.key});
 
   @override
-  ConsumerState<VideoEditorCanvas> createState() => _VideoEditorCanvasState();
+  State<VideoEditorCanvas> createState() => _VideoEditorCanvasState();
 }
 
-class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
+class _VideoEditorCanvasState extends State<VideoEditorCanvas> {
   @override
   Widget build(BuildContext context) {
-    // BLOCs
     final isSubEditorOpen = context.select(
       (VideoEditorMainBloc b) => b.state.isSubEditorOpen,
     );
-
-    // Riverpod
-    final clip = ref.watch(clipManagerProvider.select((s) => s.clips.first));
-
-    final scope = VideoEditorScope.of(context);
 
     return PopScope(
       canPop: !isSubEditorOpen,
       onPopInvokedWithResult: (didPop, _) {
         if (!didPop) {
+          final scope = VideoEditorScope.of(context);
           scope.editor?.closeSubEditor();
           final bloc = context.read<VideoEditorMainBloc>();
           bloc.add(const VideoEditorMainSubEditorClosed());
@@ -59,29 +58,9 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
       },
       child: Padding(
         padding: const .only(bottom: VideoEditorConstants.bottomBarHeight),
-        child: LayoutBuilder(
-          builder: (_, constraints) {
-            return FittedBox(
-              fit: .cover,
-              child: SizedBox(
-                width:
-                    constraints.biggest.height / clip.targetAspectRatio.value,
-                height: constraints.biggest.height,
-                // Wraps sub-editors in a nested Navigator so they open within
-                // the fitted aspect-ratio area instead of full-screen, since
-                // cropping hasn't been applied yet.
-                child: Navigator(
-                  clipBehavior: .none,
-                  onGenerateRoute: (_) {
-                    return PageRouteBuilder(
-                      pageBuilder: (_, _, _) =>
-                          _VideoEditor(constraints: constraints),
-                    );
-                  },
-                ),
-              ),
-            );
-          },
+        child: _CanvasFitter(
+          builder: (bodySize, renderSize) =>
+              _VideoEditor(renderSize: renderSize, bodySize: bodySize),
         ),
       ),
     );
@@ -89,9 +68,10 @@ class _VideoEditorCanvasState extends ConsumerState<VideoEditorCanvas> {
 }
 
 class _VideoEditor extends ConsumerStatefulWidget {
-  const _VideoEditor({required this.constraints});
+  const _VideoEditor({required this.renderSize, required this.bodySize});
 
-  final BoxConstraints constraints;
+  final Size renderSize;
+  final Size bodySize;
 
   @override
   ConsumerState<_VideoEditor> createState() => _VideoEditorState();
@@ -137,6 +117,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   }
 
   Future<void> _initializePlayer() async {
+    final clips = ref.read(clipManagerProvider).clips;
+
     Log.debug(
       '🎬 Initializing video player',
       name: 'VideoEditorCanvas',
@@ -149,16 +131,19 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           return VideoEditorPlayer(
             isPlayerReady: isPlayerReady,
             controller: _videoPlayer,
+            targetAspectRatio: clips.first.targetAspectRatio,
+            originalAspectRatio: clips.first.originalAspectRatio,
+            bodySize: widget.bodySize,
+            renderSize: widget.renderSize,
           );
         },
       ),
-      initialResolution: widget.constraints.biggest,
+      initialResolution: widget.renderSize,
       // These values are not used since we provide a custom-UI.
       fileSize: 0,
       videoDuration: .zero,
     );
 
-    final clips = ref.read(clipManagerProvider).clips;
     final outputPath = await VideoEditorRenderService.renderVideo(
       taskId: _renderTaskId,
       clips: clips,
@@ -273,7 +258,6 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final devicePixelRatio = MediaQuery.devicePixelRatioOf(context);
     final scope = VideoEditorScope.of(context);
 
     // BLOCs
@@ -284,7 +268,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     final editorStateHistory = ref.read(
       videoEditorProvider.select((s) => s.editorStateHistory),
     );
-
+    final targetAspectRatio = ref.read(
+      clipManagerProvider.select((s) => s.clips.first.targetAspectRatio),
+    );
     return ProImageEditor.video(
       _proVideoController,
       key: scope.editorKey,
@@ -301,7 +287,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             : const StateHistoryConfigs(),
         imageGeneration: ImageGenerationConfigs(
           captureImageByteFormat: .rawStraightRgba,
-          customPixelRatio: devicePixelRatio,
+          customPixelRatio: max(
+            1,
+            VideoEditorConstants.renderWidth / widget.renderSize.width,
+          ),
         ),
         mainEditor: MainEditorConfigs(
           safeArea: const EditorSafeArea.none(),
@@ -316,10 +305,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           ),
         ),
         paintEditor: PaintEditorConfigs(
+          eraserSize:
+              DrawToolType.eraser.config.strokeWidth / scope.fittedBoxScale / 2,
           safeArea: const EditorSafeArea.none(),
           widgets: PaintEditorWidgets(
             appBar: (_, _) => null,
             bottomBar: (_, _) => null,
+            colorPicker: (_, _, _, _) => null,
           ),
         ),
         filterEditor: FilterEditorConfigs(
@@ -330,8 +322,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
             bottomBar: (_, _) => null,
           ),
         ),
-        helperLines: const HelperLineConfigs(
+        helperLines: HelperLineConfigs(
           style: HelperLineStyle(
+            // 1.25 is the pro_image_editor default; we divide by fittedBoxScale
+            // to compensate for the FittedBox transformation.
+            strokeWidth: 1.25 / scope.fittedBoxScale,
             horizontalColor: VideoEditorConstants.primaryColor,
             verticalColor: VideoEditorConstants.primaryColor,
             rotateColor: VideoEditorConstants.primaryColor,
@@ -346,14 +341,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         videoEditor: VideoEditorConfigs(
           showControls: false,
           widgets: VideoEditorWidgets(
-            videoSetupLoadingIndicator: Center(
-              child: ClipRRect(
-                borderRadius: .all(.circular(32)),
-                child: SizedBox.fromSize(
-                  size: widget.constraints.biggest,
-                  child: VideoEditorThumbnail(constraints: widget.constraints),
-                ),
-              ),
+            videoSetupLoadingIndicator: _VideoSetupLoadingIndicator(
+              renderSize: widget.renderSize,
+              bodySize: widget.bodySize,
+              targetAspectRatio: targetAspectRatio,
             ),
           ),
         ),
@@ -468,12 +459,14 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
             final paintEditor = scope.paintEditor;
             final drawState = context.read<VideoEditorDrawBloc>().state;
-            // Sync editor with current BLoC state
+            final toolConfig = drawState.selectedTool.config;
+            // Sync editor with current BLoC state - use tool config for
+            // strokeWidth/opacity/mode to ensure consistency with tool switch
             paintEditor
               ?..setColor(drawState.selectedColor)
-              ..setStrokeWidth(drawState.strokeWidth)
-              ..setOpacity(drawState.opacity)
-              ..setMode(drawState.mode);
+              ..setStrokeWidth(toolConfig.strokeWidth / scope.fittedBoxScale)
+              ..setOpacity(toolConfig.opacity)
+              ..setMode(toolConfig.mode);
           },
           onDrawingDone: () => _syncDrawCapabilities(scope, drawBloc),
           onRedo: () => _syncDrawCapabilities(scope, drawBloc),
@@ -494,6 +487,138 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           },
         ),
       ),
+    );
+  }
+}
+
+class _VideoSetupLoadingIndicator extends StatelessWidget {
+  const _VideoSetupLoadingIndicator({
+    required this.renderSize,
+    required this.bodySize,
+    required this.targetAspectRatio,
+  });
+
+  final Size renderSize;
+  final Size bodySize;
+  final model.AspectRatio targetAspectRatio;
+
+  @override
+  Widget build(BuildContext context) {
+    final useFullSize = targetAspectRatio.useFullScreenForSize(bodySize);
+
+    // Calculate the scale factor that FittedBox.cover applies
+    final scale = max(
+      bodySize.width / renderSize.width,
+      bodySize.height / renderSize.height,
+    );
+
+    // Size in renderSize coordinates that equals bodySize after scaling
+    final size = bodySize / scale;
+    final radius = Radius.circular(32 / scale);
+
+    if (useFullSize) {
+      // Cover mode: show the visible portion of bodySize
+      return Center(
+        child: ClipRRect(
+          borderRadius: BorderRadius.vertical(bottom: radius),
+          child: SizedBox.fromSize(
+            size: size,
+            child: VideoEditorThumbnail(contentSize: size),
+          ),
+        ),
+      );
+    } else {
+      // Contain mode: the visible area is targetAspectRatio fitted in renderSize
+      final containSize = Size(
+        renderSize.height * targetAspectRatio.value,
+        renderSize.height,
+      );
+      final containRadius = Radius.circular(
+        32 * containSize.width / bodySize.width,
+      );
+
+      return Center(
+        child: ClipRRect(
+          borderRadius: BorderRadius.all(containRadius),
+          child: SizedBox.fromSize(
+            size: containSize,
+            child: VideoEditorThumbnail(contentSize: containSize),
+          ),
+        ),
+      );
+    }
+  }
+}
+
+class _CanvasFitter extends ConsumerWidget {
+  const _CanvasFitter({required this.builder});
+
+  final Widget Function(Size bodySize, Size renderSize) builder;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final clip = ref.watch(clipManagerProvider.select((s) => s.clips.first));
+    final scope = VideoEditorScope.of(context);
+
+    return LayoutBuilder(
+      builder: (_, constraints) {
+        final bodySize = constraints.biggest;
+
+        final useFullSize = clip.targetAspectRatio.useFullScreenForSize(
+          bodySize,
+        );
+
+        // Height is constrained by maxWidth or maxHeight,
+        // depending on which dimension is reached first
+        final height = min(bodySize.width, bodySize.height);
+        final renderSize = Size(height * clip.originalAspectRatio, height);
+
+        // Notify parent about body size
+        scope.bodySizeNotifier.value = bodySize;
+
+        // The child content (ProImageEditor with originalAspectRatio)
+        final child = SizedBox.fromSize(
+          size: renderSize,
+          // Wraps sub-editors in a nested Navigator so they open within
+          // the fitted aspect-ratio area instead of full-screen, since
+          // cropping hasn't been applied yet.
+          child: Navigator(
+            clipBehavior: Clip.none,
+            onGenerateRoute: (_) => PageRouteBuilder(
+              pageBuilder: (_, _, _) => builder(bodySize, renderSize),
+            ),
+          ),
+        );
+
+        if (useFullSize) {
+          // Cover mode: fill entire bodySize with the original aspect ratio
+          return FittedBox(fit: BoxFit.cover, child: child);
+        } else {
+          // Contain mode: fit targetAspectRatio within bodySize,
+          // then cover that area with the original aspect ratio
+          final Size targetSize;
+          if (bodySize.aspectRatio > clip.targetAspectRatio.value) {
+            // Body is wider, height is limiting
+            targetSize = Size(
+              bodySize.height * clip.targetAspectRatio.value,
+              bodySize.height,
+            );
+          } else {
+            // Body is narrower, width is limiting
+            targetSize = Size(
+              bodySize.width,
+              bodySize.width / clip.targetAspectRatio.value,
+            );
+          }
+
+          return Center(
+            child: SizedBox.fromSize(
+              size: targetSize,
+              child: FittedBox(fit: BoxFit.cover, child: child),
+            ),
+          );
+        }
+      },
     );
   }
 }

@@ -43,6 +43,14 @@ final class ProfileSaveConfirmed extends ProfileEditorEvent {
   const ProfileSaveConfirmed();
 }
 
+/// Sets the user's existing claimed username after profile load.
+final class InitialUsernameSet extends ProfileEditorEvent {
+  const InitialUsernameSet(this.username);
+
+  /// The user's current claimed username extracted from their NIP-05.
+  final String username;
+}
+
 /// Event triggered when username text changes.
 final class UsernameChanged extends ProfileEditorEvent {
   const UsernameChanged(this.username);

@@ -2,9 +2,7 @@
 // ABOUTME: Manages only editor picks - trending/popular handled by infinite feeds
 
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:openvine/models/curation_set.dart';
-import 'package:models/models.dart'
-    hide CurationSet, CurationSetType, SampleCurationSets;
+import 'package:models/models.dart';
 
 part 'curation_state.freezed.dart';
 

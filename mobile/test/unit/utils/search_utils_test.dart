@@ -115,6 +115,54 @@ void main() {
       expect(match.matchedField, equals('nip05'));
     });
 
+    test('matches about/bio at lower priority than name', () {
+      final bioProfile = UserProfile(
+        pubkey: 'abc123def456',
+        displayName: 'Some User',
+        name: 'someuser',
+        about: 'I love photography and travel',
+        rawData: const {},
+        createdAt: DateTime.now(),
+        eventId: 'event123',
+      );
+      final match = SearchUtils.matchProfile('photography', bioProfile);
+      expect(match, isNotNull);
+      expect(match!.matchedField, equals('about'));
+      // Bio score should be lower than name match would be
+      expect(match.score, lessThan(0.6));
+    });
+
+    test('prefers name match over bio match', () {
+      final bioProfile = UserProfile(
+        pubkey: 'abc123def456',
+        displayName: 'Photography Pro',
+        name: 'photopro',
+        about: 'I love photography and travel',
+        rawData: const {},
+        createdAt: DateTime.now(),
+        eventId: 'event123',
+      );
+      final match = SearchUtils.matchProfile('photography', bioProfile);
+      expect(match, isNotNull);
+      // Should match displayName, not about, since name scores higher
+      expect(match!.matchedField, equals('displayName'));
+    });
+
+    test('matches bio when no name matches', () {
+      final bioProfile = UserProfile(
+        pubkey: 'abc123def456',
+        displayName: 'Jane Doe',
+        name: 'janedoe',
+        about: 'Filmmaker exploring nostr and decentralized video',
+        rawData: const {},
+        createdAt: DateTime.now(),
+        eventId: 'event123',
+      );
+      final match = SearchUtils.matchProfile('filmmaker', bioProfile);
+      expect(match, isNotNull);
+      expect(match!.matchedField, equals('about'));
+    });
+
     test('returns null for no match', () {
       final match = SearchUtils.matchProfile('xyz123', testProfile);
       expect(match, isNull);

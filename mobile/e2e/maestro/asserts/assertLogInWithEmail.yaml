@@ -1,0 +1,12 @@
+appId: co.openvine.app
+---
+- assertVisible: |-
+    Log In
+    Tab 1 of 2
+- assertVisible: |-
+    Create Account
+    Tab 2 of 2
+- assertVisible: Email
+- assertVisible: Password
+- assertVisible: Log In
+- assertVisible: Forgot Password?

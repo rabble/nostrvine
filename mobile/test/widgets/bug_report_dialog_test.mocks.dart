@@ -3,12 +3,11 @@
 // Do not manually edit this file.
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
-import 'dart:async' as _i5;
+import 'dart:async' as _i4;
 
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:models/models.dart' as _i3;
-import 'package:openvine/models/bug_report_data.dart' as _i2;
-import 'package:openvine/services/bug_report_service.dart' as _i4;
+import 'package:models/models.dart' as _i2;
+import 'package:openvine/services/bug_report_service.dart' as _i3;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -31,7 +30,7 @@ class _FakeBugReportData_0 extends _i1.SmartFake implements _i2.BugReportData {
 }
 
 class _FakeBugReportResult_1 extends _i1.SmartFake
-    implements _i3.BugReportResult {
+    implements _i2.BugReportResult {
   _FakeBugReportResult_1(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
@@ -39,13 +38,13 @@ class _FakeBugReportResult_1 extends _i1.SmartFake
 /// A class which mocks [BugReportService].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockBugReportService extends _i1.Mock implements _i4.BugReportService {
+class MockBugReportService extends _i1.Mock implements _i3.BugReportService {
   MockBugReportService() {
     _i1.throwOnMissingStub(this);
   }
 
   @override
-  _i5.Future<_i2.BugReportData> collectDiagnostics({
+  _i4.Future<_i2.BugReportData> collectDiagnostics({
     required String? userDescription,
     String? currentScreen,
     String? userPubkey,
@@ -58,7 +57,7 @@ class MockBugReportService extends _i1.Mock implements _i4.BugReportService {
               #userPubkey: userPubkey,
               #additionalContext: additionalContext,
             }),
-            returnValue: _i5.Future<_i2.BugReportData>.value(
+            returnValue: _i4.Future<_i2.BugReportData>.value(
               _FakeBugReportData_0(
                 this,
                 Invocation.method(#collectDiagnostics, [], {
@@ -70,7 +69,7 @@ class MockBugReportService extends _i1.Mock implements _i4.BugReportService {
               ),
             ),
           )
-          as _i5.Future<_i2.BugReportData>);
+          as _i4.Future<_i2.BugReportData>);
 
   @override
   _i2.BugReportData sanitizeSensitiveData(_i2.BugReportData? data) =>
@@ -92,20 +91,20 @@ class MockBugReportService extends _i1.Mock implements _i4.BugReportService {
           as int);
 
   @override
-  _i5.Future<_i3.BugReportResult> sendBugReport(_i2.BugReportData? data) =>
+  _i4.Future<_i2.BugReportResult> sendBugReport(_i2.BugReportData? data) =>
       (super.noSuchMethod(
             Invocation.method(#sendBugReport, [data]),
-            returnValue: _i5.Future<_i3.BugReportResult>.value(
+            returnValue: _i4.Future<_i2.BugReportResult>.value(
               _FakeBugReportResult_1(
                 this,
                 Invocation.method(#sendBugReport, [data]),
               ),
             ),
           )
-          as _i5.Future<_i3.BugReportResult>);
+          as _i4.Future<_i2.BugReportResult>);
 
   @override
-  _i5.Future<_i3.BugReportResult> sendBugReportToRecipient(
+  _i4.Future<_i2.BugReportResult> sendBugReportToRecipient(
     _i2.BugReportData? data,
     String? recipientPubkey,
   ) =>
@@ -114,7 +113,7 @@ class MockBugReportService extends _i1.Mock implements _i4.BugReportService {
               data,
               recipientPubkey,
             ]),
-            returnValue: _i5.Future<_i3.BugReportResult>.value(
+            returnValue: _i4.Future<_i2.BugReportResult>.value(
               _FakeBugReportResult_1(
                 this,
                 Invocation.method(#sendBugReportToRecipient, [
@@ -124,25 +123,25 @@ class MockBugReportService extends _i1.Mock implements _i4.BugReportService {
               ),
             ),
           )
-          as _i5.Future<_i3.BugReportResult>);
+          as _i4.Future<_i2.BugReportResult>);
 
   @override
-  _i5.Future<_i3.BugReportResult> sendBugReportViaEmail(
+  _i4.Future<_i2.BugReportResult> sendBugReportViaEmail(
     _i2.BugReportData? data,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#sendBugReportViaEmail, [data]),
-            returnValue: _i5.Future<_i3.BugReportResult>.value(
+            returnValue: _i4.Future<_i2.BugReportResult>.value(
               _FakeBugReportResult_1(
                 this,
                 Invocation.method(#sendBugReportViaEmail, [data]),
               ),
             ),
           )
-          as _i5.Future<_i3.BugReportResult>);
+          as _i4.Future<_i2.BugReportResult>);
 
   @override
-  _i5.Future<bool> exportLogsToFile({
+  _i4.Future<bool> exportLogsToFile({
     String? currentScreen,
     String? userPubkey,
   }) =>
@@ -151,7 +150,7 @@ class MockBugReportService extends _i1.Mock implements _i4.BugReportService {
               #currentScreen: currentScreen,
               #userPubkey: userPubkey,
             }),
-            returnValue: _i5.Future<bool>.value(false),
+            returnValue: _i4.Future<bool>.value(false),
           )
-          as _i5.Future<bool>);
+          as _i4.Future<bool>);
 }

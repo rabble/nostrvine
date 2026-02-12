@@ -7,13 +7,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:likes_repository/likes_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/blocs/comments/comments_bloc.dart';
-import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
-import 'package:openvine/models/user_profile.dart' as models;
+import 'package:models/models.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 
 class _MockCommentsRepository extends Mock implements CommentsRepository {}
@@ -1540,7 +1540,7 @@ void main() {
           when(
             () => mockUserProfileService.getCachedProfile(validId('user1')),
           ).thenReturn(
-            models.UserProfile(
+            UserProfile(
               pubkey: validId('user1'),
               rawData: const {},
               createdAt: DateTime.now(),
@@ -1551,7 +1551,7 @@ void main() {
           when(
             () => mockUserProfileService.getCachedProfile(validId('user2')),
           ).thenReturn(
-            models.UserProfile(
+            UserProfile(
               pubkey: validId('user2'),
               rawData: const {},
               createdAt: DateTime.now(),
@@ -1627,7 +1627,7 @@ void main() {
           when(
             () => mockUserProfileService.getCachedProfile(validId('followee1')),
           ).thenReturn(
-            models.UserProfile(
+            UserProfile(
               pubkey: validId('followee1'),
               rawData: const {},
               createdAt: DateTime.now(),
@@ -1661,7 +1661,7 @@ void main() {
             ),
           ).thenAnswer(
             (_) async => [
-              models.UserProfile(
+              UserProfile(
                 pubkey: validId('remote1'),
                 rawData: const {},
                 createdAt: DateTime.now(),
@@ -1702,7 +1702,7 @@ void main() {
           when(
             () => mockUserProfileService.getCachedProfile(validId('sameuser')),
           ).thenReturn(
-            models.UserProfile(
+            UserProfile(
               pubkey: validId('sameuser'),
               rawData: const {},
               createdAt: DateTime.now(),

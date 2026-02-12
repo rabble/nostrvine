@@ -178,6 +178,20 @@ void main() {
         expect(state.isInitialized, isTrue);
       });
 
+      test('mirrorFrontCameraOutput defaults to false', () async {
+        await DivineCamera.instance.initialize();
+
+        expect(DivineCamera.instance.mirrorFrontCameraOutput, isFalse);
+      });
+
+      test('mirrorFrontCameraOutput reflects initialization value', () async {
+        await DivineCamera.instance.initialize(
+          mirrorFrontCameraOutput: true,
+        );
+
+        expect(DivineCamera.instance.mirrorFrontCameraOutput, isTrue);
+      });
+
       test('sets camera capabilities correctly', () async {
         final state = await DivineCamera.instance.initialize();
 

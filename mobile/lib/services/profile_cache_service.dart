@@ -3,7 +3,8 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:hive_ce/hive.dart';
-import 'package:openvine/models/user_profile.dart';
+import 'package:models/models.dart';
+import 'package:openvine/adapters/user_profile_hive_adapter.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Service for persistent caching of user profiles
@@ -32,7 +33,7 @@ class ProfileCacheService {
     try {
       // Register the UserProfile adapter if not already registered
       if (!Hive.isAdapterRegistered(3)) {
-        Hive.registerAdapter(UserProfileAdapter());
+        Hive.registerAdapter(UserProfileHiveAdapter());
       }
 
       // Open the profiles box
