@@ -3,6 +3,7 @@ import 'dart:ui';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 /// A bottom sheet that displays the video editor's layers in a
@@ -34,6 +35,11 @@ class _VideoEditorLayerReorderSheetState
 
   /// Reorders the local layer list and forwards the callback to the parent.
   void _onReorder(int oldIndex, int newIndex) {
+    Log.debug(
+      '🔀 Layer reordered: $oldIndex → $newIndex',
+      name: 'LayerReorderSheet',
+      category: LogCategory.video,
+    );
     setState(() {
       if (oldIndex < newIndex) newIndex--;
       final layer = _layers.removeAt(oldIndex);

@@ -95,6 +95,7 @@ class CommentsScreen extends ConsumerWidget {
       isScrollControlled: true,
       useRootNavigator: true,
       backgroundColor: Colors.transparent,
+      elevation: 0,
       builder: (builderContext) {
         final keyboardHeight = MediaQuery.of(builderContext).viewInsets.bottom;
         final isKeyboardOpen = keyboardHeight > 0;
@@ -105,19 +106,10 @@ class CommentsScreen extends ConsumerWidget {
           maxChildSize: 0.93,
           snap: true,
           snapSizes: [0.7, 0.93],
-          builder: (context, scrollController) => DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Colors.black87,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: CommentsScreen(
-              videoEvent: video,
-              sheetScrollController: scrollController,
-              initialCommentCount: initialCommentCount,
-            ),
+          builder: (context, scrollController) => CommentsScreen(
+            videoEvent: video,
+            sheetScrollController: scrollController,
+            initialCommentCount: initialCommentCount,
           ),
         );
       },
@@ -362,35 +354,42 @@ class _CommentsSortToggle extends StatelessWidget {
           CommentsSortMode.oldest => (Icons.history, 'Old'),
         };
 
-        return GestureDetector(
-          onTap: () {
-            final nextMode = switch (sortMode) {
-              CommentsSortMode.newest => CommentsSortMode.topEngagement,
-              CommentsSortMode.topEngagement => CommentsSortMode.oldest,
-              CommentsSortMode.oldest => CommentsSortMode.newest,
-            };
-            context.read<CommentsBloc>().add(CommentsSortModeChanged(nextMode));
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: VineTheme.containerLow,
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 14, color: VineTheme.onSurfaceVariant),
-                const SizedBox(width: 4),
-                Text(
-                  label,
-                  style: VineTheme.bodyFont(
-                    fontSize: 12,
-                    color: VineTheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w600,
+        return Semantics(
+          identifier: 'comments_sorting',
+          button: true,
+          label: 'Comments sorting',
+          child: GestureDetector(
+            onTap: () {
+              final nextMode = switch (sortMode) {
+                CommentsSortMode.newest => CommentsSortMode.topEngagement,
+                CommentsSortMode.topEngagement => CommentsSortMode.oldest,
+                CommentsSortMode.oldest => CommentsSortMode.newest,
+              };
+              context.read<CommentsBloc>().add(
+                CommentsSortModeChanged(nextMode),
+              );
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                color: VineTheme.containerLow,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 14, color: VineTheme.onSurfaceVariant),
+                  const SizedBox(width: 4),
+                  Text(
+                    label,
+                    style: VineTheme.bodyFont(
+                      fontSize: 12,
+                      color: VineTheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         );

@@ -20,7 +20,9 @@ import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
+import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path/path.dart' as p;
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -501,15 +503,24 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Set video expiration time option.
   void setExpiration(VideoMetadataExpiration expiration) {
+    Log.debug(
+      '⏰ Set expiration: ${expiration.name}',
+      name: 'VideoEditorNotifier',
+      category: .video,
+    );
     state = state.copyWith(expiration: expiration);
     triggerAutosave();
   }
 
   /// Create a VineDraft from the rendered clip with metadata.
-  VineDraft getActiveDraft({bool isAutosave = false}) {
+  VineDraft getActiveDraft({
+    bool isAutosave = false,
+    bool enforceSeparatedClips = false,
+  }) {
     return VineDraft.create(
       id: isAutosave ? VideoEditorConstants.autoSaveId : draftId,
-      clips: state.finalRenderedClip == null || isAutosave
+      clips:
+          state.finalRenderedClip == null || isAutosave || enforceSeparatedClips
           ? _clips
           : [state.finalRenderedClip!],
       title: state.title,
@@ -639,7 +650,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     );
 
     try {
-      await _draftService.saveDraft(getActiveDraft());
+      await _draftService.saveDraft(
+        getActiveDraft(enforceSeparatedClips: true),
+      );
 
       // Remove the autosaved draft
       await removeAutosavedDraft();
@@ -825,10 +838,23 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       category: .video,
     );
 
+    // Move rendered file from temp to documents directory so it persists
+    // and can be resolved correctly when loading from a draft.
+    final documentsPath = await getDocumentsPath();
+    final fileName = p.basename(outputPath);
+    final permanentPath = p.join(documentsPath, fileName);
+    await File(outputPath).rename(permanentPath);
+
+    Log.debug(
+      '📁 Moved rendered video to documents: $permanentPath',
+      name: 'VideoEditorNotifier',
+      category: .video,
+    );
+
     // Create final clip for publishing
     final finalRenderedClip = RecordingClip(
       id: 'clip-${DateTime.now()}',
-      video: EditorVideo.file(outputPath),
+      video: EditorVideo.file(permanentPath),
       duration: metaData.duration,
       recordedAt: .now(),
       originalAspectRatio: _clips.first.originalAspectRatio,

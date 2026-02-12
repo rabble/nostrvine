@@ -40,6 +40,7 @@ abstract class DivineCameraPlatform extends PlatformInterface {
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     bool enableScreenFlash = true,
+    bool mirrorFrontCameraOutput = true,
   }) {
     throw UnimplementedError('initializeCamera() has not been implemented.');
   }

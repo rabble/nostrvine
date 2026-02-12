@@ -255,5 +255,57 @@ void main() {
 
       expect(clip.targetAspectRatio, equals(model.AspectRatio.square));
     });
+
+    group('path round-trip for rendered videos', () {
+      test('round-trip resolves to documents directory '
+          'when video is in documents directory', () async {
+        const documentsPath = '/var/mobile/Documents';
+        final clip = RecordingClip(
+          id: 'rendered-clip',
+          video: EditorVideo.file('$documentsPath/divine_123456.mp4'),
+          duration: const Duration(seconds: 3),
+          recordedAt: DateTime(2025, 12, 13),
+          thumbnailPath: '$documentsPath/thumb.jpg',
+          targetAspectRatio: model.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        final json = clip.toJson();
+        final restored = RecordingClip.fromJson(json, documentsPath);
+
+        final originalPath = await clip.video.safeFilePath();
+        final restoredPath = await restored.video.safeFilePath();
+        expect(restoredPath, equals(originalPath));
+        expect(restored.thumbnailPath, equals(clip.thumbnailPath));
+      });
+
+      test('round-trip does NOT resolve to original path '
+          'when video is in temp directory', () async {
+        // This test documents the pre-fix behavior:
+        // A rendered video in /tmp would serialize to just the basename,
+        // but deserialize with the documents path, causing a mismatch.
+        const tempPath = '/tmp';
+        const documentsPath = '/var/mobile/Documents';
+        final clip = RecordingClip(
+          id: 'rendered-clip',
+          video: EditorVideo.file('$tempPath/divine_123456.mp4'),
+          duration: const Duration(seconds: 3),
+          recordedAt: DateTime(2025, 12, 13),
+          targetAspectRatio: model.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        final json = clip.toJson();
+        // fromJson resolves against documentsPath, not tempPath
+        final restored = RecordingClip.fromJson(json, documentsPath);
+
+        final originalPath = await clip.video.safeFilePath();
+        final restoredPath = await restored.video.safeFilePath();
+        // The paths will differ because the file was in /tmp
+        // but fromJson resolves to /var/mobile/Documents
+        expect(restoredPath, isNot(equals(originalPath)));
+        expect(restoredPath, equals('$documentsPath/divine_123456.mp4'));
+      });
+    });
   });
 }

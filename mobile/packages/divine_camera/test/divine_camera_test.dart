@@ -31,6 +31,7 @@ class MockDivineCameraPlatform
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     bool enableScreenFlash = true,
+    bool mirrorFrontCameraOutput = false,
   }) async {
     return _state = CameraState(
       isInitialized: true,
@@ -993,6 +994,7 @@ class _NoFocusSupportMock extends MockDivineCameraPlatform {
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     bool enableScreenFlash = true,
+    bool mirrorFrontCameraOutput = false,
   }) async {
     return const CameraState(
       isInitialized: true,
@@ -1008,6 +1010,7 @@ class _NoExposureSupportMock extends MockDivineCameraPlatform {
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     bool enableScreenFlash = true,
+    bool mirrorFrontCameraOutput = false,
   }) async {
     return const CameraState(
       isInitialized: true,
@@ -1023,6 +1026,7 @@ class _SingleCameraMock extends MockDivineCameraPlatform {
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     bool enableScreenFlash = true,
+    bool mirrorFrontCameraOutput = false,
   }) async {
     return const CameraState(
       isInitialized: true,

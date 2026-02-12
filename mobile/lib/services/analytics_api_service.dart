@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/utils/hashtag_extractor.dart';
@@ -13,6 +14,7 @@ class VideoStats {
   final String id;
   final String pubkey;
   final DateTime createdAt;
+  final int? publishedAt;
   final int kind;
   final String dTag;
   final String title;
@@ -34,6 +36,7 @@ class VideoStats {
     required this.id,
     required this.pubkey,
     required this.createdAt,
+    this.publishedAt,
     required this.kind,
     required this.dTag,
     required this.title,
@@ -125,6 +128,7 @@ class VideoStats {
     // Also check for blurhash and summary in tags (NIP-71 standard)
     String? blurhashFromTag;
     String? summaryFromTag;
+    int? publishedAt;
 
     if (eventData['tags'] is List) {
       final tags = eventData['tags'] as List;
@@ -147,6 +151,9 @@ class VideoStats {
           }
           if (tagName == 'summary' && summaryFromTag == null) {
             summaryFromTag = tagValue;
+          }
+          if (tagName == 'published_at' && publishedAt == null) {
+            publishedAt = int.tryParse(tagValue);
           }
         }
       }
@@ -203,6 +210,7 @@ class VideoStats {
       id: id,
       pubkey: pubkey,
       createdAt: createdAt,
+      publishedAt: publishedAt,
       kind: eventData['kind'] ?? 34236,
       dTag: dTag,
       title: title,
@@ -226,16 +234,19 @@ class VideoStats {
 
   /// Convert to VideoEvent for use in the app
   VideoEvent toVideoEvent() {
+    final effectiveTimestamp =
+        publishedAt ?? createdAt.millisecondsSinceEpoch ~/ 1000;
     return VideoEvent(
       id: id,
       pubkey: pubkey,
-      createdAt: createdAt.millisecondsSinceEpoch ~/ 1000,
+      createdAt: effectiveTimestamp,
       content: description ?? '',
-      timestamp: createdAt,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(effectiveTimestamp * 1000),
       title: title.isNotEmpty ? title : null,
       videoUrl: videoUrl.isNotEmpty ? videoUrl : null,
       thumbnailUrl: thumbnail.isNotEmpty ? thumbnail : null,
       vineId: dTag.isNotEmpty ? dTag : null,
+      publishedAt: publishedAt?.toString(),
       sha256: sha256,
       authorName: authorName,
       authorAvatar: authorAvatar,

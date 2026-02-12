@@ -4,6 +4,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' show StickerData;
+import 'package:openvine/utils/unified_logger.dart';
 
 part 'video_editor_sticker_event.dart';
 part 'video_editor_sticker_state.dart';
@@ -47,9 +48,20 @@ class VideoEditorStickerBloc
           .map((e) => StickerData.fromJson(e as Map<String, dynamic>))
           .toList();
 
+      Log.debug(
+        '🌟 Loaded ${_allStickers.length} stickers',
+        name: 'VideoEditorStickerBloc',
+        category: LogCategory.video,
+      );
+
       emit(VideoEditorStickerLoaded(stickers: _allStickers));
       onPrecacheStickers(_allStickers.take(maxPrecacheCount).toList());
     } catch (e) {
+      Log.error(
+        '🌟 Failed to load stickers: $e',
+        name: 'VideoEditorStickerBloc',
+        category: LogCategory.video,
+      );
       emit(VideoEditorStickerError(e.toString()));
     }
   }

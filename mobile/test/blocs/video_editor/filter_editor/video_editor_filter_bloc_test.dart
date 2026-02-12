@@ -4,7 +4,8 @@
 import 'package:bloc_test/bloc_test.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
-import 'package:pro_image_editor/pro_image_editor.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:pro_image_editor/pro_image_editor.dart' show PresetFilters;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -14,9 +15,9 @@ void main() {
       return VideoEditorFilterBloc();
     }
 
-    test('initial state has filters from presetFiltersList', () {
+    test('initial state has filters from [VideoEditorConstants.filters]', () {
       final bloc = buildBloc();
-      expect(bloc.state.filters, equals(presetFiltersList));
+      expect(bloc.state.filters, equals(VideoEditorConstants.filters));
       expect(bloc.state.selectedFilter, isNull);
       expect(bloc.state.opacity, 1.0);
       expect(bloc.state.hasFilter, isFalse);
@@ -24,7 +25,8 @@ void main() {
     });
 
     group('VideoEditorFilterSelected', () {
-      final testFilter = presetFiltersList[1]; // First non-None filter
+      final testFilter =
+          VideoEditorConstants.filters[1]; // First non-None filter
 
       blocTest<VideoEditorFilterBloc, VideoEditorFilterState>(
         'emits state with selected filter',
@@ -43,17 +45,18 @@ void main() {
         'updates selected filter when changed',
         build: buildBloc,
         seed: () => VideoEditorFilterState(
-          filters: presetFiltersList,
-          selectedFilter: presetFiltersList[1],
+          filters: VideoEditorConstants.filters,
+          selectedFilter: VideoEditorConstants.filters[1],
           opacity: 1.0,
         ),
-        act: (bloc) =>
-            bloc.add(VideoEditorFilterSelected(presetFiltersList[2])),
+        act: (bloc) => bloc.add(
+          VideoEditorFilterSelected(VideoEditorConstants.filters[2]),
+        ),
         expect: () => [
           isA<VideoEditorFilterState>().having(
             (s) => s.selectedFilter,
             'selectedFilter',
-            presetFiltersList[2],
+            VideoEditorConstants.filters[2],
           ),
         ],
       );
@@ -77,8 +80,8 @@ void main() {
         'updates opacity when filter is selected',
         build: buildBloc,
         seed: () => VideoEditorFilterState(
-          filters: presetFiltersList,
-          selectedFilter: presetFiltersList[1],
+          filters: VideoEditorConstants.filters,
+          selectedFilter: VideoEditorConstants.filters[1],
           opacity: 1.0,
         ),
         act: (bloc) => bloc.add(const VideoEditorFilterOpacityChanged(0.5)),
@@ -97,10 +100,10 @@ void main() {
         'restores to initial values from when editor was opened',
         build: buildBloc,
         seed: () => VideoEditorFilterState(
-          filters: presetFiltersList,
-          selectedFilter: presetFiltersList[2],
+          filters: VideoEditorConstants.filters,
+          selectedFilter: VideoEditorConstants.filters[2],
           opacity: 0.5,
-          initialSelectedFilter: presetFiltersList[1],
+          initialSelectedFilter: VideoEditorConstants.filters[1],
           initialOpacity: 0.8,
         ),
         act: (bloc) => bloc.add(const VideoEditorFilterCancelled()),
@@ -109,7 +112,7 @@ void main() {
               .having(
                 (s) => s.selectedFilter,
                 'selectedFilter',
-                presetFiltersList[1],
+                VideoEditorConstants.filters[1],
               )
               .having((s) => s.opacity, 'opacity', 0.8),
         ],
@@ -121,8 +124,8 @@ void main() {
         'stores current values as initial values for cancel',
         build: buildBloc,
         seed: () => VideoEditorFilterState(
-          filters: presetFiltersList,
-          selectedFilter: presetFiltersList[1],
+          filters: VideoEditorConstants.filters,
+          selectedFilter: VideoEditorConstants.filters[1],
           opacity: 0.7,
         ),
         act: (bloc) => bloc.add(const VideoEditorFilterEditorInitialized()),
@@ -131,14 +134,14 @@ void main() {
               .having(
                 (s) => s.initialSelectedFilter,
                 'initialSelectedFilter',
-                presetFiltersList[1],
+                VideoEditorConstants.filters[1],
               )
               .having((s) => s.initialOpacity, 'initialOpacity', 0.7)
               // Current values unchanged
               .having(
                 (s) => s.selectedFilter,
                 'selectedFilter',
-                presetFiltersList[1],
+                VideoEditorConstants.filters[1],
               )
               .having((s) => s.opacity, 'opacity', 0.7),
         ],
@@ -149,7 +152,7 @@ void main() {
   group('VideoEditorFilterState', () {
     test('hasFilter returns false when selectedFilter is null', () {
       final state = VideoEditorFilterState(
-        filters: presetFiltersList,
+        filters: VideoEditorConstants.filters,
         selectedFilter: null,
       );
       expect(state.hasFilter, isFalse);
@@ -159,7 +162,7 @@ void main() {
       'hasFilter returns false when selectedFilter is PresetFilters.none',
       () {
         final state = VideoEditorFilterState(
-          filters: presetFiltersList,
+          filters: VideoEditorConstants.filters,
           selectedFilter: PresetFilters.none,
         );
         expect(state.hasFilter, isFalse);
@@ -168,16 +171,16 @@ void main() {
 
     test('hasFilter returns true when a real filter is selected', () {
       final state = VideoEditorFilterState(
-        filters: presetFiltersList,
-        selectedFilter: presetFiltersList[1], // Non-None filter
+        filters: VideoEditorConstants.filters,
+        selectedFilter: VideoEditorConstants.filters[1], // Non-None filter
       );
       expect(state.hasFilter, isTrue);
     });
 
     test('isSelected returns true for matching filter', () {
-      final filter = presetFiltersList[1];
+      final filter = VideoEditorConstants.filters[1];
       final state = VideoEditorFilterState(
-        filters: presetFiltersList,
+        filters: VideoEditorConstants.filters,
         selectedFilter: filter,
       );
       expect(state.isSelected(filter), isTrue);
@@ -185,17 +188,17 @@ void main() {
 
     test('isSelected returns false for non-matching filter', () {
       final state = VideoEditorFilterState(
-        filters: presetFiltersList,
-        selectedFilter: presetFiltersList[1],
+        filters: VideoEditorConstants.filters,
+        selectedFilter: VideoEditorConstants.filters[1],
       );
-      expect(state.isSelected(presetFiltersList[2]), isFalse);
+      expect(state.isSelected(VideoEditorConstants.filters[2]), isFalse);
     });
 
     test(
       'isSelected returns true for None filter when selectedFilter is null',
       () {
         final state = VideoEditorFilterState(
-          filters: presetFiltersList,
+          filters: VideoEditorConstants.filters,
           selectedFilter: null,
         );
         expect(state.isSelected(PresetFilters.none), isTrue);
@@ -204,18 +207,18 @@ void main() {
 
     test('copyWith creates new state with updated values', () {
       final original = VideoEditorFilterState(
-        filters: presetFiltersList,
+        filters: VideoEditorConstants.filters,
         selectedFilter: null,
         opacity: 1.0,
       );
 
       final updated = original.copyWith(
-        selectedFilter: presetFiltersList[1],
+        selectedFilter: VideoEditorConstants.filters[1],
         opacity: 0.5,
       );
 
-      expect(updated.filters, equals(presetFiltersList));
-      expect(updated.selectedFilter, equals(presetFiltersList[1]));
+      expect(updated.filters, equals(VideoEditorConstants.filters));
+      expect(updated.selectedFilter, equals(VideoEditorConstants.filters[1]));
       expect(updated.opacity, 0.5);
       // Original unchanged
       expect(original.selectedFilter, isNull);
@@ -223,9 +226,9 @@ void main() {
     });
 
     test('copyWith preserves values when not specified', () {
-      final filter = presetFiltersList[1];
+      final filter = VideoEditorConstants.filters[1];
       final original = VideoEditorFilterState(
-        filters: presetFiltersList,
+        filters: VideoEditorConstants.filters,
         selectedFilter: filter,
         opacity: 0.7,
       );
@@ -239,36 +242,36 @@ void main() {
 
     test('props contains all fields for equality', () {
       final state = VideoEditorFilterState(
-        filters: presetFiltersList,
-        selectedFilter: presetFiltersList[1],
+        filters: VideoEditorConstants.filters,
+        selectedFilter: VideoEditorConstants.filters[1],
         opacity: 0.5,
-        initialSelectedFilter: presetFiltersList[2],
+        initialSelectedFilter: VideoEditorConstants.filters[2],
         initialOpacity: 0.8,
       );
 
       expect(state.props, [
-        presetFiltersList,
-        presetFiltersList[1],
+        VideoEditorConstants.filters,
+        VideoEditorConstants.filters[1],
         0.5,
-        presetFiltersList[2],
+        VideoEditorConstants.filters[2],
         0.8,
       ]);
     });
 
     test('equality works correctly', () {
       final state1 = VideoEditorFilterState(
-        filters: presetFiltersList,
-        selectedFilter: presetFiltersList[1],
+        filters: VideoEditorConstants.filters,
+        selectedFilter: VideoEditorConstants.filters[1],
         opacity: 0.5,
       );
       final state2 = VideoEditorFilterState(
-        filters: presetFiltersList,
-        selectedFilter: presetFiltersList[1],
+        filters: VideoEditorConstants.filters,
+        selectedFilter: VideoEditorConstants.filters[1],
         opacity: 0.5,
       );
       final state3 = VideoEditorFilterState(
-        filters: presetFiltersList,
-        selectedFilter: presetFiltersList[2],
+        filters: VideoEditorConstants.filters,
+        selectedFilter: VideoEditorConstants.filters[2],
         opacity: 0.5,
       );
 
@@ -279,7 +282,7 @@ void main() {
 
   group('VideoEditorFilterEvent', () {
     test('VideoEditorFilterSelected props contains filter', () {
-      final filter = presetFiltersList[1];
+      final filter = VideoEditorConstants.filters[1];
       final event = VideoEditorFilterSelected(filter);
       expect(event.props, [filter]);
     });
@@ -295,10 +298,10 @@ void main() {
     });
 
     test('event equality works correctly', () {
-      final filter = presetFiltersList[1];
+      final filter = VideoEditorConstants.filters[1];
       final event1 = VideoEditorFilterSelected(filter);
       final event2 = VideoEditorFilterSelected(filter);
-      final event3 = VideoEditorFilterSelected(presetFiltersList[2]);
+      final event3 = VideoEditorFilterSelected(VideoEditorConstants.filters[2]);
 
       expect(event1, equals(event2));
       expect(event1, isNot(equals(event3)));

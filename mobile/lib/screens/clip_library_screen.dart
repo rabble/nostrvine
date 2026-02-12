@@ -14,12 +14,13 @@ import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/masonary_grid.dart';
 import 'package:openvine/widgets/video_clip/video_clip_preview_sheet.dart';
@@ -69,21 +70,25 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
   @override
   void initState() {
     super.initState();
+    Log.info(
+      '📚 ClipLibrary opened (selectionMode: ${widget.selectionMode})',
+      name: 'ClipLibraryScreen',
+      category: LogCategory.video,
+    );
     unawaited(_loadClips());
     unawaited(_loadDrafts());
-
-    if (!widget.selectionMode) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) return;
-        ref.read(clipManagerProvider.notifier).clearAll();
-      });
-    }
   }
 
   Future<void> _loadClips() async {
     try {
       final clipService = ref.read(clipLibraryServiceProvider);
       final clips = await clipService.getAllClips();
+
+      Log.debug(
+        '📚 Loaded ${clips.length} clips from library',
+        name: 'ClipLibraryScreen',
+        category: LogCategory.video,
+      );
 
       if (mounted) {
         setState(() {
@@ -92,6 +97,11 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
         });
       }
     } catch (e) {
+      Log.error(
+        '📚 Failed to load clips: $e',
+        name: 'ClipLibraryScreen',
+        category: LogCategory.video,
+      );
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -105,14 +115,22 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
       final draftService = DraftStorageService();
       final drafts = await draftService.getAllDrafts();
 
-      // Filter out autosave and already published drafts
-      final filteredDrafts = drafts
-          .where(
-            (d) =>
-                d.id != VideoEditorConstants.autoSaveId &&
-                d.publishStatus != PublishStatus.published,
-          )
-          .toList();
+      // Filter out autosave and already published drafts, sort by newest first
+      final filteredDrafts =
+          drafts
+              .where(
+                (d) =>
+                    d.id != VideoEditorConstants.autoSaveId &&
+                    d.publishStatus != PublishStatus.published,
+              )
+              .toList()
+            ..sort((a, b) => b.lastModified.compareTo(a.lastModified));
+
+      Log.debug(
+        '📚 Loaded ${filteredDrafts.length} drafts',
+        name: 'ClipLibraryScreen',
+        category: LogCategory.video,
+      );
 
       if (mounted) {
         setState(() {
@@ -120,6 +138,11 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
         });
       }
     } catch (e) {
+      Log.error(
+        '📚 Failed to load drafts: $e',
+        name: 'ClipLibraryScreen',
+        category: LogCategory.video,
+      );
       // Silently fail - drafts will just be empty
     }
   }
@@ -204,6 +227,12 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
       final clipService = ref.read(clipLibraryServiceProvider);
       final deletedCount = _selectedClipIds.length;
 
+      Log.info(
+        '📚 Deleting $deletedCount clips',
+        name: 'ClipLibraryScreen',
+        category: LogCategory.video,
+      );
+
       for (final clipId in _selectedClipIds.toList()) {
         await clipService.deleteClip(clipId);
       }
@@ -263,12 +292,19 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
         .toList();
     if (selectedClips.isEmpty) return;
 
+    Log.info(
+      '📚 Creating video from ${selectedClips.length} selected clips',
+      name: 'ClipLibraryScreen',
+      category: LogCategory.video,
+    );
+
     // Add selected clips to ClipManager
     final clipManagerNotifier = ref.read(clipManagerProvider.notifier);
+    final videoPublishNotifier = ref.read(videoPublishProvider.notifier);
 
     if (!widget.selectionMode) {
-      // Clear existing clips first
-      clipManagerNotifier.clearAll();
+      // Clear cached/autosaved values.
+      await videoPublishNotifier.clearAll();
     }
 
     // Add each selected clip
@@ -316,15 +352,20 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
   }
 
   Future<void> _openDraft(VineDraft draft) async {
-    // Initialize editor with this draft
-    await ref.read(videoEditorProvider.notifier).initialize(draftId: draft.id);
+    Log.info(
+      '📚 Opening draft: ${draft.id}',
+      name: 'ClipLibraryScreen',
+      category: LogCategory.video,
+    );
+    final videoPublishNotifier = ref.read(videoPublishProvider.notifier);
+    await videoPublishNotifier.clearAll();
 
     if (!mounted) return;
 
-    // Navigate to editor
+    // Navigate to editor with draftId as path parameter
     await context.push(
-      VideoClipEditorScreen.path,
-      extra: {'fromLibrary': true, 'draftId': draft.id},
+      '${VideoClipEditorScreen.path}/${draft.id}',
+      extra: {'fromLibrary': true},
     );
 
     // Reload drafts after returning
@@ -362,6 +403,11 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
     );
 
     if (confirmed == true) {
+      Log.info(
+        '📚 Deleting draft: ${draft.id}',
+        name: 'ClipLibraryScreen',
+        category: LogCategory.video,
+      );
       final draftService = DraftStorageService();
       await draftService.deleteDraft(draft.id);
       await _loadDrafts();

@@ -5,6 +5,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:funnelcake_api_client/src/exceptions.dart';
+import 'package:funnelcake_api_client/src/models/models.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:models/models.dart' show ProfileSearchResult, VideoStats;
@@ -55,6 +56,18 @@ class FunnelcakeApiClient {
   @visibleForTesting
   String get baseUrl => _baseUrl;
 
+  Future<http.Response> _get(Uri uri) {
+    return _httpClient
+        .get(
+          uri,
+          headers: {
+            'Accept': 'application/json',
+            'User-Agent': 'OpenVine-Mobile/1.0',
+          },
+        )
+        .timeout(_timeout);
+  }
+
   /// Fetches videos by a specific author.
   ///
   /// [pubkey] is the author's public key (hex format).
@@ -94,15 +107,7 @@ class FunnelcakeApiClient {
     ).replace(queryParameters: queryParams);
 
     try {
-      final response = await _httpClient
-          .get(
-            uri,
-            headers: {
-              'Accept': 'application/json',
-              'User-Agent': 'OpenVine-Mobile/1.0',
-            },
-          )
-          .timeout(_timeout);
+      final response = await _get(uri);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List<dynamic>;
@@ -129,6 +134,213 @@ class FunnelcakeApiClient {
       rethrow;
     } catch (e) {
       throw FunnelcakeException('Failed to fetch author videos: $e');
+    }
+  }
+
+  /// Fetches trending videos sorted by engagement score.
+  ///
+  /// [limit] is the maximum number of videos to return (defaults to 50).
+  /// [before] is an optional Unix timestamp cursor for pagination.
+  ///
+  /// Returns a list of [VideoStats] objects sorted by trending score.
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeApiException] if the request fails with a non-success status.
+  /// - [FunnelcakeTimeoutException] if the request times out.
+  /// - [FunnelcakeException] for other errors.
+  Future<List<VideoStats>> getTrendingVideos({
+    int limit = 50,
+    int? before,
+  }) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    final queryParams = <String, String>{
+      'sort': 'trending',
+      'limit': limit.toString(),
+    };
+    if (before != null) {
+      queryParams['before'] = before.toString();
+    }
+
+    final uri = Uri.parse(
+      '$_baseUrl/api/videos',
+    ).replace(queryParameters: queryParams);
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List<dynamic>;
+
+        return data
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+            .toList();
+      } else {
+        throw FunnelcakeApiException(
+          message: 'Failed to fetch trending videos',
+          statusCode: response.statusCode,
+          url: uri.toString(),
+        );
+      }
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to fetch trending videos: $e');
+    }
+  }
+
+  /// Fetches recent videos sorted by creation time (newest first).
+  ///
+  /// [limit] is the maximum number of videos to return (defaults to 50).
+  /// [before] is an optional Unix timestamp cursor for pagination.
+  ///
+  /// Returns a list of [VideoStats] objects sorted by recency.
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeApiException] if the request fails with a non-success status.
+  /// - [FunnelcakeTimeoutException] if the request times out.
+  /// - [FunnelcakeException] for other errors.
+  Future<List<VideoStats>> getRecentVideos({
+    int limit = 50,
+    int? before,
+  }) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    final queryParams = <String, String>{
+      'sort': 'recent',
+      'limit': limit.toString(),
+    };
+    if (before != null) {
+      queryParams['before'] = before.toString();
+    }
+
+    final uri = Uri.parse(
+      '$_baseUrl/api/videos',
+    ).replace(queryParameters: queryParams);
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List<dynamic>;
+
+        return data
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+            .toList();
+      } else {
+        throw FunnelcakeApiException(
+          message: 'Failed to fetch recent videos',
+          statusCode: response.statusCode,
+          url: uri.toString(),
+        );
+      }
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to fetch recent videos: $e');
+    }
+  }
+
+  /// Fetches the home feed for a specific user.
+  ///
+  /// Returns videos from accounts the user follows, with cursor-based
+  /// pagination.
+  ///
+  /// [pubkey] is the user's public key (hex format).
+  /// [limit] is the maximum number of videos to return (defaults to 50).
+  /// [sort] is the sort order ('recent' or 'trending', defaults to 'recent').
+  /// [before] is an optional Unix timestamp cursor for pagination.
+  ///
+  /// Returns a [HomeFeedResponse] containing videos and pagination info.
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeNotFoundException] if the user's feed is not found.
+  /// - [FunnelcakeApiException] if the request fails with a non-success status.
+  /// - [FunnelcakeTimeoutException] if the request times out.
+  /// - [FunnelcakeException] for other errors.
+  Future<HomeFeedResponse> getHomeFeed({
+    required String pubkey,
+    int limit = 50,
+    String sort = 'recent',
+    int? before,
+  }) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    if (pubkey.isEmpty) {
+      throw const FunnelcakeException('Pubkey cannot be empty');
+    }
+
+    final queryParams = <String, String>{
+      'limit': limit.toString(),
+      'sort': sort,
+    };
+    if (before != null) {
+      queryParams['before'] = before.toString();
+    }
+
+    final uri = Uri.parse(
+      '$_baseUrl/api/users/$pubkey/feed',
+    ).replace(queryParameters: queryParams);
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+
+        final videosData = data['videos'] as List<dynamic>? ?? [];
+        final videos = videosData
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+            .toList();
+
+        // Parse pagination cursor (may be string or int)
+        final rawCursor = data['next_cursor'];
+        final nextCursor = switch (rawCursor) {
+          final int value => value,
+          final String value => int.tryParse(value),
+          _ => null,
+        };
+        final hasMore = data['has_more'] as bool? ?? false;
+
+        return HomeFeedResponse(
+          videos: videos,
+          nextCursor: nextCursor,
+          hasMore: hasMore,
+        );
+      } else if (response.statusCode == 404) {
+        throw FunnelcakeNotFoundException(
+          resource: 'Home feed',
+          url: uri.toString(),
+        );
+      } else {
+        throw FunnelcakeApiException(
+          message: 'Failed to fetch home feed',
+          statusCode: response.statusCode,
+          url: uri.toString(),
+        );
+      }
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to fetch home feed: $e');
     }
   }
 
@@ -184,15 +396,7 @@ class FunnelcakeApiClient {
     ).replace(queryParameters: queryParams);
 
     try {
-      final response = await _httpClient
-          .get(
-            uri,
-            headers: {
-              'Accept': 'application/json',
-              'User-Agent': 'OpenVine-Mobile/1.0',
-            },
-          )
-          .timeout(_timeout);
+      final response = await _get(uri);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List<dynamic>;

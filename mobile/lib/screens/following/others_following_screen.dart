@@ -174,6 +174,7 @@ class _FollowingListBody extends StatelessWidget {
                 pubkey: userPubkey,
                 onTap: () => context.pushOtherProfile(userPubkey),
                 isFollowing: isFollowing,
+                index: index,
                 onToggleFollow: () {
                   context.read<MyFollowingBloc>().add(
                     MyFollowingToggleRequested(userPubkey),
