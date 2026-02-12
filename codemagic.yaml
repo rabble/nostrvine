@@ -31,6 +31,9 @@ definitions:
     - &install_flutterfire
       name: Install FlutterFire CLI
       script: dart pub global activate flutterfire_cli
+    - &enable_spm
+      name: Enable Swift Package Manager
+      script: flutter config --enable-swift-package-manager
     - &flutter_pub_get
       name: Get Flutter dependencies
       script: flutter pub get
@@ -124,6 +127,7 @@ workflows:
     scripts:
       - *setup_code_signing_xcode
       - *install_flutterfire
+      - *enable_spm
       - *pod_install
       - *build_ios
     artifacts:
@@ -168,6 +172,7 @@ workflows:
       events: []
     scripts:
       - *install_flutterfire
+      - *enable_spm
       - *flutter_pub_get
       - *pod_install
       - *build_ios_simulator
