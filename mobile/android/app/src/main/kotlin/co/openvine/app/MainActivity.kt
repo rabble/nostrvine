@@ -29,6 +29,7 @@ import com.zendesk.service.ErrorResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlin.coroutines.cancellation.CancellationException
 import org.witness.proofmode.notarization.NotarizationProvider
 import java.security.KeyPairGenerator
 import java.security.KeyStore
@@ -196,9 +197,11 @@ class MainActivity : FlutterActivity() {
 
                 fileCert = File(fileCert.canonicalPath)
                 if (fileCert.exists())
-                    Log.d("DiVine","Success: " + fileCert.canonicalPath)
+                    Log.d(PROOFMODE_TAG, "C2PA signer init success: " + fileCert.canonicalPath)
+            } catch (e: CancellationException) {
+                throw e
             } catch (e: Exception) {
-                Log.e("DiVine", "C2PA hardware signer init failed: ${e.message}")
+                Log.e(PROOFMODE_TAG, "C2PA hardware signer init failed", e)
             }
         }
     }
