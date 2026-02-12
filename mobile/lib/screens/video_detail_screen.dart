@@ -87,6 +87,7 @@ class _VideoDetailScreenState extends ConsumerState<VideoDetailScreen> {
 
       if (event != null) {
         final fetchedVideo = VideoEvent.fromNostrEvent(event);
+
         Log.info(
           '✅ Fetched video from Nostr: ${fetchedVideo.title}',
           name: 'VideoDetailScreen',

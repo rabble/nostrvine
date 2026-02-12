@@ -95,6 +95,7 @@ class CommentsScreen extends ConsumerWidget {
       isScrollControlled: true,
       useRootNavigator: true,
       backgroundColor: Colors.transparent,
+      elevation: 0,
       builder: (builderContext) {
         final keyboardHeight = MediaQuery.of(builderContext).viewInsets.bottom;
         final isKeyboardOpen = keyboardHeight > 0;
@@ -105,19 +106,10 @@ class CommentsScreen extends ConsumerWidget {
           maxChildSize: 0.93,
           snap: true,
           snapSizes: [0.7, 0.93],
-          builder: (context, scrollController) => DecoratedBox(
-            decoration: const BoxDecoration(
-              color: Colors.black87,
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
-              ),
-            ),
-            child: CommentsScreen(
-              videoEvent: video,
-              sheetScrollController: scrollController,
-              initialCommentCount: initialCommentCount,
-            ),
+          builder: (context, scrollController) => CommentsScreen(
+            videoEvent: video,
+            sheetScrollController: scrollController,
+            initialCommentCount: initialCommentCount,
           ),
         );
       },

@@ -3,7 +3,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/models/user_profile.dart' as model;
+import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 
 void main() {
@@ -13,7 +13,7 @@ void main() {
       final container = ProviderContainer();
       final userProfileService = container.read(userProfileServiceProvider);
 
-      final testProfile = model.UserProfile(
+      final testProfile = UserProfile(
         pubkey: 'test-pubkey-123',
         displayName: 'Test User',
         name: 'testuser',
@@ -43,7 +43,7 @@ void main() {
       final container = ProviderContainer();
       final userProfileService = container.read(userProfileServiceProvider);
 
-      final profile1 = model.UserProfile(
+      final profile1 = UserProfile(
         pubkey: 'test-pubkey-456',
         displayName: 'Initial Name',
         eventId: 'event-1',
@@ -58,7 +58,7 @@ void main() {
       expect(cached?.displayName, equals('Initial Name'));
 
       // ACT: Update with new version
-      final profile2 = model.UserProfile(
+      final profile2 = UserProfile(
         pubkey: 'test-pubkey-456',
         displayName: 'Updated Name',
         picture: 'https://example.com/new-pic.jpg',
@@ -85,7 +85,7 @@ void main() {
       final userProfileService = container.read(userProfileServiceProvider);
 
       // STEP 1: User edits profile in ProfileSetupScreen
-      final newProfile = model.UserProfile(
+      final newProfile = UserProfile(
         pubkey: 'user-pubkey-789',
         displayName: 'My New Name',
         name: 'mynewname',

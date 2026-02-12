@@ -6,13 +6,11 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:likes_repository/likes_repository.dart';
-import 'package:models/models.dart'
-    hide LogCategory, CurationSet, CurationSetType, SampleCurationSets;
+import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
-import 'package:openvine/models/curation_set.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';

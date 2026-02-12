@@ -180,6 +180,35 @@ class _ProofModeExplanation extends StatelessWidget {
             ),
           ),
         ),
+        if (video.videoUrl != null && video.videoUrl!.isNotEmpty)
+          InkWell(
+            onTap: () async {
+              final checkUrl = 'https://check.proofmode.org/#${video.videoUrl}';
+              final uri = Uri.parse(checkUrl);
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
+            },
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 4),
+              child: Row(
+                children: [
+                  const Icon(Icons.open_in_new, size: 16, color: Colors.blue),
+                  const SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'Inspect with ProofCheck Tool',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.blue[700],
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
       ],
     );
   }
@@ -228,7 +257,7 @@ class _VerificationLevelCard extends StatelessWidget {
         color: Colors.green[700]!,
         title: 'Fully Verified',
         description:
-            'This video has the highest level of proof - captured on a real device with hardware security verification. We can confirm it was recorded using Divine on an actual phone.',
+            'This video has the highest level of proof - captured on a real device with hardware security verification, and embedded Content Credentials (C2PA) in the video file. We can confirm it was recorded using DiVine on an actual phone.',
       );
     } else if (video.isVerifiedWeb) {
       return _VerificationConfig(

@@ -152,8 +152,8 @@ class VideoFollowButtonView extends StatelessWidget {
         }
         return Semantics(
           identifier: 'follow_button',
-          container: true,
-          explicitChildNodes: true,
+          label: isFollowing ? 'Following' : 'Follow',
+          button: true,
           child: GestureDetector(
             onTap: () {
               Log.info(

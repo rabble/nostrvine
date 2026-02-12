@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
@@ -13,7 +14,7 @@ part 'video_editor_filter_state.dart';
 class VideoEditorFilterBloc
     extends Bloc<VideoEditorFilterEvent, VideoEditorFilterState> {
   VideoEditorFilterBloc()
-    : super(VideoEditorFilterState(filters: presetFiltersList)) {
+    : super(VideoEditorFilterState(filters: VideoEditorConstants.filters)) {
     on<VideoEditorFilterEditorInitialized>(_onEditorInitialized);
     on<VideoEditorFilterSelected>(_onFilterSelected);
     on<VideoEditorFilterOpacityChanged>(_onOpacityChanged);

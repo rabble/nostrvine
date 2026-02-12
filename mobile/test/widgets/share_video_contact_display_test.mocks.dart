@@ -8,9 +8,8 @@ import 'dart:ui' as _i10;
 
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i8;
-import 'package:models/models.dart' as _i11;
+import 'package:models/models.dart' as _i6;
 import 'package:nostr_sdk/event.dart' as _i9;
-import 'package:openvine/models/user_profile.dart' as _i6;
 import 'package:openvine/services/profile_cache_service.dart' as _i7;
 import 'package:openvine/services/social_service.dart' as _i3;
 import 'package:openvine/services/user_profile_service.dart' as _i5;
@@ -359,7 +358,7 @@ class MockVideoSharingService extends _i1.Mock
 
   @override
   _i4.Future<_i2.ShareResult> shareVideoWithUser({
-    required _i11.VideoEvent? video,
+    required _i6.VideoEvent? video,
     required String? recipientPubkey,
     String? personalMessage,
   }) =>
@@ -384,7 +383,7 @@ class MockVideoSharingService extends _i1.Mock
 
   @override
   _i4.Future<Map<String, _i2.ShareResult>> shareVideoWithMultipleUsers({
-    required _i11.VideoEvent? video,
+    required _i6.VideoEvent? video,
     required List<String>? recipientPubkeys,
     String? personalMessage,
   }) =>
@@ -421,7 +420,7 @@ class MockVideoSharingService extends _i1.Mock
           as _i4.Future<List<_i2.ShareableUser>>);
 
   @override
-  String generateShareUrl(_i11.VideoEvent? video) =>
+  String generateShareUrl(_i6.VideoEvent? video) =>
       (super.noSuchMethod(
             Invocation.method(#generateShareUrl, [video]),
             returnValue: _i8.dummyValue<String>(
@@ -432,7 +431,7 @@ class MockVideoSharingService extends _i1.Mock
           as String);
 
   @override
-  String generateShareText(_i11.VideoEvent? video) =>
+  String generateShareText(_i6.VideoEvent? video) =>
       (super.noSuchMethod(
             Invocation.method(#generateShareText, [video]),
             returnValue: _i8.dummyValue<String>(

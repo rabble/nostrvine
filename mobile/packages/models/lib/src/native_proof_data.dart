@@ -14,6 +14,7 @@ class NativeProofData {
     this.publicKey,
     this.deviceAttestation,
     this.timestamp,
+    this.c2paManifestId,
   });
 
   /// Create from JSON
@@ -25,6 +26,7 @@ class NativeProofData {
         publicKey: json['publicKey'] as String?,
         deviceAttestation: json['deviceAttestation'] as String?,
         timestamp: json['timestamp'] as String?,
+        c2paManifestId: json['c2paManifestId'] as String?,
       );
 
   /// Create from raw proof metadata map (from NativeProofModeService)
@@ -34,6 +36,8 @@ class NativeProofData {
         sensorDataCsv: metadata['csv'],
         pgpSignature: metadata['signature'],
         publicKey: metadata['publicKey'],
+        c2paManifestId: metadata['c2pa_manifest_id'],
+        deviceAttestation: metadata['deviceAttestation'],
       );
 
   /// SHA256 hash of the video file (used as proof identifier)
@@ -54,6 +58,9 @@ class NativeProofData {
   /// Timestamp of proof generation
   final String? timestamp;
 
+  /// C2PA manifest data
+  final String? c2paManifestId;
+
   /// Convert to JSON for storage
   Map<String, dynamic> toJson() => {
     'videoHash': videoHash,
@@ -62,6 +69,7 @@ class NativeProofData {
     if (publicKey != null) 'publicKey': publicKey,
     if (deviceAttestation != null) 'deviceAttestation': deviceAttestation,
     if (timestamp != null) 'timestamp': timestamp,
+    if (c2paManifestId != null) 'c2paManifestId': c2paManifestId,
   };
 
   /// Check if proof data is complete
@@ -69,7 +77,8 @@ class NativeProofData {
       pgpSignature != null && publicKey != null && sensorDataCsv != null;
 
   /// Check if this is a mobile proof with device attestation
-  bool get hasMobileAttestation => deviceAttestation != null;
+  bool get hasMobileAttestation =>
+      deviceAttestation != null || c2paManifestId != null;
 
   /// Get verification level for Nostr tags
   String get verificationLevel {

@@ -5,9 +5,11 @@
 import 'dart:async';
 
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_sdk/nostr_sdk.dart' show Filter;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -82,6 +84,9 @@ class ProfileFeed extends _$ProfileFeed {
 
           // Cache metadata for later merging with Nostr data
           _cacheVideoMetadata(authorVideos);
+
+          // Enrich with rawTags from Nostr (for ProofMode/C2PA badges)
+          authorVideos = await _enrichWithNostrTags(authorVideos);
 
           Log.info(
             '✅ ProfileFeed: Got ${authorVideos.length} videos from REST API for user=$userId, cursor: $_nextCursor',
@@ -321,6 +326,50 @@ class ProfileFeed extends _$ProfileFeed {
     );
   }
 
+  List<VideoEvent> _mergeStableTimestampsFromCurrentState(
+    List<VideoEvent> incoming,
+  ) {
+    final currentVideos = state.asData?.value.videos;
+    if (currentVideos == null || currentVideos.isEmpty) return incoming;
+
+    // Build lookup keys because REST API responses can be inconsistent
+    // about addressable identifiers (`d` tag / stableId).
+    //
+    // Known inconsistency:
+    // - Missing d-tags: Many relays don't include 'd' tags on NIP-71 addressable events
+    String? stableKey(VideoEvent v) {
+      final stableId = v.stableId;
+      if (stableId.isEmpty) return null;
+      return '${v.pubkey}:$stableId'.toLowerCase();
+    }
+
+    final existingByKey = <String, VideoEvent>{};
+    for (final v in currentVideos) {
+      final key = stableKey(v);
+      if (key != null) existingByKey[key] = v;
+    }
+
+    return incoming.map((video) {
+      final existing = stableKey(video) != null
+          ? existingByKey[stableKey(video)!]
+          : null;
+      if (existing == null) return video;
+
+      // Funnelcake may return the latest replaceable event's created_at (edit time)
+      // and may omit published_at. Preserve existing timestamps when published_at
+      // isn't present to avoid resetting relative time to "now" after refresh.
+      final hasPublishedAt =
+          video.publishedAt != null && video.publishedAt!.isNotEmpty;
+      if (hasPublishedAt) return video;
+
+      return video.copyWith(
+        createdAt: existing.createdAt,
+        timestamp: existing.timestamp,
+        publishedAt: existing.publishedAt,
+      );
+    }).toList();
+  }
+
   /// Optimistically add a newly published video to the profile feed state.
   /// This is called when the user publishes a new video to ensure instant feedback
   /// without waiting for Funnelcake REST API to index the event.
@@ -352,6 +401,23 @@ class ProfileFeed extends _$ProfileFeed {
     if (existingIds.contains(newVideo.id.toLowerCase())) {
       Log.debug(
         'ProfileFeed: Video ${newVideo.id} already in state, skipping optimistic add',
+        name: 'ProfileFeedProvider',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    // Also deduplicate replaceable/addressable videos by stable identity.
+    // Editing metadata republishes a new event id for the same (pubkey, d-tag),
+    // so id-based dedupe is insufficient and would create a duplicate entry.
+    final newStableKey = '${newVideo.pubkey}:${newVideo.stableId}'
+        .toLowerCase();
+    final existingStableKeys = currentState.videos
+        .map((v) => '${v.pubkey}:${v.stableId}'.toLowerCase())
+        .toSet();
+    if (existingStableKeys.contains(newStableKey)) {
+      Log.debug(
+        'ProfileFeed: Video ${newVideo.id} matches existing stableId=${newVideo.stableId}, skipping optimistic add',
         name: 'ProfileFeedProvider',
         category: LogCategory.video,
       );
@@ -390,10 +456,14 @@ class ProfileFeed extends _$ProfileFeed {
 
       if (apiVideos.isNotEmpty) {
         // Filter out reposts
-        final authorVideos = apiVideos.where((v) => !v.isRepost).toList();
+        var authorVideos = apiVideos.where((v) => !v.isRepost).toList();
+        authorVideos = _mergeStableTimestampsFromCurrentState(authorVideos);
 
         // Update metadata cache with fresh data
         _cacheVideoMetadata(authorVideos);
+
+        // Enrich with rawTags from Nostr (for ProofMode/C2PA badges)
+        authorVideos = await _enrichWithNostrTags(authorVideos);
 
         state = AsyncData(
           VideoFeedState(
@@ -489,7 +559,7 @@ class ProfileFeed extends _$ProfileFeed {
           final existingIds = currentState.videos
               .map((v) => v.id.toLowerCase())
               .toSet();
-          final newVideos = apiVideos
+          var newVideos = apiVideos
               .where((v) => !existingIds.contains(v.id.toLowerCase()))
               .where((v) => !v.isRepost)
               .toList();
@@ -499,6 +569,9 @@ class ProfileFeed extends _$ProfileFeed {
 
           // Cache metadata from new videos
           _cacheVideoMetadata(newVideos);
+
+          // Enrich with rawTags from Nostr (for ProofMode/C2PA badges)
+          newVideos = await _enrichWithNostrTags(newVideos);
 
           if (newVideos.isNotEmpty) {
             final allVideos = [...currentState.videos, ...newVideos];
@@ -639,10 +712,14 @@ class ProfileFeed extends _$ProfileFeed {
           _nextCursor = _getOldestTimestamp(apiVideos);
 
           // Filter out reposts
-          final authorVideos = apiVideos.where((v) => !v.isRepost).toList();
+          var authorVideos = apiVideos.where((v) => !v.isRepost).toList();
+          authorVideos = _mergeStableTimestampsFromCurrentState(authorVideos);
 
           // Cache metadata for future Nostr fallbacks
           _cacheVideoMetadata(authorVideos);
+
+          // Enrich with rawTags from Nostr (for ProofMode/C2PA badges)
+          authorVideos = await _enrichWithNostrTags(authorVideos);
 
           state = AsyncData(
             VideoFeedState(
@@ -715,6 +792,71 @@ class ProfileFeed extends _$ProfileFeed {
       }
       return video;
     }).toList();
+  }
+
+  /// Enrich REST API videos with rawTags from Nostr relay events.
+  ///
+  /// The Funnelcake REST API does not return the raw Nostr event tags array,
+  /// so ProofMode/C2PA/verification tags are missing. This method fetches
+  /// the full events from Nostr relays by ID and merges their rawTags.
+  Future<List<VideoEvent>> _enrichWithNostrTags(List<VideoEvent> videos) async {
+    if (videos.isEmpty) return videos;
+
+    // Collect IDs of videos that have empty rawTags
+    final idsToEnrich = videos
+        .where((v) => v.rawTags.isEmpty)
+        .map((v) => v.id)
+        .toList();
+
+    if (idsToEnrich.isEmpty) return videos;
+
+    try {
+      final nostrService = ref.read(nostrServiceProvider);
+
+      // Batch query Nostr relays for the full events
+      final filter = Filter(
+        ids: idsToEnrich,
+        kinds: [34236],
+        limit: idsToEnrich.length,
+      );
+      final nostrEvents = await nostrService
+          .queryEvents([filter])
+          .timeout(const Duration(seconds: 5));
+
+      if (nostrEvents.isEmpty) return videos;
+
+      // Build a lookup map: event ID -> rawTags from parsed VideoEvent
+      final nostrTagsMap = <String, Map<String, String>>{};
+      for (final event in nostrEvents) {
+        try {
+          final parsed = VideoEvent.fromNostrEvent(event, permissive: true);
+          if (parsed.rawTags.isNotEmpty) {
+            nostrTagsMap[parsed.id] = parsed.rawTags;
+          }
+        } catch (_) {
+          // Skip events that fail to parse
+        }
+      }
+
+      if (nostrTagsMap.isEmpty) return videos;
+
+      // Merge rawTags into REST API videos
+      return videos.map((video) {
+        final tags = nostrTagsMap[video.id];
+        if (tags != null && tags.isNotEmpty) {
+          return video.copyWith(rawTags: tags);
+        }
+        return video;
+      }).toList();
+    } catch (e) {
+      // Non-fatal: return original videos if enrichment fails
+      Log.warning(
+        'ProfileFeed: Failed to enrich with Nostr tags: $e',
+        name: 'ProfileFeedProvider',
+        category: LogCategory.video,
+      );
+      return videos;
+    }
   }
 }
 

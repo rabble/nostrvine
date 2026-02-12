@@ -93,58 +93,69 @@ void main() {
       Map<String, dynamic> content,
     ) async {
       when(() => mockProfileEvent.content).thenReturn(jsonEncode(content));
-      return (await profileRepository.getProfile(pubkey: testPubkey))!;
+      return (await profileRepository.fetchFreshProfile(pubkey: testPubkey))!;
     }
 
-    group('getProfile', () {
-      test('returns and caches UserProfile on cache miss and when fetchProfile '
-          'returns an event', () async {
-        final result = await profileRepository.getProfile(pubkey: testPubkey);
-
-        expect(result, isNotNull);
-        expect(result!.pubkey, equals(testPubkey));
-        expect(result.displayName, equals('Test User'));
-        expect(result.about, equals('A test bio'));
-
-        verify(() => mockUserProfilesDao.getProfile(any())).called(1);
-        verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
-        verify(() => mockUserProfilesDao.upsertProfile(result)).called(1);
-      });
-
-      test('returns cached profile on cache hit', () async {
+    group('getCachedProfile', () {
+      test('returns cached profile when it exists', () async {
         final profile = UserProfile.fromNostrEvent(mockProfileEvent);
         when(
           () => mockUserProfilesDao.getProfile(any()),
         ).thenAnswer((_) async => profile);
 
-        final result = await profileRepository.getProfile(pubkey: testPubkey);
+        final result = await profileRepository.getCachedProfile(
+          pubkey: testPubkey,
+        );
+
+        expect(result, isNotNull);
+        expect(result!.pubkey, equals(testPubkey));
+        expect(result.displayName, equals('Test User'));
+
+        verify(() => mockUserProfilesDao.getProfile(any())).called(1);
+        verifyNever(() => mockNostrClient.fetchProfile(any()));
+      });
+
+      test('returns null when no cached profile exists', () async {
+        final result = await profileRepository.getCachedProfile(
+          pubkey: testPubkey,
+        );
+
+        expect(result, isNull);
+
+        verify(() => mockUserProfilesDao.getProfile(any())).called(1);
+        verifyNever(() => mockNostrClient.fetchProfile(any()));
+      });
+    });
+
+    group('fetchFreshProfile', () {
+      test('fetches from relay and caches profile', () async {
+        final result = await profileRepository.fetchFreshProfile(
+          pubkey: testPubkey,
+        );
 
         expect(result, isNotNull);
         expect(result!.pubkey, equals(testPubkey));
         expect(result.displayName, equals('Test User'));
         expect(result.about, equals('A test bio'));
 
-        verify(() => mockUserProfilesDao.getProfile(any())).called(1);
-        verifyNever(() => mockNostrClient.fetchProfile(any()));
-        verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
+        verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+        verify(() => mockUserProfilesDao.upsertProfile(result)).called(1);
       });
 
-      test(
-        'returns null on cache miss and when fetchProfile returns null',
-        () async {
-          when(
-            () => mockNostrClient.fetchProfile(testPubkey),
-          ).thenAnswer((_) async => null);
+      test('returns null when relay returns no profile', () async {
+        when(
+          () => mockNostrClient.fetchProfile(testPubkey),
+        ).thenAnswer((_) async => null);
 
-          final result = await profileRepository.getProfile(pubkey: testPubkey);
+        final result = await profileRepository.fetchFreshProfile(
+          pubkey: testPubkey,
+        );
 
-          expect(result, isNull);
+        expect(result, isNull);
 
-          verify(() => mockUserProfilesDao.getProfile(any())).called(1);
-          verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
-          verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
-        },
-      );
+        verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+        verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
+      });
     });
 
     group('saveProfileEvent', () {
@@ -156,7 +167,7 @@ void main() {
             jsonEncode({
               'display_name': 'New Name',
               'about': 'New bio',
-              'nip05': 'new@example.com',
+              'nip05': '_@newuser.divine.video',
               'picture': 'https://example.com/new.png',
             }),
           );
@@ -164,13 +175,13 @@ void main() {
           final profile = await profileRepository.saveProfileEvent(
             displayName: 'New Name',
             about: 'New bio',
-            nip05: 'new@example.com',
+            username: 'newuser',
             picture: 'https://example.com/new.png',
           );
 
           expect(profile.displayName, equals('New Name'));
           expect(profile.about, equals('New bio'));
-          expect(profile.nip05, equals('new@example.com'));
+          expect(profile.nip05, equals('_@newuser.divine.video'));
           expect(profile.picture, equals('https://example.com/new.png'));
 
           verify(
@@ -178,7 +189,7 @@ void main() {
               profileContent: {
                 'display_name': 'New Name',
                 'about': 'New bio',
-                'nip05': 'new@example.com',
+                'nip05': '_@newuser.divine.video',
                 'picture': 'https://example.com/new.png',
               },
             ),
@@ -186,6 +197,38 @@ void main() {
           verify(() => mockUserProfilesDao.upsertProfile(profile)).called(1);
         },
       );
+
+      test('constructs nip05 identifier from username', () async {
+        await profileRepository.saveProfileEvent(
+          displayName: 'Test',
+          username: 'alice',
+        );
+
+        verify(
+          () => mockNostrClient.sendProfile(
+            profileContent: {
+              'display_name': 'Test',
+              'nip05': '_@alice.divine.video',
+            },
+          ),
+        ).called(1);
+      });
+
+      test('normalizes username to lowercase in nip05', () async {
+        await profileRepository.saveProfileEvent(
+          displayName: 'Test',
+          username: 'Alice',
+        );
+
+        verify(
+          () => mockNostrClient.sendProfile(
+            profileContent: {
+              'display_name': 'Test',
+              'nip05': '_@alice.divine.video',
+            },
+          ),
+        ).called(1);
+      });
 
       test('omits null optional fields', () async {
         await profileRepository.saveProfileEvent(displayName: 'Only Name');
@@ -272,7 +315,7 @@ void main() {
 
           await profileRepository.saveProfileEvent(
             displayName: 'New Name',
-            nip05: 'new@example.com',
+            username: 'newuser',
             about: 'New bio',
             currentProfile: currentProfile,
           );
@@ -281,7 +324,7 @@ void main() {
             () => mockNostrClient.sendProfile(
               profileContent: {
                 'display_name': 'New Name',
-                'nip05': 'new@example.com',
+                'nip05': '_@newuser.divine.video',
                 'about': 'New bio',
               },
             ),
@@ -1225,6 +1268,40 @@ void main() {
           verifyNever(() => mockHttpClient.post(any()));
         },
       );
+
+      test(
+        'sends lowercase username in payload for mixed-case input',
+        () async {
+          final expectedPayload = jsonEncode({'name': 'testuser'});
+          when(
+            () => mockNostrClient.createNip98AuthHeader(
+              url: any(named: 'url'),
+              method: any(named: 'method'),
+              payload: any(named: 'payload'),
+            ),
+          ).thenAnswer((_) => Future.value('authHeader'));
+          when(
+            () => mockHttpClient.post(
+              any(),
+              headers: any(named: 'headers'),
+              body: any(named: 'body'),
+            ),
+          ).thenAnswer((_) => Future.value(Response('body', 200)));
+
+          final result = await profileRepository.claimUsername(
+            username: 'TestUser',
+          );
+
+          expect(result, equals(const UsernameClaimSuccess()));
+          verify(
+            () => mockHttpClient.post(
+              Uri.parse('https://names.divine.video/api/username/claim'),
+              headers: any(named: 'headers'),
+              body: expectedPayload,
+            ),
+          ).called(1);
+        },
+      );
     });
 
     group('UsernameClaimResult', () {
@@ -1418,6 +1495,75 @@ void main() {
             'message',
             contains('Network error'),
           ),
+        );
+
+        verify(
+          () => mockHttpClient.get(
+            Uri.parse(
+              'https://divine.video/.well-known/nostr.json?name=testuser',
+            ),
+          ),
+        ).called(1);
+      });
+
+      test(
+        'returns UsernameTaken when username differs only in case',
+        () async {
+          when(
+            () => mockHttpClient.get(any()),
+          ).thenAnswer(
+            (_) async => Response(
+              jsonEncode({
+                'names': {'alice': 'pubkey1'},
+              }),
+              200,
+            ),
+          );
+
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'Alice',
+          );
+
+          expect(result, equals(const UsernameTaken()));
+        },
+      );
+
+      test(
+        'returns UsernameTaken for all-caps input when lowercase exists',
+        () async {
+          when(
+            () => mockHttpClient.get(any()),
+          ).thenAnswer(
+            (_) async => Response(
+              jsonEncode({
+                'names': {'alice': 'pubkey1'},
+              }),
+              200,
+            ),
+          );
+
+          final result = await profileRepository.checkUsernameAvailability(
+            username: 'ALICE',
+          );
+
+          expect(result, equals(const UsernameTaken()));
+        },
+      );
+
+      test('sends lowercase username in query parameter', () async {
+        when(
+          () => mockHttpClient.get(any()),
+        ).thenAnswer(
+          (_) async => Response(
+            jsonEncode({
+              'names': {'testuser': 'pubkey1'},
+            }),
+            200,
+          ),
+        );
+
+        await profileRepository.checkUsernameAvailability(
+          username: 'TestUser',
         );
 
         verify(

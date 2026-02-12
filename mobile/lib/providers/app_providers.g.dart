@@ -1725,52 +1725,6 @@ abstract class _$BlocklistVersion extends $Notifier<int> {
   }
 }
 
-/// NIP-05 service for username availability checking
-
-@ProviderFor(nip05Service)
-const nip05ServiceProvider = Nip05ServiceProvider._();
-
-/// NIP-05 service for username availability checking
-
-final class Nip05ServiceProvider
-    extends $FunctionalProvider<Nip05Service, Nip05Service, Nip05Service>
-    with $Provider<Nip05Service> {
-  /// NIP-05 service for username availability checking
-  const Nip05ServiceProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'nip05ServiceProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$nip05ServiceHash();
-
-  @$internal
-  @override
-  $ProviderElement<Nip05Service> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
-
-  @override
-  Nip05Service create(Ref ref) {
-    return nip05Service(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(Nip05Service value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<Nip05Service>(value),
-    );
-  }
-}
-
-String _$nip05ServiceHash() => r'b7f7e1471a3783305bf1070cb64f1b95c4bdb516';
-
 /// Draft storage service for persisting vine drafts
 
 @ProviderFor(draftStorageService)

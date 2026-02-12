@@ -1,4 +1,4 @@
-import 'package:openvine/models/user_profile.dart';
+import 'package:models/models.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/nip05_verification_provider.dart';

@@ -2,7 +2,7 @@
 // ABOUTME: Verifies navigationAction and navigationTarget for all notification types
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/notification_model.dart';
+import 'package:models/models.dart';
 
 void main() {
   group(NotificationModel, () {

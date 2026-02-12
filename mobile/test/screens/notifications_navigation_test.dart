@@ -4,8 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:models/models.dart' hide NotificationModel, NotificationType;
-import 'package:openvine/models/notification_model.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/router/router.dart';

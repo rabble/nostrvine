@@ -1,0 +1,11 @@
+appId: co.openvine.app
+---
+- assertVisible: Welcome Back
+- assertVisible: Choose how you want to sign in
+- assertVisible: Continue with Email
+- assertVisible: Login or create a new account
+- assertVisible: or
+- assertVisible: Import Nostr Key
+- assertVisible: Already have an nsec? Import it here
+- assertVisible: Connect with Signer App
+- assertVisible: Use Amber, nsecBunker, or other NIP-46 signers
