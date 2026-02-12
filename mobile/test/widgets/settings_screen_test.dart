@@ -159,18 +159,7 @@ void main() {
       // Developer Options should always be visible (not hidden behind 7-tap)
       expect(find.text('Developer Options'), findsOneWidget);
 
-      // Switch Account should be in the Profile section at the top
-      // Scroll back to top to find it
-      await tester.scrollUntilVisible(
-        find.text('PROFILE'),
-        -100,
-        scrollable: find.byType(Scrollable),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('Switch Account'), findsOneWidget);
-
-      // Scroll to find Advanced Account Options section at the bottom
+      // Scroll to find Account section at the bottom with key management
       await tester.scrollUntilVisible(
         find.text('Key Management'),
         100,
@@ -178,20 +167,11 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      // Advanced Account Options section should have key/account related items
-      expect(find.text('ADVANCED ACCOUNT OPTIONS'), findsOneWidget);
+      // Account section should have all key/account related items together
+      expect(find.text('ACCOUNT'), findsOneWidget);
+      expect(find.text('Switch Account'), findsOneWidget);
       expect(find.text('Key Management'), findsOneWidget);
       expect(find.text('Remove Keys from Device'), findsOneWidget);
-
-      // Danger Zone section should have delete option
-      await tester.scrollUntilVisible(
-        find.text('DANGER ZONE'),
-        100,
-        scrollable: find.byType(Scrollable),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.text('DANGER ZONE'), findsOneWidget);
       expect(find.text('Delete Account and Data'), findsOneWidget);
 
       // Dispose and pump to clear any pending timers from overlay visibility

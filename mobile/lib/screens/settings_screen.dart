@@ -19,6 +19,7 @@ import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/notification_settings_screen.dart';
+import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:openvine/screens/relay_diagnostic_screen.dart';
 import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
@@ -119,41 +120,27 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             children: [
               // Profile Section
               if (isAuthenticated) ...[
-                _SectionHeader(title: 'Profile'),
-                // Show register tile for anonymous users
-                // Only shown when headless auth feature is enabled
-                if (authService.isAnonymous)
-                  _SettingsTile(
-                    icon: Icons.security,
-                    title: 'Secure Your Account',
-                    subtitle:
-                        'Add email & password to recover your account on any device',
-                    onTap: () => context.push(SecureAccountScreen.path),
-                    iconColor: VineTheme.vineGreen,
-                  ),
-                _SettingsTile(
-                  icon: Icons.switch_account,
-                  title: 'Switch Account',
-                  subtitle:
-                      'Go to login screen to use a different account. '
-                      'Your current keys stay saved on this device.',
-                  onTap: _handleSwitchAccount,
+                _buildSectionHeader('Profile'),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.person,
+                  title: 'Edit Profile',
+                  subtitle: 'Update your display name, bio, and avatar',
+                  onTap: () => context.push(ProfileSetupScreen.editPath),
                 ),
               ],
 
-              // About
-              _SectionHeader(title: 'About'),
-              _VersionTile(appVersion: _appVersion),
-
               // Preferences - most used settings near the top
-              _SectionHeader(title: 'Preferences'),
-              _SettingsTile(
+              _buildSectionHeader('Preferences'),
+              _buildSettingsTile(
+                context,
                 icon: Icons.notifications,
                 title: 'Notifications',
                 subtitle: 'Manage notification preferences',
                 onTap: () => context.push(NotificationSettingsScreen.path),
               ),
-              _SettingsTile(
+              _buildSettingsTile(
+                context,
                 icon: Icons.shield,
                 title: 'Safety & Privacy',
                 subtitle: 'Blocked users, muted content, and report history',
@@ -164,26 +151,30 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               if (!kIsWeb && Platform.isMacOS) _buildAudioDeviceSelector(),
 
               // Network Configuration
-              _SectionHeader(title: 'Network'),
-              _SettingsTile(
+              _buildSectionHeader('Network'),
+              _buildSettingsTile(
+                context,
                 icon: Icons.hub,
                 title: 'Relays',
                 subtitle: 'Manage Nostr relay connections',
                 onTap: () => context.push(RelaySettingsScreen.path),
               ),
-              _SettingsTile(
+              _buildSettingsTile(
+                context,
                 icon: Icons.troubleshoot,
                 title: 'Relay Diagnostics',
                 subtitle: 'Debug relay connectivity and network issues',
                 onTap: () => context.push(RelayDiagnosticScreen.path),
               ),
-              _SettingsTile(
+              _buildSettingsTile(
+                context,
                 icon: Icons.cloud_upload,
                 title: 'Media Servers',
                 subtitle: 'Configure Blossom upload servers',
                 onTap: () => context.push(BlossomSettingsScreen.path),
               ),
-              _SettingsTile(
+              _buildSettingsTile(
+                context,
                 icon: Icons.developer_mode,
                 title: 'Developer Options',
                 subtitle: 'Environment switcher and debug settings',
@@ -191,9 +182,21 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 iconColor: Colors.orange,
               ),
 
+              // About
+              _buildSectionHeader('About'),
+              _buildVersionTile(context, ref),
+
               // Support
-              _SectionHeader(title: 'Support'),
-              _SettingsTile(
+              _buildSectionHeader('Support'),
+              _buildSettingsTile(
+                context,
+                icon: Icons.verified_user,
+                title: 'ProofMode Info',
+                subtitle: 'Learn about ProofMode verification and authenticity',
+                onTap: () => _openProofModeInfo(context),
+              ),
+              _buildSettingsTile(
+                context,
                 icon: Icons.support_agent,
                 title: 'Contact Support',
                 subtitle: 'Get help or report an issue',
@@ -218,13 +221,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   }
                 },
               ),
-              _SettingsTile(
-                icon: Icons.verified_user,
-                title: 'ProofMode Info',
-                subtitle: 'Learn about ProofMode verification and authenticity',
-                onTap: _openProofModeInfo,
-              ),
-              _SettingsTile(
+              _buildSettingsTile(
+                context,
                 icon: Icons.save,
                 title: 'Save Logs',
                 subtitle: 'Export logs to file for manual sending',
@@ -256,15 +254,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 },
               ),
 
+              // Account and key management actions at the bottom
               if (isAuthenticated) ...[
-                _SectionHeader(title: 'Advanced Account Options'),
-                _SettingsTile(
+                _buildSectionHeader('Account'),
+                // Show register tile for anonymous users
+                // Only shown when headless auth feature is enabled
+                if (authService.isAnonymous)
+                  _buildSettingsTile(
+                    context,
+                    icon: Icons.security,
+                    title: 'Secure Your Account',
+                    subtitle:
+                        'Add email & password to recover your account on any device',
+                    onTap: () => context.push(SecureAccountScreen.path),
+                    iconColor: VineTheme.vineGreen,
+                  ),
+                _buildSettingsTile(
+                  context,
+                  icon: Icons.switch_account,
+                  title: 'Switch Account',
+                  subtitle:
+                      'Go to login screen to use a different account. '
+                      'Your current keys stay saved on this device.',
+                  onTap: () => _handleSwitchAccount(context, ref),
+                ),
+                _buildSettingsTile(
+                  context,
                   icon: Icons.key,
                   title: 'Key Management',
                   subtitle: 'Export, backup, and restore your Nostr keys',
                   onTap: () => context.push(KeyManagementScreen.path),
                 ),
-                _SettingsTile(
+                _buildSettingsTile(
+                  context,
                   icon: Icons.key_off,
                   title: 'Remove Keys from Device',
                   subtitle:
@@ -275,8 +297,10 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   iconColor: Colors.orange,
                   titleColor: Colors.orange,
                 ),
-                _SectionHeader(title: 'Danger Zone'),
-                _SettingsTile(
+                const SizedBox(height: 16),
+                _buildSectionHeader('Danger Zone'),
+                _buildSettingsTile(
+                  context,
                   icon: Icons.delete_forever,
                   title: 'Delete Account and Data',
                   subtitle:
@@ -292,6 +316,45 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
     );
   }
+
+  Widget _buildSectionHeader(String title) => Padding(
+    padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
+    child: Text(
+      title.toUpperCase(),
+      style: const TextStyle(
+        color: VineTheme.vineGreen,
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.2,
+      ),
+    ),
+  );
+
+  Widget _buildSettingsTile(
+    BuildContext context, {
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required VoidCallback onTap,
+    Color? iconColor,
+    Color? titleColor,
+  }) => ListTile(
+    leading: Icon(icon, color: iconColor ?? VineTheme.vineGreen),
+    title: Text(
+      title,
+      style: TextStyle(
+        color: titleColor ?? Colors.white,
+        fontSize: 16,
+        fontWeight: FontWeight.w500,
+      ),
+    ),
+    subtitle: Text(
+      subtitle,
+      style: const TextStyle(color: Colors.grey, fontSize: 14),
+    ),
+    trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+    onTap: onTap,
+  );
 
   Widget _buildAudioSharingToggle() {
     final audioSharingService = ref.watch(
@@ -479,7 +542,79 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Future<void> _handleSwitchAccount() async {
+  Widget _buildVersionTile(BuildContext context, WidgetRef ref) {
+    final isDeveloperMode = ref.watch(isDeveloperModeEnabledProvider);
+    final environmentService = ref.watch(environmentServiceProvider);
+
+    // Read the new count after tapping
+    final newCount = ref.watch(developerModeTapCounterProvider);
+
+    return ListTile(
+      leading: const Icon(Icons.info, color: VineTheme.vineGreen),
+      title: const Text(
+        'Version',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: Text(
+        _appVersion.isEmpty ? 'Loading...' : _appVersion,
+        style: const TextStyle(color: Colors.grey, fontSize: 14),
+      ),
+      onTap: () async {
+        if (isDeveloperMode) {
+          // Already unlocked - show message
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Developer mode is already enabled'),
+              backgroundColor: VineTheme.vineGreen,
+            ),
+          );
+          return;
+        }
+
+        // Increment tap counter
+        ref.read(developerModeTapCounterProvider.notifier).tap();
+
+        Log.debug(
+          '👨‍💻 Dev mode count: $newCount',
+          name: 'SettingsScreen',
+          category: LogCategory.ui,
+        );
+
+        if (newCount >= 7) {
+          // Unlock developer mode
+          await environmentService.enableDeveloperMode();
+          ref.read(developerModeTapCounterProvider.notifier).reset();
+
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Developer mode enabled!'),
+                backgroundColor: VineTheme.vineGreen,
+                duration: Duration(seconds: 2),
+              ),
+            );
+          }
+        } else if (newCount >= 4) {
+          // Show hint message
+          final remaining = 7 - newCount;
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('$remaining more taps to enable developer mode'),
+                duration: const Duration(milliseconds: 500),
+              ),
+            );
+          }
+        }
+      },
+    );
+  }
+
+  Future<void> _handleSwitchAccount(BuildContext context, WidgetRef ref) async {
     // Check for existing drafts before showing switch account confirmation
     final draftService = DraftStorageService();
     final drafts = await draftService.getAllDrafts();
@@ -635,7 +770,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   }
 
   /// Open ProofMode info page at divine.video/proofmode
-  Future<void> _openProofModeInfo() async {
+  Future<void> _openProofModeInfo(BuildContext context) async {
     final url = Uri.parse('https://divine.video/proofmode');
 
     try {
@@ -704,150 +839,6 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           bugReportService: bugReportService,
           currentScreen: 'SettingsScreen',
           userPubkey: userPubkey,
-        ),
-      ),
-    );
-  }
-}
-
-class _VersionTile extends ConsumerWidget {
-  const _VersionTile({required String appVersion}) : _appVersion = appVersion;
-
-  final String _appVersion;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final isDeveloperMode = ref.watch(isDeveloperModeEnabledProvider);
-    final environmentService = ref.watch(environmentServiceProvider);
-
-    // Read the new count after tapping
-    final newCount = ref.watch(developerModeTapCounterProvider);
-
-    return ListTile(
-      leading: const Icon(Icons.info, color: VineTheme.vineGreen),
-      title: const Text(
-        'Version',
-        style: TextStyle(
-          color: Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        _appVersion.isEmpty ? 'Loading...' : _appVersion,
-        style: const TextStyle(color: Colors.grey, fontSize: 14),
-      ),
-      onTap: () async {
-        if (isDeveloperMode) {
-          // Already unlocked - show message
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Developer mode is already enabled'),
-              backgroundColor: VineTheme.vineGreen,
-            ),
-          );
-          return;
-        }
-
-        // Increment tap counter
-        ref.read(developerModeTapCounterProvider.notifier).tap();
-
-        Log.debug(
-          '👨‍💻 Dev mode count: $newCount',
-          name: 'SettingsScreen',
-          category: LogCategory.ui,
-        );
-
-        if (newCount >= 7) {
-          // Unlock developer mode
-          await environmentService.enableDeveloperMode();
-          ref.read(developerModeTapCounterProvider.notifier).reset();
-
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Developer mode enabled!'),
-                backgroundColor: VineTheme.vineGreen,
-                duration: Duration(seconds: 2),
-              ),
-            );
-          }
-          return;
-        }
-
-        if (newCount >= 4) {
-          // Show hint message
-          final remaining = 7 - newCount;
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('$remaining more taps to enable developer mode'),
-                duration: const Duration(milliseconds: 500),
-              ),
-            );
-          }
-          return;
-        }
-      },
-    );
-  }
-}
-
-class _SettingsTile extends StatelessWidget {
-  const _SettingsTile({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.onTap,
-    this.iconColor,
-    this.titleColor,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final VoidCallback onTap;
-  final Color? iconColor;
-  final Color? titleColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      leading: Icon(icon, color: iconColor ?? VineTheme.vineGreen),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: titleColor ?? Colors.white,
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-        ),
-      ),
-      subtitle: Text(
-        subtitle,
-        style: const TextStyle(color: Colors.grey, fontSize: 14),
-      ),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-      onTap: onTap,
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-      child: Text(
-        title.toUpperCase(),
-        style: const TextStyle(
-          color: VineTheme.vineGreen,
-          fontSize: 12,
-          fontWeight: FontWeight.w600,
-          letterSpacing: 1.2,
         ),
       ),
     );
