@@ -2,7 +2,8 @@
 # Hook: PostToolUse (Edit|Write)
 # Auto-run build_runner when editing files with code generation annotations
 #
-# Triggers on files containing: @freezed, @riverpod, @JsonSerializable, @GenerateMocks
+# Triggers on files containing: @freezed, @riverpod, @JsonSerializable,
+#   @GenerateMocks, @HiveType, @DriftDatabase, @DriftAccessor
 # Input: JSON with tool_input.file_path
 # Output: None (exit 0 on success)
 
@@ -30,7 +31,7 @@ if [[ ! -f "$FILE_PATH" ]]; then
 fi
 
 # Check if file contains code generation annotations
-if ! grep -qE '@(freezed|riverpod|Riverpod|JsonSerializable|GenerateMocks)' "$FILE_PATH"; then
+if ! grep -qE '@(freezed|riverpod|Riverpod|JsonSerializable|GenerateMocks|HiveType|DriftDatabase|DriftAccessor)' "$FILE_PATH"; then
   exit 0
 fi
 
