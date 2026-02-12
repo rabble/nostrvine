@@ -2,9 +2,11 @@
 // ABOUTME: Tries Funnelcake REST API (sort=trending) first, falls back to Nostr if unavailable
 
 import 'package:models/models.dart' hide LogCategory;
+import 'package:nostr_sdk/nostr_sdk.dart' show Filter;
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
 import 'package:openvine/state/video_feed_state.dart';
@@ -131,14 +133,17 @@ class PopularVideosFeed extends _$PopularVideosFeed {
               .where((v) => v.isSupportedOnCurrentPlatform)
               .toList();
 
+          // Enrich REST API videos with Nostr tags for ProofMode badge
+          final enrichedVideos = await _enrichWithNostrTags(filteredVideos);
+
           Log.info(
-            'PopularVideosFeed: Got ${filteredVideos.length} videos from REST API (trending + recent)',
+            'PopularVideosFeed: Got ${enrichedVideos.length} videos from REST API (trending + recent)',
             name: 'PopularVideosFeedProvider',
             category: LogCategory.video,
           );
 
           return VideoFeedState(
-            videos: filteredVideos,
+            videos: enrichedVideos,
             hasMoreContent:
                 apiVideos.length >= AppConstants.paginationBatchSize,
             isLoadingMore: false,
@@ -258,9 +263,11 @@ class PopularVideosFeed extends _$PopularVideosFeed {
           _nextCursor = _getOldestTimestamp(apiVideos);
 
           if (newVideos.isNotEmpty) {
-            final allVideos = [...currentState.videos, ...newVideos];
+            // Enrich REST API videos with Nostr tags for ProofMode badge
+            final enrichedNewVideos = await _enrichWithNostrTags(newVideos);
+            final allVideos = [...currentState.videos, ...enrichedNewVideos];
             Log.info(
-              'PopularVideosFeed: Loaded ${newVideos.length} more videos (total: ${allVideos.length})',
+              'PopularVideosFeed: Loaded ${enrichedNewVideos.length} more videos (total: ${allVideos.length})',
               name: 'PopularVideosFeedProvider',
               category: LogCategory.video,
             );
@@ -335,9 +342,12 @@ class PopularVideosFeed extends _$PopularVideosFeed {
               .where((v) => v.isSupportedOnCurrentPlatform)
               .toList();
 
+          // Enrich REST API videos with Nostr tags for ProofMode badge
+          final enrichedVideos = await _enrichWithNostrTags(filteredVideos);
+
           state = AsyncData(
             VideoFeedState(
-              videos: filteredVideos,
+              videos: enrichedVideos,
               hasMoreContent:
                   apiVideos.length >= AppConstants.paginationBatchSize,
               isLoadingMore: false,
@@ -346,7 +356,7 @@ class PopularVideosFeed extends _$PopularVideosFeed {
           );
 
           Log.info(
-            'PopularVideosFeed: Refreshed ${filteredVideos.length} videos from REST API',
+            'PopularVideosFeed: Refreshed ${enrichedVideos.length} videos from REST API',
             name: 'PopularVideosFeedProvider',
             category: LogCategory.video,
           );
@@ -370,5 +380,70 @@ class PopularVideosFeed extends _$PopularVideosFeed {
   int? _getOldestTimestamp(List<VideoEvent> videos) {
     if (videos.isEmpty) return null;
     return videos.map((v) => v.createdAt).reduce((a, b) => a < b ? a : b);
+  }
+
+  /// Enrich REST API videos with raw Nostr tags for ProofMode/C2PA badges.
+  ///
+  /// REST API responses don't include the raw Nostr event tags array,
+  /// so ProofMode/C2PA/verification tags are missing. This method fetches
+  /// the full events from Nostr relays by ID and merges their rawTags.
+  Future<List<VideoEvent>> _enrichWithNostrTags(List<VideoEvent> videos) async {
+    if (videos.isEmpty) return videos;
+
+    // Collect IDs of videos that have empty rawTags
+    final idsToEnrich = videos
+        .where((v) => v.rawTags.isEmpty)
+        .map((v) => v.id)
+        .toList();
+
+    if (idsToEnrich.isEmpty) return videos;
+
+    try {
+      final nostrService = ref.read(nostrServiceProvider);
+
+      // Batch query Nostr relays for the full events
+      final filter = Filter(
+        ids: idsToEnrich,
+        kinds: [34236],
+        limit: idsToEnrich.length,
+      );
+      final nostrEvents = await nostrService
+          .queryEvents([filter])
+          .timeout(const Duration(seconds: 5));
+
+      if (nostrEvents.isEmpty) return videos;
+
+      // Build a lookup map: event ID -> rawTags from parsed VideoEvent
+      final nostrTagsMap = <String, Map<String, String>>{};
+      for (final event in nostrEvents) {
+        try {
+          final parsed = VideoEvent.fromNostrEvent(event, permissive: true);
+          if (parsed.rawTags.isNotEmpty) {
+            nostrTagsMap[parsed.id] = parsed.rawTags;
+          }
+        } catch (_) {
+          // Skip events that fail to parse
+        }
+      }
+
+      if (nostrTagsMap.isEmpty) return videos;
+
+      // Merge rawTags into REST API videos
+      return videos.map((video) {
+        final tags = nostrTagsMap[video.id];
+        if (tags != null && tags.isNotEmpty) {
+          return video.copyWith(rawTags: tags);
+        }
+        return video;
+      }).toList();
+    } catch (e) {
+      // Non-fatal: return original videos if enrichment fails
+      Log.warning(
+        'PopularVideosFeed: Failed to enrich with Nostr tags: $e',
+        name: 'PopularVideosFeedProvider',
+        category: LogCategory.video,
+      );
+      return videos;
+    }
   }
 }
