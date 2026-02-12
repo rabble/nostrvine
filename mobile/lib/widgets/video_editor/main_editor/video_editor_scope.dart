@@ -47,10 +47,8 @@ class VideoEditorScope extends InheritedWidget {
   final Future<TextLayer?> Function([TextLayer? layer]) onAddEditTextLayer;
 
   /// FittedBox scale factor between bodySize and renderSize.
-  double get fittedBoxScale => calculateFittedBoxScale(
-        bodySizeNotifier.value,
-        originalClipAspectRatio,
-      );
+  double get fittedBoxScale =>
+      calculateFittedBoxScale(bodySizeNotifier.value, originalClipAspectRatio);
 
   /// Calculates the FittedBox scale factor for a given body size and aspect ratio.
   static double calculateFittedBoxScale(Size bodySize, double aspectRatio) {

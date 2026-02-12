@@ -3,7 +3,9 @@
 
 import 'dart:ui';
 
+import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' show AspectRatio;
+import 'package:openvine/platform_io.dart';
 
 /// Extensions for [AspectRatio] with platform-specific display logic.
 extension AspectRatioExtensions on AspectRatio {
@@ -13,7 +15,7 @@ extension AspectRatioExtensions on AspectRatio {
   /// On macOS, vertical videos are displayed with their intrinsic aspect ratio
   /// to avoid layout issues with the desktop window.
   bool get useFullScreen =>
-      this == AspectRatio.vertical /* && (kIsWeb || !Platform.isMacOS) */;
+      this == AspectRatio.vertical && (kIsWeb || !Platform.isMacOS);
 
   /// Whether this aspect ratio should use full-screen display for the given
   /// [bodySize].
@@ -23,9 +25,8 @@ extension AspectRatioExtensions on AspectRatio {
   /// - vertical + macOS but screen is already 9/16 or narrower
   bool useFullScreenForSize(Size bodySize) {
     if (this != AspectRatio.vertical) return false;
-    return true; // TODO: Restore platform check after testing
-    /* if (kIsWeb || !Platform.isMacOS) return true; */
+    if (kIsWeb || !Platform.isMacOS) return true;
     // On macOS, use fullscreen if screen already fits the target aspect ratio
-    // return bodySize.aspectRatio <= value;
+    return bodySize.aspectRatio <= value;
   }
 }

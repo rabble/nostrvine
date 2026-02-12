@@ -378,12 +378,14 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
             final paintEditor = scope.paintEditor;
             final drawState = context.read<VideoEditorDrawBloc>().state;
-            // Sync editor with current BLoC state
+            final toolConfig = drawState.selectedTool.config;
+            // Sync editor with current BLoC state - use tool config for
+            // strokeWidth/opacity/mode to ensure consistency with tool switch
             paintEditor
               ?..setColor(drawState.selectedColor)
-              ..setStrokeWidth(drawState.strokeWidth / scope.fittedBoxScale)
-              ..setOpacity(drawState.opacity)
-              ..setMode(drawState.mode);
+              ..setStrokeWidth(toolConfig.strokeWidth / scope.fittedBoxScale)
+              ..setOpacity(toolConfig.opacity)
+              ..setMode(toolConfig.mode);
           },
           onDrawingDone: () => _syncDrawCapabilities(scope, drawBloc),
           onRedo: () => _syncDrawCapabilities(scope, drawBloc),
