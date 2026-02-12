@@ -14,6 +14,7 @@ import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dar
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/screens/home_screen_router.dart';
+import 'package:divine_camera/divine_camera.dart' show DivineVideoQuality;
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
@@ -88,17 +89,22 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   }
 
   /// Initialize camera.
-  Future<void> initialize({BuildContext? context}) async {
+  ///
+  /// [videoQuality] specifies the video recording quality (default: FHD/1080p).
+  Future<void> initialize({
+    BuildContext? context,
+    DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+  }) async {
     _isDestroyed = false;
 
     Log.info(
-      '📹 Initializing video recorder',
+      '📹 Initializing video recorder with quality: ${videoQuality.value}',
       name: 'VideoRecorderNotifier',
       category: .video,
     );
 
     try {
-      await _cameraService.initialize();
+      await _cameraService.initialize(videoQuality: videoQuality);
     } catch (e) {
       Log.error(
         '📹 Camera service initialization threw exception: $e',
