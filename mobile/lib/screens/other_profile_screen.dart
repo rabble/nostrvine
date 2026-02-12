@@ -18,7 +18,7 @@ import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
-import 'package:openvine/widgets/profile/profile_grid_view.dart';
+import 'package:openvine/widgets/profile/profile_grid.dart';
 
 /// Fullscreen profile screen for viewing other users' profiles.
 ///
@@ -388,7 +388,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
           ),
         ],
       ),
-      body: ProfileGridView(
+      body: ProfileGrid(
         userIdHex: userIdHex,
         isOwnProfile: false,
         displayName: displayName,
