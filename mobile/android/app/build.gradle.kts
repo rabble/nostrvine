@@ -122,6 +122,10 @@ dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     implementation("androidx.multidex:multidex:2.0.1")
 
+    // BouncyCastle jdk18on for CertificateSigningService (replaces excluded jdk15to18 versions)
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.78.1")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
+
     // ProofMode library for cryptographic proof generation
     // Upgraded to 1.0.25 to fix duplicate class issues with java-opentimestamps fat JAR
     implementation("org.witness:android-libproofmode:1.0.25")
