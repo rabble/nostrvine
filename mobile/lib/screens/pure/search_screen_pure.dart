@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,10 +15,9 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
-import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/search_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -144,10 +144,15 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
   void _performSearch(String query, {bool updateUrl = true}) async {
     if (query.isEmpty) {
+      final videoEventService = ref.read(videoEventServiceProvider);
+      videoEventService.clearSearchResults();
+
       setState(() {
         _videoResults = [];
         _hashtagResults = [];
         _isSearching = false;
+        _isSearchingExternal = false;
+        _isSearchingWebSocket = false;
         _currentQuery = '';
       });
       _userSearchBloc.add(const UserSearchCleared());

@@ -12,7 +12,10 @@ import 'package:models/models.dart' show NativeProofData;
 /// - 'basic_proof': has some proof data but no signature
 /// - 'unverified': no meaningful proof data
 String getVerificationLevel(NativeProofData proofData) {
-  return proofData.verificationLevel;
+  if (proofData.c2paManifestId != null)
+    return 'verified_mobile'; // if it has c2pa, that means mobile device verified
+  else
+    return proofData.verificationLevel;
 }
 
 /// Create proof-manifest tag value (compact JSON)

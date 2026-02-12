@@ -73,11 +73,26 @@ class FollowRepository {
   bool get isInitialized => _isInitialized;
   int get followingCount => _followingPubkeys.length;
 
-  /// Emit current state to stream
+  /// Emit current state to stream (only if the list actually changed)
   void _emitFollowingList() {
     if (!_followingSubject.isClosed) {
-      _followingSubject.add(List.unmodifiable(_followingPubkeys));
+      final newList = List<String>.unmodifiable(_followingPubkeys);
+      final currentList = _followingSubject.valueOrNull;
+      if (currentList == null ||
+          newList.length != currentList.length ||
+          !_listsEqual(newList, currentList)) {
+        _followingSubject.add(newList);
+      }
     }
+  }
+
+  /// Compare two lists for equality by value
+  bool _listsEqual(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   /// Dispose resources

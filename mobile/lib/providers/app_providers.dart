@@ -49,7 +49,6 @@ import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/mute_service.dart';
-import 'package:openvine/services/nip05_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
@@ -536,12 +535,6 @@ class BlocklistVersion extends _$BlocklistVersion {
   int build() => 0;
 
   void increment() => state++;
-}
-
-/// NIP-05 service for username availability checking
-@riverpod
-Nip05Service nip05Service(Ref ref) {
-  return Nip05Service();
 }
 
 /// Draft storage service for persisting vine drafts

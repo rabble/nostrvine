@@ -25,6 +25,7 @@ class UserProfileTile extends ConsumerWidget {
     this.showFollowButton = true,
     this.isFollowing,
     this.onToggleFollow,
+    this.index,
   });
 
   /// The public key of the user to display.
@@ -43,6 +44,9 @@ class UserProfileTile extends ConsumerWidget {
   /// Callback to toggle follow state.
   /// Required when [showFollowButton] is true.
   final VoidCallback? onToggleFollow;
+
+  /// Optional index for semantic labeling in lists (e.g., Maestro tests).
+  final int? index;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -155,6 +159,7 @@ class UserProfileTile extends ConsumerWidget {
                       isFollowing: isFollowing!,
                       onToggleFollow: onToggleFollow!,
                       displayName: displayName,
+                      index: index,
                     ),
                   ],
                 ],
@@ -173,11 +178,13 @@ class _FollowButton extends StatelessWidget {
     required this.isFollowing,
     required this.onToggleFollow,
     required this.displayName,
+    this.index,
   });
 
   final bool isFollowing;
   final VoidCallback onToggleFollow;
   final String displayName;
+  final int? index;
 
   Future<void> _confirmUnfollow(BuildContext context) async {
     final result = await showUnfollowConfirmation(
@@ -192,26 +199,33 @@ class _FollowButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final indexSuffix = index != null ? ' $index' : '';
+
     if (isFollowing) {
       // Following state: surfaceContainer bg, outlineMuted border, userMinus icon
-      return GestureDetector(
-        onTap: () => _confirmUnfollow(context),
-        child: Container(
-          width: 40,
-          height: 40,
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: VineTheme.surfaceContainer,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: VineTheme.outlineMuted, width: 2),
-          ),
-          child: SvgPicture.asset(
-            'assets/icon/userMinus.svg',
-            width: 24,
-            height: 24,
-            colorFilter: const ColorFilter.mode(
-              VineTheme.vineGreen,
-              BlendMode.srcIn,
+      return Semantics(
+        identifier: 'unfollow_user',
+        label: 'Unfollow user$indexSuffix',
+        button: true,
+        child: GestureDetector(
+          onTap: () => _confirmUnfollow(context),
+          child: Container(
+            width: 40,
+            height: 40,
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: VineTheme.surfaceContainer,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: VineTheme.outlineMuted, width: 2),
+            ),
+            child: SvgPicture.asset(
+              'assets/icon/userMinus.svg',
+              width: 24,
+              height: 24,
+              colorFilter: const ColorFilter.mode(
+                VineTheme.vineGreen,
+                BlendMode.srcIn,
+              ),
             ),
           ),
         ),
@@ -219,23 +233,28 @@ class _FollowButton extends StatelessWidget {
     }
 
     // Follow state: vineGreen bg, userPlus icon
-    return GestureDetector(
-      onTap: onToggleFollow,
-      child: Container(
-        width: 40,
-        height: 40,
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: VineTheme.vineGreen,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: SvgPicture.asset(
-          'assets/icon/userPlus.svg',
-          width: 24,
-          height: 24,
-          colorFilter: const ColorFilter.mode(
-            VineTheme.onPrimary,
-            BlendMode.srcIn,
+    return Semantics(
+      identifier: 'follow_user',
+      label: 'Follow user$indexSuffix',
+      button: true,
+      child: GestureDetector(
+        onTap: onToggleFollow,
+        child: Container(
+          width: 40,
+          height: 40,
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: VineTheme.vineGreen,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: SvgPicture.asset(
+            'assets/icon/userPlus.svg',
+            width: 24,
+            height: 24,
+            colorFilter: const ColorFilter.mode(
+              VineTheme.onPrimary,
+              BlendMode.srcIn,
+            ),
           ),
         ),
       ),

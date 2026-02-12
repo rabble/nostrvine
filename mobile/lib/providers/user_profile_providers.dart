@@ -148,7 +148,7 @@ Future<UserProfile?> fetchUserProfile(Ref ref, String pubkey) async {
     category: LogCategory.ui,
   );
 
-  final profile = await profileRepository.getProfile(pubkey: pubkey);
+  final profile = await profileRepository.getCachedProfile(pubkey: pubkey);
 
   if (profile == null) {
     Log.debug(

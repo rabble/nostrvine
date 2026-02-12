@@ -106,7 +106,7 @@ void main() {
       );
 
       expect(
-        find.text('Only letters, numbers, -, _, and . are allowed'),
+        find.text('Only lowercase letters, numbers, -, _, and . are allowed'),
         findsOneWidget,
       );
     });

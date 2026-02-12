@@ -90,6 +90,7 @@ class RouteContext {
     this.listId,
     this.soundId,
     this.videoId,
+    this.draftId,
   });
 
   final RouteType type;
@@ -100,6 +101,7 @@ class RouteContext {
   final String? listId;
   final String? soundId;
   final String? videoId;
+  final String? draftId;
 }
 
 /// Parse a URL path into a structured RouteContext
@@ -214,6 +216,10 @@ RouteContext parseRoute(String path) {
       return const RouteContext(type: RouteType.videoEditor);
 
     case 'video-clip-editor':
+      if (segments.length > 1) {
+        final draftId = Uri.decodeComponent(segments[1]);
+        return RouteContext(type: RouteType.videoClipEditor, draftId: draftId);
+      }
       return const RouteContext(type: RouteType.videoClipEditor);
 
     case 'video-metadata':
@@ -396,6 +402,9 @@ String buildRoute(RouteContext context) {
       return VideoEditorScreen.path;
 
     case RouteType.videoClipEditor:
+      if (context.draftId != null) {
+        return '${VideoClipEditorScreen.path}/${Uri.encodeComponent(context.draftId!)}';
+      }
       return VideoClipEditorScreen.path;
 
     case RouteType.videoMetadata:

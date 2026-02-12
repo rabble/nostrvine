@@ -1040,6 +1040,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
     required String? content,
     List<List<String>>? tags,
     String? biometricPrompt,
+    int? createdAt,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#createAndSignEvent, [], {
@@ -1047,6 +1048,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               #content: content,
               #tags: tags,
               #biometricPrompt: biometricPrompt,
+              #createdAt: createdAt,
             }),
             returnValue: _i7.Future<_i4.Event?>.value(),
             returnValueForMissingStub: _i7.Future<_i4.Event?>.value(),
