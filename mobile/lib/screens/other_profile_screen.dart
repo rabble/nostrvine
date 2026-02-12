@@ -1,31 +1,35 @@
 // ABOUTME: Profile screen for viewing other users with bottom navigation
 // ABOUTME: Pushed on stack from video feeds, profiles, search results, etc.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/blocs/other_profile/other_profile_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/clipboard_utils.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/npub_hex.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
 import 'package:openvine/widgets/profile/profile_grid_view.dart';
+import 'package:openvine/widgets/profile/profile_loading_view.dart';
 
 /// Fullscreen profile screen for viewing other users' profiles.
 ///
 /// This screen is pushed outside the shell route so it doesn't show
 /// the bottom navigation bar. It provides a fullscreen profile viewing
 /// experience with back navigation.
-class OtherProfileScreen extends ConsumerStatefulWidget {
+class OtherProfileScreen extends ConsumerWidget {
   /// Route name for this screen.
   static const routeName = 'profile-view';
 
@@ -48,6 +52,54 @@ class OtherProfileScreen extends ConsumerStatefulWidget {
   /// The npub of the user whose profile is being viewed.
   final String npub;
 
+  /// Optional display name hint for users without Kind 0 profiles.
+  final String? displayNameHint;
+
+  /// Optional avatar URL hint for users without Kind 0 profiles.
+  final String? avatarUrlHint;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profileRepository = ref.watch(profileRepositoryProvider);
+
+    if (profileRepository == null) return BrandedLoadingScaffold();
+
+    final pubkey = npubToHexOrNull(npub);
+
+    if (pubkey == null)
+      return _ProfileErrorScreen(
+        message: 'Invalid profile ID',
+        onBack: context.pop,
+      );
+
+    return BlocProvider(
+      create: (context) =>
+          OtherProfileBloc(pubkey: pubkey, profileRepository: profileRepository)
+            ..add(OtherProfileLoadRequested()),
+      child: OtherProfileView(
+        pubkey: pubkey,
+        displayNameHint: displayNameHint,
+        avatarUrlHint: avatarUrlHint,
+      ),
+    );
+  }
+}
+
+/// Internal view widget for OtherProfileScreen.
+///
+/// Contains the actual UI implementation. The parent [OtherProfileScreen]
+/// handles BLoC creation and npub validation.
+class OtherProfileView extends ConsumerStatefulWidget {
+  const OtherProfileView({
+    required this.pubkey,
+    this.displayNameHint,
+    this.avatarUrlHint,
+    super.key,
+  });
+
+  /// The hex pubkey of the profile being viewed.
+  final String pubkey;
+
   /// Optional display name hint for users without Kind 0 profiles (e.g., classic Viners).
   final String? displayNameHint;
 
@@ -55,10 +107,10 @@ class OtherProfileScreen extends ConsumerStatefulWidget {
   final String? avatarUrlHint;
 
   @override
-  ConsumerState<OtherProfileScreen> createState() => _OtherProfileScreenState();
+  ConsumerState<OtherProfileView> createState() => _OtherProfileViewState();
 }
 
-class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
+class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
   final ScrollController _scrollController = ScrollController();
 
   /// Notifier to trigger refresh of profile BLoCs (likes, reposts).
@@ -67,13 +119,9 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   /// Whether a refresh is currently in progress.
   bool _isRefreshing = false;
 
-  /// Derived userIdHex from widget.npub - null if invalid npub.
-  String? get _userIdHex => npubToHexOrNull(widget.npub);
-
   @override
   void initState() {
     super.initState();
-    _fetchProfileIfNeeded();
   }
 
   @override
@@ -84,8 +132,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   }
 
   Future<void> _refreshProfile() async {
-    final userIdHex = _userIdHex;
-    if (userIdHex == null || _isRefreshing) return;
+    if (_isRefreshing) return;
 
     setState(() => _isRefreshing = true);
 
@@ -93,13 +140,13 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       // Run refresh operations and minimum duration in parallel
       // This ensures the spinner shows for at least 500ms for visual feedback
       await Future.wait([
-        _doRefresh(userIdHex),
+        _doRefresh(),
         Future<void>.delayed(const Duration(milliseconds: 500)),
       ]);
 
       Log.info(
-        '🔄 Profile refreshed for $userIdHex',
-        name: 'OtherProfileScreen',
+        '🔄 Profile refreshed for ${widget.pubkey}',
+        name: 'OtherProfileView',
         category: LogCategory.ui,
       );
     } finally {
@@ -109,47 +156,30 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
     }
   }
 
-  Future<void> _doRefresh(String userIdHex) async {
+  Future<void> _doRefresh() async {
     // Refresh videos from provider
-    await ref.read(profileFeedProvider(userIdHex).notifier).refresh();
+    await ref.read(profileFeedProvider(widget.pubkey).notifier).refresh();
 
     // Invalidate stats to recompute
-    ref.invalidate(fetchProfileStatsProvider(userIdHex));
+    ref.invalidate(fetchProfileStatsProvider(widget.pubkey));
 
     // Refresh user profile info
-    ref.read(userProfileServiceProvider).fetchProfile(userIdHex);
+    context.read<OtherProfileBloc>().add(OtherProfileRefreshRequested());
 
     // Trigger BLoC refresh for likes/reposts via notifier
     _refreshNotifier.value++;
   }
 
-  void _fetchProfileIfNeeded() {
-    final userIdHex = _userIdHex;
-    if (userIdHex == null) return;
-
-    final userProfileService = ref.read(userProfileServiceProvider);
-
-    // Fetch profile (shows cached immediately, refreshes in background)
-    Log.debug(
-      '📥 Fetching profile for OtherProfileScreen: $userIdHex',
-      name: 'OtherProfileScreen',
-      category: LogCategory.ui,
-    );
-    userProfileService.fetchProfile(userIdHex);
-  }
-
   Future<void> _more() async {
-    final userIdHex = _userIdHex!;
-
     final blocklistService = ref.read(contentBlocklistServiceProvider);
-    final isBlocked = blocklistService.isBlocked(userIdHex);
+    final isBlocked = blocklistService.isBlocked(widget.pubkey);
 
     final followRepository = ref.read(followRepositoryProvider);
     // If NostrClient doesn't have keys yet, treat as not following
-    final isFollowing = followRepository?.isFollowing(userIdHex) ?? false;
+    final isFollowing = followRepository?.isFollowing(widget.pubkey) ?? false;
 
     // Get display name for actions (match pattern from build())
-    final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
+    final profile = ref.read(userProfileReactiveProvider(widget.pubkey)).value;
     final displayName =
         profile?.bestDisplayName ?? widget.displayNameHint ?? 'user';
 
@@ -159,7 +189,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       body: StatefulBuilder(
         builder: (context, setState) {
           return MoreSheetContent(
-            userIdHex: userIdHex,
+            userIdHex: widget.pubkey,
             displayName: displayName,
             isFollowing: isFollowing,
             isBlocked: isBlocked,
@@ -173,35 +203,37 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
 
     switch (result) {
       case MoreSheetResult.copy:
-        final npub = NostrKeyUtils.encodePubKey(userIdHex);
+        final npub = NostrKeyUtils.encodePubKey(widget.pubkey);
         await ClipboardUtils.copyPubkey(context, npub);
       case MoreSheetResult.unfollow:
         await _unfollowUser();
       case MoreSheetResult.blockConfirmed:
         final blocklistService = ref.read(contentBlocklistServiceProvider);
         final nostrClient = ref.read(nostrServiceProvider);
-        blocklistService.blockUser(userIdHex, ourPubkey: nostrClient.publicKey);
+        blocklistService.blockUser(
+          widget.pubkey,
+          ourPubkey: nostrClient.publicKey,
+        );
         ref.read(blocklistVersionProvider.notifier).increment();
         if (mounted) {
           context.pop();
         }
       case MoreSheetResult.unblockConfirmed:
         final blocklistService = ref.read(contentBlocklistServiceProvider);
-        blocklistService.unblockUser(userIdHex);
+        blocklistService.unblockUser(widget.pubkey);
         ref.read(blocklistVersionProvider.notifier).increment();
     }
   }
 
   Future<void> _unfollowUser() async {
-    final userIdHex = _userIdHex!;
-    final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
+    final profile = ref.read(userProfileReactiveProvider(widget.pubkey)).value;
     final displayName =
         profile?.bestDisplayName ?? widget.displayNameHint ?? 'user';
 
     final followRepository = ref.read(followRepositoryProvider);
     // Can't unfollow if NostrClient doesn't have keys yet
     if (followRepository == null) return;
-    await followRepository.toggleFollow(userIdHex);
+    await followRepository.toggleFollow(widget.pubkey);
 
     if (mounted) {
       ScaffoldMessenger.of(
@@ -211,8 +243,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   }
 
   Future<void> _showUnblockConfirmation() async {
-    final userIdHex = _userIdHex!;
-    final profile = ref.read(userProfileReactiveProvider(userIdHex)).value;
+    final profile = ref.read(userProfileReactiveProvider(widget.pubkey)).value;
     final displayName =
         profile?.bestDisplayName ?? widget.displayNameHint ?? 'user';
 
@@ -220,7 +251,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       context: context,
       scrollable: false,
       body: MoreSheetContent(
-        userIdHex: userIdHex,
+        userIdHex: widget.pubkey,
         displayName: displayName,
         isFollowing: false,
         isBlocked: true,
@@ -233,7 +264,7 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
 
     if (result == MoreSheetResult.unblockConfirmed) {
       final blocklistService = ref.read(contentBlocklistServiceProvider);
-      blocklistService.unblockUser(userIdHex);
+      blocklistService.unblockUser(widget.pubkey);
       ref.read(blocklistVersionProvider.notifier).increment();
     }
   }
@@ -241,39 +272,29 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
   @override
   Widget build(BuildContext context) {
     Log.info(
-      '🧭 OtherProfileScreen.build for ${widget.npub}',
-      name: 'OtherProfileScreen',
+      '🧭 OtherProfileView.build for ${widget.pubkey}',
+      name: 'OtherProfileView',
     );
-
-    // Convert npub to hex using getter
-    final userIdHex = _userIdHex;
-
-    if (userIdHex == null) {
-      return _ProfileErrorScreen(
-        message: 'Invalid profile ID',
-        onBack: context.pop,
-      );
-    }
 
     // Watch blocklist version to trigger rebuilds when block/unblock occurs
     ref.watch(blocklistVersionProvider);
 
     // Get video data from profile feed
-    final videosAsync = ref.watch(profileFeedProvider(userIdHex));
+    final videosAsync = ref.watch(profileFeedProvider(widget.pubkey));
 
     // Get profile stats
-    final profileStatsAsync = ref.watch(fetchProfileStatsProvider(userIdHex));
+    final profileStatsAsync = ref.watch(
+      fetchProfileStatsProvider(widget.pubkey),
+    );
 
     // Watch profile reactively to get display name for AppBar
     // Use hint as fallback for users without Kind 0 profiles (e.g., classic Viners)
-    final profileAsync = ref.watch(userProfileReactiveProvider(userIdHex));
+    final profileAsync = ref.watch(userProfileReactiveProvider(widget.pubkey));
     final profile = profileAsync.value;
-    final displayName =
-        profile?.bestDisplayName ?? widget.displayNameHint ?? 'Profile';
-
     // Get profile color for Vine-style colored header
     final profileColor = profile?.profileBackgroundColor;
 
+    // Track analytics when data is loaded
     if (videosAsync is AsyncData && profileAsync is AsyncData) {
       ScreenAnalyticsService().markDataLoaded(
         'other_profile',
@@ -283,71 +304,110 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        toolbarHeight: 72,
-        leadingWidth: 80,
-        centerTitle: false,
-        titleSpacing: 0,
-        backgroundColor: profileColor ?? VineTheme.navGreen,
-        leading: IconButton(
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(),
-          icon: Container(
-            width: 48,
-            height: 48,
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: VineTheme.iconButtonBackground,
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: SvgPicture.asset(
-              'assets/icon/CaretLeft.svg',
-              width: 32,
-              height: 32,
-              colorFilter: const ColorFilter.mode(
-                Colors.white,
-                BlendMode.srcIn,
+    return BlocBuilder<OtherProfileBloc, OtherProfileState>(
+      builder: (context, state) {
+        final profile = switch (state) {
+          OtherProfileInitial() => null,
+          OtherProfileLoading(:final profile) => profile,
+          OtherProfileLoaded(:final profile) => profile,
+          OtherProfileError(:final profile) => profile,
+        };
+
+        final displayName =
+            profile?.bestDisplayName ?? widget.displayNameHint ?? 'Profile';
+
+        return Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            toolbarHeight: 72,
+            leadingWidth: 80,
+            centerTitle: false,
+            titleSpacing: 0,
+            backgroundColor: profileColor ?? VineTheme.navGreen,
+            leading: IconButton(
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+              icon: Container(
+                width: 48,
+                height: 48,
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: VineTheme.iconButtonBackground,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: SvgPicture.asset(
+                  'assets/icon/CaretLeft.svg',
+                  width: 32,
+                  height: 32,
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
+                ),
               ),
+              onPressed: context.pop,
             ),
-          ),
-          onPressed: context.pop,
-        ),
-        title: Text(
-          displayName,
-          style: VineTheme.titleFont(),
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-        ),
-        actions: [
-          // Refresh button
-          IconButton(
-            key: const Key('refresh-icon-button'),
-            tooltip: 'Refresh',
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(),
-            icon: Container(
-              width: 48,
-              height: 48,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: VineTheme.iconButtonBackground,
-                borderRadius: BorderRadius.circular(20),
+            title: Text(
+              displayName,
+              style: VineTheme.titleFont(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            actions: [
+              // Refresh button
+              IconButton(
+                key: const Key('refresh-icon-button'),
+                tooltip: 'Refresh',
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Container(
+                  width: 48,
+                  height: 48,
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: VineTheme.iconButtonBackground,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: _isRefreshing
+                      ? const SizedBox(
+                          width: 28,
+                          height: 28,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : SvgPicture.asset(
+                          'assets/icon/refresh.svg',
+                          width: 28,
+                          height: 28,
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
+                        ),
+                ),
+                onPressed: _isRefreshing ? null : _refreshProfile,
               ),
-              child: _isRefreshing
-                  ? const SizedBox(
-                      width: 28,
-                      height: 28,
-                      child: CircularProgressIndicator(
-                        color: Colors.white,
-                        strokeWidth: 2,
-                      ),
-                    )
-                  : SvgPicture.asset(
-                      'assets/icon/refresh.svg',
+              const SizedBox(width: 8),
+              // More button
+              Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: IconButton(
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                  icon: Container(
+                    width: 48,
+                    height: 48,
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: VineTheme.iconButtonBackground,
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: SvgPicture.asset(
+                      'assets/icon/DotsThree.svg',
                       width: 28,
                       height: 28,
                       colorFilter: const ColorFilter.mode(
@@ -355,55 +415,35 @@ class _OtherProfileScreenState extends ConsumerState<OtherProfileScreen> {
                         BlendMode.srcIn,
                       ),
                     ),
-            ),
-            onPressed: _isRefreshing ? null : _refreshProfile,
-          ),
-          const SizedBox(width: 8),
-          // More button
-          Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: Container(
-                width: 48,
-                height: 48,
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: VineTheme.iconButtonBackground,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: SvgPicture.asset(
-                  'assets/icon/DotsThree.svg',
-                  width: 28,
-                  height: 28,
-                  colorFilter: const ColorFilter.mode(
-                    Colors.white,
-                    BlendMode.srcIn,
                   ),
+                  onPressed: _more,
                 ),
               ),
-              onPressed: _more,
-            ),
+            ],
           ),
-        ],
-      ),
-      body: ProfileGridView(
-        userIdHex: userIdHex,
-        isOwnProfile: false,
-        displayName: displayName,
-        videos: videosAsync.asData?.value.videos ?? [],
-        profileStatsAsync: profileStatsAsync,
-        scrollController: _scrollController,
-        onBlockedTap: _showUnblockConfirmation,
-        displayNameHint: widget.displayNameHint,
-        avatarUrlHint: widget.avatarUrlHint,
-        refreshNotifier: _refreshNotifier,
-        isLoadingVideos: videosAsync is AsyncLoading,
-        videoLoadError: videosAsync is AsyncError
-            ? (videosAsync as AsyncError).error.toString()
-            : null,
-      ),
+          body: switch (videosAsync) {
+            AsyncLoading() => const ProfileLoadingView(),
+            AsyncError(:final error) => Center(
+              child: Text(
+                'Error: $error',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+            AsyncData(:final value) => ProfileGridView(
+              userIdHex: widget.pubkey,
+              isOwnProfile: false,
+              displayName: displayName,
+              videos: value.videos,
+              profileStatsAsync: profileStatsAsync,
+              scrollController: _scrollController,
+              onBlockedTap: _showUnblockConfirmation,
+              displayNameHint: widget.displayNameHint,
+              avatarUrlHint: widget.avatarUrlHint,
+              refreshNotifier: _refreshNotifier,
+            ),
+          },
+        );
+      },
     );
   }
 }

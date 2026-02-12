@@ -1651,6 +1651,7 @@ class AuthService implements BackgroundAwareService {
     required String content,
     List<List<String>>? tags,
     String? biometricPrompt,
+    int? createdAt,
   }) async {
     if (!isAuthenticated || _currentKeyContainer == null) {
       Log.error(
@@ -1682,7 +1683,8 @@ class AuthService implements BackgroundAwareService {
         kind,
         eventTags,
         content,
-        createdAt: NostrTimestamp.now(driftTolerance: driftTolerance),
+        createdAt:
+            createdAt ?? NostrTimestamp.now(driftTolerance: driftTolerance),
       );
 
       // 2. Branch Signing Logic (Local vs RPC)

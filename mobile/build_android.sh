@@ -80,6 +80,14 @@ if [ -f .env ]; then
     if [ -n "$DEFAULT_ENV" ]; then
         DART_DEFINES="$DART_DEFINES --dart-define=DEFAULT_ENV=$DEFAULT_ENV"
     fi
+
+    if [ -n "$PROOFMODE_SIGNING_SERVER_ENDPOINT" ]; then
+        DART_DEFINES="$DART_DEFINES --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT"
+    fi 
+
+    if [ -n "$PROOFMODE_SIGNING_SERVER_TOKEN" ]; then
+        DART_DEFINES="$DART_DEFINES --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN"
+    fi 
 fi
 
 # For release builds, ALWAYS increment build number (required by Play Store)

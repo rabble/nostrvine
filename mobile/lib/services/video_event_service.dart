@@ -23,26 +23,26 @@ import 'dart:async';
 
 import 'package:flutter/widgets.dart';
 import 'package:likes_repository/likes_repository.dart';
+import 'package:models/models.dart'
+    hide LogCategory, NIP71VideoKinds, UserProfile;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/models/user_profile.dart';
-import 'package:models/models.dart'
-    hide LogCategory, NIP71VideoKinds, UserProfile;
 import 'package:openvine/services/age_verification_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/event_router.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
+import 'package:openvine/services/repost_resolver.dart';
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/utils/log_batcher.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/services/repost_resolver.dart';
 
 /// Pagination state for tracking cursor position and loading status per subscription
 class PaginationState {
@@ -1076,29 +1076,6 @@ class VideoEventService extends ChangeNotifier {
             relayUrl: relayUrl,
             sortBy: sortBy,
           );
-          Log.info(
-            '🎯 SORT DEBUG: Requested server-side sorting by ${sortBy.fieldName}',
-            name: 'VideoEventService',
-            category: LogCategory.video,
-          );
-          Log.info(
-            '🎯 SORT DEBUG: Filter type is ${videoFilter.runtimeType}',
-            name: 'VideoEventService',
-            category: LogCategory.video,
-          );
-          final filterJson = videoFilter.toJson();
-          Log.info(
-            '🎯 SORT DEBUG: Filter JSON contains "sort" key: ${filterJson.containsKey("sort")}',
-            name: 'VideoEventService',
-            category: LogCategory.video,
-          );
-          if (filterJson.containsKey("sort")) {
-            Log.info(
-              '🎯 SORT DEBUG: Sort config: ${filterJson["sort"]}',
-              name: 'VideoEventService',
-              category: LogCategory.video,
-            );
-          }
         } catch (e) {
           Log.warning(
             'Failed to build sorted filter: $e. Using standard filter.',
@@ -1929,15 +1906,6 @@ class VideoEventService extends ChangeNotifier {
         );
         try {
           final videoEvent = VideoEvent.fromNostrEvent(event);
-
-          // 🎯 SORT DEBUG: Log loop count for discovery subscriptions
-          if (subscriptionType == SubscriptionType.discovery) {
-            Log.info(
-              '🎯 SORT DEBUG: Received discovery video with ${videoEvent.originalLoops ?? 0} loops (id: ${event.id})',
-              name: 'VideoEventService',
-              category: LogCategory.video,
-            );
-          }
 
           Log.verbose(
             'Parsed direct video: hasVideo=${videoEvent.hasVideo}, videoUrl=${videoEvent.videoUrl}',
@@ -3660,6 +3628,21 @@ class VideoEventService extends ChangeNotifier {
     return null;
   }
 
+  /// Preserve original timestamp when updating video events
+  /// This maintains the original creation time for older events that may not have 'published_at'
+  VideoEvent _preserveOriginalTimestamp(
+    VideoEvent existingVideo,
+    VideoEvent updatedVideo,
+  ) {
+    return (existingVideo.publishedAt == null &&
+            updatedVideo.publishedAt == null)
+        ? updatedVideo.copyWith(
+            createdAt: existingVideo.createdAt,
+            timestamp: existingVideo.timestamp,
+          )
+        : updatedVideo;
+  }
+
   /// Check if an error is connection-related
   bool _isConnectionError(dynamic error) {
     final errorString = error.toString().toLowerCase();
@@ -4830,25 +4813,36 @@ class VideoEventService extends ChangeNotifier {
       final subscriptionType = entry.key;
       final eventList = entry.value;
 
-      // Find by d-tag (vineId) and pubkey instead of event.id
-      // For addressable events, (pubkey, d-tag) is the stable identifier
+      // Find by stable identifier and pubkey instead of event.id.
+      // For addressable events, (pubkey, d-tag) is the stable identifier.
+      // Note: Some relays/clients may omit the 'd' tag, in which case we fall
+      // back to event.id; using stableId avoids mismatches that cause duplicates.
       final existingIndex = eventList.indexWhere(
         (existing) =>
-            existing.vineId == updatedVideo.vineId &&
+            existing.stableId == updatedVideo.stableId &&
             existing.pubkey == updatedVideo.pubkey,
       );
 
       if (existingIndex != -1) {
-        eventList[existingIndex] = updatedVideo;
+        final existingVideo = eventList[existingIndex];
+
+        // Preserve original post time when editing metadata.
+        // This is important for older events that may not have 'published_at'.
+        final mergedVideo = _preserveOriginalTimestamp(
+          existingVideo,
+          updatedVideo,
+        );
+
+        eventList[existingIndex] = mergedVideo;
         foundAny = true;
 
         // Update replaceable tracking map
         // Use NIP71VideoKinds.addressableShortVideo since that's what diVine uses
         final replaceKey =
-            '$subscriptionType:${NIP71VideoKinds.addressableShortVideo}:${updatedVideo.pubkey}:${updatedVideo.vineId}';
+            '$subscriptionType:${NIP71VideoKinds.addressableShortVideo}:${mergedVideo.pubkey}:${mergedVideo.stableId}';
         _replaceableVideoEvents[replaceKey] = (
-          updatedVideo,
-          updatedVideo.createdAt,
+          mergedVideo,
+          mergedVideo.createdAt,
         );
       }
     }
@@ -4858,11 +4852,16 @@ class VideoEventService extends ChangeNotifier {
     if (authorBucket != null) {
       final bucketIndex = authorBucket.indexWhere(
         (existing) =>
-            existing.vineId == updatedVideo.vineId &&
+            existing.stableId == updatedVideo.stableId &&
             existing.pubkey == updatedVideo.pubkey,
       );
       if (bucketIndex != -1) {
-        authorBucket[bucketIndex] = updatedVideo;
+        final existingVideo = authorBucket[bucketIndex];
+        final mergedVideo = _preserveOriginalTimestamp(
+          existingVideo,
+          updatedVideo,
+        );
+        authorBucket[bucketIndex] = mergedVideo;
         foundAny = true;
       }
     }

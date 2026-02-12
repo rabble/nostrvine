@@ -93,58 +93,69 @@ void main() {
       Map<String, dynamic> content,
     ) async {
       when(() => mockProfileEvent.content).thenReturn(jsonEncode(content));
-      return (await profileRepository.getProfile(pubkey: testPubkey))!;
+      return (await profileRepository.fetchFreshProfile(pubkey: testPubkey))!;
     }
 
-    group('getProfile', () {
-      test('returns and caches UserProfile on cache miss and when fetchProfile '
-          'returns an event', () async {
-        final result = await profileRepository.getProfile(pubkey: testPubkey);
-
-        expect(result, isNotNull);
-        expect(result!.pubkey, equals(testPubkey));
-        expect(result.displayName, equals('Test User'));
-        expect(result.about, equals('A test bio'));
-
-        verify(() => mockUserProfilesDao.getProfile(any())).called(1);
-        verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
-        verify(() => mockUserProfilesDao.upsertProfile(result)).called(1);
-      });
-
-      test('returns cached profile on cache hit', () async {
+    group('getCachedProfile', () {
+      test('returns cached profile when it exists', () async {
         final profile = UserProfile.fromNostrEvent(mockProfileEvent);
         when(
           () => mockUserProfilesDao.getProfile(any()),
         ).thenAnswer((_) async => profile);
 
-        final result = await profileRepository.getProfile(pubkey: testPubkey);
+        final result = await profileRepository.getCachedProfile(
+          pubkey: testPubkey,
+        );
+
+        expect(result, isNotNull);
+        expect(result!.pubkey, equals(testPubkey));
+        expect(result.displayName, equals('Test User'));
+
+        verify(() => mockUserProfilesDao.getProfile(any())).called(1);
+        verifyNever(() => mockNostrClient.fetchProfile(any()));
+      });
+
+      test('returns null when no cached profile exists', () async {
+        final result = await profileRepository.getCachedProfile(
+          pubkey: testPubkey,
+        );
+
+        expect(result, isNull);
+
+        verify(() => mockUserProfilesDao.getProfile(any())).called(1);
+        verifyNever(() => mockNostrClient.fetchProfile(any()));
+      });
+    });
+
+    group('fetchFreshProfile', () {
+      test('fetches from relay and caches profile', () async {
+        final result = await profileRepository.fetchFreshProfile(
+          pubkey: testPubkey,
+        );
 
         expect(result, isNotNull);
         expect(result!.pubkey, equals(testPubkey));
         expect(result.displayName, equals('Test User'));
         expect(result.about, equals('A test bio'));
 
-        verify(() => mockUserProfilesDao.getProfile(any())).called(1);
-        verifyNever(() => mockNostrClient.fetchProfile(any()));
-        verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
+        verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+        verify(() => mockUserProfilesDao.upsertProfile(result)).called(1);
       });
 
-      test(
-        'returns null on cache miss and when fetchProfile returns null',
-        () async {
-          when(
-            () => mockNostrClient.fetchProfile(testPubkey),
-          ).thenAnswer((_) async => null);
+      test('returns null when relay returns no profile', () async {
+        when(
+          () => mockNostrClient.fetchProfile(testPubkey),
+        ).thenAnswer((_) async => null);
 
-          final result = await profileRepository.getProfile(pubkey: testPubkey);
+        final result = await profileRepository.fetchFreshProfile(
+          pubkey: testPubkey,
+        );
 
-          expect(result, isNull);
+        expect(result, isNull);
 
-          verify(() => mockUserProfilesDao.getProfile(any())).called(1);
-          verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
-          verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
-        },
-      );
+        verify(() => mockNostrClient.fetchProfile(testPubkey)).called(1);
+        verifyNever(() => mockUserProfilesDao.upsertProfile(any()));
+      });
     });
 
     group('saveProfileEvent', () {
