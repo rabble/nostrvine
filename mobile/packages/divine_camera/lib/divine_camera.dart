@@ -43,6 +43,14 @@ class DivineCamera {
   /// Gets the current camera state.
   CameraState get state => _state;
 
+  /// Whether the front camera video output should be mirrored.
+  /// When `true`, recorded video appears as mirror image (like preview).
+  /// When `false`, recorded video shows real-world orientation.
+  bool _mirrorFrontCameraOutput = false;
+
+  /// Gets whether the front camera video output is mirrored.
+  bool get mirrorFrontCameraOutput => _mirrorFrontCameraOutput;
+
   /// The platform interface instance.
   DivineCameraPlatform get _platform => DivineCameraPlatform.instance;
 
@@ -80,6 +88,9 @@ class DivineCamera {
   }) async {
     // Register auto-stop callback with platform
     _platform.onRecordingAutoStopped = _handleAutoStop;
+
+    // Store the mirror setting for preview widget
+    _mirrorFrontCameraOutput = mirrorFrontCameraOutput;
 
     _state = await _platform.initializeCamera(
       lens: lens,

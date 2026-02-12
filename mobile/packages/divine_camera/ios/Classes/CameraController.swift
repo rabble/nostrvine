@@ -219,9 +219,12 @@ class CameraController: NSObject {
                 if connection.isVideoOrientationSupported {
                     connection.videoOrientation = .portrait
                 }
-                // Mirror front camera preview
-                if connection.isVideoMirroringSupported && currentLens == .front {
-                    connection.isVideoMirrored = true
+                // Mirror pixels only for front camera when mirrorFrontCameraOutput is enabled
+                // When mirrored here, Flutter doesn't need to apply preview transform
+                // When NOT mirrored here, Flutter applies visual transform for selfie preview
+                if connection.isVideoMirroringSupported {
+                    let isFront = currentLens == .front
+                    connection.isVideoMirrored = isFront && mirrorFrontCameraOutput
                 }
             }
         } else {
@@ -375,13 +378,15 @@ class CameraController: NSObject {
                     self.currentLens = newPosition
                     self.updateCameraProperties(device: newDevice)
                     
-                    // Update orientation and mirroring for front camera
+                    // Update orientation and mirroring based on settings
                     if let videoConnection = self.videoOutput?.connection(with: .video) {
                         if videoConnection.isVideoOrientationSupported {
                             videoConnection.videoOrientation = .portrait
                         }
+                        // Mirror pixels for front camera when mirrorFrontCameraOutput is enabled
+                        let isFront = newPosition == .front
                         if videoConnection.isVideoMirroringSupported {
-                            videoConnection.isVideoMirrored = newPosition == .front
+                            videoConnection.isVideoMirrored = isFront && self.mirrorFrontCameraOutput
                         }
                     }
                 }
@@ -716,16 +721,6 @@ class CameraController: NSObject {
                 
                 let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
                 videoInput.expectsMediaDataInRealTime = true
-                
-                // For front camera: Apply horizontal flip transform based on mirrorFrontCameraOutput setting
-                // When mirrorFrontCameraOutput is false, we flip the video to un-mirror it
-                // (since preview is always mirrored for selfie mode)
-                if self.currentLens == .front && !self.mirrorFrontCameraOutput {
-                    // Horizontal flip: scale x by -1 and translate to keep frame in bounds
-                    var transform = CGAffineTransform(scaleX: -1, y: 1)
-                    transform = transform.translatedBy(x: CGFloat(-videoWidth), y: 0)
-                    videoInput.transform = transform
-                }
                 
                 // Create pixel buffer adaptor - use the actual frame dimensions (before portrait rotation)
                 let sourcePixelBufferAttributes: [String: Any] = [
