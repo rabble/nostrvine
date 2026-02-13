@@ -92,7 +92,14 @@ class GallerySaveService {
       }
 
       // Save the video to the gallery
-      await Gal.putVideo(filePath, album: albumName);
+      // On iOS, don't use album parameter - it requires full photo library access
+      // With album, iOS shows a second permission dialog for full access
+      // Without album, it only needs photosAddOnly permission
+      if (Platform.isIOS) {
+        await Gal.putVideo(filePath);
+      } else {
+        await Gal.putVideo(filePath, album: albumName);
+      }
 
       Log.info(
         'Video saved to camera roll successfully',

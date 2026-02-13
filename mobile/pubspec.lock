@@ -241,15 +241,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.12.1"
-  c2pa_flutter:
-    dependency: "direct main"
-    description:
-      path: "."
-      ref: main
-      resolved-ref: "36d5d99b981eae3a28ec341ed14b3682857eeb18"
-      url: "https://github.com/guardianproject/c2pa-flutter.git"
-    source: git
-    version: "0.0.1"
   cached_network_image:
     dependency: "direct main"
     description:
@@ -1668,18 +1659,18 @@ packages:
     dependency: "direct main"
     description:
       name: pro_image_editor
-      sha256: d0cc9516c52e775de4b02ece96f69dd9c5eebf1f9c3060ecec9a58042038f786
+      sha256: a44e4a25a8baea9f1852938f19ea6fa60cb3d74aeb7ad6ec0ac7786b57f3eedf
       url: "https://pub.dev"
     source: hosted
-    version: "11.23.0"
+    version: "12.0.0"
   pro_video_editor:
     dependency: "direct main"
     description:
       name: pro_video_editor
-      sha256: d14cad85b5490e4cbe2aaedcf5fd6e3e5bdc4de82a6fe829b6b900a7f3d98008
+      sha256: c88b33c445569e544bf6b4d53392f8d66563394d56b1eb5c8a0dc9553843bf4c
       url: "https://pub.dev"
     source: hosted
-    version: "1.5.2"
+    version: "1.6.0"
   process:
     dependency: transitive
     description:
@@ -2550,5 +2541,5 @@ packages:
     source: hosted
     version: "2.1.0"
 sdks:
-  dart: ">=3.10.1 <4.0.0"
+  dart: ">=3.10.0 <4.0.0"
   flutter: ">=3.38.3 <4.0.0"
