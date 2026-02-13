@@ -1,18 +1,23 @@
 // ABOUTME: Classics tab widget showing pre-2017 Vine archive videos
 // ABOUTME: Uses REST API when available, falls back to Nostr videos with embedded loop stats
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_staggered_grid_view/flutter_staggered_grid_view.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/classic_viners_slider.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Tab widget displaying Classics archive videos (pre-2017).
 ///
@@ -21,10 +26,7 @@ import 'package:openvine/widgets/video_thumbnail_widget.dart';
 /// - Loading/error/data states
 /// - Empty state when REST API unavailable
 class ClassicVinesTab extends ConsumerStatefulWidget {
-  const ClassicVinesTab({super.key, required this.onVideoTap});
-
-  /// Callback when a video is tapped to enter feed mode
-  final void Function(List<VideoEvent> videos, int index) onVideoTap;
+  const ClassicVinesTab({super.key});
 
   @override
   ConsumerState<ClassicVinesTab> createState() => _ClassicVinesTabState();
@@ -77,7 +79,6 @@ class _ClassicVinesTabState extends ConsumerState<ClassicVinesTab> {
 
     return _ClassicVinesContent(
       videos: videos,
-      onVideoTap: widget.onVideoTap,
       isLoadingMore: feedState.isLoadingMore,
       hasMoreContent: feedState.hasMoreContent,
     );
@@ -92,13 +93,11 @@ class _ClassicVinesTabState extends ConsumerState<ClassicVinesTab> {
 class _ClassicVinesContent extends ConsumerStatefulWidget {
   const _ClassicVinesContent({
     required this.videos,
-    required this.onVideoTap,
     this.isLoadingMore = false,
     this.hasMoreContent = false,
   });
 
   final List<VideoEvent> videos;
-  final void Function(List<VideoEvent> videos, int index) onVideoTap;
   final bool isLoadingMore;
   final bool hasMoreContent;
 
@@ -109,18 +108,21 @@ class _ClassicVinesContent extends ConsumerStatefulWidget {
 
 class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent> {
   final ScrollController _scrollController = ScrollController();
+  late final StreamController<List<VideoEvent>> _videosStreamController;
   bool _isLoadingTriggered = false;
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
   }
 
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _videosStreamController.close();
     super.dispose();
   }
 
@@ -159,6 +161,13 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent> {
 
   @override
   Widget build(BuildContext context) {
+    // Listen to provider changes and push to stream for fullscreen updates
+    ref.listen(classicVinesFeedProvider, (previous, next) {
+      if (next.hasValue && next.value != null) {
+        _videosStreamController.add(next.value!.videos);
+      }
+    });
+
     return RefreshIndicator(
       color: VineTheme.onPrimary,
       backgroundColor: VineTheme.vineGreen,
@@ -179,7 +188,25 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent> {
           // Video grid below
           _ClassicVideosSliverGrid(
             videos: widget.videos,
-            onVideoTap: widget.onVideoTap,
+            onVideoTap: (videos, index) {
+              Log.info(
+                '🎯 ClassicVinesTab TAP: gridIndex=$index, '
+                'videoId=${videos[index].id}',
+                category: LogCategory.video,
+              );
+              context.push(
+                PooledFullscreenVideoFeedScreen.path,
+                extra: PooledFullscreenVideoFeedArgs(
+                  videosStream: _videosStreamController.stream.startWith(
+                    videos,
+                  ),
+                  initialIndex: index,
+                  onLoadMore: () =>
+                      ref.read(classicVinesFeedProvider.notifier).loadMore(),
+                  contextTitle: 'Classics',
+                ),
+              );
+            },
           ),
           // Loading indicator at bottom
           if (widget.isLoadingMore || widget.hasMoreContent)

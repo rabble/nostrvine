@@ -1,23 +1,21 @@
 appId: co.openvine.app
 ---
 #TC to search for a user,
-# given the user is logged in in the app,
+# given the user is logged in in the app, in the Explore/New screen
 # input video description and validate its playback
 #Steps:
 # 1. Tap on Search: Validate search screen
 # 2. Input text SEARCH_USER: Validate user is found
 # 3. Tap on the Users tab: Validate user is listed
 # 4. Tap on the user listed: validate user profile is displayed
+# 5. Tap on back: Validate user is on the search screen
 
 # 1. Tap on Search: Validate search screen
 - tapOn: Search
 - runFlow: ../asserts/assertSearch.yaml
 
-# 2. Input text "lele": Validate user is found
+# 2. Input text "SEARCH_USER": Validate user is found
 - tapOn: Find something cool...
-- inputText: ${SEARCH_USER}
-- runFlow: ../utils/searchWorkaround.yaml
-- eraseText
 - inputText: ${SEARCH_USER}
 #Assert Users result
 - assertVisible: |-
@@ -29,16 +27,14 @@ appId: co.openvine.app
     Users \((?!0)\d+\)
     Tab 2 of 3
 - assertVisible:
-    text: ${SEARCH_USER_DESCRIPTION}
+    text: ${SEARCH_USER}
 
 # 4. Tap on the user listed: validate user profile is displayed
 - tapOn:
-    point: 4%,28%
-#TO-DO: once id is added to the profile button tap it and validate we are on the user profile
-- tapOn:
-    id: ${SEARCH_USER_ID}
-- runFlow:
-    file: ../asserts/assertUserProfile.yaml
-    env:
-      USER_NAME: ${SEARCH_USER}
-      USER_BIO: ${SEARCH_USER_BIO}
+    point: 50%,28%
+- runFlow: ../asserts/assertUserProfile.yaml
+- runFlow: ../asserts/assertSpecificUserProfile.yaml
+- tapOn: Back
+- assertVisible:
+    text: ${SEARCH_USER}
+- assertVisible: Search

@@ -1,0 +1,6 @@
+appId: co.openvine.app
+---
+- launchApp:
+    clearState: true
+- assertVisible: Options
+- assertVisible: Delete comment

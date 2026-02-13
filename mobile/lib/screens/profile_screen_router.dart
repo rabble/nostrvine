@@ -27,7 +27,7 @@ import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
-import 'package:openvine/widgets/profile/profile_grid_view.dart';
+import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
 import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
 import 'package:openvine/widgets/vine_bottom_nav.dart';
@@ -733,7 +733,7 @@ class ProfileViewSwitcher extends StatelessWidget {
           )
         :
           // Otherwise show Instagram-style grid view
-          ProfileGridView(
+          ProfileGrid(
             userIdHex: userIdHex,
             isOwnProfile: isOwnProfile,
             displayName: displayName,

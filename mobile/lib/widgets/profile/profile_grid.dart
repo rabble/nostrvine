@@ -1,5 +1,6 @@
-// ABOUTME: Profile grid view with header, stats, action buttons, and tabbed content
-// ABOUTME: Reusable between own profile and others' profile screens
+// ABOUTME: Profile grid with BLoC injection and view with header, stats,
+// ABOUTME: action buttons, and tabbed content.
+// ABOUTME: Reusable between own profile and others' profile screens.
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -19,8 +20,158 @@ import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 import 'package:openvine/widgets/profile/profile_reposts_grid.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
 
+/// Identifies each tab in the profile grid.
+enum ProfileTab {
+  /// The videos tab.
+  videos,
+
+  /// The liked videos tab.
+  liked,
+
+  /// The reposted videos tab.
+  reposts,
+}
+
+/// Profile grid that provides all required BLoCs via [BlocProvider].
+///
+/// This is the entry point for the profile grid. It creates and provides
+/// [ProfileLikedVideosBloc], [ProfileRepostedVideosBloc], and conditionally
+/// [OthersFollowersBloc] (for non-own profiles).
+class ProfileGrid extends ConsumerWidget {
+  const ProfileGrid({
+    required this.userIdHex,
+    required this.isOwnProfile,
+    required this.videos,
+    required this.profileStatsAsync,
+    this.displayName,
+    this.onSetupProfile,
+    this.onEditProfile,
+    this.onOpenClips,
+    this.onBlockedTap,
+    this.scrollController,
+    this.displayNameHint,
+    this.avatarUrlHint,
+    this.refreshNotifier,
+    this.isLoadingVideos = false,
+    this.videoLoadError,
+    super.key,
+  });
+
+  /// The hex public key of the profile being displayed.
+  final String userIdHex;
+
+  /// Whether this is the current user's own profile.
+  final bool isOwnProfile;
+
+  /// Display name for unfollow confirmation (only used for other profiles).
+  final String? displayName;
+
+  /// List of videos to display in the videos tab.
+  final List<VideoEvent> videos;
+
+  /// Async value containing profile stats.
+  final AsyncValue<ProfileStats> profileStatsAsync;
+
+  /// Callback when "Set Up" button is tapped (own profile only).
+  final VoidCallback? onSetupProfile;
+
+  /// Callback when "Edit Profile" is tapped (own profile only).
+  final VoidCallback? onEditProfile;
+
+  /// Callback when "Clips" button is tapped (own profile only).
+  final VoidCallback? onOpenClips;
+
+  /// Callback when the Blocked button is tapped (other profiles only).
+  final VoidCallback? onBlockedTap;
+
+  /// Optional scroll controller for the NestedScrollView.
+  final ScrollController? scrollController;
+
+  /// Optional display name hint for users without Kind 0 profiles
+  /// (e.g., classic Viners).
+  final String? displayNameHint;
+
+  /// Optional avatar URL hint for users without Kind 0 profiles.
+  final String? avatarUrlHint;
+
+  /// Notifier that triggers BLoC refresh when its value changes.
+  /// Parent should call `notifier.value++` to trigger refresh.
+  final ValueNotifier<int>? refreshNotifier;
+
+  /// Whether videos are currently being loaded.
+  /// When true and [videos] is empty, shows a loading indicator
+  /// in the videos tab instead of the empty state.
+  final bool isLoadingVideos;
+
+  /// Error message if video loading failed, shown in the videos tab.
+  final String? videoLoadError;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final nostrService = ref.watch(nostrServiceProvider);
+    final likesRepository = ref.watch(likesRepositoryProvider);
+    final followRepository = ref.watch(followRepositoryProvider);
+    final videosRepository = ref.watch(videosRepositoryProvider);
+    final repostsRepository = ref.watch(repostsRepositoryProvider);
+    final currentUserPubkey = nostrService.publicKey;
+
+    // Show loading state until NostrClient has keys
+    if (followRepository == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return MultiBlocProvider(
+      key: ValueKey(userIdHex),
+      providers: [
+        BlocProvider(
+          create: (_) => ProfileLikedVideosBloc(
+            likesRepository: likesRepository,
+            videosRepository: videosRepository,
+            currentUserPubkey: currentUserPubkey,
+            targetUserPubkey: userIdHex,
+          )..add(const ProfileLikedVideosSubscriptionRequested()),
+        ),
+        BlocProvider(
+          create: (_) => ProfileRepostedVideosBloc(
+            repostsRepository: repostsRepository,
+            videosRepository: videosRepository,
+            currentUserPubkey: currentUserPubkey,
+            targetUserPubkey: userIdHex,
+          )..add(const ProfileRepostedVideosSubscriptionRequested()),
+        ),
+        if (!isOwnProfile)
+          BlocProvider(
+            create: (_) =>
+                OthersFollowersBloc(followRepository: followRepository)
+                  ..add(OthersFollowersListLoadRequested(userIdHex)),
+          ),
+      ],
+      child: ProfileGridView(
+        userIdHex: userIdHex,
+        isOwnProfile: isOwnProfile,
+        videos: videos,
+        profileStatsAsync: profileStatsAsync,
+        displayName: displayName,
+        onSetupProfile: onSetupProfile,
+        onEditProfile: onEditProfile,
+        onOpenClips: onOpenClips,
+        onBlockedTap: onBlockedTap,
+        scrollController: scrollController,
+        displayNameHint: displayNameHint,
+        avatarUrlHint: avatarUrlHint,
+        refreshNotifier: refreshNotifier,
+        isLoadingVideos: isLoadingVideos,
+        videoLoadError: videoLoadError,
+      ),
+    );
+  }
+}
+
 /// Profile grid view showing header, stats, action buttons, and tabbed content.
-class ProfileGridView extends ConsumerStatefulWidget {
+///
+/// Must be wrapped by [ProfileGrid] which provides the required BLoCs.
+class ProfileGridView extends StatefulWidget {
+  @visibleForTesting
   const ProfileGridView({
     required this.userIdHex,
     required this.isOwnProfile,
@@ -70,7 +221,8 @@ class ProfileGridView extends ConsumerStatefulWidget {
   /// Optional scroll controller for the NestedScrollView.
   final ScrollController? scrollController;
 
-  /// Optional display name hint for users without Kind 0 profiles (e.g., classic Viners).
+  /// Optional display name hint for users without Kind 0 profiles
+  /// (e.g., classic Viners).
   final String? displayNameHint;
 
   /// Optional avatar URL hint for users without Kind 0 profiles.
@@ -89,30 +241,54 @@ class ProfileGridView extends ConsumerStatefulWidget {
   final String? videoLoadError;
 
   @override
-  ConsumerState<ProfileGridView> createState() => _ProfileGridViewState();
+  State<ProfileGridView> createState() => _ProfileGridViewState();
 }
 
-class _ProfileGridViewState extends ConsumerState<ProfileGridView>
+class _ProfileGridViewState extends State<ProfileGridView>
     with TickerProviderStateMixin {
-  late TabController _tabController;
+  /// Cache for preserving tab selection across widget rebuilds.
+  /// Keyed by userIdHex so each profile remembers its own tab.
+  static final Map<String, ProfileTab> tabIndexCache = {};
 
-  /// Direct references to BLoCs for refresh capability.
-  ProfileLikedVideosBloc? _likedVideosBloc;
-  ProfileRepostedVideosBloc? _repostedVideosBloc;
-
-  /// Track the userIdHex the BLoCs were created for.
-  String? _blocsUserIdHex;
+  late TabController tabController;
 
   /// Track which tabs have been synced (lazy loading).
-  bool _likedTabSynced = false;
-  bool _repostsTabSynced = false;
+  bool likedTabSynced = false;
+  bool repostsTabSynced = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
-    _tabController.addListener(_onTabChanged);
+    final cachedTab =
+        tabIndexCache[widget.userIdHex] ?? ProfileTab.values.first;
+    tabController = TabController(
+      vsync: this,
+      length: ProfileTab.values.length,
+      initialIndex: cachedTab.index,
+    );
+    tabController.addListener(_onTabChanged);
     widget.refreshNotifier?.addListener(_onRefreshRequested);
+
+    // If restored to a non-default tab, trigger sync immediately
+    // since _onTabChanged won't fire for the initial index.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+
+      if (tabController.index == ProfileTab.liked.index && !likedTabSynced) {
+        likedTabSynced = true;
+        return context.read<ProfileLikedVideosBloc>().add(
+          const ProfileLikedVideosSyncRequested(),
+        );
+      }
+
+      if (tabController.index == ProfileTab.reposts.index &&
+          !repostsTabSynced) {
+        repostsTabSynced = true;
+        return context.read<ProfileRepostedVideosBloc>().add(
+          const ProfileRepostedVideosSyncRequested(),
+        );
+      }
+    });
   }
 
   @override
@@ -125,117 +301,70 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   }
 
   void _onTabChanged() {
+    // Persist tab selection for navigation restoration
+    tabIndexCache[widget.userIdHex] = ProfileTab.values[tabController.index];
+
     // Trigger rebuild to update SVG icon colors
     if (mounted) setState(() {});
 
     // Lazy load: Trigger sync only when user first views the tab
-    if (_tabController.index == 1 &&
-        !_likedTabSynced &&
-        _likedVideosBloc != null) {
-      _likedTabSynced = true;
-      _likedVideosBloc!.add(const ProfileLikedVideosSyncRequested());
-    } else if (_tabController.index == 2 &&
-        !_repostsTabSynced &&
-        _repostedVideosBloc != null) {
-      _repostsTabSynced = true;
-      _repostedVideosBloc!.add(const ProfileRepostedVideosSyncRequested());
+    if (tabController.index == ProfileTab.liked.index && !likedTabSynced) {
+      likedTabSynced = true;
+      return context.read<ProfileLikedVideosBloc>().add(
+        const ProfileLikedVideosSyncRequested(),
+      );
+    }
+
+    if (tabController.index == ProfileTab.reposts.index && !repostsTabSynced) {
+      repostsTabSynced = true;
+      return context.read<ProfileRepostedVideosBloc>().add(
+        const ProfileRepostedVideosSyncRequested(),
+      );
     }
   }
 
   void _onRefreshRequested() {
     // Dispatch sync events to BLoCs to refresh likes/reposts
     // Only sync tabs that have been viewed (lazy load still applies)
-    if (_likedTabSynced) {
-      _likedVideosBloc?.add(const ProfileLikedVideosSyncRequested());
+    if (likedTabSynced) {
+      return context.read<ProfileLikedVideosBloc>().add(
+        const ProfileLikedVideosSyncRequested(),
+      );
     }
-    if (_repostsTabSynced) {
-      _repostedVideosBloc?.add(const ProfileRepostedVideosSyncRequested());
+
+    if (repostsTabSynced) {
+      return context.read<ProfileRepostedVideosBloc>().add(
+        const ProfileRepostedVideosSyncRequested(),
+      );
     }
   }
 
   @override
   void dispose() {
     widget.refreshNotifier?.removeListener(_onRefreshRequested);
-    _tabController.removeListener(_onTabChanged);
-    _tabController.dispose();
-    // Close the BLoCs we created
-    _likedVideosBloc?.close();
-    _repostedVideosBloc?.close();
+    tabController.removeListener(_onTabChanged);
+    tabController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final followRepository = ref.watch(followRepositoryProvider);
-    final likesRepository = ref.watch(likesRepositoryProvider);
-    final repostsRepository = ref.watch(repostsRepositoryProvider);
-    final videosRepository = ref.watch(videosRepositoryProvider);
-    final nostrService = ref.watch(nostrServiceProvider);
-    final currentUserPubkey = nostrService.publicKey;
-
-    // Show loading state until NostrClient has keys
-    if (followRepository == null) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    // Create BLoCs if not already created, or recreate if userIdHex changed
-    // Store references for refresh capability
-    if (_blocsUserIdHex != widget.userIdHex) {
-      _likedVideosBloc?.close();
-      _repostedVideosBloc?.close();
-
-      // Reset lazy load flags when switching profiles
-      _likedTabSynced = false;
-      _repostsTabSynced = false;
-
-      // Create BLoCs but DON'T sync yet - lazy load when tab is viewed
-      // VideosRepository handles cache-first lookups via SQLite localStorage
-      _likedVideosBloc = ProfileLikedVideosBloc(
-        likesRepository: likesRepository,
-        videosRepository: videosRepository,
-        currentUserPubkey: currentUserPubkey,
-        targetUserPubkey: widget.userIdHex,
-      )..add(const ProfileLikedVideosSubscriptionRequested());
-      // Sync deferred until user views Liked tab
-
-      _repostedVideosBloc = ProfileRepostedVideosBloc(
-        repostsRepository: repostsRepository,
-        videosRepository: videosRepository,
-        currentUserPubkey: currentUserPubkey,
-        targetUserPubkey: widget.userIdHex,
-      )..add(const ProfileRepostedVideosSubscriptionRequested());
-      // Sync deferred until user views Reposts tab
-
-      _blocsUserIdHex = widget.userIdHex;
-    }
-
-    // Build the base widget with ProfileLikedVideosBloc and
-    // ProfileRepostedVideosBloc using .value() to provide our managed instances
-    final tabContent = MultiBlocProvider(
-      providers: [
-        BlocProvider<ProfileLikedVideosBloc>.value(value: _likedVideosBloc!),
-        BlocProvider<ProfileRepostedVideosBloc>.value(
-          value: _repostedVideosBloc!,
+    final tabContent = TabBarView(
+      controller: tabController,
+      children: [
+        ProfileVideosGrid(
+          videos: widget.videos,
+          userIdHex: widget.userIdHex,
+          isLoading: widget.isLoadingVideos,
+          errorMessage: widget.videoLoadError,
         ),
+        ProfileLikedGrid(isOwnProfile: widget.isOwnProfile),
+        ProfileRepostsGrid(isOwnProfile: widget.isOwnProfile),
       ],
-      child: TabBarView(
-        controller: _tabController,
-        children: [
-          ProfileVideosGrid(
-            videos: widget.videos,
-            userIdHex: widget.userIdHex,
-            isLoading: widget.isLoadingVideos,
-            errorMessage: widget.videoLoadError,
-          ),
-          ProfileLikedGrid(isOwnProfile: widget.isOwnProfile),
-          ProfileRepostsGrid(isOwnProfile: widget.isOwnProfile),
-        ],
-      ),
     );
 
-    // Build the main content
-    Widget content = DefaultTabController(
-      length: 3,
+    final content = DefaultTabController(
+      length: ProfileTab.values.length,
       child: NestedScrollView(
         controller: widget.scrollController,
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
@@ -281,7 +410,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
             pinned: true,
             delegate: _SliverAppBarDelegate(
               TabBar(
-                controller: _tabController,
+                controller: tabController,
                 indicatorColor: VineTheme.tabIndicatorGreen,
                 indicatorWeight: 4,
                 indicatorSize: TabBarIndicatorSize.tab,
@@ -295,7 +424,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(
-                          _tabController.index == 0
+                          tabController.index == ProfileTab.videos.index
                               ? VineTheme.whiteText
                               : VineTheme.onSurfaceMuted,
                           BlendMode.srcIn,
@@ -311,7 +440,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(
-                          _tabController.index == 1
+                          tabController.index == ProfileTab.liked.index
                               ? VineTheme.whiteText
                               : VineTheme.onSurfaceMuted,
                           BlendMode.srcIn,
@@ -327,7 +456,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(
-                          _tabController.index == 2
+                          tabController.index == ProfileTab.reposts.index
                               ? VineTheme.whiteText
                               : VineTheme.onSurfaceMuted,
                           BlendMode.srcIn,
@@ -345,20 +474,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     );
 
     // Wrap content with surfaceBackground to match app bar
-    content = ColoredBox(color: VineTheme.surfaceBackground, child: content);
-
-    // Wrap with OthersFollowersBloc for other users' profiles
-    // This allows the follow button to update the followers count optimistically
-    if (!widget.isOwnProfile) {
-      return BlocProvider<OthersFollowersBloc>(
-        create: (_) =>
-            OthersFollowersBloc(followRepository: followRepository)
-              ..add(OthersFollowersListLoadRequested(widget.userIdHex)),
-        child: content,
-      );
-    }
-
-    return content;
+    return ColoredBox(color: VineTheme.surfaceBackground, child: content);
   }
 }
 

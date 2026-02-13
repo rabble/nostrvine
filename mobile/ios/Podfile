@@ -72,6 +72,12 @@ post_install do |installer|
 
         ## dart: PermissionGroup.microphone
         'PERMISSION_MICROPHONE=1',
+
+        ## dart: PermissionGroup.photos
+        'PERMISSION_PHOTOS=1',
+
+        ## dart: PermissionGroup.photosAddOnly
+        'PERMISSION_PHOTOS_ADD_ONLY=1',
       ]
 
       # Remove duplicate preprocessor definitions

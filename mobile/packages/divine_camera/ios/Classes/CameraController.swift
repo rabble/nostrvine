@@ -153,14 +153,7 @@ class CameraController: NSObject {
         let session = AVCaptureSession()
         session.beginConfiguration()
         
-        // Set preset based on configured video quality
-        if session.canSetSessionPreset(videoQualityPreset) {
-            session.sessionPreset = videoQualityPreset
-        } else if session.canSetSessionPreset(.high) {
-            session.sessionPreset = .high
-        }
-        
-        // Setup video input
+        // Setup video input FIRST (before setting preset)
         guard let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: currentLens) else {
             completion(nil, "No camera available for position")
             return
@@ -170,12 +163,41 @@ class CameraController: NSObject {
         
         do {
             let videoInput = try AVCaptureDeviceInput(device: videoDevice)
+            
+            // Add input before setting preset
             if session.canAddInput(videoInput) {
                 session.addInput(videoInput)
                 self.videoInput = videoInput
             } else {
                 completion(nil, "Cannot add video input")
                 return
+            }
+            
+            // Now set preset AFTER adding input - try requested quality with fallback
+            let presetsToTry: [AVCaptureSession.Preset] = [
+                videoQualityPreset,
+                .hd4K3840x2160,
+                .hd1920x1080,
+                .hd1280x720,
+                .high,
+                .medium,
+                .low
+            ]
+            
+            var presetSet = false
+            for preset in presetsToTry {
+                if session.canSetSessionPreset(preset) {
+                    session.sessionPreset = preset
+                    if preset != videoQualityPreset {
+                        print("[DivineCameraController] Requested preset not supported, falling back to: \(preset.rawValue)")
+                    }
+                    presetSet = true
+                    break
+                }
+            }
+            
+            if !presetSet {
+                print("[DivineCameraController] Warning: Could not set any preferred preset")
             }
         } catch {
             completion(nil, "Failed to create video input: \(error.localizedDescription)")
@@ -371,23 +393,63 @@ class CameraController: NSObject {
             // Add new input
             do {
                 let newInput = try AVCaptureDeviceInput(device: newDevice)
+                
+                // First try to add input with current preset
                 if session.canAddInput(newInput) {
                     session.addInput(newInput)
                     self.videoInput = newInput
                     self.videoDevice = newDevice
                     self.currentLens = newPosition
                     self.updateCameraProperties(device: newDevice)
+                } else {
+                    // Current preset may not be supported by new camera (e.g., UHD on front camera)
+                    // Try fallback presets
+                    let fallbackPresets: [AVCaptureSession.Preset] = [
+                        .hd4K3840x2160,
+                        .hd1920x1080,
+                        .hd1280x720,
+                        .high,
+                        .medium,
+                        .low
+                    ]
                     
-                    // Update orientation and mirroring based on settings
-                    if let videoConnection = self.videoOutput?.connection(with: .video) {
-                        if videoConnection.isVideoOrientationSupported {
-                            videoConnection.videoOrientation = .portrait
+                    var success = false
+                    for preset in fallbackPresets {
+                        if session.canSetSessionPreset(preset) {
+                            session.sessionPreset = preset
+                            if session.canAddInput(newInput) {
+                                session.addInput(newInput)
+                                self.videoInput = newInput
+                                self.videoDevice = newDevice
+                                self.currentLens = newPosition
+                                self.updateCameraProperties(device: newDevice)
+                                print("[DivineCameraController] Camera switch: preset fallback to \(preset.rawValue)")
+                                success = true
+                                break
+                            }
                         }
-                        // Mirror pixels for front camera when mirrorFrontCameraOutput is enabled
-                        let isFront = newPosition == .front
-                        if videoConnection.isVideoMirroringSupported {
-                            videoConnection.isVideoMirrored = isFront && self.mirrorFrontCameraOutput
+                    }
+                    
+                    if !success {
+                        // Re-add old input if all fallbacks failed
+                        if let oldInput = self.videoInput {
+                            session.addInput(oldInput)
                         }
+                        session.commitConfiguration()
+                        completion(nil, "Cannot add video input for new camera")
+                        return
+                    }
+                }
+                
+                // Update orientation and mirroring based on settings
+                if let videoConnection = self.videoOutput?.connection(with: .video) {
+                    if videoConnection.isVideoOrientationSupported {
+                        videoConnection.videoOrientation = .portrait
+                    }
+                    // Mirror pixels for front camera when mirrorFrontCameraOutput is enabled
+                    let isFront = newPosition == .front
+                    if videoConnection.isVideoMirroringSupported {
+                        videoConnection.isVideoMirrored = isFront && self.mirrorFrontCameraOutput
                     }
                 }
             } catch {

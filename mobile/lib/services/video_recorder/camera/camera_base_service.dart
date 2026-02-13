@@ -3,6 +3,7 @@
 
 import 'dart:io';
 
+import 'package:divine_camera/divine_camera.dart' show DivineVideoQuality;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
@@ -40,7 +41,11 @@ abstract class CameraService {
   final void Function(EditorVideo video) onAutoStopped;
 
   /// Initializes the camera and prepares it for use.
-  Future<void> initialize();
+  ///
+  /// [videoQuality] specifies the video recording quality (default: FHD/1080p).
+  Future<void> initialize({
+    DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+  });
 
   /// Releases camera resources and cleans up.
   Future<void> dispose();

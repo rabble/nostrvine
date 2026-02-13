@@ -22,7 +22,7 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_content.dart';
 import 'package:openvine/widgets/profile/more_sheet/more_sheet_result.dart';
-import 'package:openvine/widgets/profile/profile_grid_view.dart';
+import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
 
 /// Fullscreen profile screen for viewing other users' profiles.
@@ -67,11 +67,12 @@ class OtherProfileScreen extends ConsumerWidget {
 
     final pubkey = npubToHexOrNull(npub);
 
-    if (pubkey == null)
+    if (pubkey == null) {
       return _ProfileErrorScreen(
         message: 'Invalid profile ID',
         onBack: context.pop,
       );
+    }
 
     return BlocProvider(
       create: (context) =>
@@ -346,6 +347,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                     Colors.white,
                     BlendMode.srcIn,
                   ),
+                  semanticsLabel: 'Back',
                 ),
               ),
               onPressed: context.pop,
@@ -415,6 +417,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                         Colors.white,
                         BlendMode.srcIn,
                       ),
+                      semanticsLabel: 'More options',
                     ),
                   ),
                   onPressed: _more,
@@ -430,7 +433,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                 style: const TextStyle(color: Colors.white),
               ),
             ),
-            AsyncData(:final value) => ProfileGridView(
+            AsyncData(:final value) => ProfileGrid(
               userIdHex: widget.pubkey,
               isOwnProfile: false,
               displayName: displayName,

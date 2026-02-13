@@ -1,16 +1,21 @@
 // ABOUTME: For You tab widget showing ML-powered personalized video recommendations
 // ABOUTME: Uses Gorse-based recommendations from Funnelcake REST API (staging only)
 
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/for_you_provider.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
 import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Tab widget displaying For You personalized recommendations.
 ///
@@ -19,10 +24,7 @@ import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 /// - Loading/error/data states
 /// - Empty state when recommendations unavailable
 class ForYouTab extends ConsumerStatefulWidget {
-  const ForYouTab({super.key, required this.onVideoTap});
-
-  /// Callback when a video is tapped to enter feed mode
-  final void Function(List<VideoEvent> videos, int index) onVideoTap;
+  const ForYouTab({super.key});
 
   @override
   ConsumerState<ForYouTab> createState() => _ForYouTabState();
@@ -73,7 +75,7 @@ class _ForYouTabState extends ConsumerState<ForYouTab> {
       return const _ForYouEmptyState();
     }
 
-    return _ForYouContent(videos: videos, onVideoTap: widget.onVideoTap);
+    return _ForYouContent(videos: videos);
   }
 }
 
@@ -82,10 +84,9 @@ class _ForYouTabState extends ConsumerState<ForYouTab> {
 /// Header pushes up as user scrolls down (1:1 with scroll distance).
 /// When scrolling up, header slides back in as an overlay with animation.
 class _ForYouContent extends ConsumerStatefulWidget {
-  const _ForYouContent({required this.videos, required this.onVideoTap});
+  const _ForYouContent({required this.videos});
 
   final List<VideoEvent> videos;
-  final void Function(List<VideoEvent> videos, int index) onVideoTap;
 
   @override
   ConsumerState<_ForYouContent> createState() => _ForYouContentState();
@@ -93,6 +94,20 @@ class _ForYouContent extends ConsumerStatefulWidget {
 
 class _ForYouContentState extends ConsumerState<_ForYouContent>
     with ScrollToHideMixin {
+  late final StreamController<List<VideoEvent>> _videosStreamController;
+
+  @override
+  void initState() {
+    super.initState();
+    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
+  }
+
+  @override
+  void dispose() {
+    _videosStreamController.close();
+    super.dispose();
+  }
+
   void _showAlgorithmExplainer(BuildContext context) {
     showModalBottomSheet<void>(
       context: context,
@@ -107,6 +122,13 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
 
   @override
   Widget build(BuildContext context) {
+    // Listen to provider changes and push to stream for fullscreen updates
+    ref.listen(forYouFeedProvider, (previous, next) {
+      if (next.hasValue && next.value != null) {
+        _videosStreamController.add(next.value!.videos);
+      }
+    });
+
     measureHeaderHeight();
 
     return Stack(
@@ -124,7 +146,23 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                 bottom: 4,
                 top: headerHeight > 0 ? headerHeight + 4 : 4,
               ),
-              onVideoTap: widget.onVideoTap,
+              onVideoTap: (videoList, index) {
+                Log.info(
+                  '🎯 ForYouTab TAP: gridIndex=$index, '
+                  'videoId=${videoList[index].id}',
+                  category: LogCategory.video,
+                );
+                context.push(
+                  PooledFullscreenVideoFeedScreen.path,
+                  extra: PooledFullscreenVideoFeedArgs(
+                    videosStream: _videosStreamController.stream.startWith(
+                      videoList,
+                    ),
+                    initialIndex: index,
+                    contextTitle: 'For You',
+                  ),
+                );
+              },
               onRefresh: () async {
                 Log.info(
                   '🔄 ForYouTab: Refreshing recommendations',

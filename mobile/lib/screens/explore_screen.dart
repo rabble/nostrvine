@@ -496,11 +496,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             TabBarView(
               controller: _tabController,
               children: [
-                if (_classicsAvailable)
-                  ClassicVinesTab(
-                    onVideoTap: (videos, index) =>
-                        _enterFeedMode(videos, index),
-                  ),
+                if (_classicsAvailable) const ClassicVinesTab(),
                 NewVideosTab(
                   screenAnalytics: _screenAnalytics,
                   feedTracker: _feedTracker,
@@ -511,11 +507,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   feedTracker: _feedTracker,
                   errorTracker: _errorTracker,
                 ),
-                if (_forYouAvailable)
-                  ForYouTab(
-                    onVideoTap: (videos, index) =>
-                        _enterFeedMode(videos, index),
-                  ),
+                if (_forYouAvailable) const ForYouTab(),
                 _buildListsTab(),
               ],
             ),
