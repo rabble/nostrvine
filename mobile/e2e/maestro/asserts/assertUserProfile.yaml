@@ -1,4 +1,17 @@
 appId: co.openvine.app
 ---
-- assertVisible: ${USER_NAME}
-- assertVisible: ${USER_BIO}
+- assertVisible: Refresh
+- assertVisible: Videos
+- assertVisible:
+    text: "[0-9]+\nFollowers"
+- assertVisible:
+    text: "[0-9]+\nFollowing"
+- assertVisible: |-
+    videos_tab
+    Tab 1 of 3
+- assertVisible: |-
+    liked_tab
+    Tab 2 of 3
+- assertVisible: |-
+    reposted_tab
+    Tab 3 of 3
