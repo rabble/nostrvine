@@ -20,6 +20,18 @@ import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 import 'package:openvine/widgets/profile/profile_reposts_grid.dart';
 import 'package:openvine/widgets/profile/profile_videos_grid.dart';
 
+/// Identifies each tab in the profile grid.
+enum ProfileTab {
+  /// The videos tab.
+  videos,
+
+  /// The liked videos tab.
+  liked,
+
+  /// The reposted videos tab.
+  reposts,
+}
+
 /// Profile grid that provides all required BLoCs via [BlocProvider].
 ///
 /// This is the entry point for the profile grid. It creates and provides
@@ -236,7 +248,7 @@ class _ProfileGridViewState extends State<ProfileGridView>
     with TickerProviderStateMixin {
   /// Cache for preserving tab selection across widget rebuilds.
   /// Keyed by userIdHex so each profile remembers its own tab.
-  static final Map<String, int> tabIndexCache = {};
+  static final Map<String, ProfileTab> tabIndexCache = {};
 
   late TabController tabController;
 
@@ -247,11 +259,12 @@ class _ProfileGridViewState extends State<ProfileGridView>
   @override
   void initState() {
     super.initState();
-    final cachedIndex = tabIndexCache[widget.userIdHex] ?? 0;
+    final cachedTab =
+        tabIndexCache[widget.userIdHex] ?? ProfileTab.values.first;
     tabController = TabController(
-      length: 3,
       vsync: this,
-      initialIndex: cachedIndex,
+      length: ProfileTab.values.length,
+      initialIndex: cachedTab.index,
     );
     tabController.addListener(_onTabChanged);
     widget.refreshNotifier?.addListener(_onRefreshRequested);
@@ -261,14 +274,15 @@ class _ProfileGridViewState extends State<ProfileGridView>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
 
-      if (tabController.index == 1 && !likedTabSynced) {
+      if (tabController.index == ProfileTab.liked.index && !likedTabSynced) {
         likedTabSynced = true;
         return context.read<ProfileLikedVideosBloc>().add(
           const ProfileLikedVideosSyncRequested(),
         );
       }
 
-      if (tabController.index == 2 && !repostsTabSynced) {
+      if (tabController.index == ProfileTab.reposts.index &&
+          !repostsTabSynced) {
         repostsTabSynced = true;
         return context.read<ProfileRepostedVideosBloc>().add(
           const ProfileRepostedVideosSyncRequested(),
@@ -288,20 +302,20 @@ class _ProfileGridViewState extends State<ProfileGridView>
 
   void _onTabChanged() {
     // Persist tab selection for navigation restoration
-    tabIndexCache[widget.userIdHex] = tabController.index;
+    tabIndexCache[widget.userIdHex] = ProfileTab.values[tabController.index];
 
     // Trigger rebuild to update SVG icon colors
     if (mounted) setState(() {});
 
     // Lazy load: Trigger sync only when user first views the tab
-    if (tabController.index == 1 && !likedTabSynced) {
+    if (tabController.index == ProfileTab.liked.index && !likedTabSynced) {
       likedTabSynced = true;
       return context.read<ProfileLikedVideosBloc>().add(
         const ProfileLikedVideosSyncRequested(),
       );
     }
 
-    if (tabController.index == 2 && !repostsTabSynced) {
+    if (tabController.index == ProfileTab.reposts.index && !repostsTabSynced) {
       repostsTabSynced = true;
       return context.read<ProfileRepostedVideosBloc>().add(
         const ProfileRepostedVideosSyncRequested(),
@@ -350,7 +364,7 @@ class _ProfileGridViewState extends State<ProfileGridView>
     );
 
     final content = DefaultTabController(
-      length: 3,
+      length: ProfileTab.values.length,
       child: NestedScrollView(
         controller: widget.scrollController,
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
@@ -410,7 +424,7 @@ class _ProfileGridViewState extends State<ProfileGridView>
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(
-                          tabController.index == 0
+                          tabController.index == ProfileTab.videos.index
                               ? VineTheme.whiteText
                               : VineTheme.onSurfaceMuted,
                           BlendMode.srcIn,
@@ -426,7 +440,7 @@ class _ProfileGridViewState extends State<ProfileGridView>
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(
-                          tabController.index == 1
+                          tabController.index == ProfileTab.liked.index
                               ? VineTheme.whiteText
                               : VineTheme.onSurfaceMuted,
                           BlendMode.srcIn,
@@ -442,7 +456,7 @@ class _ProfileGridViewState extends State<ProfileGridView>
                         width: 28,
                         height: 28,
                         colorFilter: ColorFilter.mode(
-                          tabController.index == 2
+                          tabController.index == ProfileTab.reposts.index
                               ? VineTheme.whiteText
                               : VineTheme.onSurfaceMuted,
                           BlendMode.srcIn,
