@@ -67,7 +67,7 @@ void main() {
       });
 
       test('maps limited to PermissionStatus.granted', () {
-        // limited is for iOS 14+ "Limited Photos Access" - sufficient for saving
+        // limited is for iOS 14+ "Limited Photos Access" sufficient for saving
         final result = service.mapPermissionStatus(ph.PermissionStatus.limited);
         expect(result, PermissionStatus.granted);
       });
