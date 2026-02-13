@@ -79,6 +79,10 @@ dependencies:
   permission_handler: ^12.0.1 # Handle runtime permissions
 
   # Camera and media
+  c2pa_flutter:
+    git:
+      url: https://github.com/guardianproject/c2pa-flutter.git
+      ref: main
   divine_camera:
     path: packages/divine_camera
   camera_macos_plus: ^0.0.4
