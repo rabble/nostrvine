@@ -219,7 +219,7 @@ class _PopularVideosTrendingContentState
   Widget build(BuildContext context) {
     // Listen to provider changes and push to stream for fullscreen updates
     ref.listen(popularVideosFeedProvider, (previous, next) {
-      if (next.hasValue && next.value != null) {
+      if (next.hasValue) {
         _videosStreamController.add(next.value!.videos);
       }
     });

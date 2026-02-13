@@ -210,7 +210,7 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
   Widget build(BuildContext context) {
     // Listen to provider changes and push to stream for fullscreen updates
     ref.listen(popularNowFeedProvider, (previous, next) {
-      if (next.hasValue && next.value != null) {
+      if (next.hasValue) {
         final videos = next.value!.videos
             .where((v) => v.isSupportedOnCurrentPlatform)
             .toList();
