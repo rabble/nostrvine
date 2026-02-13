@@ -66,17 +66,13 @@ final class MyProfileLoaded extends MyProfileState {
   List<Object?> get props => [profile, isFresh, extractedUsername];
 }
 
-/// Error state - may still contain cached profile to display.
+/// Error state when profile loading fails.
 final class MyProfileError extends MyProfileState {
-  const MyProfileError({required this.errorType, this.profile});
+  const MyProfileError({required this.errorType});
 
   /// The type of error that occurred.
   final MyProfileErrorType errorType;
 
-  /// Cached profile to display despite the error.
-  /// Null if no cached profile exists.
-  final UserProfile? profile;
-
   @override
-  List<Object?> get props => [errorType, profile];
+  List<Object?> get props => [errorType];
 }
