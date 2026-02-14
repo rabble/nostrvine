@@ -142,6 +142,9 @@ class VideoEditorProviderState {
   ///
   /// All parameters are optional. Only provided fields will be updated,
   /// others retain their current values.
+  ///
+  /// Use [clearFinalRenderedClip] = true to explicitly set
+  /// [finalRenderedClip] to null.
   VideoEditorProviderState copyWith({
     int? currentClipIndex,
     Duration? currentPosition,
@@ -163,6 +166,7 @@ class VideoEditorProviderState {
     VideoMetadataExpiration? expiration,
     bool? metadataLimitReached,
     RecordingClip? finalRenderedClip,
+    bool clearFinalRenderedClip = false,
     Map<String, dynamic>? editorStateHistory,
     Map<String, dynamic>? editorEditingParameters,
     List<String>? collaboratorPubkeys,
@@ -191,7 +195,9 @@ class VideoEditorProviderState {
       tags: tags ?? this.tags,
       expiration: expiration ?? this.expiration,
       metadataLimitReached: metadataLimitReached ?? this.metadataLimitReached,
-      finalRenderedClip: finalRenderedClip ?? this.finalRenderedClip,
+      finalRenderedClip: clearFinalRenderedClip
+          ? null
+          : (finalRenderedClip ?? this.finalRenderedClip),
       editorStateHistory: editorStateHistory ?? this.editorStateHistory,
       editorEditingParameters:
           editorEditingParameters ?? this.editorEditingParameters,

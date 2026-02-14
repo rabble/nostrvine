@@ -30,6 +30,7 @@ class VineDraft {
     this.proofManifestJson,
     this.editorStateHistory = const {},
     this.editorEditingParameters = const {},
+    this.finalRenderedClip,
     this.collaboratorPubkeys = const [],
     this.inspiredByVideo,
     this.inspiredByNpub,
@@ -49,6 +50,7 @@ class VineDraft {
     String? proofManifestJson,
     Map<String, dynamic>? editorStateHistory,
     Map<String, dynamic>? editorEditingParameters,
+    RecordingClip? finalRenderedClip,
     List<String> collaboratorPubkeys = const [],
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,
@@ -73,6 +75,7 @@ class VineDraft {
       proofManifestJson: proofManifestJson,
       editorStateHistory: editorStateHistory ?? const {},
       editorEditingParameters: editorEditingParameters ?? const {},
+      finalRenderedClip: finalRenderedClip,
       collaboratorPubkeys: collaboratorPubkeys,
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: inspiredByNpub,
@@ -149,6 +152,13 @@ class VineDraft {
       editorEditingParameters:
           (json['editorEditingParameters'] as Map<String, dynamic>?) ??
           const {},
+      finalRenderedClip: json['finalRenderedClip'] != null
+          ? RecordingClip.fromJson(
+              json['finalRenderedClip'] as Map<String, dynamic>,
+              documentsPath,
+              useOriginalPath: useOriginalPath,
+            )
+          : null,
       collaboratorPubkeys: json['collaboratorPubkeys'] != null
           ? List<String>.from(json['collaboratorPubkeys'] as Iterable)
           : const [],
@@ -181,18 +191,20 @@ class VineDraft {
   final Map<String, dynamic> editorStateHistory;
   final Map<String, dynamic> editorEditingParameters;
 
+  /// The final rendered clip ready for publishing.
+  /// Cached to avoid re-rendering when no changes are made.
+  final RecordingClip? finalRenderedClip;
+
   /// Pubkeys of collaborators tagged in this video.
   final List<String> collaboratorPubkeys;
 
-  /// Reference to a specific video that inspired this one.
+  /// Reference to a specific video that inspired this one (a-tag).
   final InspiredByInfo? inspiredByVideo;
 
   /// NIP-27 npub reference for general "Inspired By" a creator.
   final String? inspiredByNpub;
 
-  /// Event ID of a selected existing audio event (Kind 1063) to reference.
-  /// When set, the publisher adds an `["e", id, relay, "audio"]` tag
-  /// without re-extracting audio from the video.
+  /// Event ID of a selected existing audio event to reference.
   final String? selectedAudioEventId;
 
   /// Relay hint for the selected audio event.
@@ -236,6 +248,7 @@ class VineDraft {
     Object? proofManifestJson = _sentinel,
     Map<String, dynamic>? editorStateHistory,
     Map<String, dynamic>? editorEditingParameters,
+    Object? finalRenderedClip = _sentinel,
     List<String>? collaboratorPubkeys,
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,
@@ -263,6 +276,9 @@ class VineDraft {
     editorStateHistory: editorStateHistory ?? this.editorStateHistory,
     editorEditingParameters:
         editorEditingParameters ?? this.editorEditingParameters,
+    finalRenderedClip: finalRenderedClip == _sentinel
+        ? this.finalRenderedClip
+        : finalRenderedClip as RecordingClip?,
     collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
     inspiredByVideo: inspiredByVideo ?? this.inspiredByVideo,
     inspiredByNpub: inspiredByNpub ?? this.inspiredByNpub,
@@ -294,13 +310,17 @@ class VineDraft {
     if (editorStateHistory.isNotEmpty) 'editorStateHistory': editorStateHistory,
     if (editorEditingParameters.isNotEmpty)
       'editorEditingParameters': editorEditingParameters,
+    if (finalRenderedClip != null)
+      'finalRenderedClip': finalRenderedClip!.toJson(),
     if (collaboratorPubkeys.isNotEmpty)
       'collaboratorPubkeys': collaboratorPubkeys,
-    if (inspiredByVideo != null) 'inspiredByVideo': inspiredByVideo!.toJson(),
+    if (inspiredByVideo != null)
+      'inspiredByVideo': inspiredByVideo!.toJson(),
     if (inspiredByNpub != null) 'inspiredByNpub': inspiredByNpub,
     if (selectedAudioEventId != null)
       'selectedAudioEventId': selectedAudioEventId,
-    if (selectedAudioRelay != null) 'selectedAudioRelay': selectedAudioRelay,
+    if (selectedAudioRelay != null)
+      'selectedAudioRelay': selectedAudioRelay,
   };
 
   String get displayDuration {
