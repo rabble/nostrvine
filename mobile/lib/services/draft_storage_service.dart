@@ -104,11 +104,13 @@ class DraftStorageService {
         ],
         // Check if old finalRenderedClip is orphaned
         if (existingDraft.finalRenderedClip != null) ...[
-          if (!newFilePaths
-              .contains(existingDraft.finalRenderedClip?.video.file?.path))
+          if (!newFilePaths.contains(
             existingDraft.finalRenderedClip?.video.file?.path,
-          if (!newFilePaths
-              .contains(existingDraft.finalRenderedClip?.thumbnailPath))
+          ))
+            existingDraft.finalRenderedClip?.video.file?.path,
+          if (!newFilePaths.contains(
+            existingDraft.finalRenderedClip?.thumbnailPath,
+          ))
             existingDraft.finalRenderedClip?.thumbnailPath,
         ],
       ];
