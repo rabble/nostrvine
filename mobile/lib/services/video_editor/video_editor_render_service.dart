@@ -182,6 +182,10 @@ class VideoEditorRenderService {
   /// on top of the video as a watermark overlay.
   ///
   /// Returns the path to the rendered video file, or null if cancelled/failed.
+  ///
+  /// If [usePersistentStorage] is true, the output file will be saved to the
+  /// documents directory instead of the temporary directory. Use this when
+  /// the rendered video should persist across app restarts.
   static Future<String?> renderVideo({
     required List<RecordingClip> clips,
     required model.AspectRatio aspectRatio,
@@ -190,8 +194,12 @@ class VideoEditorRenderService {
     double? originalAudioVolume,
     double? customAudioVolume,
     Uint8List? imageBytes,
+    bool usePersistentStorage = false,
   }) async {
-    final tempDir = await getTemporaryDirectory();
+    final cacheDir = await getTemporaryDirectory();
+    final outputDir = usePersistentStorage
+        ? await getApplicationDocumentsDirectory()
+        : cacheDir;
     var tempFilePaths = <String>[];
 
     try {
@@ -206,11 +214,12 @@ class VideoEditorRenderService {
         await clip.processingCompleter?.future;
       }
 
+      // Intermediate normalized clips always go to cache (they get deleted)
       final result = await _normalizeClipsToAspectRatio(
         clips: clips,
         aspectRatio: aspectRatio,
         enableAudio: enableAudio,
-        tempDir: tempDir,
+        cacheDir: cacheDir,
       );
       tempFilePaths = result.tempFilePaths;
 
@@ -218,7 +227,7 @@ class VideoEditorRenderService {
         segments: result.segments,
         clipId: clips.first.id,
         enableAudio: enableAudio,
-        tempDir: tempDir,
+        outputDir: outputDir,
         globalTransform: result.globalTransform,
         customAudioPath: customAudioPath,
         originalAudioVolume: originalAudioVolume,
@@ -385,7 +394,7 @@ class VideoEditorRenderService {
     required List<RecordingClip> clips,
     required model.AspectRatio aspectRatio,
     required bool enableAudio,
-    required Directory tempDir,
+    required Directory cacheDir,
   }) async {
     // Analyze all clips first to determine the optimal rendering strategy
     final clipAnalysis = await _analyzeClips(clips, aspectRatio);
@@ -438,7 +447,7 @@ class VideoEditorRenderService {
           index: i,
           cropParams: entry.cropParams,
           enableAudio: enableAudio,
-          tempDir: tempDir,
+          cacheDir: cacheDir,
         );
         tempFilePaths.add(normalizedPath);
         segments.add(
@@ -485,10 +494,12 @@ class VideoEditorRenderService {
     required int index,
     required _CropParameters cropParams,
     required bool enableAudio,
-    required Directory tempDir,
+    required Directory cacheDir,
   }) async {
-    final outputPath =
-        '${tempDir.path}/normalized_${index}_${DateTime.now().microsecondsSinceEpoch}.mp4';
+    final outputPath = path.join(
+      cacheDir.path,
+      'normalized_${index}_${DateTime.now().microsecondsSinceEpoch}.mp4',
+    );
 
     final task = VideoRenderData(
       id: '${clip.id}_normalized',
@@ -523,15 +534,17 @@ class VideoEditorRenderService {
     required List<VideoSegment> segments,
     required String clipId,
     required bool enableAudio,
-    required Directory tempDir,
+    required Directory outputDir,
     _CropParameters? globalTransform,
     String? customAudioPath,
     double? originalAudioVolume,
     double? customAudioVolume,
     Uint8List? imageBytes,
   }) async {
-    final outputPath =
-        '${tempDir.path}/divine_${DateTime.now().microsecondsSinceEpoch}.mp4';
+    final outputPath = path.join(
+      outputDir.path,
+      'divine_${DateTime.now().microsecondsSinceEpoch}.mp4',
+    );
 
     final task = VideoRenderData(
       id: clipId,
