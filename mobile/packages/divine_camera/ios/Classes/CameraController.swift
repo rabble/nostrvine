@@ -73,6 +73,9 @@ class CameraController: NSObject {
     private var maxDurationMs: Int?
     private var isWriterSessionStarted: Bool = false
     
+    /// Completion handler for camera switch - called when first frame from new camera arrives
+    private var switchCameraCompletion: (([String: Any]?, String?) -> Void)?
+    
     private let sessionQueue = DispatchQueue(label: "com.divine_camera.session")
     private let videoOutputQueue = DispatchQueue(label: "com.divine_camera.videoOutput")
     
@@ -464,9 +467,14 @@ class CameraController: NSObject {
             
             session.commitConfiguration()
             
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                completion(self.getCameraState(), nil)
+            // Store completion to be called when first frame arrives from new camera.
+            // This ensures Flutter gets the new lens state only after the texture
+            // already shows a frame from the new camera, preventing mirror glitches.
+            self.switchCameraCompletion = { [weak self] state, error in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    completion(self.getCameraState(), nil)
+                }
             }
         }
     }
@@ -1108,6 +1116,15 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
             DispatchQueue.main.async { [weak self] in
                 guard let self = self, self.textureId >= 0 else { return }
                 self.textureRegistry.textureFrameAvailable(self.textureId)
+            }
+            
+            // Complete camera switch if waiting for first frame from new camera.
+            // This is done AFTER textureFrameAvailable so Flutter shows the new frame
+            // before receiving the state update with the new lens.
+            if let switchCompletion = switchCameraCompletion {
+                switchCameraCompletion = nil
+                let state = getCameraState()
+                switchCompletion(state, nil)
             }
             
             // Write video frame to asset writer if recording
