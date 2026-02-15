@@ -68,6 +68,8 @@ class VideoStats {
     } else {
       id = rawId?.toString() ?? '';
     }
+    // Normalize to lowercase per NIP-01 (Funnelcake may return uppercase hex)
+    id = id.toLowerCase();
 
     // Parse pubkey - same format as id
     String pubkey;
@@ -77,6 +79,8 @@ class VideoStats {
     } else {
       pubkey = rawPubkey?.toString() ?? '';
     }
+    // Normalize to lowercase per NIP-01 (Funnelcake may return uppercase hex)
+    pubkey = pubkey.toLowerCase();
 
     // Parse created_at - funnelcake returns Unix timestamp (int), not ISO string
     DateTime createdAt;
