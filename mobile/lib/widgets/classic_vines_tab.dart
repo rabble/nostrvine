@@ -16,6 +16,7 @@ import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/classic_viners_slider.dart';
+import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_thumbnail_widget.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -315,7 +316,48 @@ class _ClassicVideoItem extends StatelessWidget {
       onTap: () => onVideoTap(videos, index),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(4),
-        child: VideoThumbnailWidget(video: video),
+        child: Stack(
+          children: [
+            VideoThumbnailWidget(video: video),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: Container(
+                padding: const EdgeInsets.only(
+                  left: 8,
+                  right: 8,
+                  bottom: 6,
+                  top: 24,
+                ),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [Colors.transparent, Color(0xCC000000)],
+                  ),
+                ),
+                child: UserName.fromPubKey(
+                  video.pubkey,
+                  embeddedName: video.authorName,
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    shadows: const [
+                      Shadow(
+                        offset: Offset(0, 1),
+                        blurRadius: 3,
+                        color: Color(0x80000000),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
