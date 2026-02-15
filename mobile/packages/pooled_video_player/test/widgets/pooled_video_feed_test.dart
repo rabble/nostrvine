@@ -315,8 +315,7 @@ void main() {
 
         final state = tester.state<PooledVideoFeedState>(
           find.byType(PooledVideoFeed),
-        )
-          ..reassemble();
+        )..reassemble();
         await tester.pump();
 
         expect(state.controller, same(controller));
@@ -335,8 +334,7 @@ void main() {
 
         final state = tester.state<PooledVideoFeedState>(
           find.byType(PooledVideoFeed),
-        )
-          ..reassemble();
+        )..reassemble();
         await tester.pump();
 
         // New controller should have same video count
