@@ -49,16 +49,27 @@ class PopularNowFeed extends _$PopularNowFeed {
 
     final videoEventService = ref.watch(videoEventServiceProvider);
 
-    // If app is not ready, return empty state - will rebuild when appReady becomes true
+    // If app is not ready, preserve existing data during background
     if (!isAppReady) {
+      if (this.state.hasValue && this.state.value != null) {
+        final existing = this.state.value!;
+        if (existing.videos.isNotEmpty) {
+          Log.info(
+            '🆕 PopularNowFeed: App not ready, preserving ${existing.videos.length} cached videos',
+            name: 'PopularNowFeedProvider',
+            category: LogCategory.video,
+          );
+          return existing;
+        }
+      }
       Log.info(
-        '🆕 PopularNowFeed: App not ready, returning empty state (will rebuild when ready)',
+        '🆕 PopularNowFeed: App not ready, no cached data yet',
         name: 'PopularNowFeedProvider',
         category: LogCategory.video,
       );
       return VideoFeedState(
         videos: const [],
-        hasMoreContent: true, // Assume there's content to load when ready
+        hasMoreContent: true,
         isLoadingMore: false,
       );
     }

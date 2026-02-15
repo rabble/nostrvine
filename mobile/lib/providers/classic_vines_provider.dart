@@ -48,6 +48,13 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     );
 
     if (!isAppReady) {
+      // Preserve existing data during background — don't wipe the feed
+      if (state.hasValue && state.value != null) {
+        final existing = state.value!;
+        if (existing.videos.isNotEmpty) {
+          return existing;
+        }
+      }
       return VideoFeedState(
         videos: const [],
         hasMoreContent: false,
