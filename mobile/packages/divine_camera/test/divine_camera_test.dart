@@ -637,7 +637,7 @@ void main() {
 
       final props = state.props;
 
-      expect(props.length, 15);
+      expect(props.length, 16);
       expect(props[0], isTrue); // isInitialized
       expect(props[1], isFalse); // isRecording
       expect(props[4], DivineCameraLens.back); // lens
