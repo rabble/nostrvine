@@ -1206,10 +1206,11 @@ class VideoOverlayActions extends ConsumerWidget {
     // Only interactive elements (buttons, chips with GestureDetector) absorb taps
     // When contextTitle is non-empty, a list header exists above - add extra offset to avoid overlap
     // List header is roughly 64px tall (8px padding + 48px content + 8px padding), add clearance
-    // In fullscreen mode, add extra offset to clear the back button row (AppBar ~56px + padding)
-    final hasListHeader = contextTitle != null && contextTitle!.isNotEmpty;
-    final fullscreenOffset = isFullscreen ? 48.0 : 0.0;
-    final topOffset = (hasListHeader ? 80.0 : 16.0) + fullscreenOffset;
+    // In fullscreen mode, the AppBar floats transparently over the content
+    // so the badge just needs the same base offset - no extra list header padding
+    final hasListHeader =
+        !isFullscreen && contextTitle != null && contextTitle!.isNotEmpty;
+    final topOffset = hasListHeader ? 80.0 : 16.0;
 
     // Calculate bottom offset based on navigation state
     final bottomOffset = hasBottomNavigation
