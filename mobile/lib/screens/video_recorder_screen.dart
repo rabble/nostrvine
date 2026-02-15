@@ -159,7 +159,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     const backgroundColor = Color(0xFF000A06);
 
     return const AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
+      value: SystemUiOverlayStyle(
         statusBarColor: backgroundColor,
         statusBarIconBrightness: .light,
         statusBarBrightness: .dark,
