@@ -158,7 +158,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
   Widget build(BuildContext context) {
     const backgroundColor = Color(0xFF000A06);
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
+    return const AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: backgroundColor,
         statusBarIconBrightness: .light,
@@ -169,7 +169,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
         body: Stack(
           fit: .expand,
           children: [
-            const Column(
+            Column(
               spacing: 12,
               children: [
                 Expanded(
@@ -196,76 +196,8 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
             ),
 
             // Countdown overlay
-            const VideoRecorderCountdownOverlay(),
-
-            // TEST: Lens selector (temporary)
-            const Positioned(
-              bottom: 180,
-              left: 0,
-              right: 0,
-              child: _LensSelectorTest(),
-            ),
+            VideoRecorderCountdownOverlay(),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// TEST WIDGET: Temporary lens selector for testing multi-lens support.
-/// Remove this widget once proper UI is implemented.
-class _LensSelectorTest extends ConsumerWidget {
-  const _LensSelectorTest();
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Watch the provider to rebuild on state changes
-    ref.watch(videoRecorderProvider);
-
-    final notifier = ref.read(videoRecorderProvider.notifier);
-    final availableLenses = notifier.availableLenses;
-    final currentLens = notifier.currentLens;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: availableLenses.map((lens) {
-            final isSelected = lens == currentLens;
-            return Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 4),
-              child: GestureDetector(
-                onTap: () => notifier.setLens(lens),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? Colors.white
-                        : Colors.black.withAlpha(150),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSelected ? Colors.white : Colors.white38,
-                    ),
-                  ),
-                  child: Text(
-                    lens.shortLabel,
-                    style: TextStyle(
-                      color: isSelected ? Colors.black : Colors.white,
-                      fontWeight: isSelected
-                          ? FontWeight.bold
-                          : FontWeight.normal,
-                      fontSize: 12,
-                    ),
-                  ),
-                ),
-              ),
-            );
-          }).toList(),
         ),
       ),
     );
