@@ -491,11 +491,12 @@ void main() {
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
 
         // Simulate hot reload - should not crash
-        final state1 = tester.state<State<SingleVideoPlayer>>(
-          find.byType(SingleVideoPlayer),
-        );
-        // ignore: invalid_use_of_protected_member, testing hot reload lifecycle
-        state1.reassemble();
+        tester
+            .state<State<SingleVideoPlayer>>(
+              find.byType(SingleVideoPlayer),
+            )
+            // ignore: invalid_use_of_protected_member
+            .reassemble();
         await tester.pump();
         await tester.pump();
 
@@ -517,11 +518,12 @@ void main() {
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
 
         // Simulate hot reload
-        final state2 = tester.state<State<SingleVideoPlayer>>(
-          find.byType(SingleVideoPlayer),
-        );
-        // ignore: invalid_use_of_protected_member, testing hot reload lifecycle
-        state2.reassemble();
+        tester
+            .state<State<SingleVideoPlayer>>(
+              find.byType(SingleVideoPlayer),
+            )
+            // ignore: invalid_use_of_protected_member
+            .reassemble();
         await tester.pump();
         await tester.pump();
 
@@ -536,11 +538,12 @@ void main() {
         await tester.pump();
 
         // Still loading, trigger reassemble - should not crash
-        final state3 = tester.state<State<SingleVideoPlayer>>(
-          find.byType(SingleVideoPlayer),
-        );
-        // ignore: invalid_use_of_protected_member, testing hot reload lifecycle
-        state3.reassemble();
+        tester
+            .state<State<SingleVideoPlayer>>(
+              find.byType(SingleVideoPlayer),
+            )
+            // ignore: invalid_use_of_protected_member
+            .reassemble();
         await tester.pump();
         await tester.pump();
 
