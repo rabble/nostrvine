@@ -695,13 +695,13 @@ class VideoEvent {
   /// (Inspired By a person, not a specific video).
   final String? inspiredByNpub;
 
-  /// Original event tags as List<List<String>> for republishing.
+  /// Original event tags as `List<List<String>>` for republishing.
   /// Preserved from the Nostr event so we can rebuild the event with new tags.
   @JsonKey(includeToJson: false, includeFromJson: false)
   final List<List<String>> nostrEventTags;
 
   /// Addressable coordinates or URL for text-track subtitle reference.
-  /// Format: "39307:<pubkey>:subtitles:<video-d-tag>" or HTTP URL.
+  /// Format: `39307:<pubkey>:subtitles:<video-d-tag>` or HTTP URL.
   final String? textTrackRef;
 
   /// Embedded VTT content from funnelcake REST API (skips relay fetch).
