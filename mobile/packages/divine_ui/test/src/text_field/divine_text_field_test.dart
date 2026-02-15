@@ -200,6 +200,46 @@ void main() {
       expect(textField.obscuringCharacter, equals('✱'));
     });
 
+    group('didUpdateWidget', () {
+      testWidgets('updates when focusNode changes', (tester) async {
+        final focusNode1 = FocusNode();
+        final focusNode2 = FocusNode();
+
+        await tester.pumpWidget(buildTestWidget(focusNode: focusNode1));
+
+        var textField = tester.widget<TextField>(find.byType(TextField));
+        expect(textField.focusNode, equals(focusNode1));
+
+        await tester.pumpWidget(buildTestWidget(focusNode: focusNode2));
+        await tester.pump();
+
+        textField = tester.widget<TextField>(find.byType(TextField));
+        expect(textField.focusNode, equals(focusNode2));
+
+        focusNode1.dispose();
+        focusNode2.dispose();
+      });
+
+      testWidgets('updates when controller changes', (tester) async {
+        final controller1 = TextEditingController(text: 'First');
+        final controller2 = TextEditingController(text: 'Second');
+
+        await tester.pumpWidget(buildTestWidget(controller: controller1));
+
+        var textField = tester.widget<TextField>(find.byType(TextField));
+        expect(textField.controller, equals(controller1));
+
+        await tester.pumpWidget(buildTestWidget(controller: controller2));
+        await tester.pump();
+
+        textField = tester.widget<TextField>(find.byType(TextField));
+        expect(textField.controller, equals(controller2));
+
+        controller1.dispose();
+        controller2.dispose();
+      });
+    });
+
     testWidgets('label floats when text is entered', (tester) async {
       final controller = TextEditingController();
       await tester.pumpWidget(buildTestWidget(controller: controller));
