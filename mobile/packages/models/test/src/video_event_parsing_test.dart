@@ -295,8 +295,7 @@ void main() {
     const collabPubkey2 =
         'cccc567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
 
-    test('should parse p-tags as collaborators when different from author',
-        () {
+    test('should parse p-tags as collaborators when different from author', () {
       final nostrEvent = Event(
         authorPubkey,
         34236,
@@ -399,8 +398,7 @@ void main() {
     const creatorPubkey =
         'dddd567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
 
-    test('should parse a-tag as inspiredByVideo for Kind 34236 references',
-        () {
+    test('should parse a-tag as inspiredByVideo for Kind 34236 references', () {
       final nostrEvent = Event(
         authorPubkey,
         34236,

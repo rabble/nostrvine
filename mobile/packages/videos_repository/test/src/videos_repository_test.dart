@@ -3071,6 +3071,295 @@ void main() {
         );
       });
     });
+
+    group('getCollabVideos', () {
+      test('returns videos from relay fallback when no Funnelcake', () async {
+        final event = _createVideoEvent(
+          id: 'collab-video-1',
+          pubkey: 'author-pubkey',
+          videoUrl: 'https://example.com/collab.mp4',
+          createdAt: 1704067200,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [event],
+        );
+
+        final result = await repository.getCollabVideos(
+          taggedPubkey: 'collab-pubkey',
+        );
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('collab-video-1'));
+
+        final captured = verify(
+          () => mockNostrClient.queryEvents(captureAny()),
+        ).captured;
+        final filters = captured.first as List<Filter>;
+        expect(filters.first.kinds, contains(EventKind.videoVertical));
+        expect(filters.first.p, equals(['collab-pubkey']));
+      });
+
+      test('passes limit and until to relay query', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => <Event>[],
+        );
+
+        await repository.getCollabVideos(
+          taggedPubkey: 'collab-pubkey',
+          limit: 10,
+          until: 1704067200,
+        );
+
+        final captured = verify(
+          () => mockNostrClient.queryEvents(captureAny()),
+        ).captured;
+        final filters = captured.first as List<Filter>;
+        expect(filters.first.limit, equals(10));
+        expect(filters.first.until, equals(1704067200));
+      });
+
+      test('uses default limit of 5', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => <Event>[],
+        );
+
+        await repository.getCollabVideos(taggedPubkey: 'collab-pubkey');
+
+        final captured = verify(
+          () => mockNostrClient.queryEvents(captureAny()),
+        ).captured;
+        final filters = captured.first as List<Filter>;
+        expect(filters.first.limit, equals(5));
+      });
+
+      test('returns empty list when no events found', () async {
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => <Event>[],
+        );
+
+        final result = await repository.getCollabVideos(
+          taggedPubkey: 'collab-pubkey',
+        );
+
+        expect(result, isEmpty);
+      });
+
+      group('Funnelcake API first', () {
+        late MockFunnelcakeApiClient mockFunnelcakeClient;
+
+        setUp(() {
+          mockFunnelcakeClient = MockFunnelcakeApiClient();
+        });
+
+        test('returns API results when Funnelcake succeeds', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getCollabVideos(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'collab-event-1',
+                pubkey: 'author-pubkey',
+                dTag: 'dtag-1',
+                videoUrl: 'https://example.com/collab.mp4',
+              ),
+            ],
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getCollabVideos(
+            taggedPubkey: 'collab-pubkey',
+          );
+
+          expect(result, hasLength(1));
+          expect(
+            result.first.videoUrl,
+            equals('https://example.com/collab.mp4'),
+          );
+          verifyNever(() => mockNostrClient.queryEvents(any()));
+        });
+
+        test('passes parameters to Funnelcake API', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getCollabVideos(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'collab-event-1',
+                pubkey: 'author-pubkey',
+                dTag: 'dtag-1',
+                videoUrl: 'https://example.com/collab.mp4',
+              ),
+            ],
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          await repositoryWithApi.getCollabVideos(
+            taggedPubkey: 'collab-pubkey',
+            limit: 10,
+            until: 1704067200,
+          );
+
+          verify(
+            () => mockFunnelcakeClient.getCollabVideos(
+              pubkey: 'collab-pubkey',
+              limit: 10,
+              before: 1704067200,
+            ),
+          ).called(1);
+        });
+
+        test('falls back to relay when Funnelcake throws', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getCollabVideos(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenThrow(
+            const FunnelcakeException('Server error'),
+          );
+
+          final event = _createVideoEvent(
+            id: 'relay-collab-1',
+            pubkey: 'author-pubkey',
+            videoUrl: 'https://example.com/relay-collab.mp4',
+            createdAt: 1704067200,
+          );
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => [event],
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          final result = await repositoryWithApi.getCollabVideos(
+            taggedPubkey: 'collab-pubkey',
+          );
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('relay-collab-1'));
+          verify(() => mockNostrClient.queryEvents(any())).called(1);
+        });
+
+        test('falls back to relay when Funnelcake returns empty', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getCollabVideos(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer((_) async => <VideoStats>[]);
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => <Event>[],
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          await repositoryWithApi.getCollabVideos(
+            taggedPubkey: 'collab-pubkey',
+          );
+
+          verify(() => mockNostrClient.queryEvents(any())).called(1);
+        });
+
+        test('falls back to relay when Funnelcake not available', () async {
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(false);
+
+          when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+            (_) async => <Event>[],
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+          );
+
+          await repositoryWithApi.getCollabVideos(
+            taggedPubkey: 'collab-pubkey',
+          );
+
+          verifyNever(
+            () => mockFunnelcakeClient.getCollabVideos(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          );
+          verify(() => mockNostrClient.queryEvents(any())).called(1);
+        });
+
+        test('filters blocked pubkeys from API results', () async {
+          final blockFilter = TestContentFilter(
+            blockedPubkeys: {'blocked-author'},
+          );
+
+          when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+          when(
+            () => mockFunnelcakeClient.getCollabVideos(
+              pubkey: any(named: 'pubkey'),
+              limit: any(named: 'limit'),
+              before: any(named: 'before'),
+            ),
+          ).thenAnswer(
+            (_) async => [
+              _createVideoStats(
+                id: 'allowed-video',
+                pubkey: 'good-author',
+                dTag: 'dtag-1',
+                videoUrl: 'https://example.com/good.mp4',
+              ),
+              _createVideoStats(
+                id: 'blocked-video',
+                pubkey: 'blocked-author',
+                dTag: 'dtag-2',
+                videoUrl: 'https://example.com/blocked.mp4',
+              ),
+            ],
+          );
+
+          final repositoryWithApi = VideosRepository(
+            nostrClient: mockNostrClient,
+            funnelcakeApiClient: mockFunnelcakeClient,
+            blockFilter: blockFilter.call,
+          );
+
+          final result = await repositoryWithApi.getCollabVideos(
+            taggedPubkey: 'collab-pubkey',
+          );
+
+          expect(result, hasLength(1));
+          expect(result.first.id, equals('allowed-video'));
+        });
+      });
+    });
   });
 }
 

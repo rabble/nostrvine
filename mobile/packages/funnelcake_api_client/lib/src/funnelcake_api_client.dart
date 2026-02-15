@@ -476,8 +476,7 @@ class FunnelcakeApiClient {
           .timeout(_timeout);
 
       if (response.statusCode == 200) {
-        final data =
-            jsonDecode(response.body) as List<dynamic>;
+        final data = jsonDecode(response.body) as List<dynamic>;
 
         return data
             .map(
@@ -486,8 +485,7 @@ class FunnelcakeApiClient {
               ),
             )
             .where(
-              (v) =>
-                  v.id.isNotEmpty && v.videoUrl.isNotEmpty,
+              (v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty,
             )
             .toList();
       } else if (response.statusCode == 404) {

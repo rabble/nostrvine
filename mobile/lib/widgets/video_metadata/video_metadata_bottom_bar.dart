@@ -184,7 +184,7 @@ class _SaveForLaterButton extends ConsumerWidget {
     // Build the status message
     String label;
     if (saveSuccess) {
-      label = 'Saved to library!';
+      label = gallerySaveMessage ?? 'Saved to library!';
     } else {
       label = 'Failed to save';
     }

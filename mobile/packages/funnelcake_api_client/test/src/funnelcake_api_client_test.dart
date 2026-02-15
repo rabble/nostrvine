@@ -1324,7 +1324,8 @@ void main() {
     });
 
     group('getCollabVideos', () {
-      const validCollabResponse = '''
+      const validCollabResponse =
+          '''
 [
   {
     "id": "collab123def456",
@@ -1478,7 +1479,8 @@ void main() {
       });
 
       test('filters out videos with empty id', () async {
-        const responseWithEmptyId = '''
+        const responseWithEmptyId =
+            '''
 [
   {
     "id": "",
