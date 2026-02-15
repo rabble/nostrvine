@@ -25,7 +25,6 @@ import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as p;
-import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 final videoEditorProvider =

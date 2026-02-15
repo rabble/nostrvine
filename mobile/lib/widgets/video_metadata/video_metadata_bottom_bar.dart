@@ -3,12 +3,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// Bottom bar with "Save for Later" and "Post" buttons for video metadata.
 ///
@@ -105,6 +109,7 @@ class _SaveForLaterButton extends ConsumerWidget {
     }
 
     bool saveSuccess = true;
+    String? gallerySaveMessage;
 
     try {
       // 1. Get video path and save to gallery FIRST (before draft save deletes

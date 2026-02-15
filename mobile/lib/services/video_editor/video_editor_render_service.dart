@@ -495,21 +495,7 @@ class VideoEditorRenderService {
       video: clip.video,
       enableAudio: enableAudio,
       shouldOptimizeForNetworkUse: true,
-      imageBytes: parameters?.layers.isNotEmpty == true
-          ? parameters?.image
-          : null,
-      blur: parameters?.blur,
-      colorMatrixList: parameters?.colorFilters ?? [],
-      imageBytesWithCropping: true,
-      transform: ExportTransform(
-        x: cropParams.x,
-        y: cropParams.y,
-        width: cropParams.width,
-        height: cropParams.height,
-        flipX: parameters?.flipX ?? false,
-        flipY: parameters?.flipY ?? false,
-        rotateTurns: parameters?.rotateTurns ?? 0,
-      ),
+      transform: cropParams.toExportTransform(),
     );
 
     await ProVideoEditor.instance.renderVideoToFile(outputPath, task);
@@ -553,23 +539,8 @@ class VideoEditorRenderService {
       endTime: VideoEditorConstants.maxDuration,
       enableAudio: enableAudio,
       shouldOptimizeForNetworkUse: true,
-      imageBytes: parameters?.layers.isNotEmpty == true
-          ? parameters?.image
-          : imageBytes,
-      blur: parameters?.blur,
-      colorMatrixList: parameters?.colorFilters ?? [],
-      imageBytesWithCropping: true,
-      transform: globalTransform != null
-          ? ExportTransform(
-              x: globalTransform.x,
-              y: globalTransform.y,
-              width: globalTransform.width,
-              height: globalTransform.height,
-              flipX: parameters?.flipX ?? false,
-              flipY: parameters?.flipY ?? false,
-              rotateTurns: parameters?.rotateTurns ?? 0,
-            )
-          : null,
+      transform: globalTransform?.toExportTransform(),
+      imageBytes: imageBytes,
       customAudioPath: customAudioPath,
       originalAudioVolume: originalAudioVolume,
       customAudioVolume: customAudioVolume,

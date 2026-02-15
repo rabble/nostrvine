@@ -107,7 +107,9 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     final pubkeys = followRepo.followingPubkeys;
 
     // Batch-load profiles from SQLite cache (fast, no network)
-    final futures = pubkeys.map((pk) => profileRepo.getProfile(pubkey: pk));
+    final futures = pubkeys.map(
+      (pk) => profileRepo.getCachedProfile(pubkey: pk),
+    );
     final results = await Future.wait(futures);
 
     final profiles = results.whereType<UserProfile>().toList();

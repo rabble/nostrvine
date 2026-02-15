@@ -433,7 +433,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
                 style: const TextStyle(color: Colors.white),
               ),
             ),
-            AsyncData(:final value) => ProfileGrid(
+            AsyncData(:final value) => ProfileGridView(
               userIdHex: widget.pubkey,
               isOwnProfile: false,
               displayName: displayName,

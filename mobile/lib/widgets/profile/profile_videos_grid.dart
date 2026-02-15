@@ -110,11 +110,15 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
   @override
   Widget build(BuildContext context) {
     final backgroundPublish = context.watch<BackgroundPublishBloc>();
+    final isOwnProfile =
+        ref.read(authServiceProvider).currentPublicKeyHex == widget.userIdHex;
 
     final allVideos = [
-      ...backgroundPublish.state.uploads
-          .where((upload) => upload.result == null)
-          .map(_GridUploadingVideoEntry.new),
+      // Only show uploading tiles on own profile
+      if (isOwnProfile)
+        ...backgroundPublish.state.uploads
+            .where((upload) => upload.result == null)
+            .map(_GridUploadingVideoEntry.new),
 
       ...widget.videos.map(_GridVideoEventEntry.new),
     ];
