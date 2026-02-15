@@ -151,7 +151,7 @@ class CameraController: NSObject {
                     // Check if the ultra-wide supports close focus (macro)
                     // Devices supporting macro typically have minimum focus distance < 0.5m
                     let format = ultraWideDevice.activeFormat
-                    if format.isAutoFocusSystem(.phaseDetection) || format.isAutoFocusSystem(.contrastDetection) {
+                    if format.autoFocusSystem == .phaseDetection || format.autoFocusSystem == .contrastDetection {
                         // Ultra-wide with autofocus can typically do macro
                         hasMacroCamera = true
                     }
@@ -567,7 +567,7 @@ class CameraController: NSObject {
                         videoConnection.videoOrientation = .portrait
                     }
                     // Mirror pixels for front camera when mirrorFrontCameraOutput is enabled
-                    let isFront = newPosition == .front
+                    let isFront = newDevice.position == .front
                     if videoConnection.isVideoMirroringSupported {
                         videoConnection.isVideoMirrored = isFront && self.mirrorFrontCameraOutput
                     }
