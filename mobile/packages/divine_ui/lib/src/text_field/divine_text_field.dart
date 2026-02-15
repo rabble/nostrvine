@@ -27,7 +27,8 @@ import 'package:flutter/services.dart';
 class DivineTextField extends StatefulWidget {
   /// Creates a Divine styled text field.
   const DivineTextField({
-    required this.label,
+    this.label,
+    this.labelText,
     super.key,
     this.controller,
     this.focusNode,
@@ -44,10 +45,17 @@ class DivineTextField extends StatefulWidget {
     this.onChanged,
     this.onSubmitted,
     this.onEditingComplete,
+    this.minLines,
+    this.maxLines,
+    this.maxLength,
+    this.contentPadding,
   });
 
   /// Label text shown inside the field, floats above when focused/filled.
-  final String label;
+  final String? label;
+
+  /// Alternative label text parameter for backward compatibility.
+  final String? labelText;
 
   /// Controller for the text field.
   final TextEditingController? controller;
@@ -95,6 +103,21 @@ class DivineTextField extends StatefulWidget {
 
   /// Called when editing is complete.
   final VoidCallback? onEditingComplete;
+
+  /// Minimum number of lines to display.
+  final int? minLines;
+
+  /// Maximum number of lines to display.
+  final int? maxLines;
+
+  /// Maximum character length allowed.
+  final int? maxLength;
+
+  /// Custom content padding for the input decoration.
+  final EdgeInsetsGeometry? contentPadding;
+
+  /// Resolved label text, preferring [label] over [labelText].
+  String? get _resolvedLabel => label ?? labelText;
 
   @override
   State<DivineTextField> createState() => _DivineTextFieldState();
@@ -194,6 +217,9 @@ class _DivineTextFieldState extends State<DivineTextField> {
       textInputAction: widget.textInputAction,
       textCapitalization: widget.textCapitalization,
       inputFormatters: widget.inputFormatters,
+      minLines: widget.minLines,
+      maxLines: widget.obscureText ? 1 : widget.maxLines,
+      maxLength: widget.maxLength,
       onTap: widget.onTap,
       onChanged: widget.onChanged,
       onSubmitted: widget.onSubmitted,
@@ -202,7 +228,7 @@ class _DivineTextFieldState extends State<DivineTextField> {
       cursorColor: VineTheme.primary,
       decoration: InputDecoration(
         isDense: true,
-        contentPadding: EdgeInsets.zero,
+        contentPadding: widget.contentPadding ?? EdgeInsets.zero,
         border: InputBorder.none,
         enabledBorder: InputBorder.none,
         focusedBorder: InputBorder.none,
@@ -210,7 +236,7 @@ class _DivineTextFieldState extends State<DivineTextField> {
         focusedErrorBorder: InputBorder.none,
         disabledBorder: InputBorder.none,
         filled: false,
-        labelText: widget.label,
+        labelText: widget._resolvedLabel,
         labelStyle: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted),
         floatingLabelBehavior: FloatingLabelBehavior.auto,
         floatingLabelStyle: VineTheme.labelSmallFont(color: VineTheme.primary),
