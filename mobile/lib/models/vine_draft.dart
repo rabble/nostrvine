@@ -314,13 +314,11 @@ class VineDraft {
       'finalRenderedClip': finalRenderedClip!.toJson(),
     if (collaboratorPubkeys.isNotEmpty)
       'collaboratorPubkeys': collaboratorPubkeys,
-    if (inspiredByVideo != null)
-      'inspiredByVideo': inspiredByVideo!.toJson(),
+    if (inspiredByVideo != null) 'inspiredByVideo': inspiredByVideo!.toJson(),
     if (inspiredByNpub != null) 'inspiredByNpub': inspiredByNpub,
     if (selectedAudioEventId != null)
       'selectedAudioEventId': selectedAudioEventId,
-    if (selectedAudioRelay != null)
-      'selectedAudioRelay': selectedAudioRelay,
+    if (selectedAudioRelay != null) 'selectedAudioRelay': selectedAudioRelay,
   };
 
   String get displayDuration {
