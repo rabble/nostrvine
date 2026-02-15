@@ -337,7 +337,7 @@ void main() {
       });
 
       test('returns true when already on requested lens', () async {
-        await DivineCamera.instance.initialize(lens: DivineCameraLens.back);
+        await DivineCamera.instance.initialize();
 
         final result = await DivineCamera.instance.setLens(
           DivineCameraLens.back,
