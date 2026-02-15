@@ -160,6 +160,24 @@ class _SingleVideoPlayerState extends State<SingleVideoPlayer> {
   }
 
   @override
+  void reassemble() {
+    super.reassemble();
+    // During hot reload, stop native playback to prevent
+    // "Callback invoked after it has been deleted" crash.
+    unawaited(_bufferSubscription?.cancel());
+    _bufferSubscription = null;
+    _effectivePool.stopAll();
+    _state = SingleVideoState.loading;
+    _pooledPlayer = null;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        unawaited(_loadVideo());
+      }
+    });
+  }
+
+  @override
   void dispose() {
     unawaited(_bufferSubscription?.cancel());
     // Player stays in pool - LRU will handle cleanup
