@@ -104,10 +104,6 @@ class _DivineTextFieldState extends State<DivineTextField> {
   late FocusNode _focusNode;
   late TextEditingController _controller;
   bool _isObscured = true;
-  bool _hasFocus = false;
-
-  bool get _hasText => _controller.text.isNotEmpty;
-  bool get _isFloating => _hasFocus || _hasText;
 
   @override
   void initState() {
@@ -146,7 +142,7 @@ class _DivineTextFieldState extends State<DivineTextField> {
   }
 
   void _handleFocusChange() {
-    setState(() => _hasFocus = _focusNode.hasFocus);
+    setState(() {});
   }
 
   void _handleTextChange() {
@@ -230,7 +226,6 @@ class _DivineTextFieldState extends State<DivineTextField> {
         padding: const EdgeInsets.all(8),
         child: DivineIcon(
           icon: _isObscured ? DivineIconName.eye : DivineIconName.eyeSlash,
-          size: 24,
           color: VineTheme.onSurfaceMuted,
         ),
       ),
