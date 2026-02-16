@@ -312,16 +312,28 @@ class _DivineTextFieldState extends State<DivineTextField> {
     );
   }
 
+  // Icon right padding so the gap from the icon to the container's right edge
+  // equals the gap from the icon to the top/bottom edges:
+  // vertical gap = (76 - 24) / 2 = 26px from container edge to icon edge
+  // right gap = _iconRightPadding + parent right padding (8) = 26px
+  static const double _iconRightPadding = 18.0;
+  static const double _iconOtherPadding = 8.0;
+
   Widget _buildVisibilityToggle() {
     return GestureDetector(
       onTap: _toggleObscured,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.only(
+          left: _iconOtherPadding,
+          top: _iconOtherPadding,
+          bottom: _iconOtherPadding,
+          right: _iconRightPadding,
+        ),
         child: DivineIcon(
           icon: _isObscured ? DivineIconName.eye : DivineIconName.eyeSlash,
           size: 24,
-          color: VineTheme.onSurfaceMuted,
+          color: _hasText ? VineTheme.onSurface : VineTheme.onSurfaceMuted,
         ),
       ),
     );
