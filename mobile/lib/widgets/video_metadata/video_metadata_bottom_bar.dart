@@ -75,8 +75,8 @@ class _SaveForLaterButton extends ConsumerWidget {
         hint: isProcessing
             ? 'Rendering video...'
             : isSaving
-                ? 'Saving video...'
-                : 'Save video to drafts and camera roll',
+            ? 'Saving video...'
+            : 'Save video to drafts and camera roll',
         button: true,
         enabled: !isSaving && !isProcessing,
         child: GestureDetector(
