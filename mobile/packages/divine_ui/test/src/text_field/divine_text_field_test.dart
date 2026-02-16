@@ -91,8 +91,42 @@ void main() {
       var tapped = false;
       await tester.pumpWidget(buildTestWidget(onTap: () => tapped = true));
 
-      await tester.tap(find.byType(TextField));
+      await tester.tap(find.byType(DivineTextField));
+      await tester.pump();
       expect(tapped, isTrue);
+    });
+
+    testWidgets('focuses field when container area is tapped', (
+      tester,
+    ) async {
+      final focusNode = FocusNode();
+      await tester.pumpWidget(
+        buildTestWidget(focusNode: focusNode),
+      );
+
+      expect(focusNode.hasFocus, isFalse);
+
+      // Tap on the DivineTextField container (not directly on the TextField)
+      await tester.tap(find.byType(DivineTextField));
+      await tester.pump();
+
+      expect(focusNode.hasFocus, isTrue);
+
+      focusNode.dispose();
+    });
+
+    testWidgets('does not focus when disabled', (tester) async {
+      final focusNode = FocusNode();
+      await tester.pumpWidget(
+        buildTestWidget(focusNode: focusNode, enabled: false),
+      );
+
+      await tester.tap(find.byType(DivineTextField));
+      await tester.pump();
+
+      expect(focusNode.hasFocus, isFalse);
+
+      focusNode.dispose();
     });
 
     testWidgets('respects readOnly property', (tester) async {
@@ -137,8 +171,13 @@ void main() {
       var textField = tester.widget<TextField>(find.byType(TextField));
       expect(textField.obscureText, isTrue);
 
-      // Tap the eye icon
-      await tester.tap(find.byType(DivineIcon));
+      // Tap the eye icon toggle
+      await tester.tap(
+        find.ancestor(
+          of: find.byType(DivineIcon),
+          matching: find.byType(GestureDetector),
+        ).first,
+      );
       await tester.pump();
 
       // Now should be visible

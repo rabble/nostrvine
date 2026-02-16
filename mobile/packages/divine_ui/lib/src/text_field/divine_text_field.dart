@@ -173,6 +173,13 @@ class _DivineTextFieldState extends State<DivineTextField> {
     setState(() {});
   }
 
+  void _handleContainerTap() {
+    if (widget.enabled && !widget.readOnly) {
+      _focusNode.requestFocus();
+    }
+    widget.onTap?.call();
+  }
+
   void _toggleObscured() {
     setState(() => _isObscured = !_isObscured);
   }
@@ -216,7 +223,11 @@ class _DivineTextFieldState extends State<DivineTextField> {
         child: Row(
           children: [
             Expanded(
-              child: _buildContent(label, hasLabel),
+              child: GestureDetector(
+                onTap: _handleContainerTap,
+                behavior: HitTestBehavior.opaque,
+                child: _buildContent(label, hasLabel),
+              ),
             ),
             if (widget.obscureText) _buildVisibilityToggle(),
           ],
