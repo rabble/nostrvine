@@ -513,11 +513,7 @@ final pageContextProvider = StreamProvider<RouteContext>((ref) async* {
   // Emit a context immediately if the stream is a single-value Stream.value(...)
   // (In tests we often use Stream.value('/profile/npub...'))
   await for (final loc in locations) {
-    print('🟪 PAGE_CONTEXT DEBUG: Raw location = $loc');
     final ctx = parseRoute(loc);
-    print(
-      '🟪 PAGE_CONTEXT DEBUG: Parsed context = type=${ctx.type}, npub=${ctx.npub}, index=${ctx.videoIndex}',
-    );
     Log.info(
       'CTX derive: type=${ctx.type} npub=${ctx.npub} index=${ctx.videoIndex}',
       name: 'Route',

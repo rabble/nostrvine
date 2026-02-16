@@ -379,7 +379,15 @@ class PaginatedPubkeys {
   });
 
   factory PaginatedPubkeys.fromJson(Map<String, dynamic> json) {
-    final pubkeysData = json['pubkeys'] as List<dynamic>? ?? [];
+    // The funnelcake API uses context-specific keys:
+    // - /following returns {"following": [...]}
+    // - /followers returns {"followers": [...]}
+    // - Fall back to "pubkeys" for generic responses
+    final pubkeysData =
+        json['following'] as List<dynamic>? ??
+        json['followers'] as List<dynamic>? ??
+        json['pubkeys'] as List<dynamic>? ??
+        [];
     return PaginatedPubkeys(
       pubkeys: pubkeysData.map((e) => e.toString()).toList(),
       total: json['total'] as int? ?? pubkeysData.length,
