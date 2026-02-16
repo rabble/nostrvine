@@ -334,5 +334,9 @@ class CameraMobileService extends CameraService {
   List<DivineCameraLens> get availableLenses => _camera.state.availableLenses;
 
   @override
+  CameraLensMetadata? get currentLensMetadata =>
+      _camera.state.currentLensMetadata;
+
+  @override
   String? get initializationError => _initializationError;
 }

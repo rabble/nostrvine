@@ -2,6 +2,7 @@
 // ABOUTME: Holds current camera configuration and status
 
 import 'package:divine_camera/src/models/camera_lens.dart';
+import 'package:divine_camera/src/models/camera_lens_metadata.dart';
 import 'package:divine_camera/src/models/flash_mode.dart';
 import 'package:equatable/equatable.dart';
 
@@ -25,6 +26,7 @@ class CameraState extends Equatable {
     this.isExposurePointSupported = false,
     this.textureId,
     this.availableLenses = const [DivineCameraLens.back],
+    this.currentLensMetadata,
   });
 
   /// Creates a [CameraState] from a map.
@@ -53,6 +55,11 @@ class CameraState extends Equatable {
               map['availableLenses'] as List<dynamic>,
             )
           : const [DivineCameraLens.back],
+      currentLensMetadata: map['currentLensMetadata'] != null
+          ? CameraLensMetadata.fromMap(
+              map['currentLensMetadata'] as Map<dynamic, dynamic>,
+            )
+          : null,
     );
   }
 
@@ -105,6 +112,11 @@ class CameraState extends Equatable {
   /// Includes front, back, ultraWide, telephoto, and macro if supported.
   final List<DivineCameraLens> availableLenses;
 
+  /// Metadata for the currently active camera lens.
+  ///
+  /// Contains hardware info like focal length, aperture, sensor size.
+  final CameraLensMetadata? currentLensMetadata;
+
   /// Whether the camera can record video.
   bool get canRecord => isInitialized && !isRecording;
 
@@ -152,6 +164,7 @@ class CameraState extends Equatable {
     bool? isExposurePointSupported,
     int? textureId,
     List<DivineCameraLens>? availableLenses,
+    CameraLensMetadata? currentLensMetadata,
   }) {
     return CameraState(
       isInitialized: isInitialized ?? this.isInitialized,
@@ -172,6 +185,7 @@ class CameraState extends Equatable {
           isExposurePointSupported ?? this.isExposurePointSupported,
       textureId: textureId ?? this.textureId,
       availableLenses: availableLenses ?? this.availableLenses,
+      currentLensMetadata: currentLensMetadata ?? this.currentLensMetadata,
     );
   }
 
@@ -196,6 +210,7 @@ class CameraState extends Equatable {
       'availableLenses': availableLenses
           .map((l) => l.toNativeString())
           .toList(),
+      'currentLensMetadata': currentLensMetadata?.toMap(),
     };
   }
 
@@ -216,7 +231,8 @@ class CameraState extends Equatable {
         'isFocusPointSupported: $isFocusPointSupported, '
         'isExposurePointSupported: $isExposurePointSupported, '
         'textureId: $textureId, '
-        'availableLenses: $availableLenses)';
+        'availableLenses: $availableLenses, '
+        'currentLensMetadata: $currentLensMetadata)';
   }
 
   @override
@@ -237,5 +253,6 @@ class CameraState extends Equatable {
     isExposurePointSupported,
     textureId,
     availableLenses,
+    currentLensMetadata,
   ];
 }

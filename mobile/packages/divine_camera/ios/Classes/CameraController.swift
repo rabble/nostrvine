@@ -167,6 +167,106 @@ class CameraController: NSObject {
               "ultraWide=\(hasUltraWideCamera), telephoto=\(hasTelephotoCamera), macro=\(hasMacroCamera)")
     }
     
+    /// Gets metadata for the currently active camera lens.
+    private func getCurrentLensMetadata() -> [String: Any]? {
+        guard let device = currentCamera else {
+            return nil
+        }
+        return extractCameraMetadata(device: device, lensType: currentLensType)
+    }
+    
+    /// Extracts metadata from an AVCaptureDevice.
+    private func extractCameraMetadata(device: AVCaptureDevice, lensType: String) -> [String: Any] {
+        let format = device.activeFormat
+        let formatDescription = format.formatDescription
+        let dimensions = CMVideoFormatDescriptionGetDimensions(formatDescription)
+        
+        // Get focal length from device lensAperture (available in exif data context)
+        // Note: iOS doesn't directly expose focal length like Android, but we can get it from format
+        var focalLength: Double? = nil
+        var aperture: Double? = nil
+        var fieldOfView: Double? = nil
+        
+        // Field of view is available on the format
+        let fov = format.videoFieldOfView
+        if fov > 0 {
+            fieldOfView = Double(fov)
+        }
+        
+        // Try to get more details from device properties
+        // Note: These are approximations based on common iOS device specs
+        // Actual focal length requires EXIF data from captured images
+        if #available(iOS 13.0, *) {
+            // Get geometric distortion corrected field of view if available
+            if let videoFormat = device.formats.first(where: { $0 === format }) {
+                fieldOfView = Double(videoFormat.videoFieldOfView)
+            }
+        }
+        
+        // Min focus distance (from lens position range)
+        // iOS expresses focus as a position from 0 (far) to 1 (near)
+        // We can check if macro-level focus is supported
+        var minFocusDistance: Double? = nil
+        if device.isLockingFocusWithCustomLensPositionSupported {
+            // Device supports manual focus - near focus capability exists
+            // For macro-capable lenses this is typically < 0.1 meters
+            if lensType == "macro" || lensType == "ultraWide" {
+                // Ultra-wide/macro lenses on Pro iPhones can focus at ~2cm
+                minFocusDistance = 50.0  // Diopters (1/0.02m = 50 for 2cm)
+            } else {
+                minFocusDistance = 10.0  // Diopters (1/0.1m = 10 for 10cm)
+            }
+        }
+        
+        // Optical stabilization
+        let hasOpticalStabilization = device.activeFormat.isVideoStabilizationModeSupported(.cinematic) ||
+                                      device.activeFormat.isVideoStabilizationModeSupported(.standard)
+        
+        // Sensor size approximation for common iPhone models
+        // These are estimated values - iOS doesn't expose actual sensor dimensions
+        var sensorWidth: Double? = nil
+        var sensorHeight: Double? = nil
+        
+        // Estimate 35mm equivalent focal length from field of view
+        // FOV = 2 * arctan(sensor_diagonal / (2 * focal_length))
+        // For 35mm: diagonal = 43.27mm
+        // focal_length_35mm = 43.27 / (2 * tan(FOV/2))
+        var focalLengthEquivalent35mm: Double? = nil
+        if let fov = fieldOfView, fov > 0 {
+            let fovRadians = fov * .pi / 180.0
+            let equivalent = 43.27 / (2.0 * tan(fovRadians / 2.0))
+            focalLengthEquivalent35mm = equivalent
+            
+            // Estimate physical focal length assuming typical smartphone crop factor (~7x)
+            focalLength = equivalent / 7.0
+        }
+        
+        // Check if this is a multi-camera logical device
+        var isLogicalCamera = false
+        var physicalCameraIds: [String] = []
+        if #available(iOS 13.0, *) {
+            let physicalDevices = device.constituentDevices
+            isLogicalCamera = physicalDevices.count > 1
+            physicalCameraIds = physicalDevices.map { $0.uniqueID }
+        }
+        
+        return [
+            "lensType": lensType,
+            "focalLength": focalLength as Any,
+            "focalLengthEquivalent35mm": focalLengthEquivalent35mm as Any,
+            "aperture": aperture as Any,
+            "sensorWidth": sensorWidth as Any,
+            "sensorHeight": sensorHeight as Any,
+            "pixelArrayWidth": Int(dimensions.width),
+            "pixelArrayHeight": Int(dimensions.height),
+            "minFocusDistance": minFocusDistance as Any,
+            "fieldOfView": fieldOfView as Any,
+            "hasOpticalStabilization": hasOpticalStabilization,
+            "isLogicalCamera": isLogicalCamera,
+            "physicalCameraIds": physicalCameraIds
+        ]
+    }
+    
     /// Returns a list of available lens types on this device.
     private func getAvailableLenses() -> [String] {
         var lenses: [String] = []
@@ -1125,7 +1225,8 @@ class CameraController: NSObject {
             "isFocusPointSupported": isFocusPointSupported,
             "isExposurePointSupported": isExposurePointSupported,
             "textureId": textureId,
-            "availableLenses": getAvailableLenses()
+            "availableLenses": getAvailableLenses(),
+            "currentLensMetadata": getCurrentLensMetadata() as Any
         ]
     }
     

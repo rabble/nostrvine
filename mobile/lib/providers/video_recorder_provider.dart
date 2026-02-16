@@ -511,6 +511,13 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       video: videoResult,
       originalAspectRatio: _cameraService.cameraAspectRatio,
       targetAspectRatio: state.aspectRatio,
+      lensMetadata: _cameraService.currentLensMetadata,
+    );
+
+    Log.debug(
+      '📷 Lens metadata: ${_cameraService.currentLensMetadata?.toMap()}',
+      name: 'VideoRecorderNotifier',
+      category: .video,
     );
 
     Log.info(
@@ -526,7 +533,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     final metadata = await ProVideoEditor.instance.getMetadata(videoResult);
     clipProvider.updateClipDuration(clip.id, metadata.duration);
     Log.debug(
-      '📊 Video duration: ${metadata.duration.inMilliseconds}ms',
+      '📊 Video duratioyn: ${metadata.duration.inMilliseconds}ms',
       name: 'VideoRecorderNotifier',
       category: .video,
     );
