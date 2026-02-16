@@ -145,6 +145,10 @@ class VideoEditorProviderState {
   ///
   /// Use [clearFinalRenderedClip] = true to explicitly set
   /// [finalRenderedClip] to null.
+  /// Use [clearInspiredByVideo] = true to explicitly set
+  /// [inspiredByVideo] to null.
+  /// Use [clearInspiredByNpub] = true to explicitly set
+  /// [inspiredByNpub] to null.
   VideoEditorProviderState copyWith({
     int? currentClipIndex,
     Duration? currentPosition,
@@ -171,7 +175,9 @@ class VideoEditorProviderState {
     Map<String, dynamic>? editorEditingParameters,
     List<String>? collaboratorPubkeys,
     InspiredByInfo? inspiredByVideo,
+    bool clearInspiredByVideo = false,
     String? inspiredByNpub,
+    bool clearInspiredByNpub = false,
     Object? selectedAudioEventId = _sentinel,
     Object? selectedAudioRelay = _sentinel,
   }) {
@@ -202,8 +208,12 @@ class VideoEditorProviderState {
       editorEditingParameters:
           editorEditingParameters ?? this.editorEditingParameters,
       collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
-      inspiredByVideo: inspiredByVideo ?? this.inspiredByVideo,
-      inspiredByNpub: inspiredByNpub ?? this.inspiredByNpub,
+      inspiredByVideo: clearInspiredByVideo
+          ? null
+          : (inspiredByVideo ?? this.inspiredByVideo),
+      inspiredByNpub: clearInspiredByNpub
+          ? null
+          : (inspiredByNpub ?? this.inspiredByNpub),
       selectedAudioEventId: selectedAudioEventId == _sentinel
           ? this.selectedAudioEventId
           : selectedAudioEventId as String?,

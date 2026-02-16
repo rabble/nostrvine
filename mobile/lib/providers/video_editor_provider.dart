@@ -567,19 +567,22 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Set the "Inspired By" reference to a specific video (a-tag).
   void setInspiredByVideo(InspiredByInfo info) {
-    state = state.copyWith(inspiredByVideo: info, inspiredByNpub: null);
+    state = state.copyWith(inspiredByVideo: info, clearInspiredByNpub: true);
     triggerAutosave();
   }
 
   /// Set the "Inspired By" reference to a person (NIP-27 npub in content).
   void setInspiredByPerson(String npub) {
-    state = state.copyWith(inspiredByNpub: npub, inspiredByVideo: null);
+    state = state.copyWith(inspiredByNpub: npub, clearInspiredByVideo: true);
     triggerAutosave();
   }
 
   /// Clear all "Inspired By" attribution.
   void clearInspiredBy() {
-    state = state.copyWith(inspiredByVideo: null, inspiredByNpub: null);
+    state = state.copyWith(
+      clearInspiredByVideo: true,
+      clearInspiredByNpub: true,
+    );
     triggerAutosave();
   }
 
