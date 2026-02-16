@@ -280,6 +280,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         category: .video,
       );
 
+      invalidateFinalRenderedClip();
       await autosaveChanges();
     } catch (e) {
       Log.error(
@@ -680,7 +681,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Can be called from other providers (e.g., ClipManager) to trigger
   /// autosave after changes. Uses debouncing to batch rapid changes.
   void triggerAutosave() {
-    invalidateFinalRenderedClip();
     _autosaveTimer?.cancel();
     _autosaveTimer = Timer(_autosaveDebounce, () {
       if (!ref.mounted) return;
@@ -698,8 +698,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// This method is typically called periodically or on significant changes
   /// to prevent data loss. Unlike [saveAsDraft], autosave uses a fixed
   /// [autoSaveId] to maintain a single recovery point.
-  Future<bool> autosaveChanges({bool clearFinalRenderedClip = true}) async {
-    if (clearFinalRenderedClip) invalidateFinalRenderedClip();
+  Future<bool> autosaveChanges() async {
     final clipCount = _clips.length;
     final hasTitle = state.title.isNotEmpty;
 
@@ -977,7 +976,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       isProcessing: false,
       finalRenderedClip: finalRenderedClip,
     );
-    autosaveChanges(clearFinalRenderedClip: false);
+    autosaveChanges();
   }
 
   /// Cancel an ongoing video render operation.
