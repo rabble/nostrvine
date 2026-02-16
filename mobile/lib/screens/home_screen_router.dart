@@ -95,11 +95,11 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
       pageContext,
       onLoading: () => const Center(child: BrandedLoadingIndicator(size: 80)),
       onData: (ctx) {
-        // Only handle home routes - if we get here with wrong route, don't redirect
-        // Just return empty container and let GoRouter handle the correct widget
-        // This prevents redirect loops when navigating away from home
+        // During post-login transitions, the router location stream may emit
+        // stale routes (welcome, explore, etc.) before settling on /home/0.
+        // Show a loading indicator instead of a blank screen during this window.
         if (ctx.type != RouteType.home) {
-          return const SizedBox.shrink();
+          return const Center(child: BrandedLoadingIndicator(size: 80));
         }
 
         int urlIndex = 0;
