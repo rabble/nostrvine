@@ -25,6 +25,8 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
     final collaborators = ref.watch(
       videoEditorProvider.select((s) => s.collaboratorPubkeys),
     );
+    final remainingSlots =
+        VideoEditorNotifier.maxCollaborators - collaborators.length;
 
     return Padding(
       padding: const EdgeInsets.all(16),
@@ -32,37 +34,94 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         spacing: 12,
         children: [
-          // Section label
+          Row(
+            children: [
+              Text(
+                // TODO(l10n): Replace with context.l10n
+                //   when localization is added.
+                'Collaborators',
+                style: VineTheme.bodyFont(
+                  color: VineTheme.onSurface,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  height: 1.25,
+                ),
+              ),
+              const SizedBox(width: 8),
+              _HelpButton(
+                // TODO(l10n): Replace with context.l10n
+                //   when localization is added.
+                onTap: () => _showHelpDialog(context),
+                tooltip: 'How collaborators work',
+              ),
+            ],
+          ),
           Text(
             // TODO(l10n): Replace with context.l10n
             //   when localization is added.
-            'Collaborators',
-            style: VineTheme.bodyFont(
-              color: VineTheme.onSurfaceVariant,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              height: 1.45,
-              letterSpacing: 0.5,
-            ),
+            'Tag up to ${VideoEditorNotifier.maxCollaborators} mutual '
+            'follows as co-creators.',
+            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
           ),
 
-          // Collaborator chips
           if (collaborators.isNotEmpty)
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: collaborators
-                  .map((pubkey) => _CollaboratorChip(pubkey: pubkey))
-                  .toList(),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: const Color(0x6E032017),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: VineTheme.outlineVariant),
+              ),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: collaborators
+                    .map((pubkey) => _CollaboratorChip(pubkey: pubkey))
+                    .toList(),
+              ),
             ),
 
-          // Add button (when under limit)
           if (collaborators.length < VideoEditorNotifier.maxCollaborators)
             _AddCollaboratorButton(
               onPressed: () => _addCollaborator(context, ref),
+              remainingSlots: remainingSlots,
             ),
         ],
       ),
+    );
+  }
+
+  void _showHelpDialog(BuildContext context) {
+    showDialog<void>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: VineTheme.cardBackground,
+          title: Text(
+            // TODO(l10n): Replace with context.l10n when localization is added.
+            'Collaborators',
+            style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
+          ),
+          content: Text(
+            // TODO(l10n): Replace with context.l10n when localization is added.
+            'Collaborators are tagged as co-creators on this post. '
+            'You can only add people you mutually follow, and they appear in '
+            'the post metadata when published.',
+            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                // TODO(l10n): Replace with context.l10n when localization is added.
+                'Got it',
+                style: VineTheme.bodyFont(color: VineTheme.primary),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
@@ -174,16 +233,21 @@ class _CollaboratorChip extends ConsumerWidget {
 
 /// Button to add a new collaborator.
 class _AddCollaboratorButton extends StatelessWidget {
-  const _AddCollaboratorButton({required this.onPressed});
+  const _AddCollaboratorButton({
+    required this.onPressed,
+    required this.remainingSlots,
+  });
 
   final VoidCallback onPressed;
+  final int remainingSlots;
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
           color: const Color(0x8C032017),
@@ -205,14 +269,62 @@ class _AddCollaboratorButton extends StatelessWidget {
             Text(
               // TODO(l10n): Replace with context.l10n
               //   when localization is added.
-              'Add collaborator',
+              'Add collaborator (${remainingSlots} left)',
               style: VineTheme.bodyFont(
                 color: VineTheme.onSurfaceVariant,
                 fontSize: 13,
                 fontWeight: FontWeight.w500,
               ),
             ),
+            const Spacer(),
+            Text(
+              // TODO(l10n): Replace with context.l10n
+              //   when localization is added.
+              'Mutuals only',
+              style: VineTheme.bodyFont(
+                color: VineTheme.onSurfaceMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HelpButton extends StatelessWidget {
+  const _HelpButton({required this.onTap, required this.tooltip});
+
+  final VoidCallback onTap;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 22,
+          height: 22,
+          decoration: BoxDecoration(
+            color: const Color(0x8C032017),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(color: VineTheme.outlineVariant),
+          ),
+          child: Center(
+            child: Text(
+              '?',
+              style: VineTheme.bodyFont(
+                color: VineTheme.onSurfaceVariant,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
         ),
       ),
     );

@@ -231,18 +231,11 @@ class _FormData extends ConsumerWidget {
         const _SectionCard(child: VideoMetadataTagsInput()),
         const SizedBox(height: 16),
         const _MetadataLimitWarning(),
-        const _SectionCard(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              VideoMetadataExpirationSelector(),
-              _SectionDivider(),
-              VideoMetadataCollaboratorsInput(),
-              _SectionDivider(),
-              VideoMetadataInspiredByInput(),
-            ],
-          ),
-        ),
+        const _SectionCard(child: VideoMetadataExpirationSelector()),
+        const SizedBox(height: 12),
+        const _SectionCard(child: VideoMetadataCollaboratorsInput()),
+        const SizedBox(height: 12),
+        const _SectionCard(child: VideoMetadataInspiredByInput()),
       ],
     );
   }
@@ -293,22 +286,6 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: VineTheme.outlineVariant),
       ),
       child: child,
-    );
-  }
-}
-
-class _SectionDivider extends StatelessWidget {
-  const _SectionDivider();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.symmetric(horizontal: 16),
-      child: Divider(
-        thickness: 0.5,
-        height: 1,
-        color: VineTheme.outlineVariant,
-      ),
     );
   }
 }
