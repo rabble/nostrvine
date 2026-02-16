@@ -317,8 +317,6 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
-				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
-				"$(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)",
 			);
 			name = "FlutterFire: \"flutterfire upload-crashlytics-symbols\"";
 			outputFileListPaths = (
@@ -337,8 +335,6 @@
 			inputFileListPaths = (
 			);
 			inputPaths = (
-				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
-				"$(TARGET_BUILD_DIR)/$(INFOPLIST_PATH)",
 			);
 			outputFileListPaths = (
 			);
