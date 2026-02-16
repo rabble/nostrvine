@@ -58,7 +58,9 @@ class DivineTextField extends StatefulWidget {
   @Deprecated('Use label instead')
   final String? labelText;
 
-  /// The effective label to display (prefers [label] over [labelText]).
+  /// The effective label to display (prefers [label] over deprecated
+  /// labelText).
+  // ignore: deprecated_member_use_from_same_package
   String? get effectiveLabel => label ?? labelText;
 
   /// Controller for the text field.
@@ -190,8 +192,8 @@ class _DivineTextFieldState extends State<DivineTextField> {
 
   /// Figma specs for field height breakdown:
   /// 16px padding + 16px label + 4px gap + 24px input + 16px padding = 76px
-  static const double _totalHeight = 76.0;
-  static const double _horizontalPadding = 24.0;
+  static const double _totalHeight = 76;
+  static const double _horizontalPadding = 24;
 
   @override
   Widget build(BuildContext context) {
@@ -270,11 +272,11 @@ class _DivineTextFieldContent extends StatelessWidget {
   final bool isFloating;
   final Widget child;
 
-  static const double _verticalPadding = 16.0;
-  static const double _labelLineHeight = 16.0;
-  static const double _labelGap = 4.0;
-  static const double _inputLineHeight = 24.0;
-  static const double _totalHeight = 76.0;
+  static const double _verticalPadding = 16;
+  static const double _labelLineHeight = 16;
+  static const double _labelGap = 4;
+  static const double _inputLineHeight = 24;
+  static const double _totalHeight = 76;
 
   /// Duration for the floating label transition animation.
   static const Duration _animationDuration = Duration(milliseconds: 200);
@@ -432,10 +434,10 @@ class _VisibilityToggle extends StatelessWidget {
   /// Ensures equal spacing from the icon to all container edges
   /// (26px): vertical = (76 - 24) / 2 = 26px,
   /// right = 18 + parent padding 8 = 26px.
-  static const double _iconRightPadding = 18.0;
+  static const double _iconRightPadding = 18;
 
   /// Left, top, and bottom padding for the visibility toggle.
-  static const double _iconOtherPadding = 8.0;
+  static const double _iconOtherPadding = 8;
 
   @override
   Widget build(BuildContext context) {
@@ -454,7 +456,6 @@ class _VisibilityToggle extends StatelessWidget {
           ),
           child: DivineIcon(
             icon: isObscured ? DivineIconName.eye : DivineIconName.eyeSlash,
-            size: 24,
             color: hasText ? VineTheme.onSurface : VineTheme.onSurfaceMuted,
           ),
         ),

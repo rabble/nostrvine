@@ -192,7 +192,7 @@ class _FormData extends ConsumerWidget {
                   controller: titleController,
                   // TODO(l10n): Replace with context.l10n when localization is
                   // added.
-                  labelText: 'Title',
+                  label: 'Title',
                   focusNode: titleFocusNode,
                   textInputAction: .next,
                   minLines: 1,
@@ -211,7 +211,7 @@ class _FormData extends ConsumerWidget {
                   controller: descriptionController,
                   // TODO(l10n): Replace with context.l10n when localization is
                   // added.
-                  labelText: 'Description',
+                  label: 'Description',
                   focusNode: descriptionFocusNode,
                   keyboardType: .multiline,
                   textInputAction: .newline,
