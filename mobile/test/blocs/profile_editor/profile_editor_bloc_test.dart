@@ -6,7 +6,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
-import 'package:openvine/models/user_profile.dart' as app_models;
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:profile_repository/profile_repository.dart';
 
@@ -44,7 +43,7 @@ void main() {
 
     setUpAll(() {
       registerFallbackValue(
-        app_models.UserProfile(
+        UserProfile(
           pubkey: testPubkey,
           displayName: testDisplayName,
           rawData: const {},

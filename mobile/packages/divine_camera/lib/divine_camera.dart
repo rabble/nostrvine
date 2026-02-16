@@ -43,6 +43,14 @@ class DivineCamera {
   /// Gets the current camera state.
   CameraState get state => _state;
 
+  /// Whether the front camera video output should be mirrored.
+  /// When `true`, recorded video appears as mirror image (like preview).
+  /// When `false`, recorded video shows real-world orientation.
+  bool _mirrorFrontCameraOutput = false;
+
+  /// Gets whether the front camera video output is mirrored.
+  bool get mirrorFrontCameraOutput => _mirrorFrontCameraOutput;
+
   /// The platform interface instance.
   DivineCameraPlatform get _platform => DivineCameraPlatform.instance;
 
@@ -80,6 +88,9 @@ class DivineCamera {
   }) async {
     // Register auto-stop callback with platform
     _platform.onRecordingAutoStopped = _handleAutoStop;
+
+    // Store the mirror setting for preview widget
+    _mirrorFrontCameraOutput = mirrorFrontCameraOutput;
 
     _state = await _platform.initializeCamera(
       lens: lens,
@@ -162,6 +173,24 @@ class DivineCamera {
     _notifyStateChanged();
 
     _state = await _platform.switchCamera(newLens);
+    _state = _state.copyWith(isSwitchingCamera: false);
+    _notifyStateChanged();
+    return true;
+  }
+
+  /// Switches to a specific camera lens.
+  ///
+  /// [lens] the lens to switch to.
+  /// Returns true if successful.
+  Future<bool> setLens(DivineCameraLens lens) async {
+    if (lens == _state.lens) return true;
+    if (!_state.availableLenses.contains(lens)) return false;
+
+    // Set switching state to keep last frame visible
+    _state = _state.copyWith(isSwitchingCamera: true);
+    _notifyStateChanged();
+
+    _state = await _platform.switchCamera(lens);
     _state = _state.copyWith(isSwitchingCamera: false);
     _notifyStateChanged();
     return true;

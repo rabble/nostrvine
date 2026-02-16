@@ -1,7 +1,8 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/extensions/aspect_ratio_extensions.dart';
+import 'package:openvine/platform_io.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -189,7 +190,7 @@ class _VideoPlayerWidget extends StatelessWidget {
         builder: (context, constraints) {
           // For vertical videos (9:16), expand to fill the available space.
           // For other ratios (e.g., square), maintain their intrinsic aspect.
-          final aspectRatio = clip.targetAspectRatio == .vertical
+          final aspectRatio = clip.targetAspectRatio.useFullScreen
               ? constraints.biggest.aspectRatio
               : clip.targetAspectRatio.value;
 

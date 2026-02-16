@@ -36,6 +36,12 @@ void main() {
                   'isFocusPointSupported': true,
                   'isExposurePointSupported': true,
                   'textureId': 1,
+                  'availableLenses': [
+                    'front',
+                    'back',
+                    'ultraWide',
+                    'telephoto',
+                  ],
                 };
               case 'disposeCamera':
                 return null;
@@ -63,6 +69,12 @@ void main() {
                   'isFocusPointSupported': true,
                   'isExposurePointSupported': true,
                   'textureId': 1,
+                  'availableLenses': [
+                    'front',
+                    'back',
+                    'ultraWide',
+                    'telephoto',
+                  ],
                 };
               case 'startRecording':
                 return null;
@@ -93,6 +105,12 @@ void main() {
                   'isFocusPointSupported': true,
                   'isExposurePointSupported': true,
                   'textureId': 1,
+                  'availableLenses': [
+                    'front',
+                    'back',
+                    'ultraWide',
+                    'telephoto',
+                  ],
                 };
               default:
                 return null;
@@ -178,6 +196,83 @@ void main() {
 
       expect(state.lens, DivineCameraLens.front);
     });
+
+    test('switchCamera to ultraWide returns correct lens', () async {
+      final state = await platform.switchCamera(DivineCameraLens.ultraWide);
+
+      expect(state.lens, DivineCameraLens.ultraWide);
+    });
+
+    test('switchCamera to telephoto returns correct lens', () async {
+      final state = await platform.switchCamera(DivineCameraLens.telephoto);
+
+      expect(state.lens, DivineCameraLens.telephoto);
+    });
+
+    test('initializeCamera returns availableLenses', () async {
+      final state = await platform.initializeCamera();
+
+      expect(state.availableLenses, isNotEmpty);
+      expect(state.availableLenses, contains(DivineCameraLens.front));
+      expect(state.availableLenses, contains(DivineCameraLens.back));
+      expect(state.availableLenses, contains(DivineCameraLens.ultraWide));
+      expect(state.availableLenses, contains(DivineCameraLens.telephoto));
+    });
+
+    test(
+      'CameraState hasUltraWideCamera returns true when available',
+      () async {
+        final state = await platform.initializeCamera();
+
+        expect(state.hasUltraWideCamera, isTrue);
+      },
+    );
+
+    test(
+      'CameraState hasTelephotoCamera returns true when available',
+      () async {
+        final state = await platform.initializeCamera();
+
+        expect(state.hasTelephotoCamera, isTrue);
+      },
+    );
+
+    test(
+      'CameraState hasMacroCamera returns false when not available',
+      () async {
+        final state = await platform.initializeCamera();
+
+        expect(state.hasMacroCamera, isFalse);
+      },
+    );
+
+    test('CameraState availableBackLenses filters front camera', () async {
+      final state = await platform.initializeCamera();
+
+      expect(
+        state.availableBackLenses,
+        isNot(contains(DivineCameraLens.front)),
+      );
+      expect(state.availableBackLenses, contains(DivineCameraLens.back));
+      expect(state.availableBackLenses, contains(DivineCameraLens.ultraWide));
+    });
+
+    test(
+      'CameraState availableFrontLenses returns only front cameras',
+      () async {
+        final state = await platform.initializeCamera();
+
+        expect(state.availableFrontLenses, contains(DivineCameraLens.front));
+        expect(
+          state.availableFrontLenses,
+          isNot(contains(DivineCameraLens.back)),
+        );
+        expect(
+          state.availableFrontLenses,
+          isNot(contains(DivineCameraLens.ultraWide)),
+        );
+      },
+    );
 
     test('startRecording completes without error', () async {
       await expectLater(platform.startRecording(), completes);

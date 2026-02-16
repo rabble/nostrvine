@@ -8,6 +8,36 @@
     "ask": []
   },
   "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-edit-nostr-id-guard.sh",
+            "timeout": 5000,
+            "statusMessage": "Checking for Nostr ID truncation..."
+          },
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-edit-vinetheme-guard.sh",
+            "timeout": 5000,
+            "statusMessage": "Checking VineTheme compliance..."
+          }
+        ]
+      },
+      {
+        "matcher": "Bash(git commit:*)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/pre-commit-build-runner.sh",
+            "timeout": 120000,
+            "statusMessage": "Running build_runner for staged files..."
+          }
+        ]
+      }
+    ],
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
@@ -15,13 +45,13 @@
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-format.sh",
-            "timeout": 30,
+            "timeout": 30000,
             "statusMessage": "Formatting code..."
           },
           {
             "type": "command",
             "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit-analyze.sh",
-            "timeout": 60,
+            "timeout": 60000,
             "statusMessage": "Analyzing code..."
           }
         ]

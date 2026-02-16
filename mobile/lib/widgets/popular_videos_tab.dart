@@ -1,22 +1,25 @@
 // ABOUTME: Popular Videos tab widget showing trending videos sorted by loop count
 // ABOUTME: Uses REST API (sort=loops) with Nostr fallback for accurate loop-based sorting
 
+import 'dart:async';
+
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/popular_videos_feed_provider.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
-import 'package:openvine/services/top_hashtags_service.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/services/feed_performance_tracker.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
-import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
+import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/trending_hashtags_section.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Tab widget displaying popular/trending videos sorted by loop count.
 ///
@@ -198,8 +201,28 @@ class _PopularVideosTrendingContent extends ConsumerStatefulWidget {
 class _PopularVideosTrendingContentState
     extends ConsumerState<_PopularVideosTrendingContent>
     with ScrollToHideMixin {
+  late final StreamController<List<VideoEvent>> _videosStreamController;
+
+  @override
+  void initState() {
+    super.initState();
+    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
+  }
+
+  @override
+  void dispose() {
+    _videosStreamController.close();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Listen to provider changes and push to stream for fullscreen updates
+    ref.listen(popularVideosFeedProvider, (previous, next) {
+      if (next.hasValue) {
+        _videosStreamController.add(next.value!.videos);
+      }
+    });
     final hashtags = TopHashtagsService.instance.getTopHashtags(limit: 20);
 
     measureHeaderHeight();
@@ -226,10 +249,16 @@ class _PopularVideosTrendingContentState
                   category: LogCategory.video,
                 );
                 context.push(
-                  FullscreenVideoFeedScreen.path,
-                  extra: FullscreenVideoFeedArgs(
-                    source: StaticFeedSource(videoList),
+                  PooledFullscreenVideoFeedScreen.path,
+                  extra: PooledFullscreenVideoFeedArgs(
+                    // Use startWith to ensure initial videos are delivered
+                    // before FullscreenFeedBloc subscribes to the stream
+                    videosStream: _videosStreamController.stream.startWith(
+                      videoList,
+                    ),
                     initialIndex: index,
+                    onLoadMore: () =>
+                        ref.read(popularVideosFeedProvider.notifier).loadMore(),
                     contextTitle: 'Popular Videos',
                   ),
                 );

@@ -46,8 +46,12 @@ import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
+import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
+import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
+import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
@@ -205,13 +209,20 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   /// Controller params for the current video
   /// Uses platform-aware URL selection: HLS on Android, MP4 on iOS/macOS
   /// Cache uses original MP4 URL (HLS can't be cached as single file)
-  VideoControllerParams get _controllerParams => VideoControllerParams(
-    videoId: widget.video.id,
-    videoUrl:
-        widget.video.getOptimalVideoUrlForPlatform() ?? widget.video.videoUrl!,
-    cacheUrl: widget.video.videoUrl, // Always cache original MP4
-    videoEvent: widget.video,
-  );
+  /// Checks fallback URL cache first (set when quality variant fails)
+  VideoControllerParams get _controllerParams {
+    // Check for fallback URL (stored when quality variant 720p/480p fails)
+    final fallbackUrl = ref.read(fallbackUrlCacheProvider)[widget.video.id];
+    return VideoControllerParams(
+      videoId: widget.video.id,
+      videoUrl:
+          fallbackUrl ??
+          widget.video.getOptimalVideoUrlForPlatform() ??
+          widget.video.videoUrl!,
+      cacheUrl: widget.video.videoUrl, // Always cache original MP4
+      videoEvent: widget.video,
+    );
+  }
 
   @override
   void initState() {
@@ -235,6 +246,36 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         );
         return;
       }
+
+      // Listen for quality variant fallback URL changes (applies to all play modes).
+      // When a 720p/480p variant fails, the provider stores a fallback URL.
+      // We need to detect this and re-trigger playback with the new controller.
+      ref.listenManual(
+        fallbackUrlCacheProvider.select((cache) => cache[widget.video.id]),
+        (prev, next) {
+          if (!mounted) return;
+          if (prev == null && next != null) {
+            Log.info(
+              '🔄 Quality fallback URL detected for ${widget.video.id}, '
+              'retriggering playback with original MP4: $next',
+              name: 'VideoFeedItem',
+              category: LogCategory.video,
+            );
+            // Use postFrameCallback to ensure the widget has rebuilt with
+            // new _controllerParams before we try to play
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              final bool isActive =
+                  widget.isActiveOverride == true ||
+                  (widget.isActiveOverride == null &&
+                      ref.read(isVideoActiveProvider(_stableVideoId)));
+              if (isActive) {
+                _handlePlaybackChange(true);
+              }
+            });
+          }
+        },
+      );
 
       // If using override, handle playback directly without provider listener
       // BUT still listen to overlay visibility for modal pause/resume
@@ -605,6 +646,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       category: LogCategory.ui,
     );
 
+    // Watch fallback URL to trigger rebuild when quality variant (720p/480p) fails.
+    // This ensures _controllerParams switches to the fallback URL and creates a new
+    // controller with the original MP4 URL.
+    ref.watch(fallbackUrlCacheProvider.select((cache) => cache[video.id]));
+
     // Skip rendering if no video URL
     if (video.videoUrl == null) {
       return Container(
@@ -861,6 +907,44 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                     // and is playing (audio/video working), don't show error overlay
                     final isActuallyBroken = value.hasError && !value.isPlaying;
                     if (isActuallyBroken) {
+                      // When a quality variant (720p/480p) fails, the catchError
+                      // handler in the provider will store a fallback URL and
+                      // trigger a rebuild with a fresh controller for the original
+                      // MP4. During the brief window between the error and the
+                      // rebuild, suppress the error overlay and show the loading
+                      // state instead so the user sees a seamless transition.
+                      final optimalUrl = video.getOptimalVideoUrlForPlatform();
+                      final isQualityVariant =
+                          optimalUrl != null &&
+                          (optimalUrl.contains('/720p') ||
+                              optimalUrl.contains('/480p'));
+                      final fallbackUrl = ref.read(
+                        fallbackUrlCacheProvider,
+                      )[video.id];
+
+                      if (isQualityVariant && fallbackUrl == null) {
+                        // Fallback pending — show thumbnail + loading indicator
+                        return SizedBox.expand(
+                          child: Container(
+                            color: Colors.black,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                VideoThumbnailWidget(
+                                  video: video,
+                                  fit: BoxFit.cover,
+                                  showPlayIcon: false,
+                                ),
+                                if (isActive)
+                                  const Center(
+                                    child: BrandedLoadingIndicator(size: 60),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
                       return VideoErrorOverlay(
                         video: video,
                         controllerParams: _controllerParams,
@@ -1041,6 +1125,22 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                   ),
                                 ),
                               ),
+                            // Subtitle overlay
+                            if (isActive && video.hasSubtitles)
+                              Consumer(
+                                builder: (context, ref, _) {
+                                  final visibilityMap = ref.watch(
+                                    subtitleVisibilityProvider,
+                                  );
+                                  final subtitlesVisible =
+                                      visibilityMap[video.id] ?? false;
+                                  return SubtitleOverlay(
+                                    video: video,
+                                    positionMs: value.position.inMilliseconds,
+                                    visible: subtitlesVisible,
+                                  );
+                                },
+                              ),
                           ],
                         ),
                       ),
@@ -1206,10 +1306,11 @@ class VideoOverlayActions extends ConsumerWidget {
     // Only interactive elements (buttons, chips with GestureDetector) absorb taps
     // When contextTitle is non-empty, a list header exists above - add extra offset to avoid overlap
     // List header is roughly 64px tall (8px padding + 48px content + 8px padding), add clearance
-    // In fullscreen mode, add extra offset to clear the back button row (AppBar ~56px + padding)
-    final hasListHeader = contextTitle != null && contextTitle!.isNotEmpty;
-    final fullscreenOffset = isFullscreen ? 48.0 : 0.0;
-    final topOffset = (hasListHeader ? 80.0 : 16.0) + fullscreenOffset;
+    // In fullscreen mode, the AppBar floats transparently over the content
+    // so the badge just needs the same base offset - no extra list header padding
+    final hasListHeader =
+        !isFullscreen && contextTitle != null && contextTitle!.isNotEmpty;
+    final topOffset = hasListHeader ? 80.0 : 16.0;
 
     // Calculate bottom offset based on navigation state
     final bottomOffset = hasBottomNavigation
@@ -1511,6 +1612,16 @@ class VideoOverlayActions extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  // Collaborator avatar row (if video has collaborators)
+                  if (video.hasCollaborators) ...[
+                    const SizedBox(height: 4),
+                    CollaboratorAvatarRow(video: video),
+                  ],
+                  // Inspired-by attribution row (if video credits another creator)
+                  if (video.hasInspiredBy) ...[
+                    const SizedBox(height: 4),
+                    InspiredByAttributionRow(video: video, isActive: isActive),
+                  ],
                   // Audio attribution row (if video uses external audio)
                   if (video.hasAudioReference) ...[
                     const SizedBox(height: 4),
@@ -1590,6 +1701,11 @@ class VideoOverlayActions extends ConsumerWidget {
                       ),
                     ),
                   ),
+
+                  const SizedBox(height: 4),
+
+                  // CC (subtitles) button
+                  CcActionButton(video: video),
 
                   const SizedBox(height: 4),
 

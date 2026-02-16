@@ -66,10 +66,10 @@ void main() {
         expect(result, PermissionStatus.canRequest);
       });
 
-      test('maps limited to PermissionStatus.canRequest', () {
-        // limited is for iOS photo library partial access
+      test('maps limited to PermissionStatus.granted', () {
+        // limited is for iOS 14+ "Limited Photos Access" sufficient for saving
         final result = service.mapPermissionStatus(ph.PermissionStatus.limited);
-        expect(result, PermissionStatus.canRequest);
+        expect(result, PermissionStatus.granted);
       });
 
       test('maps provisional to PermissionStatus.canRequest', () {

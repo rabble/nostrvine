@@ -168,6 +168,36 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
   }
 
   @override
+  void reassemble() {
+    super.reassemble();
+    // During hot reload, media_kit native callbacks can fire on invalidated
+    // Dart FFI handles, causing "Callback invoked after it has been deleted".
+    // Stop all native playback and recreate the controller to prevent this.
+    _effectivePool.stopAll();
+
+    if (_ownsController) {
+      _controller
+        ..removeListener(_onControllerChanged)
+        ..dispose();
+      _controller = VideoFeedController(
+        videos: widget.videos,
+        pool: _effectivePool,
+        initialIndex: _currentIndex,
+        preloadAhead: widget.preloadAhead,
+        preloadBehind: widget.preloadBehind,
+      );
+      _videoCount = _controller.videoCount;
+      _controller.addListener(_onControllerChanged);
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _controller.play();
+        }
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _controller.removeListener(_onControllerChanged);
     _pageController.dispose();

@@ -669,6 +669,35 @@ VideoPlayerController individualVideoController(
           }
         }
 
+        // Check if this was a quality variant URL (720p/480p) that failed
+        // If so, fall back to original MP4 (params.cacheUrl is always the original)
+        final isQualityVariant =
+            videoUrl.contains('/720p') || videoUrl.contains('/480p');
+        if (isQualityVariant && params.cacheUrl != null) {
+          Log.info(
+            '📱 Quality variant failed for ${params.videoId} ($videoUrl) - '
+            'falling back to original MP4: ${params.cacheUrl}',
+            name: 'IndividualVideoController',
+            category: LogCategory.video,
+          );
+          try {
+            final currentFallbackCache = ref.read(fallbackUrlCacheProvider);
+            if (!currentFallbackCache.containsKey(params.videoId)) {
+              final newCache = {...currentFallbackCache};
+              newCache[params.videoId] = params.cacheUrl!;
+              ref.read(fallbackUrlCacheProvider.notifier).state = newCache;
+            }
+          } catch (e) {
+            Log.debug(
+              '⚠️ Could not store quality fallback URL: $e',
+              name: 'IndividualVideoController',
+              category: LogCategory.video,
+            );
+          }
+          loopEnforcementTimer?.cancel();
+          return;
+        }
+
         // Enhanced error logging with full Nostr event details
         final errorMessage = error.toString();
         var logMessage =

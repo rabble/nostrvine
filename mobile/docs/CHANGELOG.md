@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed - Model Deduplication (2026-02-08)
+
+#### Summary
+Completed the VGV model migration by eliminating 6 duplicate model classes that existed in both `lib/models/` (app layer) and `packages/models/` (package layer). This resolves type mismatch bugs and reduces maintenance confusion.
+
+#### Deleted (6 app-layer duplicates)
+- `lib/models/bug_report_data.dart` — replaced by `package:models`
+- `lib/models/log_entry.dart` — replaced by `package:models` (enums unified)
+- `lib/models/curation_set.dart` — replaced by `package:models`
+- `lib/models/user_profile.dart` + `.g.dart` — replaced by `package:models` + manual Hive adapter + extension methods
+- `lib/models/notification_model.dart` — replaced by `package:models` + service-layer converter
+
+#### Created
+- `lib/adapters/user_profile_hive_adapter.dart` — manual Hive TypeAdapter (typeId: 3, 13 fields) preserving binary format compatibility with existing caches
+- `lib/services/notification_model_converter.dart` — extracted `fromRelayApi()` factory into a service-layer utility function
+
+#### Key Changes
+- **Enum unification**: `LogLevel` and `LogCategory` in `unified_logger.dart` now re-export from `package:models` instead of defining duplicates, preserving the `Log` API used by 60+ files
+- **UserProfile extensions**: Flutter-dependent getters (`npub`, `truncatedNpub`, `profileBackgroundColor`) remain in `lib/utils/user_profile_utils.dart`; pure getters (`betterDisplayName`, `displayNip05`, `hasProfileBackgroundColor`, `hasBannerImage`) moved to package model
+- **Import updates**: ~70 files updated to use `package:models/models.dart` instead of `package:openvine/models/`
+- **GoogleFonts test fix**: Bundled `Inter-Medium.ttf` in `google_fonts/` to fix test failures from missing font assets
+- **PendingActionService test fix**: Injected fast retry config to prevent 60s timeout in unit tests
+
+#### Documented for Future (Tier 3)
+- `PendingUpload` — same migration pattern as UserProfile, deferred due to 30 consumer files
+- `VineDraft` — NOT a duplicate (different schemas), requires architectural decision
+
 ### Changed - Explore Tab Improvements (2026-01-26)
 
 #### Features

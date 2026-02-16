@@ -68,6 +68,8 @@ void main() {
             child: VideoEditorScope(
               editorKey: editorKey,
               removeAreaKey: GlobalKey(),
+              originalClipAspectRatio: 9 / 16,
+              bodySizeNotifier: ValueNotifier(const Size(400, 600)),
               onAddStickers: () {},
               onAddEditTextLayer: ([layer]) async => null,
               child: const SizedBox(

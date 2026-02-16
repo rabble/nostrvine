@@ -4,8 +4,9 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
-import 'package:openvine/models/notification_model.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/notification_model_converter.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/services/relay_notification_api_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -592,7 +593,7 @@ class RelayNotifications extends _$RelayNotifications {
       }
 
       enriched.add(
-        NotificationModel.fromRelayApi(
+        notificationModelFromRelayApi(
           relay,
           actorName: profile?.bestDisplayName,
           actorPictureUrl: profile?.picture,

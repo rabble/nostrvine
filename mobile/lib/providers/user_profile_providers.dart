@@ -3,7 +3,7 @@
 
 import 'dart:async';
 
-import 'package:openvine/models/user_profile.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/tab_visibility_provider.dart';

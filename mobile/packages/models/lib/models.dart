@@ -19,6 +19,7 @@ export 'src/pending_upload.dart';
 export 'src/profile_search_result.dart';
 export 'src/ready_event_data.dart';
 export 'src/user_profile.dart';
+export 'src/video_attribution.dart';
 export 'src/video_editor/sticker_data.dart';
 export 'src/video_event.dart';
 export 'src/video_state.dart';

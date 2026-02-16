@@ -552,6 +552,158 @@ void main() {
       );
 
       test(
+        'enriches profiles missing picture from local cache',
+        () async {
+          // Arrange - search result has no picture
+          final mockSearchEvent = MockEvent();
+          const searchPubkey =
+              'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+              'c3d4e5f6a1b2c3d4e5f6a1b2';
+          const searchEventId =
+              'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+              'd3c4b5a6f1e2d3c4b5a6f1e2';
+
+          when(() => mockSearchEvent.kind).thenReturn(0);
+          when(() => mockSearchEvent.pubkey).thenReturn(searchPubkey);
+          when(() => mockSearchEvent.createdAt).thenReturn(1704067200);
+          when(() => mockSearchEvent.id).thenReturn(searchEventId);
+          when(() => mockSearchEvent.content).thenReturn(
+            jsonEncode({'display_name': 'Alice'}),
+          );
+
+          when(
+            () => mockNostrClient.queryUsers('alice', limit: 200),
+          ).thenAnswer((_) async => [mockSearchEvent]);
+
+          // Cache has a profile with a picture
+          when(
+            () => mockUserProfilesDao.getProfile(searchPubkey),
+          ).thenAnswer(
+            (_) async => UserProfile(
+              pubkey: searchPubkey,
+              displayName: 'Alice Cached',
+              picture: 'https://example.com/alice.png',
+              rawData: const {},
+              createdAt: DateTime(2026),
+              eventId: searchEventId,
+            ),
+          );
+
+          // Act
+          final result = await profileRepository.searchUsers(query: 'alice');
+
+          // Assert - picture enriched from cache
+          expect(result, hasLength(1));
+          expect(result.first.displayName, equals('Alice'));
+          expect(result.first.picture, equals('https://example.com/alice.png'));
+        },
+      );
+
+      test(
+        'does not overwrite existing picture with cached version',
+        () async {
+          // Arrange - search result already has a picture
+          final mockSearchEvent = MockEvent();
+          const searchPubkey =
+              'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+              'c3d4e5f6a1b2c3d4e5f6a1b2';
+          const searchEventId =
+              'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+              'd3c4b5a6f1e2d3c4b5a6f1e2';
+
+          when(() => mockSearchEvent.kind).thenReturn(0);
+          when(() => mockSearchEvent.pubkey).thenReturn(searchPubkey);
+          when(() => mockSearchEvent.createdAt).thenReturn(1704067200);
+          when(() => mockSearchEvent.id).thenReturn(searchEventId);
+          when(() => mockSearchEvent.content).thenReturn(
+            jsonEncode({
+              'display_name': 'Alice',
+              'picture': 'https://example.com/fresh.png',
+            }),
+          );
+
+          when(
+            () => mockNostrClient.queryUsers('alice', limit: 200),
+          ).thenAnswer((_) async => [mockSearchEvent]);
+
+          // Cache has a different (stale) picture
+          when(
+            () => mockUserProfilesDao.getProfile(searchPubkey),
+          ).thenAnswer(
+            (_) async => UserProfile(
+              pubkey: searchPubkey,
+              picture: 'https://example.com/stale.png',
+              rawData: const {},
+              createdAt: DateTime(2026),
+              eventId: searchEventId,
+            ),
+          );
+
+          // Act
+          final result = await profileRepository.searchUsers(query: 'alice');
+
+          // Assert - search result picture preserved, not overwritten
+          expect(result, hasLength(1));
+          expect(
+            result.first.picture,
+            equals('https://example.com/fresh.png'),
+          );
+        },
+      );
+
+      test(
+        'enriches multiple null fields from cache',
+        () async {
+          // Arrange - search result has minimal data
+          final mockSearchEvent = MockEvent();
+          const searchPubkey =
+              'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+              'c3d4e5f6a1b2c3d4e5f6a1b2';
+          const searchEventId =
+              'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
+              'd3c4b5a6f1e2d3c4b5a6f1e2';
+
+          when(() => mockSearchEvent.kind).thenReturn(0);
+          when(() => mockSearchEvent.pubkey).thenReturn(searchPubkey);
+          when(() => mockSearchEvent.createdAt).thenReturn(1704067200);
+          when(() => mockSearchEvent.id).thenReturn(searchEventId);
+          when(() => mockSearchEvent.content).thenReturn(
+            jsonEncode({'display_name': 'Alice'}),
+          );
+
+          when(
+            () => mockNostrClient.queryUsers('alice', limit: 200),
+          ).thenAnswer((_) async => [mockSearchEvent]);
+
+          // Cache has complete profile
+          when(
+            () => mockUserProfilesDao.getProfile(searchPubkey),
+          ).thenAnswer(
+            (_) async => UserProfile(
+              pubkey: searchPubkey,
+              displayName: 'Alice Cached',
+              about: 'Bio from cache',
+              picture: 'https://example.com/alice.png',
+              nip05: 'alice@example.com',
+              rawData: const {},
+              createdAt: DateTime(2026),
+              eventId: searchEventId,
+            ),
+          );
+
+          // Act
+          final result = await profileRepository.searchUsers(query: 'alice');
+
+          // Assert - null fields enriched, non-null preserved
+          expect(result, hasLength(1));
+          expect(result.first.displayName, equals('Alice'));
+          expect(result.first.about, equals('Bio from cache'));
+          expect(result.first.picture, equals('https://example.com/alice.png'));
+          expect(result.first.nip05, equals('alice@example.com'));
+        },
+      );
+
+      test(
         'uses profileSearchFilter when provided',
         () async {
           // Arrange

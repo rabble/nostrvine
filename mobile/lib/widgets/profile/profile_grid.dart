@@ -8,12 +8,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
+import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.dart';
 import 'package:openvine/blocs/profile_liked_videos/profile_liked_videos_bloc.dart';
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/widgets/profile/profile_action_buttons_widget.dart';
+import 'package:openvine/widgets/profile/profile_collabs_grid.dart';
 import 'package:openvine/widgets/profile/profile_header_widget.dart';
 import 'package:openvine/widgets/profile/profile_liked_grid.dart';
 import 'package:openvine/widgets/profile/profile_reposts_grid.dart';
@@ -99,6 +101,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   /// Direct references to BLoCs for refresh capability.
   ProfileLikedVideosBloc? _likedVideosBloc;
   ProfileRepostedVideosBloc? _repostedVideosBloc;
+  ProfileCollabVideosBloc? _collabVideosBloc;
 
   /// Track the userIdHex the BLoCs were created for.
   String? _blocsUserIdHex;
@@ -106,11 +109,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
   /// Track which tabs have been synced (lazy loading).
   bool _likedTabSynced = false;
   bool _repostsTabSynced = false;
+  bool _collabsTabSynced = false;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 4, vsync: this);
     _tabController.addListener(_onTabChanged);
     widget.refreshNotifier?.addListener(_onRefreshRequested);
   }
@@ -139,6 +143,11 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         _repostedVideosBloc != null) {
       _repostsTabSynced = true;
       _repostedVideosBloc!.add(const ProfileRepostedVideosSyncRequested());
+    } else if (_tabController.index == 3 &&
+        !_collabsTabSynced &&
+        _collabVideosBloc != null) {
+      _collabsTabSynced = true;
+      _collabVideosBloc!.add(const ProfileCollabVideosFetchRequested());
     }
   }
 
@@ -151,6 +160,9 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     if (_repostsTabSynced) {
       _repostedVideosBloc?.add(const ProfileRepostedVideosSyncRequested());
     }
+    if (_collabsTabSynced) {
+      _collabVideosBloc?.add(const ProfileCollabVideosFetchRequested());
+    }
   }
 
   @override
@@ -161,6 +173,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     // Close the BLoCs we created
     _likedVideosBloc?.close();
     _repostedVideosBloc?.close();
+    _collabVideosBloc?.close();
     super.dispose();
   }
 
@@ -183,10 +196,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
     if (_blocsUserIdHex != widget.userIdHex) {
       _likedVideosBloc?.close();
       _repostedVideosBloc?.close();
+      _collabVideosBloc?.close();
 
       // Reset lazy load flags when switching profiles
       _likedTabSynced = false;
       _repostsTabSynced = false;
+      _collabsTabSynced = false;
 
       // Create BLoCs but DON'T sync yet - lazy load when tab is viewed
       // VideosRepository handles cache-first lookups via SQLite localStorage
@@ -206,6 +221,12 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
       )..add(const ProfileRepostedVideosSubscriptionRequested());
       // Sync deferred until user views Reposts tab
 
+      _collabVideosBloc = ProfileCollabVideosBloc(
+        videosRepository: videosRepository,
+        targetUserPubkey: widget.userIdHex,
+      );
+      // Fetch deferred until user views Collabs tab
+
       _blocsUserIdHex = widget.userIdHex;
     }
 
@@ -217,6 +238,7 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
         BlocProvider<ProfileRepostedVideosBloc>.value(
           value: _repostedVideosBloc!,
         ),
+        BlocProvider<ProfileCollabVideosBloc>.value(value: _collabVideosBloc!),
       ],
       child: TabBarView(
         controller: _tabController,
@@ -229,13 +251,14 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
           ),
           ProfileLikedGrid(isOwnProfile: widget.isOwnProfile),
           ProfileRepostsGrid(isOwnProfile: widget.isOwnProfile),
+          ProfileCollabsGrid(isOwnProfile: widget.isOwnProfile),
         ],
       ),
     );
 
     // Build the main content
     Widget content = DefaultTabController(
-      length: 3,
+      length: 4,
       child: NestedScrollView(
         controller: widget.scrollController,
         headerSliverBuilder: (context, innerBoxIsScrolled) => [
@@ -328,6 +351,22 @@ class _ProfileGridViewState extends ConsumerState<ProfileGridView>
                         height: 28,
                         colorFilter: ColorFilter.mode(
                           _tabController.index == 2
+                              ? VineTheme.whiteText
+                              : VineTheme.onSurfaceMuted,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ),
+                  ),
+                  Tab(
+                    icon: Semantics(
+                      label: 'collabs_tab',
+                      child: SvgPicture.asset(
+                        'assets/icon/user.svg',
+                        width: 28,
+                        height: 28,
+                        colorFilter: ColorFilter.mode(
+                          _tabController.index == 3
                               ? VineTheme.whiteText
                               : VineTheme.onSurfaceMuted,
                           BlendMode.srcIn,

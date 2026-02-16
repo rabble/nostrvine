@@ -5,7 +5,6 @@ import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart';
-import 'package:openvine/models/user_profile.dart' as app_models;
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:profile_repository/profile_repository.dart';
@@ -257,8 +256,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       );
       // TODO(Josh-Sanford): Move cache into ProfileRepository and remove
       // UserProfileService dependency
-      final appProfile = app_models.UserProfile.fromJson(savedProfile.toJson());
-      await _userProfileService.updateCachedProfile(appProfile);
+      await _userProfileService.updateCachedProfile(savedProfile);
     } catch (error) {
       Log.error('Failed to publish profile: $error', name: 'ProfileEditorBloc');
       emit(
@@ -313,8 +311,7 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
         banner: banner,
         currentProfile: currentProfile,
       );
-      final appProfile = app_models.UserProfile.fromJson(rolledBack.toJson());
-      await _userProfileService.updateCachedProfile(appProfile);
+      await _userProfileService.updateCachedProfile(rolledBack);
       Log.info('📝 Rollback complete', name: 'ProfileEditorBloc');
     } catch (e) {
       Log.error('Rollback failed: $e', name: 'ProfileEditorBloc');

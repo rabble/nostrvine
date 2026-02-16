@@ -864,6 +864,7 @@ class MockVideoEventService extends _i1.Mock implements _i10.VideoEventService {
     _i15.VideoSortField? sortBy,
     _i15.NIP50SortMode? nip50Sort,
     bool? force = false,
+    List<String>? collaboratorPubkeys,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#subscribeToVideoFeed, [], {
@@ -879,6 +880,7 @@ class MockVideoEventService extends _i1.Mock implements _i10.VideoEventService {
               #sortBy: sortBy,
               #nip50Sort: nip50Sort,
               #force: force,
+              #collaboratorPubkeys: collaboratorPubkeys,
             }),
             returnValue: _i9.Future<void>.value(),
             returnValueForMissingStub: _i9.Future<void>.value(),
@@ -1383,12 +1385,12 @@ class MockLikesRepository extends _i1.Mock implements _i3.LikesRepository {
   }
 
   @override
-  _i9.Stream<Set<String>> watchLikedEventIds() =>
+  _i9.Stream<List<String>> watchLikedEventIds() =>
       (super.noSuchMethod(
             Invocation.method(#watchLikedEventIds, []),
-            returnValue: _i9.Stream<Set<String>>.empty(),
+            returnValue: _i9.Stream<List<String>>.empty(),
           )
-          as _i9.Stream<Set<String>>);
+          as _i9.Stream<List<String>>);
 
   @override
   _i9.Future<Set<String>> getLikedEventIds() =>

@@ -1,20 +1,23 @@
 // ABOUTME: New Videos tab widget showing recent videos sorted by time
 // ABOUTME: Extracted from ExploreScreen for better separation of concerns
 
+import 'dart:async';
+
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/popular_now_feed_provider.dart';
-import 'package:go_router/go_router.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/services/feed_performance_tracker.dart';
+import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
-import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
+import 'package:rxdart/rxdart.dart';
 
 /// Tab widget displaying new/recent videos sorted by time.
 ///
@@ -173,7 +176,7 @@ class _NewVideosTabState extends ConsumerState<NewVideosTab> {
 }
 
 /// Content widget displaying the video grid
-class _NewVideosContent extends ConsumerWidget {
+class _NewVideosContent extends ConsumerStatefulWidget {
   const _NewVideosContent({
     required this.videos,
     this.isLoadingMore = false,
@@ -185,9 +188,38 @@ class _NewVideosContent extends ConsumerWidget {
   final bool hasMoreContent;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_NewVideosContent> createState() => _NewVideosContentState();
+}
+
+class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
+  late final StreamController<List<VideoEvent>> _videosStreamController;
+
+  @override
+  void initState() {
+    super.initState();
+    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
+  }
+
+  @override
+  void dispose() {
+    _videosStreamController.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Listen to provider changes and push to stream for fullscreen updates
+    ref.listen(popularNowFeedProvider, (previous, next) {
+      if (next.hasValue) {
+        final videos = next.value!.videos
+            .where((v) => v.isSupportedOnCurrentPlatform)
+            .toList();
+        _videosStreamController.add(videos);
+      }
+    });
+
     return ComposableVideoGrid(
-      videos: videos,
+      videos: widget.videos,
       useMasonryLayout: true,
       onVideoTap: (videoList, index) {
         Log.info(
@@ -195,16 +227,14 @@ class _NewVideosContent extends ConsumerWidget {
           'videoId=${videoList[index].id}',
           category: LogCategory.video,
         );
-        // Navigate to fullscreen video feed
         context.push(
-          FullscreenVideoFeedScreen.path,
-          extra: FullscreenVideoFeedArgs(
+          PooledFullscreenVideoFeedScreen.path,
+          extra: PooledFullscreenVideoFeedArgs(
+            videosStream: _videosStreamController.stream.startWith(videoList),
             initialIndex: index,
+            onLoadMore: () =>
+                ref.read(popularNowFeedProvider.notifier).loadMore(),
             contextTitle: 'New Videos',
-            source: StaticFeedSource(
-              videoList,
-              onLoadMore: ref.read(popularNowFeedProvider.notifier).loadMore,
-            ),
           ),
         );
       },
@@ -219,8 +249,8 @@ class _NewVideosContent extends ConsumerWidget {
         Log.info('📜 NewVideosTab: Loading more', category: LogCategory.video);
         await ref.read(popularNowFeedProvider.notifier).loadMore();
       },
-      isLoadingMore: isLoadingMore,
-      hasMoreContent: hasMoreContent,
+      isLoadingMore: widget.isLoadingMore,
+      hasMoreContent: widget.hasMoreContent,
       emptyBuilder: _NewVideosEmptyState.new,
     );
   }

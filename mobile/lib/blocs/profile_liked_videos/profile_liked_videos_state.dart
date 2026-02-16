@@ -46,6 +46,7 @@ final class ProfileLikedVideosState extends Equatable {
     this.error,
     this.isLoadingMore = false,
     this.hasMoreContent = true,
+    this.nextPageOffset = 0,
   });
 
   /// The current loading status
@@ -66,6 +67,13 @@ final class ProfileLikedVideosState extends Equatable {
   /// Whether there are more videos to load
   final bool hasMoreContent;
 
+  /// The offset into [likedEventIds] for the next page fetch.
+  ///
+  /// Tracks how many IDs have been consumed for pagination, independent of
+  /// how many videos were actually loaded (some IDs may not resolve to videos
+  /// due to relay unavailability or unsupported format filtering).
+  final int nextPageOffset;
+
   /// Whether data has been successfully loaded
   bool get isLoaded => status == ProfileLikedVideosStatus.success;
 
@@ -83,6 +91,7 @@ final class ProfileLikedVideosState extends Equatable {
     bool clearError = false,
     bool? isLoadingMore,
     bool? hasMoreContent,
+    int? nextPageOffset,
   }) {
     return ProfileLikedVideosState(
       status: status ?? this.status,
@@ -91,6 +100,7 @@ final class ProfileLikedVideosState extends Equatable {
       error: clearError ? null : (error ?? this.error),
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMoreContent: hasMoreContent ?? this.hasMoreContent,
+      nextPageOffset: nextPageOffset ?? this.nextPageOffset,
     );
   }
 
@@ -102,5 +112,6 @@ final class ProfileLikedVideosState extends Equatable {
     error,
     isLoadingMore,
     hasMoreContent,
+    nextPageOffset,
   ];
 }

@@ -135,6 +135,34 @@ class UserProfile {
     return pubkey;
   }
 
+  /// Like [bestDisplayName] but with a custom fallback placeholder.
+  String betterDisplayName(String? anonymousPlaceholder) {
+    if (displayName?.isNotEmpty ?? false) return displayName!;
+    if (name?.isNotEmpty ?? false) return name!;
+    if (anonymousPlaceholder != null) return anonymousPlaceholder;
+    return bestDisplayName;
+  }
+
+  /// NIP-05 formatted for display (strips leading underscore).
+  String? get displayNip05 {
+    if (nip05 == null || nip05!.isEmpty) return null;
+    if (nip05!.startsWith('_@')) return nip05!.substring(1);
+    return nip05;
+  }
+
+  /// Whether the banner field contains a hex color (Vine import).
+  bool get hasProfileBackgroundColor {
+    final b = banner;
+    if (b == null || b.isEmpty) return false;
+    return b.startsWith('0x') || b.startsWith('#');
+  }
+
+  /// Whether the banner field is an image URL.
+  bool get hasBannerImage {
+    final b = banner;
+    return b != null && b.startsWith('http');
+  }
+
   /// Get the best available display name
   String get bestDisplayName {
     if (displayName?.isNotEmpty ?? false) return displayName!;

@@ -109,6 +109,9 @@ class VideoEditorConstants {
   /// Height of the bottom action bar in the video editor.
   static const double bottomBarHeight = 90;
 
+  /// Target render width for the video editor output.
+  static const double renderWidth = 1080;
+
   /// Hero animation tag for the back button in the video editor.
   static const heroBackButtonId = 'Video-Editor-Back-Button';
 

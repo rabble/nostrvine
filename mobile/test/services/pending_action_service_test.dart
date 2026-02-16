@@ -39,6 +39,11 @@ void main() {
       connectionStatusService: mockConnectionService,
       pendingActionsDao: dao,
       userPubkey: testUserPubkey,
+      retryConfig: const PendingActionRetryConfig(
+        maxRetries: 1,
+        initialDelay: Duration.zero,
+        maxDelay: Duration.zero,
+      ),
     );
 
     await service.initialize();

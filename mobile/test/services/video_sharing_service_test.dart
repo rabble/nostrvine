@@ -4,9 +4,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
-import 'package:openvine/models/user_profile.dart' as profile_model;
-import 'package:models/models.dart' hide UserProfile;
-import 'package:openvine/services/auth_service.dart';
+import 'package:models/models.dart';
+import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/video_sharing_service.dart';
@@ -60,7 +59,7 @@ void main() {
         'pubkey3' * 8,
       ];
 
-      final profile1 = profile_model.UserProfile(
+      final profile1 = UserProfile(
         pubkey: followingPubkeys[0],
         rawData: const {},
         createdAt: DateTime.now(),
@@ -70,7 +69,7 @@ void main() {
         picture: 'https://example.com/alice.jpg',
       );
 
-      final profile2 = profile_model.UserProfile(
+      final profile2 = UserProfile(
         pubkey: followingPubkeys[1],
         rawData: const {},
         createdAt: DateTime.now(),
@@ -185,7 +184,7 @@ void main() {
       // Arrange
       final followingPubkeys = ['pubkey1' * 8, 'pubkey2' * 8, 'pubkey3' * 8];
 
-      final profile1 = profile_model.UserProfile(
+      final profile1 = UserProfile(
         pubkey: followingPubkeys[0],
         rawData: const {},
         createdAt: DateTime.now(),
@@ -193,7 +192,7 @@ void main() {
         displayName: 'Alice Smith',
       );
 
-      final profile2 = profile_model.UserProfile(
+      final profile2 = UserProfile(
         pubkey: followingPubkeys[1],
         rawData: const {},
         createdAt: DateTime.now(),
@@ -201,7 +200,7 @@ void main() {
         displayName: 'Bob Jones',
       );
 
-      final profile3 = profile_model.UserProfile(
+      final profile3 = UserProfile(
         pubkey: followingPubkeys[2],
         rawData: const {},
         createdAt: DateTime.now(),
@@ -234,7 +233,7 @@ void main() {
       // Arrange
       final followingPubkeys = ['pubkey1' * 8];
 
-      final profile = profile_model.UserProfile(
+      final profile = UserProfile(
         pubkey: followingPubkeys[0],
         rawData: const {},
         createdAt: DateTime.now(),
@@ -261,7 +260,7 @@ void main() {
     test('returns user by hex pubkey lookup as fallback', () async {
       // Arrange
       final hexPubkey = 'a' * 64;
-      final profile = profile_model.UserProfile(
+      final profile = UserProfile(
         pubkey: hexPubkey,
         rawData: const {},
         createdAt: DateTime.now(),
@@ -288,7 +287,7 @@ void main() {
       // Arrange
       final followingPubkeys = ['pubkey1' * 8];
 
-      final profile = profile_model.UserProfile(
+      final profile = UserProfile(
         pubkey: followingPubkeys[0],
         rawData: const {},
         createdAt: DateTime.now(),

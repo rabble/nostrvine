@@ -99,8 +99,8 @@ class LikesRepository {
   /// In-memory cache of like records keyed by target event ID.
   final Map<String, LikeRecord> _likeRecords = {};
 
-  /// Reactive stream controller for liked event IDs.
-  final _likedIdsController = BehaviorSubject<Set<String>>.seeded({});
+  /// Reactive stream controller for liked event IDs (ordered by recency).
+  final _likedIdsController = BehaviorSubject<List<String>>.seeded([]);
 
   /// Whether the repository has been initialized with data from storage.
   bool _isInitialized = false;
@@ -110,21 +110,26 @@ class LikesRepository {
   /// Once disposed, all stream emissions and auth-change handlers are no-ops.
   bool _isDisposed = false;
 
-  /// Emits the current set of liked event IDs.
+  /// Emits the current liked event IDs ordered by recency (most recent first).
   ///
   /// Guards against emitting after [dispose] has been called or the controller
   /// has been closed, which can happen if [clearCache] runs during or after
   /// [dispose] (e.g. on logout).
   void _emitLikedIds() {
     if (_isDisposed || _likedIdsController.isClosed) return;
-    _likedIdsController.add(_likeRecords.keys.toSet());
+    final sortedRecords = _likeRecords.values.toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    _likedIdsController.add(
+      sortedRecords.map((r) => r.targetEventId).toList(),
+    );
   }
 
-  /// Stream of liked event IDs (reactive).
+  /// Stream of liked event IDs ordered by recency (reactive).
   ///
-  /// Emits a new set whenever the user's likes change.
-  /// This is useful for UI components that need to reactively update.
-  Stream<Set<String>> watchLikedEventIds() {
+  /// Emits an ordered list (most recent first) whenever the user's likes
+  /// change. This is useful for UI components that need to reactively update
+  /// while preserving pagination order.
+  Stream<List<String>> watchLikedEventIds() {
     // If we have local storage, delegate to its reactive stream
     if (_localStorage != null) {
       return _localStorage.watchLikedEventIds();

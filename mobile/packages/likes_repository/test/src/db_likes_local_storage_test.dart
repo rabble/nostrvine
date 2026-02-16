@@ -354,7 +354,7 @@ void main() {
 
     group('watchLikedEventIds', () {
       test('returns stream from dao', () async {
-        final controller = StreamController<Set<String>>();
+        final controller = StreamController<List<String>>();
         when(
           () => mockDao.watchLikedEventIds(any()),
         ).thenAnswer((_) => controller.stream);
@@ -363,15 +363,15 @@ void main() {
 
         // Add values to controller
         controller
-          ..add({testTargetEventId})
-          ..add({testTargetEventId, testTargetEventId2});
+          ..add([testTargetEventId])
+          ..add([testTargetEventId, testTargetEventId2]);
 
         final emissions = await stream.take(2).toList();
 
-        expect(emissions[0], equals({testTargetEventId}));
+        expect(emissions[0], equals([testTargetEventId]));
         expect(
           emissions[1],
-          equals({testTargetEventId, testTargetEventId2}),
+          equals([testTargetEventId, testTargetEventId2]),
         );
 
         verify(() => mockDao.watchLikedEventIds(testUserPubkey)).called(1);

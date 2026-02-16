@@ -99,7 +99,7 @@ class DbLikesLocalStorage implements LikesLocalStorage {
   }
 
   @override
-  Stream<Set<String>> watchLikedEventIds() {
+  Stream<List<String>> watchLikedEventIds() {
     return _dao.watchLikedEventIds(_userPubkey);
   }
 
