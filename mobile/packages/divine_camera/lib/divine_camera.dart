@@ -178,6 +178,24 @@ class DivineCamera {
     return true;
   }
 
+  /// Switches to a specific camera lens.
+  ///
+  /// [lens] the lens to switch to.
+  /// Returns true if successful.
+  Future<bool> setLens(DivineCameraLens lens) async {
+    if (lens == _state.lens) return true;
+    if (!_state.availableLenses.contains(lens)) return false;
+
+    // Set switching state to keep last frame visible
+    _state = _state.copyWith(isSwitchingCamera: true);
+    _notifyStateChanged();
+
+    _state = await _platform.switchCamera(lens);
+    _state = _state.copyWith(isSwitchingCamera: false);
+    _notifyStateChanged();
+    return true;
+  }
+
   /// Starts video recording.
   ///
   /// [maxDuration] optionally limits the recording duration.

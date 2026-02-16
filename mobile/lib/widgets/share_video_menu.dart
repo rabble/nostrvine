@@ -32,9 +32,11 @@ import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
-import 'package:openvine/services/openvine_media_cache.dart';
+// NOTE: Subtitle generation temporarily disabled due to Android build issues
+// See: https://github.com/divinevideo/divine-mobile/issues/1568
+// import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/widgets/save_original_progress_sheet.dart';
-import 'package:openvine/widgets/subtitle_generation_sheet.dart';
+// import 'package:openvine/widgets/subtitle_generation_sheet.dart';
 import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 
 // TODO(any): Move this to a reusable widget
@@ -98,10 +100,12 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                   ],
                   const SizedBox(height: 24),
                   _buildShareSection(),
-                  if (_isUserOwnContent()) ...[
-                    const SizedBox(height: 24),
-                    _buildSubtitleSection(),
-                  ],
+                  // NOTE: Subtitle generation temporarily disabled due to Android build issues
+                  // See: https://github.com/divinevideo/divine-mobile/issues/1568
+                  // if (_isUserOwnContent()) ...[
+                  //   const SizedBox(height: 24),
+                  //   _buildSubtitleSection(),
+                  // ],
                   const SizedBox(height: 24),
                   _buildListSection(),
                   const SizedBox(height: 24),
@@ -478,60 +482,62 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
     ],
   );
 
-  Widget _buildSubtitleSection() => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      const Text(
-        'Subtitles',
-        style: TextStyle(
-          color: VineTheme.whiteText,
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-      const SizedBox(height: 12),
-      _buildActionTile(
-        icon: Icons.closed_caption,
-        title: widget.video.hasSubtitles
-            ? 'Regenerate Subtitles'
-            : 'Generate Subtitles',
-        subtitle: 'Auto-transcribe speech with AI',
-        onTap: () => _generateSubtitles(context),
-      ),
-    ],
-  );
+  // NOTE: Subtitle generation temporarily disabled due to Android build issues
+  // See: https://github.com/divinevideo/divine-mobile/issues/1568
+  // Widget _buildSubtitleSection() => Column(
+  //   crossAxisAlignment: CrossAxisAlignment.start,
+  //   children: [
+  //     const Text(
+  //       'Subtitles',
+  //       style: TextStyle(
+  //         color: VineTheme.whiteText,
+  //         fontSize: 16,
+  //         fontWeight: FontWeight.w600,
+  //       ),
+  //     ),
+  //     const SizedBox(height: 12),
+  //     _buildActionTile(
+  //       icon: Icons.closed_caption,
+  //       title: widget.video.hasSubtitles
+  //           ? 'Regenerate Subtitles'
+  //           : 'Generate Subtitles',
+  //       subtitle: 'Auto-transcribe speech with AI',
+  //       onTap: () => _generateSubtitles(context),
+  //     ),
+  //   ],
+  // );
 
-  Future<void> _generateSubtitles(BuildContext ctx) async {
-    final cache = ref.read(mediaCacheProvider);
-    final cachedFile = cache.getCachedFileSync(widget.video.id);
+  // Future<void> _generateSubtitles(BuildContext ctx) async {
+  //   final cache = ref.read(mediaCacheProvider);
+  //   final cachedFile = cache.getCachedFileSync(widget.video.id);
 
-    if (cachedFile == null) {
-      if (mounted) {
-        ScaffoldMessenger.of(ctx).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'Video not cached locally. Play the video first, then try again.',
-            ),
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-      return;
-    }
+  //   if (cachedFile == null) {
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(ctx).showSnackBar(
+  //         const SnackBar(
+  //           content: Text(
+  //             'Video not cached locally. Play the video first, then try again.',
+  //           ),
+  //           duration: Duration(seconds: 3),
+  //         ),
+  //       );
+  //     }
+  //     return;
+  //   }
 
-    _safePop(ctx);
+  //   _safePop(ctx);
 
-    if (!ctx.mounted) return;
+  //   if (!ctx.mounted) return;
 
-    await showModalBottomSheet<void>(
-      context: ctx,
-      backgroundColor: VineTheme.backgroundColor,
-      builder: (_) => SubtitleGenerationSheet(
-        video: widget.video,
-        videoFilePath: cachedFile.path,
-      ),
-    );
-  }
+  //   await showModalBottomSheet<void>(
+  //     context: ctx,
+  //     backgroundColor: VineTheme.backgroundColor,
+  //     builder: (_) => SubtitleGenerationSheet(
+  //       video: widget.video,
+  //       videoFilePath: cachedFile.path,
+  //     ),
+  //   );
+  // }
 
   Widget _buildListSection() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,

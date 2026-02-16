@@ -1,13 +1,15 @@
 // ABOUTME: Providers for subtitle fetching with dual strategy.
 // ABOUTME: Fast path: parse embedded VTT from REST API. Slow path: query relay
 // ABOUTME: for Kind 39307 subtitle events.
+//
+// NOTE: Subtitle generation is temporarily disabled due to Android build issues
+// with whisper_ggml_plus v1.3.1. See: https://github.com/divinevideo/divine-mobile/issues/1568
 
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
-import 'package:openvine/services/subtitle_generation_service.dart';
+// import 'package:openvine/services/subtitle_generation_service.dart';
 import 'package:openvine/services/subtitle_service.dart';
-import 'package:openvine/services/whisper_transcription_service.dart';
+// import 'package:openvine/services/whisper_transcription_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'subtitle_providers.g.dart';
@@ -81,17 +83,17 @@ class SubtitleVisibility extends _$SubtitleVisibility {
 
 /// Provider for the SubtitleGenerationService.
 /// Requires authentication.
-@riverpod
-SubtitleGenerationService subtitleGenerationService(Ref ref) {
-  final whisperService = WhisperTranscriptionService();
-  final authService = ref.watch(authServiceProvider);
-  final eventPublisher = ref.watch(videoEventPublisherProvider);
-  final nostrClient = ref.watch(nostrServiceProvider);
+// @riverpod
+// SubtitleGenerationService subtitleGenerationService(Ref ref) {
+//   final whisperService = WhisperTranscriptionService();
+//   final authService = ref.watch(authServiceProvider);
+//   final eventPublisher = ref.watch(videoEventPublisherProvider);
+//   final nostrClient = ref.watch(nostrServiceProvider);
 
-  return SubtitleGenerationService(
-    whisperService: whisperService,
-    authService: authService,
-    eventPublisher: eventPublisher,
-    nostrClient: nostrClient,
-  );
-}
+//   return SubtitleGenerationService(
+//     whisperService: whisperService,
+//     authService: authService,
+//     eventPublisher: eventPublisher,
+//     nostrClient: nostrClient,
+//   );
+// }
