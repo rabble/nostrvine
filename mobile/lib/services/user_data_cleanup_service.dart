@@ -50,6 +50,14 @@ class UserDataCleanupService {
     'terms_accepted_at',
   ];
 
+  /// Key prefixes for dynamic user-specific data (keys that embed pubkey/npub).
+  /// All keys starting with these prefixes are cleared on logout/identity change.
+  static const List<String> userSpecificPrefixes = [
+    'following_list_', // follow cache per pubkey
+    'blossom_server_discovery_', // blossom server cache per npub
+    'relay_discovery_', // relay discovery cache per npub
+  ];
+
   /// Checks if user-specific data should be cleared for the given pubkey.
   ///
   /// Returns true if:
@@ -93,7 +101,9 @@ class UserDataCleanupService {
   Future<int> clearUserSpecificData({String? reason}) async {
     final cleanupReason = reason ?? 'unspecified';
     Log.info(
-      'Starting user data cleanup (reason: $cleanupReason, checking ${userSpecificKeys.length} keys)',
+      'Starting user data cleanup (reason: $cleanupReason, '
+      'checking ${userSpecificKeys.length} keys + '
+      '${userSpecificPrefixes.length} prefixes)',
       name: 'UserDataCleanupService',
       category: LogCategory.auth,
     );
@@ -101,11 +111,25 @@ class UserDataCleanupService {
     int clearedCount = 0;
     final clearedKeys = <String>[];
 
+    // Clear exact-match keys
     for (final key in userSpecificKeys) {
       if (_prefs.containsKey(key)) {
         await _prefs.remove(key);
         clearedCount++;
         clearedKeys.add(key);
+      }
+    }
+
+    // Clear prefix-matched dynamic keys (e.g. following_list_{pubkey})
+    final allKeys = _prefs.getKeys();
+    for (final key in allKeys) {
+      for (final prefix in userSpecificPrefixes) {
+        if (key.startsWith(prefix)) {
+          await _prefs.remove(key);
+          clearedCount++;
+          clearedKeys.add(key);
+          break;
+        }
       }
     }
 
