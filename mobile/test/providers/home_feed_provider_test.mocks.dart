@@ -351,6 +351,7 @@ class MockVideoEventService extends _i1.Mock implements _i4.VideoEventService {
     _i13.VideoSortField? sortBy,
     _i13.NIP50SortMode? nip50Sort,
     bool? force = false,
+    List<String>? collaboratorPubkeys,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#subscribeToVideoFeed, [], {
@@ -366,6 +367,7 @@ class MockVideoEventService extends _i1.Mock implements _i4.VideoEventService {
               #sortBy: sortBy,
               #nip50Sort: nip50Sort,
               #force: force,
+              #collaboratorPubkeys: collaboratorPubkeys,
             }),
             returnValue: _i12.Future<void>.value(),
             returnValueForMissingStub: _i12.Future<void>.value(),
@@ -1566,6 +1568,22 @@ class MockAnalyticsApiService extends _i1.Mock
               #limit: limit,
               #before: before,
               #forceRefresh: forceRefresh,
+            }),
+            returnValue: _i12.Future<List<_i5.VideoEvent>>.value(
+              <_i5.VideoEvent>[],
+            ),
+          )
+          as _i12.Future<List<_i5.VideoEvent>>);
+
+  @override
+  _i12.Future<List<_i5.VideoEvent>> getClassicVideosByHashtag({
+    required String? hashtag,
+    int? limit = 50,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#getClassicVideosByHashtag, [], {
+              #hashtag: hashtag,
+              #limit: limit,
             }),
             returnValue: _i12.Future<List<_i5.VideoEvent>>.value(
               <_i5.VideoEvent>[],

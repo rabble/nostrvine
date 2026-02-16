@@ -83,6 +83,15 @@ class MockCrashReportingService extends _i1.Mock
           as _i3.Future<void>);
 
   @override
+  _i3.Future<void> updateCacheMetricsKeys() =>
+      (super.noSuchMethod(
+            Invocation.method(#updateCacheMetricsKeys, []),
+            returnValue: _i3.Future<void>.value(),
+            returnValueForMissingStub: _i3.Future<void>.value(),
+          )
+          as _i3.Future<void>);
+
+  @override
   void logInitializationStep(String? step) => super.noSuchMethod(
     Invocation.method(#logInitializationStep, [step]),
     returnValueForMissingStub: null,

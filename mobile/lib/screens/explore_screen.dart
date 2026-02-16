@@ -21,6 +21,7 @@ import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -54,7 +55,7 @@ class ExploreScreen extends ConsumerStatefulWidget {
 }
 
 class _ExploreScreenState extends ConsumerState<ExploreScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, GridPrefetchMixin {
   TabController? _tabController;
   // Feed mode and videos are now derived from URL + providers - no internal state needed
   String? _hashtagMode; // When non-null, showing hashtag feed
@@ -286,6 +287,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
   void _enterFeedMode(List<VideoEvent> videos, int startIndex) {
     if (!mounted) return;
+
+    // Pre-warm adjacent videos before navigation for faster playback
+    prefetchAroundIndex(startIndex, videos);
 
     // Store video list in provider so it survives widget recreation
     ref.read(exploreTabVideosProvider.notifier).state = videos;

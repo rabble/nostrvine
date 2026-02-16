@@ -1,5 +1,5 @@
-// ABOUTME: Video metadata editing screen for post details, title, description, tags and expiration
-// ABOUTME: Implements Figma design 1:1 with custom widget classes
+// ABOUTME: Video metadata editing screen for post details, title, description,
+// ABOUTME: tags and expiration with updated visual hierarchy
 
 import 'dart:async';
 
@@ -8,12 +8,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_clip_preview.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_collaborators_input.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_inspired_by_input.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_tags_input.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_upload_status.dart';
 
@@ -74,8 +75,9 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
         onTap: () => FocusManager.instance.primaryFocus?.unfocus(),
         child: Stack(
           children: [
+            const Positioned.fill(child: _BackgroundGradient()),
             Scaffold(
-              backgroundColor: VineTheme.surfaceContainerHigh,
+              backgroundColor: Colors.transparent,
               appBar: AppBar(
                 backgroundColor: Colors.transparent,
                 surfaceTintColor: Colors.transparent,
@@ -83,12 +85,21 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
                   tag: VideoEditorConstants.heroBackButtonId,
                   child: IconButton(
                     padding: const .all(8),
-                    icon: SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: SvgPicture.asset(
-                        'assets/icon/CaretLeft.svg',
-                        colorFilter: const .mode(Colors.white, .srcIn),
+                    icon: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: const Color(0x33000000),
+                        borderRadius: BorderRadius.circular(14),
+                        border: Border.all(color: VineTheme.outlineVariant),
+                      ),
+                      child: SizedBox(
+                        width: 36,
+                        height: 36,
+                        child: Center(
+                          child: SvgPicture.asset(
+                            'assets/icon/CaretLeft.svg',
+                            colorFilter: const .mode(Colors.white, .srcIn),
+                          ),
+                        ),
                       ),
                     ),
                     onPressed: () => context.pop(),
@@ -97,35 +108,19 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
                 ),
                 title: Text(
                   'Post details',
-                  style: GoogleFonts.bricolageGrotesque(
-                    color: VineTheme.onSurface,
-                    fontSize: 18,
-                    fontWeight: .w800,
-                    height: 1.33,
-                    letterSpacing: 0.15,
-                  ),
+                  style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
                 ),
               ),
               body: Column(
-                spacing: 12,
                 children: [
                   Expanded(
                     child: SingleChildScrollView(
-                      child: Column(
-                        mainAxisSize: .min,
-                        crossAxisAlignment: .stretch,
-                        children: [
-                          // Video preview at top
-                          const VideoMetadataClipPreview(),
-
-                          // Form fields
-                          _FormData(
-                            titleController: _titleController,
-                            descriptionController: _descriptionController,
-                            titleFocusNode: _titleFocusNode,
-                            descriptionFocusNode: _descriptionFocusNode,
-                          ),
-                        ],
+                      padding: const EdgeInsets.fromLTRB(16, 8, 16, 20),
+                      child: _FormData(
+                        titleController: _titleController,
+                        descriptionController: _descriptionController,
+                        titleFocusNode: _titleFocusNode,
+                        descriptionFocusNode: _descriptionFocusNode,
                       ),
                     ),
                   ),
@@ -142,14 +137,24 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
   }
 }
 
-/// A subtle divider line for separating metadata sections.
-class _Divider extends StatelessWidget {
-  /// Creates a divider widget.
-  const _Divider();
+class _BackgroundGradient extends StatelessWidget {
+  const _BackgroundGradient();
 
   @override
   Widget build(BuildContext context) {
-    return const Divider(thickness: 0, height: 1, color: Color(0xFF001A12));
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            const Color(0xFF062117),
+            VineTheme.surfaceContainerHigh,
+            const Color(0xFF000704),
+          ],
+        ),
+      ),
+    );
   }
 }
 
@@ -171,53 +176,116 @@ class _FormData extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
-      mainAxisSize: .min,
       crossAxisAlignment: .stretch,
       children: [
-        // Title input field
-        DivineTextField(
-          controller: titleController,
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          labelText: 'Title',
-          focusNode: titleFocusNode,
-          textInputAction: .next,
-          minLines: 1,
-          maxLines: 5,
-          onChanged: (value) {
-            ref.read(videoEditorProvider.notifier).updateMetadata(title: value);
-          },
-          onSubmitted: (_) => descriptionFocusNode.requestFocus(),
+        const _FormHeader(),
+        const SizedBox(height: 20),
+        const _SectionCard(child: VideoMetadataClipPreview()),
+        const SizedBox(height: 16),
+        _SectionCard(
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                // Title input field
+                DivineTextField(
+                  controller: titleController,
+                  // TODO(l10n): Replace with context.l10n when localization is
+                  // added.
+                  labelText: 'Title',
+                  focusNode: titleFocusNode,
+                  textInputAction: .next,
+                  minLines: 1,
+                  maxLines: 5,
+                  onChanged: (value) {
+                    ref
+                        .read(videoEditorProvider.notifier)
+                        .updateMetadata(title: value);
+                  },
+                  onSubmitted: (_) => descriptionFocusNode.requestFocus(),
+                ),
+                const SizedBox(height: 12),
+
+                // Description input field
+                DivineTextField(
+                  controller: descriptionController,
+                  // TODO(l10n): Replace with context.l10n when localization is
+                  // added.
+                  labelText: 'Description',
+                  focusNode: descriptionFocusNode,
+                  keyboardType: .multiline,
+                  textInputAction: .newline,
+                  minLines: 1,
+                  maxLines: 10,
+                  onChanged: (value) {
+                    ref
+                        .read(videoEditorProvider.notifier)
+                        .updateMetadata(description: value);
+                  },
+                ),
+              ],
+            ),
+          ),
         ),
-        const _Divider(),
-
-        // Description input field
-        DivineTextField(
-          controller: descriptionController,
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          labelText: 'Description',
-          focusNode: descriptionFocusNode,
-          keyboardType: .multiline,
-          textInputAction: .newline,
-          minLines: 1,
-          maxLines: 10,
-          onChanged: (value) {
-            ref
-                .read(videoEditorProvider.notifier)
-                .updateMetadata(description: value);
-          },
-        ),
-        const _Divider(),
-
-        // Hashtags input
-        const VideoMetadataTagsInput(),
-        const _Divider(),
-
-        // 64KB limit warning (shown only if exceeded)
+        const SizedBox(height: 16),
+        const _SectionCard(child: VideoMetadataTagsInput()),
+        const SizedBox(height: 16),
         const _MetadataLimitWarning(),
-
-        // Expiration time selector
-        const VideoMetadataExpirationSelector(),
+        const _SectionCard(child: VideoMetadataExpirationSelector()),
+        const SizedBox(height: 12),
+        const _SectionCard(child: VideoMetadataCollaboratorsInput()),
+        const SizedBox(height: 12),
+        const _SectionCard(child: VideoMetadataInspiredByInput()),
       ],
+    );
+  }
+}
+
+class _FormHeader extends StatelessWidget {
+  const _FormHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      decoration: BoxDecoration(
+        color: const Color(0xAA032017),
+        border: Border.all(color: VineTheme.outlineVariant),
+        borderRadius: BorderRadius.circular(24),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Ready to publish?',
+            style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Add context and credits so people can discover your post.',
+            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionCard extends StatelessWidget {
+  const _SectionCard({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: const Color(0xC0032017),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: VineTheme.outlineVariant),
+      ),
+      child: child,
     );
   }
 }
@@ -235,8 +303,15 @@ class _MetadataLimitWarning extends ConsumerWidget {
     if (!limitReached) return const SizedBox.shrink();
 
     return Container(
-      padding: const .all(16),
-      color: const Color(0xFF4A1C00),
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const .all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF4A1C00),
+        border: Border.all(
+          color: const Color(0xFFFFB84D).withValues(alpha: 0.6),
+        ),
+        borderRadius: BorderRadius.circular(16),
+      ),
       child: Row(
         children: [
           const Icon(
@@ -247,7 +322,8 @@ class _MetadataLimitWarning extends ConsumerWidget {
           const SizedBox(width: 12),
           Expanded(
             child: Text(
-              // TODO(l10n): Replace with context.l10n when localization is added.
+              // TODO(l10n): Replace with context.l10n when localization is
+              // added.
               '64KB limit reached. Remove some content to continue.',
               style: VineTheme.bodyFont(
                 color: const Color(0xFFFFB84D),

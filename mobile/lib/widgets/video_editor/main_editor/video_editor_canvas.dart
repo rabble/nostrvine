@@ -145,8 +145,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     );
 
     final outputPath = await VideoEditorRenderService.renderVideo(
-      taskId: _renderTaskId,
       clips: clips,
+      aspectRatio: clips.first.targetAspectRatio,
+      enableAudio: true,
     );
 
     _videoPlayer = VideoPlayerController.file(File(outputPath!));
@@ -236,7 +237,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         );
       }
     }
-    notifier.updateEditorEditingParameters(parameters);
+    notifier.updateEditorEditingParameters(<String, dynamic>{
+      'image': parameters.image,
+      'colorFilters': parameters.colorFilters,
+    });
     notifier.startRenderVideo();
   }
 
@@ -251,7 +255,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       category: LogCategory.video,
     );
     _videoPlayer?.pause();
-    ref.read(videoEditorProvider.notifier).setProcessing(true);
+    ref.read(videoEditorProvider.notifier).startRenderVideo();
     await context.push(VideoMetadataScreen.path);
     if (mounted) _videoPlayer?.play();
   }

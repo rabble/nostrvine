@@ -733,7 +733,7 @@ class ProfileViewSwitcher extends StatelessWidget {
           )
         :
           // Otherwise show Instagram-style grid view
-          ProfileGrid(
+          ProfileGridView(
             userIdHex: userIdHex,
             isOwnProfile: isOwnProfile,
             displayName: displayName,

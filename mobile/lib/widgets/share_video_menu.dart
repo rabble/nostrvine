@@ -22,7 +22,9 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/widgets/user_name.dart';
+import 'package:openvine/widgets/user_picker_sheet.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -30,6 +32,10 @@ import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/sound_detail_screen.dart';
+import 'package:openvine/services/openvine_media_cache.dart';
+import 'package:openvine/widgets/save_original_progress_sheet.dart';
+import 'package:openvine/widgets/subtitle_generation_sheet.dart';
+import 'package:openvine/widgets/watermark_download_progress_sheet.dart';
 
 // TODO(any): Move this to a reusable widget
 Widget get _buildLoadingIndicator => Padding(
@@ -92,6 +98,10 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
                   ],
                   const SizedBox(height: 24),
                   _buildShareSection(),
+                  if (_isUserOwnContent()) ...[
+                    const SizedBox(height: 24),
+                    _buildSubtitleSection(),
+                  ],
                   const SizedBox(height: 24),
                   _buildListSection(),
                   const SizedBox(height: 24),
@@ -434,6 +444,29 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         onTap: _shareExternally,
       ),
 
+      const SizedBox(height: 8),
+
+      // Save original video (no watermark) — own content only
+      if (_isUserOwnContent()) ...[
+        _buildActionTile(
+          icon: Icons.save_alt,
+          title: 'Save to Gallery',
+          subtitle: 'Save original video to camera roll',
+          onTap: () => _saveOriginal(context),
+        ),
+        const SizedBox(height: 8),
+      ],
+
+      // Save video with watermark
+      _buildActionTile(
+        icon: Icons.download,
+        title: _isUserOwnContent() ? 'Save with Watermark' : 'Save Video',
+        subtitle: _isUserOwnContent()
+            ? 'Download with diVine watermark'
+            : 'Save video to camera roll',
+        onTap: () => _saveWithWatermark(context),
+      ),
+
       // Use this sound option (only if video has audio reference)
       if (widget.video.hasAudioReference) ...[
         const SizedBox(height: 8),
@@ -444,6 +477,61 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       ],
     ],
   );
+
+  Widget _buildSubtitleSection() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      const Text(
+        'Subtitles',
+        style: TextStyle(
+          color: VineTheme.whiteText,
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      const SizedBox(height: 12),
+      _buildActionTile(
+        icon: Icons.closed_caption,
+        title: widget.video.hasSubtitles
+            ? 'Regenerate Subtitles'
+            : 'Generate Subtitles',
+        subtitle: 'Auto-transcribe speech with AI',
+        onTap: () => _generateSubtitles(context),
+      ),
+    ],
+  );
+
+  Future<void> _generateSubtitles(BuildContext ctx) async {
+    final cache = ref.read(mediaCacheProvider);
+    final cachedFile = cache.getCachedFileSync(widget.video.id);
+
+    if (cachedFile == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(ctx).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'Video not cached locally. Play the video first, then try again.',
+            ),
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    _safePop(ctx);
+
+    if (!ctx.mounted) return;
+
+    await showModalBottomSheet<void>(
+      context: ctx,
+      backgroundColor: VineTheme.backgroundColor,
+      builder: (_) => SubtitleGenerationSheet(
+        video: widget.video,
+        videoFilePath: cachedFile.path,
+      ),
+    );
+  }
 
   Widget _buildListSection() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
@@ -919,6 +1007,36 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
         category: LogCategory.ui,
       );
     }
+  }
+
+  /// Save video with diVine watermark overlay
+  Future<void> _saveOriginal(BuildContext ctx) async {
+    // Close the share menu first
+    _safePop(ctx);
+
+    if (!ctx.mounted) return;
+
+    await showSaveOriginalSheet(context: ctx, ref: ref, video: widget.video);
+  }
+
+  Future<void> _saveWithWatermark(BuildContext ctx) async {
+    // Close the share menu first
+    _safePop(ctx);
+
+    // Resolve the creator's display name from their profile
+    final profileService = ref.read(userProfileServiceProvider);
+    final profile = profileService.getCachedProfile(widget.video.pubkey);
+    final username =
+        profile?.bestDisplayName ?? widget.video.authorName ?? 'diVine';
+
+    if (!ctx.mounted) return;
+
+    await showWatermarkDownloadSheet(
+      context: ctx,
+      ref: ref,
+      video: widget.video,
+      username: username,
+    );
   }
 
   /// Show dialog with raw Nostr event JSON
@@ -2326,18 +2444,33 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
   late TextEditingController _titleController;
   late TextEditingController _descriptionController;
   late TextEditingController _hashtagsController;
+  late List<String> _collaboratorPubkeys;
+  InspiredByInfo? _inspiredByVideo;
+  String? _inspiredByNpub;
   bool _isUpdating = false;
   bool _isDeleting = false;
+
+  static const _maxCollaborators = 5;
 
   @override
   void initState() {
     super.initState();
     _titleController = TextEditingController(text: widget.video.title ?? '');
-    _descriptionController = TextEditingController(text: widget.video.content);
+
+    // Strip existing NIP-27 inspired-by line from content for editing
+    var content = widget.video.content;
+    final npubPattern = RegExp(r'\n\nInspired by nostr:npub1[a-z0-9]+$');
+    content = content.replaceFirst(npubPattern, '');
+    _descriptionController = TextEditingController(text: content);
 
     // Convert hashtags list to comma-separated string
     final hashtagsText = widget.video.hashtags.join(', ');
     _hashtagsController = TextEditingController(text: hashtagsText);
+
+    // Initialize collaborators and inspired-by from existing video
+    _collaboratorPubkeys = List<String>.from(widget.video.collaboratorPubkeys);
+    _inspiredByVideo = widget.video.inspiredByVideo;
+    _inspiredByNpub = widget.video.inspiredByNpub;
   }
 
   @override
@@ -2390,9 +2523,38 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
               hintStyle: TextStyle(color: VineTheme.secondaryText),
             ),
           ),
+          const SizedBox(height: 16),
+
+          // Collaborators section
+          _EditCollaboratorsSection(
+            collaboratorPubkeys: _collaboratorPubkeys,
+            isDisabled: _isUpdating,
+            onAdd: (pubkey) => setState(() => _collaboratorPubkeys.add(pubkey)),
+            onRemove: (pubkey) =>
+                setState(() => _collaboratorPubkeys.remove(pubkey)),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Inspired By section
+          _EditInspiredBySection(
+            inspiredByNpub: _inspiredByNpub,
+            inspiredByVideo: _inspiredByVideo,
+            isDisabled: _isUpdating,
+            onSetNpub: (npub) => setState(() {
+              _inspiredByNpub = npub;
+              _inspiredByVideo = null;
+            }),
+            onClear: () => setState(() {
+              _inspiredByNpub = null;
+              _inspiredByVideo = null;
+            }),
+          ),
+
           const SizedBox(height: 8),
           const Text(
-            'Note: Only metadata can be edited. Video content cannot be changed.',
+            'Note: Only metadata can be edited. '
+            'Video content cannot be changed.',
             style: TextStyle(color: VineTheme.secondaryText, fontSize: 12),
           ),
           const SizedBox(height: 16),
@@ -2520,13 +2682,34 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         tags.add(['alt', widget.video.altText!]);
       }
 
+      // Add collaborator p-tags
+      for (final pubkey in _collaboratorPubkeys) {
+        tags.add(['p', pubkey]);
+      }
+
+      // Add inspired-by a-tag (video reference)
+      if (_inspiredByVideo != null) {
+        tags.add([
+          'a',
+          _inspiredByVideo!.addressableId,
+          _inspiredByVideo!.relayUrl ?? '',
+          'inspired-by',
+        ]);
+      }
+
       // Add client tag
       tags.add(['client', 'diVine']);
+
+      // Build content with optional NIP-27 inspired-by person reference
+      var content = _descriptionController.text.trim();
+      if (_inspiredByNpub != null && _inspiredByNpub!.isNotEmpty) {
+        final ibText = '\n\nInspired by nostr:$_inspiredByNpub';
+        content = content.isEmpty ? ibText.trim() : '$content$ibText';
+      }
 
       // Create and sign the updated event
       // Use original created_at + 1 so relays treat this as a replacement
       // while preserving the video's chronological position in feeds.
-      final content = _descriptionController.text.trim();
       final event = await authService.createAndSignEvent(
         kind: NIP71VideoKinds.addressableShortVideo, // Kind 34236
         content: content,
@@ -2676,6 +2859,358 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
     _descriptionController.dispose();
     _hashtagsController.dispose();
     super.dispose();
+  }
+}
+
+/// Collaborators editing section for the post-publish edit dialog.
+///
+/// Manages its own state via callbacks rather than videoEditorProvider.
+class _EditCollaboratorsSection extends ConsumerWidget {
+  const _EditCollaboratorsSection({
+    required this.collaboratorPubkeys,
+    required this.isDisabled,
+    required this.onAdd,
+    required this.onRemove,
+  });
+
+  final List<String> collaboratorPubkeys;
+  final bool isDisabled;
+  final ValueChanged<String> onAdd;
+  final ValueChanged<String> onRemove;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Collaborators',
+        style: VineTheme.bodyFont(
+          color: VineTheme.onSurfaceVariant,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          height: 1.45,
+          letterSpacing: 0.5,
+        ),
+      ),
+      const SizedBox(height: 8),
+      if (collaboratorPubkeys.isNotEmpty)
+        Wrap(
+          spacing: 8,
+          runSpacing: 8,
+          children: collaboratorPubkeys
+              .map(
+                (pubkey) => _EditCollaboratorChip(
+                  pubkey: pubkey,
+                  isDisabled: isDisabled,
+                  onRemove: () => onRemove(pubkey),
+                ),
+              )
+              .toList(),
+        ),
+      if (collaboratorPubkeys.isNotEmpty) const SizedBox(height: 8),
+      if (!isDisabled &&
+          collaboratorPubkeys.length < _EditVideoDialogState._maxCollaborators)
+        GestureDetector(
+          onTap: () => _addCollaborator(context, ref),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: VineTheme.onSurfaceMuted),
+                ),
+                child: const Icon(
+                  Icons.add,
+                  color: VineTheme.onSurfaceMuted,
+                  size: 14,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Add collaborator',
+                style: VineTheme.bodyFont(
+                  color: VineTheme.onSurfaceMuted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+    ],
+  );
+
+  Future<void> _addCollaborator(BuildContext context, WidgetRef ref) async {
+    final profile = await showUserPickerSheet(
+      context,
+      filterMode: UserPickerFilterMode.mutualFollowsOnly,
+      title: 'Add collaborator',
+    );
+
+    if (profile == null || !context.mounted) return;
+
+    // Verify mutual follow
+    final followRepo = ref.read(followRepositoryProvider);
+    if (followRepo == null) return;
+    final isMutual = await followRepo.isMutualFollow(profile.pubkey);
+
+    if (!isMutual) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'You need to mutually follow '
+            '${profile.bestDisplayName} to add '
+            'them as a collaborator.',
+          ),
+          backgroundColor: VineTheme.cardBackground,
+        ),
+      );
+      return;
+    }
+
+    // Avoid duplicates
+    if (!collaboratorPubkeys.contains(profile.pubkey)) {
+      onAdd(profile.pubkey);
+    }
+  }
+}
+
+/// Single collaborator chip for the edit dialog.
+class _EditCollaboratorChip extends ConsumerWidget {
+  const _EditCollaboratorChip({
+    required this.pubkey,
+    required this.isDisabled,
+    required this.onRemove,
+  });
+
+  final String pubkey;
+  final bool isDisabled;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final profileAsync = ref.watch(fetchUserProfileProvider(pubkey));
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color: VineTheme.surfaceBackground,
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          UserAvatar(
+            imageUrl: profileAsync.value?.picture,
+            name: profileAsync.value?.bestDisplayName,
+            size: 20,
+          ),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              profileAsync.value?.bestDisplayName ?? 'Loading...',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: VineTheme.bodyFont(
+                color: VineTheme.whiteText,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (!isDisabled) ...[
+            const SizedBox(width: 4),
+            GestureDetector(
+              onTap: onRemove,
+              child: const Icon(
+                Icons.close,
+                color: VineTheme.onSurfaceMuted,
+                size: 14,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Inspired-by editing section for the post-publish edit dialog.
+class _EditInspiredBySection extends ConsumerWidget {
+  const _EditInspiredBySection({
+    required this.inspiredByNpub,
+    required this.inspiredByVideo,
+    required this.isDisabled,
+    required this.onSetNpub,
+    required this.onClear,
+  });
+
+  final String? inspiredByNpub;
+  final InspiredByInfo? inspiredByVideo;
+  final bool isDisabled;
+  final ValueChanged<String> onSetNpub;
+  final VoidCallback onClear;
+
+  bool get _hasInspiredBy => inspiredByNpub != null || inspiredByVideo != null;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        'Inspired by',
+        style: VineTheme.bodyFont(
+          color: VineTheme.onSurfaceVariant,
+          fontSize: 11,
+          fontWeight: FontWeight.w600,
+          height: 1.45,
+          letterSpacing: 0.5,
+        ),
+      ),
+      const SizedBox(height: 8),
+      if (_hasInspiredBy)
+        _EditInspiredByDisplay(
+          inspiredByNpub: inspiredByNpub,
+          inspiredByVideo: inspiredByVideo,
+          isDisabled: isDisabled,
+          onClear: onClear,
+        )
+      else if (!isDisabled)
+        GestureDetector(
+          onTap: () => _selectInspiredBy(context, ref),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 24,
+                height: 24,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(6),
+                  border: Border.all(color: VineTheme.onSurfaceMuted),
+                ),
+                child: const Icon(
+                  Icons.add,
+                  color: VineTheme.onSurfaceMuted,
+                  size: 14,
+                ),
+              ),
+              const SizedBox(width: 6),
+              Text(
+                'Add inspiration credit',
+                style: VineTheme.bodyFont(
+                  color: VineTheme.onSurfaceMuted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+    ],
+  );
+
+  Future<void> _selectInspiredBy(BuildContext context, WidgetRef ref) async {
+    final profile = await showUserPickerSheet(
+      context,
+      filterMode: UserPickerFilterMode.allUsers,
+      title: 'Inspired by',
+    );
+
+    if (profile == null || !context.mounted) return;
+
+    // Check if the user has muted us
+    final blocklistService = ref.read(contentBlocklistServiceProvider);
+    if (blocklistService.hasMutedUs(profile.pubkey)) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('This creator cannot be referenced.'),
+          backgroundColor: VineTheme.cardBackground,
+        ),
+      );
+      return;
+    }
+
+    final npub = NostrKeyUtils.encodePubKey(profile.pubkey);
+    onSetNpub(npub);
+  }
+}
+
+/// Displays the current inspired-by attribution in the edit dialog.
+class _EditInspiredByDisplay extends ConsumerWidget {
+  const _EditInspiredByDisplay({
+    required this.inspiredByNpub,
+    required this.inspiredByVideo,
+    required this.isDisabled,
+    required this.onClear,
+  });
+
+  final String? inspiredByNpub;
+  final InspiredByInfo? inspiredByVideo;
+  final bool isDisabled;
+  final VoidCallback onClear;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Resolve the pubkey to display
+    String? displayName;
+    String? avatarUrl;
+
+    if (inspiredByVideo != null) {
+      final pubkey = inspiredByVideo!.creatorPubkey;
+      final profileAsync = ref.watch(fetchUserProfileProvider(pubkey));
+      displayName = profileAsync.value?.bestDisplayName;
+      avatarUrl = profileAsync.value?.picture;
+    }
+
+    // For npub, show a truncated display
+    final npubDisplay = inspiredByNpub != null && inspiredByNpub!.length > 20
+        ? '${inspiredByNpub!.substring(0, 10)}...'
+              '${inspiredByNpub!.substring(inspiredByNpub!.length - 8)}'
+        : inspiredByNpub;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        color: VineTheme.surfaceBackground,
+      ),
+      child: Row(
+        children: [
+          UserAvatar(
+            imageUrl: avatarUrl,
+            name: displayName ?? npubDisplay,
+            size: 24,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              displayName ?? npubDisplay ?? 'Unknown',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: VineTheme.bodyFont(
+                color: VineTheme.whiteText,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          if (!isDisabled)
+            GestureDetector(
+              onTap: onClear,
+              child: const Icon(
+                Icons.close,
+                color: VineTheme.onSurfaceMuted,
+                size: 16,
+              ),
+            ),
+        ],
+      ),
+    );
   }
 }
 

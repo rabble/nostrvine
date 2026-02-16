@@ -574,10 +574,11 @@ class AuthService implements BackgroundAwareService {
 
       _authSource = AuthenticationSource.bunker;
 
-      await _performDiscovery();
-
       _setAuthState(AuthState.authenticated);
       _profileController.add(_currentProfile);
+
+      // Run discovery in background - not needed for home feed
+      unawaited(_performDiscovery());
 
       Log.info(
         'Bunker reconnection successful for user: $userPubkey',
@@ -788,10 +789,11 @@ class AuthService implements BackgroundAwareService {
 
       _authSource = AuthenticationSource.amber;
 
-      await _performDiscovery();
-
       _setAuthState(AuthState.authenticated);
       _profileController.add(_currentProfile);
+
+      // Run discovery in background - not needed for home feed
+      unawaited(_performDiscovery());
 
       Log.info(
         'Amber reconnection successful for user: $pubkey',
@@ -1878,9 +1880,12 @@ class AuthService implements BackgroundAwareService {
 
       await prefs.setString(_kAuthSourceKey, source.code);
 
-      await _performDiscovery();
-
       _setAuthState(AuthState.authenticated);
+
+      // Run discovery in background - it's not needed for the home feed to start
+      // loading. Discovery results (relay list, blossom servers) are only used
+      // when editing profile or publishing content.
+      unawaited(_performDiscovery());
     } catch (e) {
       Log.warning(
         'error in _setupUserSession: $e',

@@ -15,10 +15,10 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/utils/search_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -62,7 +62,7 @@ class SearchScreenPure extends ConsumerStatefulWidget {
 }
 
 class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, GridPrefetchMixin {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   late TabController _tabController;
@@ -439,6 +439,9 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     });
     // Update provider so active video system can access merged search results
     ref.read(searchScreenVideosProvider.notifier).state = uniqueVideos;
+
+    // Prefetch top video files for faster playback on tap
+    prefetchGridVideos(uniqueVideos);
   }
 
   @override
@@ -545,8 +548,8 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     if (widget.embedded) {
       return BlocProvider.value(
         value: _userSearchBloc,
-        child: Container(
-          color: VineTheme.backgroundColor, // Ensure visible background
+        child: Material(
+          color: VineTheme.backgroundColor,
           child: Column(
             children: [
               Container(
@@ -680,15 +683,13 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                 '🔍 SearchScreenPure: Tapped video at index $index',
                 category: LogCategory.video,
               );
-              // Push to fullscreen video feed (outside shell, no bottom nav)
-              context.push(
-                FullscreenVideoFeedScreen.path,
-                extra: FullscreenVideoFeedArgs(
-                  source: StaticFeedSource(videos),
-                  initialIndex: index,
-                  contextTitle: _currentQuery.isNotEmpty
-                      ? 'Search: $_currentQuery'
-                      : null,
+              // Pre-warm adjacent videos before navigation
+              prefetchAroundIndex(index, videos);
+              // Navigate using GoRouter to enable router-driven video playback
+              context.go(
+                SearchScreenPure.pathForTerm(
+                  term: _currentQuery.isNotEmpty ? _currentQuery : null,
+                  index: index,
                 ),
               );
             },

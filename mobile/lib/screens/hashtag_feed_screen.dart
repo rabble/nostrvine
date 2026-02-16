@@ -81,7 +81,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
   }
 
   /// Fetch videos from Funnelcake REST API and update state immediately.
-  /// Uses a short timeout to fail fast and fall back to WebSocket.
+  /// Fetches trending AND classic videos in parallel, then interleaves 50/50.
   Future<void> _fetchFromFunnelcake({bool forceRefresh = false}) async {
     try {
       final analyticsService = ref.read(analyticsApiServiceProvider);
@@ -95,27 +95,39 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
         return;
       }
 
-      // Use a 5-second timeout to fail fast
-      final videos = await analyticsService
-          .getVideosByHashtag(
-            hashtag: widget.hashtag,
-            limit: 100,
-            forceRefresh: forceRefresh,
-          )
-          .timeout(const Duration(seconds: 5));
+      // Fetch trending AND classic videos in parallel
+      final results = await Future.wait([
+        analyticsService.getVideosByHashtag(
+          hashtag: widget.hashtag,
+          limit: 50,
+          forceRefresh: forceRefresh,
+        ),
+        analyticsService.getClassicVideosByHashtag(
+          hashtag: widget.hashtag,
+          limit: 50,
+        ),
+      ]).timeout(const Duration(seconds: 5));
 
       if (!mounted) return;
 
+      final trendingVideos = results[0];
+      final classicVideos = results[1];
+
       Log.info(
-        '🏷️ HashtagFeedScreen: Got ${videos.length} videos from Funnelcake for #${widget.hashtag}',
+        '🏷️ HashtagFeedScreen: Got ${trendingVideos.length} trending + '
+        '${classicVideos.length} classic videos from Funnelcake '
+        'for #${widget.hashtag}',
         category: LogCategory.video,
       );
 
+      // Interleave 50/50 for a balanced feed
+      final interleaved = _interleaveVideos(trendingVideos, classicVideos);
+
       // Update immediately - don't wait for WebSocket
       setState(() {
-        _popularVideos = videos;
+        _popularVideos = interleaved;
         // Mark as ready to show content if we have videos
-        if (videos.isNotEmpty) {
+        if (interleaved.isNotEmpty) {
           _subscriptionAttempted = true;
         }
       });
@@ -125,6 +137,55 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
         category: LogCategory.video,
       );
     }
+  }
+
+  /// Interleave trending and classic videos 1:1 for a balanced feed.
+  /// Deduplicates first so a video appearing in both lists isn't shown twice.
+  /// If one list runs out, appends the remainder of the other.
+  List<VideoEvent> _interleaveVideos(
+    List<VideoEvent> trending,
+    List<VideoEvent> classics,
+  ) {
+    // Build set of trending IDs for deduplication
+    final trendingIds = <String>{};
+    for (final v in trending) {
+      if (v.id.isNotEmpty) trendingIds.add(v.id.toLowerCase());
+      if (v.vineId != null && v.vineId!.isNotEmpty) {
+        trendingIds.add(v.vineId!.toLowerCase());
+      }
+    }
+
+    // Remove classics that already appear in trending
+    final uniqueClassics = <VideoEvent>[];
+    for (final video in classics) {
+      final isDuplicate =
+          trendingIds.contains(video.id.toLowerCase()) ||
+          (video.vineId != null &&
+              trendingIds.contains(video.vineId!.toLowerCase()));
+      if (!isDuplicate) {
+        uniqueClassics.add(video);
+      }
+    }
+
+    Log.debug(
+      '🏷️ Interleaving: ${trending.length} trending + '
+      '${uniqueClassics.length} unique classics '
+      '(${classics.length - uniqueClassics.length} duplicates removed)',
+      category: LogCategory.video,
+    );
+
+    // Interleave 1:1
+    final result = <VideoEvent>[];
+    final maxLen = trending.length > uniqueClassics.length
+        ? trending.length
+        : uniqueClassics.length;
+
+    for (var i = 0; i < maxLen; i++) {
+      if (i < trending.length) result.add(trending[i]);
+      if (i < uniqueClassics.length) result.add(uniqueClassics[i]);
+    }
+
+    return result;
   }
 
   /// Subscribe to hashtag via WebSocket for real-time updates.

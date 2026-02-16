@@ -4,6 +4,8 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
 import android.util.Log
@@ -222,36 +224,38 @@ class MainActivity : FlutterActivity() {
                         return@setMethodCallHandler
                     }
 
-                    try {
-                        Log.d(PROOFMODE_TAG, "Generating proof for: $mediaPath")
-
-                        // Convert file path to URI
-                        val mediaFile = File(mediaPath)
-                        if (!mediaFile.exists()) {
-                            result.error("FILE_NOT_FOUND", "Media file does not exist: $mediaPath", null)
-                            return@setMethodCallHandler
-                        }
-
-                        val mediaUri = Uri.fromFile(mediaFile)
-
-                        // Generate proof using native ProofMode library
-                        val proofHash = ProofMode.generateProof(this, mediaUri)
-
-                        if (proofHash.isNullOrEmpty()) {
-                            Log.e(PROOFMODE_TAG, "ProofMode did not generate hash")
-                            result.error("PROOF_HASH_MISSING", "ProofMode did not generate video hash", null)
-                            return@setMethodCallHandler
-                        }
-
-                        Log.d(PROOFMODE_TAG, "Proof generated successfully: $proofHash")
-
-
-
-                        result.success(proofHash)
-                    } catch (e: Exception) {
-                        Log.e(PROOFMODE_TAG, "Failed to generate proof", e)
-                        result.error("PROOF_GENERATION_FAILED", e.message, null)
+                    val mediaFile = File(mediaPath)
+                    if (!mediaFile.exists()) {
+                        result.error("FILE_NOT_FOUND", "Media file does not exist: $mediaPath", null)
+                        return@setMethodCallHandler
                     }
+
+                    // Run proof generation on a background thread to avoid ANR.
+                    // RSA key generation (BouncyCastle BN_primality_test) is CPU-heavy.
+                    val mainHandler = Handler(Looper.getMainLooper())
+                    val context = this
+                    Thread {
+                        try {
+                            Log.d(PROOFMODE_TAG, "Generating proof for: $mediaPath")
+                            val mediaUri = Uri.fromFile(mediaFile)
+                            val proofHash = ProofMode.generateProof(context, mediaUri)
+
+                            mainHandler.post {
+                                if (proofHash.isNullOrEmpty()) {
+                                    Log.e(PROOFMODE_TAG, "ProofMode did not generate hash")
+                                    result.error("PROOF_HASH_MISSING", "ProofMode did not generate video hash", null)
+                                } else {
+                                    Log.d(PROOFMODE_TAG, "Proof generated successfully: $proofHash")
+                                    result.success(proofHash)
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e(PROOFMODE_TAG, "Failed to generate proof", e)
+                            mainHandler.post {
+                                result.error("PROOF_GENERATION_FAILED", e.message, null)
+                            }
+                        }
+                    }.start()
                 }
 
                 "getProofDir" -> {
