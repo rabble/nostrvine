@@ -105,7 +105,8 @@ class CameraLensMetadata extends Equatable {
   /// Whether this lens has optical image stabilization (OIS).
   final bool hasOpticalStabilization;
 
-  /// Whether this is a logical multi-camera (combines multiple physical cameras).
+  /// Whether this is a logical multi-camera
+  /// (combines multiple physical cameras).
   final bool isLogicalCamera;
 
   /// IDs of physical cameras that make up this logical camera.
