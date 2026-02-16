@@ -222,7 +222,7 @@ class VideoEditorRenderService {
         clips: clips,
         aspectRatio: aspectRatio ?? clips.first.targetAspectRatio,
         enableAudio: enableAudio,
-        tempDir: cacheDir,
+        cacheDir: cacheDir,
         parameters: parameters,
       );
       tempFilePaths = result.tempFilePaths;
@@ -231,7 +231,7 @@ class VideoEditorRenderService {
         segments: result.segments,
         taskId: taskId ?? clips.first.id,
         enableAudio: enableAudio,
-        tempDir: outputDir,
+        outputDir: outputDir,
         globalTransform: result.globalTransform,
         customAudioPath: customAudioPath,
         originalAudioVolume: originalAudioVolume,
@@ -388,7 +388,7 @@ class VideoEditorRenderService {
     required List<RecordingClip> clips,
     required model.AspectRatio aspectRatio,
     required bool enableAudio,
-    required Directory tempDir,
+    required Directory cacheDir,
     required CompleteParameters? parameters,
   }) async {
     // Analyze all clips first to determine the optimal rendering strategy
@@ -442,7 +442,7 @@ class VideoEditorRenderService {
           index: i,
           cropParams: entry.cropParams,
           enableAudio: enableAudio,
-          tempDir: tempDir,
+          tempDir: cacheDir,
           parameters: parameters,
         );
         tempFilePaths.add(normalizedPath);
@@ -545,7 +545,7 @@ class VideoEditorRenderService {
     required List<VideoSegment> segments,
     required String taskId,
     required bool enableAudio,
-    required Directory tempDir,
+    required Directory outputDir,
     required CompleteParameters? parameters,
     _CropParameters? globalTransform,
     String? customAudioPath,
@@ -554,7 +554,7 @@ class VideoEditorRenderService {
     Uint8List? imageBytes,
   }) async {
     final outputPath = path.join(
-      tempDir.path,
+      outputDir.path,
       'divine_${DateTime.now().microsecondsSinceEpoch}.mp4',
     );
 
