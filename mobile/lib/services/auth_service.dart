@@ -1869,6 +1869,7 @@ class AuthService implements BackgroundAwareService {
       if (shouldClean) {
         await _userDataCleanupService.clearUserSpecificData(
           reason: 'identity_change',
+          isIdentityChange: true,
         );
         // restore the TOS acceptance since we wouldn't be here otherwise
         await acceptTerms();
