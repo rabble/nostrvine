@@ -409,8 +409,19 @@ class CameraController(
             emptyList()
         }
         
+        // Exposure time range (nanoseconds) - static capability, not live value
+        val exposureTimeRange = chars.get(CameraCharacteristics.SENSOR_INFO_EXPOSURE_TIME_RANGE)
+        val exposureTimeMin = exposureTimeRange?.lower?.toDouble()?.div(1_000_000_000.0)  // Convert ns to seconds
+        val exposureTimeMax = exposureTimeRange?.upper?.toDouble()?.div(1_000_000_000.0)  // Convert ns to seconds
+        
+        // ISO sensitivity range - static capability, not live value
+        val isoRange = chars.get(CameraCharacteristics.SENSOR_INFO_SENSITIVITY_RANGE)
+        val isoMin = isoRange?.lower
+        val isoMax = isoRange?.upper
+        
         return mapOf(
             "lensType" to lensType,
+            "cameraId" to cameraId,
             "focalLength" to focalLength,
             "focalLengthEquivalent35mm" to focalLengthEquivalent35mm,
             "aperture" to aperture,
@@ -422,7 +433,11 @@ class CameraController(
             "fieldOfView" to fieldOfView,
             "hasOpticalStabilization" to hasOpticalStabilization,
             "isLogicalCamera" to isLogicalCamera,
-            "physicalCameraIds" to physicalCameraIds
+            "physicalCameraIds" to physicalCameraIds,
+            "exposureTimeMin" to exposureTimeMin,
+            "exposureTimeMax" to exposureTimeMax,
+            "isoMin" to isoMin,
+            "isoMax" to isoMax
         )
     }
 

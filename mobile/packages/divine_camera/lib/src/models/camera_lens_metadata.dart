@@ -11,6 +11,7 @@ class CameraLensMetadata extends Equatable {
   /// Creates camera lens metadata.
   const CameraLensMetadata({
     required this.lensType,
+    this.cameraId,
     this.focalLength,
     this.focalLengthEquivalent35mm,
     this.aperture,
@@ -23,12 +24,19 @@ class CameraLensMetadata extends Equatable {
     this.hasOpticalStabilization = false,
     this.isLogicalCamera = false,
     this.physicalCameraIds = const [],
+    this.exposureDuration,
+    this.exposureTimeMin,
+    this.exposureTimeMax,
+    this.iso,
+    this.isoMin,
+    this.isoMax,
   });
 
   /// Creates [CameraLensMetadata] from a platform map.
   factory CameraLensMetadata.fromMap(Map<dynamic, dynamic> map) {
     return CameraLensMetadata(
       lensType: map['lensType'] as String? ?? 'unknown',
+      cameraId: map['cameraId'] as String?,
       focalLength: (map['focalLength'] as num?)?.toDouble(),
       focalLengthEquivalent35mm: (map['focalLengthEquivalent35mm'] as num?)
           ?.toDouble(),
@@ -46,11 +54,23 @@ class CameraLensMetadata extends Equatable {
               ?.whereType<String>()
               .toList() ??
           const [],
+      exposureDuration: (map['exposureDuration'] as num?)?.toDouble(),
+      exposureTimeMin: (map['exposureTimeMin'] as num?)?.toDouble(),
+      exposureTimeMax: (map['exposureTimeMax'] as num?)?.toDouble(),
+      iso: (map['iso'] as num?)?.toDouble(),
+      isoMin: map['isoMin'] as int?,
+      isoMax: map['isoMax'] as int?,
     );
   }
 
   /// The lens type identifier (e.g., 'back', 'front', 'ultraWide').
   final String lensType;
+
+  /// Platform-specific camera hardware identifier.
+  ///
+  /// On iOS: AVCaptureDevice.uniqueID
+  /// On Android: Camera ID string (e.g., "0", "1")
+  final String? cameraId;
 
   /// Physical focal length in millimeters.
   ///
@@ -112,6 +132,36 @@ class CameraLensMetadata extends Equatable {
   /// IDs of physical cameras that make up this logical camera.
   final List<String> physicalCameraIds;
 
+  /// Current exposure duration in seconds (iOS only, live value).
+  ///
+  /// This is the actual exposure time being used for the current frame.
+  final double? exposureDuration;
+
+  /// Minimum supported exposure time in seconds (Android only).
+  ///
+  /// From SENSOR_INFO_EXPOSURE_TIME_RANGE.
+  final double? exposureTimeMin;
+
+  /// Maximum supported exposure time in seconds (Android only).
+  ///
+  /// From SENSOR_INFO_EXPOSURE_TIME_RANGE.
+  final double? exposureTimeMax;
+
+  /// Current ISO sensitivity (iOS only, live value).
+  ///
+  /// This is the actual ISO being used for the current frame.
+  final double? iso;
+
+  /// Minimum supported ISO sensitivity (Android only).
+  ///
+  /// From SENSOR_INFO_SENSITIVITY_RANGE.
+  final int? isoMin;
+
+  /// Maximum supported ISO sensitivity (Android only).
+  ///
+  /// From SENSOR_INFO_SENSITIVITY_RANGE.
+  final int? isoMax;
+
   /// Sensor resolution in megapixels.
   double? get megapixels {
     if (pixelArrayWidth == null || pixelArrayHeight == null) return null;
@@ -138,6 +188,7 @@ class CameraLensMetadata extends Equatable {
   Map<String, dynamic> toMap() {
     return {
       'lensType': lensType,
+      'cameraId': cameraId,
       'focalLength': focalLength,
       'focalLengthEquivalent35mm': focalLengthEquivalent35mm,
       'aperture': aperture,
@@ -150,6 +201,12 @@ class CameraLensMetadata extends Equatable {
       'hasOpticalStabilization': hasOpticalStabilization,
       'isLogicalCamera': isLogicalCamera,
       'physicalCameraIds': physicalCameraIds,
+      'exposureDuration': exposureDuration,
+      'exposureTimeMin': exposureTimeMin,
+      'exposureTimeMax': exposureTimeMax,
+      'iso': iso,
+      'isoMin': isoMin,
+      'isoMax': isoMax,
     };
   }
 
@@ -157,6 +214,7 @@ class CameraLensMetadata extends Equatable {
   String toString() {
     return 'CameraLensMetadata('
         'lensType: $lensType, '
+        'cameraId: $cameraId, '
         'focalLength: ${focalLength}mm, '
         'aperture: f/$aperture, '
         'megapixels: ${megapixels?.toStringAsFixed(1)}MP)';
@@ -165,6 +223,7 @@ class CameraLensMetadata extends Equatable {
   @override
   List<Object?> get props => [
     lensType,
+    cameraId,
     focalLength,
     focalLengthEquivalent35mm,
     aperture,
@@ -177,5 +236,11 @@ class CameraLensMetadata extends Equatable {
     hasOpticalStabilization,
     isLogicalCamera,
     physicalCameraIds,
+    exposureDuration,
+    exposureTimeMin,
+    exposureTimeMax,
+    iso,
+    isoMin,
+    isoMax,
   ];
 }
