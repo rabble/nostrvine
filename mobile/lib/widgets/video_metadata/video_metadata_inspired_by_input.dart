@@ -134,7 +134,8 @@ class _InspiredByDisplay extends ConsumerWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: VineTheme.cardBackground,
+        color: const Color(0xFF0B2A20),
+        border: Border.all(color: VineTheme.outlineVariant),
       ),
       child: Row(
         children: [
@@ -284,37 +285,38 @@ class _AddInspiredByButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onPressed,
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: VineTheme.onSurfaceMuted,
-                strokeAlign: BorderSide.strokeAlignInside,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          color: const Color(0x8C032017),
+          border: Border.all(color: VineTheme.outlineVariant),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 22,
+              height: 22,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(7),
+                color: const Color(0xFF0E2B21),
+              ),
+              child: const Icon(Icons.add, color: VineTheme.primary, size: 15),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              // TODO(l10n): Replace with context.l10n
+              //   when localization is added.
+              'Add inspiration credit',
+              style: VineTheme.bodyFont(
+                color: VineTheme.onSurfaceVariant,
+                fontSize: 13,
+                fontWeight: FontWeight.w500,
               ),
             ),
-            child: const Icon(
-              Icons.add,
-              color: VineTheme.onSurfaceMuted,
-              size: 16,
-            ),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            // TODO(l10n): Replace with context.l10n
-            //   when localization is added.
-            'Add inspiration credit',
-            style: VineTheme.bodyFont(
-              color: VineTheme.onSurfaceMuted,
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

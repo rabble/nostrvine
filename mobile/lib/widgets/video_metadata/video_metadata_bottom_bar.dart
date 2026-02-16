@@ -2,7 +2,6 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -23,15 +22,30 @@ class VideoMetadataBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(child: _SaveForLaterButton()),
-          SizedBox(width: 16),
-          Expanded(child: _PostButton()),
-        ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xE5032017),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: VineTheme.outlineVariant),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x6B000000),
+              blurRadius: 20,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(child: _SaveForLaterButton()),
+            SizedBox(width: 10),
+            Expanded(child: _PostButton()),
+          ],
+        ),
       ),
     );
   }
@@ -61,34 +75,37 @@ class _SaveForLaterButton extends ConsumerWidget {
         child: AnimatedOpacity(
           duration: const Duration(milliseconds: 200),
           opacity: isSaving ? 0.6 : 1.0,
-          child: Container(
+          child: DecoratedBox(
             decoration: BoxDecoration(
-              color: VineTheme.surfaceContainer,
-              border: Border.all(color: const Color(0xFF0E2B21), width: 2),
-              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xAA0E2B21), Color(0xE5032017)],
+              ),
+              border: Border.all(color: const Color(0xFF184235), width: 1.5),
+              borderRadius: BorderRadius.circular(18),
             ),
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Center(
-              child: isSaving
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: VineTheme.primary,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                child: isSaving
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: VineTheme.primary,
+                        ),
+                      )
+                    // TODO(l10n): Replace with context.l10n when localization
+                    // is added.
+                    : Text(
+                        'Save for Later',
+                        style: VineTheme.titleSmallFont(
+                          color: VineTheme.primary,
+                        ),
                       ),
-                    )
-                  // TODO(l10n): Replace with context.l10n when localization is added.
-                  : Text(
-                      'Save for Later',
-                      style: GoogleFonts.bricolageGrotesque(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: VineTheme.primary,
-                        height: 1.33,
-                        letterSpacing: 0.15,
-                      ),
-                    ),
+              ),
             ),
           ),
         ),
@@ -249,22 +266,32 @@ class _PostButton extends ConsumerWidget {
           onTap: isValidToPost
               ? () => ref.read(videoEditorProvider.notifier).postVideo(context)
               : null,
-          child: Container(
+          child: DecoratedBox(
             decoration: BoxDecoration(
-              color: VineTheme.primary,
-              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF3ED9A2), VineTheme.primary],
+              ),
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x4D27C58B),
+                  blurRadius: 18,
+                  offset: Offset(0, 6),
+                ),
+              ],
             ),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Center(
-              // TODO(l10n): Replace with context.l10n when localization is added.
-              child: Text(
-                'Post',
-                style: GoogleFonts.bricolageGrotesque(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF002C1C),
-                  height: 1.33,
-                  letterSpacing: 0.15,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                // TODO(l10n): Replace with context.l10n when localization is
+                // added.
+                child: Text(
+                  'Post',
+                  style: VineTheme.titleSmallFont(
+                    color: const Color(0xFF002C1C),
+                  ),
                 ),
               ),
             ),
