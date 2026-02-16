@@ -195,7 +195,12 @@ void main() {
 
           expect(focusNode.hasFocus, isFalse);
 
-          await tester.tap(find.byType(DivineTextField));
+          // Tap the top of the Container (padding area above
+          // the TextField) to trigger _handleContainerTap and
+          // exercise the requestFocus path.
+          final containerFinder = find.byType(Container).first;
+          final topLeft = tester.getTopLeft(containerFinder);
+          await tester.tapAt(topLeft + const Offset(30, 5));
           await tester.pump();
 
           expect(focusNode.hasFocus, isTrue);
