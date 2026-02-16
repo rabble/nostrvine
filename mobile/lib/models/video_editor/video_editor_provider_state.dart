@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:models/models.dart' show InspiredByInfo;
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 
 /// Immutable state model for the video editor.
 ///
@@ -36,7 +37,7 @@ class VideoEditorProviderState {
     this.metadataLimitReached = false,
     this.finalRenderedClip,
     this.editorStateHistory = const {},
-    this.editorEditingParameters = const {},
+    this.editorEditingParameters,
     this.collaboratorPubkeys = const [],
     this.inspiredByVideo,
     this.inspiredByNpub,
@@ -113,7 +114,7 @@ class VideoEditorProviderState {
   final Map<String, dynamic> editorStateHistory;
 
   /// Serialized editing parameters (filters, drawings, etc.) from ProImageEditor.
-  final Map<String, dynamic> editorEditingParameters;
+  final CompleteParameters? editorEditingParameters;
 
   /// Pubkeys of collaborators to tag in the published video.
   final List<String> collaboratorPubkeys;
@@ -168,7 +169,7 @@ class VideoEditorProviderState {
     RecordingClip? finalRenderedClip,
     bool clearFinalRenderedClip = false,
     Map<String, dynamic>? editorStateHistory,
-    Map<String, dynamic>? editorEditingParameters,
+    CompleteParameters? editorEditingParameters,
     List<String>? collaboratorPubkeys,
     InspiredByInfo? inspiredByVideo,
     String? inspiredByNpub,

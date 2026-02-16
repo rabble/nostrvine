@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,28 +25,22 @@ class VideoMetadataPreviewThumbnail extends ConsumerWidget {
 
     final thumbnail = Image.file(File(clip.thumbnailPath!), fit: .cover);
 
-    if (editingParameters.isEmpty) {
+    if (editingParameters == null) {
       return thumbnail;
     }
-
-    // Extract editing data from serialized parameters
-    final rawFilters = editingParameters['colorFilters'] as List? ?? const [];
-    final colorFilters = rawFilters
-        .map((f) => (f as List).cast<double>())
-        .toList();
-    final imageBytes = editingParameters['image'] as Uint8List? ?? Uint8List(0);
 
     return Stack(
       alignment: .center,
       fit: .expand,
       children: [
         ColorFilterGenerator(
-          filters: colorFilters,
+          filters: editingParameters.colorFilters,
           tuneAdjustments: const [],
           child: thumbnail,
         ),
         // Overlay the layers
-        if (imageBytes.isNotEmpty) Image.memory(imageBytes, fit: .cover),
+        if (editingParameters.image.isNotEmpty)
+          Image.memory(editingParameters.image, fit: .cover),
       ],
     );
   }
