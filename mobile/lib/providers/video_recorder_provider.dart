@@ -533,7 +533,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     final metadata = await ProVideoEditor.instance.getMetadata(videoResult);
     clipProvider.updateClipDuration(clip.id, metadata.duration);
     Log.debug(
-      '📊 Video duratioyn: ${metadata.duration.inMilliseconds}ms',
+      '📊 Video duration: ${metadata.duration.inMilliseconds}ms',
       name: 'VideoRecorderNotifier',
       category: .video,
     );
