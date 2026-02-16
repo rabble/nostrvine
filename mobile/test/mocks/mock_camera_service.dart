@@ -1,7 +1,8 @@
 // ABOUTME: Mock implementation of CameraService for testing
 // ABOUTME: Provides a fake camera service that doesn't require actual hardware
 
-import 'package:divine_camera/divine_camera.dart' show DivineVideoQuality;
+import 'package:divine_camera/divine_camera.dart'
+    show DivineCameraLens, DivineVideoQuality;
 import 'package:flutter/material.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
@@ -14,6 +15,7 @@ class MockCameraService extends CameraService {
   double zoomLevel = 1.0;
   DivineFlashMode flashMode = DivineFlashMode.auto;
   Offset focusPoint = Offset.zero;
+  DivineCameraLens _currentLens = DivineCameraLens.back;
 
   MockCameraService.create({
     required super.onUpdateState,
@@ -57,6 +59,13 @@ class MockCameraService extends CameraService {
 
   @override
   Future<bool> switchCamera() async {
+    _currentLens = _currentLens.opposite;
+    return true;
+  }
+
+  @override
+  Future<bool> setLens(DivineCameraLens lens) async {
+    _currentLens = lens;
     return true;
   }
 
@@ -104,6 +113,16 @@ class MockCameraService extends CameraService {
 
   @override
   bool get hasFlash => true;
+
+  @override
+  DivineCameraLens get currentLens => _currentLens;
+
+  @override
+  List<DivineCameraLens> get availableLenses => [
+    DivineCameraLens.front,
+    DivineCameraLens.back,
+    DivineCameraLens.ultraWide,
+  ];
 
   @override
   String? get initializationError => null;

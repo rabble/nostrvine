@@ -67,7 +67,10 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
 
   /// Trigger autosave via VideoEditorProvider (debounced).
   void _triggerAutosave() {
-    ref.read(videoEditorProvider.notifier).triggerAutosave();
+    final notifier = ref.read(videoEditorProvider.notifier);
+
+    notifier.invalidateFinalRenderedClip();
+    notifier.triggerAutosave();
   }
 
   /// Force immediate autosave without debounce.

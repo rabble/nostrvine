@@ -11,6 +11,7 @@ import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -194,13 +195,8 @@ class GallerySaveService {
   /// Falls back to copying the video to the user's Downloads folder.
   Future<GallerySaveResult> _saveToDownloads(String filePath) async {
     try {
-      final home = Platform.environment['HOME'] ?? '';
-      if (home.isEmpty) {
-        return const GallerySaveFailure('Could not locate Downloads folder');
-      }
-
-      final downloadsDir = Directory(p.join(home, 'Downloads'));
-      if (!downloadsDir.existsSync()) {
+      final downloadsDir = await getDownloadsDirectory();
+      if (downloadsDir == null || !downloadsDir.existsSync()) {
         return const GallerySaveFailure('Downloads folder not found');
       }
 

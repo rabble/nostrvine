@@ -3,7 +3,8 @@
 
 import 'dart:io';
 
-import 'package:divine_camera/divine_camera.dart' show DivineVideoQuality;
+import 'package:divine_camera/divine_camera.dart'
+    show DivineCameraLens, DivineVideoQuality;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
@@ -65,6 +66,9 @@ abstract class CameraService {
   /// Switches between front and back camera. Returns true if successful.
   Future<bool> switchCamera();
 
+  /// Switches to a specific camera lens. Returns true if successful.
+  Future<bool> setLens(DivineCameraLens lens);
+
   /// Starts video recording.
   /// [outputDirectory] specifies where to save the video.
   Future<bool> startRecording({Duration? maxDuration, String? outputDirectory});
@@ -98,6 +102,12 @@ abstract class CameraService {
 
   /// Whether the device can active the camera-flash.
   bool get hasFlash;
+
+  /// The current active camera lens.
+  DivineCameraLens get currentLens;
+
+  /// List of available camera lenses on this device.
+  List<DivineCameraLens> get availableLenses;
 
   /// Error message if initialization failed, null if successful.
   String? get initializationError;
