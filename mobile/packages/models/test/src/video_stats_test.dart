@@ -165,6 +165,70 @@ void main() {
         expect(stats.pubkey, equals('pub456'));
       });
 
+      test('normalizes uppercase id to lowercase', () {
+        final json = {
+          'id': 'ABCDEF1234567890',
+          'pubkey': 'test-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag': 'video-1',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.id, equals('abcdef1234567890'));
+      });
+
+      test('normalizes uppercase pubkey to lowercase', () {
+        final json = {
+          'id': 'test-id',
+          'pubkey': 'ABCDEF1234567890',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag': 'video-1',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.pubkey, equals('abcdef1234567890'));
+      });
+
+      test('normalizes uppercase byte array id to lowercase', () {
+        // 'ABCD' as ASCII codes: A=65, B=66, C=67, D=68
+        final json = {
+          'id': [65, 66, 67, 68, 69, 70],
+          'pubkey': 'test-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag': 'video-1',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.id, equals('abcdef'));
+      });
+
       test('parses created_at as Unix timestamp', () {
         final json = {
           'id': 'test-id',
