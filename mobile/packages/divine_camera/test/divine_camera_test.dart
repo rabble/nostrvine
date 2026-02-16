@@ -1293,14 +1293,12 @@ void main() {
     test('props returns correct list', () {
       const metadata = CameraLensMetadata(
         lensType: 'back',
-        focalLength: 4.5,
       );
 
       final props = metadata.props;
 
-      expect(props.length, 13);
+      expect(props.length, 20);
       expect(props[0], 'back');
-      expect(props[1], 4.5);
     });
 
     test('equality works correctly', () {
