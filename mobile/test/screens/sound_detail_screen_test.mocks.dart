@@ -979,6 +979,7 @@ class MockVideoEventService extends _i1.Mock implements _i8.VideoEventService {
     _i14.VideoSortField? sortBy,
     _i14.NIP50SortMode? nip50Sort,
     bool? force = false,
+    List<String>? collaboratorPubkeys,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#subscribeToVideoFeed, [], {
@@ -994,6 +995,7 @@ class MockVideoEventService extends _i1.Mock implements _i8.VideoEventService {
               #sortBy: sortBy,
               #nip50Sort: nip50Sort,
               #force: force,
+              #collaboratorPubkeys: collaboratorPubkeys,
             }),
             returnValue: _i4.Future<void>.value(),
             returnValueForMissingStub: _i4.Future<void>.value(),

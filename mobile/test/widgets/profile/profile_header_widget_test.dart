@@ -9,7 +9,7 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:mockito/mockito.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
-import 'package:openvine/models/user_profile.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
@@ -571,6 +571,46 @@ void main() {
         final button = tester.widget<ElevatedButton>(registerButton);
         expect(button.onPressed, isNotNull);
       });
+    });
+  });
+
+  group('buildProfileUrl', () {
+    const testNpub =
+        'npub10z98cqe5kehs5wfnax59vqzuyd7puhr2dyy0g5ha5kxc83h38yts0z3mgg';
+
+    test('returns subdomain URL for divine.video NIP-05', () {
+      expect(
+        buildProfileUrl('_@thomassanders.divine.video', testNpub),
+        equals('https://thomassanders.divine.video'),
+      );
+    });
+
+    test('returns subdomain URL for user@subdomain.divine.video NIP-05', () {
+      expect(
+        buildProfileUrl('user@rabble.divine.video', testNpub),
+        equals('https://rabble.divine.video'),
+      );
+    });
+
+    test('returns npub profile URL for non-divine.video NIP-05', () {
+      expect(
+        buildProfileUrl('alice@example.com', testNpub),
+        equals('https://divine.video/profile/$testNpub'),
+      );
+    });
+
+    test('returns npub profile URL when NIP-05 is null', () {
+      expect(
+        buildProfileUrl(null, testNpub),
+        equals('https://divine.video/profile/$testNpub'),
+      );
+    });
+
+    test('returns npub profile URL when NIP-05 is empty', () {
+      expect(
+        buildProfileUrl('', testNpub),
+        equals('https://divine.video/profile/$testNpub'),
+      );
     });
   });
 }

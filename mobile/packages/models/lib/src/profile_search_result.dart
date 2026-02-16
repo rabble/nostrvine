@@ -24,6 +24,8 @@ class ProfileSearchResult {
     this.website,
     this.createdAt,
     this.eventId,
+    this.followerCount,
+    this.videoCount,
   });
 
   /// Creates a [ProfileSearchResult] from JSON response.
@@ -60,6 +62,23 @@ class ProfileSearchResult {
       eventId = rawEventId.toString();
     }
 
+    // Parse follower_count and video_count
+    int? followerCount;
+    final rawFollowers = json['follower_count'];
+    if (rawFollowers is int) {
+      followerCount = rawFollowers;
+    } else if (rawFollowers is String) {
+      followerCount = int.tryParse(rawFollowers);
+    }
+
+    int? videoCount;
+    final rawVideos = json['video_count'];
+    if (rawVideos is int) {
+      videoCount = rawVideos;
+    } else if (rawVideos is String) {
+      videoCount = int.tryParse(rawVideos);
+    }
+
     return ProfileSearchResult(
       pubkey: pubkey,
       name: json['name']?.toString(),
@@ -73,6 +92,8 @@ class ProfileSearchResult {
       website: json['website']?.toString(),
       createdAt: createdAt,
       eventId: eventId,
+      followerCount: followerCount,
+      videoCount: videoCount,
     );
   }
 
@@ -109,6 +130,12 @@ class ProfileSearchResult {
   /// Nostr event ID of the profile.
   final String? eventId;
 
+  /// Number of followers for this profile.
+  final int? followerCount;
+
+  /// Number of videos published by this profile.
+  final int? videoCount;
+
   /// Get the best display name available.
   String get bestDisplayName =>
       displayName ?? name ?? pubkey.substring(0, 8).toUpperCase();
@@ -128,7 +155,10 @@ class ProfileSearchResult {
       website: website,
       nip05: nip05,
       lud16: lud16,
-      rawData: const {},
+      rawData: {
+        if (followerCount != null) 'follower_count': followerCount,
+        if (videoCount != null) 'video_count': videoCount,
+      },
       createdAt: createdAt ?? DateTime.now(),
       eventId: eventId ?? '',
     );

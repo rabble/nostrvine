@@ -8,8 +8,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
-import 'package:openvine/models/user_profile.dart';
+import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
@@ -109,7 +110,7 @@ class ProfileHeaderWidget extends ConsumerWidget {
                 : null,
           ),
           child: Padding(
-            padding: const EdgeInsets.fromLTRB(24, 20, 24, 16),
+            padding: const EdgeInsets.fromLTRB(24, 20, 0, 16),
             child: Column(
               children: [
                 // Setup profile banner for new users with default names
@@ -138,19 +139,25 @@ class ProfileHeaderWidget extends ConsumerWidget {
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
-                          ProfileStatColumn(
-                            count: videoCount,
-                            label: 'Videos',
-                            isLoading: false,
-                            onTap: null, // Videos aren't tappable
+                          Flexible(
+                            child: ProfileStatColumn(
+                              count: videoCount,
+                              label: 'Videos',
+                              isLoading: false,
+                              onTap: null, // Videos aren't tappable
+                            ),
                           ),
-                          ProfileFollowersStat(
-                            pubkey: userIdHex,
-                            displayName: displayName,
+                          Flexible(
+                            child: ProfileFollowersStat(
+                              pubkey: userIdHex,
+                              displayName: displayName,
+                            ),
                           ),
-                          ProfileFollowingStat(
-                            pubkey: userIdHex,
-                            displayName: displayName,
+                          Flexible(
+                            child: ProfileFollowingStat(
+                              pubkey: userIdHex,
+                              displayName: displayName,
+                            ),
                           ),
                         ],
                       ),
@@ -513,11 +520,14 @@ class _UniqueIdentifier extends ConsumerWidget {
             Padding(
               padding: const EdgeInsets.only(left: 8),
               child: GestureDetector(
-                onTap: () => ClipboardUtils.copy(
-                  context,
-                  npub,
-                  message: 'Unique ID copied to clipboard',
-                ),
+                onTap: () {
+                  final profileUrl = buildProfileUrl(nip05, npub);
+                  ClipboardUtils.copy(
+                    context,
+                    profileUrl,
+                    message: 'Profile link copied',
+                  );
+                },
                 child: SvgPicture.asset(
                   'assets/icon/copy.svg',
                   width: 24,
@@ -541,9 +551,11 @@ class _UniqueIdentifier extends ConsumerWidget {
                   size: 14,
                 ),
                 const SizedBox(width: 4),
-                Text(
-                  'Username not verifying - contact support',
-                  style: VineTheme.bodySmallFont(color: Colors.orange),
+                Flexible(
+                  child: Text(
+                    'Username not verifying - contact support',
+                    style: VineTheme.bodySmallFont(color: Colors.orange),
+                  ),
                 ),
               ],
             ),
@@ -551,6 +563,26 @@ class _UniqueIdentifier extends ConsumerWidget {
       ],
     );
   }
+}
+
+/// Build a shareable profile URL.
+///
+/// If the user has a `.divine.video` NIP-05 subdomain (e.g. `_@thomas.divine.video`),
+/// returns `https://thomas.divine.video`. Otherwise falls back to
+/// `https://divine.video/profile/{npub}`.
+@visibleForTesting
+String buildProfileUrl(String? nip05, String npub) {
+  if (nip05 != null && nip05.isNotEmpty) {
+    // NIP-05 format: `_@username.divine.video` or `user@domain.com`
+    final atIndex = nip05.indexOf('@');
+    if (atIndex != -1) {
+      final domain = nip05.substring(atIndex + 1);
+      if (domain.endsWith('.divine.video')) {
+        return 'https://$domain';
+      }
+    }
+  }
+  return 'https://divine.video/profile/$npub';
 }
 
 /// About/bio text display with expandable "Show more/less" functionality.

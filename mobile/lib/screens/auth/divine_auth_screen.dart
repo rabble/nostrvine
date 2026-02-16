@@ -2,6 +2,7 @@
 // ABOUTME: Handles both login and registration with email verification flow
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
@@ -38,6 +39,8 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _passwordFocusNode = FocusNode();
+  final _confirmPasswordFocusNode = FocusNode();
 
   bool _isLoading = false;
   bool _obscurePassword = true;
@@ -66,6 +69,8 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _passwordFocusNode.dispose();
+    _confirmPasswordFocusNode.dispose();
     super.dispose();
   }
 
@@ -182,6 +187,9 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
       final authService = ref.read(authServiceProvider);
       await authService.signInWithDivineOAuth(session);
 
+      // Signal password manager to save credentials
+      TextInput.finishAutofillContext();
+
       // Navigation will be handled by auth state listener
     } on OAuthException catch (e) {
       _setErrorMessage(e.message);
@@ -248,7 +256,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                 controller: _tabController,
                 indicatorColor: Colors.white,
                 labelColor: Colors.white,
-                unselectedLabelColor: Colors.white60,
+                unselectedLabelColor: VineTheme.onSurfaceMuted,
                 tabs: const [
                   Tab(text: 'Log In'),
                   Tab(text: 'Create Account'),
@@ -263,134 +271,163 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const SizedBox(height: 32),
+                  child: AutofillGroup(
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          const SizedBox(height: 32),
 
-                        // Email field
-                        TextFormField(
-                          controller: _emailController,
-                          keyboardType: TextInputType.emailAddress,
-                          autocorrect: false,
-                          decoration: _buildInputDecoration(
-                            label: 'Email',
-                            icon: Icons.email_outlined,
+                          // Email field
+                          TextFormField(
+                            controller: _emailController,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            onFieldSubmitted: (_) =>
+                                _passwordFocusNode.requestFocus(),
+                            autocorrect: false,
+                            autofillHints: const [AutofillHints.email],
+                            decoration: _buildInputDecoration(
+                              label: 'Email',
+                              icon: Icons.email_outlined,
+                            ),
+                            validator: Validators.validateEmail,
                           ),
-                          validator: Validators.validateEmail,
-                        ),
-                        const SizedBox(height: 16),
+                          const SizedBox(height: 16),
 
-                        // Password field
-                        TextFormField(
-                          controller: _passwordController,
-                          obscureText: _obscurePassword,
-                          decoration: _buildInputDecoration(
-                            label: 'Password',
-                            icon: Icons.lock_outlined,
-                            suffixIcon: IconButton(
-                              icon: Icon(
-                                _obscurePassword
-                                    ? Icons.visibility_off
-                                    : Icons.visibility,
-                                color: Colors.white60,
-                              ),
-                              onPressed: () => setState(
-                                () => _obscurePassword = !_obscurePassword,
+                          // Password field
+                          TextFormField(
+                            controller: _passwordController,
+                            focusNode: _passwordFocusNode,
+                            obscureText: _obscurePassword,
+                            textInputAction: _currentMode == AuthMode.login
+                                ? TextInputAction.done
+                                : TextInputAction.next,
+                            onFieldSubmitted: (_) =>
+                                _currentMode == AuthMode.login
+                                ? _handleSubmit()
+                                : _confirmPasswordFocusNode.requestFocus(),
+                            autofillHints: [
+                              _currentMode == AuthMode.login
+                                  ? AutofillHints.password
+                                  : AutofillHints.newPassword,
+                            ],
+                            decoration: _buildInputDecoration(
+                              label: 'Password',
+                              icon: Icons.lock_outlined,
+                              suffixIcon: IconButton(
+                                icon: Icon(
+                                  _obscurePassword
+                                      ? Icons.visibility_off
+                                      : Icons.visibility,
+                                  color: VineTheme.onSurfaceMuted,
+                                ),
+                                onPressed: () => setState(
+                                  () => _obscurePassword = !_obscurePassword,
+                                ),
                               ),
                             ),
+                            validator: Validators.validatePassword,
                           ),
-                          validator: Validators.validatePassword,
-                        ),
-                        const SizedBox(height: 16),
+                          const SizedBox(height: 16),
 
-                        // Confirm password (register only)
-                        AnimatedSize(
-                          duration: const Duration(milliseconds: 200),
-                          child: _tabController.index == 1
-                              ? Column(
-                                  children: [
-                                    TextFormField(
-                                      controller: _confirmPasswordController,
-                                      obscureText: _obscureConfirmPassword,
-                                      decoration: _buildInputDecoration(
-                                        label: 'Confirm Password',
-                                        icon: Icons.lock_outlined,
-                                        suffixIcon: IconButton(
-                                          icon: Icon(
-                                            _obscureConfirmPassword
-                                                ? Icons.visibility_off
-                                                : Icons.visibility,
-                                            color: Colors.white60,
-                                          ),
-                                          onPressed: () => setState(
-                                            () => _obscureConfirmPassword =
-                                                !_obscureConfirmPassword,
+                          // Confirm password (register only)
+                          AnimatedSize(
+                            duration: const Duration(milliseconds: 200),
+                            child: _tabController.index == 1
+                                ? Column(
+                                    children: [
+                                      TextFormField(
+                                        controller: _confirmPasswordController,
+                                        focusNode: _confirmPasswordFocusNode,
+                                        obscureText: _obscureConfirmPassword,
+                                        textInputAction: TextInputAction.done,
+                                        onFieldSubmitted: (_) =>
+                                            _handleSubmit(),
+                                        autofillHints: const [
+                                          AutofillHints.newPassword,
+                                        ],
+                                        decoration: _buildInputDecoration(
+                                          label: 'Confirm Password',
+                                          icon: Icons.lock_outlined,
+                                          suffixIcon: IconButton(
+                                            icon: Icon(
+                                              _obscureConfirmPassword
+                                                  ? Icons.visibility_off
+                                                  : Icons.visibility,
+                                              color: VineTheme.onSurfaceMuted,
+                                            ),
+                                            onPressed: () => setState(
+                                              () => _obscureConfirmPassword =
+                                                  !_obscureConfirmPassword,
+                                            ),
                                           ),
                                         ),
+                                        validator: _validateConfirmPassword,
                                       ),
-                                      validator: _validateConfirmPassword,
+                                      const SizedBox(height: 16),
+                                    ],
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+
+                          // Error message
+                          if (_errorMessage != null) ...[
+                            ErrorMessage(message: _errorMessage),
+                            const SizedBox(height: 16),
+                          ],
+
+                          // Submit button
+                          SizedBox(
+                            height: 50,
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _handleSubmit,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.white,
+                                foregroundColor: VineTheme.vineGreen,
+                                disabledBackgroundColor:
+                                    VineTheme.onSurfaceMuted,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: _isLoading
+                                  ? const SizedBox(
+                                      width: 24,
+                                      height: 24,
+                                      child: CircularProgressIndicator(
+                                        strokeWidth: 2,
+                                        color: VineTheme.vineGreen,
+                                      ),
+                                    )
+                                  : Text(
+                                      _tabController.index == 0
+                                          ? 'Log In'
+                                          : 'Create Account',
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
-                                    const SizedBox(height: 16),
-                                  ],
-                                )
-                              : const SizedBox.shrink(),
-                        ),
+                            ),
+                          ),
 
-                        // Error message
-                        if (_errorMessage != null) ...[
-                          ErrorMessage(message: _errorMessage),
-                          const SizedBox(height: 16),
-                        ],
+                          const SizedBox(height: 24),
 
-                        // Submit button
-                        SizedBox(
-                          height: 50,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _handleSubmit,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: VineTheme.vineGreen,
-                              disabledBackgroundColor: Colors.white60,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+                          // Forgot password (login only)
+                          if (_tabController.index == 0)
+                            TextButton(
+                              onPressed: _showForgotPasswordDialog,
+                              child: const Text(
+                                'Forgot Password?',
+                                style: TextStyle(
+                                  color: VineTheme.onSurfaceVariant,
+                                ),
                               ),
                             ),
-                            child: _isLoading
-                                ? const SizedBox(
-                                    width: 24,
-                                    height: 24,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: VineTheme.vineGreen,
-                                    ),
-                                  )
-                                : Text(
-                                    _tabController.index == 0
-                                        ? 'Log In'
-                                        : 'Create Account',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                          ),
-                        ),
-
-                        const SizedBox(height: 24),
-
-                        // Forgot password (login only)
-                        if (_tabController.index == 0)
-                          TextButton(
-                            onPressed: _showForgotPasswordDialog,
-                            child: const Text(
-                              'Forgot Password?',
-                              style: TextStyle(color: Colors.white70),
-                            ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
@@ -447,7 +484,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
             onPressed: dialogContext.pop,
             child: const Text(
               'Cancel',
-              style: TextStyle(color: Colors.white60),
+              style: TextStyle(color: VineTheme.onSurfaceMuted),
             ),
           ),
           ElevatedButton(

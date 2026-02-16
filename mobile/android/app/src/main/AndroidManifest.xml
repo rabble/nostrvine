@@ -14,6 +14,8 @@
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
     <!-- For Android 10-12 (API 29-32) - Only needed for profile pictures on older devices -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <!-- For saving videos to gallery on API 29 and below (gal package) -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" />
     <uses-feature android:name="android.hardware.camera" android:required="false" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
 

@@ -85,6 +85,7 @@ final activeVideoIdProvider = Provider<String?>((ref) {
       break;
     case RouteType.videoFeed:
     case RouteType.pooledVideoFeed:
+    case RouteType.videoDetail:
       // videoFeed routes manage their own playback via passed videos
       // Return null to let the screen handle it internally
       Log.debug(

@@ -50,10 +50,13 @@ mixin AsyncValueUIHelpersMixin {
     );
   }
 
-  /// Default loading widget - centered spinner with vine green color
+  /// Default loading widget - centered spinner with vine green color on dark background
   Widget _buildDefaultLoading() {
-    return const Center(
-      child: CircularProgressIndicator(color: VineTheme.vineGreen),
+    return const ColoredBox(
+      color: VineTheme.backgroundColor,
+      child: Center(
+        child: CircularProgressIndicator(color: VineTheme.vineGreen),
+      ),
     );
   }
 

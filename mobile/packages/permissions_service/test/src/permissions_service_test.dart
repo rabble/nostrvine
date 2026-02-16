@@ -66,10 +66,10 @@ void main() {
         expect(result, PermissionStatus.canRequest);
       });
 
-      test('maps limited to PermissionStatus.canRequest', () {
-        // limited is for iOS photo library partial access
+      test('maps limited to PermissionStatus.granted', () {
+        // limited is for iOS 14+ "Limited Photos Access" sufficient for saving
         final result = service.mapPermissionStatus(ph.PermissionStatus.limited);
-        expect(result, PermissionStatus.canRequest);
+        expect(result, PermissionStatus.granted);
       });
 
       test('maps provisional to PermissionStatus.canRequest', () {
@@ -138,6 +138,27 @@ void main() {
 
       expect(result, isTrue);
       verify(() => mockService.openAppSettings()).called(1);
+    });
+
+    test('can mock gallery permission methods', () async {
+      when(
+        () => mockService.checkGalleryStatus(),
+      ).thenAnswer((_) async => PermissionStatus.canRequest);
+      when(
+        () => mockService.requestGalleryPermission(),
+      ).thenAnswer((_) async => PermissionStatus.granted);
+
+      expect(
+        await mockService.checkGalleryStatus(),
+        PermissionStatus.canRequest,
+      );
+      expect(
+        await mockService.requestGalleryPermission(),
+        PermissionStatus.granted,
+      );
+
+      verify(() => mockService.checkGalleryStatus()).called(1);
+      verify(() => mockService.requestGalleryPermission()).called(1);
     });
   });
 }

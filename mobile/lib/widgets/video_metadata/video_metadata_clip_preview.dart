@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:openvine/models/recording_clip.dart';
-import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_preview_screen.dart';
 import 'package:openvine/widgets/video_clip_editor/video_clip_editor_processing_overlay.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_preview_thumbnail.dart';
 
 /// Video clip preview widget with thumbnail and play button.
 ///
@@ -34,7 +34,9 @@ class VideoMetadataClipPreview extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     // Get the first (and only) clip from manager
-    final clip = ref.watch(clipManagerProvider).clips.first;
+    final clips = ref.watch(clipManagerProvider).clips;
+    if (clips.isEmpty) return const SizedBox.shrink();
+    final clip = clips.first;
     // Watch processing state and rendered clip
     final state = ref.watch(
       videoEditorProvider.select(
@@ -46,57 +48,79 @@ class VideoMetadataClipPreview extends ConsumerWidget {
     );
 
     return Padding(
-      padding: const .symmetric(vertical: 32),
+      padding: const .symmetric(vertical: 18),
       child: Center(
-        child: SizedBox(
-          height: 200,
-          // Hero animation to preview screen
-          child: Hero(
-            tag: 'Video-metadata-clip-preview-video',
-            // Use linear flight path instead of curved arc
-            createRectTween: (begin, end) => RectTween(begin: begin, end: end),
-            child: AspectRatio(
-              aspectRatio: clip.targetAspectRatio.value,
-              child: ClipRRect(
-                borderRadius: .circular(16),
-                child: Stack(
-                  children: [
-                    // Video thumbnail or placeholder
-                    AnimatedSwitcher(
-                      layoutBuilder: (currentChild, previousChildren) => Stack(
-                        fit: .expand,
-                        alignment: .center,
-                        children: [...previousChildren, ?currentChild],
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(22),
+            border: Border.all(color: const Color(0xFF205040)),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x52000000),
+                blurRadius: 20,
+                offset: Offset(0, 8),
+              ),
+            ],
+          ),
+          child: SizedBox(
+            height: 200,
+            // Hero animation to preview screen
+            child: Hero(
+              tag: 'Video-metadata-clip-preview-video',
+              // Use linear flight path instead of curved arc
+              createRectTween: (begin, end) =>
+                  RectTween(begin: begin, end: end),
+              child: AspectRatio(
+                aspectRatio: clip.targetAspectRatio.value,
+                child: ClipRRect(
+                  borderRadius: .circular(16),
+                  child: Semantics(
+                    button: true,
+                    // TODO(l10n): Replace with context.l10n when localization
+                    // is added.
+                    label: 'Open post preview screen',
+                    child: GestureDetector(
+                      onTap: state.finalRenderedClip != null
+                          ? () =>
+                                _openPreview(context, state.finalRenderedClip!)
+                          : null,
+                      child: Stack(
+                        children: [
+                          // Video thumbnail or placeholder
+                          AnimatedSwitcher(
+                            layoutBuilder: (currentChild, previousChildren) =>
+                                Stack(
+                                  fit: .expand,
+                                  alignment: .center,
+                                  children: [
+                                    ...previousChildren,
+                                    ?currentChild,
+                                  ],
+                                ),
+                            duration: const Duration(milliseconds: 150),
+                            child: clip.thumbnailPath != null
+                                ? // Video thumbnail image
+                                  VideoMetadataPreviewThumbnail(clip: clip)
+                                : // Fallback placeholder
+                                  ColoredBox(
+                                    color: Colors.grey.shade400,
+                                    child: const Icon(
+                                      Icons.play_circle_outline,
+                                      size: 64,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                          ),
+                          // Processing overlay with play button
+                          VideoClipEditorProcessingOverlay(
+                            clip: clip,
+                            isProcessing: state.isProcessing,
+                            inactivePlaceholder: _PlayIndicator(clip: clip),
+                          ),
+                        ],
                       ),
-                      duration: const Duration(milliseconds: 150),
-                      child: clip.thumbnailPath != null
-                          ? // Video thumbnail image
-                            Image.file(File(clip.thumbnailPath!), fit: .cover)
-                          : // Fallback placeholder
-                            ColoredBox(
-                              color: Colors.grey.shade400,
-                              child: const Icon(
-                                Icons.play_circle_outline,
-                                size: 64,
-                                color: Colors.white,
-                              ),
-                            ),
                     ),
-                    // Processing overlay with play button
-                    VideoClipEditorProcessingOverlay(
-                      clip: clip,
-                      isProcessing: state.isProcessing,
-                      inactivePlaceholder: _PlayIndicator(
-                        clip: clip,
-                        onTap: state.finalRenderedClip != null
-                            ? () => _openPreview(
-                                context,
-                                state.finalRenderedClip!,
-                              )
-                            : null,
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -110,35 +134,25 @@ class VideoMetadataClipPreview extends ConsumerWidget {
 /// Play button indicator overlay for opening the preview screen.
 class _PlayIndicator extends StatelessWidget {
   /// Creates a play indicator.
-  const _PlayIndicator({required this.clip, required this.onTap});
+  const _PlayIndicator({required this.clip});
 
   final RecordingClip clip;
-  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Semantics(
-        button: true,
-        // TODO(l10n): Replace with context.l10n when localization is added.
-        label: 'Open post preview screen',
-        child: GestureDetector(
-          onTap: onTap,
-          // Semi-transparent dark button with play icon
-          child: Container(
-            padding: const .all(12),
-            decoration: ShapeDecoration(
-              color: Colors.black.withValues(alpha: 0.65),
-              shape: RoundedRectangleBorder(borderRadius: .circular(20)),
-            ),
-            child: SizedBox(
-              width: 24,
-              height: 24,
-              child: SvgPicture.asset(
-                'assets/icon/play.svg',
-                colorFilter: const .mode(Colors.white, .srcIn),
-              ),
-            ),
+      child: Container(
+        padding: const .all(12),
+        decoration: ShapeDecoration(
+          color: Colors.black.withValues(alpha: 0.65),
+          shape: RoundedRectangleBorder(borderRadius: .circular(20)),
+        ),
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: SvgPicture.asset(
+            'assets/icon/play.svg',
+            colorFilter: const .mode(Colors.white, .srcIn),
           ),
         ),
       ),

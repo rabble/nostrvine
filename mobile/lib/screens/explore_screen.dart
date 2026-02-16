@@ -21,6 +21,7 @@ import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -54,7 +55,7 @@ class ExploreScreen extends ConsumerStatefulWidget {
 }
 
 class _ExploreScreenState extends ConsumerState<ExploreScreen>
-    with TickerProviderStateMixin {
+    with TickerProviderStateMixin, GridPrefetchMixin {
   TabController? _tabController;
   // Feed mode and videos are now derived from URL + providers - no internal state needed
   String? _hashtagMode; // When non-null, showing hashtag feed
@@ -232,15 +233,6 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       tabName: tabName,
     );
 
-    // Lists tab - refresh lists when activated (last tab)
-    final listsTabIndex = _tabCount - 1; // Lists is always the last tab
-    if (index == listsTabIndex) {
-      Log.debug('🔄 Lists tab activated', category: LogCategory.video);
-      // Invalidate providers to refresh list data
-      ref.invalidate(userListsProvider);
-      ref.invalidate(curatedListsProvider);
-    }
-
     // Exit feed or hashtag mode when user switches tabs
     _resetToDefaultState();
   }
@@ -295,6 +287,9 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
   void _enterFeedMode(List<VideoEvent> videos, int startIndex) {
     if (!mounted) return;
+
+    // Pre-warm adjacent videos before navigation for faster playback
+    prefetchAroundIndex(startIndex, videos);
 
     // Store video list in provider so it survives widget recreation
     ref.read(exploreTabVideosProvider.notifier).state = videos;
@@ -505,11 +500,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
             TabBarView(
               controller: _tabController,
               children: [
-                if (_classicsAvailable)
-                  ClassicVinesTab(
-                    onVideoTap: (videos, index) =>
-                        _enterFeedMode(videos, index),
-                  ),
+                if (_classicsAvailable) const ClassicVinesTab(),
                 NewVideosTab(
                   screenAnalytics: _screenAnalytics,
                   feedTracker: _feedTracker,
@@ -520,11 +511,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
                   feedTracker: _feedTracker,
                   errorTracker: _errorTracker,
                 ),
-                if (_forYouAvailable)
-                  ForYouTab(
-                    onVideoTap: (videos, index) =>
-                        _enterFeedMode(videos, index),
-                  ),
+                if (_forYouAvailable) const ForYouTab(),
                 _buildListsTab(),
               ],
             ),
@@ -757,6 +744,7 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
 
           // MY LISTS and PEOPLE LISTS - Show immediately when data available
           allListsAsync.when(
+            skipLoadingOnRefresh: true,
             data: (data) {
               final userLists = data.userLists;
               final myLists = data.curatedLists.where((list) {

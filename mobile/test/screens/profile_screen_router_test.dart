@@ -245,6 +245,8 @@ void main() {
     setUp(() {
       mockDraft = _MockVineDraft();
       when(() => mockDraft.id).thenReturn('test-draft-id');
+      when(() => mockDraft.title).thenReturn('');
+      when(() => mockDraft.clips).thenReturn([]);
       scrollController = ScrollController();
 
       mockFollowRepository = _MockFollowRepository();
@@ -257,7 +259,7 @@ void main() {
       mockLikesRepository = _MockLikesRepository();
       when(
         () => mockLikesRepository.watchLikedEventIds(),
-      ).thenAnswer((_) => const Stream<Set<String>>.empty());
+      ).thenAnswer((_) => const Stream<List<String>>.empty());
       when(
         () => mockLikesRepository.fetchUserLikes(any()),
       ).thenAnswer((_) async => <String>[]);

@@ -1,6 +1,10 @@
 // ABOUTME: Service for audio playback during recording with headphone detection
 // ABOUTME: Manages audio session configuration and exposes playback streams
 
+// No non-experimental alternative exists. Tracked upstream:
+// https://github.com/ryanheise/audio_session/issues
+// ignore_for_file: experimental_member_use
+
 import 'dart:async';
 import 'dart:io';
 

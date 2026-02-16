@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 /// A styled text field following the Divine design system.
 ///
 /// Features a container with rounded corners and a floating label that
-/// appears when the field is focused or has content.
+/// animates when the field is focused or has content.
 ///
 /// For password fields, set [obscureText] to true to enable the visibility
 /// toggle icon.
@@ -47,6 +47,7 @@ class DivineTextField extends StatefulWidget {
     this.onEditingComplete,
     this.minLines,
     this.maxLines,
+    this.maxLength,
     this.contentPadding,
   });
 
@@ -112,6 +113,9 @@ class DivineTextField extends StatefulWidget {
 
   /// Maximum number of lines to display.
   final int? maxLines;
+
+  /// Maximum character length allowed.
+  final int? maxLength;
 
   /// Custom content padding for the text field.
   final EdgeInsetsGeometry? contentPadding;
@@ -294,6 +298,7 @@ class _DivineTextFieldState extends State<DivineTextField> {
       onEditingComplete: widget.onEditingComplete,
       minLines: widget.minLines,
       maxLines: widget.obscureText ? 1 : (widget.maxLines ?? 1),
+      maxLength: widget.maxLength,
       style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
       cursorColor: VineTheme.primary,
       decoration: InputDecoration(

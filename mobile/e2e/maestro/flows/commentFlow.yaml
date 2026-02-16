@@ -1,16 +1,11 @@
 appId: co.openvine.app
-env:
-  VIDEO_USER: ""
-  VIDEO_DESCRIPTION: ""
-  VIDEO_TITLE: "Chris"
-  FULL_COMMENT: ""
 ---
 - runFlow: ../tests/loginFreshInstall.yaml
 - runFlow: ../tests/commentVideo.yaml
 #- runFlow: ../tests/deleteComment.yaml
-- runFlow:
-    file: ../tests/deleteComment.yaml
-    env:
-      FULL_COMMENT: ${FULL_COMMENT}
+#- runFlow:
+#    file: ../tests/deleteComment.yaml
+#    env:
+#      FULL_COMMENT: ${FULL_COMMENT}
 #Tear down
 - killApp

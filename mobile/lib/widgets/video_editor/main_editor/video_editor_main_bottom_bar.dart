@@ -4,6 +4,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 
 /// Bottom action bar for the video editor.
@@ -17,44 +18,56 @@ class VideoEditorMainBottomBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final scope = VideoEditorScope.of(context);
 
-    return Padding(
-      padding: const .fromLTRB(16, 0, 16, 4),
-      child: Row(
-        mainAxisAlignment: .spaceBetween,
-        crossAxisAlignment: .end,
-        children: [
-          _ActionButton(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            label: 'Text',
-            iconPath: 'assets/icon/text.svg',
-            onTap: () => scope.editor?.openTextEditor(),
-          ),
-          _ActionButton(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            label: 'Draw',
-            iconPath: 'assets/icon/draw.svg',
-            onTap: () => scope.editor?.openPaintEditor(),
-          ),
-          _ActionButton(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            label: 'Stickers',
-            iconPath: 'assets/icon/sticker.svg',
-            onTap: scope.onAddStickers,
-          ),
-          _ActionButton(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            label: 'Effects',
-            iconPath: 'assets/icon/tune.svg',
-            onTap: () => scope.editor?.openFilterEditor(),
-          ),
-          _ActionButton(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            label: 'Music',
-            iconPath: 'assets/icon/music.svg',
-            // TODO(@hm21): Implement music editor
-            onTap: () {},
-          ),
-        ],
+    return SizedBox(
+      height: VideoEditorConstants.bottomBarHeight,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          return SingleChildScrollView(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+            scrollDirection: Axis.horizontal,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minWidth: constraints.maxWidth - 32),
+              child: Row(
+                spacing: 12,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  _ActionButton(
+                    // TODO(l10n): Replace with context.l10n when localization is added.
+                    label: 'Text',
+                    iconPath: 'assets/icon/text.svg',
+                    onTap: () => scope.editor?.openTextEditor(),
+                  ),
+                  _ActionButton(
+                    // TODO(l10n): Replace with context.l10n when localization is added.
+                    label: 'Draw',
+                    iconPath: 'assets/icon/draw.svg',
+                    onTap: () => scope.editor?.openPaintEditor(),
+                  ),
+                  _ActionButton(
+                    // TODO(l10n): Replace with context.l10n when localization is added.
+                    label: 'Stickers',
+                    iconPath: 'assets/icon/sticker.svg',
+                    onTap: scope.onAddStickers,
+                  ),
+                  _ActionButton(
+                    // TODO(l10n): Replace with context.l10n when localization is added.
+                    label: 'Effects',
+                    iconPath: 'assets/icon/tune.svg',
+                    onTap: () => scope.editor?.openFilterEditor(),
+                  ),
+                  _ActionButton(
+                    // TODO(l10n): Replace with context.l10n when localization is added.
+                    label: 'Music',
+                    iconPath: 'assets/icon/music.svg',
+                    // TODO(@hm21): Implement music editor
+                    onTap: () {},
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }

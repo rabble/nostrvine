@@ -75,7 +75,7 @@ class ServiceInitHelper {
 
     try {
       // Generate a test key container for testing
-      final keyContainer = SecureKeyContainer.generate();
+      final keyContainer = await SecureKeyContainer.generate();
 
       final nostrService = NostrServiceFactory.create(
         keyContainer: keyContainer,

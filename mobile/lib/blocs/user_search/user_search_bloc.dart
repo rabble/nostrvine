@@ -1,5 +1,7 @@
 // ABOUTME: BLoC for searching user profiles via ProfileRepository.
 
+import 'dart:developer' as developer;
+
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -13,6 +15,9 @@ part 'user_search_state.dart';
 /// Debounce duration for search queries
 const _debounceDuration = Duration(milliseconds: 300);
 
+/// Number of results per page
+const _pageSize = 50;
+
 /// Event transformer that debounces and restarts on new events
 EventTransformer<E> _debounceRestartable<E>() {
   return (events, mapper) {
@@ -21,7 +26,6 @@ EventTransformer<E> _debounceRestartable<E>() {
 }
 
 /// BLoC for searching user profiles.
-///
 class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   UserSearchBloc({required ProfileRepository profileRepository})
     : _profileRepository = profileRepository,
@@ -31,6 +35,7 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
       transformer: _debounceRestartable(),
     );
     on<UserSearchCleared>(_onCleared);
+    on<UserSearchLoadMore>(_onLoadMore, transformer: sequential());
   }
 
   final ProfileRepository _profileRepository;
@@ -50,10 +55,69 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
     emit(state.copyWith(status: UserSearchStatus.loading, query: query));
 
     try {
-      final results = await _profileRepository.searchUsers(query: query);
-      emit(state.copyWith(status: UserSearchStatus.success, results: results));
+      final results = await _profileRepository.searchUsers(
+        query: query,
+        limit: _pageSize,
+        sortBy: 'followers',
+        hasVideos: true,
+      );
+
+      final withPic = results.where((p) => p.picture != null).length;
+      developer.log(
+        'Query "$query": ${results.length} results, '
+        '$withPic with picture',
+        name: 'UserSearchBloc',
+      );
+      for (final p in results) {
+        developer.log(
+          '  ${p.bestDisplayName}: picture=${p.picture ?? "null"}',
+          name: 'UserSearchBloc',
+        );
+      }
+
+      emit(
+        state.copyWith(
+          status: UserSearchStatus.success,
+          results: results,
+          offset: results.length,
+          hasMore: results.length == _pageSize,
+          isLoadingMore: false,
+        ),
+      );
     } on Exception {
       emit(state.copyWith(status: UserSearchStatus.failure));
+    }
+  }
+
+  Future<void> _onLoadMore(
+    UserSearchLoadMore event,
+    Emitter<UserSearchState> emit,
+  ) async {
+    if (!state.hasMore || state.isLoadingMore || state.query.isEmpty) return;
+
+    emit(state.copyWith(isLoadingMore: true));
+
+    try {
+      final moreResults = await _profileRepository.searchUsers(
+        query: state.query,
+        limit: _pageSize,
+        offset: state.offset,
+        sortBy: 'followers',
+        hasVideos: true,
+      );
+
+      final allResults = [...state.results, ...moreResults];
+
+      emit(
+        state.copyWith(
+          results: allResults,
+          offset: allResults.length,
+          hasMore: moreResults.length == _pageSize,
+          isLoadingMore: false,
+        ),
+      );
+    } on Exception {
+      emit(state.copyWith(isLoadingMore: false));
     }
   }
 

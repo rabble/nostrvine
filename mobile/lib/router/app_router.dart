@@ -8,6 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/services/page_load_observer.dart';
 import 'package:openvine/screens/auth/divine_auth_screen.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/screens/auth/login_options_screen.dart';
@@ -70,6 +71,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     // Start at /welcome - redirect logic will navigate to appropriate route
     initialLocation: WelcomeScreen.path,
     observers: [
+      PageLoadObserver(),
       VideoStopNavigatorObserver(),
       FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
     ],
@@ -139,6 +141,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
 
         // If TOS is accepted but user is not authenticated, redirect to welcome
         if (authState == AuthState.unauthenticated) {
+          _hasNavigated = false;
           Log.debug(
             'Not authenticated, redirecting to ${WelcomeScreen.path}',
             name: 'AppRouter',
@@ -743,9 +746,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           // The draft ID is optional if the user wants to continue editing
           // the draft.
           final draftId = st.pathParameters['draftId'];
+          final extra = st.extra as Map<String, dynamic>?;
+          final fromLibrary = extra?['fromLibrary'] as bool? ?? false;
 
           return VideoClipEditorScreen(
             draftId: draftId == null || draftId.isEmpty ? null : draftId,
+            fromLibrary: fromLibrary,
           );
         },
       ),

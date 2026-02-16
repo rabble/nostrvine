@@ -2,10 +2,7 @@
 // ABOUTME: Pure business logic without external dependencies for easy testing
 
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/models/notification_model.dart';
-import 'package:openvine/models/user_profile.dart';
-import 'package:models/models.dart'
-    hide NotificationModel, NotificationType, UserProfile;
+import 'package:models/models.dart';
 import 'package:openvine/services/notification_helpers.dart';
 
 /// Parses Nostr events into notification models

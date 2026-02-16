@@ -146,7 +146,8 @@ class ProfileLikedVideosBloc
         state.copyWith(
           status: ProfileLikedVideosStatus.success,
           videos: videos,
-          hasMoreContent: likedEventIds.length > _pageSize,
+          hasMoreContent: likedEventIds.length > firstPageIds.length,
+          nextPageOffset: firstPageIds.length,
           clearError: true,
         ),
       );
@@ -215,7 +216,8 @@ class ProfileLikedVideosBloc
           state.copyWith(
             status: ProfileLikedVideosStatus.success,
             videos: videos,
-            hasMoreContent: cachedIds.length > _pageSize,
+            hasMoreContent: cachedIds.length > firstPageIds.length,
+            nextPageOffset: firstPageIds.length,
             clearError: true,
           ),
         );
@@ -288,7 +290,8 @@ class ProfileLikedVideosBloc
           state.copyWith(
             status: ProfileLikedVideosStatus.success,
             videos: videos,
-            hasMoreContent: likedEventIds.length > _pageSize,
+            hasMoreContent: likedEventIds.length > firstPageIds.length,
+            nextPageOffset: firstPageIds.length,
             clearError: true,
           ),
         );
@@ -336,11 +339,9 @@ class ProfileLikedVideosBloc
     // user's likes, so watching it for other users would show wrong data.
     if (_isOtherUserProfile) return;
 
-    await emit.forEach<Set<String>>(
+    await emit.forEach<List<String>>(
       _likesRepository.watchLikedEventIds(),
-      onData: (likedIdsSet) {
-        final newIds = likedIdsSet.toList();
-
+      onData: (newIds) {
         // Skip if IDs haven't changed
         if (listEquals(newIds, state.likedEventIds)) return state;
 
@@ -365,13 +366,25 @@ class ProfileLikedVideosBloc
               .where((v) => !removedIds.contains(v.id))
               .toList();
 
-          return state.copyWith(likedEventIds: newIds, videos: updatedVideos);
+          // Clamp offset to new list length (removed IDs may shift it)
+          final adjustedOffset = state.nextPageOffset.clamp(0, newIds.length);
+
+          return state.copyWith(
+            likedEventIds: newIds,
+            videos: updatedVideos,
+            nextPageOffset: adjustedOffset,
+          );
         }
 
-        // If a video was liked, we need to fetch it asynchronously
-        // For now, just update the IDs - the video will be fetched on next sync
+        // If a video was liked, we need to fetch it asynchronously.
+        // New likes are prepended (most recent first), so shift the offset
+        // forward to keep existing pagination position correct.
         if (newIds.length > state.likedEventIds.length) {
-          return state.copyWith(likedEventIds: newIds);
+          final addedCount = newIds.length - state.likedEventIds.length;
+          return state.copyWith(
+            likedEventIds: newIds,
+            nextPageOffset: state.nextPageOffset + addedCount,
+          );
         }
 
         return state;
@@ -381,8 +394,10 @@ class ProfileLikedVideosBloc
 
   /// Handle load more request - fetches the next page of videos.
   ///
-  /// Uses [state.videos.length] to determine the offset and fetches
-  /// the next [_pageSize] videos from [state.likedEventIds].
+  /// Uses [state.nextPageOffset] to track the position in [state.likedEventIds]
+  /// and fetches the next [_pageSize] IDs. The offset advances by the number
+  /// of IDs consumed, not the number of videos loaded (some IDs may not
+  /// resolve to videos due to relay unavailability or format filtering).
   Future<void> _onLoadMoreRequested(
     ProfileLikedVideosLoadMoreRequested event,
     Emitter<ProfileLikedVideosState> emit,
@@ -394,18 +409,18 @@ class ProfileLikedVideosBloc
       return;
     }
 
-    final currentCount = state.videos.length;
+    final offset = state.nextPageOffset;
     final totalCount = state.likedEventIds.length;
 
-    // No more to load
-    if (currentCount >= totalCount) {
+    // No more IDs to consume
+    if (offset >= totalCount) {
       emit(state.copyWith(hasMoreContent: false));
       return;
     }
 
     Log.info(
       'ProfileLikedVideosBloc: Loading more videos '
-      '(current: $currentCount, total: $totalCount)',
+      '(offset: $offset, total: $totalCount)',
       name: 'ProfileLikedVideosBloc',
       category: LogCategory.video,
     );
@@ -415,7 +430,7 @@ class ProfileLikedVideosBloc
     try {
       // Get the next page of IDs
       final nextPageIds = state.likedEventIds
-          .skip(currentCount)
+          .skip(offset)
           .take(_pageSize)
           .toList();
 
@@ -428,15 +443,25 @@ class ProfileLikedVideosBloc
         category: LogCategory.video,
       );
 
-      // Append to existing videos
-      final allVideos = [...state.videos, ...newVideos];
-      final hasMore = allVideos.length < totalCount;
+      // Deduplicate: filter out any videos already loaded
+      final existingIds = state.videos.map((v) => v.id).toSet();
+      final uniqueNewVideos = newVideos
+          .where((v) => !existingIds.contains(v.id))
+          .toList();
+
+      // Advance offset by IDs consumed (not videos loaded)
+      final newOffset = offset + nextPageIds.length;
+
+      // Append only unique videos
+      final allVideos = [...state.videos, ...uniqueNewVideos];
+      final hasMore = newOffset < totalCount;
 
       emit(
         state.copyWith(
           videos: allVideos,
           isLoadingMore: false,
           hasMoreContent: hasMore,
+          nextPageOffset: newOffset,
         ),
       );
     } catch (e) {

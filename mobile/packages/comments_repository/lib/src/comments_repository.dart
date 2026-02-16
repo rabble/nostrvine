@@ -166,8 +166,9 @@ class CommentsRepository {
       ['E', rootEventId, '', rootEventAuthorPubkey],
       // Include A tag for addressable events (Kind 30000-39999)
       // This ensures comments can be found by clients querying by either E or A
+      // NIP-22: A tags use 3 elements [A, address, relay_hint]
       if (rootAddressableId != null && rootAddressableId.isNotEmpty)
-        ['A', rootAddressableId, '', rootEventAuthorPubkey],
+        ['A', rootAddressableId, ''],
       ['K', rootEventKind.toString()],
       ['P', rootEventAuthorPubkey],
       // Parent item tags (lowercase)
@@ -180,8 +181,9 @@ class CommentsRepository {
         // Top-level comment - parent is the same as root
         ['e', rootEventId, '', rootEventAuthorPubkey],
         // Include lowercase 'a' tag for addressable events too
+        // NIP-22: a tags use 3 elements [a, address, relay_hint]
         if (rootAddressableId != null && rootAddressableId.isNotEmpty)
-          ['a', rootAddressableId, '', rootEventAuthorPubkey],
+          ['a', rootAddressableId, ''],
         ['k', rootEventKind.toString()],
         ['p', rootEventAuthorPubkey],
       ],
@@ -324,14 +326,15 @@ class CommentsRepository {
   Comment? _eventToComment(Event event, String rootEventId, int rootEventKind) {
     try {
       String? parsedRootEventId;
+      String? parsedRootAddressableId;
       String? replyToEventId;
       String? rootAuthorPubkey;
       String? replyToAuthorPubkey;
       String? parentKind;
 
       // Parse NIP-22 tags to determine comment relationships
-      // Uppercase tags (E, K, P) = root scope
-      // Lowercase tags (e, k, p) = parent item
+      // Uppercase tags (E, A, K, P) = root scope
+      // Lowercase tags (e, a, k, p) = parent item
       for (final rawTag in event.tags) {
         final tag = rawTag as List<dynamic>;
         if (tag.length < 2) continue;
@@ -346,6 +349,10 @@ class CommentsRepository {
             if (tag.length >= 4) {
               rootAuthorPubkey = tag[3] as String;
             }
+          case 'A':
+            // Root addressable ID (uppercase = root scope)
+            // Format: kind:pubkey:d-tag
+            parsedRootAddressableId = tagValue;
           case 'P':
             // Root author pubkey (uppercase = root scope)
             rootAuthorPubkey ??= tagValue;
@@ -361,6 +368,15 @@ class CommentsRepository {
           case 'p':
             // Parent author pubkey (lowercase = parent item)
             replyToAuthorPubkey ??= tagValue;
+        }
+      }
+
+      // Extract root author pubkey from addressable ID if not found in tags
+      // A tag format: kind:pubkey:d-tag
+      if (rootAuthorPubkey == null && parsedRootAddressableId != null) {
+        final parts = parsedRootAddressableId.split(':');
+        if (parts.length >= 2) {
+          rootAuthorPubkey = parts[1];
         }
       }
 

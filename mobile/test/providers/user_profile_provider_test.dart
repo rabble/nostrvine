@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/models/user_profile.dart' as models;
+import 'package:models/models.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -263,7 +263,7 @@ void main() {
       ).thenReturn(1); // FIX: Add missing mock
 
       // Pre-populate cache
-      final testProfile = models.UserProfile(
+      final testProfile = UserProfile(
         pubkey: pubkey,
         name: 'Cached User',
         rawData: {},
@@ -400,7 +400,7 @@ void main() {
       ).thenReturn(1); // FIX: Add missing mock
 
       // Pre-populate cache with old profile
-      final oldProfile = models.UserProfile(
+      final oldProfile = UserProfile(
         pubkey: pubkey,
         name: 'Old Name',
         rawData: {},

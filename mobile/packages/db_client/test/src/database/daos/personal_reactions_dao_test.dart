@@ -526,6 +526,40 @@ void main() {
         expect(emissions[0], contains(testTargetEventId));
         expect(emissions[1], isEmpty);
       });
+
+      test('emits IDs ordered by createdAt descending', () async {
+        await dao.upsertReaction(
+          targetEventId: testTargetEventId,
+          reactionEventId: testReactionEventId,
+          userPubkey: testUserPubkey,
+          createdAt: 1000,
+        );
+        await dao.upsertReaction(
+          targetEventId: testTargetEventId2,
+          reactionEventId: testReactionEventId2,
+          userPubkey: testUserPubkey,
+          createdAt: 3000,
+        );
+        await dao.upsertReaction(
+          targetEventId: testTargetEventId3,
+          reactionEventId: testReactionEventId3,
+          userPubkey: testUserPubkey,
+          createdAt: 2000,
+        );
+
+        final stream = dao.watchLikedEventIds(testUserPubkey);
+        final result = await stream.first;
+
+        // Should be ordered by createdAt descending
+        expect(
+          result,
+          equals([
+            testTargetEventId2, // createdAt: 3000
+            testTargetEventId3, // createdAt: 2000
+            testTargetEventId, // createdAt: 1000
+          ]),
+        );
+      });
     });
 
     group('watchAllReactions', () {

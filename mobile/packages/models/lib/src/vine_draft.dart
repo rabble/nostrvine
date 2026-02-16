@@ -1,5 +1,15 @@
 // ABOUTME: Data model for Vine drafts that users save before publishing
 // ABOUTME: Includes video file path, metadata, publish status, and timestamps
+//
+// TODO(dedup): This is NOT a simple duplicate of lib/models/vine_draft.dart.
+// The two versions have fundamentally different schemas:
+// - This package version: legacy single-file format
+//   (videoFile, frameCount, etc.)
+// - App version: multi-clip editing with collaborators,
+//   audio, inspired-by fields
+// Resolution requires an architectural decision: either delete this obsolete
+// package version, or replace it with the app version (which depends on
+// RecordingClip, InspiredByInfo, and other app-layer types).
 
 import 'dart:convert';
 import 'dart:io';

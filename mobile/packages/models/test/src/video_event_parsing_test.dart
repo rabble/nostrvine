@@ -286,4 +286,311 @@ void main() {
       expect(videoEvent.videoUrl, isNull);
     });
   });
+
+  group('VideoEvent collaborator parsing', () {
+    const authorPubkey =
+        'aaaa567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+    const collabPubkey1 =
+        'bbbb567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+    const collabPubkey2 =
+        'cccc567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+
+    test('should parse p-tags as collaborators when different from author', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+          ['p', collabPubkey1, 'wss://relay.divine.video'],
+          ['p', collabPubkey2, 'wss://relay.divine.video'],
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.collaboratorPubkeys, hasLength(2));
+      expect(videoEvent.collaboratorPubkeys, contains(collabPubkey1));
+      expect(videoEvent.collaboratorPubkeys, contains(collabPubkey2));
+      expect(videoEvent.hasCollaborators, isTrue);
+    });
+
+    test('should not include author pubkey as collaborator', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+          ['p', authorPubkey, 'wss://relay.divine.video'], // Author self-tag
+          ['p', collabPubkey1, 'wss://relay.divine.video'],
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.collaboratorPubkeys, hasLength(1));
+      expect(videoEvent.collaboratorPubkeys, contains(collabPubkey1));
+      expect(
+        videoEvent.collaboratorPubkeys,
+        isNot(contains(authorPubkey)),
+      );
+    });
+
+    test('should deduplicate collaborator pubkeys', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+          ['p', collabPubkey1, 'wss://relay.divine.video'],
+          ['p', collabPubkey1, 'wss://relay.divine.video'], // Duplicate
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.collaboratorPubkeys, hasLength(1));
+    });
+
+    test('should return empty collaborators when no p-tags', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.collaboratorPubkeys, isEmpty);
+      expect(videoEvent.hasCollaborators, isFalse);
+    });
+
+    test('should skip empty p-tag values', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+          ['p', '', 'wss://relay.divine.video'], // Empty pubkey
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.collaboratorPubkeys, isEmpty);
+    });
+  });
+
+  group('VideoEvent Inspired By parsing', () {
+    const authorPubkey =
+        'aaaa567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+    const creatorPubkey =
+        'dddd567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef';
+
+    test('should parse a-tag as inspiredByVideo for Kind 34236 references', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+          [
+            'a',
+            '34236:$creatorPubkey:test-d-tag',
+            'wss://relay.divine.video',
+            'mention',
+          ],
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.inspiredByVideo, isNotNull);
+      expect(
+        videoEvent.inspiredByVideo!.addressableId,
+        equals('34236:$creatorPubkey:test-d-tag'),
+      );
+      expect(
+        videoEvent.inspiredByVideo!.relayUrl,
+        equals('wss://relay.divine.video'),
+      );
+      expect(
+        videoEvent.inspiredByVideo!.creatorPubkey,
+        equals(creatorPubkey),
+      );
+      expect(videoEvent.inspiredByVideo!.dTag, equals('test-d-tag'));
+      expect(videoEvent.hasInspiredBy, isTrue);
+    });
+
+    test('should ignore a-tag that does not start with 34236:', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+          ['a', '30023:$creatorPubkey:some-article', 'wss://relay.example.com'],
+        ],
+        'Test video',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.inspiredByVideo, isNull);
+    });
+
+    test('should parse NIP-27 nostr:npub in content as inspiredByNpub', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+        ],
+        'Great idea! Inspired by nostr:npub1abc123def456ghi789',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(
+        videoEvent.inspiredByNpub,
+        equals('npub1abc123def456ghi789'),
+      );
+      expect(videoEvent.hasInspiredBy, isTrue);
+    });
+
+    test('should not set inspiredByNpub when no nostr:npub in content', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+        ],
+        'Just a regular description with no mentions',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.inspiredByNpub, isNull);
+    });
+
+    test('should parse both a-tag and npub content together', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+          [
+            'a',
+            '34236:$creatorPubkey:test-d-tag',
+            'wss://relay.divine.video',
+          ],
+        ],
+        'Inspired by nostr:npub1xyz789abc',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.inspiredByVideo, isNotNull);
+      expect(videoEvent.inspiredByNpub, equals('npub1xyz789abc'));
+      expect(videoEvent.hasInspiredBy, isTrue);
+    });
+
+    test('should not have inspiredBy when no a-tag or npub', () {
+      final nostrEvent = Event(
+        authorPubkey,
+        34236,
+        [
+          ['url', 'https://example.com/video.mp4'],
+        ],
+        'No inspiration here',
+        createdAt: 1757385263,
+      );
+
+      final videoEvent = VideoEvent.fromNostrEvent(nostrEvent);
+
+      expect(videoEvent.inspiredByVideo, isNull);
+      expect(videoEvent.inspiredByNpub, isNull);
+      expect(videoEvent.hasInspiredBy, isFalse);
+    });
+  });
+
+  group(InspiredByInfo, () {
+    test('should parse creatorPubkey from addressableId', () {
+      const info = InspiredByInfo(
+        addressableId: '34236:abc123:my-video',
+      );
+
+      expect(info.creatorPubkey, equals('abc123'));
+    });
+
+    test('should parse dTag from addressableId', () {
+      const info = InspiredByInfo(
+        addressableId: '34236:abc123:my-video',
+      );
+
+      expect(info.dTag, equals('my-video'));
+    });
+
+    test('should handle addressableId with missing segments', () {
+      const infoNoSegments = InspiredByInfo(addressableId: '34236');
+
+      expect(infoNoSegments.creatorPubkey, isEmpty);
+      expect(infoNoSegments.dTag, isEmpty);
+    });
+
+    test('should round-trip through JSON serialization', () {
+      const original = InspiredByInfo(
+        addressableId: '34236:abc123:my-video',
+        relayUrl: 'wss://relay.divine.video',
+      );
+
+      final json = original.toJson();
+      final restored = InspiredByInfo.fromJson(json);
+
+      expect(restored.addressableId, equals(original.addressableId));
+      expect(restored.relayUrl, equals(original.relayUrl));
+      expect(restored, equals(original));
+    });
+
+    test('should serialize without relayUrl when null', () {
+      const info = InspiredByInfo(addressableId: '34236:abc:vid');
+
+      final json = info.toJson();
+
+      expect(json.containsKey('relayUrl'), isFalse);
+      expect(json['addressableId'], equals('34236:abc:vid'));
+    });
+
+    test('should implement equality based on addressableId', () {
+      const info1 = InspiredByInfo(
+        addressableId: '34236:abc:vid',
+        relayUrl: 'wss://relay1.com',
+      );
+      const info2 = InspiredByInfo(
+        addressableId: '34236:abc:vid',
+        relayUrl: 'wss://relay2.com', // Different relay, same ID
+      );
+      const info3 = InspiredByInfo(
+        addressableId: '34236:different:vid',
+      );
+
+      expect(info1, equals(info2));
+      expect(info1, isNot(equals(info3)));
+    });
+  });
 }

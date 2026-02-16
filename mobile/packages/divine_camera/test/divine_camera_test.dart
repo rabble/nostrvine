@@ -31,6 +31,7 @@ class MockDivineCameraPlatform
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     bool enableScreenFlash = true,
+    bool mirrorFrontCameraOutput = false,
   }) async {
     return _state = CameraState(
       isInitialized: true,
@@ -42,6 +43,13 @@ class MockDivineCameraPlatform
       textureId: 1,
       isFocusPointSupported: true,
       isExposurePointSupported: true,
+      availableLenses: const [
+        DivineCameraLens.front,
+        DivineCameraLens.frontUltraWide,
+        DivineCameraLens.back,
+        DivineCameraLens.ultraWide,
+        DivineCameraLens.telephoto,
+      ],
     );
   }
 
@@ -177,6 +185,20 @@ void main() {
         expect(state.isInitialized, isTrue);
       });
 
+      test('mirrorFrontCameraOutput defaults to false', () async {
+        await DivineCamera.instance.initialize();
+
+        expect(DivineCamera.instance.mirrorFrontCameraOutput, isFalse);
+      });
+
+      test('mirrorFrontCameraOutput reflects initialization value', () async {
+        await DivineCamera.instance.initialize(
+          mirrorFrontCameraOutput: true,
+        );
+
+        expect(DivineCamera.instance.mirrorFrontCameraOutput, isTrue);
+      });
+
       test('sets camera capabilities correctly', () async {
         final state = await DivineCamera.instance.initialize();
 
@@ -300,6 +322,75 @@ void main() {
           expect(DivineCamera.instance.canSwitchCamera, isTrue);
         },
       );
+    });
+
+    group('setLens', () {
+      test('switches to specific lens', () async {
+        await DivineCamera.instance.initialize();
+
+        final result = await DivineCamera.instance.setLens(
+          DivineCameraLens.ultraWide,
+        );
+
+        expect(result, isTrue);
+        expect(DivineCamera.instance.state.lens, DivineCameraLens.ultraWide);
+      });
+
+      test('returns true when already on requested lens', () async {
+        await DivineCamera.instance.initialize();
+
+        final result = await DivineCamera.instance.setLens(
+          DivineCameraLens.back,
+        );
+
+        expect(result, isTrue);
+        expect(DivineCamera.instance.state.lens, DivineCameraLens.back);
+      });
+
+      test('returns false when lens not available', () async {
+        await DivineCamera.instance.initialize();
+
+        // macro is not in availableLenses in the mock
+        final result = await DivineCamera.instance.setLens(
+          DivineCameraLens.macro,
+        );
+
+        expect(result, isFalse);
+        // Lens should not have changed
+        expect(DivineCamera.instance.state.lens, DivineCameraLens.back);
+      });
+
+      test('switches to frontUltraWide lens', () async {
+        await DivineCamera.instance.initialize();
+
+        final result = await DivineCamera.instance.setLens(
+          DivineCameraLens.frontUltraWide,
+        );
+
+        expect(result, isTrue);
+        expect(
+          DivineCamera.instance.state.lens,
+          DivineCameraLens.frontUltraWide,
+        );
+      });
+    });
+
+    group('hasFrontUltraWideCamera', () {
+      test('returns true when frontUltraWide is in availableLenses', () async {
+        await DivineCamera.instance.initialize();
+
+        expect(DivineCamera.instance.state.hasFrontUltraWideCamera, isTrue);
+      });
+
+      test('returns false when frontUltraWide is not available', () async {
+        // Use single camera mock which doesn't have frontUltraWide
+        final singleCameraMock = _SingleCameraMock();
+        DivineCameraPlatform.instance = singleCameraMock;
+
+        await DivineCamera.instance.initialize();
+
+        expect(DivineCamera.instance.state.hasFrontUltraWideCamera, isFalse);
+      });
     });
 
     group('recording', () {
@@ -622,7 +713,7 @@ void main() {
 
       final props = state.props;
 
-      expect(props.length, 15);
+      expect(props.length, 16);
       expect(props[0], isTrue); // isInitialized
       expect(props[1], isFalse); // isRecording
       expect(props[4], DivineCameraLens.back); // lens
@@ -993,6 +1084,7 @@ class _NoFocusSupportMock extends MockDivineCameraPlatform {
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     bool enableScreenFlash = true,
+    bool mirrorFrontCameraOutput = false,
   }) async {
     return const CameraState(
       isInitialized: true,
@@ -1008,6 +1100,7 @@ class _NoExposureSupportMock extends MockDivineCameraPlatform {
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     bool enableScreenFlash = true,
+    bool mirrorFrontCameraOutput = false,
   }) async {
     return const CameraState(
       isInitialized: true,
@@ -1023,6 +1116,7 @@ class _SingleCameraMock extends MockDivineCameraPlatform {
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     bool enableScreenFlash = true,
+    bool mirrorFrontCameraOutput = false,
   }) async {
     return const CameraState(
       isInitialized: true,

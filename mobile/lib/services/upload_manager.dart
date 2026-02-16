@@ -328,11 +328,23 @@ class UploadManager {
       );
     }
 
-    if (videoDuration == null) {
+    int? videoWidth;
+    int? videoHeight;
+
+    try {
       final meta = await ProVideoEditor.instance.getMetadata(
         EditorVideo.file(videoFilePath),
       );
-      videoDuration = meta.duration;
+      videoDuration ??= meta.duration;
+      final resolution = meta.resolution;
+      videoWidth = resolution.width.round();
+      videoHeight = resolution.height.round();
+    } catch (e) {
+      Log.warning(
+        '⚠️ Could not extract video metadata: $e',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
     }
 
     return _startUploadInternal(
@@ -341,6 +353,8 @@ class UploadManager {
       title: draft.title,
       description: draft.description,
       hashtags: draft.hashtags.toList(),
+      videoWidth: videoWidth,
+      videoHeight: videoHeight,
       videoDuration: videoDuration,
       proofManifestJson: draft.proofManifestJson,
       onProgress: onProgress,

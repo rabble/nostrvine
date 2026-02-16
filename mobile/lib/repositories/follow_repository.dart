@@ -73,11 +73,26 @@ class FollowRepository {
   bool get isInitialized => _isInitialized;
   int get followingCount => _followingPubkeys.length;
 
-  /// Emit current state to stream
+  /// Emit current state to stream (only if the list actually changed)
   void _emitFollowingList() {
     if (!_followingSubject.isClosed) {
-      _followingSubject.add(List.unmodifiable(_followingPubkeys));
+      final newList = List<String>.unmodifiable(_followingPubkeys);
+      final currentList = _followingSubject.valueOrNull;
+      if (currentList == null ||
+          newList.length != currentList.length ||
+          !_listsEqual(newList, currentList)) {
+        _followingSubject.add(newList);
+      }
     }
+  }
+
+  /// Compare two lists for equality by value
+  bool _listsEqual(List<String> a, List<String> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
   }
 
   /// Dispose resources
@@ -163,6 +178,73 @@ class FollowRepository {
         category: LogCategory.system,
       );
       return [];
+    }
+  }
+
+  /// Check if the current user and another user mutually follow each other.
+  ///
+  /// Returns true only if:
+  /// 1. The current user is following [pubkey] (local cache check, instant)
+  /// 2. [pubkey] is following the current user (relay query for their Kind 3)
+  ///
+  /// Returns false if either direction is not a follow, or on timeout/error.
+  Future<bool> isMutualFollow(String pubkey) async {
+    // Step 1: Check if we follow them (instant, from local cache)
+    if (!isFollowing(pubkey)) return false;
+
+    // Step 2: Check if they follow us (requires relay query)
+    try {
+      final theirFollowers = await _fetchFollowers(_nostrClient.publicKey);
+      return theirFollowers.contains(pubkey) ||
+          // They follow us means their contact list mentions our pubkey.
+          // _fetchFollowers returns authors of events mentioning us in p-tags,
+          // so we check if the target pubkey is among those authors.
+          await _checkIfTheyFollowUs(pubkey);
+    } catch (e) {
+      Log.warning(
+        'Failed to check mutual follow for $pubkey: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+  }
+
+  /// Check if [pubkey] follows the current user by querying their Kind 3 event.
+  Future<bool> _checkIfTheyFollowUs(String pubkey) async {
+    if (pubkey.isEmpty || _nostrClient.publicKey.isEmpty) return false;
+
+    try {
+      final events = await _nostrClient
+          .queryEvents([
+            Filter(
+              authors: [pubkey],
+              kinds: const [3], // Their contact list
+              limit: 1,
+            ),
+          ])
+          .timeout(_fetchFollowersTimeout, onTimeout: () => <Event>[]);
+
+      if (events.isEmpty) return false;
+
+      // Check if our pubkey is in their contact list p-tags
+      final contactList = events.first;
+      for (final tag in contactList.tags) {
+        if (tag.isNotEmpty &&
+            tag[0] == 'p' &&
+            tag.length > 1 &&
+            tag[1] == _nostrClient.publicKey) {
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      Log.warning(
+        'Failed to check if $pubkey follows us: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return false;
     }
   }
 

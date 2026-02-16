@@ -44,11 +44,15 @@ class DraftStorageService {
 
     // Collect all file paths that need migration
     final pathsToMigrate = <String?>[
-      for (final draft in draftsWithOriginalPaths)
+      for (final draft in draftsWithOriginalPaths) ...[
         for (final clip in draft.clips) ...[
           clip.video.file?.path,
           clip.thumbnailPath,
         ],
+        // Include finalRenderedClip paths
+        draft.finalRenderedClip?.video.file?.path,
+        draft.finalRenderedClip?.thumbnailPath,
+      ],
     ];
 
     // Run the migration
@@ -68,6 +72,11 @@ class DraftStorageService {
   /// Save a draft to storage. If a draft with the same ID exists, it will be updated.
   /// When updating, orphaned clip files (video/thumbnail) from the old draft are deleted.
   Future<void> saveDraft(VineDraft draft) async {
+    Log.debug(
+      '💾 Saving draft: ${draft.id}',
+      name: 'DraftStorageService',
+      category: LogCategory.video,
+    );
     final drafts = await getAllDrafts();
 
     // Check if draft with same ID exists
@@ -82,6 +91,9 @@ class DraftStorageService {
           clip.video.file?.path,
           clip.thumbnailPath,
         ],
+        // Include new finalRenderedClip paths
+        draft.finalRenderedClip?.video.file?.path,
+        draft.finalRenderedClip?.thumbnailPath,
       };
 
       final orphanedFiles = <String?>[
@@ -89,6 +101,17 @@ class DraftStorageService {
           if (!newFilePaths.contains(clip.video.file?.path))
             clip.video.file?.path,
           if (!newFilePaths.contains(clip.thumbnailPath)) clip.thumbnailPath,
+        ],
+        // Check if old finalRenderedClip is orphaned
+        if (existingDraft.finalRenderedClip != null) ...[
+          if (!newFilePaths.contains(
+            existingDraft.finalRenderedClip?.video.file?.path,
+          ))
+            existingDraft.finalRenderedClip?.video.file?.path,
+          if (!newFilePaths.contains(
+            existingDraft.finalRenderedClip?.thumbnailPath,
+          ))
+            existingDraft.finalRenderedClip?.thumbnailPath,
         ],
       ];
 
@@ -187,6 +210,11 @@ class DraftStorageService {
 
       return drafts;
     } catch (e) {
+      Log.error(
+        '❌ Failed to load drafts: $e',
+        name: 'DraftStorageService',
+        category: LogCategory.video,
+      );
       // If storage is corrupted, return empty list
       return [];
     }
@@ -194,6 +222,11 @@ class DraftStorageService {
 
   /// Delete a draft by ID and remove associated video/thumbnail files
   Future<void> deleteDraft(String id) async {
+    Log.debug(
+      '🗑️ Deleting draft: $id',
+      name: 'DraftStorageService',
+      category: LogCategory.video,
+    );
     final drafts = await getAllDrafts();
     final draftIndex = drafts.indexWhere((draft) => draft.id == id);
 
@@ -206,6 +239,13 @@ class DraftStorageService {
 
       // Delete clip files only if not referenced by clip library
       await FileCleanupService.deleteRecordingClipsFiles(draft.clips);
+
+      // Delete final rendered clip if present
+      if (draft.finalRenderedClip != null) {
+        await FileCleanupService.deleteRecordingClipFiles(
+          draft.finalRenderedClip!,
+        );
+      }
       return;
     }
 
@@ -214,8 +254,17 @@ class DraftStorageService {
 
   /// Clear all drafts from storage and delete associated files
   Future<void> clearAllDrafts() async {
+    Log.info(
+      '🧹 Clearing all drafts',
+      name: 'DraftStorageService',
+      category: LogCategory.video,
+    );
     final drafts = await getAllDrafts();
     final allClips = drafts.expand((draft) => draft.clips).toList();
+    final allFinalRenderedClips = drafts
+        .map((draft) => draft.finalRenderedClip)
+        .whereType<RecordingClip>()
+        .toList();
 
     // Clear storage first, then delete files (so reference check sees updated state)
     final prefs = await _prefsAsync;
@@ -223,6 +272,7 @@ class DraftStorageService {
 
     // Delete clip files only if not referenced by clip library
     await FileCleanupService.deleteRecordingClipsFiles(allClips);
+    await FileCleanupService.deleteRecordingClipsFiles(allFinalRenderedClips);
   }
 
   /// Internal helper to save drafts list to storage
