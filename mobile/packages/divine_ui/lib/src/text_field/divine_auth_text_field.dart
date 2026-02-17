@@ -412,7 +412,6 @@ class _AuthTextFieldInput extends StatelessWidget {
       onChanged: onChanged,
       onFieldSubmitted: onSubmitted,
       onEditingComplete: onEditingComplete,
-      maxLines: 1,
       maxLength: maxLength,
       style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
       cursorColor: hasError ? VineTheme.error : VineTheme.primary,
@@ -458,8 +457,8 @@ class _ErrorSupportingText extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: _verticalPadding),
+          const Padding(
+            padding: EdgeInsets.only(top: _verticalPadding),
             child: DivineIcon(
               icon: DivineIconName.warningCircle,
               size: _iconSize,
