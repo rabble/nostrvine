@@ -212,12 +212,6 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       toggleRecording();
     };
 
-    Log.debug(
-      '📷 Setting remote record control: enabled',
-      name: 'VideoRecorderNotifier',
-      category: .video,
-    );
-
     final success = await _cameraService.setRemoteRecordControlEnabled(
       enabled: true,
     );
@@ -247,7 +241,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       Log.debug(
         '🎮 Remote record control disabled',
         name: 'VideoRecorderNotifier',
-        category: LogCategory.video,
+        category: .video,
       );
     }
   }
@@ -266,7 +260,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       Log.debug(
         '🎵 Sound selected - volume keys disabled (Bluetooth still works)',
         name: 'VideoRecorderNotifier',
-        category: LogCategory.video,
+        category: .video,
       );
     } else if (next == null && previous != null) {
       // Sound was cleared - re-enable volume key interception
@@ -275,7 +269,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       Log.debug(
         '🎵 Sound cleared - volume keys re-enabled',
         name: 'VideoRecorderNotifier',
-        category: LogCategory.video,
+        category: .video,
       );
     }
   }
@@ -291,7 +285,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       Log.debug(
         '🎮 Remote record control paused (for audio playback)',
         name: 'VideoRecorderNotifier',
-        category: LogCategory.video,
+        category: .video,
       );
     }
   }
@@ -307,7 +301,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       Log.debug(
         '🎮 Remote record control resumed',
         name: 'VideoRecorderNotifier',
-        category: LogCategory.video,
+        category: .video,
       );
 
       // If a sound is selected, keep volume keys disabled
@@ -316,7 +310,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         Log.debug(
           '🎮 Volume keys re-disabled (sound is selected)',
           name: 'VideoRecorderNotifier',
-          category: LogCategory.video,
+          category: .video,
         );
       }
     }
