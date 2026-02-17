@@ -25,6 +25,7 @@ import 'package:video_player/video_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/services/video_editor/video_editor_haptic_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 /// The main canvas area for the video editor.
@@ -91,6 +92,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   bool get _isLayerBeingTransformed => _selectedLayer != null;
 
   Layer? _selectedLayer;
+  bool _wasOverRemoveArea = false;
 
   @override
   void initState() {
@@ -417,6 +419,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           onScaleUpdate: (details) {
             if (!_isLayerBeingTransformed) return;
             final isOverRemoveArea = scope.isOverRemoveArea(details.focalPoint);
+
+            // Trigger haptic feedback when entering the remove area
+            if (isOverRemoveArea && !_wasOverRemoveArea) {
+              VideoEditorHapticService.instance.layerOverRemoveArea();
+            }
+            _wasOverRemoveArea = isOverRemoveArea;
+
             bloc.add(
               VideoEditorLayerOverRemoveAreaChanged(isOver: isOverRemoveArea),
             );
@@ -436,6 +445,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               _selectedLayer = null;
             }
 
+            _wasOverRemoveArea = false;
             bloc.add(const VideoEditorLayerInteractionEnded());
           },
           onAddLayer: (layer) {
@@ -456,6 +466,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           },
           onCreateTextLayer: scope.onAddEditTextLayer,
           onEditTextLayer: scope.onAddEditTextLayer,
+          helperLines: HelperLinesCallbacks(
+            onLineHit: VideoEditorHapticService.instance.guidelineHit,
+          ),
         ),
         paintEditorCallbacks: PaintEditorCallbacks(
           onInit: () {
