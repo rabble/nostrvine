@@ -219,20 +219,50 @@ class NotificationServiceEnhanced {
     _subscriptions['reposts'] = subscription;
   }
 
+  /// Resolve a video event from a Nostr event's tags
+  /// Tries event ID lookup (E/e tags) first, then addressable ID lookup (A/a tags)
+  /// Returns the (videoEvent, targetEventId) or null if not found
+  ({VideoEvent videoEvent, String targetEventId})? _resolveVideoEvent(
+    Event event,
+  ) {
+    // First try by event ID (E/e tags)
+    final videoEventId = extractVideoEventId(event);
+    if (videoEventId != null) {
+      final videoEvent = _videoService?.getVideoEventById(videoEventId);
+      if (videoEvent != null) {
+        return (videoEvent: videoEvent, targetEventId: videoEventId);
+      }
+    }
+
+    // Fall back to addressable ID (A/a tags) for kind 30000+ events
+    final addressableId = extractAddressableId(event);
+    if (addressableId != null) {
+      final parsed = parseAddressableId(addressableId);
+      if (parsed != null) {
+        final videoEvent = _videoService?.getVideoEventByVineId(parsed.dTag);
+        if (videoEvent != null) {
+          return (videoEvent: videoEvent, targetEventId: videoEvent.id);
+        }
+      }
+    }
+
+    return null;
+  }
+
   /// Handle reaction (like) events
   Future<void> _handleReactionEvent(Event event) async {
     // Check if this is a like (+ reaction)
     if (event.content != '+') return;
 
-    // Get the video that was liked
-    final videoEventId = extractVideoEventId(event);
-    if (videoEventId == null) return;
+    // Get the video that was liked (tries E/e tags then A/a tags)
+    final resolved = _resolveVideoEvent(event);
+    if (resolved == null) return;
 
-    // Get video info
-    final videoEvent = _videoService?.getVideoEventById(videoEventId);
+    final videoEvent = resolved.videoEvent;
+    final videoEventId = resolved.targetEventId;
 
     // CRITICAL: Only create notification if this is the current user's video
-    if (videoEvent == null || videoEvent.pubkey != _nostrService?.publicKey) {
+    if (videoEvent.pubkey != _nostrService?.publicKey) {
       return;
     }
 
@@ -258,16 +288,15 @@ class NotificationServiceEnhanced {
 
   /// Handle comment events
   Future<void> _handleCommentEvent(Event event) async {
-    // Extract video ID using helper that checks uppercase 'E' tag first
-    // (NIP-22 root scope for comments), then falls back to lowercase 'e'
-    final videoEventId = extractVideoEventId(event);
-    if (videoEventId == null) return;
+    // Resolve video via E/e tags first, then A/a tags for addressable events
+    final resolved = _resolveVideoEvent(event);
+    if (resolved == null) return;
 
-    // Get video info
-    final videoEvent = _videoService?.getVideoEventById(videoEventId);
+    final videoEvent = resolved.videoEvent;
+    final videoEventId = resolved.targetEventId;
 
     // CRITICAL: Only create notification if this is the current user's video
-    if (videoEvent == null || videoEvent.pubkey != _nostrService?.publicKey) {
+    if (videoEvent.pubkey != _nostrService?.publicKey) {
       return;
     }
 
@@ -369,15 +398,15 @@ class NotificationServiceEnhanced {
 
   /// Handle repost events
   Future<void> _handleRepostEvent(Event event) async {
-    // Get the video that was reposted using helper
-    final videoEventId = extractVideoEventId(event);
-    if (videoEventId == null) return;
+    // Resolve video via E/e tags first, then A/a tags for addressable events
+    final resolved = _resolveVideoEvent(event);
+    if (resolved == null) return;
 
-    // Get video info
-    final videoEvent = _videoService?.getVideoEventById(videoEventId);
+    final videoEvent = resolved.videoEvent;
+    final videoEventId = resolved.targetEventId;
 
     // CRITICAL: Only create notification if this is the current user's video
-    if (videoEvent == null || videoEvent.pubkey != _nostrService?.publicKey) {
+    if (videoEvent.pubkey != _nostrService?.publicKey) {
       return;
     }
 
