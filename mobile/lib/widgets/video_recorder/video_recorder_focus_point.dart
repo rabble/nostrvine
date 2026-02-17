@@ -93,7 +93,7 @@ class _VideoRecorderFocusPointState
       _lastVisiblePosition = state.focusPoint;
     }
 
-    //   camera coordinates to display coordinates
+    // Transform camera coordinates to display coordinates
     final cameraPoint = isVisible ? state.focusPoint : _lastVisiblePosition;
 
     return LayoutBuilder(
