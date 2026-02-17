@@ -1541,6 +1541,9 @@ void main() {
       expect(state.currentLensMetadata, isNull);
     });
   });
+
+  // MethodChannelDivineCamera Tests
+  _runMethodChannelTests();
 }
 
 /// Mock that doesn't support focus point
@@ -1594,3 +1597,195 @@ class _SingleCameraMock extends MockDivineCameraPlatform {
 /// A class that directly extends DivineCameraPlatform for testing the base
 /// class methods that throw UnimplementedError.
 class _BasePlatformForTesting extends DivineCameraPlatform {}
+
+void _runMethodChannelTests() {
+  group(MethodChannelDivineCamera, () {
+    late MethodChannelDivineCamera methodChannelImpl;
+    late List<MethodCall> capturedCalls;
+
+    setUp(() {
+      methodChannelImpl = MethodChannelDivineCamera();
+      capturedCalls = <MethodCall>[];
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            methodChannelImpl.methodChannel,
+            (MethodCall methodCall) async {
+              capturedCalls.add(methodCall);
+              switch (methodCall.method) {
+                case 'setRemoteRecordControlEnabled':
+                  return true;
+                case 'setVolumeKeysEnabled':
+                  return true;
+                default:
+                  return null;
+              }
+            },
+          );
+    });
+
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            methodChannelImpl.methodChannel,
+            null,
+          );
+    });
+
+    test('onRemoteRecordTrigger getter returns null initially', () {
+      expect(methodChannelImpl.onRemoteRecordTrigger, isNull);
+    });
+
+    test('onRemoteRecordTrigger setter sets callback', () {
+      void callback(RemoteRecordTrigger trigger) {}
+      methodChannelImpl.onRemoteRecordTrigger = callback;
+      expect(methodChannelImpl.onRemoteRecordTrigger, equals(callback));
+    });
+
+    test('onRemoteRecordTrigger setter can clear callback', () {
+      void callback(RemoteRecordTrigger trigger) {}
+      methodChannelImpl
+        ..onRemoteRecordTrigger = callback
+        ..onRemoteRecordTrigger = null;
+      expect(methodChannelImpl.onRemoteRecordTrigger, isNull);
+    });
+
+    test('setRemoteRecordControlEnabled invokes method channel', () async {
+      final result = await methodChannelImpl.setRemoteRecordControlEnabled(
+        enabled: true,
+      );
+
+      expect(result, isTrue);
+      expect(capturedCalls, hasLength(1));
+      expect(capturedCalls.first.method, 'setRemoteRecordControlEnabled');
+      expect(capturedCalls.first.arguments, {'enabled': true});
+    });
+
+    test('setRemoteRecordControlEnabled with false', () async {
+      final result = await methodChannelImpl.setRemoteRecordControlEnabled(
+        enabled: false,
+      );
+
+      expect(result, isTrue);
+      expect(capturedCalls.first.arguments, {'enabled': false});
+    });
+
+    test('setVolumeKeysEnabled invokes method channel', () async {
+      final result = await methodChannelImpl.setVolumeKeysEnabled(
+        enabled: true,
+      );
+
+      expect(result, isTrue);
+      expect(capturedCalls, hasLength(1));
+      expect(capturedCalls.first.method, 'setVolumeKeysEnabled');
+      expect(capturedCalls.first.arguments, {'enabled': true});
+    });
+
+    test('setVolumeKeysEnabled with false', () async {
+      final result = await methodChannelImpl.setVolumeKeysEnabled(
+        enabled: false,
+      );
+
+      expect(result, isTrue);
+      expect(capturedCalls.first.arguments, {'enabled': false});
+    });
+
+    group('handleMethodCall', () {
+      test('handles onRemoteRecordTrigger callback', () async {
+        RemoteRecordTrigger? receivedTrigger;
+        methodChannelImpl.onRemoteRecordTrigger = (trigger) {
+          receivedTrigger = trigger;
+        };
+
+        final binaryMessenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+        // Simulate native calling back to Flutter
+        const codec = StandardMethodCodec();
+        final encoded = codec.encodeMethodCall(
+          const MethodCall('onRemoteRecordTrigger', 'volumeDown'),
+        );
+
+        await binaryMessenger.handlePlatformMessage(
+          'divine_camera',
+          encoded,
+          (_) {},
+        );
+
+        expect(receivedTrigger, equals(RemoteRecordTrigger.volumeDown));
+      });
+
+      test('handles onRemoteRecordTrigger with null callback', () async {
+        // Ensure no callback is set
+        methodChannelImpl.onRemoteRecordTrigger = null;
+
+        final binaryMessenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+        const codec = StandardMethodCodec();
+        final encoded = codec.encodeMethodCall(
+          const MethodCall('onRemoteRecordTrigger', 'volumeUp'),
+        );
+
+        await binaryMessenger.handlePlatformMessage(
+          'divine_camera',
+          encoded,
+          (_) {},
+        );
+
+        // Callback should still be null (not modified by the call)
+        expect(methodChannelImpl.onRemoteRecordTrigger, isNull);
+      });
+
+      test('handles onRemoteRecordTrigger with null trigger type', () async {
+        var callbackInvoked = false;
+        methodChannelImpl.onRemoteRecordTrigger = (_) {
+          callbackInvoked = true;
+        };
+
+        final binaryMessenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+        const codec = StandardMethodCodec();
+        // Pass null as the trigger type argument
+        final encoded = codec.encodeMethodCall(
+          const MethodCall('onRemoteRecordTrigger'),
+        );
+
+        await binaryMessenger.handlePlatformMessage(
+          'divine_camera',
+          encoded,
+          (_) {},
+        );
+
+        // Callback should NOT be invoked when trigger type is null
+        expect(callbackInvoked, isFalse);
+      });
+
+      test('handles unknown method call gracefully', () async {
+        // Set callbacks to verify they are NOT invoked for unknown methods
+        var remoteRecordTriggerInvoked = false;
+        methodChannelImpl.onRemoteRecordTrigger = (_) {
+          remoteRecordTriggerInvoked = true;
+        };
+
+        final binaryMessenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+        const codec = StandardMethodCodec();
+        final encoded = codec.encodeMethodCall(
+          const MethodCall('unknownMethod'),
+        );
+
+        await binaryMessenger.handlePlatformMessage(
+          'divine_camera',
+          encoded,
+          (_) {},
+        );
+
+        // No callbacks should have been invoked
+        expect(remoteRecordTriggerInvoked, isFalse);
+      });
+    });
+  });
+}
