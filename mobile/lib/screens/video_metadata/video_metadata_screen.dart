@@ -188,7 +188,7 @@ class _FormData extends ConsumerWidget {
             child: Column(
               children: [
                 // Title input field
-                DivineTextField(
+                DivineAuthTextField(
                   controller: titleController,
                   // TODO(l10n): Replace with context.l10n when localization is
                   // added.
@@ -207,7 +207,7 @@ class _FormData extends ConsumerWidget {
                 const SizedBox(height: 12),
 
                 // Description input field
-                DivineTextField(
+                DivineAuthTextField(
                   controller: descriptionController,
                   // TODO(l10n): Replace with context.l10n when localization is
                   // added.

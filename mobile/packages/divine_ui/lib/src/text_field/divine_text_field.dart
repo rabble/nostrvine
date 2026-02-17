@@ -105,7 +105,6 @@ class DivineTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // ignore: deprecated_member_use_from_same_package
     final effectiveLabel = label ?? labelText;
     return DivineAuthTextField(
       label: effectiveLabel,
