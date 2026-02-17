@@ -16,9 +16,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
-import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/utils/search_utils.dart';
@@ -423,9 +421,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
     // Prefetch top video files for faster playback on tap
     prefetchGridVideos(uniqueVideos);
-
-    // Re-dispatch hashtag search so BLoC picks up new videos from external sources
-    _hashtagSearchBloc.add(HashtagSearchQueryChanged(querySnapshot));
   }
 
   @override
