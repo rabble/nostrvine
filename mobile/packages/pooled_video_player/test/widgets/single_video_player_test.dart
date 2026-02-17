@@ -495,6 +495,7 @@ void main() {
             .state<State<SingleVideoPlayer>>(
               find.byType(SingleVideoPlayer),
             )
+            // Triggered for testing purposes
             // ignore: invalid_use_of_protected_member
             .reassemble();
         await tester.pump();
@@ -522,6 +523,7 @@ void main() {
             .state<State<SingleVideoPlayer>>(
               find.byType(SingleVideoPlayer),
             )
+            // Triggered for testing purposes
             // ignore: invalid_use_of_protected_member
             .reassemble();
         await tester.pump();
@@ -542,6 +544,7 @@ void main() {
             .state<State<SingleVideoPlayer>>(
               find.byType(SingleVideoPlayer),
             )
+            // Triggered for testing purposes
             // ignore: invalid_use_of_protected_member
             .reassemble();
         await tester.pump();
