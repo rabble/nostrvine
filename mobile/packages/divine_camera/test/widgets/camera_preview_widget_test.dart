@@ -59,6 +59,9 @@ class MockDivineCameraPlatform
   Future<bool> setExposurePoint(Offset offset) async => true;
 
   @override
+  Future<bool> cancelFocusAndMetering() async => true;
+
+  @override
   Future<bool> setZoomLevel(double level) async => true;
 
   @override

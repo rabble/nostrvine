@@ -74,6 +74,11 @@ class MockDivineCameraPlatform
   }
 
   @override
+  Future<bool> cancelFocusAndMetering() async {
+    return true;
+  }
+
+  @override
   Future<bool> setZoomLevel(double level) async {
     return level >= 1.0 && level <= 10.0;
   }

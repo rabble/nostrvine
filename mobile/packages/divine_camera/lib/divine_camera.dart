@@ -148,6 +148,16 @@ class DivineCamera {
     return _platform.setExposurePoint(offset);
   }
 
+  /// Cancels any active focus/metering lock and returns to continuous
+  /// auto-focus mode.
+  ///
+  /// Call this to reset focus behavior after a tap-to-focus.
+  /// For example, when recording ends or camera switches.
+  /// Returns true if successful.
+  Future<bool> cancelFocusAndMetering() async {
+    return _platform.cancelFocusAndMetering();
+  }
+
   /// Sets the zoom level.
   ///
   /// [level] the zoom level to set.

@@ -68,6 +68,15 @@ abstract class DivineCameraPlatform extends PlatformInterface {
     throw UnimplementedError('setExposurePoint() has not been implemented.');
   }
 
+  /// Cancels any active focus/metering lock and returns to continuous
+  /// auto-focus mode.
+  /// Call this to reset focus behavior after a tap-to-focus.
+  Future<bool> cancelFocusAndMetering() {
+    throw UnimplementedError(
+      'cancelFocusAndMetering() has not been implemented.',
+    );
+  }
+
   /// Sets the zoom level.
   /// Returns true if successful.
   Future<bool> setZoomLevel(double level) {

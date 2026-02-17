@@ -69,6 +69,9 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             let y = args["y"] as? Double ?? 0.5
             setExposurePoint(x: x, y: y, result: result)
             
+        case "cancelFocusAndMetering":
+            cancelFocusAndMetering(result: result)
+            
         case "setZoomLevel":
             let args = call.arguments as? [String: Any] ?? [:]
             let level = args["level"] as? Double ?? 1.0
@@ -153,6 +156,15 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             return
         }
         let success = controller.setExposurePoint(x: CGFloat(x), y: CGFloat(y))
+        result(success)
+    }
+    
+    private func cancelFocusAndMetering(result: @escaping FlutterResult) {
+        guard let controller = cameraController else {
+            result(FlutterError(code: "NOT_INITIALIZED", message: "Camera not initialized", details: nil))
+            return
+        }
+        let success = controller.cancelFocusAndMetering()
         result(success)
     }
     

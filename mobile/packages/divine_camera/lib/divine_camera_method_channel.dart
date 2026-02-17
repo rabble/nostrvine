@@ -122,6 +122,14 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
   }
 
   @override
+  Future<bool> cancelFocusAndMetering() async {
+    final result = await methodChannel.invokeMethod<bool>(
+      'cancelFocusAndMetering',
+    );
+    return result ?? false;
+  }
+
+  @override
   Future<bool> setZoomLevel(double level) async {
     final result = await methodChannel.invokeMethod<bool>('setZoomLevel', {
       'level': level,

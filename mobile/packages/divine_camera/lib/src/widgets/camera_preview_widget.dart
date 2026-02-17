@@ -86,7 +86,29 @@ class _CameraPreviewWidgetState extends State<CameraPreviewWidget> {
 
     // Calculate normalized coordinates (0.0 - 1.0) based on actual preview size
     var normalizedX = (localPosition.dx / previewSize.width).clamp(0.0, 1.0);
-    final normalizedY = (localPosition.dy / previewSize.height).clamp(0.0, 1.0);
+    var normalizedY = (localPosition.dy / previewSize.height).clamp(0.0, 1.0);
+
+    // When using BoxFit.cover, the camera feed is cropped to fill the display.
+    // We need to transform display coordinates to camera sensor coordinates.
+    // coverage:ignore-start
+    if (widget.fit == BoxFit.cover) {
+      final displayAspectRatio = previewSize.width / previewSize.height;
+      final sensorAspectRatio = _camera.cameraAspectRatio;
+      final arRatio = displayAspectRatio / sensorAspectRatio;
+
+      if (arRatio > 1) {
+        // Display is wider than sensor - height is cropped from top/bottom
+        final visibleHeight = 1 / arRatio;
+        final cropY = (1 - visibleHeight) / 2;
+        normalizedY = normalizedY * visibleHeight + cropY;
+      } else if (arRatio < 1) {
+        // Display is taller than sensor - width is cropped from left/right
+        final visibleWidth = arRatio;
+        final cropX = (1 - visibleWidth) / 2;
+        normalizedX = normalizedX * visibleWidth + cropX;
+      }
+    }
+    // coverage:ignore-end
 
     // If preview is mirrored in Flutter, flip the X coordinate for the camera
     // The visual focus indicator stays where the user tapped,
