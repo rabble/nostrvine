@@ -48,6 +48,7 @@ class DivineAuthTextField extends StatefulWidget {
     this.onEditingComplete,
     this.maxLength,
     this.contentPadding,
+    this.errorText,
   });
 
   /// Label text shown inside the field, floats above when focused/filled.
@@ -115,6 +116,13 @@ class DivineAuthTextField extends StatefulWidget {
   /// Custom content padding for the text field.
   final EdgeInsetsGeometry? contentPadding;
 
+  /// Error message to display below the field.
+  ///
+  /// When non-null, the field shows an error state: red border, error overlay
+  /// background, error-colored floating label, and the error message with a
+  /// warning icon below the container.
+  final String? errorText;
+
   @override
   State<DivineAuthTextField> createState() => _DivineAuthTextFieldState();
 }
@@ -127,6 +135,7 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
 
   bool get _hasText => _controller.text.isNotEmpty;
   bool get _isFloating => _hasFocus || _hasText;
+  bool get _hasError => widget.errorText != null;
 
   @override
   void initState() {
@@ -195,58 +204,73 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
     final label = widget.effectiveLabel;
     final hasLabel = label != null && label.isNotEmpty;
 
-    return Container(
-      height: _totalHeight,
-      decoration: BoxDecoration(
-        color: VineTheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(24),
-      ),
-      child: Padding(
-        padding: EdgeInsets.only(
-          left: _horizontalPadding,
-          right: widget.obscureText ? 8 : _horizontalPadding,
-        ),
-        child: Row(
-          children: [
-            Expanded(
-              child: GestureDetector(
-                onTap: _handleContainerTap,
-                behavior: HitTestBehavior.opaque,
-                child: _AuthTextFieldContent(
-                  label: label,
-                  hasLabel: hasLabel,
-                  isFloating: _isFloating,
-                  child: _AuthTextFieldInput(
-                    controller: _controller,
-                    focusNode: _focusNode,
-                    obscureText: widget.obscureText && _isObscured,
-                    enabled: widget.enabled,
-                    readOnly: widget.readOnly,
-                    autocorrect: widget.autocorrect,
-                    keyboardType: widget.keyboardType,
-                    textInputAction: widget.textInputAction,
-                    textCapitalization: widget.textCapitalization,
-                    inputFormatters: widget.inputFormatters,
-                    validator: widget.validator,
-                    onTap: widget.onTap,
-                    onChanged: widget.onChanged,
-                    onSubmitted: widget.onSubmitted,
-                    onEditingComplete: widget.onEditingComplete,
-                    maxLength: widget.maxLength,
-                    contentPadding: widget.contentPadding,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          height: _totalHeight,
+          decoration: BoxDecoration(
+            color: _hasError
+                ? VineTheme.errorOverlay
+                : VineTheme.surfaceContainer,
+            borderRadius: BorderRadius.circular(24),
+            border: _hasError
+                ? Border.all(color: VineTheme.error, width: 2)
+                : null,
+          ),
+          child: Padding(
+            padding: EdgeInsets.only(
+              left: _horizontalPadding,
+              right: widget.obscureText ? 8 : _horizontalPadding,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: _handleContainerTap,
+                    behavior: HitTestBehavior.opaque,
+                    child: _AuthTextFieldContent(
+                      label: label,
+                      hasLabel: hasLabel,
+                      isFloating: _isFloating,
+                      hasError: _hasError,
+                      child: _AuthTextFieldInput(
+                        controller: _controller,
+                        focusNode: _focusNode,
+                        obscureText: widget.obscureText && _isObscured,
+                        enabled: widget.enabled,
+                        readOnly: widget.readOnly,
+                        autocorrect: widget.autocorrect,
+                        keyboardType: widget.keyboardType,
+                        textInputAction: widget.textInputAction,
+                        textCapitalization: widget.textCapitalization,
+                        inputFormatters: widget.inputFormatters,
+                        validator: widget.validator,
+                        onTap: widget.onTap,
+                        onChanged: widget.onChanged,
+                        onSubmitted: widget.onSubmitted,
+                        onEditingComplete: widget.onEditingComplete,
+                        maxLength: widget.maxLength,
+                        contentPadding: widget.contentPadding,
+                        hasError: _hasError,
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                if (widget.obscureText)
+                  _VisibilityToggle(
+                    isObscured: _isObscured,
+                    hasText: _hasText,
+                    onToggle: _toggleObscured,
+                  ),
+              ],
             ),
-            if (widget.obscureText)
-              _VisibilityToggle(
-                isObscured: _isObscured,
-                hasText: _hasText,
-                onToggle: _toggleObscured,
-              ),
-          ],
+          ),
         ),
-      ),
+        if (_hasError)
+          _ErrorSupportingText(errorText: widget.errorText!),
+      ],
     );
   }
 }
@@ -257,12 +281,14 @@ class _AuthTextFieldContent extends StatelessWidget {
     required this.label,
     required this.hasLabel,
     required this.isFloating,
+    required this.hasError,
     required this.child,
   });
 
   final String? label;
   final bool hasLabel;
   final bool isFloating;
+  final bool hasError;
   final Widget child;
 
   static const double _verticalPadding = 16;
@@ -306,7 +332,9 @@ class _AuthTextFieldContent extends StatelessWidget {
               curve: Curves.easeOut,
               style: isFloating
                   ? VineTheme.labelSmallFont(
-                      color: VineTheme.primary,
+                      color: hasError
+                          ? VineTheme.error
+                          : VineTheme.primary,
                     )
                   : VineTheme.bodyLargeFont(
                       color: VineTheme.onSurfaceMuted,
@@ -338,6 +366,7 @@ class _AuthTextFieldInput extends StatelessWidget {
     required this.readOnly,
     required this.autocorrect,
     required this.textCapitalization,
+    required this.hasError,
     this.keyboardType,
     this.textInputAction,
     this.inputFormatters,
@@ -356,6 +385,7 @@ class _AuthTextFieldInput extends StatelessWidget {
   final bool enabled;
   final bool readOnly;
   final bool autocorrect;
+  final bool hasError;
   final TextInputType? keyboardType;
   final TextInputAction? textInputAction;
   final TextCapitalization textCapitalization;
@@ -390,7 +420,7 @@ class _AuthTextFieldInput extends StatelessWidget {
       maxLines: 1,
       maxLength: maxLength,
       style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
-      cursorColor: VineTheme.primary,
+      cursorColor: hasError ? VineTheme.error : VineTheme.primary,
       decoration: InputDecoration(
         isDense: true,
         contentPadding: contentPadding ?? EdgeInsets.zero,
@@ -402,6 +432,60 @@ class _AuthTextFieldInput extends StatelessWidget {
         disabledBorder: InputBorder.none,
         filled: false,
         errorStyle: VineTheme.bodySmallFont(color: VineTheme.error),
+      ),
+    );
+  }
+}
+
+/// The error message row shown below the field container.
+///
+/// Displays a [DivineIconName.warningCircle] icon and the error text,
+/// both in [VineTheme.error] color per the Figma spec.
+class _ErrorSupportingText extends StatelessWidget {
+  const _ErrorSupportingText({required this.errorText});
+
+  final String errorText;
+
+  static const double _horizontalPadding = 24;
+  static const double _iconSize = 16;
+  static const double _iconTextGap = 4;
+  static const double _verticalPadding = 2;
+  static const double _topGap = 4;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(
+        left: _horizontalPadding,
+        right: _horizontalPadding,
+        top: _topGap,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(top: _verticalPadding),
+            child: DivineIcon(
+              icon: DivineIconName.warningCircle,
+              size: _iconSize,
+              color: VineTheme.error,
+            ),
+          ),
+          const SizedBox(width: _iconTextGap),
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                vertical: _verticalPadding,
+              ),
+              child: Text(
+                errorText,
+                style: VineTheme.bodySmallFont(
+                  color: VineTheme.error,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

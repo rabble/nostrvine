@@ -291,6 +291,9 @@ class VineTheme {
   /// On-error-container color for text/icons on error container backgrounds.
   static const Color onErrorContainer = Color(0xFFFFEDEA);
 
+  /// Error overlay for pressed/error state backgrounds (15% error).
+  static const Color errorOverlay = Color(0x26F44336);
+
   /// Light alpha overlay (25% white).
   static const Color alphaLight25 = Color(0x40FFFFFF);
 

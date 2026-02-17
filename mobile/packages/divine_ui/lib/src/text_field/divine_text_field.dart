@@ -33,6 +33,7 @@ class DivineTextField extends StatelessWidget {
     this.maxLines,
     this.maxLength,
     this.contentPadding,
+    this.errorText,
   });
 
   /// Label text shown inside the field, floats above when focused/filled.
@@ -99,6 +100,9 @@ class DivineTextField extends StatelessWidget {
   /// Custom content padding for the text field.
   final EdgeInsetsGeometry? contentPadding;
 
+  /// Error message to display below the field.
+  final String? errorText;
+
   @override
   Widget build(BuildContext context) {
     // ignore: deprecated_member_use_from_same_package
@@ -122,6 +126,7 @@ class DivineTextField extends StatelessWidget {
       onEditingComplete: onEditingComplete,
       maxLength: maxLength,
       contentPadding: contentPadding,
+      errorText: errorText,
     );
   }
 }

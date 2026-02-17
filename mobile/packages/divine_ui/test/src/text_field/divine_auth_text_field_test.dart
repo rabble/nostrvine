@@ -16,6 +16,7 @@ void main() {
       ValueChanged<String>? onChanged,
       ValueChanged<String>? onSubmitted,
       VoidCallback? onTap,
+      String? errorText,
     }) {
       return MaterialApp(
         theme: VineTheme.theme,
@@ -32,6 +33,7 @@ void main() {
             onChanged: onChanged,
             onSubmitted: onSubmitted,
             onTap: onTap,
+            errorText: errorText,
           ),
         ),
       );
@@ -425,6 +427,144 @@ void main() {
           expect(
             find.bySemanticsLabel('Hide password'),
             findsOneWidget,
+          );
+        },
+      );
+    });
+
+    group('error state', () {
+      testWidgets(
+        'renders error border when errorText is provided',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              errorText: 'Invalid code. Please try again.',
+            ),
+          );
+
+          final container = tester.widget<Container>(
+            find.ancestor(
+              of: find.byType(TextField),
+              matching: find.byType(Container),
+            ),
+          );
+          final decoration =
+              container.decoration! as BoxDecoration;
+          expect(decoration.border, isNotNull);
+          final border = decoration.border! as Border;
+          expect(border.top.color, equals(VineTheme.error));
+          expect(border.top.width, equals(2));
+        },
+      );
+
+      testWidgets(
+        'renders error overlay background when errorText is '
+        'provided',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              errorText: 'Invalid code. Please try again.',
+            ),
+          );
+
+          final container = tester.widget<Container>(
+            find.ancestor(
+              of: find.byType(TextField),
+              matching: find.byType(Container),
+            ),
+          );
+          final decoration =
+              container.decoration! as BoxDecoration;
+          expect(
+            decoration.color,
+            equals(VineTheme.errorOverlay),
+          );
+        },
+      );
+
+      testWidgets(
+        'renders error supporting text with warning icon',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              errorText: 'Invalid code. Please try again.',
+            ),
+          );
+
+          expect(
+            find.text('Invalid code. Please try again.'),
+            findsOneWidget,
+          );
+          expect(find.byType(DivineIcon), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'does not render error elements when errorText is null',
+        (tester) async {
+          await tester.pumpWidget(buildTestWidget());
+
+          final container = tester.widget<Container>(
+            find.ancestor(
+              of: find.byType(TextField),
+              matching: find.byType(Container),
+            ),
+          );
+          final decoration =
+              container.decoration! as BoxDecoration;
+          expect(decoration.border, isNull);
+          expect(
+            decoration.color,
+            equals(VineTheme.surfaceContainer),
+          );
+        },
+      );
+
+      testWidgets(
+        'renders floating label in error color when errorText '
+        'is provided',
+        (tester) async {
+          final controller = TextEditingController(text: 'abc');
+          await tester.pumpWidget(
+            buildTestWidget(
+              controller: controller,
+              errorText: 'Invalid code. Please try again.',
+            ),
+          );
+          await tester.pump();
+
+          final labelText = tester.widget<AnimatedDefaultTextStyle>(
+            find.ancestor(
+              of: find.text('Test Label'),
+              matching:
+                  find.byType(AnimatedDefaultTextStyle),
+            ).first,
+          );
+          expect(
+            labelText.style.color,
+            equals(VineTheme.error),
+          );
+
+          controller.dispose();
+        },
+      );
+
+      testWidgets(
+        'renders cursor in error color when errorText '
+        'is provided',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              errorText: 'Invalid code. Please try again.',
+            ),
+          );
+
+          final textField = tester.widget<TextField>(
+            find.byType(TextField),
+          );
+          expect(
+            textField.cursorColor,
+            equals(VineTheme.error),
           );
         },
       );
