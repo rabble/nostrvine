@@ -251,6 +251,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       category: LogCategory.video,
     );
     _videoPlayer?.pause();
+    // IMPORTANT: Don't start video rendering here. We must await
+    // `_handleEditorComplete` which generate the layer image before we start
+    // rendering! However, we can navigate to the metadata screen immediately
+    // since it shows a progress spinner anyway (~200ms task).
     ref.read(videoEditorProvider.notifier).setProcessing(true);
     await context.push(VideoMetadataScreen.path);
     if (mounted) _videoPlayer?.play();

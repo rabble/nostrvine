@@ -2,6 +2,7 @@
 // ABOUTME: Tracks editing state with export stages and computed properties for UI state
 
 import 'package:flutter/widgets.dart';
+import 'package:models/models.dart' show InspiredByInfo;
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
@@ -37,6 +38,11 @@ class VideoEditorProviderState {
     this.finalRenderedClip,
     this.editorStateHistory = const {},
     this.editorEditingParameters,
+    this.collaboratorPubkeys = const [],
+    this.inspiredByVideo,
+    this.inspiredByNpub,
+    this.selectedAudioEventId,
+    this.selectedAudioRelay,
     GlobalKey? deleteButtonKey,
   }) : deleteButtonKey = deleteButtonKey ?? GlobalKey();
 
@@ -110,6 +116,21 @@ class VideoEditorProviderState {
   /// Serialized editing parameters (filters, drawings, etc.) from ProImageEditor.
   final CompleteParameters? editorEditingParameters;
 
+  /// Pubkeys of collaborators to tag in the published video.
+  final List<String> collaboratorPubkeys;
+
+  /// Reference to a specific video that inspired this one (a-tag).
+  final InspiredByInfo? inspiredByVideo;
+
+  /// NIP-27 npub reference for general "Inspired By" a creator.
+  final String? inspiredByNpub;
+
+  /// Event ID of a selected existing audio event (Kind 1063) to reference.
+  final String? selectedAudioEventId;
+
+  /// Relay hint for the selected audio event.
+  final String? selectedAudioRelay;
+
   /// Whether the video is valid and ready to be posted.
   ///
   /// Returns true if:
@@ -122,6 +143,13 @@ class VideoEditorProviderState {
   ///
   /// All parameters are optional. Only provided fields will be updated,
   /// others retain their current values.
+  ///
+  /// Use [clearFinalRenderedClip] = true to explicitly set
+  /// [finalRenderedClip] to null.
+  /// Use [clearInspiredByVideo] = true to explicitly set
+  /// [inspiredByVideo] to null.
+  /// Use [clearInspiredByNpub] = true to explicitly set
+  /// [inspiredByNpub] to null.
   VideoEditorProviderState copyWith({
     int? currentClipIndex,
     Duration? currentPosition,
@@ -143,8 +171,16 @@ class VideoEditorProviderState {
     VideoMetadataExpiration? expiration,
     bool? metadataLimitReached,
     RecordingClip? finalRenderedClip,
+    bool clearFinalRenderedClip = false,
     Map<String, dynamic>? editorStateHistory,
     CompleteParameters? editorEditingParameters,
+    List<String>? collaboratorPubkeys,
+    InspiredByInfo? inspiredByVideo,
+    bool clearInspiredByVideo = false,
+    String? inspiredByNpub,
+    bool clearInspiredByNpub = false,
+    Object? selectedAudioEventId = _sentinel,
+    Object? selectedAudioRelay = _sentinel,
   }) {
     return VideoEditorProviderState(
       currentClipIndex: currentClipIndex ?? this.currentClipIndex,
@@ -166,10 +202,27 @@ class VideoEditorProviderState {
       tags: tags ?? this.tags,
       expiration: expiration ?? this.expiration,
       metadataLimitReached: metadataLimitReached ?? this.metadataLimitReached,
-      finalRenderedClip: finalRenderedClip ?? this.finalRenderedClip,
+      finalRenderedClip: clearFinalRenderedClip
+          ? null
+          : (finalRenderedClip ?? this.finalRenderedClip),
       editorStateHistory: editorStateHistory ?? this.editorStateHistory,
       editorEditingParameters:
           editorEditingParameters ?? this.editorEditingParameters,
+      collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
+      inspiredByVideo: clearInspiredByVideo
+          ? null
+          : (inspiredByVideo ?? this.inspiredByVideo),
+      inspiredByNpub: clearInspiredByNpub
+          ? null
+          : (inspiredByNpub ?? this.inspiredByNpub),
+      selectedAudioEventId: selectedAudioEventId == _sentinel
+          ? this.selectedAudioEventId
+          : selectedAudioEventId as String?,
+      selectedAudioRelay: selectedAudioRelay == _sentinel
+          ? this.selectedAudioRelay
+          : selectedAudioRelay as String?,
     );
   }
+
+  static const _sentinel = Object();
 }

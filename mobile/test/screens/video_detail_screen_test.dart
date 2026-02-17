@@ -38,6 +38,9 @@ void main() {
       mockNostrClient = _MockNostrClient();
       mockBlocklistService = _MockContentBlocklistService();
 
+      // Stub configuredRelays (needed by analyticsApiService provider)
+      when(() => mockNostrClient.configuredRelays).thenReturn(<String>[]);
+
       // Default: no authors blocked
       when(
         () => mockBlocklistService.shouldFilterFromFeeds(any()),

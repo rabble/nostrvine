@@ -135,6 +135,11 @@ dependencies {
 
     // AndroidX AppCompat required by Zendesk SDK
     implementation("androidx.appcompat:appcompat:1.6.1")
+
+    // BouncyCastle for CSR generation
+    implementation("org.bouncycastle:bcprov-jdk18on:1.81")
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.81")
+
 }
 
 // Note: android-libproofmode 1.0.25+ fixed duplicate class issues with java-opentimestamps

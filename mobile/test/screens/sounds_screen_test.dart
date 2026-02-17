@@ -636,6 +636,10 @@ void main() {
           createTestAudioEvent(id: 'sound1', title: 'Cool Beat'),
         ];
 
+        // Use completer to keep play() running so finally block doesn't reset state
+        final playCompleter = Completer<void>();
+        when(mockAudioService.play()).thenAnswer((_) => playCompleter.future);
+
         await tester.pumpWidget(
           createTestWidget(
             child: const SoundsScreen(),
@@ -653,14 +657,18 @@ void main() {
         // First tap to start playing
         final playButtons = find.byIcon(Icons.play_arrow);
         await tester.tap(playButtons.first);
-        await tester.pumpAndSettle();
+        // Pump to update UI while play() is still "running"
+        await tester.pump();
 
-        // Now there should be a stop icon
+        // Now there should be a stop icon (play is in progress)
         final stopButtons = find.byIcon(Icons.stop);
         expect(stopButtons, findsWidgets);
 
         // Second tap to stop
         await tester.tap(stopButtons.first);
+
+        // Complete play() to avoid hanging
+        playCompleter.complete();
         await tester.pumpAndSettle();
 
         // Verify stop was called
@@ -825,10 +833,12 @@ void main() {
           createTestAudioEvent(id: 'sound1', title: 'Cool Beat'),
         ];
 
+        // Use completer to keep play() running so finally block doesn't reset state
+        final playCompleter = Completer<void>();
         when(
           mockAudioService.loadAudio(any),
         ).thenAnswer((_) async => const Duration(seconds: 6));
-        when(mockAudioService.play()).thenAnswer((_) async {});
+        when(mockAudioService.play()).thenAnswer((_) => playCompleter.future);
         when(mockAudioService.isPlaying).thenReturn(true);
 
         final mockGoRouter = MockGoRouter();
@@ -861,18 +871,21 @@ void main() {
 
         await tester.pumpAndSettle();
 
-        // First start a preview
+        // First start a preview - play() stays pending
         final playButtons = find.byIcon(Icons.play_arrow);
         await tester.tap(playButtons.first);
-        await tester.pumpAndSettle();
+        await tester.pump();
 
-        // Clear previous interactions
+        // Clear previous interactions but keep mock setup
         clearInteractions(mockAudioService);
         when(mockAudioService.stop()).thenAnswer((_) async {});
 
         // Now tap chevron to navigate
         final chevronButtons = find.byIcon(Icons.chevron_right);
         await tester.tap(chevronButtons.first);
+
+        // Complete play() to avoid hanging
+        playCompleter.complete();
         await tester.pumpAndSettle();
 
         // Verify stop was called when navigating away

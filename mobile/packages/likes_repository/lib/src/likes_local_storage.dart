@@ -53,8 +53,8 @@ abstract class LikesLocalStorage {
 
   /// Watches all liked event IDs (reactive stream).
   ///
-  /// Emits a new set whenever likes change.
-  Stream<Set<String>> watchLikedEventIds();
+  /// Emits an ordered list (most recent first) whenever likes change.
+  Stream<List<String>> watchLikedEventIds();
 
   /// Clears all like records.
   ///

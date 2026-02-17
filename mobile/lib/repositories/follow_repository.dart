@@ -25,6 +25,10 @@ typedef IsOnlineCallback = bool Function();
 typedef QueueOfflineFollowCallback =
     Future<void> Function({required bool isFollow, required String pubkey});
 
+/// Callback to fetch following list from REST API (funnelcake)
+typedef FetchFollowingFromApiCallback =
+    Future<List<String>> Function(String pubkey);
+
 /// Repository for managing follow relationships.
 /// Single source of truth for follow data.
 ///
@@ -40,10 +44,12 @@ class FollowRepository {
     PersonalEventCacheService? personalEventCache,
     IsOnlineCallback? isOnline,
     QueueOfflineFollowCallback? queueOfflineAction,
+    FetchFollowingFromApiCallback? fetchFollowingFromApi,
   }) : _nostrClient = nostrClient,
        _personalEventCache = personalEventCache,
        _isOnline = isOnline,
-       _queueOfflineAction = queueOfflineAction;
+       _queueOfflineAction = queueOfflineAction,
+       _fetchFollowingFromApi = fetchFollowingFromApi;
 
   final NostrClient _nostrClient;
   final PersonalEventCacheService? _personalEventCache;
@@ -53,6 +59,9 @@ class FollowRepository {
 
   /// Callback to queue actions for offline sync
   final QueueOfflineFollowCallback? _queueOfflineAction;
+
+  /// Callback to fetch following list from REST API (fast, non-blocking)
+  final FetchFollowingFromApiCallback? _fetchFollowingFromApi;
 
   // BehaviorSubject replays last value to late subscribers, fixing race condition
   // where BLoC subscribes AFTER initial emission
@@ -181,6 +190,73 @@ class FollowRepository {
     }
   }
 
+  /// Check if the current user and another user mutually follow each other.
+  ///
+  /// Returns true only if:
+  /// 1. The current user is following [pubkey] (local cache check, instant)
+  /// 2. [pubkey] is following the current user (relay query for their Kind 3)
+  ///
+  /// Returns false if either direction is not a follow, or on timeout/error.
+  Future<bool> isMutualFollow(String pubkey) async {
+    // Step 1: Check if we follow them (instant, from local cache)
+    if (!isFollowing(pubkey)) return false;
+
+    // Step 2: Check if they follow us (requires relay query)
+    try {
+      final theirFollowers = await _fetchFollowers(_nostrClient.publicKey);
+      return theirFollowers.contains(pubkey) ||
+          // They follow us means their contact list mentions our pubkey.
+          // _fetchFollowers returns authors of events mentioning us in p-tags,
+          // so we check if the target pubkey is among those authors.
+          await _checkIfTheyFollowUs(pubkey);
+    } catch (e) {
+      Log.warning(
+        'Failed to check mutual follow for $pubkey: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+  }
+
+  /// Check if [pubkey] follows the current user by querying their Kind 3 event.
+  Future<bool> _checkIfTheyFollowUs(String pubkey) async {
+    if (pubkey.isEmpty || _nostrClient.publicKey.isEmpty) return false;
+
+    try {
+      final events = await _nostrClient
+          .queryEvents([
+            Filter(
+              authors: [pubkey],
+              kinds: const [3], // Their contact list
+              limit: 1,
+            ),
+          ])
+          .timeout(_fetchFollowersTimeout, onTimeout: () => <Event>[]);
+
+      if (events.isEmpty) return false;
+
+      // Check if our pubkey is in their contact list p-tags
+      final contactList = events.first;
+      for (final tag in contactList.tags) {
+        if (tag.isNotEmpty &&
+            tag[0] == 'p' &&
+            tag.length > 1 &&
+            tag[1] == _nostrClient.publicKey) {
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      Log.warning(
+        'Failed to check if $pubkey follows us: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return false;
+    }
+  }
+
   /// Toggle follow status for a user.
   Future<void> toggleFollow(String pubkey) async {
     if (isFollowing(pubkey)) {
@@ -207,7 +283,12 @@ class FollowRepository {
       // 2. Load from PersonalEventCache if available
       await _loadFromPersonalEventCache();
 
-      // 3. Subscribe to contact list for initial fetch and cross-device sync
+      // 3. If still empty, try REST API (funnelcake) for fast bootstrap
+      if (_followingPubkeys.isEmpty && _fetchFollowingFromApi != null) {
+        await _loadFromRestApi();
+      }
+
+      // 4. Subscribe to contact list for real-time sync and cross-device updates
       if (_nostrClient.hasKeys) {
         _subscribeToContactList();
       }
@@ -546,6 +627,52 @@ class FollowRepository {
     } catch (e) {
       Log.error(
         'Failed to load from PersonalEventCache: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Load following list from REST API (funnelcake) for fast bootstrap.
+  ///
+  /// Called only when local cache and PersonalEventCache are both empty
+  /// (e.g., first login or after identity change cleanup). This provides
+  /// the following list before the WebSocket subscription can deliver it.
+  Future<void> _loadFromRestApi() async {
+    try {
+      final currentUserPubkey = _nostrClient.publicKey;
+      if (currentUserPubkey.isEmpty) return;
+
+      Log.info(
+        'Loading following list from REST API (cache was empty)',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+
+      final pubkeys = await _fetchFollowingFromApi!(currentUserPubkey);
+
+      if (pubkeys.isNotEmpty) {
+        _followingPubkeys = pubkeys;
+        _emitFollowingList();
+
+        // Persist to SharedPreferences so redirect logic can use it
+        await _saveToLocalStorage();
+
+        Log.info(
+          'Loaded following from REST API: ${pubkeys.length} users',
+          name: 'FollowRepository',
+          category: LogCategory.system,
+        );
+      } else {
+        Log.debug(
+          'REST API returned empty following list',
+          name: 'FollowRepository',
+          category: LogCategory.system,
+        );
+      }
+    } catch (e) {
+      Log.warning(
+        'Failed to load following from REST API (will rely on relay): $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );

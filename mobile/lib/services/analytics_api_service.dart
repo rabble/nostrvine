@@ -31,6 +31,7 @@ class VideoStats {
   final int engagementScore;
   final double? trendingScore;
   final int? loops; // Original loop count for classic Vines
+  final int? views; // Live/new views from Funnelcake analytics
 
   VideoStats({
     required this.id,
@@ -53,6 +54,7 @@ class VideoStats {
     required this.engagementScore,
     this.trendingScore,
     this.loops,
+    this.views,
   });
 
   factory VideoStats.fromJson(Map<String, dynamic> json) {
@@ -68,6 +70,8 @@ class VideoStats {
     } else {
       id = rawId?.toString() ?? '';
     }
+    // Normalize to lowercase per NIP-01 (Funnelcake may return uppercase hex)
+    id = id.toLowerCase();
 
     // Parse pubkey - same format as id
     String pubkey;
@@ -77,6 +81,8 @@ class VideoStats {
     } else {
       pubkey = rawPubkey?.toString() ?? '';
     }
+    // Normalize to lowercase per NIP-01 (Funnelcake may return uppercase hex)
+    pubkey = pubkey.toLowerCase();
 
     // Parse created_at - funnelcake returns Unix timestamp (int), not ISO string
     DateTime createdAt;
@@ -92,14 +98,14 @@ class VideoStats {
     // Parse loops from multiple possible sources:
     // 1. Direct field in stats or root
     // 2. From event tags array (["loops", "12345"])
-    int? loops;
-    final directLoops =
-        statsData['loops'] ?? json['loops'] ?? json['original_loops'];
-    if (directLoops is int) {
-      loops = directLoops;
-    } else if (directLoops is String) {
-      loops = int.tryParse(directLoops);
-    }
+    int? loops = findIntDeep(json, {
+      'loops',
+      'loop_count',
+      'original_loops',
+      'total_loops',
+      'embedded_loops',
+      'computed_loops',
+    });
 
     // Also check event tags for loops if not found directly
     if (loops == null && eventData['tags'] is List) {
@@ -107,6 +113,26 @@ class VideoStats {
       for (final tag in tags) {
         if (tag is List && tag.length >= 2 && tag[0] == 'loops') {
           loops = int.tryParse(tag[1].toString());
+          break;
+        }
+      }
+    }
+
+    // Parse view counts (new/live loop activity in Funnelcake).
+    int? views = findIntDeep(json, {
+      'views',
+      'view_count',
+      'total_views',
+      'unique_views',
+      'unique_viewers',
+    });
+
+    // Also check event tags for views if not found directly.
+    if (views == null && eventData['tags'] is List) {
+      final tags = eventData['tags'] as List;
+      for (final tag in tags) {
+        if (tag is List && tag.length >= 2 && tag[0] == 'views') {
+          views = int.tryParse(tag[1].toString());
           break;
         }
       }
@@ -229,6 +255,7 @@ class VideoStats {
       trendingScore: (statsData['trending_score'] ?? json['trending_score'])
           ?.toDouble(),
       loops: loops,
+      views: views,
     );
   }
 
@@ -236,6 +263,7 @@ class VideoStats {
   VideoEvent toVideoEvent() {
     final effectiveTimestamp =
         publishedAt ?? createdAt.millisecondsSinceEpoch ~/ 1000;
+    final normalizedDTag = dTag.isNotEmpty ? dTag : id;
     return VideoEvent(
       id: id,
       pubkey: pubkey,
@@ -245,12 +273,17 @@ class VideoStats {
       title: title.isNotEmpty ? title : null,
       videoUrl: videoUrl.isNotEmpty ? videoUrl : null,
       thumbnailUrl: thumbnail.isNotEmpty ? thumbnail : null,
-      vineId: dTag.isNotEmpty ? dTag : null,
+      vineId: normalizedDTag,
       publishedAt: publishedAt?.toString(),
       sha256: sha256,
       authorName: authorName,
       authorAvatar: authorAvatar,
       blurhash: blurhash,
+      rawTags: {
+        if (normalizedDTag.isNotEmpty) 'd': normalizedDTag,
+        if (loops != null) 'loops': loops.toString(),
+        if (views != null) 'views': views.toString(),
+      },
       originalLikes: reactions,
       originalComments: comments,
       originalReposts: reposts,
@@ -379,7 +412,15 @@ class PaginatedPubkeys {
   });
 
   factory PaginatedPubkeys.fromJson(Map<String, dynamic> json) {
-    final pubkeysData = json['pubkeys'] as List<dynamic>? ?? [];
+    // The funnelcake API uses context-specific keys:
+    // - /following returns {"following": [...]}
+    // - /followers returns {"followers": [...]}
+    // - Fall back to "pubkeys" for generic responses
+    final pubkeysData =
+        json['following'] as List<dynamic>? ??
+        json['followers'] as List<dynamic>? ??
+        json['pubkeys'] as List<dynamic>? ??
+        [];
     return PaginatedPubkeys(
       pubkeys: pubkeysData.map((e) => e.toString()).toList(),
       total: json['total'] as int? ?? pubkeysData.length,
@@ -397,6 +438,7 @@ class BulkVideoStatsEntry {
   final int comments;
   final int reposts;
   final int? loops;
+  final int? views;
 
   const BulkVideoStatsEntry({
     required this.eventId,
@@ -404,17 +446,86 @@ class BulkVideoStatsEntry {
     required this.comments,
     required this.reposts,
     this.loops,
+    this.views,
   });
 
   factory BulkVideoStatsEntry.fromJson(Map<String, dynamic> json) {
+    int? parseInt(dynamic value) {
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      if (value is String) {
+        final normalized = value.replaceAll(',', '').trim();
+        final asInt = int.tryParse(normalized);
+        if (asInt != null) return asInt;
+        final asDouble = double.tryParse(normalized);
+        if (asDouble != null) return asDouble.toInt();
+      }
+      return null;
+    }
+
+    int? findIntDeep(dynamic source, Set<String> targetKeys) {
+      if (source is Map) {
+        // Check current level first.
+        for (final entry in source.entries) {
+          final key = entry.key.toString().toLowerCase();
+          if (targetKeys.contains(key)) {
+            final parsed = parseInt(entry.value);
+            if (parsed != null) return parsed;
+          }
+        }
+
+        // Recurse into nested structures.
+        for (final value in source.values) {
+          final parsed = findIntDeep(value, targetKeys);
+          if (parsed != null) return parsed;
+        }
+      } else if (source is List) {
+        for (final value in source) {
+          final parsed = findIntDeep(value, targetKeys);
+          if (parsed != null) return parsed;
+        }
+      }
+      return null;
+    }
+
     return BulkVideoStatsEntry(
-      eventId: json['event_id']?.toString() ?? '',
-      reactions: json['reactions'] as int? ?? 0,
-      comments: json['comments'] as int? ?? 0,
-      reposts: json['reposts'] as int? ?? 0,
-      loops: json['loops'] as int?,
+      eventId: (json['event_id'] ?? json['id'] ?? '').toString(),
+      reactions:
+          findIntDeep(json, {
+            'reactions',
+            'likes',
+            'like_count',
+            'total_likes',
+          }) ??
+          0,
+      comments:
+          findIntDeep(json, {'comments', 'comment_count', 'total_comments'}) ??
+          0,
+      reposts:
+          findIntDeep(json, {'reposts', 'repost_count', 'total_reposts'}) ?? 0,
+      loops: findIntDeep(json, {
+        'loops',
+        'loop_count',
+        'total_loops',
+        'embedded_loops',
+        'computed_loops',
+      }),
+      views: findIntDeep(json, {
+        'views',
+        'view_count',
+        'total_views',
+        'unique_views',
+        'unique_viewers',
+      }),
     );
   }
+}
+
+class _CachedViewCount {
+  final int views;
+  final DateTime fetchedAt;
+
+  const _CachedViewCount({required this.views, required this.fetchedAt});
 }
 
 /// Service for Funnelcake REST API interactions
@@ -423,6 +534,7 @@ class BulkVideoStatsEntry {
 /// backed by ClickHouse for efficient video discovery queries.
 class AnalyticsApiService {
   static const Duration cacheTimeout = Duration(minutes: 5);
+  static const Duration _viewCountCacheTimeout = Duration(seconds: 30);
 
   final String? _baseUrl;
   final http.Client _httpClient;
@@ -438,6 +550,7 @@ class AnalyticsApiService {
   // Cache for hashtag search results
   final Map<String, List<VideoStats>> _hashtagSearchCache = {};
   final Map<String, DateTime> _hashtagSearchCacheTime = {};
+  final Map<String, _CachedViewCount> _videoViewsCache = {};
 
   AnalyticsApiService({required String? baseUrl, http.Client? httpClient})
     : _baseUrl = baseUrl,
@@ -724,7 +837,7 @@ class AnalyticsApiService {
 
   /// Search videos by hashtag
   ///
-  /// Uses funnelcake's /api/search?tag= endpoint for hashtag discovery.
+  /// Uses funnelcake's /api/videos?tag= endpoint for hashtag discovery.
   ///
   /// [before] - Unix timestamp cursor for pagination
   Future<List<VideoEvent>> getVideosByHashtag({
@@ -758,7 +871,7 @@ class AnalyticsApiService {
 
     try {
       var url =
-          '$_baseUrl/api/search?tag=$normalizedTag&sort=trending&limit=$limit';
+          '$_baseUrl/api/videos?tag=$normalizedTag&sort=trending&limit=$limit';
       if (before != null) {
         url += '&before=$before';
       }
@@ -813,6 +926,93 @@ class AnalyticsApiService {
     } catch (e) {
       Log.error(
         'Error searching by hashtag: $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+      return [];
+    }
+  }
+
+  /// Fetch classic/all-time-popular videos for a hashtag
+  ///
+  /// Uses /api/videos?tag={hashtag}&sort=loops to surface classic vines
+  /// and high-engagement content sorted by all-time loop count.
+  ///
+  /// Separate from [getVideosByHashtag] so both can run in parallel.
+  Future<List<VideoEvent>> getClassicVideosByHashtag({
+    required String hashtag,
+    int limit = 50,
+  }) async {
+    if (!isAvailable) return [];
+
+    final normalizedTag = hashtag.replaceFirst('#', '').toLowerCase();
+
+    // Check cache
+    final cacheKey = 'classics_$normalizedTag';
+    final cachedTime = _hashtagSearchCacheTime[cacheKey];
+    if (cachedTime != null &&
+        DateTime.now().difference(cachedTime) < cacheTimeout &&
+        _hashtagSearchCache.containsKey(cacheKey)) {
+      Log.debug(
+        'Using cached classic hashtag videos for #$normalizedTag',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+      return _hashtagSearchCache[cacheKey]!
+          .map((v) => v.toVideoEvent())
+          .toList();
+    }
+
+    try {
+      final url =
+          '$_baseUrl/api/videos?tag=$normalizedTag&sort=loops&limit=$limit';
+      Log.info(
+        'Fetching classic videos by hashtag from Funnelcake: $url',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+
+        final videos = data
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+            .toList();
+
+        // Cache results
+        _hashtagSearchCache[cacheKey] = videos;
+        _hashtagSearchCacheTime[cacheKey] = DateTime.now();
+
+        Log.info(
+          'Found ${videos.length} classic videos for #$normalizedTag',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+
+        return videos.map((v) => v.toVideoEvent()).toList();
+      } else {
+        Log.error(
+          'Classic hashtag search failed: ${response.statusCode}\n'
+          'URL: $url',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+        return [];
+      }
+    } catch (e) {
+      Log.error(
+        'Error fetching classic videos by hashtag: $e',
         name: 'AnalyticsApiService',
         category: LogCategory.video,
       );
@@ -986,6 +1186,147 @@ class AnalyticsApiService {
     }
   }
 
+  /// Get view analytics for a specific video via GET /api/videos/{id}/views
+  ///
+  /// Returns:
+  /// - `int` view count when available (including `0` if explicitly returned)
+  /// - `null` when endpoint/data is unavailable
+  Future<int?> getVideoViews(String eventId) async {
+    if (!isAvailable || eventId.isEmpty) return null;
+    final normalizedId = eventId.toLowerCase();
+    final now = DateTime.now();
+    final cached = _videoViewsCache[normalizedId];
+    if (cached != null &&
+        now.difference(cached.fetchedAt) < _viewCountCacheTimeout) {
+      return cached.views;
+    }
+
+    int? parseInt(dynamic value) {
+      if (value is int) return value;
+      if (value is num) return value.toInt();
+      if (value is String) {
+        final normalized = value.replaceAll(',', '').trim();
+        final asInt = int.tryParse(normalized);
+        if (asInt != null) return asInt;
+        final asDouble = double.tryParse(normalized);
+        if (asDouble != null) return asDouble.toInt();
+      }
+      return null;
+    }
+
+    try {
+      final url = '$_baseUrl/api/videos/$eventId/views';
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        int resolvedViews = 0;
+        if (data is Map<String, dynamic>) {
+          resolvedViews =
+              parseInt(data['views']) ??
+              parseInt(data['view_count']) ??
+              parseInt(data['total_views']) ??
+              parseInt(data['unique_views']) ??
+              parseInt(data['unique_viewers']) ??
+              0;
+        }
+        _videoViewsCache[normalizedId] = _CachedViewCount(
+          views: resolvedViews,
+          fetchedAt: now,
+        );
+        return resolvedViews;
+      }
+
+      if (response.statusCode == 404) {
+        // Treat as no views for now; many deployments return 404 when view
+        // tracking is disabled or no row exists yet.
+        _videoViewsCache[normalizedId] = _CachedViewCount(
+          views: 0,
+          fetchedAt: now,
+        );
+        return 0;
+      }
+
+      return cached?.views;
+    } catch (_) {
+      return cached?.views;
+    }
+  }
+
+  /// Fetch view counts for multiple videos by calling /api/videos/{id}/views.
+  ///
+  /// There is no documented bulk endpoint for views/loops yet, so this method
+  /// fans out requests with bounded concurrency and a short-lived cache.
+  Future<Map<String, int>> getBulkVideoViews(
+    List<String> eventIds, {
+    int maxVideos = 20,
+    int maxConcurrent = 8,
+  }) async {
+    if (!isAvailable || eventIds.isEmpty || maxVideos <= 0) {
+      return {};
+    }
+
+    final uniqueIds = eventIds
+        .where((id) => id.isNotEmpty)
+        .map((id) => id.toLowerCase())
+        .toSet()
+        .take(maxVideos)
+        .toList();
+    if (uniqueIds.isEmpty) {
+      return {};
+    }
+
+    final result = <String, int>{};
+    final now = DateTime.now();
+    final idsToFetch = <String>[];
+
+    for (final id in uniqueIds) {
+      final cached = _videoViewsCache[id];
+      if (cached != null &&
+          now.difference(cached.fetchedAt) < _viewCountCacheTimeout) {
+        result[id] = cached.views;
+      } else {
+        idsToFetch.add(id);
+      }
+    }
+
+    if (idsToFetch.isNotEmpty) {
+      for (var i = 0; i < idsToFetch.length; i += maxConcurrent) {
+        final end = (i + maxConcurrent < idsToFetch.length)
+            ? i + maxConcurrent
+            : idsToFetch.length;
+        final chunk = idsToFetch.sublist(i, end);
+        final chunkResults = await Future.wait(
+          chunk.map((id) async {
+            final views = await getVideoViews(id);
+            if (views == null) return null;
+            return MapEntry(id, views);
+          }),
+        );
+        for (final entry in chunkResults.whereType<MapEntry<String, int>>()) {
+          result[entry.key] = entry.value;
+        }
+      }
+    }
+
+    Log.debug(
+      'Bulk video views fetch: ${result.length}/${uniqueIds.length} resolved '
+      '(requested=${eventIds.length}, capped=$maxVideos)',
+      name: 'AnalyticsApiService',
+      category: LogCategory.video,
+    );
+
+    return result;
+  }
+
   /// Get videos by a specific author
   ///
   /// [before] - Unix timestamp cursor for pagination
@@ -1149,7 +1490,9 @@ class AnalyticsApiService {
     }
 
     try {
-      var url = '$_baseUrl/api/users/$pubkey/feed?limit=$limit&sort=$sort';
+      var url =
+          '$_baseUrl/api/users/$pubkey/feed'
+          '?limit=$limit&sort=$sort&include_collabs=true';
       if (before != null) {
         url += '&before=$before';
       }
@@ -1722,16 +2065,43 @@ class AnalyticsApiService {
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as Map<String, dynamic>;
-        final statsData = data['stats'] as List<dynamic>? ?? [];
-
         final result = <String, BulkVideoStatsEntry>{};
-        for (final stat in statsData) {
-          if (stat is Map<String, dynamic>) {
-            final entry = BulkVideoStatsEntry.fromJson(stat);
-            if (entry.eventId.isNotEmpty) {
-              result[entry.eventId] = entry;
+        final statsData = data['stats'];
+
+        if (statsData is List) {
+          for (final stat in statsData) {
+            if (stat is Map) {
+              final statMap = Map<String, dynamic>.from(stat);
+              final entry = BulkVideoStatsEntry.fromJson(statMap);
+              if (entry.eventId.isNotEmpty) {
+                result[entry.eventId] = entry;
+              }
             }
           }
+        } else if (statsData is Map) {
+          // Some API variants return {"stats": {"<eventId>": {...}}}
+          for (final mapEntry in statsData.entries) {
+            final eventId = mapEntry.key.toString();
+            final value = mapEntry.value;
+            if (value is Map) {
+              final statMap = Map<String, dynamic>.from(value);
+              final statWithEventId = {
+                'event_id': statMap['event_id'] ?? eventId,
+                ...statMap,
+              };
+              final entry = BulkVideoStatsEntry.fromJson(statWithEventId);
+              if (entry.eventId.isNotEmpty) {
+                result[entry.eventId] = entry;
+              }
+            }
+          }
+        } else {
+          Log.warning(
+            'Bulk video stats fetch: unexpected stats payload type: '
+            '${statsData.runtimeType}',
+            name: 'AnalyticsApiService',
+            category: LogCategory.video,
+          );
         }
 
         Log.info(
@@ -1739,6 +2109,15 @@ class AnalyticsApiService {
           name: 'AnalyticsApiService',
           category: LogCategory.video,
         );
+        if (result.isNotEmpty) {
+          final sample = result.values.first;
+          Log.debug(
+            'Bulk stats sample: eventId=${sample.eventId}, '
+            'loops=${sample.loops}, views=${sample.views}',
+            name: 'AnalyticsApiService',
+            category: LogCategory.video,
+          );
+        }
 
         return result;
       } else {
@@ -1975,6 +2354,7 @@ class AnalyticsApiService {
     _trendingHashtagsCache.clear();
     _hashtagSearchCache.clear();
     _hashtagSearchCacheTime.clear();
+    _videoViewsCache.clear();
     _lastTrendingVideosFetch = null;
     _lastRecentVideosFetch = null;
     _lastTrendingHashtagsFetch = null;
@@ -1991,4 +2371,40 @@ class AnalyticsApiService {
     clearCache();
     _httpClient.close();
   }
+}
+
+int? parseInt(dynamic value) {
+  if (value is int) return value;
+  if (value is num) return value.toInt();
+  if (value is String) {
+    final normalized = value.replaceAll(',', '').trim();
+    final asInt = int.tryParse(normalized);
+    if (asInt != null) return asInt;
+    final asDouble = double.tryParse(normalized);
+    if (asDouble != null) return asDouble.toInt();
+  }
+  return null;
+}
+
+int? findIntDeep(dynamic source, Set<String> targetKeys) {
+  if (source is Map) {
+    for (final entry in source.entries) {
+      final key = entry.key.toString().toLowerCase();
+      if (targetKeys.contains(key)) {
+        final parsed = parseInt(entry.value);
+        if (parsed != null) return parsed;
+      }
+    }
+
+    for (final value in source.values) {
+      final parsed = findIntDeep(value, targetKeys);
+      if (parsed != null) return parsed;
+    }
+  } else if (source is List) {
+    for (final value in source) {
+      final parsed = findIntDeep(value, targetKeys);
+      if (parsed != null) return parsed;
+    }
+  }
+  return null;
 }

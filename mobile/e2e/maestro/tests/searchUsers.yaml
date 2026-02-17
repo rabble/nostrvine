@@ -37,4 +37,5 @@ appId: co.openvine.app
 - tapOn: Back
 - assertVisible:
     text: ${SEARCH_USER}
-- assertVisible: Search
+- assertVisible:
+    text: "Search.*"

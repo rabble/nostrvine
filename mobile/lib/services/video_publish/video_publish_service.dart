@@ -132,6 +132,12 @@ class VideoPublishService {
                   draft.expireTime!.inSeconds
             : null,
         allowAudioReuse: draft.allowAudioReuse,
+        collaboratorPubkeys: draft.collaboratorPubkeys,
+        inspiredByAddressableId: draft.inspiredByVideo?.addressableId,
+        inspiredByRelayUrl: draft.inspiredByVideo?.relayUrl,
+        inspiredByNpub: draft.inspiredByNpub,
+        selectedAudioEventId: draft.selectedAudioEventId,
+        selectedAudioRelay: draft.selectedAudioRelay,
       );
 
       if (!published) {

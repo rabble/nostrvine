@@ -880,6 +880,8 @@ class VideoEventService extends ChangeNotifier {
     NIP50SortMode?
     nip50Sort, // NIP-50 search sorting (e.g., sort:hot, sort:top)
     bool force = false, // Force refresh even if parameters match
+    List<String>?
+    collaboratorPubkeys, // Also fetch videos tagging these pubkeys
   }) async {
     // NostrService now handles subscription deduplication automatically via filter hashing
     // We still track subscription types for our own state management
@@ -1140,6 +1142,24 @@ class VideoEventService extends ChangeNotifier {
         );
         Log.debug(
           '  - Video filter ($limit limit): ${videoFilter.toJson()}',
+          name: 'VideoEventService',
+          category: LogCategory.video,
+        );
+      }
+
+      // Add collaborator p-tag filter to catch videos tagging followed users
+      if (collaboratorPubkeys != null && collaboratorPubkeys.isNotEmpty) {
+        final collabFilter = Filter(
+          kinds: NIP71VideoKinds.getAllVideoKinds(),
+          p: collaboratorPubkeys,
+          since: effectiveSince,
+          until: effectiveUntil,
+          limit: (limit * 0.3).round(), // 30% of limit for collab videos
+        );
+        filters.add(collabFilter);
+        Log.debug(
+          '  - Collaborator filter (${(limit * 0.3).round()} limit, '
+          '${collaboratorPubkeys.length} pubkeys): ${collabFilter.toJson()}',
           name: 'VideoEventService',
           category: LogCategory.video,
         );
@@ -2522,6 +2542,7 @@ class VideoEventService extends ChangeNotifier {
       includeReposts: true,
       sortBy: sortBy,
       force: force,
+      collaboratorPubkeys: followingPubkeys,
     );
 
     // After subscription, seed from relay to ensure we have ALL videos from
@@ -4494,21 +4515,15 @@ class VideoEventService extends ChangeNotifier {
       );
       context.writeln('  Has subscription: ${isSubscribed(subscriptionType)}');
 
-      // Log locally
-      Log.error(
-        '🚨 EMPTY FEED - Reporting to Crashlytics:\n${context.toString()}',
+      // Log locally — this is a normal condition (new user, sparse relay, etc.)
+      // so we log as warning instead of flooding Crashlytics with non-fatal errors.
+      Log.warning(
+        '⚠️ EMPTY FEED for ${subscriptionType.name}:\n${context.toString()}',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
 
-      // Report to Crashlytics as non-fatal error
-      CrashReportingService.instance.recordError(
-        Exception('Empty feed after EOSE: ${subscriptionType.name}'),
-        StackTrace.current,
-        reason: context.toString(),
-      );
-
-      // Set custom keys for filtering in Crashlytics
+      // Set custom keys for filtering if needed later
       CrashReportingService.instance.setCustomKey(
         'last_empty_feed_type',
         subscriptionType.name,
@@ -4631,21 +4646,15 @@ class VideoEventService extends ChangeNotifier {
         context.writeln('  ⚠️ Filter may match no events on this relay');
       }
 
-      // Log locally
-      Log.error(
-        '⏰ FEED TIMEOUT - Reporting to Crashlytics:\n${context.toString()}',
+      // Log locally — timeouts are expected on slow networks, backgrounded apps,
+      // etc. Log as warning instead of flooding Crashlytics with non-fatal errors.
+      Log.warning(
+        '⏰ FEED TIMEOUT for ${subscriptionType.name}:\n${context.toString()}',
         name: 'VideoEventService',
         category: LogCategory.video,
       );
 
-      // Report to Crashlytics as non-fatal error
-      CrashReportingService.instance.recordError(
-        Exception('Feed loading timeout after 30s: ${subscriptionType.name}'),
-        StackTrace.current,
-        reason: context.toString(),
-      );
-
-      // Set custom keys for filtering in Crashlytics
+      // Set custom keys for filtering if needed later
       CrashReportingService.instance.setCustomKey(
         'last_timeout_feed_type',
         subscriptionType.name,

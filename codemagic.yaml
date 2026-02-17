@@ -107,7 +107,7 @@ workflows:
           - TEST
           - POC
     environment:
-      flutter: 3.38.3
+      flutter: 3.41.1
       xcode: latest
       cocoapods: default
       groups:
@@ -158,7 +158,7 @@ workflows:
           - TEST
           - POC
     environment:
-      flutter: 3.38.3
+      flutter: 3.41.1
       xcode: 16.1  # Pinned to avoid FFmpeg Kit linker issues with newer Xcode
       cocoapods: default
       groups:
@@ -196,7 +196,7 @@ workflows:
           - TEST
           - POC
     environment:
-      flutter: 3.38.3
+      flutter: 3.41.1
       java: 17
       groups:
         - zendesk_credentials

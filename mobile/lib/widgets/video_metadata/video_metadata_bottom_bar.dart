@@ -2,12 +2,14 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Bottom bar with "Save for Later" and "Post" buttons for video metadata.
@@ -19,15 +21,30 @@ class VideoMetadataBottomBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Padding(
-      padding: EdgeInsets.fromLTRB(16, 0, 16, 4),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          Expanded(child: _SaveForLaterButton()),
-          SizedBox(width: 16),
-          Expanded(child: _PostButton()),
-        ],
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
+      child: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xE5032017),
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: VineTheme.outlineVariant),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x6B000000),
+              blurRadius: 20,
+              offset: Offset(0, 6),
+            ),
+          ],
+        ),
+        child: const Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(child: _SaveForLaterButton()),
+            SizedBox(width: 10),
+            Expanded(child: _PostButton()),
+          ],
+        ),
       ),
     );
   }
@@ -40,51 +57,67 @@ class _SaveForLaterButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isSaving = ref.watch(
-      videoEditorProvider.select((s) => s.isSavingDraft),
+    final state = ref.watch(
+      videoEditorProvider.select(
+        (s) => (isSavingDraft: s.isSavingDraft, isProcessing: s.isProcessing),
+      ),
     );
+    final isSaving = state.isSavingDraft;
+    final isProcessing = state.isProcessing;
 
-    return Semantics(
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Save for later button',
-      hint: isSaving
-          ? 'Saving video...'
-          : 'Save video to drafts and camera roll',
-      button: true,
-      enabled: !isSaving,
-      child: GestureDetector(
-        onTap: isSaving ? null : () => _onSaveForLater(context, ref),
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 200),
-          opacity: isSaving ? 0.6 : 1.0,
-          child: Container(
-            decoration: BoxDecoration(
-              color: VineTheme.surfaceContainer,
-              border: Border.all(color: const Color(0xFF0E2B21), width: 2),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Center(
-              child: isSaving
-                  ? const SizedBox(
-                      width: 24,
-                      height: 24,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2.5,
-                        color: VineTheme.primary,
-                      ),
-                    )
-                  // TODO(l10n): Replace with context.l10n when localization is added.
-                  : Text(
-                      'Save for Later',
-                      style: GoogleFonts.bricolageGrotesque(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        color: VineTheme.primary,
-                        height: 1.33,
-                        letterSpacing: 0.15,
-                      ),
-                    ),
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 200),
+      opacity: !isProcessing ? 1 : 0.32,
+      child: Semantics(
+        identifier: 'save_for_later_button',
+        // TODO(l10n): Replace with context.l10n when localization is added.
+        label: 'Save for later button',
+        hint: isProcessing
+            ? 'Rendering video...'
+            : isSaving
+            ? 'Saving video...'
+            : 'Save video to drafts and camera roll',
+        button: true,
+        enabled: !isSaving && !isProcessing,
+        child: GestureDetector(
+          onTap: isSaving || isProcessing
+              ? null
+              : () => _onSaveForLater(context, ref),
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 200),
+            opacity: isSaving ? 0.6 : 1.0,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xAA0E2B21), Color(0xE5032017)],
+                ),
+                border: Border.all(color: const Color(0xFF184235), width: 1.5),
+                borderRadius: BorderRadius.circular(18),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Center(
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: VineTheme.primary,
+                          ),
+                        )
+                      // TODO(l10n): Replace with context.l10n when localization
+                      // is added.
+                      : Text(
+                          'Save for Later',
+                          style: VineTheme.titleSmallFont(
+                            color: VineTheme.primary,
+                          ),
+                        ),
+                ),
+              ),
             ),
           ),
         ),
@@ -94,6 +127,7 @@ class _SaveForLaterButton extends ConsumerWidget {
 
   Future<void> _onSaveForLater(BuildContext context, WidgetRef ref) async {
     // Get the clips from clip manager
+    final finalRenderedClip = ref.read(videoEditorProvider).finalRenderedClip;
     final recordingClips = ref.read(clipManagerProvider).clips;
     if (recordingClips.isEmpty) {
       Log.warning(
@@ -105,8 +139,50 @@ class _SaveForLaterButton extends ConsumerWidget {
     }
 
     bool saveSuccess = true;
+    String? gallerySaveMessage;
 
     try {
+      // 1. Save the final rendered video to the gallery.
+      if (finalRenderedClip != null) {
+        final gallerySaveService = ref.read(gallerySaveServiceProvider);
+        final galleryResult = await gallerySaveService.saveVideoToGallery(
+          finalRenderedClip.video,
+        );
+
+        gallerySaveMessage = switch (galleryResult) {
+          GallerySaveSuccess() => 'Saved to camera roll',
+          GallerySavePermissionDenied() => 'Camera roll: permission denied',
+          GallerySaveFailure(:final reason) => 'Camera roll: $reason',
+        };
+      }
+
+      // 2. Save each clip to the clip library for the Clips tab.
+      final clipLibraryService = ref.read(clipLibraryServiceProvider);
+      final sessionId = 'save_${DateTime.now().millisecondsSinceEpoch}';
+
+      for (final clip in recordingClips) {
+        final clipPath = await clip.video.safeFilePath();
+        final savedClip = SavedClip(
+          id: 'clip_${DateTime.now().microsecondsSinceEpoch}_${clip.id}',
+          filePath: clipPath,
+          thumbnailPath: clip.thumbnailPath,
+          duration: clip.duration,
+          createdAt: DateTime.now(),
+          aspectRatio: clip.targetAspectRatio.name,
+          sessionId: sessionId,
+        );
+
+        await clipLibraryService.saveClip(savedClip);
+
+        Log.info(
+          'Saved clip to library: ${savedClip.id}',
+          name: '_SaveForLaterButton',
+          category: LogCategory.video,
+        );
+      }
+
+      // 3. Save as draft (with metadata) for the Drafts tab
+      // Note: This may delete original files, so it must happen LAST
       final draftSuccess = await ref
           .read(videoEditorProvider.notifier)
           .saveAsDraft();
@@ -137,7 +213,7 @@ class _SaveForLaterButton extends ConsumerWidget {
     // Build the status message
     String label;
     if (saveSuccess) {
-      label = 'Saved to library!';
+      label = gallerySaveMessage ?? 'Saved to library!';
     } else {
       label = 'Failed to save';
     }
@@ -191,6 +267,7 @@ class _PostButton extends ConsumerWidget {
       duration: const Duration(milliseconds: 200),
       opacity: isValidToPost ? 1 : 0.32,
       child: Semantics(
+        identifier: 'post_button',
         // TODO(l10n): Replace with context.l10n when localization is added.
         label: 'Post button',
         hint: isValidToPost
@@ -202,22 +279,32 @@ class _PostButton extends ConsumerWidget {
           onTap: isValidToPost
               ? () => ref.read(videoEditorProvider.notifier).postVideo(context)
               : null,
-          child: Container(
+          child: DecoratedBox(
             decoration: BoxDecoration(
-              color: VineTheme.primary,
-              borderRadius: BorderRadius.circular(20),
+              gradient: const LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors: [Color(0xFF3ED9A2), VineTheme.primary],
+              ),
+              borderRadius: BorderRadius.circular(18),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x4D27C58B),
+                  blurRadius: 18,
+                  offset: Offset(0, 6),
+                ),
+              ],
             ),
-            padding: const EdgeInsets.symmetric(vertical: 12),
-            child: Center(
-              // TODO(l10n): Replace with context.l10n when localization is added.
-              child: Text(
-                'Post',
-                style: GoogleFonts.bricolageGrotesque(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF002C1C),
-                  height: 1.33,
-                  letterSpacing: 0.15,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Center(
+                // TODO(l10n): Replace with context.l10n when localization is
+                // added.
+                child: Text(
+                  'Post',
+                  style: VineTheme.titleSmallFont(
+                    color: const Color(0xFF002C1C),
+                  ),
                 ),
               ),
             ),

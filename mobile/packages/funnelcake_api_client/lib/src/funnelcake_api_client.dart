@@ -421,6 +421,96 @@ class FunnelcakeApiClient {
     }
   }
 
+  /// Fetches videos where a user is tagged as collaborator.
+  ///
+  /// [pubkey] is the collaborator's public key (hex format).
+  /// [limit] is the maximum number of videos to return
+  /// (defaults to 50).
+  /// [before] is an optional Unix timestamp cursor for
+  /// pagination.
+  ///
+  /// Returns a list of [VideoStats] objects.
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is
+  ///   not configured.
+  /// - [FunnelcakeNotFoundException] if no collabs found.
+  /// - [FunnelcakeApiException] if the request fails.
+  /// - [FunnelcakeTimeoutException] on timeout.
+  /// - [FunnelcakeException] for other errors.
+  Future<List<VideoStats>> getCollabVideos({
+    required String pubkey,
+    int limit = 50,
+    int? before,
+  }) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    if (pubkey.isEmpty) {
+      throw const FunnelcakeException(
+        'Pubkey cannot be empty',
+      );
+    }
+
+    final queryParams = <String, String>{
+      'limit': limit.toString(),
+    };
+    if (before != null) {
+      queryParams['before'] = before.toString();
+    }
+
+    final uri = Uri.parse(
+      '$_baseUrl/api/users/$pubkey/collabs',
+    ).replace(queryParameters: queryParams);
+
+    try {
+      final response = await _httpClient
+          .get(
+            uri,
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(_timeout);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List<dynamic>;
+
+        return data
+            .map(
+              (v) => VideoStats.fromJson(
+                v as Map<String, dynamic>,
+              ),
+            )
+            .where(
+              (v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty,
+            )
+            .toList();
+      } else if (response.statusCode == 404) {
+        throw FunnelcakeNotFoundException(
+          resource: 'Collab videos',
+          url: uri.toString(),
+        );
+      } else {
+        throw FunnelcakeApiException(
+          message: 'Failed to fetch collab videos',
+          statusCode: response.statusCode,
+          url: uri.toString(),
+        );
+      }
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException(
+        'Failed to fetch collab videos: $e',
+      );
+    }
+  }
+
   /// Disposes of the HTTP client if it was created internally.
   void dispose() {
     if (_ownsHttpClient) {

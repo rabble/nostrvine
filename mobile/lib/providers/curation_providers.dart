@@ -11,6 +11,7 @@ import 'package:openvine/providers/video_events_providers.dart';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/state/curation_state.dart';
+import 'package:openvine/utils/relay_url_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -20,15 +21,25 @@ part 'curation_providers.g.dart';
 @riverpod
 AnalyticsApiService analyticsApiService(Ref ref) {
   final environmentConfig = ref.watch(currentEnvironmentProvider);
+  final nostrService = ref.watch(nostrServiceProvider);
+  final baseUrl = resolveApiBaseUrlFromRelays(
+    configuredRelays: nostrService.configuredRelays,
+    fallbackBaseUrl: environmentConfig.apiBaseUrl,
+  );
 
-  return AnalyticsApiService(baseUrl: environmentConfig.apiBaseUrl);
+  return AnalyticsApiService(baseUrl: baseUrl);
 }
 
 /// Provider for FunnelcakeApiClient (typed client for Funnelcake REST API)
 @riverpod
 FunnelcakeApiClient funnelcakeApiClient(Ref ref) {
   final environmentConfig = ref.watch(currentEnvironmentProvider);
-  return FunnelcakeApiClient(baseUrl: environmentConfig.apiBaseUrl);
+  final nostrService = ref.watch(nostrServiceProvider);
+  final baseUrl = resolveApiBaseUrlFromRelays(
+    configuredRelays: nostrService.configuredRelays,
+    fallbackBaseUrl: environmentConfig.apiBaseUrl,
+  );
+  return FunnelcakeApiClient(baseUrl: baseUrl);
 }
 
 /// Single source of truth for Funnelcake REST API availability.

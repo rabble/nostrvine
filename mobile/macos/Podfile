@@ -39,6 +39,9 @@ target 'Runner' do
 end
 
 post_install do |installer|
+  host_arch = `uname -m`.strip
+  exclude_x86_64_for_macos = host_arch == 'arm64'
+
   # Add script phase to codesign media_kit frameworks (fixes unsigned library crash)
   installer.pods_project.targets.each do |target|
     if target.name == 'media_kit_libs_macos_video'
@@ -52,6 +55,15 @@ post_install do |installer|
   main_project = installer.aggregate_targets.first.user_project
   main_project.targets.each do |target|
     if target.name == 'Runner'
+      target.build_configurations.each do |config|
+        if exclude_x86_64_for_macos
+          # whisper_ggml_plus currently fails to link x86_64 symbols; force
+          # arm64 builds on Apple Silicon hosts.
+          config.build_settings['EXCLUDED_ARCHS[sdk=macosx*]'] = 'x86_64'
+          config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES' if config.name == 'Debug'
+        end
+      end
+
       # Check if script phase already exists
       phase_name = 'Codesign media_kit frameworks'
       existing_phase = target.shell_script_build_phases.find { |p| p.name == phase_name }
@@ -125,7 +137,13 @@ done
       # Fix Firebase Crashlytics dSYM warnings
       if config.name == 'Debug'
         config.build_settings['DEBUG_INFORMATION_FORMAT'] = 'dwarf-with-dsym'
-        config.build_settings['ONLY_ACTIVE_ARCH'] = 'NO'
+        config.build_settings['ONLY_ACTIVE_ARCH'] = 'YES'
+      end
+
+      if exclude_x86_64_for_macos
+        # whisper_ggml_plus currently fails to link x86_64 symbols; force
+        # arm64 builds on Apple Silicon hosts.
+        config.build_settings['EXCLUDED_ARCHS[sdk=macosx*]'] = 'x86_64'
       end
 
       # Suppress specific warnings

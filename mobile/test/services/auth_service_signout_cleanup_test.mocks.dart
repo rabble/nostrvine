@@ -330,9 +330,15 @@ class MockUserDataCleanupService extends _i1.Mock
           as bool);
 
   @override
-  _i4.Future<int> clearUserSpecificData({String? reason}) =>
+  _i4.Future<int> clearUserSpecificData({
+    String? reason,
+    bool? isIdentityChange = false,
+  }) =>
       (super.noSuchMethod(
-            Invocation.method(#clearUserSpecificData, [], {#reason: reason}),
+            Invocation.method(#clearUserSpecificData, [], {
+              #reason: reason,
+              #isIdentityChange: isIdentityChange,
+            }),
             returnValue: _i4.Future<int>.value(0),
           )
           as _i4.Future<int>);

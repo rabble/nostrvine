@@ -18,6 +18,7 @@ import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
@@ -410,6 +411,12 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       ),
 
       // Non-tab routes outside the shell (camera/settings/editor/video/welcome)
+      GoRoute(
+        path: CreatorAnalyticsScreen.path,
+        name: CreatorAnalyticsScreen.routeName,
+        parentNavigatorKey: NavigatorKeys.root,
+        builder: (ctx, st) => const CreatorAnalyticsScreen(),
+      ),
 
       // CURATED LIST route (NIP-51 kind 30005 video lists)
       // Outside shell so the screen's own AppBar is shown without the shell AppBar
@@ -879,6 +886,7 @@ int tabIndexFromLocation(String loc) {
     case 'new-video-feed':
     case 'list':
     case 'discover-lists':
+    case 'creator-analytics':
       return -1; // Non-tab routes - no bottom nav (outside shell)
     default:
       return 0; // fallback to home

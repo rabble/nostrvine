@@ -6,6 +6,7 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:models/models.dart' show InspiredByInfo;
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
@@ -13,16 +14,16 @@ import 'package:openvine/models/video_metadata/video_metadata_expiration.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/file_cleanup_service.dart';
 import 'package:openvine/services/native_proofmode_service.dart';
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
-import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:path/path.dart' as p;
 import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -72,6 +73,30 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       );
     });
     return VideoEditorProviderState();
+  }
+
+  /// Invalidate the final rendered clip when content changes.
+  ///
+  /// Called by ClipManager when clips change, or when editor parameters
+  /// change, to ensure a re-render is required before publishing.
+  /// Also deletes the rendered file from disk since it's stored in Documents.
+  void invalidateFinalRenderedClip() {
+    final clip = state.finalRenderedClip;
+    if (clip == null) return;
+
+    Log.debug(
+      '🔄 Invalidating final rendered clip due to content change',
+      name: 'VideoEditorNotifier',
+      category: LogCategory.video,
+    );
+    if (state.isProcessing) {
+      cancelRenderVideo();
+    }
+
+    state = state.copyWith(clearFinalRenderedClip: true);
+
+    // Delete the old rendered file from disk to free up space
+    unawaited(FileCleanupService.deleteRecordingClipFiles(clip));
   }
 
   /// Initialize the video editor with an optional draft.
@@ -256,6 +281,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         category: .video,
       );
 
+      invalidateFinalRenderedClip();
       await autosaveChanges();
     } catch (e) {
       Log.error(
@@ -512,11 +538,79 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     triggerAutosave();
   }
 
+  // === COLLABORATORS & INSPIRED BY ===
+
+  /// Maximum number of collaborators allowed per video.
+  static const int maxCollaborators = 5;
+
+  /// Add a collaborator pubkey to the video.
+  ///
+  /// Enforces a maximum of [maxCollaborators] collaborators.
+  /// Silently ignores duplicates.
+  void addCollaborator(String pubkey) {
+    if (state.collaboratorPubkeys.length >= maxCollaborators) return;
+    if (state.collaboratorPubkeys.contains(pubkey)) return;
+    state = state.copyWith(
+      collaboratorPubkeys: [...state.collaboratorPubkeys, pubkey],
+    );
+    triggerAutosave();
+  }
+
+  /// Remove a collaborator pubkey from the video.
+  void removeCollaborator(String pubkey) {
+    state = state.copyWith(
+      collaboratorPubkeys: state.collaboratorPubkeys
+          .where((p) => p != pubkey)
+          .toList(),
+    );
+    triggerAutosave();
+  }
+
+  /// Set the "Inspired By" reference to a specific video (a-tag).
+  void setInspiredByVideo(InspiredByInfo info) {
+    state = state.copyWith(inspiredByVideo: info, clearInspiredByNpub: true);
+    triggerAutosave();
+  }
+
+  /// Set the "Inspired By" reference to a person (NIP-27 npub in content).
+  void setInspiredByPerson(String npub) {
+    state = state.copyWith(inspiredByNpub: npub, clearInspiredByVideo: true);
+    triggerAutosave();
+  }
+
+  /// Clear all "Inspired By" attribution.
+  void clearInspiredBy() {
+    state = state.copyWith(
+      clearInspiredByVideo: true,
+      clearInspiredByNpub: true,
+    );
+    triggerAutosave();
+  }
+
   /// Create a VineDraft from the rendered clip with metadata.
+  ///
+  /// When a sound is selected via [selectedSoundProvider], automatically
+  /// populates [selectedAudioEventId] and [selectedAudioRelay] for the
+  /// publisher to add an `["e", ..., "audio"]` tag. Also auto-populates
+  /// [inspiredByVideo] from the sound's [sourceVideoReference] if not
+  /// already set.
   VineDraft getActiveDraft({
     bool isAutosave = false,
     bool enforceSeparatedClips = false,
   }) {
+    // Read selected sound for audio reference and auto-attribution
+    final selectedSound = ref.read(selectedSoundProvider);
+
+    // Auto-populate inspired-by from selected sound's source video
+    var inspiredByVideo = state.inspiredByVideo;
+    if (inspiredByVideo == null &&
+        selectedSound?.sourceVideoReference != null) {
+      inspiredByVideo = InspiredByInfo(
+        addressableId: selectedSound!.sourceVideoReference!,
+        relayUrl: selectedSound.sourceVideoRelay,
+      );
+    }
+
     return VineDraft.create(
       id: isAutosave ? VideoEditorConstants.autoSaveId : draftId,
       clips:
@@ -531,6 +625,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       selectedApproach: 'video',
       editorStateHistory: state.editorStateHistory,
       editorEditingParameters: state.editorEditingParameters?.toMap(),
+      collaboratorPubkeys: state.collaboratorPubkeys,
+      inspiredByVideo: inspiredByVideo,
+      inspiredByNpub: state.inspiredByNpub,
+      selectedAudioEventId: selectedSound?.id,
+      selectedAudioRelay: selectedSound?.sourceVideoRelay,
+      finalRenderedClip: isAutosave ? state.finalRenderedClip : null,
     );
   }
 
@@ -546,6 +646,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       name: 'VideoEditorNotifier',
       category: LogCategory.video,
     );
+    invalidateFinalRenderedClip();
     state = state.copyWith(editorStateHistory: stateHistory);
     triggerAutosave();
   }
@@ -560,6 +661,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       name: 'VideoEditorNotifier',
       category: LogCategory.video,
     );
+    invalidateFinalRenderedClip();
     state = state.copyWith(editorEditingParameters: editingParameters);
     triggerAutosave();
   }
@@ -741,6 +843,27 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
     // Clear existing clips before restoring to prevent duplication
     _clipManager.clearClips();
 
+    // Validate finalRenderedClip - only restore if file still exists
+    RecordingClip? validFinalRenderedClip;
+    final finalClip = draft.finalRenderedClip;
+    if (finalClip != null) {
+      final videoPath = finalClip.video.file?.path;
+      if (videoPath != null && File(videoPath).existsSync()) {
+        validFinalRenderedClip = finalClip;
+        Log.info(
+          '✅ Restored final rendered clip',
+          name: 'VideoEditorNotifier',
+          category: LogCategory.video,
+        );
+      } else {
+        Log.info(
+          '⚠️ Final rendered clip file missing, will re-render',
+          name: 'VideoEditorNotifier',
+          category: LogCategory.video,
+        );
+      }
+    }
+
     state = state.copyWith(
       title: draft.title,
       description: draft.description,
@@ -751,6 +874,13 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       editorEditingParameters: CompleteParameters.fromMap(
         draft.editorEditingParameters,
       ),
+      collaboratorPubkeys: draft.collaboratorPubkeys,
+      inspiredByVideo: draft.inspiredByVideo,
+      inspiredByNpub: draft.inspiredByNpub,
+      selectedAudioEventId: draft.selectedAudioEventId,
+      selectedAudioRelay: draft.selectedAudioRelay,
+      finalRenderedClip: validFinalRenderedClip,
+      clearFinalRenderedClip: validFinalRenderedClip == null,
     );
     _clipManager.addMultipleClips(clipsWithThumbnails);
     // We set the aspect ratio in the video recorder to match the clips,
@@ -802,13 +932,14 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Combines all clips, applies audio settings, generates proofmode
   /// attestation, and creates the final rendered clip for publishing.
   Future<void> startRenderVideo() async {
-    setProcessing(true);
+    if (state.isProcessing || state.finalRenderedClip != null) return;
 
     Log.info(
       '🎬 Starting final video render',
       name: 'VideoEditorNotifier',
       category: .video,
     );
+    setProcessing(true);
 
     // Render video and get proofmode data
     final (outputPath, proofManifestJson) = await _renderVideo();
@@ -838,23 +969,10 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       category: .video,
     );
 
-    // Move rendered file from temp to documents directory so it persists
-    // and can be resolved correctly when loading from a draft.
-    final documentsPath = await getDocumentsPath();
-    final fileName = p.basename(outputPath);
-    final permanentPath = p.join(documentsPath, fileName);
-    await File(outputPath).rename(permanentPath);
-
-    Log.debug(
-      '📁 Moved rendered video to documents: $permanentPath',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
-
     // Create final clip for publishing
     final finalRenderedClip = RecordingClip(
       id: 'clip-${DateTime.now()}',
-      video: EditorVideo.file(permanentPath),
+      video: EditorVideo.file(outputPath),
       duration: metaData.duration,
       recordedAt: .now(),
       originalAspectRatio: _clips.first.originalAspectRatio,
@@ -866,6 +984,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       isProcessing: false,
       finalRenderedClip: finalRenderedClip,
     );
+    autosaveChanges();
   }
 
   /// Cancel an ongoing video render operation.
@@ -882,13 +1001,12 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         name: 'VideoEditorNotifier',
         category: .video,
       );
-    } catch (e, stackTrace) {
-      Log.error(
-        '❌ Failed to cancel video render: $e',
+    } catch (e) {
+      // May fail if render already completed or was cancelled - not an error
+      Log.debug(
+        '⏹️ Cancel video render returned: $e',
         name: 'VideoEditorNotifier',
         category: .video,
-        error: e,
-        stackTrace: stackTrace,
       );
     }
 
@@ -945,6 +1063,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         clips: _clips,
         aspectRatio: _clips.first.targetAspectRatio,
         enableAudio: !state.isMuted,
+        usePersistentStorage: true,
         parameters: state.editorEditingParameters,
       );
       String? proofManifestJson;

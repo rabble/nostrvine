@@ -1,6 +1,9 @@
 // ABOUTME: Tests for GallerySaveService result types and error handling
 // ABOUTME: Validates the gallery save result sealed class hierarchy
 
+import 'dart:io';
+
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:openvine/services/gallery_save_service.dart';
@@ -30,6 +33,7 @@ void main() {
       var isSuccess = switch (successResult) {
         GallerySaveSuccess() => true,
         GallerySaveFailure() => false,
+        GallerySavePermissionDenied() => false,
       };
       expect(isSuccess, isTrue);
 
@@ -37,6 +41,7 @@ void main() {
       isSuccess = switch (failureResult) {
         GallerySaveSuccess() => true,
         GallerySaveFailure() => false,
+        GallerySavePermissionDenied() => false,
       };
       expect(isSuccess, isFalse);
     });
@@ -46,6 +51,7 @@ void main() {
 
       final reason = switch (result) {
         GallerySaveSuccess() => null,
+        GallerySavePermissionDenied() => null,
         GallerySaveFailure(:final reason) => reason,
       };
 
@@ -111,5 +117,36 @@ void main() {
       // File doesn't exist, so it fails before permission check
       expect(result, isA<GallerySaveFailure>());
     });
+
+    test(
+      'skips permission check on MissingPluginException (desktop)',
+      () async {
+        // Simulate desktop platform where permission_handler is unavailable
+        when(() => mockPermissionsService.checkGalleryStatus()).thenThrow(
+          MissingPluginException(
+            'No implementation found for method checkPermissionStatus',
+          ),
+        );
+
+        // Create a real temp file so the file-existence check passes
+        final tempDir = Directory.systemTemp.createTempSync('gallery_test_');
+        final tempFile = File('${tempDir.path}/test_video.mp4');
+        tempFile.writeAsBytesSync([0, 1, 2, 3]);
+
+        final result = await service.saveVideoToGallery(
+          EditorVideo.file(tempFile.path),
+        );
+
+        // Should NOT fail with "Permission denied" — the MissingPluginException
+        // is caught and the service proceeds to Gal.putVideo, which will fail
+        // in test env with a different error.
+        if (result is GallerySaveFailure) {
+          expect(result.reason, isNot(contains('Permission denied')));
+        }
+
+        // Cleanup
+        tempDir.deleteSync(recursive: true);
+      },
+    );
   });
 }

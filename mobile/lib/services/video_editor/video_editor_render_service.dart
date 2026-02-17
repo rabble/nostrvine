@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -172,15 +173,36 @@ class VideoEditorRenderService {
 
   /// Renders multiple clips into a single video file with aspect ratio cropping.
   ///
+  /// When [customAudioPath] is provided, the custom audio track is mixed into
+  /// the output. Use [originalAudioVolume] (default 1.0) and
+  /// [customAudioVolume] (default 1.0) to control relative levels.
+  /// Set [originalAudioVolume] to 0.0 to mute the original audio entirely
+  /// (e.g. when recording lip-sync without headphones).
+  ///
+  /// When [imageBytes] is provided (PNG with transparency), it is composited
+  /// on top of the video as a watermark overlay.
+  ///
   /// Returns the path to the rendered video file, or null if cancelled/failed.
+  ///
+  /// If [usePersistentStorage] is true, the output file will be saved to the
+  /// documents directory instead of the temporary directory. Use this when
+  /// the rendered video should persist across app restarts.
   static Future<String?> renderVideo({
     required List<RecordingClip> clips,
+    String? customAudioPath,
+    double? originalAudioVolume,
+    double? customAudioVolume,
+    Uint8List? imageBytes,
+    bool usePersistentStorage = false,
     model.AspectRatio? aspectRatio,
     bool enableAudio = true,
     CompleteParameters? parameters,
     String? taskId,
   }) async {
-    final tempDir = await getTemporaryDirectory();
+    final cacheDir = await getTemporaryDirectory();
+    final outputDir = usePersistentStorage
+        ? await getApplicationDocumentsDirectory()
+        : cacheDir;
     var tempFilePaths = <String>[];
 
     try {
@@ -195,11 +217,12 @@ class VideoEditorRenderService {
         await clip.processingCompleter?.future;
       }
 
+      // Intermediate normalized clips always go to cache (they get deleted)
       final result = await _normalizeClipsToAspectRatio(
         clips: clips,
         aspectRatio: aspectRatio ?? clips.first.targetAspectRatio,
         enableAudio: enableAudio,
-        tempDir: tempDir,
+        cacheDir: cacheDir,
         parameters: parameters,
       );
       tempFilePaths = result.tempFilePaths;
@@ -208,8 +231,12 @@ class VideoEditorRenderService {
         segments: result.segments,
         taskId: taskId ?? clips.first.id,
         enableAudio: enableAudio,
-        tempDir: tempDir,
+        outputDir: outputDir,
         globalTransform: result.globalTransform,
+        customAudioPath: customAudioPath,
+        originalAudioVolume: originalAudioVolume,
+        customAudioVolume: customAudioVolume,
+        imageBytes: imageBytes,
         parameters: parameters,
       );
 
@@ -361,7 +388,7 @@ class VideoEditorRenderService {
     required List<RecordingClip> clips,
     required model.AspectRatio aspectRatio,
     required bool enableAudio,
-    required Directory tempDir,
+    required Directory cacheDir,
     required CompleteParameters? parameters,
   }) async {
     // Analyze all clips first to determine the optimal rendering strategy
@@ -415,7 +442,7 @@ class VideoEditorRenderService {
           index: i,
           cropParams: entry.cropParams,
           enableAudio: enableAudio,
-          tempDir: tempDir,
+          tempDir: cacheDir,
           parameters: parameters,
         );
         tempFilePaths.add(normalizedPath);
@@ -466,8 +493,10 @@ class VideoEditorRenderService {
     required Directory tempDir,
     required CompleteParameters? parameters,
   }) async {
-    final outputPath =
-        '${tempDir.path}/normalized_${index}_${DateTime.now().microsecondsSinceEpoch}.mp4';
+    final outputPath = path.join(
+      tempDir.path,
+      'normalized_${index}_${DateTime.now().microsecondsSinceEpoch}.mp4',
+    );
 
     final task = VideoRenderData(
       id: '${clip.id}_normalized',
@@ -508,17 +537,26 @@ class VideoEditorRenderService {
 
   /// Concatenates all video segments into a final output file.
   ///
-  /// If [globalTransform] is provided, applies it to all segments in a single pass.
+  /// If [globalTransform] is provided, applies it to all segments in a single
+  /// pass. When [customAudioPath] is set, the custom audio track is mixed in
+  /// at the given volume levels. When [imageBytes] is provided, the image is
+  /// composited as an overlay (e.g. watermark).
   static Future<String> _concatenateSegments({
     required List<VideoSegment> segments,
     required String taskId,
     required bool enableAudio,
-    required Directory tempDir,
-    _CropParameters? globalTransform,
+    required Directory outputDir,
     required CompleteParameters? parameters,
+    _CropParameters? globalTransform,
+    String? customAudioPath,
+    double? originalAudioVolume,
+    double? customAudioVolume,
+    Uint8List? imageBytes,
   }) async {
-    final outputPath =
-        '${tempDir.path}/divine_${DateTime.now().microsecondsSinceEpoch}.mp4';
+    final outputPath = path.join(
+      outputDir.path,
+      'divine_${DateTime.now().microsecondsSinceEpoch}.mp4',
+    );
 
     final task = VideoRenderData(
       id: taskId,
@@ -526,6 +564,9 @@ class VideoEditorRenderService {
       endTime: VideoEditorConstants.maxDuration,
       enableAudio: enableAudio,
       shouldOptimizeForNetworkUse: true,
+      customAudioPath: customAudioPath,
+      originalAudioVolume: originalAudioVolume,
+      customAudioVolume: customAudioVolume,
       imageBytes: parameters?.layers.isNotEmpty == true
           ? parameters?.image
           : null,

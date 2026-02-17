@@ -92,14 +92,57 @@ class MediaCacheConfig {
   final bool allowBadCertificatesInDebug;
 }
 
+/// Tracks cache hit/miss statistics for observability.
+///
+/// Records hits, misses, and prefetch effectiveness. Use [toMap] to export
+/// metrics for analytics reporting.
+class CacheMetrics {
+  /// Number of synchronous cache lookups that found a cached file.
+  int hits = 0;
+
+  /// Number of synchronous cache lookups that did not find a cached file.
+  int misses = 0;
+
+  /// Files that were prefetched AND later accessed via getCachedFileSync.
+  int prefetchedUsed = 0;
+
+  /// Total files that were prefetched (downloaded via preCacheFiles).
+  int prefetchedTotal = 0;
+
+  /// Cache hit rate as a ratio (0.0 to 1.0).
+  double get hitRate {
+    final total = hits + misses;
+    if (total == 0) return 0;
+    return hits / total;
+  }
+
+  /// Export metrics as a map for analytics reporting.
+  Map<String, dynamic> toMap() => {
+    'cache_hits': hits,
+    'cache_misses': misses,
+    'cache_hit_rate': hitRate,
+    'prefetched_used': prefetchedUsed,
+    'prefetched_total': prefetchedTotal,
+  };
+
+  /// Reset all counters to zero.
+  void reset() {
+    hits = 0;
+    misses = 0;
+    prefetchedUsed = 0;
+    prefetchedTotal = 0;
+  }
+}
+
 /// {@template media_cache_manager}
 /// A configurable media cache manager built on `flutter_cache_manager`.
 ///
 /// Features:
 /// - Configurable cache size, stale period, and timeouts
-/// - Corrupt cache file recovery via [SafeCacheInfoRepository]
+/// - Corrupt cache file recovery via `SafeCacheInfoRepository`
 /// - Optional in-memory manifest for synchronous file lookups
 /// - Preset configurations for videos and images
+/// - Cache hit/miss metrics via `metrics`
 ///
 /// Example:
 /// ```dart
@@ -119,6 +162,9 @@ class MediaCacheConfig {
 ///   'https://example.com/video.mp4',
 ///   key: 'video_123',
 /// );
+///
+/// // Check cache performance
+/// print('Hit rate: ${videoCache.metrics.hitRate}');
 /// ```
 /// {@endtemplate}
 
@@ -165,6 +211,12 @@ class MediaCacheManager extends CacheManager {
 
   /// Tracks keys currently being cached to prevent duplicate requests.
   final Map<String, Future<File?>> _pendingCacheOperations = {};
+
+  /// Tracks keys that were downloaded via [preCacheFiles] (prefetched).
+  final Set<String> _prefetchedKeys = {};
+
+  /// Cache hit/miss metrics for observability.
+  final CacheMetrics metrics = CacheMetrics();
 
   /// Whether the cache manifest has been initialized.
   bool _manifestInitialized = false;
@@ -277,6 +329,7 @@ class MediaCacheManager extends CacheManager {
 
     final cachedPath = _cacheManifest[key];
     if (cachedPath == null) {
+      metrics.misses++;
       return null;
     }
 
@@ -285,7 +338,15 @@ class MediaCacheManager extends CacheManager {
     if (!file.existsSync()) {
       // Remove stale entry from manifest
       _cacheManifest.remove(key);
+      metrics.misses++;
       return null;
+    }
+
+    metrics.hits++;
+
+    // Track prefetch effectiveness
+    if (_prefetchedKeys.contains(key)) {
+      metrics.prefetchedUsed++;
     }
 
     return file;
@@ -380,6 +441,12 @@ class MediaCacheManager extends CacheManager {
   }) async {
     if (items.isEmpty) return;
 
+    // Track all items as prefetched for metrics
+    for (final item in items) {
+      _prefetchedKeys.add(item.key);
+    }
+    metrics.prefetchedTotal += items.length;
+
     // Process in batches
     for (var i = 0; i < items.length; i += batchSize) {
       final batch = <Future<File?>>[];
@@ -427,7 +494,7 @@ class MediaCacheManager extends CacheManager {
     _pendingCacheOperations.clear();
   }
 
-  /// Returns basic cache statistics.
+  /// Returns basic cache statistics including hit/miss metrics.
   Map<String, dynamic> getCacheStats() {
     return {
       'cacheKey': _config.cacheKey,
@@ -436,6 +503,7 @@ class MediaCacheManager extends CacheManager {
       'maxObjects': _config.maxNrOfCacheObjects,
       'stalePeriodDays': _config.stalePeriod.inDays,
       'syncManifestEnabled': _config.enableSyncManifest,
+      ...metrics.toMap(),
     };
   }
 
@@ -445,5 +513,7 @@ class MediaCacheManager extends CacheManager {
     _manifestInitialized = false;
     _cacheManifest.clear();
     _pendingCacheOperations.clear();
+    _prefetchedKeys.clear();
+    metrics.reset();
   }
 }

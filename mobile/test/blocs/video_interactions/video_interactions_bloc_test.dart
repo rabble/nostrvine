@@ -22,7 +22,7 @@ void main() {
     late _MockLikesRepository mockLikesRepository;
     late _MockCommentsRepository mockCommentsRepository;
     late _MockRepostsRepository mockRepostsRepository;
-    late StreamController<Set<String>> likedIdsController;
+    late StreamController<List<String>> likedIdsController;
     late StreamController<Set<String>> repostedIdsController;
 
     const testEventId = 'test-event-id';
@@ -33,7 +33,7 @@ void main() {
       mockLikesRepository = _MockLikesRepository();
       mockCommentsRepository = _MockCommentsRepository();
       mockRepostsRepository = _MockRepostsRepository();
-      likedIdsController = StreamController<Set<String>>.broadcast();
+      likedIdsController = StreamController<List<String>>.broadcast();
       repostedIdsController = StreamController<Set<String>>.broadcast();
 
       // Default stub for watchLikedEventIds
@@ -796,7 +796,7 @@ void main() {
         act: (bloc) async {
           bloc.add(const VideoInteractionsSubscriptionRequested());
           await Future<void>.delayed(const Duration(milliseconds: 50));
-          likedIdsController.add({testEventId});
+          likedIdsController.add([testEventId]);
         },
         wait: const Duration(milliseconds: 100),
         expect: () => [
@@ -821,7 +821,7 @@ void main() {
         act: (bloc) async {
           bloc.add(const VideoInteractionsSubscriptionRequested());
           await Future<void>.delayed(const Duration(milliseconds: 50));
-          likedIdsController.add(<String>{});
+          likedIdsController.add(<String>[]);
         },
         wait: const Duration(milliseconds: 100),
         expect: () => [
@@ -845,7 +845,7 @@ void main() {
         act: (bloc) async {
           bloc.add(const VideoInteractionsSubscriptionRequested());
           await Future<void>.delayed(const Duration(milliseconds: 50));
-          likedIdsController.add({testEventId});
+          likedIdsController.add([testEventId]);
         },
         wait: const Duration(milliseconds: 100),
         expect: () => <VideoInteractionsState>[],
@@ -860,7 +860,7 @@ void main() {
 
         // After closing, stream events should not affect anything
         // This mainly tests that no errors occur
-        expect(() => likedIdsController.add({testEventId}), returnsNormally);
+        expect(() => likedIdsController.add([testEventId]), returnsNormally);
       });
     });
   });

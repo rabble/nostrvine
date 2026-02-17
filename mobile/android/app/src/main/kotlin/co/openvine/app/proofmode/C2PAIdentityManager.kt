@@ -212,8 +212,8 @@ class C2PAIdentityManager(private val context: Context) {
             // Use the library's CertificateManager to generate a proper CSR
             val config =
                 CertificateManager.CertificateConfig(
-                    commonName = "Proofmode C2PA Hardware Key",
-                    organization = "Proofmode App Self-Signed",
+                    commonName = "DiVine Proofmode C2PA Hardware Key",
+                    organization = "DiVine App Proofmode Self-Signed",
                     organizationalUnit = "Mobile",
                     country = "US",
                     state = "New York",
