@@ -5,6 +5,7 @@
 // ABOUTME: Supports offline queuing via callback injection.
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:meta/meta.dart';
 import 'package:nostr_client/nostr_client.dart';
@@ -94,6 +95,14 @@ class RepostsRepository {
   /// In-memory cache of repost records keyed by addressable ID.
   final Map<String, RepostRecord> _repostRecords = {};
 
+  /// Local count cache keyed by addressable ID.
+  ///
+  /// Stores the last known-correct repost count after toggle operations.
+  /// This survives BLoC disposal (since the repository is a singleton) and
+  /// prevents stale NIP-45 COUNT from relays that haven't processed Kind 5
+  /// deletions yet.
+  final Map<String, int> _localCountCache = {};
+
   /// Reactive stream controller for reposted addressable IDs.
   final _repostedIdsController = BehaviorSubject<Set<String>>.seeded({});
 
@@ -165,13 +174,30 @@ class RepostsRepository {
     return _repostRecords.containsKey(addressableId);
   }
 
+  /// Cache a locally-adjusted repost count for a video.
+  ///
+  /// Called after a successful toggle to preserve the correct count across
+  /// BLoC recreations (e.g. when scrolling away and back in the feed).
+  /// This prevents stale NIP-45 COUNT from relays that haven't processed
+  /// Kind 5 deletions yet.
+  void cacheRepostCount(String addressableId, int count) {
+    _localCountCache[addressableId] = max(0, count);
+  }
+
   /// Get the repost count for a video by its addressable ID.
   ///
-  /// Queries relays for the count of Kind 16 generic reposts referencing the
-  /// video by its addressable ID (using the `a` tag).
+  /// Returns a locally-cached count if available (set by recent toggle
+  /// operations), otherwise queries relays via NIP-45 COUNT.
   ///
   /// Note: This counts all reposts from all users, not just the current user's.
   Future<int> getRepostCount(String addressableId) async {
+    // Use local cache if available (set by recent toggle operations).
+    // This prevents stale relay counts after unrepost, since relays may not
+    // immediately decrement NIP-45 COUNT for Kind 5 deletions.
+    if (_localCountCache.containsKey(addressableId)) {
+      return _localCountCache[addressableId]!;
+    }
+
     // Query relays for count of Kind 16 reposts referencing this addressable ID
     final filter = Filter(
       kinds: const [EventKind.genericRepost],
@@ -674,6 +700,7 @@ class RepostsRepository {
   /// stream emission is attempted.
   Future<void> clearCache() async {
     _repostRecords.clear();
+    _localCountCache.clear();
     await _localStorage?.clearAll();
     _emitRepostedIds();
     _isInitialized = false;

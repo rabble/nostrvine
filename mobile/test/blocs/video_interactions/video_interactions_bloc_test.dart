@@ -596,6 +596,11 @@ void main() {
             isRepostInProgress: false,
           ),
         ],
+        verify: (_) {
+          verify(
+            () => mockRepostsRepository.cacheRepostCount(testAddressableId, 6),
+          ).called(1);
+        },
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
@@ -630,6 +635,11 @@ void main() {
             isRepostInProgress: false,
           ),
         ],
+        verify: (_) {
+          verify(
+            () => mockRepostsRepository.cacheRepostCount(testAddressableId, 4),
+          ).called(1);
+        },
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(

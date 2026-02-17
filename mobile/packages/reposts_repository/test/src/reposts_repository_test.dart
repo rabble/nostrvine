@@ -567,6 +567,75 @@ void main() {
 
         expect(count, equals(0));
       });
+
+      test('returns cached count when available', () async {
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+        )..cacheRepostCount(testAddressableId, 7);
+
+        final count = await repository.getRepostCount(testAddressableId);
+
+        expect(count, equals(7));
+        verifyNever(() => mockNostrClient.countEvents(any()));
+      });
+
+      test('cached count clamps to zero for negative values', () async {
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+        )..cacheRepostCount(testAddressableId, -1);
+
+        final count = await repository.getRepostCount(testAddressableId);
+
+        expect(count, equals(0));
+      });
+    });
+
+    group('cacheRepostCount', () {
+      test(
+        'overrides relay count on subsequent getRepostCount calls',
+        () async {
+          when(
+            () => mockNostrClient.countEvents(any()),
+          ).thenAnswer(
+            (_) async => const CountResult(count: 10),
+          );
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+          );
+
+          // First call hits relay
+          final relayCount = await repository.getRepostCount(testAddressableId);
+          expect(relayCount, equals(10));
+
+          // Cache a different count (simulating unrepost)
+          repository.cacheRepostCount(testAddressableId, 9);
+
+          // Second call uses cache
+          final cachedCount = await repository.getRepostCount(
+            testAddressableId,
+          );
+          expect(cachedCount, equals(9));
+        },
+      );
+
+      test('is cleared by clearCache', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer(
+          (_) async => const CountResult(count: 10),
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+        )..cacheRepostCount(testAddressableId, 5);
+        await repository.clearCache();
+
+        final count = await repository.getRepostCount(testAddressableId);
+
+        expect(count, equals(10));
+        verify(() => mockNostrClient.countEvents(any())).called(1);
+      });
     });
 
     group('getRepostCountByEventId', () {
