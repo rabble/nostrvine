@@ -96,7 +96,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
   /// - New subdomain format: `_@username.divine.video`
   /// - Legacy formats: `username@divine.video`, `username@openvine.co`
   ///
-  /// Returns `null` if [nip05] is null or not a divine.video identifier.
+  /// Returns `null` if [nip05] is null or not a recognized identifier.
   static String? _extractDivineUsername(String? nip05) {
     if (nip05 == null || nip05.isEmpty) return null;
 

@@ -59,7 +59,7 @@ final class MyProfileLoaded extends MyProfileState {
   ///
   /// Supports both new subdomain format (`_@username.divine.video`)
   /// and legacy formats (`username@divine.video`, `username@openvine.co`).
-  /// Null if no divine.video NIP-05 is set.
+  /// Null if the NIP-05 is not from a recognized domain.
   final String? extractedUsername;
 
   @override
