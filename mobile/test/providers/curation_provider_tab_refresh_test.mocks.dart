@@ -2266,6 +2266,30 @@ class MockAnalyticsApiService extends _i1.Mock
           as _i9.Future<_i6.VideoStats?>);
 
   @override
+  _i9.Future<int?> getVideoViews(String? eventId) =>
+      (super.noSuchMethod(
+            Invocation.method(#getVideoViews, [eventId]),
+            returnValue: _i9.Future<int?>.value(),
+          )
+          as _i9.Future<int?>);
+
+  @override
+  _i9.Future<Map<String, int>> getBulkVideoViews(
+    List<String>? eventIds, {
+    int? maxVideos = 20,
+    int? maxConcurrent = 8,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #getBulkVideoViews,
+              [eventIds],
+              {#maxVideos: maxVideos, #maxConcurrent: maxConcurrent},
+            ),
+            returnValue: _i9.Future<Map<String, int>>.value(<String, int>{}),
+          )
+          as _i9.Future<Map<String, int>>);
+
+  @override
   _i9.Future<List<_i11.VideoEvent>> getVideosByAuthor({
     required String? pubkey,
     int? limit = 50,
