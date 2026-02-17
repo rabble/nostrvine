@@ -1,6 +1,7 @@
 import 'package:divine_camera/divine_camera.dart';
 import 'package:divine_camera/divine_camera_method_channel.dart';
 import 'package:divine_camera/divine_camera_platform_interface.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -152,6 +153,42 @@ void main() {
   group('DivineCameraPlatform', () {
     test('$MethodChannelDivineCamera is the default instance', () {
       expect(initialPlatform, isInstanceOf<MethodChannelDivineCamera>());
+    });
+
+    group('base class throws UnimplementedError', () {
+      late _BasePlatformForTesting basePlatform;
+
+      setUp(() {
+        basePlatform = _BasePlatformForTesting();
+      });
+
+      test('onRemoteRecordTrigger getter throws', () {
+        expect(
+          () => basePlatform.onRemoteRecordTrigger,
+          throwsUnimplementedError,
+        );
+      });
+
+      test('onRemoteRecordTrigger setter throws', () {
+        expect(
+          () => basePlatform.onRemoteRecordTrigger = (_) {},
+          throwsUnimplementedError,
+        );
+      });
+
+      test('setRemoteRecordControlEnabled throws', () {
+        expect(
+          () => basePlatform.setRemoteRecordControlEnabled(enabled: true),
+          throwsUnimplementedError,
+        );
+      });
+
+      test('setVolumeKeysEnabled throws', () {
+        expect(
+          () => basePlatform.setVolumeKeysEnabled(enabled: true),
+          throwsUnimplementedError,
+        );
+      });
     });
   });
 
@@ -778,6 +815,27 @@ void main() {
       expect(triggers.length, equals(3));
       expect(triggers.toSet().length, equals(3));
     });
+
+    test('toNativeString returns correct string for volumeUp', () {
+      expect(
+        RemoteRecordTrigger.volumeUp.toNativeString(),
+        equals('volumeUp'),
+      );
+    });
+
+    test('toNativeString returns correct string for volumeDown', () {
+      expect(
+        RemoteRecordTrigger.volumeDown.toNativeString(),
+        equals('volumeDown'),
+      );
+    });
+
+    test('toNativeString returns correct string for bluetooth', () {
+      expect(
+        RemoteRecordTrigger.bluetooth.toNativeString(),
+        equals('bluetooth'),
+      );
+    });
   });
 
   group('CameraState additional tests', () {
@@ -1207,6 +1265,158 @@ void main() {
       expect(DivineCamera.instance.onRecordingAutoStopped, isNull);
     });
   });
+
+  group(MethodChannelDivineCamera, () {
+    late MethodChannelDivineCamera methodChannelImpl;
+    late List<MethodCall> capturedCalls;
+
+    setUp(() {
+      methodChannelImpl = MethodChannelDivineCamera();
+      capturedCalls = <MethodCall>[];
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            methodChannelImpl.methodChannel,
+            (MethodCall methodCall) async {
+              capturedCalls.add(methodCall);
+              switch (methodCall.method) {
+                case 'setRemoteRecordControlEnabled':
+                  return true;
+                case 'setVolumeKeysEnabled':
+                  return true;
+                default:
+                  return null;
+              }
+            },
+          );
+    });
+
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            methodChannelImpl.methodChannel,
+            null,
+          );
+    });
+
+    test('onRemoteRecordTrigger getter returns null initially', () {
+      expect(methodChannelImpl.onRemoteRecordTrigger, isNull);
+    });
+
+    test('onRemoteRecordTrigger setter sets callback', () {
+      void callback(RemoteRecordTrigger trigger) {}
+      methodChannelImpl.onRemoteRecordTrigger = callback;
+      expect(methodChannelImpl.onRemoteRecordTrigger, equals(callback));
+    });
+
+    test('onRemoteRecordTrigger setter can clear callback', () {
+      void callback(RemoteRecordTrigger trigger) {}
+      methodChannelImpl.onRemoteRecordTrigger = callback;
+      methodChannelImpl.onRemoteRecordTrigger = null;
+      expect(methodChannelImpl.onRemoteRecordTrigger, isNull);
+    });
+
+    test('setRemoteRecordControlEnabled invokes method channel', () async {
+      final result = await methodChannelImpl.setRemoteRecordControlEnabled(
+        enabled: true,
+      );
+
+      expect(result, isTrue);
+      expect(capturedCalls, hasLength(1));
+      expect(capturedCalls.first.method, 'setRemoteRecordControlEnabled');
+      expect(capturedCalls.first.arguments, {'enabled': true});
+    });
+
+    test('setRemoteRecordControlEnabled with false', () async {
+      final result = await methodChannelImpl.setRemoteRecordControlEnabled(
+        enabled: false,
+      );
+
+      expect(result, isTrue);
+      expect(capturedCalls.first.arguments, {'enabled': false});
+    });
+
+    test('setVolumeKeysEnabled invokes method channel', () async {
+      final result = await methodChannelImpl.setVolumeKeysEnabled(
+        enabled: true,
+      );
+
+      expect(result, isTrue);
+      expect(capturedCalls, hasLength(1));
+      expect(capturedCalls.first.method, 'setVolumeKeysEnabled');
+      expect(capturedCalls.first.arguments, {'enabled': true});
+    });
+
+    test('setVolumeKeysEnabled with false', () async {
+      final result = await methodChannelImpl.setVolumeKeysEnabled(
+        enabled: false,
+      );
+
+      expect(result, isTrue);
+      expect(capturedCalls.first.arguments, {'enabled': false});
+    });
+
+    group('handleMethodCall', () {
+      test('handles onRemoteRecordTrigger callback', () async {
+        RemoteRecordTrigger? receivedTrigger;
+        methodChannelImpl.onRemoteRecordTrigger = (trigger) {
+          receivedTrigger = trigger;
+        };
+
+        final binaryMessenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+        // Simulate native calling back to Flutter
+        final codec = const StandardMethodCodec();
+        final encoded = codec.encodeMethodCall(
+          const MethodCall('onRemoteRecordTrigger', 'volumeDown'),
+        );
+
+        await binaryMessenger.handlePlatformMessage(
+          'divine_camera',
+          encoded,
+          (_) {},
+        );
+
+        expect(receivedTrigger, equals(RemoteRecordTrigger.volumeDown));
+      });
+
+      test('handles onRemoteRecordTrigger with null callback', () async {
+        // No callback set - should not crash
+        final binaryMessenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+        final codec = const StandardMethodCodec();
+        final encoded = codec.encodeMethodCall(
+          const MethodCall('onRemoteRecordTrigger', 'volumeUp'),
+        );
+
+        // This should not throw
+        await binaryMessenger.handlePlatformMessage(
+          'divine_camera',
+          encoded,
+          (_) {},
+        );
+      });
+
+      test('handles unknown method call', () async {
+        final binaryMessenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+        final codec = const StandardMethodCodec();
+        final encoded = codec.encodeMethodCall(
+          const MethodCall('unknownMethod', null),
+        );
+
+        // This should not throw
+        await binaryMessenger.handlePlatformMessage(
+          'divine_camera',
+          encoded,
+          (_) {},
+        );
+      });
+    });
+  });
 }
 
 /// Mock that doesn't support focus point
@@ -1256,3 +1466,7 @@ class _SingleCameraMock extends MockDivineCameraPlatform {
     );
   }
 }
+
+/// A class that directly extends DivineCameraPlatform for testing the base
+/// class methods that throw UnimplementedError.
+class _BasePlatformForTesting extends DivineCameraPlatform {}
