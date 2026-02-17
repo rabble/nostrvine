@@ -572,6 +572,7 @@ void main() {
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
+              currentCount: 5,
             ),
           ).thenAnswer((_) async => true);
         },
@@ -596,11 +597,6 @@ void main() {
             isRepostInProgress: false,
           ),
         ],
-        verify: (_) {
-          verify(
-            () => mockRepostsRepository.cacheRepostCount(testAddressableId, 6),
-          ).called(1);
-        },
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
@@ -611,6 +607,7 @@ void main() {
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
+              currentCount: 5,
             ),
           ).thenAnswer((_) async => false);
         },
@@ -635,11 +632,6 @@ void main() {
             isRepostInProgress: false,
           ),
         ],
-        verify: (_) {
-          verify(
-            () => mockRepostsRepository.cacheRepostCount(testAddressableId, 4),
-          ).called(1);
-        },
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
@@ -650,6 +642,7 @@ void main() {
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
+              currentCount: 0,
             ),
           ).thenAnswer((_) async => false);
         },
@@ -710,6 +703,7 @@ void main() {
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
+              currentCount: 0,
             ),
           ).thenThrow(const AlreadyRepostedException(testAddressableId));
         },
@@ -741,6 +735,7 @@ void main() {
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
+              currentCount: 0,
             ),
           ).thenThrow(const NotRepostedException(testAddressableId));
         },
@@ -772,6 +767,7 @@ void main() {
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
+              currentCount: 0,
             ),
           ).thenThrow(Exception('Network error'));
         },

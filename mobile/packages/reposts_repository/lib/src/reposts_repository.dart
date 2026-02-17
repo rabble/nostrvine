@@ -176,11 +176,11 @@ class RepostsRepository {
 
   /// Cache a locally-adjusted repost count for a video.
   ///
-  /// Called after a successful toggle to preserve the correct count across
-  /// BLoC recreations (e.g. when scrolling away and back in the feed).
+  /// Called internally after a successful toggle to preserve the correct count
+  /// across BLoC recreations (e.g. when scrolling away and back in the feed).
   /// This prevents stale NIP-45 COUNT from relays that haven't processed
   /// Kind 5 deletions yet.
-  void cacheRepostCount(String addressableId, int count) {
+  void _cacheRepostCount(String addressableId, int count) {
     _localCountCache[addressableId] = max(0, count);
   }
 
@@ -462,6 +462,10 @@ class RepostsRepository {
   /// - [addressableId]: The addressable ID of the video (kind:pubkey:d-tag)
   /// - [originalAuthorPubkey]: The pubkey of the video's author
   /// - [eventId]: Optional event ID for better relay compatibility
+  /// - [currentCount]: The current repost count displayed in the UI. When
+  ///   provided, the repository caches the adjusted count (incremented or
+  ///   decremented) so that future [getRepostCount] calls return the correct
+  ///   value instead of a stale NIP-45 COUNT from relays.
   ///
   /// This is a convenience method that combines [isReposted], [repostVideo],
   /// and [unrepostVideo].
@@ -469,6 +473,7 @@ class RepostsRepository {
     required String addressableId,
     required String originalAuthorPubkey,
     String? eventId,
+    int? currentCount,
   }) async {
     await _ensureInitialized();
 
@@ -480,6 +485,9 @@ class RepostsRepository {
 
     if (isCurrentlyReposted) {
       await unrepostVideo(addressableId);
+      if (currentCount != null) {
+        _cacheRepostCount(addressableId, currentCount - 1);
+      }
       return false;
     } else {
       await repostVideo(
@@ -487,6 +495,9 @@ class RepostsRepository {
         originalAuthorPubkey: originalAuthorPubkey,
         eventId: eventId,
       );
+      if (currentCount != null) {
+        _cacheRepostCount(addressableId, currentCount + 1);
+      }
       return true;
     }
   }

@@ -237,21 +237,17 @@ class VideoInteractionsBloc
     emit(state.copyWith(isRepostInProgress: true, clearError: true));
 
     try {
+      final currentCount = state.repostCount ?? 0;
       final isNowReposted = await _repostsRepository.toggleRepost(
         addressableId: _addressableId,
         originalAuthorPubkey: _authorPubkey,
         eventId: _eventId,
+        currentCount: currentCount,
       );
 
       // Update local state with new repost status and adjusted count
-      final currentCount = state.repostCount ?? 0;
       final newCount = isNowReposted ? currentCount + 1 : currentCount - 1;
       final safeCount = newCount < 0 ? 0 : newCount;
-
-      // Cache the adjusted count in the repository so future BLoC instances
-      // (created when scrolling away and back) use the correct count instead
-      // of a stale NIP-45 COUNT from relays.
-      _repostsRepository.cacheRepostCount(_addressableId, safeCount);
 
       emit(
         state.copyWith(

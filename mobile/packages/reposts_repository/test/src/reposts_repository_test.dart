@@ -568,10 +568,17 @@ void main() {
         expect(count, equals(0));
       });
 
-      test('returns cached count when available', () async {
+      test('returns cached count when available after toggleRepost', () async {
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-        )..cacheRepostCount(testAddressableId, 7);
+        );
+
+        // Trigger a repost with currentCount: 6 → caches 6+1=7
+        await repository.toggleRepost(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+          currentCount: 6,
+        );
 
         final count = await repository.getRepostCount(testAddressableId);
 
@@ -580,9 +587,33 @@ void main() {
       });
 
       test('cached count clamps to zero for negative values', () async {
+        // Set up a repost record so unrepost succeeds
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenAnswer(
+          (_) async => createMockEvent(
+            id: 'deletion_event_id',
+            kind: EventKind.eventDeletion,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        );
+
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-        )..cacheRepostCount(testAddressableId, -1);
+        );
+
+        // First repost so there's something to unrepost
+        await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        // Trigger an unrepost with currentCount: 0 → caches max(0, 0-1) = 0
+        await repository.toggleRepost(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+          currentCount: 0,
+        );
 
         final count = await repository.getRepostCount(testAddressableId);
 
@@ -590,7 +621,7 @@ void main() {
       });
     });
 
-    group('cacheRepostCount', () {
+    group('count caching via toggleRepost', () {
       test(
         'overrides relay count on subsequent getRepostCount calls',
         () async {
@@ -608,14 +639,18 @@ void main() {
           final relayCount = await repository.getRepostCount(testAddressableId);
           expect(relayCount, equals(10));
 
-          // Cache a different count (simulating unrepost)
-          repository.cacheRepostCount(testAddressableId, 9);
+          // Repost with currentCount: 10 → caches 11
+          await repository.toggleRepost(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+            currentCount: 10,
+          );
 
-          // Second call uses cache
+          // Second call uses cache (11 from repost)
           final cachedCount = await repository.getRepostCount(
             testAddressableId,
           );
-          expect(cachedCount, equals(9));
+          expect(cachedCount, equals(11));
         },
       );
 
@@ -628,7 +663,14 @@ void main() {
 
         final repository = RepostsRepository(
           nostrClient: mockNostrClient,
-        )..cacheRepostCount(testAddressableId, 5);
+        );
+
+        // Repost with currentCount: 4 → caches 5
+        await repository.toggleRepost(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+          currentCount: 4,
+        );
         await repository.clearCache();
 
         final count = await repository.getRepostCount(testAddressableId);
