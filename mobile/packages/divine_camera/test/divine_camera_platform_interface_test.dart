@@ -28,6 +28,9 @@ class TestDivineCameraPlatform extends DivineCameraPlatform
   Future<bool> setFocusPoint(Offset offset) async => true;
 
   @override
+  Future<bool> cancelFocusAndMetering() async => true;
+
+  @override
   Future<bool> setExposurePoint(Offset offset) async => true;
 
   @override
@@ -128,6 +131,13 @@ void main() {
       test('setFocusPoint throws', () {
         expect(
           () => basePlatform.setFocusPoint(const Offset(0.5, 0.5)),
+          throwsA(isA<UnimplementedError>()),
+        );
+      });
+
+      test('cancelFocusAndMetering throws', () {
+        expect(
+          () => basePlatform.cancelFocusAndMetering(),
           throwsA(isA<UnimplementedError>()),
         );
       });
