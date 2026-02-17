@@ -283,6 +283,14 @@ void main() {
 
         expect(success, isTrue);
       });
+
+      test('cancels focus and metering successfully', () async {
+        await DivineCamera.instance.initialize();
+
+        final success = await DivineCamera.instance.cancelFocusAndMetering();
+
+        expect(success, isTrue);
+      });
     });
 
     group('zoom', () {
