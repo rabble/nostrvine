@@ -902,6 +902,10 @@ class CameraController: NSObject {
     /// Sets the focus point in normalized coordinates (0.0-1.0).
     /// Uses combined focus + exposure + white balance for best results.
     /// Focus is locked for 3 seconds, then returns to continuous auto-focus.
+    ///
+    /// Note: Input coordinates are in display space (portrait mode).
+    /// iOS focusPointOfInterest uses sensor coordinates (landscape),
+    /// so we transform: display (x, y) → sensor (y, 1-x) for portrait mode.
     func setFocusPoint(x: CGFloat, y: CGFloat) -> Bool {
         guard let device = videoDevice, device.isFocusPointOfInterestSupported else {
             return false
@@ -910,18 +914,25 @@ class CameraController: NSObject {
         // Cancel any pending auto-cancel timer from previous tap
         focusAutoCancelWorkItem?.cancel()
         
+        // Transform display coordinates to sensor coordinates
+        // iOS sensor coordinate system is always landscape-oriented:
+        // - (0,0) is top-left of sensor (in landscape)
+        // - For portrait mode, we need to rotate the coordinates
+        // Display (x, y) → Sensor (y, 1-x) for portrait orientation
+        let sensorPoint = CGPoint(x: y, y: 1 - x)
+        
         do {
             try device.lockForConfiguration()
             
             // Set focus point and trigger one-shot auto-focus
-            device.focusPointOfInterest = CGPoint(x: x, y: y)
+            device.focusPointOfInterest = sensorPoint
             if device.isFocusModeSupported(.autoFocus) {
                 device.focusMode = .autoFocus
             }
             
             // Also set exposure at the same point for consistent results
             if device.isExposurePointOfInterestSupported {
-                device.exposurePointOfInterest = CGPoint(x: x, y: y)
+                device.exposurePointOfInterest = sensorPoint
                 if device.isExposureModeSupported(.autoExpose) {
                     device.exposureMode = .autoExpose
                 }
@@ -978,14 +989,21 @@ class CameraController: NSObject {
     
     /// Sets the exposure point in normalized coordinates (0.0-1.0).
     /// For exposure-only adjustment without changing focus.
+    ///
+    /// Note: Input coordinates are in display space (portrait mode).
+    /// iOS exposurePointOfInterest uses sensor coordinates (landscape),
+    /// so we transform: display (x, y) → sensor (y, 1-x) for portrait mode.
     func setExposurePoint(x: CGFloat, y: CGFloat) -> Bool {
         guard let device = videoDevice, device.isExposurePointOfInterestSupported else {
             return false
         }
         
+        // Transform display coordinates to sensor coordinates
+        let sensorPoint = CGPoint(x: y, y: 1 - x)
+        
         do {
             try device.lockForConfiguration()
-            device.exposurePointOfInterest = CGPoint(x: x, y: y)
+            device.exposurePointOfInterest = sensorPoint
             if device.isExposureModeSupported(.autoExpose) {
                 device.exposureMode = .autoExpose
             }
