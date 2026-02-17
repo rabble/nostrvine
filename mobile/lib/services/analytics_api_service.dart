@@ -68,6 +68,8 @@ class VideoStats {
     } else {
       id = rawId?.toString() ?? '';
     }
+    // Normalize to lowercase per NIP-01 (Funnelcake may return uppercase hex)
+    id = id.toLowerCase();
 
     // Parse pubkey - same format as id
     String pubkey;
@@ -77,6 +79,8 @@ class VideoStats {
     } else {
       pubkey = rawPubkey?.toString() ?? '';
     }
+    // Normalize to lowercase per NIP-01 (Funnelcake may return uppercase hex)
+    pubkey = pubkey.toLowerCase();
 
     // Parse created_at - funnelcake returns Unix timestamp (int), not ISO string
     DateTime createdAt;
@@ -379,7 +383,15 @@ class PaginatedPubkeys {
   });
 
   factory PaginatedPubkeys.fromJson(Map<String, dynamic> json) {
-    final pubkeysData = json['pubkeys'] as List<dynamic>? ?? [];
+    // The funnelcake API uses context-specific keys:
+    // - /following returns {"following": [...]}
+    // - /followers returns {"followers": [...]}
+    // - Fall back to "pubkeys" for generic responses
+    final pubkeysData =
+        json['following'] as List<dynamic>? ??
+        json['followers'] as List<dynamic>? ??
+        json['pubkeys'] as List<dynamic>? ??
+        [];
     return PaginatedPubkeys(
       pubkeys: pubkeysData.map((e) => e.toString()).toList(),
       total: json['total'] as int? ?? pubkeysData.length,

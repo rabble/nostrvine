@@ -114,6 +114,47 @@ class AppDatabase extends _$AppDatabase {
         ON nip05_verifications (expires_at)
       ''');
     }
+
+    // Check if pending_actions table exists, create if missing
+    final pendingActionsResult = await customSelect(
+      "SELECT name FROM sqlite_master WHERE type='table' "
+      "AND name='pending_actions'",
+    ).get();
+
+    if (pendingActionsResult.isEmpty) {
+      await customStatement('''
+        CREATE TABLE pending_actions (
+          id TEXT NOT NULL PRIMARY KEY,
+          type TEXT NOT NULL,
+          target_id TEXT NOT NULL,
+          author_pubkey TEXT,
+          addressable_id TEXT,
+          target_kind INTEGER,
+          status TEXT NOT NULL,
+          user_pubkey TEXT NOT NULL,
+          created_at INTEGER NOT NULL,
+          retry_count INTEGER NOT NULL DEFAULT 0,
+          last_error TEXT,
+          last_attempt_at INTEGER
+        )
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_pending_action_status
+        ON pending_actions (status)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_pending_action_user
+        ON pending_actions (user_pubkey)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_pending_action_user_status
+        ON pending_actions (user_pubkey, status)
+      ''');
+      await customStatement('''
+        CREATE INDEX IF NOT EXISTS idx_pending_action_created
+        ON pending_actions (created_at)
+      ''');
+    }
   }
 
   /// Runs cleanup of expired data from all tables.

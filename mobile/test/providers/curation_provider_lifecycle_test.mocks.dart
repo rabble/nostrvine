@@ -1525,12 +1525,12 @@ class MockLikesRepository extends _i1.Mock implements _i3.LikesRepository {
   }
 
   @override
-  _i9.Stream<Set<String>> watchLikedEventIds() =>
+  _i9.Stream<List<String>> watchLikedEventIds() =>
       (super.noSuchMethod(
             Invocation.method(#watchLikedEventIds, []),
-            returnValue: _i9.Stream<Set<String>>.empty(),
+            returnValue: _i9.Stream<List<String>>.empty(),
           )
-          as _i9.Stream<Set<String>>);
+          as _i9.Stream<List<String>>);
 
   @override
   _i9.Future<Set<String>> getLikedEventIds() =>

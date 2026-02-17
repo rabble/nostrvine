@@ -11,6 +11,7 @@ import 'package:flutter/widgets.dart';
 
 // Export models for external use
 export 'src/models/camera_lens.dart';
+export 'src/models/camera_lens_metadata.dart';
 export 'src/models/camera_state.dart';
 export 'src/models/flash_mode.dart';
 export 'src/models/video_quality.dart';
@@ -173,6 +174,24 @@ class DivineCamera {
     _notifyStateChanged();
 
     _state = await _platform.switchCamera(newLens);
+    _state = _state.copyWith(isSwitchingCamera: false);
+    _notifyStateChanged();
+    return true;
+  }
+
+  /// Switches to a specific camera lens.
+  ///
+  /// [lens] the lens to switch to.
+  /// Returns true if successful.
+  Future<bool> setLens(DivineCameraLens lens) async {
+    if (lens == _state.lens) return true;
+    if (!_state.availableLenses.contains(lens)) return false;
+
+    // Set switching state to keep last frame visible
+    _state = _state.copyWith(isSwitchingCamera: true);
+    _notifyStateChanged();
+
+    _state = await _platform.switchCamera(lens);
     _state = _state.copyWith(isSwitchingCamera: false);
     _notifyStateChanged();
     return true;

@@ -145,9 +145,8 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
     );
 
     final outputPath = await VideoEditorRenderService.renderVideo(
+      taskId: _renderTaskId,
       clips: clips,
-      aspectRatio: clips.first.targetAspectRatio,
-      enableAudio: true,
     );
 
     _videoPlayer = VideoPlayerController.file(File(outputPath!));
@@ -237,10 +236,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
         );
       }
     }
-    notifier.updateEditorEditingParameters(<String, dynamic>{
-      'image': parameters.image,
-      'colorFilters': parameters.colorFilters,
-    });
+    notifier.updateEditorEditingParameters(parameters);
     notifier.startRenderVideo();
   }
 
@@ -255,7 +251,11 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
       category: LogCategory.video,
     );
     _videoPlayer?.pause();
-    ref.read(videoEditorProvider.notifier).startRenderVideo();
+    // IMPORTANT: Don't start video rendering here. We must await
+    // `_handleEditorComplete` which generate the layer image before we start
+    // rendering! However, we can navigate to the metadata screen immediately
+    // since it shows a progress spinner anyway (~200ms task).
+    ref.read(videoEditorProvider.notifier).setProcessing(true);
     await context.push(VideoMetadataScreen.path);
     if (mounted) _videoPlayer?.play();
   }

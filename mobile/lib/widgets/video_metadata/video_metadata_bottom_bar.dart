@@ -11,7 +11,6 @@ import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:pro_video_editor/pro_video_editor.dart';
 
 /// Bottom bar with "Save for Later" and "Post" buttons for video metadata.
 ///
@@ -58,53 +57,66 @@ class _SaveForLaterButton extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isSaving = ref.watch(
-      videoEditorProvider.select((s) => s.isSavingDraft),
+    final state = ref.watch(
+      videoEditorProvider.select(
+        (s) => (isSavingDraft: s.isSavingDraft, isProcessing: s.isProcessing),
+      ),
     );
+    final isSaving = state.isSavingDraft;
+    final isProcessing = state.isProcessing;
 
-    return Semantics(
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Save for later button',
-      hint: isSaving
-          ? 'Saving video...'
-          : 'Save video to drafts and camera roll',
-      button: true,
-      enabled: !isSaving,
-      child: GestureDetector(
-        onTap: isSaving ? null : () => _onSaveForLater(context, ref),
-        child: AnimatedOpacity(
-          duration: const Duration(milliseconds: 200),
-          opacity: isSaving ? 0.6 : 1.0,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [Color(0xAA0E2B21), Color(0xE5032017)],
+    return AnimatedOpacity(
+      duration: const Duration(milliseconds: 200),
+      opacity: !isProcessing ? 1 : 0.32,
+      child: Semantics(
+        identifier: 'save_for_later_button',
+        // TODO(l10n): Replace with context.l10n when localization is added.
+        label: 'Save for later button',
+        hint: isProcessing
+            ? 'Rendering video...'
+            : isSaving
+            ? 'Saving video...'
+            : 'Save video to drafts and camera roll',
+        button: true,
+        enabled: !isSaving && !isProcessing,
+        child: GestureDetector(
+          onTap: isSaving || isProcessing
+              ? null
+              : () => _onSaveForLater(context, ref),
+          child: AnimatedOpacity(
+            duration: const Duration(milliseconds: 200),
+            opacity: isSaving ? 0.6 : 1.0,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Color(0xAA0E2B21), Color(0xE5032017)],
+                ),
+                border: Border.all(color: const Color(0xFF184235), width: 1.5),
+                borderRadius: BorderRadius.circular(18),
               ),
-              border: Border.all(color: const Color(0xFF184235), width: 1.5),
-              borderRadius: BorderRadius.circular(18),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 12),
-              child: Center(
-                child: isSaving
-                    ? const SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2.5,
-                          color: VineTheme.primary,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                child: Center(
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            color: VineTheme.primary,
+                          ),
+                        )
+                      // TODO(l10n): Replace with context.l10n when localization
+                      // is added.
+                      : Text(
+                          'Save for Later',
+                          style: VineTheme.titleSmallFont(
+                            color: VineTheme.primary,
+                          ),
                         ),
-                      )
-                    // TODO(l10n): Replace with context.l10n when localization
-                    // is added.
-                    : Text(
-                        'Save for Later',
-                        style: VineTheme.titleSmallFont(
-                          color: VineTheme.primary,
-                        ),
-                      ),
+                ),
               ),
             ),
           ),
@@ -115,6 +127,7 @@ class _SaveForLaterButton extends ConsumerWidget {
 
   Future<void> _onSaveForLater(BuildContext context, WidgetRef ref) async {
     // Get the clips from clip manager
+    final finalRenderedClip = ref.read(videoEditorProvider).finalRenderedClip;
     final recordingClips = ref.read(clipManagerProvider).clips;
     if (recordingClips.isEmpty) {
       Log.warning(
@@ -129,22 +142,21 @@ class _SaveForLaterButton extends ConsumerWidget {
     String? gallerySaveMessage;
 
     try {
-      // 1. Get video path and save to gallery FIRST (before draft save deletes
-      // the original file)
-      final videoPath = await recordingClips.first.video.safeFilePath();
-      final gallerySaveService = ref.read(gallerySaveServiceProvider);
-      final galleryResult = await gallerySaveService.saveVideoToGallery(
-        EditorVideo.file(videoPath),
-      );
+      // 1. Save the final rendered video to the gallery.
+      if (finalRenderedClip != null) {
+        final gallerySaveService = ref.read(gallerySaveServiceProvider);
+        final galleryResult = await gallerySaveService.saveVideoToGallery(
+          finalRenderedClip.video,
+        );
 
-      gallerySaveMessage = switch (galleryResult) {
-        GallerySaveSuccess() => 'Saved to camera roll',
-        GallerySavePermissionDenied() => 'Camera roll: permission denied',
-        GallerySaveFailure(:final reason) => 'Camera roll: $reason',
-      };
+        gallerySaveMessage = switch (galleryResult) {
+          GallerySaveSuccess() => 'Saved to camera roll',
+          GallerySavePermissionDenied() => 'Camera roll: permission denied',
+          GallerySaveFailure(:final reason) => 'Camera roll: $reason',
+        };
+      }
 
-      // 2. Save each clip to the clip library for the Clips tab
-      // (must happen before saveAsDraft which may delete files)
+      // 2. Save each clip to the clip library for the Clips tab.
       final clipLibraryService = ref.read(clipLibraryServiceProvider);
       final sessionId = 'save_${DateTime.now().millisecondsSinceEpoch}';
 
@@ -255,6 +267,7 @@ class _PostButton extends ConsumerWidget {
       duration: const Duration(milliseconds: 200),
       opacity: isValidToPost ? 1 : 0.32,
       child: Semantics(
+        identifier: 'post_button',
         // TODO(l10n): Replace with context.l10n when localization is added.
         label: 'Post button',
         hint: isValidToPost

@@ -19,7 +19,7 @@ void main() {
   group('ProfileLikedVideosBloc', () {
     late _MockLikesRepository mockLikesRepository;
     late _MockVideosRepository mockVideosRepository;
-    late StreamController<Set<String>> likedIdsController;
+    late StreamController<List<String>> likedIdsController;
 
     // Test pubkeys
     const currentUserPubkey =
@@ -30,7 +30,7 @@ void main() {
     setUp(() {
       mockLikesRepository = _MockLikesRepository();
       mockVideosRepository = _MockVideosRepository();
-      likedIdsController = StreamController<Set<String>>.broadcast();
+      likedIdsController = StreamController<List<String>>.broadcast();
 
       // Default stub for watchLikedEventIds
       when(
@@ -311,7 +311,7 @@ void main() {
           // Wait for subscription to be set up
           await Future<void>.delayed(const Duration(milliseconds: 50));
           // Emit stream with event2 removed (unliked)
-          likedIdsController.add({'event1'});
+          likedIdsController.add(['event1']);
         },
         wait: const Duration(milliseconds: 100),
         expect: () => [
@@ -331,7 +331,7 @@ void main() {
         act: (bloc) async {
           bloc.add(const ProfileLikedVideosSubscriptionRequested());
           await Future<void>.delayed(const Duration(milliseconds: 50));
-          likedIdsController.add({'event1'});
+          likedIdsController.add(['event1']);
         },
         wait: const Duration(milliseconds: 100),
         expect: () => <ProfileLikedVideosState>[],
@@ -347,14 +347,14 @@ void main() {
         act: (bloc) async {
           bloc.add(const ProfileLikedVideosSubscriptionRequested());
           await Future<void>.delayed(const Duration(milliseconds: 50));
-          likedIdsController.add({'event1', 'event2'});
+          likedIdsController.add(['event2', 'event1']);
         },
         wait: const Duration(milliseconds: 100),
         expect: () => [
           isA<ProfileLikedVideosState>().having(
             (s) => s.likedEventIds,
             'likedEventIds',
-            containsAll(['event1', 'event2']),
+            equals(['event2', 'event1']),
           ),
         ],
       );
@@ -367,7 +367,7 @@ void main() {
         await bloc.close();
 
         // After closing, stream events should not cause errors
-        expect(() => likedIdsController.add({'event1'}), returnsNormally);
+        expect(() => likedIdsController.add(['event1']), returnsNormally);
       });
     });
 
@@ -412,7 +412,7 @@ void main() {
           bloc.add(const ProfileLikedVideosSubscriptionRequested());
           await Future<void>.delayed(const Duration(milliseconds: 50));
           // Try to emit on the liked IDs stream
-          likedIdsController.add({'event1'});
+          likedIdsController.add(['event1']);
         },
         wait: const Duration(milliseconds: 100),
         expect: () => <ProfileLikedVideosState>[],
@@ -449,7 +449,7 @@ void main() {
 
     group('ProfileLikedVideosLoadMoreRequested', () {
       blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
-        'loads next page of videos',
+        'loads next page of videos and advances nextPageOffset',
         setUp: () {
           final video3 = createTestVideo('event3');
           when(
@@ -465,6 +465,7 @@ void main() {
           likedEventIds: const ['event1', 'event2', 'event3'],
           videos: [createTestVideo('event1'), createTestVideo('event2')],
           hasMoreContent: true,
+          nextPageOffset: 2,
         ),
         act: (bloc) => bloc.add(const ProfileLikedVideosLoadMoreRequested()),
         expect: () => [
@@ -476,6 +477,124 @@ void main() {
           isA<ProfileLikedVideosState>()
               .having((s) => s.isLoadingMore, 'isLoadingMore', false)
               .having((s) => s.videos.length, 'videos count', 3)
+              .having((s) => s.hasMoreContent, 'hasMoreContent', false)
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 3),
+        ],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'advances nextPageOffset by IDs consumed even when some IDs '
+        'do not resolve to videos',
+        setUp: () {
+          // Only 1 of 3 IDs resolves to a video (others missing from relay)
+          final video5 = createTestVideo('event5');
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer((_) async => [video5]);
+        },
+        build: createBloc,
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          likedEventIds: const [
+            'event1',
+            'event2',
+            'event3',
+            'event4',
+            'event5',
+            'event6',
+          ],
+          videos: [createTestVideo('event1'), createTestVideo('event2')],
+          hasMoreContent: true,
+          nextPageOffset: 3,
+        ),
+        act: (bloc) => bloc.add(const ProfileLikedVideosLoadMoreRequested()),
+        expect: () => [
+          isA<ProfileLikedVideosState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              // Only 1 new video resolved, so 2 + 1 = 3 total
+              .having((s) => s.videos.length, 'videos count', 3)
+              // Offset advances by 3 IDs consumed (event4, event5, event6)
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 6)
+              // All IDs consumed → no more content
+              .having((s) => s.hasMoreContent, 'hasMoreContent', false),
+        ],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'emits hasMoreContent false when '
+        'nextPageOffset >= likedEventIds.length',
+        build: createBloc,
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          likedEventIds: const ['event1', 'event2'],
+          videos: [createTestVideo('event1')],
+          hasMoreContent: true,
+          nextPageOffset: 2,
+        ),
+        act: (bloc) => bloc.add(const ProfileLikedVideosLoadMoreRequested()),
+        expect: () => [
+          isA<ProfileLikedVideosState>().having(
+            (s) => s.hasMoreContent,
+            'hasMoreContent',
+            false,
+          ),
+        ],
+        verify: (_) {
+          // Should not even attempt to fetch videos
+          verifyNever(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          );
+        },
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'deduplicates videos already present in state',
+        setUp: () {
+          // Repository returns a video that's already loaded
+          final duplicateVideo = createTestVideo('event1');
+          final newVideo = createTestVideo('event3');
+          when(
+            () => mockVideosRepository.getVideosByIds(
+              any(),
+              cacheResults: any(named: 'cacheResults'),
+            ),
+          ).thenAnswer((_) async => [duplicateVideo, newVideo]);
+        },
+        build: createBloc,
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          likedEventIds: const ['event1', 'event2', 'event3'],
+          videos: [createTestVideo('event1')],
+          hasMoreContent: true,
+          nextPageOffset: 1,
+        ),
+        act: (bloc) => bloc.add(const ProfileLikedVideosLoadMoreRequested()),
+        expect: () => [
+          isA<ProfileLikedVideosState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              // Only event3 is new, so 1 + 1 = 2 (event1 deduped)
+              .having((s) => s.videos.length, 'videos count', 2)
+              .having((s) => s.videos.map((v) => v.id).toList(), 'video IDs', [
+                'event1',
+                'event3',
+              ])
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 3)
               .having((s) => s.hasMoreContent, 'hasMoreContent', false),
         ],
       );
@@ -501,6 +620,68 @@ void main() {
         ),
         act: (bloc) => bloc.add(const ProfileLikedVideosLoadMoreRequested()),
         expect: () => <ProfileLikedVideosState>[],
+      );
+    });
+
+    group('Subscription nextPageOffset adjustment', () {
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'clamps nextPageOffset when unlike reduces likedEventIds',
+        build: createBloc,
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          likedEventIds: const ['event1', 'event2', 'event3'],
+          videos: [
+            createTestVideo('event1'),
+            createTestVideo('event2'),
+            createTestVideo('event3'),
+          ],
+          nextPageOffset: 3,
+        ),
+        act: (bloc) async {
+          bloc.add(const ProfileLikedVideosSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          // event3 was unliked
+          likedIdsController.add(['event1', 'event2']);
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.likedEventIds, 'likedEventIds', [
+                'event1',
+                'event2',
+              ])
+              .having((s) => s.videos.length, 'videos count', 2)
+              // nextPageOffset clamped from 3 to 2
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 2),
+        ],
+      );
+
+      blocTest<ProfileLikedVideosBloc, ProfileLikedVideosState>(
+        'shifts nextPageOffset forward when new like is added',
+        build: createBloc,
+        seed: () => ProfileLikedVideosState(
+          status: ProfileLikedVideosStatus.success,
+          likedEventIds: const ['event1', 'event2'],
+          videos: [createTestVideo('event1'), createTestVideo('event2')],
+          nextPageOffset: 2,
+        ),
+        act: (bloc) async {
+          bloc.add(const ProfileLikedVideosSubscriptionRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+          // New like prepended
+          likedIdsController.add(['event3', 'event1', 'event2']);
+        },
+        wait: const Duration(milliseconds: 100),
+        expect: () => [
+          isA<ProfileLikedVideosState>()
+              .having((s) => s.likedEventIds, 'likedEventIds', [
+                'event3',
+                'event1',
+                'event2',
+              ])
+              // nextPageOffset shifted forward by 1 (1 new like added)
+              .having((s) => s.nextPageOffset, 'nextPageOffset', 3),
+        ],
       );
     });
   });

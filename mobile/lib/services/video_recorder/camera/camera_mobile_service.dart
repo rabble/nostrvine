@@ -186,6 +186,36 @@ class CameraMobileService extends CameraService {
   }
 
   @override
+  Future<bool> setLens(DivineCameraLens lens) async {
+    if (!_isInitialized) return false;
+    try {
+      Log.info(
+        '📷 Switching to lens: ${lens.displayName}',
+        name: 'CameraMobileService',
+        category: .video,
+      );
+
+      final success = await _camera.setLens(lens);
+      if (success) {
+        onUpdateState(forceCameraRebuild: true);
+        Log.info(
+          '📷 Switched to lens: ${lens.displayName}',
+          name: 'CameraMobileService',
+          category: .video,
+        );
+      }
+      return success;
+    } catch (e) {
+      Log.error(
+        '📷 Failed to set lens: $e',
+        name: 'CameraMobileService',
+        category: .video,
+      );
+      return false;
+    }
+  }
+
+  @override
   Future<bool> startRecording({
     Duration? maxDuration,
     String? outputDirectory,
@@ -296,6 +326,16 @@ class CameraMobileService extends CameraService {
 
   @override
   bool get canSwitchCamera => _camera.canSwitchCamera;
+
+  @override
+  DivineCameraLens get currentLens => _camera.state.lens;
+
+  @override
+  List<DivineCameraLens> get availableLenses => _camera.state.availableLenses;
+
+  @override
+  CameraLensMetadata? get currentLensMetadata =>
+      _camera.state.currentLensMetadata;
 
   @override
   String? get initializationError => _initializationError;

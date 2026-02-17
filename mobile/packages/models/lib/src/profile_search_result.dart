@@ -43,6 +43,8 @@ class ProfileSearchResult {
     } else {
       pubkey = rawPubkey?.toString() ?? '';
     }
+    // Normalize to lowercase per NIP-01 (Funnelcake may return uppercase hex)
+    pubkey = pubkey.toLowerCase();
 
     // Parse created_at - funnelcake returns Unix timestamp (int), not ISO
     DateTime? createdAt;
@@ -61,6 +63,8 @@ class ProfileSearchResult {
     } else if (rawEventId != null) {
       eventId = rawEventId.toString();
     }
+    // Normalize to lowercase per NIP-01 (Funnelcake may return uppercase hex)
+    eventId = eventId?.toLowerCase();
 
     // Parse follower_count and video_count
     int? followerCount;

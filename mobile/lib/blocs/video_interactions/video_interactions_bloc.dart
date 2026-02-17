@@ -62,7 +62,7 @@ class VideoInteractionsBloc
     Emitter<VideoInteractionsState> emit,
   ) {
     final subscriptions = [
-      emit.forEach<Set<String>>(
+      emit.forEach<List<String>>(
         _likesRepository.watchLikedEventIds(),
         onData: (likedIds) {
           final isLiked = likedIds.contains(_eventId);

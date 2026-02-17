@@ -206,7 +206,7 @@ class NotificationServiceEnhanced {
   /// Subscribe to reposts
   void _subscribeToReposts(String userPubkey) {
     final filter = Filter(
-      kinds: [16], // Kind 16 = Generic Reposts (NIP-18)
+      kinds: [6, 16], // Kind 6 = Repost, Kind 16 = Generic Repost (NIP-18)
       // NO h filter - we query all relays
     );
 
@@ -225,13 +225,7 @@ class NotificationServiceEnhanced {
     if (event.content != '+') return;
 
     // Get the video that was liked
-    String? videoEventId;
-    for (final tag in event.tags) {
-      if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-        videoEventId = tag[1];
-        break;
-      }
-    }
+    final videoEventId = extractVideoEventId(event);
     if (videoEventId == null) return;
 
     // Get video info
@@ -264,14 +258,9 @@ class NotificationServiceEnhanced {
 
   /// Handle comment events
   Future<void> _handleCommentEvent(Event event) async {
-    // Check if this is a reply to a video
-    String? videoEventId;
-    for (final tag in event.tags) {
-      if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-        videoEventId = tag[1];
-        break;
-      }
-    }
+    // Extract video ID using helper that checks uppercase 'E' tag first
+    // (NIP-22 root scope for comments), then falls back to lowercase 'e'
+    final videoEventId = extractVideoEventId(event);
     if (videoEventId == null) return;
 
     // Get video info
@@ -380,14 +369,8 @@ class NotificationServiceEnhanced {
 
   /// Handle repost events
   Future<void> _handleRepostEvent(Event event) async {
-    // Get the video that was reposted
-    String? videoEventId;
-    for (final tag in event.tags) {
-      if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-        videoEventId = tag[1];
-        break;
-      }
-    }
+    // Get the video that was reposted using helper
+    final videoEventId = extractVideoEventId(event);
     if (videoEventId == null) return;
 
     // Get video info

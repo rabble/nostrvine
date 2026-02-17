@@ -15,7 +15,8 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/home_screen_router.dart';
-import 'package:divine_camera/divine_camera.dart' show DivineVideoQuality;
+import 'package:divine_camera/divine_camera.dart'
+    show DivineCameraLens, DivineVideoQuality;
 import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
@@ -254,6 +255,36 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     updateState();
   }
 
+  /// Switch to a specific camera lens.
+  Future<void> setLens(DivineCameraLens lens) async {
+    final success = await _cameraService.setLens(lens);
+
+    if (!success) {
+      Log.warning(
+        '⚠️ Failed to set lens to ${lens.displayName}',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+      return;
+    }
+    _baseZoomLevel = 1;
+
+    Log.info(
+      '🔄 Lens switched to ${lens.displayName} - zoom reset to 1.0x',
+      name: 'VideoRecorderNotifier',
+      category: .video,
+    );
+
+    state = state.copyWith(zoomLevel: 1);
+    updateState();
+  }
+
+  /// The current active camera lens.
+  DivineCameraLens get currentLens => _cameraService.currentLens;
+
+  /// List of available camera lenses on this device.
+  List<DivineCameraLens> get availableLenses => _cameraService.availableLenses;
+
   /// Set camera zoom level (within min/max bounds).
   Future<void> setZoomLevel(double value) async {
     if (value > _cameraService.maxZoomLevel ||
@@ -480,6 +511,13 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       video: videoResult,
       originalAspectRatio: _cameraService.cameraAspectRatio,
       targetAspectRatio: state.aspectRatio,
+      lensMetadata: _cameraService.currentLensMetadata,
+    );
+
+    Log.debug(
+      '📷 Lens metadata: ${_cameraService.currentLensMetadata?.toMap()}',
+      name: 'VideoRecorderNotifier',
+      category: .video,
     );
 
     Log.info(
