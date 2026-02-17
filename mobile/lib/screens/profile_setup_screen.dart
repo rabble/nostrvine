@@ -102,11 +102,6 @@ class _ProfileSetupScreenViewState
   final _usernameFocusNode = FocusNode();
 
   bool _isUploadingImage = false;
-
-  /// Guards against overwriting user edits. Once true, subsequent
-  /// [MyProfileBloc] state changes (e.g., fresh profile arriving after
-  /// cached) will not re-populate the form controllers.
-  bool _hasPrefilledForm = false;
   File? _selectedImage;
   String? _uploadedImageUrl;
   Color? _selectedProfileColor;
@@ -150,21 +145,12 @@ class _ProfileSetupScreenViewState
     return MultiBlocListener(
       listeners: [
         BlocListener<MyProfileBloc, MyProfileState>(
+          listenWhen: (prev, curr) => curr is MyProfileLoaded,
           listener: (context, myProfileState) {
-            if (_hasPrefilledForm) return;
+            if (myProfileState is! MyProfileLoaded) return;
 
-            final profile = switch (myProfileState) {
-              MyProfileLoading(:final profile) => profile,
-              MyProfileLoaded(:final profile) => profile,
-              _ => null,
-            };
-            if (profile == null) return;
-
-            final extractedUsername = switch (myProfileState) {
-              MyProfileLoading(:final extractedUsername) => extractedUsername,
-              MyProfileLoaded(:final extractedUsername) => extractedUsername,
-              _ => null,
-            };
+            final profile = myProfileState.profile;
+            final extractedUsername = myProfileState.extractedUsername;
 
             setState(() {
               _nameController.text = profile.displayName ?? profile.name ?? '';
@@ -182,8 +168,6 @@ class _ProfileSetupScreenViewState
                 InitialUsernameSet(extractedUsername),
               );
             }
-
-            _hasPrefilledForm = true;
           },
         ),
         BlocListener<ProfileEditorBloc, ProfileEditorState>(
