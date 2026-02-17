@@ -1028,7 +1028,7 @@ void main() {
         await controller.close();
       });
 
-      test('subscribes with correct filters including since', () {
+      test('subscribes with correct filters including since', () async {
         final controller = StreamController<Event>.broadcast();
 
         when(
@@ -1057,12 +1057,12 @@ void main() {
         expect(filters.first.uppercaseE, contains(testRootEventId));
         expect(filters.first.since, equals(2000000 ~/ 1000));
 
-        controller.close();
+        await controller.close();
       });
 
       test(
         'includes A tag filter when rootAddressableId is provided',
-        () {
+        () async {
           final controller = StreamController<Event>.broadcast();
           const testAddressableId = '34236:$testRootAuthorPubkey:video-dtag';
 
@@ -1093,7 +1093,7 @@ void main() {
           expect(filters[0].uppercaseE, contains(testRootEventId));
           expect(filters[1].uppercaseA, contains(testAddressableId));
 
-          controller.close();
+          await controller.close();
         },
       );
 

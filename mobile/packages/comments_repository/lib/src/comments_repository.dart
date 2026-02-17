@@ -342,8 +342,8 @@ class CommentsRepository {
   Stream<Comment> watchComments({
     required String rootEventId,
     required int rootEventKind,
-    String? rootAddressableId,
     required DateTime since,
+    String? rootAddressableId,
   }) {
     try {
       final sinceTimestamp = since.millisecondsSinceEpoch ~/ 1000;

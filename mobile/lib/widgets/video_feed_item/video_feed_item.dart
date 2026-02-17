@@ -2187,10 +2187,20 @@ class _CommentActionButton extends StatelessWidget {
                   }
                 }
               }
+              final interactionsBloc = context.read<VideoInteractionsBloc?>();
               CommentsScreen.show(
                 context,
                 video,
                 initialCommentCount: totalComments,
+                onCommentCountChanged: interactionsBloc == null
+                    ? null
+                    : (count) {
+                        if (!interactionsBloc.isClosed) {
+                          interactionsBloc.add(
+                            VideoInteractionsCommentCountUpdated(count),
+                          );
+                        }
+                      },
               );
             },
             icon: DecoratedBox(

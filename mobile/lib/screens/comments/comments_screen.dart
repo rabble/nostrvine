@@ -93,6 +93,7 @@ class CommentsScreen extends ConsumerWidget {
     required this.videoEvent,
     required this.sheetScrollController,
     this.initialCommentCount,
+    this.onCommentCountChanged,
     super.key,
   });
 
@@ -105,11 +106,17 @@ class CommentsScreen extends ConsumerWidget {
   /// stored in the video event metadata.
   final int? initialCommentCount;
 
+  /// Called whenever the total comment count changes (initial load or
+  /// real-time updates).  The caller can use this to keep external state
+  /// (e.g. the video feed sidebar count) in sync.
+  final ValueChanged<int>? onCommentCountChanged;
+
   /// Shows comments as a modal bottom sheet overlay
   static Future<void> show(
     BuildContext context,
     VideoEvent video, {
     int? initialCommentCount,
+    ValueChanged<int>? onCommentCountChanged,
   }) {
     final container = ProviderScope.containerOf(context, listen: false);
     final overlayNotifier = container.read(overlayVisibilityProvider.notifier);
@@ -135,6 +142,7 @@ class CommentsScreen extends ConsumerWidget {
             videoEvent: video,
             sheetScrollController: scrollController,
             initialCommentCount: initialCommentCount,
+            onCommentCountChanged: onCommentCountChanged,
           ),
         );
       },
@@ -183,28 +191,36 @@ class CommentsScreen extends ConsumerWidget {
         userProfileService: userProfileService,
         followRepository: followRepository,
       )..add(const CommentsLoadRequested()),
-      child: VineBottomSheet(
-        title: _CommentsTitle(
-          initialCount: initialCommentCount ?? videoEvent.originalComments ?? 0,
-          onNewCommentsPillTap: () {
-            // Scroll to top and acknowledge new comments.
-            // The sheetScrollController drives the DraggableScrollableSheet's
-            // inner list, so animating to 0 scrolls the comments list to top.
-            if (sheetScrollController.hasClients) {
-              sheetScrollController.animateTo(
-                0,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOut,
-              );
-            }
-          },
+      child: BlocListener<CommentsBloc, CommentsState>(
+        listenWhen: (prev, next) =>
+            prev.commentsById.length != next.commentsById.length,
+        listener: (context, state) {
+          onCommentCountChanged?.call(state.commentsById.length);
+        },
+        child: VineBottomSheet(
+          title: _CommentsTitle(
+            initialCount:
+                initialCommentCount ?? videoEvent.originalComments ?? 0,
+            onNewCommentsPillTap: () {
+              // Scroll to top and acknowledge new comments.
+              // The sheetScrollController drives the DraggableScrollableSheet's
+              // inner list, so animating to 0 scrolls the comments list to top.
+              if (sheetScrollController.hasClients) {
+                sheetScrollController.animateTo(
+                  0,
+                  duration: const Duration(milliseconds: 300),
+                  curve: Curves.easeOut,
+                );
+              }
+            },
+          ),
+          trailing: const _CommentsSortToggle(),
+          body: _CommentsScreenBody(
+            videoEvent: videoEvent,
+            sheetScrollController: sheetScrollController,
+          ),
+          bottomInput: const _MainCommentInput(),
         ),
-        trailing: const _CommentsSortToggle(),
-        body: _CommentsScreenBody(
-          videoEvent: videoEvent,
-          sheetScrollController: sheetScrollController,
-        ),
-        bottomInput: const _MainCommentInput(),
       ),
     );
   }
