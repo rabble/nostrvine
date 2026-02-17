@@ -173,7 +173,9 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
   }
 
   void _handleContainerTap() {
-    if (widget.enabled && !widget.readOnly) {
+    if (!widget.enabled) return;
+
+    if (!widget.readOnly) {
       _focusNode.requestFocus();
     }
     widget.onTap?.call();

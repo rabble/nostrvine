@@ -228,6 +228,23 @@ void main() {
         focusNode.dispose();
       });
 
+      testWidgets('does not call onTap when disabled', (
+        tester,
+      ) async {
+        var tapped = false;
+        await tester.pumpWidget(
+          buildTestWidget(
+            onTap: () => tapped = true,
+            enabled: false,
+          ),
+        );
+
+        await tester.tap(find.byType(DivineAuthTextField));
+        await tester.pump();
+
+        expect(tapped, isFalse);
+      });
+
       testWidgets(
         'toggles password visibility when eye icon tapped',
         (tester) async {
