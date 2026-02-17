@@ -81,7 +81,7 @@ class VideoEditorHapticService {
   /// without custom vibration support, it starts and cancels the vibration
   /// to simulate a short pulse.
   Future<void> guidelineHit() async {
-    await _vibrate(durationMs: 3);
+    await _vibrate(durationMs: 2);
   }
 
   /// Triggers haptic feedback when a layer enters the remove area.
@@ -90,6 +90,11 @@ class VideoEditorHapticService {
   Future<void> layerOverRemoveArea() async {
     await _vibrate(durationMs: 10);
   }
+
+  /// Triggers haptic feedback when a clip enters the delete zone.
+  ///
+  /// Uses the same vibration as [layerOverRemoveArea] for consistency.
+  Future<void> clipOverRemoveArea() => layerOverRemoveArea();
 
   /// Internal helper to trigger vibration with error handling.
   ///
