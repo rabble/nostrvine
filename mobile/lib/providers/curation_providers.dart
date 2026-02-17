@@ -2,10 +2,8 @@
 // ABOUTME: Manages only editor picks - trending/popular handled by infinite feeds
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:models/models.dart'
-    hide LogCategory, CurationSet, CurationSetType, SampleCurationSets;
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/constants/app_constants.dart';
-import 'package:openvine/models/curation_set.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';

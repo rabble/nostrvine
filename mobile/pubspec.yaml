@@ -79,6 +79,10 @@ dependencies:
   permission_handler: ^12.0.1 # Handle runtime permissions
 
   # Camera and media
+  c2pa_flutter:
+    git:
+      url: https://github.com/guardianproject/c2pa-flutter.git
+      ref: main
   divine_camera:
     path: packages/divine_camera
   camera_macos_plus: ^0.0.4
@@ -152,8 +156,8 @@ dependencies:
   convert: ^3.1.2
   just_audio: ^0.10.5
   audio_session: ^0.2.2
-  pro_video_editor: ^1.4.1
-  pro_image_editor: ^11.21.1
+  pro_video_editor: ^1.6.0
+  pro_image_editor: ^12.0.0
   linked_scroll_controller: ^0.2.0
   flutter_colorpicker: ^1.1.0
   file_picker: ^10.3.7
@@ -172,12 +176,20 @@ dependencies:
   flutter_staggered_grid_view: ^0.7.0
   qr_flutter: ^4.1.0
 
+  # On-device speech-to-text for subtitle generation
+  # Temporarily disabled due to Android build issues
+  # See: https://github.com/divinevideo/divine-mobile/issues/1568
+  # whisper_ggml_plus: ^1.3.1
 
 dependency_overrides:
   device_info_plus: ^10.1.2
   rxdart: ^0.28.0
   cryptography_flutter:
     path: overrides/cryptography_flutter-2.3.2
+  # whisper_ggml_plus pins json_annotation ^4.10.0, riverpod_generator needs ^4.9.0
+  # Temporarily disabled due to Android build issues with whisper_ggml_plus
+  # See: https://github.com/divinevideo/divine-mobile/issues/1568
+  # json_annotation: ^4.10.0
 
 dev_dependencies:
   flutter_test:
@@ -233,6 +245,7 @@ flutter:
     - assets/sounds/
     - assets/top_1000_hashtags.json
     - assets/fonts/
+    - google_fonts/
     - assets/icon/
     - assets/icon/content-controls/
     - assets/loading-brand.gif

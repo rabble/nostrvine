@@ -26,6 +26,9 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/proofmode_publishing_helpers.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 
+//adding c2pa support for publishing c2pa manifest data into nostr
+import 'package:openvine/services/c2pa_signing_service.dart';
+
 /// Service for publishing processed videos to Nostr relays
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class VideoEventPublisher {
@@ -245,6 +248,12 @@ class VideoEventPublisher {
     List<String>? hashtags,
     int? expirationTimestamp,
     bool allowAudioReuse = false,
+    List<String> collaboratorPubkeys = const [],
+    String? inspiredByAddressableId,
+    String? inspiredByRelayUrl,
+    String? inspiredByNpub,
+    String? selectedAudioEventId,
+    String? selectedAudioRelay,
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -257,6 +266,12 @@ class VideoEventPublisher {
       updatedUpload,
       expirationTimestamp: expirationTimestamp,
       allowAudioReuse: allowAudioReuse,
+      collaboratorPubkeys: collaboratorPubkeys,
+      inspiredByAddressableId: inspiredByAddressableId,
+      inspiredByRelayUrl: inspiredByRelayUrl,
+      inspiredByNpub: inspiredByNpub,
+      selectedAudioEventId: selectedAudioEventId,
+      selectedAudioRelay: selectedAudioRelay,
     );
   }
 
@@ -265,6 +280,12 @@ class VideoEventPublisher {
     PendingUpload upload, {
     int? expirationTimestamp,
     bool allowAudioReuse = false,
+    List<String> collaboratorPubkeys = const [],
+    String? inspiredByAddressableId,
+    String? inspiredByRelayUrl,
+    String? inspiredByNpub,
+    String? selectedAudioEventId,
+    String? selectedAudioRelay,
   }) async {
     if (upload.videoId == null || upload.cdnUrl == null) {
       Log.error(
@@ -522,10 +543,40 @@ class VideoEventPublisher {
         tags.add(['expiration', expirationTimestamp.toString()]);
       }
 
+      // Add collaborator p-tags (standard NIP-71 format)
+      for (final pubkey in collaboratorPubkeys) {
+        tags.add(['p', pubkey, 'wss://relay.divine.video']);
+      }
+
+      // Add Inspired By a-tag (specific video reference)
+      if (inspiredByAddressableId != null) {
+        tags.add([
+          'a',
+          inspiredByAddressableId,
+          inspiredByRelayUrl ?? 'wss://relay.divine.video',
+          'mention',
+        ]);
+      }
+
+      // Handle selected audio: reference an existing Kind 1063 audio event
+      // (e.g., when recording with a selected sound from another video)
+      if (selectedAudioEventId != null && selectedAudioEventId.isNotEmpty) {
+        final audioRelay = selectedAudioRelay ?? 'wss://relay.divine.video';
+        tags.add(['e', selectedAudioEventId, audioRelay, 'audio']);
+        Log.info(
+          'Added selected audio reference e tag: $selectedAudioEventId',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
+      }
+
       // Handle audio reuse: extract audio, upload, publish Kind 1063 event
       // Then add e tag linking video to audio event
+      // Skip if we already referenced a selected audio event above
       String? audioEventId;
-      if (allowAudioReuse && upload.localVideoPath.isNotEmpty) {
+      if (allowAudioReuse &&
+          selectedAudioEventId == null &&
+          upload.localVideoPath.isNotEmpty) {
         tags.add(['allow_audio_reuse', 'true']);
         Log.info(
           'Audio reuse enabled - starting audio publishing flow',
@@ -587,6 +638,20 @@ class VideoEventPublisher {
               category: LogCategory.video,
             );
 
+            //check C2PA metadata
+            final C2paSigningService _c2paSigningService = C2paSigningService();
+            final manifestInfo = await _c2paSigningService.readManifest(
+              upload.localVideoPath,
+            );
+            if (manifestInfo?.validationStatus != null) {
+              tags.add(['c2pa_manifest_id', ?manifestInfo?.activeManifest]);
+              Log.verbose(
+                'Added c2pa_manifest_id tag: ${manifestInfo?.activeManifest}',
+                name: 'VideoEventPublisher',
+                category: LogCategory.video,
+              );
+            }
+
             // Add verification level tag (NIP-145)
             final verificationLevel = getVerificationLevel(nativeProof);
             tags.add(['verification', verificationLevel]);
@@ -644,7 +709,13 @@ class VideoEventPublisher {
       }
 
       // Create the event content
-      final content = upload.description ?? upload.title ?? '';
+      var content = upload.description ?? upload.title ?? '';
+
+      // Append NIP-27 Inspired By person reference to content
+      if (inspiredByNpub != null && inspiredByNpub.isNotEmpty) {
+        final ibText = '\n\nInspired by nostr:$inspiredByNpub';
+        content = content.isEmpty ? ibText.trim() : '$content$ibText';
+      }
 
       // Create and sign the event
       if (_authService == null) {
@@ -1101,6 +1172,62 @@ class VideoEventPublisher {
         }
       }
     }
+  }
+
+  /// Republish a video event with an added text-track tag for subtitles.
+  ///
+  /// Takes the existing video event's original tags, adds a text-track tag
+  /// referencing the subtitle event, and publishes the updated event.
+  /// Returns true if publishing succeeded.
+  Future<bool> republishWithSubtitles({
+    required VideoEvent existingEvent,
+    required String textTrackRef,
+    String textTrackLang = 'en',
+  }) async {
+    // Start from the original Nostr event tags
+    final tags = existingEvent.nostrEventTags
+        .where((t) => t.isNotEmpty && t.first != 'text-track')
+        .map((t) => List<String>.from(t))
+        .toList();
+
+    // Add the new text-track tag
+    tags.add([
+      'text-track',
+      textTrackRef,
+      'wss://relay.divine.video',
+      'captions',
+      textTrackLang,
+    ]);
+
+    // Sign the updated event
+    final event = await _authService?.createAndSignEvent(
+      kind: NIP71VideoKinds.getPreferredAddressableKind(),
+      content: existingEvent.content,
+      tags: tags,
+    );
+
+    if (event == null) {
+      Log.error(
+        'Failed to sign republished event with subtitles',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return false;
+    }
+
+    // Optimistically update local cache
+    try {
+      _videoEventService?.addVideoEvent(VideoEvent.fromNostrEvent(event));
+    } catch (e) {
+      Log.warning(
+        'Failed to update local cache after subtitle republish: $e',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+    }
+
+    // Publish to relays
+    return _publishEventToNostr(event);
   }
 
   void dispose() {

@@ -4,6 +4,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/models/video_editor/video_editor_provider_state.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -540,6 +541,62 @@ void main() {
     });
   });
 
+  group('getActiveDraft', () {
+    late ProviderContainer container;
+
+    setUp(() {
+      container = ProviderContainer();
+    });
+
+    tearDown(() {
+      container.dispose();
+    });
+
+    test('should use _clips when finalRenderedClip is null', () {
+      // Add clips to the clip manager
+      container
+          .read(clipManagerProvider.notifier)
+          .addClip(
+            video: EditorVideo.file('/docs/original.mp4'),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+            duration: const Duration(seconds: 2),
+          );
+
+      container.read(videoEditorProvider.notifier).setDraftId('test-draft');
+
+      // finalRenderedClip is null by default, so getActiveDraft should
+      // use _clips for both autosave and non-autosave
+      final draft = container
+          .read(videoEditorProvider.notifier)
+          .getActiveDraft();
+
+      expect(draft.clips, hasLength(1));
+      expect(draft.id, equals('test-draft'));
+    });
+
+    test('autosave should always use _clips even if '
+        'finalRenderedClip were set', () {
+      // Add clips to the clip manager
+      container
+          .read(clipManagerProvider.notifier)
+          .addClip(
+            video: EditorVideo.file('/docs/original.mp4'),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+            duration: const Duration(seconds: 2),
+          );
+
+      // Autosave should use _clips
+      final autosaveDraft = container
+          .read(videoEditorProvider.notifier)
+          .getActiveDraft(isAutosave: true);
+
+      expect(autosaveDraft.clips, hasLength(1));
+      expect(autosaveDraft.id, equals(VideoEditorConstants.autoSaveId));
+    });
+  });
+
   group('VideoEditorProviderState', () {
     test('copyWith should preserve unchanged values', () {
       final original = VideoEditorProviderState(
@@ -579,6 +636,62 @@ void main() {
       expect(copied.currentClipIndex, 5);
       expect(copied.isEditing, false);
       expect(copied.isMuted, true); // Unchanged
+    });
+
+    group('isValidToPost', () {
+      test('returns false when finalRenderedClip is null', () {
+        final state = VideoEditorProviderState();
+
+        expect(state.finalRenderedClip, isNull);
+        expect(state.isValidToPost, isFalse);
+      });
+
+      test('returns true when finalRenderedClip is set and not processing', () {
+        final state = VideoEditorProviderState(
+          finalRenderedClip: RecordingClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+        );
+
+        expect(state.isValidToPost, isTrue);
+      });
+
+      test('returns false when metadataLimitReached even with clip', () {
+        final state = VideoEditorProviderState(
+          metadataLimitReached: true,
+          finalRenderedClip: RecordingClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+        );
+
+        expect(state.isValidToPost, isFalse);
+      });
+
+      test('returns false when isProcessing even with clip', () {
+        final state = VideoEditorProviderState(
+          isProcessing: true,
+          finalRenderedClip: RecordingClip(
+            id: 'rendered',
+            video: EditorVideo.file('/docs/rendered.mp4'),
+            duration: const Duration(seconds: 3),
+            recordedAt: DateTime.now(),
+            targetAspectRatio: .vertical,
+            originalAspectRatio: 9 / 16,
+          ),
+        );
+
+        expect(state.isValidToPost, isFalse);
+      });
     });
   });
 }

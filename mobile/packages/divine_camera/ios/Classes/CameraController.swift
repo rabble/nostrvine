@@ -38,6 +38,9 @@ class CameraController: NSObject {
     private var originalBrightness: CGFloat?
     private var screenFlashFeatureEnabled: Bool = true
     
+    // Whether to mirror front camera video output
+    private var mirrorFrontCameraOutput: Bool = true
+    
     // Auto flash mode - checks brightness once when recording starts
     private var isAutoFlashMode: Bool = false
     private var autoFlashTorchEnabled: Bool = false
@@ -63,12 +66,24 @@ class CameraController: NSObject {
     private var isFocusPointSupported: Bool = false
     private var isExposurePointSupported: Bool = false
     
+    // Multi-lens support
+    private var hasUltraWideCamera: Bool = false
+    private var hasTelephotoCamera: Bool = false
+    private var hasMacroCamera: Bool = false
+    private var hasFrontUltraWideCamera: Bool = false
+    
+    // Current lens type (more granular than just position)
+    private var currentLensType: String = "back"
+    
     private var recordingStartTime: Date?
     private var currentRecordingURL: URL?
     private var recordingCompletion: (([String: Any]?, String?) -> Void)?
     private var maxDurationTimer: Timer?
     private var maxDurationMs: Int?
     private var isWriterSessionStarted: Bool = false
+    
+    /// Completion handler for camera switch - called when first frame from new camera arrives
+    private var switchCameraCompletion: (([String: Any]?, String?) -> Void)?
     
     private let sessionQueue = DispatchQueue(label: "com.divine_camera.session")
     private let videoOutputQueue = DispatchQueue(label: "com.divine_camera.videoOutput")
@@ -81,21 +96,126 @@ class CameraController: NSObject {
     
     /// Checks which cameras are available on the device.
     private func checkCameraAvailability() {
-        let discoverySession = AVCaptureDevice.DiscoverySession(
+        // Check front camera
+        let frontDiscoverySession = AVCaptureDevice.DiscoverySession(
             deviceTypes: [.builtInWideAngleCamera],
             mediaType: .video,
-            position: .unspecified
+            position: .front
         )
+        hasFrontCamera = !frontDiscoverySession.devices.isEmpty
         
-        for device in discoverySession.devices {
-            switch device.position {
-            case .front:
-                hasFrontCamera = true
-            case .back:
-                hasBackCamera = true
-            default:
-                break
+        // Check front ultra-wide camera (iOS 13+, available on some iPads)
+        if #available(iOS 13.0, *) {
+            let frontUltraWideDiscoverySession = AVCaptureDevice.DiscoverySession(
+                deviceTypes: [.builtInUltraWideCamera],
+                mediaType: .video,
+                position: .front
+            )
+            hasFrontUltraWideCamera = !frontUltraWideDiscoverySession.devices.isEmpty
+        }
+        
+        // Check back cameras
+        let backDiscoverySession = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInWideAngleCamera],
+            mediaType: .video,
+            position: .back
+        )
+        hasBackCamera = !backDiscoverySession.devices.isEmpty
+        
+        // Check ultra-wide camera (iOS 13+)
+        if #available(iOS 13.0, *) {
+            let ultraWideDiscoverySession = AVCaptureDevice.DiscoverySession(
+                deviceTypes: [.builtInUltraWideCamera],
+                mediaType: .video,
+                position: .back
+            )
+            hasUltraWideCamera = !ultraWideDiscoverySession.devices.isEmpty
+        }
+        
+        // Check telephoto camera
+        let telephotoDiscoverySession = AVCaptureDevice.DiscoverySession(
+            deviceTypes: [.builtInTelephotoCamera],
+            mediaType: .video,
+            position: .back
+        )
+        hasTelephotoCamera = !telephotoDiscoverySession.devices.isEmpty
+        
+        // Check for macro capability (iOS 15+ on devices with ultra-wide lens capable of macro)
+        // Macro is typically available on ultra-wide lens on iPhone 13 Pro and later
+        if #available(iOS 15.0, *) {
+            if hasUltraWideCamera {
+                // On iOS 15+, devices with ultra-wide can support macro mode
+                // The ultra-wide lens on Pro models has minimum focus distance for macro
+                if let ultraWideDevice = AVCaptureDevice.default(
+                    .builtInUltraWideCamera,
+                    for: .video,
+                    position: .back
+                ) {
+                    // Check if the ultra-wide supports close focus (macro)
+                    // Devices supporting macro typically have minimum focus distance < 0.5m
+                    let format = ultraWideDevice.activeFormat
+                    if format.autoFocusSystem == .phaseDetection || format.autoFocusSystem == .contrastDetection {
+                        // Ultra-wide with autofocus can typically do macro
+                        hasMacroCamera = true
+                    }
+                }
             }
+        }
+        
+        print("[DivineCameraController] Camera availability: front=\(hasFrontCamera), " +
+              "frontUltraWide=\(hasFrontUltraWideCamera), back=\(hasBackCamera), " +
+              "ultraWide=\(hasUltraWideCamera), telephoto=\(hasTelephotoCamera), macro=\(hasMacroCamera)")
+    }
+    
+    /// Returns a list of available lens types on this device.
+    private func getAvailableLenses() -> [String] {
+        var lenses: [String] = []
+        if hasFrontCamera { lenses.append("front") }
+        if hasFrontUltraWideCamera { lenses.append("frontUltraWide") }
+        if hasBackCamera { lenses.append("back") }
+        if hasUltraWideCamera { lenses.append("ultraWide") }
+        if hasTelephotoCamera { lenses.append("telephoto") }
+        if hasMacroCamera { lenses.append("macro") }
+        return lenses
+    }
+    
+    /// Gets the AVCaptureDevice for the specified lens type.
+    private func getDeviceForLensType(_ lensType: String) -> AVCaptureDevice? {
+        switch lensType {
+        case "front":
+            return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front)
+        case "frontUltraWide":
+            if #available(iOS 13.0, *) {
+                return AVCaptureDevice.default(.builtInUltraWideCamera, for: .video, position: .front)
+            }
+            return nil
+        case "back":
+            return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+        case "ultraWide":
+            if #available(iOS 13.0, *) {
+                return AVCaptureDevice.default(.builtInUltraWideCamera, for: .video, position: .back)
+            }
+            return nil
+        case "telephoto":
+            return AVCaptureDevice.default(.builtInTelephotoCamera, for: .video, position: .back)
+        case "macro":
+            // Macro uses ultra-wide lens on iOS
+            if #available(iOS 13.0, *) {
+                return AVCaptureDevice.default(.builtInUltraWideCamera, for: .video, position: .back)
+            }
+            return nil
+        default:
+            return AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back)
+        }
+    }
+    
+    /// Gets the position for the specified lens type.
+    private func getPositionForLensType(_ lensType: String) -> AVCaptureDevice.Position {
+        switch lensType {
+        case "front", "frontUltraWide":
+            return .front
+        default:
+            return .back
         }
     }
     
@@ -103,17 +223,24 @@ class CameraController: NSObject {
     private var videoQualityPreset: AVCaptureSession.Preset = .high
     
     /// Initializes the camera with the specified lens and video quality.
-    func initialize(lens: String, videoQuality: String, enableScreenFlash: Bool = true, completion: @escaping ([String: Any]?, String?) -> Void) {
-        currentLens = lens == "front" ? .front : .back
+    func initialize(lens: String, videoQuality: String, enableScreenFlash: Bool = true, mirrorFrontCameraOutput: Bool = true, completion: @escaping ([String: Any]?, String?) -> Void) {
+        currentLensType = lens
+        currentLens = getPositionForLensType(lens)
         screenFlashFeatureEnabled = enableScreenFlash
+        self.mirrorFrontCameraOutput = mirrorFrontCameraOutput
         
-        // Fallback to available camera if requested camera is not available
-        if currentLens == .front && !hasFrontCamera && hasBackCamera {
-            print("[DivineCameraController] Front camera requested but not available, falling back to back camera")
-            currentLens = .back
-        } else if currentLens == .back && !hasBackCamera && hasFrontCamera {
-            print("[DivineCameraController] Back camera requested but not available, falling back to front camera")
-            currentLens = .front
+        // Fallback to available camera if requested lens is not available
+        if getDeviceForLensType(currentLensType) == nil {
+            // Try back camera first, then front
+            if hasBackCamera {
+                print("[DivineCameraController] Requested lens \(lens) not available, falling back to back camera")
+                currentLensType = "back"
+                currentLens = .back
+            } else if hasFrontCamera {
+                print("[DivineCameraController] Requested lens \(lens) not available, falling back to front camera")
+                currentLensType = "front"
+                currentLens = .front
+            }
         }
         
         // Map video quality string to AVCaptureSession.Preset
@@ -149,16 +276,9 @@ class CameraController: NSObject {
         let session = AVCaptureSession()
         session.beginConfiguration()
         
-        // Set preset based on configured video quality
-        if session.canSetSessionPreset(videoQualityPreset) {
-            session.sessionPreset = videoQualityPreset
-        } else if session.canSetSessionPreset(.high) {
-            session.sessionPreset = .high
-        }
-        
-        // Setup video input
-        guard let videoDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: currentLens) else {
-            completion(nil, "No camera available for position")
+        // Setup video input FIRST (before setting preset)
+        guard let videoDevice = getDeviceForLensType(currentLensType) else {
+            completion(nil, "No camera available for lens type: \(currentLensType)")
             return
         }
         
@@ -166,12 +286,41 @@ class CameraController: NSObject {
         
         do {
             let videoInput = try AVCaptureDeviceInput(device: videoDevice)
+            
+            // Add input before setting preset
             if session.canAddInput(videoInput) {
                 session.addInput(videoInput)
                 self.videoInput = videoInput
             } else {
                 completion(nil, "Cannot add video input")
                 return
+            }
+            
+            // Now set preset AFTER adding input - try requested quality with fallback
+            let presetsToTry: [AVCaptureSession.Preset] = [
+                videoQualityPreset,
+                .hd4K3840x2160,
+                .hd1920x1080,
+                .hd1280x720,
+                .high,
+                .medium,
+                .low
+            ]
+            
+            var presetSet = false
+            for preset in presetsToTry {
+                if session.canSetSessionPreset(preset) {
+                    session.sessionPreset = preset
+                    if preset != videoQualityPreset {
+                        print("[DivineCameraController] Requested preset not supported, falling back to: \(preset.rawValue)")
+                    }
+                    presetSet = true
+                    break
+                }
+            }
+            
+            if !presetSet {
+                print("[DivineCameraController] Warning: Could not set any preferred preset")
             }
         } catch {
             completion(nil, "Failed to create video input: \(error.localizedDescription)")
@@ -215,9 +364,12 @@ class CameraController: NSObject {
                 if connection.isVideoOrientationSupported {
                     connection.videoOrientation = .portrait
                 }
-                // Mirror front camera preview
-                if connection.isVideoMirroringSupported && currentLens == .front {
-                    connection.isVideoMirrored = true
+                // Mirror pixels only for front camera when mirrorFrontCameraOutput is enabled
+                // When mirrored here, Flutter doesn't need to apply preview transform
+                // When NOT mirrored here, Flutter applies visual transform for selfie preview
+                if connection.isVideoMirroringSupported {
+                    let isFront = currentLens == .front
+                    connection.isVideoMirrored = isFront && mirrorFrontCameraOutput
                 }
             }
         } else {
@@ -347,10 +499,12 @@ class CameraController: NSObject {
                 return
             }
             
-            let newPosition: AVCaptureDevice.Position = lens == "front" ? .front : .back
+            // Update lens type and position
+            self.currentLensType = lens
+            self.currentLens = self.getPositionForLensType(lens)
             
-            guard let newDevice = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: newPosition) else {
-                completion(nil, "No camera available for position")
+            guard let newDevice = self.getDeviceForLensType(lens) else {
+                completion(nil, "Lens \(lens) is not available on this device")
                 return
             }
             
@@ -364,21 +518,61 @@ class CameraController: NSObject {
             // Add new input
             do {
                 let newInput = try AVCaptureDeviceInput(device: newDevice)
+                
+                // First try to add input with current preset
                 if session.canAddInput(newInput) {
                     session.addInput(newInput)
                     self.videoInput = newInput
                     self.videoDevice = newDevice
-                    self.currentLens = newPosition
                     self.updateCameraProperties(device: newDevice)
+                } else {
+                    // Current preset may not be supported by new camera (e.g., UHD on front camera)
+                    // Try fallback presets
+                    let fallbackPresets: [AVCaptureSession.Preset] = [
+                        .hd4K3840x2160,
+                        .hd1920x1080,
+                        .hd1280x720,
+                        .high,
+                        .medium,
+                        .low
+                    ]
                     
-                    // Update orientation and mirroring for front camera
-                    if let videoConnection = self.videoOutput?.connection(with: .video) {
-                        if videoConnection.isVideoOrientationSupported {
-                            videoConnection.videoOrientation = .portrait
+                    var success = false
+                    for preset in fallbackPresets {
+                        if session.canSetSessionPreset(preset) {
+                            session.sessionPreset = preset
+                            if session.canAddInput(newInput) {
+                                session.addInput(newInput)
+                                self.videoInput = newInput
+                                self.videoDevice = newDevice
+                                self.updateCameraProperties(device: newDevice)
+                                print("[DivineCameraController] Camera switch: preset fallback to \(preset.rawValue)")
+                                success = true
+                                break
+                            }
                         }
-                        if videoConnection.isVideoMirroringSupported {
-                            videoConnection.isVideoMirrored = newPosition == .front
+                    }
+                    
+                    if !success {
+                        // Re-add old input if all fallbacks failed
+                        if let oldInput = self.videoInput {
+                            session.addInput(oldInput)
                         }
+                        session.commitConfiguration()
+                        completion(nil, "Cannot add video input for new camera")
+                        return
+                    }
+                }
+                
+                // Update orientation and mirroring based on settings
+                if let videoConnection = self.videoOutput?.connection(with: .video) {
+                    if videoConnection.isVideoOrientationSupported {
+                        videoConnection.videoOrientation = .portrait
+                    }
+                    // Mirror pixels for front camera when mirrorFrontCameraOutput is enabled
+                    let isFront = newDevice.position == .front
+                    if videoConnection.isVideoMirroringSupported {
+                        videoConnection.isVideoMirrored = isFront && self.mirrorFrontCameraOutput
                     }
                 }
             } catch {
@@ -393,9 +587,14 @@ class CameraController: NSObject {
             
             session.commitConfiguration()
             
-            DispatchQueue.main.async { [weak self] in
-                guard let self = self else { return }
-                completion(self.getCameraState(), nil)
+            // Store completion to be called when first frame arrives from new camera.
+            // This ensures Flutter gets the new lens state only after the texture
+            // already shows a frame from the new camera, preventing mirror glitches.
+            self.switchCameraCompletion = { [weak self] state, error in
+                DispatchQueue.main.async {
+                    guard let self = self else { return }
+                    completion(self.getCameraState(), nil)
+                }
             }
         }
     }
@@ -712,7 +911,6 @@ class CameraController: NSObject {
                 
                 let videoInput = AVAssetWriterInput(mediaType: .video, outputSettings: videoSettings)
                 videoInput.expectsMediaDataInRealTime = true
-                // No transform needed - the video connection is already set to portrait orientation
                 
                 // Create pixel buffer adaptor - use the actual frame dimensions (before portrait rotation)
                 let sourcePixelBufferAttributes: [String: Any] = [
@@ -916,7 +1114,7 @@ class CameraController: NSObject {
             "isInitialized": captureSession != nil,
             "isRecording": isRecording,
             "flashMode": getFlashModeString(),
-            "lens": currentLens == .front ? "front" : "back",
+            "lens": currentLensType,
             "zoomLevel": Double(currentZoom),
             "minZoomLevel": Double(minZoom),
             "maxZoomLevel": Double(maxZoom),
@@ -926,7 +1124,8 @@ class CameraController: NSObject {
             "hasBackCamera": hasBackCamera,
             "isFocusPointSupported": isFocusPointSupported,
             "isExposurePointSupported": isExposurePointSupported,
-            "textureId": textureId
+            "textureId": textureId,
+            "availableLenses": getAvailableLenses()
         ]
     }
     
@@ -1038,6 +1237,15 @@ extension CameraController: AVCaptureVideoDataOutputSampleBufferDelegate {
             DispatchQueue.main.async { [weak self] in
                 guard let self = self, self.textureId >= 0 else { return }
                 self.textureRegistry.textureFrameAvailable(self.textureId)
+            }
+            
+            // Complete camera switch if waiting for first frame from new camera.
+            // This is done AFTER textureFrameAvailable so Flutter shows the new frame
+            // before receiving the state update with the new lens.
+            if let switchCompletion = switchCameraCompletion {
+                switchCameraCompletion = nil
+                let state = getCameraState()
+                switchCompletion(state, nil)
             }
             
             // Write video frame to asset writer if recording

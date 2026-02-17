@@ -17,7 +17,9 @@ import 'package:openvine/providers/active_video_provider.dart'; // For isVideoAc
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
 import 'package:openvine/providers/overlay_visibility_provider.dart'; // For hasVisibleOverlayProvider (modal pause/resume)
+import 'package:openvine/providers/nip05_verification_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/screens/comments/comments.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/router/router.dart';
@@ -44,8 +46,12 @@ import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
+import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
+import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
+import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
+import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
@@ -203,13 +209,20 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   /// Controller params for the current video
   /// Uses platform-aware URL selection: HLS on Android, MP4 on iOS/macOS
   /// Cache uses original MP4 URL (HLS can't be cached as single file)
-  VideoControllerParams get _controllerParams => VideoControllerParams(
-    videoId: widget.video.id,
-    videoUrl:
-        widget.video.getOptimalVideoUrlForPlatform() ?? widget.video.videoUrl!,
-    cacheUrl: widget.video.videoUrl, // Always cache original MP4
-    videoEvent: widget.video,
-  );
+  /// Checks fallback URL cache first (set when quality variant fails)
+  VideoControllerParams get _controllerParams {
+    // Check for fallback URL (stored when quality variant 720p/480p fails)
+    final fallbackUrl = ref.read(fallbackUrlCacheProvider)[widget.video.id];
+    return VideoControllerParams(
+      videoId: widget.video.id,
+      videoUrl:
+          fallbackUrl ??
+          widget.video.getOptimalVideoUrlForPlatform() ??
+          widget.video.videoUrl!,
+      cacheUrl: widget.video.videoUrl, // Always cache original MP4
+      videoEvent: widget.video,
+    );
+  }
 
   @override
   void initState() {
@@ -233,6 +246,36 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
         );
         return;
       }
+
+      // Listen for quality variant fallback URL changes (applies to all play modes).
+      // When a 720p/480p variant fails, the provider stores a fallback URL.
+      // We need to detect this and re-trigger playback with the new controller.
+      ref.listenManual(
+        fallbackUrlCacheProvider.select((cache) => cache[widget.video.id]),
+        (prev, next) {
+          if (!mounted) return;
+          if (prev == null && next != null) {
+            Log.info(
+              '🔄 Quality fallback URL detected for ${widget.video.id}, '
+              'retriggering playback with original MP4: $next',
+              name: 'VideoFeedItem',
+              category: LogCategory.video,
+            );
+            // Use postFrameCallback to ensure the widget has rebuilt with
+            // new _controllerParams before we try to play
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              final bool isActive =
+                  widget.isActiveOverride == true ||
+                  (widget.isActiveOverride == null &&
+                      ref.read(isVideoActiveProvider(_stableVideoId)));
+              if (isActive) {
+                _handlePlaybackChange(true);
+              }
+            });
+          }
+        },
+      );
 
       // If using override, handle playback directly without provider listener
       // BUT still listen to overlay visibility for modal pause/resume
@@ -603,6 +646,11 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       category: LogCategory.ui,
     );
 
+    // Watch fallback URL to trigger rebuild when quality variant (720p/480p) fails.
+    // This ensures _controllerParams switches to the fallback URL and creates a new
+    // controller with the original MP4 URL.
+    ref.watch(fallbackUrlCacheProvider.select((cache) => cache[video.id]));
+
     // Skip rendering if no video URL
     if (video.videoUrl == null) {
       return Container(
@@ -859,6 +907,44 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                     // and is playing (audio/video working), don't show error overlay
                     final isActuallyBroken = value.hasError && !value.isPlaying;
                     if (isActuallyBroken) {
+                      // When a quality variant (720p/480p) fails, the catchError
+                      // handler in the provider will store a fallback URL and
+                      // trigger a rebuild with a fresh controller for the original
+                      // MP4. During the brief window between the error and the
+                      // rebuild, suppress the error overlay and show the loading
+                      // state instead so the user sees a seamless transition.
+                      final optimalUrl = video.getOptimalVideoUrlForPlatform();
+                      final isQualityVariant =
+                          optimalUrl != null &&
+                          (optimalUrl.contains('/720p') ||
+                              optimalUrl.contains('/480p'));
+                      final fallbackUrl = ref.read(
+                        fallbackUrlCacheProvider,
+                      )[video.id];
+
+                      if (isQualityVariant && fallbackUrl == null) {
+                        // Fallback pending — show thumbnail + loading indicator
+                        return SizedBox.expand(
+                          child: Container(
+                            color: Colors.black,
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                VideoThumbnailWidget(
+                                  video: video,
+                                  fit: BoxFit.cover,
+                                  showPlayIcon: false,
+                                ),
+                                if (isActive)
+                                  const Center(
+                                    child: BrandedLoadingIndicator(size: 60),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
                       return VideoErrorOverlay(
                         video: video,
                         controllerParams: _controllerParams,
@@ -911,7 +997,10 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                 child: SizedBox(
                                   width: videoWidth,
                                   height: videoHeight,
-                                  child: VideoPlayer(controller),
+                                  child: _SafeVideoPlayer(
+                                    controller: controller,
+                                    videoId: video.id,
+                                  ),
                                 ),
                               ),
                             ),
@@ -1036,6 +1125,22 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                                   ),
                                 ),
                               ),
+                            // Subtitle overlay
+                            if (isActive && video.hasSubtitles)
+                              Consumer(
+                                builder: (context, ref, _) {
+                                  final visibilityMap = ref.watch(
+                                    subtitleVisibilityProvider,
+                                  );
+                                  final subtitlesVisible =
+                                      visibilityMap[video.id] ?? false;
+                                  return SubtitleOverlay(
+                                    video: video,
+                                    positionMs: value.position.inMilliseconds,
+                                    visible: subtitlesVisible,
+                                  );
+                                },
+                              ),
                           ],
                         ),
                       ),
@@ -1100,6 +1205,57 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
   }
 }
 
+/// A wrapper around [VideoPlayer] that guards against "No active player
+/// with ID" crashes caused by the native AVFoundation/ExoPlayer being
+/// disposed while the Flutter widget tree still references the controller.
+///
+/// This race condition occurs during tab switches or feed scrolling when
+/// Riverpod auto-disposes the [VideoPlayerController] (via `Future.microtask`)
+/// while the [ValueListenableBuilder] still holds a reference and triggers
+/// a rebuild.
+///
+/// The widget performs two layers of defense:
+/// 1. **Pre-build**: Checks [disposedControllersProvider] which is marked
+///    synchronously in the Riverpod `onDispose` callback, BEFORE the deferred
+///    `controller.dispose()` microtask runs. If the video ID is in the set,
+///    the native player is gone (or will be momentarily) and we show a
+///    placeholder instead.
+/// 2. **Fallback**: If the pre-build check misses the race (e.g. the disposal
+///    happened outside our provider lifecycle), the error is handled at the
+///    [FlutterError.onError] level in `main.dart` where it is downgraded from
+///    FATAL to non-fatal, and the global [ErrorWidget.builder] renders a dark
+///    placeholder.
+class _SafeVideoPlayer extends ConsumerWidget {
+  const _SafeVideoPlayer({required this.controller, required this.videoId});
+
+  final VideoPlayerController controller;
+  final String videoId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Check the disposed-controllers set. This is marked synchronously in
+    // Riverpod's onDispose, so it is always up-to-date BEFORE the deferred
+    // controller.dispose() microtask removes the native player.
+    final isDisposed = ref.watch(
+      disposedControllersProvider.select(
+        (disposed) => disposed.contains(videoId),
+      ),
+    );
+
+    if (isDisposed) {
+      Log.debug(
+        'SafeVideoPlayer: controller for $videoId is marked disposed, '
+        'showing placeholder',
+        name: 'SafeVideoPlayer',
+        category: LogCategory.video,
+      );
+      return const SizedBox.shrink();
+    }
+
+    return VideoPlayer(controller);
+  }
+}
+
 /// Video overlay actions widget with working functionality
 class VideoOverlayActions extends ConsumerWidget {
   const VideoOverlayActions({
@@ -1150,10 +1306,11 @@ class VideoOverlayActions extends ConsumerWidget {
     // Only interactive elements (buttons, chips with GestureDetector) absorb taps
     // When contextTitle is non-empty, a list header exists above - add extra offset to avoid overlap
     // List header is roughly 64px tall (8px padding + 48px content + 8px padding), add clearance
-    // In fullscreen mode, add extra offset to clear the back button row (AppBar ~56px + padding)
-    final hasListHeader = contextTitle != null && contextTitle!.isNotEmpty;
-    final fullscreenOffset = isFullscreen ? 48.0 : 0.0;
-    final topOffset = (hasListHeader ? 80.0 : 16.0) + fullscreenOffset;
+    // In fullscreen mode, the AppBar floats transparently over the content
+    // so the badge just needs the same base offset - no extra list header padding
+    final hasListHeader =
+        !isFullscreen && contextTitle != null && contextTitle!.isNotEmpty;
+    final topOffset = hasListHeader ? 80.0 : 16.0;
 
     // Calculate bottom offset based on navigation state
     final bottomOffset = hasBottomNavigation
@@ -1339,32 +1496,28 @@ class VideoOverlayActions extends ConsumerWidget {
                                 Row(
                                   children: [
                                     Flexible(
-                                      child: Text(
-                                        displayName,
-                                        style: VineTheme.titleFont(
-                                          fontSize: 14,
-                                          height: 20 / 14,
-                                          color: Colors.white,
+                                      child: Semantics(
+                                        identifier: 'video_author_name',
+                                        container: true,
+                                        explicitChildNodes: true,
+                                        label: 'Video author: $displayName',
+                                        child: Text(
+                                          displayName,
+                                          style: VineTheme.titleFont(
+                                            fontSize: 14,
+                                            height: 20 / 14,
+                                            color: Colors.white,
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                        maxLines: 1,
-                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
-                                    if (profile?.hasNip05 ?? false) ...[
-                                      const SizedBox(width: 4),
-                                      Container(
-                                        padding: const EdgeInsets.all(2),
-                                        decoration: const BoxDecoration(
-                                          color: Colors.blue,
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: const Icon(
-                                          Icons.check,
-                                          color: Colors.white,
-                                          size: 10,
-                                        ),
-                                      ),
-                                    ],
+                                    // Use actual NIP-05 verification —
+                                    // only show badge when DNS lookup
+                                    // confirms the pubkey owns the claimed
+                                    // identifier (NIP-05 spec).
+                                    _Nip05Badge(pubkey: video.pubkey),
                                   ],
                                 ),
                                 Text(
@@ -1433,12 +1586,13 @@ class VideoOverlayActions extends ConsumerWidget {
                     identifier: 'video_description',
                     container: true,
                     explicitChildNodes: true,
-                    label: 'Video description',
+                    label:
+                        'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
                     child: ClickableHashtagText(
                       text:
                           (video.content.isNotEmpty
                                   ? video.content
-                                  : video.title!)
+                                  : video.title ?? '')
                               .trim(),
                       style: const TextStyle(
                         fontFamily: 'Inter',
@@ -1458,6 +1612,16 @@ class VideoOverlayActions extends ConsumerWidget {
                       overflow: TextOverflow.ellipsis,
                     ),
                   ),
+                  // Collaborator avatar row (if video has collaborators)
+                  if (video.hasCollaborators) ...[
+                    const SizedBox(height: 4),
+                    CollaboratorAvatarRow(video: video),
+                  ],
+                  // Inspired-by attribution row (if video credits another creator)
+                  if (video.hasInspiredBy) ...[
+                    const SizedBox(height: 4),
+                    InspiredByAttributionRow(video: video, isActive: isActive),
+                  ],
                   // Audio attribution row (if video uses external audio)
                   if (video.hasAudioReference) ...[
                     const SizedBox(height: 4),
@@ -1537,6 +1701,11 @@ class VideoOverlayActions extends ConsumerWidget {
                       ),
                     ),
                   ),
+
+                  const SizedBox(height: 4),
+
+                  // CC (subtitles) button
+                  CcActionButton(video: video),
 
                   const SizedBox(height: 4),
 
@@ -1673,6 +1842,7 @@ class VideoOverlayActions extends ConsumerWidget {
         cacheUrl: video.videoUrl,
         videoEvent: video,
       );
+
       final controller = ref.read(
         individualVideoControllerProvider(controllerParams),
       );
@@ -2017,7 +2187,11 @@ class _CommentActionButton extends StatelessWidget {
                   }
                 }
               }
-              CommentsScreen.show(context, video);
+              CommentsScreen.show(
+                context,
+                video,
+                initialCommentCount: totalComments,
+              );
             },
             icon: DecoratedBox(
               decoration: BoxDecoration(
@@ -2058,6 +2232,39 @@ class _CommentActionButton extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// NIP-05 verification badge that watches the actual verification provider.
+///
+/// Only shows the blue checkmark when DNS lookup confirms the pubkey
+/// owns the claimed NIP-05 identifier, per the NIP-05 spec.
+class _Nip05Badge extends ConsumerWidget {
+  const _Nip05Badge({required this.pubkey});
+
+  final String pubkey;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final verificationAsync = ref.watch(nip05VerificationProvider(pubkey));
+    final isVerified = switch (verificationAsync) {
+      AsyncData(:final value) => value == Nip05VerificationStatus.verified,
+      _ => false,
+    };
+
+    if (!isVerified) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 4),
+      child: Container(
+        padding: const EdgeInsets.all(2),
+        decoration: const BoxDecoration(
+          color: Colors.blue,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.check, color: Colors.white, size: 10),
+      ),
     );
   }
 }

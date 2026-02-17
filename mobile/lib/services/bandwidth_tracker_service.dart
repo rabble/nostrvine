@@ -1,5 +1,5 @@
 // ABOUTME: Tracks video download bandwidth across playback sessions
-// ABOUTME: Uses rolling average to recommend 720p vs 480p quality for HLS streams
+// ABOUTME: Uses rolling average to recommend original/720p/480p quality
 
 import 'dart:collection';
 import 'dart:developer' as developer;
@@ -8,10 +8,13 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 /// Quality recommendation based on measured bandwidth
 enum VideoQuality {
-  /// 720p - good connections (>2 Mbps effective)
+  /// Original MP4 - fast connections (>4 Mbps effective)
   high,
 
-  /// 480p - slow connections (<2 Mbps effective)
+  /// 720p variant (~2.5 Mbps) - decent connections (2-4 Mbps)
+  medium,
+
+  /// 480p variant (~1 Mbps) - slow connections (<2 Mbps effective)
   low,
 }
 
@@ -37,8 +40,12 @@ class BandwidthTrackerService {
   static const int _maxSamples = 10;
 
   /// Threshold for switching to low quality (Mbps)
-  /// 720p video at ~2-3 Mbps needs at least 2 Mbps to stream smoothly
+  /// 480p variant at ~1 Mbps needs at least 2 Mbps to stream smoothly
   static const double _lowQualityThreshold = 2.0;
+
+  /// Threshold for switching to high (original) quality (Mbps)
+  /// Original MP4 at full resolution needs fast connection
+  static const double _highQualityThreshold = 4.0;
 
   /// Persisted quality preference key
   static const String _qualityPrefKey = 'video_quality_preference';
@@ -59,6 +66,8 @@ class BandwidthTrackerService {
 
       if (savedQuality == 'high') {
         _userOverride = VideoQuality.high;
+      } else if (savedQuality == 'medium') {
+        _userOverride = VideoQuality.medium;
       } else if (savedQuality == 'low') {
         _userOverride = VideoQuality.low;
       } else {
@@ -136,6 +145,10 @@ class BandwidthTrackerService {
   }
 
   /// Get recommended quality based on measured bandwidth
+  ///
+  /// - `> 4 Mbps` → [VideoQuality.high] (original MP4)
+  /// - `2-4 Mbps` → [VideoQuality.medium] (720p variant, ~2.5 Mbps)
+  /// - `< 2 Mbps` → [VideoQuality.low] (480p variant, ~1 Mbps)
   VideoQuality get recommendedQuality {
     // User override takes precedence
     if (_userOverride != null) {
@@ -144,14 +157,18 @@ class BandwidthTrackerService {
 
     // Auto mode - use measured bandwidth
     final avg = averageBandwidth;
-    if (avg < _lowQualityThreshold) {
-      return VideoQuality.low;
+    if (avg >= _highQualityThreshold) {
+      return VideoQuality.high;
+    } else if (avg >= _lowQualityThreshold) {
+      return VideoQuality.medium;
     }
-    return VideoQuality.high;
+    return VideoQuality.low;
   }
 
-  /// Check if we should use 720p quality
-  bool get shouldUseHighQuality => recommendedQuality == VideoQuality.high;
+  /// Check if we should use high or medium quality (not low/480p)
+  bool get shouldUseHighQuality =>
+      recommendedQuality == VideoQuality.high ||
+      recommendedQuality == VideoQuality.medium;
 
   /// Set user quality override
   ///

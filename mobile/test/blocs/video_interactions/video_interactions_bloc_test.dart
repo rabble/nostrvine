@@ -22,7 +22,7 @@ void main() {
     late _MockLikesRepository mockLikesRepository;
     late _MockCommentsRepository mockCommentsRepository;
     late _MockRepostsRepository mockRepostsRepository;
-    late StreamController<Set<String>> likedIdsController;
+    late StreamController<List<String>> likedIdsController;
     late StreamController<Set<String>> repostedIdsController;
 
     const testEventId = 'test-event-id';
@@ -33,7 +33,7 @@ void main() {
       mockLikesRepository = _MockLikesRepository();
       mockCommentsRepository = _MockCommentsRepository();
       mockRepostsRepository = _MockRepostsRepository();
-      likedIdsController = StreamController<Set<String>>.broadcast();
+      likedIdsController = StreamController<List<String>>.broadcast();
       repostedIdsController = StreamController<Set<String>>.broadcast();
 
       // Default stub for watchLikedEventIds
@@ -786,7 +786,7 @@ void main() {
 
     group('VideoInteractionsSubscriptionRequested', () {
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'updates like status when stream emits with this event liked',
+        'updates isLiked without adjusting likeCount when stream emits liked',
         build: createBloc,
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
@@ -796,20 +796,22 @@ void main() {
         act: (bloc) async {
           bloc.add(const VideoInteractionsSubscriptionRequested());
           await Future<void>.delayed(const Duration(milliseconds: 50));
-          likedIdsController.add({testEventId});
+          likedIdsController.add([testEventId]);
         },
         wait: const Duration(milliseconds: 100),
         expect: () => [
+          // likeCount stays at 10 — count is only adjusted by _onLikeToggled
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             isLiked: true,
-            likeCount: 11,
+            likeCount: 10,
           ),
         ],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'updates like status when stream emits without this event',
+        'updates isLiked without adjusting likeCount when stream emits '
+        'unliked',
         build: createBloc,
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
@@ -819,20 +821,21 @@ void main() {
         act: (bloc) async {
           bloc.add(const VideoInteractionsSubscriptionRequested());
           await Future<void>.delayed(const Duration(milliseconds: 50));
-          likedIdsController.add(<String>{});
+          likedIdsController.add(<String>[]);
         },
         wait: const Duration(milliseconds: 100),
         expect: () => [
+          // likeCount stays at 10 — count is only adjusted by _onLikeToggled
           const VideoInteractionsState(
             status: VideoInteractionsStatus.success,
             isLiked: false,
-            likeCount: 9,
+            likeCount: 10,
           ),
         ],
       );
 
       blocTest<VideoInteractionsBloc, VideoInteractionsState>(
-        'does not emit when status unchanged',
+        'does not emit when like status unchanged',
         build: createBloc,
         seed: () => const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
@@ -842,7 +845,7 @@ void main() {
         act: (bloc) async {
           bloc.add(const VideoInteractionsSubscriptionRequested());
           await Future<void>.delayed(const Duration(milliseconds: 50));
-          likedIdsController.add({testEventId});
+          likedIdsController.add([testEventId]);
         },
         wait: const Duration(milliseconds: 100),
         expect: () => <VideoInteractionsState>[],
@@ -857,7 +860,7 @@ void main() {
 
         // After closing, stream events should not affect anything
         // This mainly tests that no errors occur
-        expect(() => likedIdsController.add({testEventId}), returnsNormally);
+        expect(() => likedIdsController.add([testEventId]), returnsNormally);
       });
     });
   });

@@ -12,10 +12,9 @@ import 'dart:io';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:http/http.dart' as http;
-import 'package:models/models.dart' show BugReportResult;
+import 'package:models/models.dart'
+    show BugReportData, BugReportResult, LogEntry;
 import 'package:openvine/config/bug_report_config.dart';
-import 'package:openvine/models/bug_report_data.dart';
-import 'package:openvine/models/log_entry.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
 import 'package:openvine/services/log_capture_service.dart';

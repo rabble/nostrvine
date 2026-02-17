@@ -2,6 +2,7 @@
 // ABOUTME: Handles both login and registration with email verification flow
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:keycast_flutter/keycast_flutter.dart';
@@ -38,6 +39,8 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _passwordFocusNode = FocusNode();
+  final _confirmPasswordFocusNode = FocusNode();
 
   bool _isLoading = false;
   String? _errorMessage;
@@ -64,6 +67,8 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _passwordFocusNode.dispose();
+    _confirmPasswordFocusNode.dispose();
     super.dispose();
   }
 
@@ -180,6 +185,9 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
       final authService = ref.read(authServiceProvider);
       await authService.signInWithDivineOAuth(session);
 
+      // Signal password manager to save credentials
+      TextInput.finishAutofillContext();
+
       // Navigation will be handled by auth state listener
     } on OAuthException catch (e) {
       _setErrorMessage(e.message);
@@ -254,7 +262,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                       const SizedBox(height: 32),
 
                       // Email field
-                      DivineTextField(
+                      DivineAuthTextField(
                         label: 'Email',
                         controller: _emailController,
                         keyboardType: TextInputType.emailAddress,
@@ -264,7 +272,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                       const SizedBox(height: 16),
 
                       // Password field
-                      DivineTextField(
+                      DivineAuthTextField(
                         label: 'Password',
                         controller: _passwordController,
                         obscureText: true,
@@ -278,11 +286,13 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                         child: _tabController.index == 1
                             ? Column(
                                 children: [
-                                  DivineTextField(
+                                  DivineAuthTextField(
                                     label: 'Confirm Password',
-                                    controller: _confirmPasswordController,
+                                    controller:
+                                        _confirmPasswordController,
                                     obscureText: true,
-                                    validator: _validateConfirmPassword,
+                                    validator:
+                                        _validateConfirmPassword,
                                   ),
                                   const SizedBox(height: 16),
                                 ],
@@ -357,7 +367,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                   ),
                 ),
                 const SizedBox(height: 20),
-                DivineTextField(
+                DivineAuthTextField(
                   label: 'Email Address',
                   controller: resetEmailController,
                   keyboardType: TextInputType.emailAddress,
@@ -385,7 +395,8 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
                   label: 'Send Link',
                   onPressed: () async {
                     if (dialogFormKey.currentState!.validate()) {
-                      final email = resetEmailController.text.trim();
+                      final email =
+                          resetEmailController.text.trim();
                       dialogContext.pop();
                       await _performPasswordReset(email);
                     }

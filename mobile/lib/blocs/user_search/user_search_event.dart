@@ -26,3 +26,8 @@ final class UserSearchQueryChanged extends UserSearchEvent {
 final class UserSearchCleared extends UserSearchEvent {
   const UserSearchCleared();
 }
+
+/// Request to load more results for the current query
+final class UserSearchLoadMore extends UserSearchEvent {
+  const UserSearchLoadMore();
+}

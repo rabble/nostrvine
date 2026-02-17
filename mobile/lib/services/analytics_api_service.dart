@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/utils/hashtag_extractor.dart';
@@ -13,6 +14,7 @@ class VideoStats {
   final String id;
   final String pubkey;
   final DateTime createdAt;
+  final int? publishedAt;
   final int kind;
   final String dTag;
   final String title;
@@ -34,6 +36,7 @@ class VideoStats {
     required this.id,
     required this.pubkey,
     required this.createdAt,
+    this.publishedAt,
     required this.kind,
     required this.dTag,
     required this.title,
@@ -125,6 +128,7 @@ class VideoStats {
     // Also check for blurhash and summary in tags (NIP-71 standard)
     String? blurhashFromTag;
     String? summaryFromTag;
+    int? publishedAt;
 
     if (eventData['tags'] is List) {
       final tags = eventData['tags'] as List;
@@ -147,6 +151,9 @@ class VideoStats {
           }
           if (tagName == 'summary' && summaryFromTag == null) {
             summaryFromTag = tagValue;
+          }
+          if (tagName == 'published_at' && publishedAt == null) {
+            publishedAt = int.tryParse(tagValue);
           }
         }
       }
@@ -203,6 +210,7 @@ class VideoStats {
       id: id,
       pubkey: pubkey,
       createdAt: createdAt,
+      publishedAt: publishedAt,
       kind: eventData['kind'] ?? 34236,
       dTag: dTag,
       title: title,
@@ -226,16 +234,19 @@ class VideoStats {
 
   /// Convert to VideoEvent for use in the app
   VideoEvent toVideoEvent() {
+    final effectiveTimestamp =
+        publishedAt ?? createdAt.millisecondsSinceEpoch ~/ 1000;
     return VideoEvent(
       id: id,
       pubkey: pubkey,
-      createdAt: createdAt.millisecondsSinceEpoch ~/ 1000,
+      createdAt: effectiveTimestamp,
       content: description ?? '',
-      timestamp: createdAt,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(effectiveTimestamp * 1000),
       title: title.isNotEmpty ? title : null,
       videoUrl: videoUrl.isNotEmpty ? videoUrl : null,
       thumbnailUrl: thumbnail.isNotEmpty ? thumbnail : null,
       vineId: dTag.isNotEmpty ? dTag : null,
+      publishedAt: publishedAt?.toString(),
       sha256: sha256,
       authorName: authorName,
       authorAvatar: authorAvatar,
@@ -713,7 +724,7 @@ class AnalyticsApiService {
 
   /// Search videos by hashtag
   ///
-  /// Uses funnelcake's /api/search?tag= endpoint for hashtag discovery.
+  /// Uses funnelcake's /api/videos?tag= endpoint for hashtag discovery.
   ///
   /// [before] - Unix timestamp cursor for pagination
   Future<List<VideoEvent>> getVideosByHashtag({
@@ -747,7 +758,7 @@ class AnalyticsApiService {
 
     try {
       var url =
-          '$_baseUrl/api/search?tag=$normalizedTag&sort=trending&limit=$limit';
+          '$_baseUrl/api/videos?tag=$normalizedTag&sort=trending&limit=$limit';
       if (before != null) {
         url += '&before=$before';
       }
@@ -802,6 +813,93 @@ class AnalyticsApiService {
     } catch (e) {
       Log.error(
         'Error searching by hashtag: $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+      return [];
+    }
+  }
+
+  /// Fetch classic/all-time-popular videos for a hashtag
+  ///
+  /// Uses /api/videos?tag={hashtag}&sort=loops to surface classic vines
+  /// and high-engagement content sorted by all-time loop count.
+  ///
+  /// Separate from [getVideosByHashtag] so both can run in parallel.
+  Future<List<VideoEvent>> getClassicVideosByHashtag({
+    required String hashtag,
+    int limit = 50,
+  }) async {
+    if (!isAvailable) return [];
+
+    final normalizedTag = hashtag.replaceFirst('#', '').toLowerCase();
+
+    // Check cache
+    final cacheKey = 'classics_$normalizedTag';
+    final cachedTime = _hashtagSearchCacheTime[cacheKey];
+    if (cachedTime != null &&
+        DateTime.now().difference(cachedTime) < cacheTimeout &&
+        _hashtagSearchCache.containsKey(cacheKey)) {
+      Log.debug(
+        'Using cached classic hashtag videos for #$normalizedTag',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+      return _hashtagSearchCache[cacheKey]!
+          .map((v) => v.toVideoEvent())
+          .toList();
+    }
+
+    try {
+      final url =
+          '$_baseUrl/api/videos?tag=$normalizedTag&sort=loops&limit=$limit';
+      Log.info(
+        'Fetching classic videos by hashtag from Funnelcake: $url',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+
+        final videos = data
+            .map((v) => VideoStats.fromJson(v as Map<String, dynamic>))
+            .where((v) => v.id.isNotEmpty && v.videoUrl.isNotEmpty)
+            .toList();
+
+        // Cache results
+        _hashtagSearchCache[cacheKey] = videos;
+        _hashtagSearchCacheTime[cacheKey] = DateTime.now();
+
+        Log.info(
+          'Found ${videos.length} classic videos for #$normalizedTag',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+
+        return videos.map((v) => v.toVideoEvent()).toList();
+      } else {
+        Log.error(
+          'Classic hashtag search failed: ${response.statusCode}\n'
+          'URL: $url',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+        return [];
+      }
+    } catch (e) {
+      Log.error(
+        'Error fetching classic videos by hashtag: $e',
         name: 'AnalyticsApiService',
         category: LogCategory.video,
       );
@@ -1138,7 +1236,9 @@ class AnalyticsApiService {
     }
 
     try {
-      var url = '$_baseUrl/api/users/$pubkey/feed?limit=$limit&sort=$sort';
+      var url =
+          '$_baseUrl/api/users/$pubkey/feed'
+          '?limit=$limit&sort=$sort&include_collabs=true';
       if (before != null) {
         url += '&before=$before';
       }

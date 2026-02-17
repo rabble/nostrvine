@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
+import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:go_router/go_router.dart';
@@ -33,37 +34,117 @@ class _GridUploadingVideoEntry extends _GridVideoEntry {
 }
 
 /// Grid widget displaying user's videos on their profile
-class ProfileVideosGrid extends ConsumerWidget {
+class ProfileVideosGrid extends ConsumerStatefulWidget {
   const ProfileVideosGrid({
     required this.videos,
     required this.userIdHex,
+    this.isLoading = false,
+    this.errorMessage,
     super.key,
   });
 
   final List<VideoEvent> videos;
   final String userIdHex;
 
+  /// Whether videos are currently being loaded.
+  final bool isLoading;
+
+  /// Error message if video loading failed.
+  final String? errorMessage;
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfileVideosGrid> createState() => _ProfileVideosGridState();
+}
+
+class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
+    with GridPrefetchMixin {
+  List<VideoEvent>? _lastPrefetchedVideos;
+
+  @override
+  void initState() {
+    super.initState();
+    // Prefetch visible grid videos after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _prefetchIfNeeded();
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(ProfileVideosGrid oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Prefetch when video list changes
+    if (oldWidget.videos != widget.videos) {
+      _prefetchIfNeeded();
+    }
+  }
+
+  void _prefetchIfNeeded() {
+    final videos = widget.videos;
+    if (videos.isEmpty || videos == _lastPrefetchedVideos) return;
+    _lastPrefetchedVideos = videos;
+    prefetchGridVideos(videos);
+  }
+
+  void _onVideoTapped(int index) {
+    final videos = widget.videos;
+    Log.info(
+      '🎯 ProfileVideosGrid TAP: gridIndex=$index, '
+      'videoId=${videos[index].id}',
+      category: LogCategory.video,
+    );
+
+    // Pre-warm adjacent videos before navigation
+    prefetchAroundIndex(index, videos);
+
+    context.push(
+      FullscreenVideoFeedScreen.path,
+      extra: FullscreenVideoFeedArgs(
+        source: ProfileFeedSource(widget.userIdHex),
+        initialIndex: index,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final backgroundPublish = context.watch<BackgroundPublishBloc>();
+    final isOwnProfile =
+        ref.read(authServiceProvider).currentPublicKeyHex == widget.userIdHex;
 
     final allVideos = [
-      ...backgroundPublish.state.uploads
-          .where((upload) => upload.result == null)
-          .map(_GridUploadingVideoEntry.new),
+      // Only show uploading tiles on own profile
+      if (isOwnProfile)
+        ...backgroundPublish.state.uploads
+            .where((upload) => upload.result == null)
+            .map(_GridUploadingVideoEntry.new),
 
-      ...videos.map(_GridVideoEventEntry.new),
+      ...widget.videos.map(_GridVideoEventEntry.new),
     ];
 
+    if (widget.errorMessage != null && allVideos.isEmpty) {
+      return _ProfileVideosErrorState(errorMessage: widget.errorMessage!);
+    }
+
     if (allVideos.isEmpty) {
+      if (widget.isLoading) {
+        return const _ProfileVideosLoadingState();
+      }
       return _ProfileVideosEmptyState(
-        userIdHex: userIdHex,
+        userIdHex: widget.userIdHex,
         isOwnProfile:
-            ref.read(authServiceProvider).currentPublicKeyHex == userIdHex,
+            ref.read(authServiceProvider).currentPublicKeyHex ==
+            widget.userIdHex,
         onRefresh: () =>
-            ref.read(profileFeedProvider(userIdHex).notifier).loadMore(),
+            ref.read(profileFeedProvider(widget.userIdHex).notifier).loadMore(),
       );
     }
+
+    // Count uploading videos to offset indices for published videos
+    final uploadingCount = backgroundPublish.state.uploads
+        .where((upload) => upload.result == null)
+        .length;
 
     return CustomScrollView(
       slivers: [
@@ -84,8 +165,15 @@ class ProfileVideosGrid extends ConsumerWidget {
                 ),
                 _GridVideoEventEntry eventEntry => _VideoGridTile(
                   videoEvent: eventEntry.videoEvent,
-                  userIdHex: userIdHex,
+                  userIdHex: widget.userIdHex,
                   index: index,
+                  onTap: () {
+                    // Adjust index to account for uploading videos at the top
+                    final publishedIndex = index - uploadingCount;
+                    if (publishedIndex >= 0) {
+                      _onVideoTapped(publishedIndex);
+                    }
+                  },
                 ),
               };
             }, childCount: allVideos.length),
@@ -192,32 +280,17 @@ class _VideoGridTile extends StatelessWidget {
     required this.videoEvent,
     required this.userIdHex,
     required this.index,
+    required this.onTap,
   });
 
   final VideoEvent videoEvent;
   final String userIdHex;
   final int index;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-    onTap: () {
-      Log.info(
-        '🎯 ProfileVideosGrid TAP: gridIndex=$index, '
-        'videoId=${videoEvent.id}',
-        category: LogCategory.video,
-      );
-      // Use FullscreenVideoFeedScreen with ProfileFeedSource for
-      // reactive updates when loadMore fetches new videos
-      // TODO(migration): Migrate to PooledFullscreenVideoFeedScreen once
-      // ProfileVideosBloc is created
-      context.push(
-        FullscreenVideoFeedScreen.path,
-        extra: FullscreenVideoFeedArgs(
-          source: ProfileFeedSource(userIdHex),
-          initialIndex: index,
-        ),
-      );
-    },
+    onTap: onTap,
     child: ClipRRect(
       borderRadius: BorderRadius.circular(4),
       child: DecoratedBox(
@@ -246,6 +319,72 @@ class _VideoThumbnail extends StatelessWidget {
     }
     return const _ThumbnailPlaceholder();
   }
+}
+
+/// Loading state shown while videos are being fetched.
+class _ProfileVideosLoadingState extends StatelessWidget {
+  const _ProfileVideosLoadingState();
+
+  @override
+  Widget build(BuildContext context) => const CustomScrollView(
+    slivers: [
+      SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: VineTheme.vineGreen),
+              SizedBox(height: 16),
+              Text(
+                'Loading videos...',
+                style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  );
+}
+
+/// Error state shown when video loading fails.
+class _ProfileVideosErrorState extends StatelessWidget {
+  const _ProfileVideosErrorState({required this.errorMessage});
+
+  final String errorMessage;
+
+  @override
+  Widget build(BuildContext context) => CustomScrollView(
+    slivers: [
+      SliverFillRemaining(
+        hasScrollBody: false,
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: VineTheme.secondaryText,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Error: $errorMessage',
+                style: const TextStyle(
+                  color: VineTheme.primaryText,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      ),
+    ],
+  );
 }
 
 /// Flat color placeholder for thumbnails

@@ -24,6 +24,7 @@ class CameraState extends Equatable {
     this.isFocusPointSupported = false,
     this.isExposurePointSupported = false,
     this.textureId,
+    this.availableLenses = const [DivineCameraLens.back],
   });
 
   /// Creates a [CameraState] from a map.
@@ -47,6 +48,11 @@ class CameraState extends Equatable {
       isExposurePointSupported:
           map['isExposurePointSupported'] as bool? ?? false,
       textureId: map['textureId'] as int?,
+      availableLenses: map['availableLenses'] != null
+          ? DivineCameraLens.fromNativeStringList(
+              map['availableLenses'] as List<dynamic>,
+            )
+          : const [DivineCameraLens.back],
     );
   }
 
@@ -95,8 +101,35 @@ class CameraState extends Equatable {
   /// The texture ID for the camera preview (Android).
   final int? textureId;
 
+  /// List of all available camera lenses on this device.
+  /// Includes front, back, ultraWide, telephoto, and macro if supported.
+  final List<DivineCameraLens> availableLenses;
+
   /// Whether the camera can record video.
   bool get canRecord => isInitialized && !isRecording;
+
+  /// Returns all available back-facing lenses (excludes front camera).
+  List<DivineCameraLens> get availableBackLenses =>
+      availableLenses.where((l) => l.isBackFacing).toList();
+
+  /// Returns all available front-facing lenses.
+  List<DivineCameraLens> get availableFrontLenses =>
+      availableLenses.where((l) => l.isFrontFacing).toList();
+
+  /// Whether the device has an ultra-wide camera.
+  bool get hasUltraWideCamera =>
+      availableLenses.contains(DivineCameraLens.ultraWide);
+
+  /// Whether the device has a front ultra-wide camera (for group selfies).
+  bool get hasFrontUltraWideCamera =>
+      availableLenses.contains(DivineCameraLens.frontUltraWide);
+
+  /// Whether the device has a telephoto camera.
+  bool get hasTelephotoCamera =>
+      availableLenses.contains(DivineCameraLens.telephoto);
+
+  /// Whether the device has a macro camera.
+  bool get hasMacroCamera => availableLenses.contains(DivineCameraLens.macro);
 
   /// Whether the camera can switch between front and back.
   bool get canSwitchCamera => hasFrontCamera && hasBackCamera;
@@ -118,6 +151,7 @@ class CameraState extends Equatable {
     bool? isFocusPointSupported,
     bool? isExposurePointSupported,
     int? textureId,
+    List<DivineCameraLens>? availableLenses,
   }) {
     return CameraState(
       isInitialized: isInitialized ?? this.isInitialized,
@@ -137,6 +171,7 @@ class CameraState extends Equatable {
       isExposurePointSupported:
           isExposurePointSupported ?? this.isExposurePointSupported,
       textureId: textureId ?? this.textureId,
+      availableLenses: availableLenses ?? this.availableLenses,
     );
   }
 
@@ -158,6 +193,9 @@ class CameraState extends Equatable {
       'isFocusPointSupported': isFocusPointSupported,
       'isExposurePointSupported': isExposurePointSupported,
       'textureId': textureId,
+      'availableLenses': availableLenses
+          .map((l) => l.toNativeString())
+          .toList(),
     };
   }
 
@@ -177,7 +215,8 @@ class CameraState extends Equatable {
         'hasBackCamera: $hasBackCamera, '
         'isFocusPointSupported: $isFocusPointSupported, '
         'isExposurePointSupported: $isExposurePointSupported, '
-        'textureId: $textureId)';
+        'textureId: $textureId, '
+        'availableLenses: $availableLenses)';
   }
 
   @override
@@ -197,5 +236,6 @@ class CameraState extends Equatable {
     isFocusPointSupported,
     isExposurePointSupported,
     textureId,
+    availableLenses,
   ];
 }

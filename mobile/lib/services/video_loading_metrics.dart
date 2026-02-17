@@ -4,6 +4,7 @@
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/foundation.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Tracks different stages of video loading for performance analysis
@@ -445,6 +446,9 @@ class VideoLoadingMetrics {
 
     // Notify visual overlay with timing
     _notifyEvent('🚀 COMPLETE: ${session.videoId} in ${totalDuration}ms');
+
+    // Periodically report cache metrics
+    _maybeReportCacheMetrics();
   }
 
   /// Send error metrics to Firebase Analytics
@@ -467,6 +471,49 @@ class VideoLoadingMetrics {
         'video_url_domain': Uri.tryParse(session.videoUrl)?.host ?? 'unknown',
       },
     );
+  }
+
+  /// Number of video loads since last cache metrics report.
+  int _loadsSinceLastCacheReport = 0;
+
+  /// Report cache hit/miss metrics to Firebase Analytics.
+  ///
+  /// Called automatically every 50 video loads, or can be called manually
+  /// (e.g., on app background).
+  void reportCacheMetrics() {
+    final metrics = openVineMediaCache.metrics;
+    final metricsMap = metrics.toMap();
+
+    _analytics.logEvent(
+      name: 'video_cache_performance',
+      parameters: {
+        'cache_hits': metricsMap['cache_hits'] as int,
+        'cache_misses': metricsMap['cache_misses'] as int,
+        'hit_rate': (metricsMap['cache_hit_rate'] as double).toStringAsFixed(3),
+        'prefetched_used': metricsMap['prefetched_used'] as int,
+        'prefetched_total': metricsMap['prefetched_total'] as int,
+      },
+    );
+
+    UnifiedLogger.info(
+      'Cache metrics reported: '
+      'hits=${metricsMap['cache_hits']}, '
+      'misses=${metricsMap['cache_misses']}, '
+      'hitRate=${(metricsMap['cache_hit_rate'] as double).toStringAsFixed(3)}, '
+      'prefetchUsed=${metricsMap['prefetched_used']}/'
+      '${metricsMap['prefetched_total']}',
+      name: 'VideoLoadingMetrics',
+    );
+
+    _loadsSinceLastCacheReport = 0;
+  }
+
+  /// Increment load counter and report cache metrics periodically.
+  void _maybeReportCacheMetrics() {
+    _loadsSinceLastCacheReport++;
+    if (_loadsSinceLastCacheReport >= 50) {
+      reportCacheMetrics();
+    }
   }
 
   /// Clear all active sessions (useful for testing/debugging)

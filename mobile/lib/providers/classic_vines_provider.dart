@@ -2,6 +2,7 @@
 // ABOUTME: Uses REST API when available, falls back to Nostr videos with embedded stats
 
 import 'dart:async';
+import 'dart:math';
 
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -24,8 +25,16 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
   static const int _pageSize = 100;
   static const int _totalClassicVines = 10000; // Approximate total
 
-  /// Current page (0-indexed)
-  int _currentPage = 0;
+  /// Max random offset — draws from top 500 most-looped vines
+  static const int _maxRandomOffset = 400;
+
+  final Random _random = Random();
+
+  /// Random starting offset for the current session (0–400)
+  int _randomOffset = 0;
+
+  /// Number of additional pages appended via loadMore
+  int _loadMorePages = 0;
 
   @override
   Future<VideoFeedState> build() async {
@@ -39,6 +48,13 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     );
 
     if (!isAppReady) {
+      // Preserve existing data during background — don't wipe the feed
+      if (state.hasValue && state.value != null) {
+        final existing = state.value!;
+        if (existing.videos.isNotEmpty) {
+          return existing;
+        }
+      }
       return VideoFeedState(
         videos: const [],
         hasMoreContent: false,
@@ -51,31 +67,35 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     final funnelcakeAvailable =
         ref.watch(funnelcakeAvailableProvider).asData?.value ?? false;
 
+    // Pick a random offset within the top 500 most-looped vines
+    _randomOffset = _random.nextInt(_maxRandomOffset + 1);
+    _loadMorePages = 0;
+
     // Try REST API first (Funnelcake has comprehensive classic Vine data)
     if (funnelcakeAvailable) {
       try {
-        // Load just the current page (100 videos) - not all 10k!
-        final videos = await analyticsService.getClassicVinesPage(
-          page: _currentPage,
-          pageSize: _pageSize,
-          sort: 'loops', // Most viral first
+        final videos = await analyticsService.getClassicVines(
+          limit: _pageSize,
+          offset: _randomOffset,
+          sort: 'loops',
         );
 
-        // Filter for platform compatibility
-        final filteredVideos = videos
-            .where((v) => v.isSupportedOnCurrentPlatform)
-            .toList();
+        // Filter for platform compatibility and shuffle
+        final filteredVideos =
+            videos.where((v) => v.isSupportedOnCurrentPlatform).toList()
+              ..shuffle(_random);
 
         Log.info(
-          '🎬 ClassicVinesFeed: Loaded page $_currentPage with ${filteredVideos.length} videos',
+          '🎬 ClassicVinesFeed: Loaded ${filteredVideos.length} videos '
+          '(offset: $_randomOffset, shuffled)',
           name: 'ClassicVinesFeedProvider',
           category: LogCategory.video,
         );
 
-        final maxPages = (_totalClassicVines / _pageSize).ceil();
+        final nextOffset = _randomOffset + _pageSize;
         return VideoFeedState(
           videos: filteredVideos,
-          hasMoreContent: _currentPage < maxPages - 1,
+          hasMoreContent: nextOffset < _totalClassicVines,
           isLoadingMore: false,
           lastUpdated: DateTime.now(),
         );
@@ -106,32 +126,36 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
             (a, b) => (b.originalLoops ?? 0).compareTo(a.originalLoops ?? 0),
           );
 
+    // Take top entries then shuffle for variety
+    final topClassics = classicVideos.take(_pageSize).toList()
+      ..shuffle(_random);
+
     return VideoFeedState(
-      videos: classicVideos.take(_pageSize).toList(),
+      videos: topClassics,
       hasMoreContent: classicVideos.length > _pageSize,
       isLoadingMore: false,
       lastUpdated: DateTime.now(),
     );
   }
 
-  /// Spin to the next page of classic vines
+  /// Refresh with a new random slice of classic vines
   Future<void> refresh() async {
     final analyticsService = ref.read(analyticsApiServiceProvider);
     final funnelcakeAvailable =
         ref.read(funnelcakeAvailableProvider).asData?.value ?? false;
 
     if (!funnelcakeAvailable) {
-      // Can't paginate without API
+      // Can't paginate without API — invalidate to re-run build()
       ref.invalidateSelf();
       return;
     }
 
-    // Advance to next page
-    final maxPages = (_totalClassicVines / _pageSize).ceil();
-    _currentPage = (_currentPage + 1) % maxPages;
+    // Pick a new random offset for a fresh slice
+    _randomOffset = _random.nextInt(_maxRandomOffset + 1);
+    _loadMorePages = 0;
 
     Log.info(
-      '🎬 ClassicVinesFeed: Spinning to page $_currentPage of $maxPages',
+      '🎬 ClassicVinesFeed: Refreshing with new offset $_randomOffset',
       name: 'ClassicVinesFeedProvider',
       category: LogCategory.video,
     );
@@ -139,27 +163,28 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     state = const AsyncLoading();
 
     try {
-      final videos = await analyticsService.getClassicVinesPage(
-        page: _currentPage,
-        pageSize: _pageSize,
+      final videos = await analyticsService.getClassicVines(
+        limit: _pageSize,
+        offset: _randomOffset,
         sort: 'loops',
       );
 
-      final filteredVideos = videos
-          .where((v) => v.isSupportedOnCurrentPlatform)
-          .toList();
+      final filteredVideos =
+          videos.where((v) => v.isSupportedOnCurrentPlatform).toList()
+            ..shuffle(_random);
 
+      final nextOffset = _randomOffset + _pageSize;
       state = AsyncData(
         VideoFeedState(
           videos: filteredVideos,
-          hasMoreContent: _currentPage < maxPages - 1,
+          hasMoreContent: nextOffset < _totalClassicVines,
           isLoadingMore: false,
           lastUpdated: DateTime.now(),
         ),
       );
     } catch (e) {
       Log.error(
-        '🎬 ClassicVinesFeed: Error loading page $_currentPage: $e',
+        '🎬 ClassicVinesFeed: Error refreshing (offset $_randomOffset): $e',
         name: 'ClassicVinesFeedProvider',
         category: LogCategory.video,
       );
@@ -167,7 +192,7 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     }
   }
 
-  /// Load more videos (append next page to current list)
+  /// Load more videos (append next sequential page from current offset)
   Future<void> loadMore() async {
     if (!state.hasValue || state.value == null) return;
     final currentState = state.value!;
@@ -182,11 +207,12 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
     state = AsyncData(currentState.copyWith(isLoadingMore: true));
 
     try {
-      // Load next page and append
-      final nextPage = _currentPage + 1;
-      final videos = await analyticsService.getClassicVinesPage(
-        page: nextPage,
-        pageSize: _pageSize,
+      _loadMorePages++;
+      final nextOffset = _randomOffset + _loadMorePages * _pageSize;
+
+      final videos = await analyticsService.getClassicVines(
+        limit: _pageSize,
+        offset: nextOffset,
         sort: 'loops',
       );
 
@@ -194,11 +220,12 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
           .where((v) => v.isSupportedOnCurrentPlatform)
           .toList();
 
-      final maxPages = (_totalClassicVines / _pageSize).ceil();
       final allVideos = [...currentState.videos, ...filteredVideos];
+      final followingOffset = nextOffset + _pageSize;
 
       Log.info(
-        '🎬 ClassicVinesFeed: Loaded ${filteredVideos.length} more (total: ${allVideos.length})',
+        '🎬 ClassicVinesFeed: Loaded ${filteredVideos.length} more '
+        '(offset: $nextOffset, total: ${allVideos.length})',
         name: 'ClassicVinesFeedProvider',
         category: LogCategory.video,
       );
@@ -206,12 +233,13 @@ class ClassicVinesFeed extends _$ClassicVinesFeed {
       state = AsyncData(
         VideoFeedState(
           videos: allVideos,
-          hasMoreContent: nextPage < maxPages - 1,
+          hasMoreContent: followingOffset < _totalClassicVines,
           isLoadingMore: false,
           lastUpdated: DateTime.now(),
         ),
       );
     } catch (e) {
+      _loadMorePages--; // Revert so retry works
       Log.error(
         '🎬 ClassicVinesFeed: Error loading more: $e',
         name: 'ClassicVinesFeedProvider',

@@ -16,6 +16,9 @@
 # 6 - DEFAULT_ENV is configured via build inputs (dropdown) when starting a build
 #   - Options: PRODUCTION, STAGING, TEST, POC
 #   - Defaults to PRODUCTION for automatic builds
+# 7 - Create environment variable group "proofmode_credentials" with:
+#   - PROOFMODE_SIGNING_SERVER_ENDPOINT
+#   - PROOFMODE_SIGNING_SERVER_TOKEN
 
 definitions:
   environment:
@@ -28,6 +31,9 @@ definitions:
     - &install_flutterfire
       name: Install FlutterFire CLI
       script: dart pub global activate flutterfire_cli
+    - &enable_spm
+      name: Enable Swift Package Manager
+      script: flutter config --enable-swift-package-manager
     - &flutter_pub_get
       name: Get Flutter dependencies
       script: flutter pub get
@@ -44,7 +50,9 @@ definitions:
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
-          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }}
+          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
+          --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
     - &build_aab
       name: Build Android AAB
       script: |
@@ -54,7 +62,9 @@ definitions:
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
-          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }}
+          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
+          --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
     - &build_ios
       name: Build and sign iOS
       script: |
@@ -65,6 +75,8 @@ definitions:
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
           --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
+          --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
           --export-options-plist=/Users/builder/export_options.plist
     - &build_ios_simulator
       name: Build iOS Simulator app
@@ -73,7 +85,9 @@ definitions:
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
-          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }}
+          --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
+          --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
+          --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
 workflows:
   ios-build:
     name: iOS Build
@@ -98,6 +112,7 @@ workflows:
       cocoapods: default
       groups:
         - zendesk_credentials
+        - proofmode_credentials
       vars:
         BUNDLE_ID: co.openvine.app
       ios_signing:
@@ -112,6 +127,7 @@ workflows:
     scripts:
       - *setup_code_signing_xcode
       - *install_flutterfire
+      - *enable_spm
       - *pod_install
       - *build_ios
     artifacts:
@@ -147,6 +163,7 @@ workflows:
       cocoapods: default
       groups:
         - zendesk_credentials
+        - proofmode_credentials
     cache:
       cache_paths:
         - $HOME/Library/Caches/CocoaPods
@@ -155,6 +172,7 @@ workflows:
       events: []
     scripts:
       - *install_flutterfire
+      - *enable_spm
       - *flutter_pub_get
       - *pod_install
       - *build_ios_simulator
@@ -183,6 +201,7 @@ workflows:
       groups:
         - zendesk_credentials
         - google_play_credentials
+        - proofmode_credentials
       android_signing:
         - divine_keystore
     cache:

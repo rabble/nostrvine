@@ -5,9 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/models/curation_set.dart';
-import 'package:models/models.dart'
-    hide CurationSet, CurationSetType, SampleCurationSets;
+import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';

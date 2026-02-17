@@ -225,6 +225,7 @@ class WebSocketConnectionManager {
 
   void _onMessage(dynamic message) {
     _lastActivityAt = DateTime.now();
+    if (_messageController.isClosed) return;
     if (message is String) {
       _messageController.add(message);
     } else {
@@ -234,7 +235,9 @@ class WebSocketConnectionManager {
 
   void _onStreamError(dynamic error) {
     log('Stream error: $error');
-    _errorController.add('Stream error: $error');
+    if (!_errorController.isClosed) {
+      _errorController.add('Stream error: $error');
+    }
     _handleDisconnect();
   }
 
@@ -471,7 +474,9 @@ class WebSocketConnectionManager {
   void _setState(ConnectionState newState) {
     if (_state != newState) {
       _state = newState;
-      _stateController.add(newState);
+      if (!_stateController.isClosed) {
+        _stateController.add(newState);
+      }
     }
   }
 

@@ -287,6 +287,61 @@ void main() {
       });
     });
 
+    group('reassemble', () {
+      testWidgets('recreates owned controller on hot reload', (tester) async {
+        await tester.pumpWidget(buildFeed());
+
+        final state = tester.state<PooledVideoFeedState>(
+          find.byType(PooledVideoFeed),
+        );
+        final originalController = state.controller;
+
+        state.reassemble();
+        await tester.pump();
+
+        expect(state.controller, isNot(same(originalController)));
+        expect(state.controller.videoCount, equals(5));
+      });
+
+      testWidgets('preserves external controller on hot reload', (
+        tester,
+      ) async {
+        final controller = VideoFeedController(
+          videos: createTestVideos(count: 3),
+          pool: pool,
+        );
+
+        await tester.pumpWidget(buildFeed(controller: controller));
+
+        final state = tester.state<PooledVideoFeedState>(
+          find.byType(PooledVideoFeed),
+        )..reassemble();
+        await tester.pump();
+
+        expect(state.controller, same(controller));
+
+        controller.dispose();
+      });
+
+      testWidgets('preserves current index after hot reload', (tester) async {
+        await tester.pumpWidget(buildFeed());
+
+        // Scroll to page 2
+        await tester.drag(find.byType(PageView), const Offset(0, -500));
+        await tester.pumpAndSettle();
+        await tester.drag(find.byType(PageView), const Offset(0, -500));
+        await tester.pumpAndSettle();
+
+        final state = tester.state<PooledVideoFeedState>(
+          find.byType(PooledVideoFeed),
+        )..reassemble();
+        await tester.pump();
+
+        // New controller should have same video count
+        expect(state.controller.videoCount, equals(5));
+      });
+    });
+
     group('didUpdateWidget', () {
       testWidgets('updates when controller changes', (tester) async {
         final controller1 = VideoFeedController(

@@ -3,6 +3,7 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/widgets.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -171,13 +172,34 @@ class VideoEditorRenderService {
 
   /// Renders multiple clips into a single video file with aspect ratio cropping.
   ///
+  /// When [customAudioPath] is provided, the custom audio track is mixed into
+  /// the output. Use [originalAudioVolume] (default 1.0) and
+  /// [customAudioVolume] (default 1.0) to control relative levels.
+  /// Set [originalAudioVolume] to 0.0 to mute the original audio entirely
+  /// (e.g. when recording lip-sync without headphones).
+  ///
+  /// When [imageBytes] is provided (PNG with transparency), it is composited
+  /// on top of the video as a watermark overlay.
+  ///
   /// Returns the path to the rendered video file, or null if cancelled/failed.
+  ///
+  /// If [usePersistentStorage] is true, the output file will be saved to the
+  /// documents directory instead of the temporary directory. Use this when
+  /// the rendered video should persist across app restarts.
   static Future<String?> renderVideo({
     required List<RecordingClip> clips,
     required model.AspectRatio aspectRatio,
     required bool enableAudio,
+    String? customAudioPath,
+    double? originalAudioVolume,
+    double? customAudioVolume,
+    Uint8List? imageBytes,
+    bool usePersistentStorage = false,
   }) async {
-    final tempDir = await getTemporaryDirectory();
+    final cacheDir = await getTemporaryDirectory();
+    final outputDir = usePersistentStorage
+        ? await getApplicationDocumentsDirectory()
+        : cacheDir;
     var tempFilePaths = <String>[];
 
     try {
@@ -192,11 +214,12 @@ class VideoEditorRenderService {
         await clip.processingCompleter?.future;
       }
 
+      // Intermediate normalized clips always go to cache (they get deleted)
       final result = await _normalizeClipsToAspectRatio(
         clips: clips,
         aspectRatio: aspectRatio,
         enableAudio: enableAudio,
-        tempDir: tempDir,
+        cacheDir: cacheDir,
       );
       tempFilePaths = result.tempFilePaths;
 
@@ -204,8 +227,12 @@ class VideoEditorRenderService {
         segments: result.segments,
         clipId: clips.first.id,
         enableAudio: enableAudio,
-        tempDir: tempDir,
+        outputDir: outputDir,
         globalTransform: result.globalTransform,
+        customAudioPath: customAudioPath,
+        originalAudioVolume: originalAudioVolume,
+        customAudioVolume: customAudioVolume,
+        imageBytes: imageBytes,
       );
 
       // Fire-and-forget: temp cleanup is non-critical and handles
@@ -265,6 +292,13 @@ class VideoEditorRenderService {
       }
 
       onComplete(true);
+    } on RenderCanceledException {
+      Log.info(
+        '🚫 Clip duration limit cancelled',
+        name: 'VideoEditorRenderService',
+        category: .video,
+      );
+      onComplete(false);
     } catch (e, stack) {
       Log.error(
         '❌ Failed to limit clip duration: $e',
@@ -280,6 +314,75 @@ class VideoEditorRenderService {
     }
   }
 
+  /// Crops a video to the specified aspect ratio.
+  ///
+  /// When [customAudioPath] is provided, the custom audio track is mixed in.
+  /// When [imageBytes] is provided, the image is composited as an overlay.
+  ///
+  /// Returns the path to the cropped video file, or the original path if no
+  /// cropping is needed.
+  static Future<String> cropToAspectRatio({
+    required EditorVideo video,
+    required model.AspectRatio aspectRatio,
+    bool enableAudio = true,
+    VideoMetadata? metadata,
+    String? customAudioPath,
+    double? originalAudioVolume,
+    double? customAudioVolume,
+    Uint8List? imageBytes,
+  }) async {
+    metadata ??= await ProVideoEditor.instance.getMetadata(video);
+    final resolution = metadata.resolution;
+    final cropParams = _CropParameters.forAspectRatio(
+      resolution: resolution,
+      aspectRatio: aspectRatio,
+    );
+
+    // No cropping needed if video already matches target aspect ratio
+    if (!cropParams.needsCropping(resolution)) {
+      Log.debug(
+        '⏭️ Video already matches target aspect ratio - no crop needed',
+        name: _logName,
+        category: .video,
+      );
+      return await video.safeFilePath();
+    }
+
+    Log.debug(
+      '✂️ Cropping video from ${resolution.width.round()}x${resolution.height.round()} '
+      'to ${cropParams.width}x${cropParams.height}',
+      name: _logName,
+      category: .video,
+    );
+
+    final tempDir = await getTemporaryDirectory();
+    final outputPath = path.join(
+      tempDir.path,
+      'cropped_${DateTime.now().microsecondsSinceEpoch}.mp4',
+    );
+
+    final task = VideoRenderData(
+      video: video,
+      enableAudio: enableAudio,
+      shouldOptimizeForNetworkUse: true,
+      transform: cropParams.toExportTransform(),
+      customAudioPath: customAudioPath,
+      originalAudioVolume: originalAudioVolume,
+      customAudioVolume: customAudioVolume,
+      imageBytes: imageBytes,
+    );
+
+    await ProVideoEditor.instance.renderVideoToFile(outputPath, task);
+
+    Log.debug(
+      '✅ Video cropped to: $outputPath',
+      name: _logName,
+      category: .video,
+    );
+
+    return outputPath;
+  }
+
   /// Normalizes all clips to the target aspect ratio.
   ///
   /// Optimizes rendering by:
@@ -291,7 +394,7 @@ class VideoEditorRenderService {
     required List<RecordingClip> clips,
     required model.AspectRatio aspectRatio,
     required bool enableAudio,
-    required Directory tempDir,
+    required Directory cacheDir,
   }) async {
     // Analyze all clips first to determine the optimal rendering strategy
     final clipAnalysis = await _analyzeClips(clips, aspectRatio);
@@ -344,7 +447,7 @@ class VideoEditorRenderService {
           index: i,
           cropParams: entry.cropParams,
           enableAudio: enableAudio,
-          tempDir: tempDir,
+          cacheDir: cacheDir,
         );
         tempFilePaths.add(normalizedPath);
         segments.add(
@@ -391,10 +494,12 @@ class VideoEditorRenderService {
     required int index,
     required _CropParameters cropParams,
     required bool enableAudio,
-    required Directory tempDir,
+    required Directory cacheDir,
   }) async {
-    final outputPath =
-        '${tempDir.path}/normalized_${index}_${DateTime.now().microsecondsSinceEpoch}.mp4';
+    final outputPath = path.join(
+      cacheDir.path,
+      'normalized_${index}_${DateTime.now().microsecondsSinceEpoch}.mp4',
+    );
 
     final task = VideoRenderData(
       id: '${clip.id}_normalized',
@@ -421,16 +526,25 @@ class VideoEditorRenderService {
 
   /// Concatenates all video segments into a final output file.
   ///
-  /// If [globalTransform] is provided, applies it to all segments in a single pass.
+  /// If [globalTransform] is provided, applies it to all segments in a single
+  /// pass. When [customAudioPath] is set, the custom audio track is mixed in
+  /// at the given volume levels. When [imageBytes] is provided, the image is
+  /// composited as an overlay (e.g. watermark).
   static Future<String> _concatenateSegments({
     required List<VideoSegment> segments,
     required String clipId,
     required bool enableAudio,
-    required Directory tempDir,
+    required Directory outputDir,
     _CropParameters? globalTransform,
+    String? customAudioPath,
+    double? originalAudioVolume,
+    double? customAudioVolume,
+    Uint8List? imageBytes,
   }) async {
-    final outputPath =
-        '${tempDir.path}/divine_${DateTime.now().microsecondsSinceEpoch}.mp4';
+    final outputPath = path.join(
+      outputDir.path,
+      'divine_${DateTime.now().microsecondsSinceEpoch}.mp4',
+    );
 
     final task = VideoRenderData(
       id: clipId,
@@ -439,6 +553,10 @@ class VideoEditorRenderService {
       enableAudio: enableAudio,
       shouldOptimizeForNetworkUse: true,
       transform: globalTransform?.toExportTransform(),
+      imageBytes: imageBytes,
+      customAudioPath: customAudioPath,
+      originalAudioVolume: originalAudioVolume,
+      customAudioVolume: customAudioVolume,
     );
 
     await ProVideoEditor.instance.renderVideoToFile(outputPath, task);

@@ -10,7 +10,6 @@ import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
-import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -49,7 +48,6 @@ class VideoPublishService {
     required this.blossomService,
     required this.draftService,
     required this.onProgressChanged,
-    this.gallerySaveService,
   });
 
   /// Manages background video uploads.
@@ -70,9 +68,6 @@ class VideoPublishService {
   /// Callback when upload progress changes.
   final OnProgressChanged onProgressChanged;
 
-  /// Optional service to save videos to device camera roll.
-  final GallerySaveService? gallerySaveService;
-
   /// Tracks the current background upload ID.
   String? _backgroundUploadId;
 
@@ -92,12 +87,12 @@ class VideoPublishService {
       final videoPath = await draft.clips.first.video.safeFilePath();
       Log.info('📝 Publishing video: $videoPath', category: .video);
 
-      // Fire-and-forget: Save video to camera roll as backup
-      // This runs in parallel with the upload and doesn't block publishing
-      _saveVideoToCameraRoll(videoPath);
-
       // Verify user is fully authenticated
       if (!authService.isAuthenticated) {
+        Log.warning(
+          '⚠️ User not authenticated, cannot publish',
+          category: .video,
+        );
         // TODO(l10n): Replace with context.l10n when localization is added.
         return const PublishError('Please sign in to publish videos.');
       }
@@ -106,12 +101,17 @@ class VideoPublishService {
       // Use existing upload if available, otherwise start new upload
       final pendingUpload = await _getOrCreateUpload(pubkey, draft);
       if (pendingUpload == null) {
+        Log.error('❌ Upload creation failed', category: .video);
         // TODO(l10n): Replace with context.l10n when localization is added.
         return const PublishError('Failed to upload video. Please try again.');
       }
 
       // Check if upload failed
       if (pendingUpload.status == .failed) {
+        Log.error(
+          '❌ Upload status is failed: ${pendingUpload.errorMessage}',
+          category: .video,
+        );
         return await _handleUploadError(
           Exception(pendingUpload.errorMessage ?? 'Upload failed'),
           StackTrace.current,
@@ -132,9 +132,16 @@ class VideoPublishService {
                   draft.expireTime!.inSeconds
             : null,
         allowAudioReuse: draft.allowAudioReuse,
+        collaboratorPubkeys: draft.collaboratorPubkeys,
+        inspiredByAddressableId: draft.inspiredByVideo?.addressableId,
+        inspiredByRelayUrl: draft.inspiredByVideo?.relayUrl,
+        inspiredByNpub: draft.inspiredByNpub,
+        selectedAudioEventId: draft.selectedAudioEventId,
+        selectedAudioRelay: draft.selectedAudioRelay,
       );
 
       if (!published) {
+        Log.error('❌ Failed to publish Nostr event', category: .video);
         return await _handleUploadError(
           Exception('Failed to publish Nostr event'),
           StackTrace.current,
@@ -144,6 +151,7 @@ class VideoPublishService {
 
       // Success: delete draft
       await draftService.deleteDraft(draft.id);
+      Log.debug('🗑️ Deleted publish draft: ${draft.id}', category: .video);
 
       Log.info('📝 Published successfully', category: .video);
       return const PublishSuccess();
@@ -177,6 +185,11 @@ class VideoPublishService {
   Future<PublishError?> _handleActiveUpload(String draftId) async {
     final upload = uploadManager.getUpload(_backgroundUploadId!);
     if (upload == null) return null;
+
+    Log.debug(
+      '📤 Checking active upload: ${upload.id}, status: ${upload.status}',
+      category: .video,
+    );
 
     // If already ready, continue
     if (upload.status == .readyToPublish) return null;
@@ -275,10 +288,13 @@ class VideoPublishService {
   /// Retry a failed upload and continue publishing.
   Future<PublishResult> retryUpload(VineDraft draft) async {
     if (_backgroundUploadId == null) {
+      Log.warning('⚠️ No background upload to retry', category: .video);
+
       /// TODO(l10n): Replace with context.l10n when localization is added.
       return const PublishError('No upload to retry.');
     }
 
+    Log.info('🔄 Retrying upload: $_backgroundUploadId', category: .video);
     try {
       await uploadManager.retryUpload(_backgroundUploadId!);
       final success = await _pollUploadProgress(draft.id, _backgroundUploadId!);
@@ -323,31 +339,6 @@ class VideoPublishService {
 
     final userMessage = await _getUserFriendlyErrorMessage(e);
     return PublishError(userMessage);
-  }
-
-  /// Saves video to camera roll as a backup (fire-and-forget).
-  ///
-  /// This method runs asynchronously and does not block the publish flow.
-  /// Any errors are logged but do not affect the publishing process.
-  void _saveVideoToCameraRoll(String videoPath) {
-    if (gallerySaveService == null) return;
-
-    // Run async without awaiting - fire and forget
-    Future(() async {
-      final result = await gallerySaveService!.saveVideoToGallery(videoPath);
-      switch (result) {
-        case GallerySaveSuccess():
-          Log.info(
-            '📱 Video backup saved to camera roll',
-            category: LogCategory.video,
-          );
-        case GallerySaveFailure(:final reason):
-          Log.warning(
-            '📱 Camera roll backup skipped: $reason',
-            category: LogCategory.video,
-          );
-      }
-    });
   }
 
   /// Converts technical error messages into user-friendly descriptions.

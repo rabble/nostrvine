@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -234,6 +236,23 @@ class PlayerPool {
     _lruOrder.remove(url);
     if (player != null && !player.isDisposed) {
       await player.dispose();
+    }
+  }
+
+  /// Stop all active player playback without disposing.
+  ///
+  /// Used during hot reload to prevent native mpv callbacks from firing
+  /// on invalidated Dart FFI handles, which causes a fatal crash:
+  /// "Callback invoked after it has been deleted."
+  void stopAll() {
+    for (final player in _players.values) {
+      if (!player.isDisposed) {
+        try {
+          unawaited(player.player.stop());
+        } on Exception {
+          // Ignore errors during emergency stop
+        }
+      }
     }
   }
 

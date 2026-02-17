@@ -158,6 +158,7 @@ void main() {
           () => mockNostr.sendEvent(
             event,
             targetRelays: targetRelays,
+            tempRelays: targetRelays,
           ),
         ).called(1);
       });

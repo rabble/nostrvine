@@ -472,6 +472,46 @@ void main() {
         });
       });
 
+      group('stopAll', () {
+        test('stops all non-disposed players', () async {
+          await pool.getPlayer('https://example.com/v1.mp4');
+          await pool.getPlayer('https://example.com/v2.mp4');
+
+          pool.stopAll();
+
+          for (final player in createdPlayers) {
+            // ignore: unnecessary_lambdas, chained mock calls need lambda for mocktail
+            verify(() => player.player.stop()).called(1);
+          }
+        });
+
+        test('skips disposed players', () async {
+          await pool.getPlayer('https://example.com/v1.mp4');
+          await pool.getPlayer('https://example.com/v2.mp4');
+
+          when(() => createdPlayers[0].isDisposed).thenReturn(true);
+
+          pool.stopAll();
+
+          verifyNever(() => createdPlayers[0].player.stop());
+          verify(() => createdPlayers[1].player.stop()).called(1);
+        });
+
+        test('handles empty pool', () {
+          expect(() => pool.stopAll(), returnsNormally);
+        });
+
+        test('handles exception during stop gracefully', () async {
+          await pool.getPlayer('https://example.com/v1.mp4');
+
+          when(() => createdPlayers[0].player.stop()).thenThrow(
+            Exception('stop failed'),
+          );
+
+          expect(() => pool.stopAll(), returnsNormally);
+        });
+      });
+
       group('dispose', () {
         test('disposes all players', () async {
           await pool.getPlayer('https://example.com/v1.mp4');

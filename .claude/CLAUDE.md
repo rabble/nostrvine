@@ -30,15 +30,15 @@ All generic Flutter/Dart standards are organized in `.claude/rules/`:
 # Tool Preferences
 
 ## Dart MCP Server
-**ALWAYS** use the **Dart MCP Server** (`mcp__dart__*`) for all Flutter/Dart operations:
+**ALWAYS** use the **Dart MCP Server** (`mcp__dart__*`) for Flutter/Dart operations:
 - Running tests (`mcp__dart__run_tests`)
-- Analyzing code (`mcp__dart__analyze_files`)
-- Formatting code (`mcp__dart__dart_format`)
 - Running pub commands (`mcp__dart__pub`)
 - Launching/debugging apps (`mcp__dart__launch_app`, `mcp__dart__hot_reload`)
 - Searching pub.dev (`mcp__dart__pub_dev_search`)
 
-**Fallback**: Use shell commands (`flutter test`, `dart analyze`, etc.) only if MCP unavailable.
+**Do NOT run `dart format`, `dart analyze`, or `flutter analyze` manually or via MCP.** PostToolUse hooks in `.claude/settings.json` automatically format and analyze every Dart file after each `Edit` or `Write` tool use. Let the hooks do their job.
+
+**Fallback**: Use shell commands (`flutter test`, etc.) only if MCP unavailable.
 
 ## Nostr MCP Server
 **ALWAYS** use the **Nostr MCP Server** (`mcp__nostr__*`) for all Nostr-related lookups:
@@ -177,17 +177,9 @@ This project uses code generation (Riverpod, Freezed, JSON serializable, Mockito
    dart run build_runner build --delete-conflicting-outputs
    ```
 
-2. **Format code**:
-   ```bash
-   dart format --output=none --set-exit-if-changed lib test
-   ```
+2. **Format and analyze**: Handled automatically by PostToolUse hooks (`.claude/settings.json`) after every `Edit`/`Write` on Dart files. Do NOT run these manually or via MCP.
 
-3. **Analyze code**:
-   ```bash
-   flutter analyze
-   ```
-
-4. **Stage specific files** (NEVER use `git add -A` or `git add .`):
+3. **Stage specific files** (NEVER use `git add -A` or `git add .`):
    ```bash
    git add lib/path/to/file.dart lib/path/to/file.g.dart
    ```

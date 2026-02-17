@@ -32,8 +32,20 @@ class ForYouFeed extends _$ForYouFeed {
     );
 
     if (!isAppReady) {
+      // Preserve existing data during background — don't wipe the feed
+      if (state.hasValue && state.value != null) {
+        final existing = state.value!;
+        if (existing.videos.isNotEmpty) {
+          Log.info(
+            '🎯 ForYouFeed: App not ready, preserving ${existing.videos.length} cached videos',
+            name: 'ForYouFeedProvider',
+            category: LogCategory.video,
+          );
+          return existing;
+        }
+      }
       Log.info(
-        '🎯 ForYouFeed: App not ready, returning empty state',
+        '🎯 ForYouFeed: App not ready, no cached data yet',
         name: 'ForYouFeedProvider',
         category: LogCategory.video,
       );

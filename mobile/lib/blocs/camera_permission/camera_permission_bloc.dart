@@ -62,6 +62,11 @@ class CameraPermissionBloc
         return;
       }
 
+      // Note: Gallery permission is optional. We don't block recording if
+      // gallery access is denied - the video will still upload, just won't
+      // be saved locally.
+      await _permissionsService.requestGalleryPermission();
+
       emit(const CameraPermissionLoaded(CameraPermissionStatus.authorized));
     } catch (e) {
       emit(const CameraPermissionError());
@@ -117,7 +122,7 @@ class CameraPermissionBloc
     await _permissionsService.openAppSettings();
   }
 
-  /// Check the status of camera and microphone permissions.
+  /// Check the status of camera, microphone, and gallery permissions.
   Future<CameraPermissionStatus> checkPermissions() async {
     final (cameraStatus, micStatus) = await (
       _permissionsService.checkCameraStatus(),

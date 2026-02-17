@@ -477,6 +477,81 @@ void main() {
       });
     });
 
+    group('reassemble', () {
+      testWidgets('survives hot reload from ready state', (tester) async {
+        final video = createTestVideo(url: 'https://example.com/video.mp4');
+
+        await tester.pumpWidget(buildWidget(video: video));
+        await tester.pump();
+
+        // Transition to ready state
+        final setup = playerSetups['https://example.com/video.mp4']!;
+        setup.bufferingController.add(false);
+        await tester.pump();
+        expect(find.byKey(const Key('video_widget')), findsOneWidget);
+
+        // Simulate hot reload - should not crash
+        tester
+            .state<State<SingleVideoPlayer>>(
+              find.byType(SingleVideoPlayer),
+            )
+            // ignore: invalid_use_of_protected_member
+            .reassemble();
+        await tester.pump();
+        await tester.pump();
+
+        // After hot reload, video reloads and auto-transitions back to ready
+        // (mock player is not buffering, so _onBufferReady fires immediately)
+        expect(find.byKey(const Key('video_widget')), findsOneWidget);
+      });
+
+      testWidgets('survives hot reload with autoPlay false', (tester) async {
+        final video = createTestVideo(url: 'https://example.com/video.mp4');
+
+        await tester.pumpWidget(buildWidget(video: video, autoPlay: false));
+        await tester.pump();
+
+        // Transition to ready state
+        final setup = playerSetups['https://example.com/video.mp4']!;
+        setup.bufferingController.add(false);
+        await tester.pump();
+        expect(find.byKey(const Key('video_widget')), findsOneWidget);
+
+        // Simulate hot reload
+        tester
+            .state<State<SingleVideoPlayer>>(
+              find.byType(SingleVideoPlayer),
+            )
+            // ignore: invalid_use_of_protected_member
+            .reassemble();
+        await tester.pump();
+        await tester.pump();
+
+        // Widget should be functional after hot reload
+        expect(find.byType(SingleVideoPlayer), findsOneWidget);
+      });
+
+      testWidgets('survives hot reload from loading state', (tester) async {
+        final video = createTestVideo(url: 'https://example.com/video.mp4');
+
+        await tester.pumpWidget(buildWidget(video: video));
+        await tester.pump();
+
+        // Still loading, trigger reassemble - should not crash
+        tester
+            .state<State<SingleVideoPlayer>>(
+              find.byType(SingleVideoPlayer),
+            )
+            // ignore: invalid_use_of_protected_member
+            .reassemble();
+        await tester.pump();
+        await tester.pump();
+
+        // Widget should still be functional after hot reload
+        expect(find.byType(SingleVideoPlayer), findsOneWidget);
+      });
+    });
+
     group('default widgets', () {
       testWidgets('default error state shows retry button', (tester) async {
         final errorPool = TestablePlayerPool(
