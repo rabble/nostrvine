@@ -531,7 +531,10 @@ class HomeFeed extends _$HomeFeed {
     );
 
     // Track IDs of videos from followed users for deduplication
-    final followingVideoIds = followingVideos.map((v) => v.id).toSet();
+    // Use lowercase for case-insensitive comparison (NIP-01 normalization)
+    final followingVideoIds = followingVideos
+        .map((v) => v.id.toLowerCase())
+        .toSet();
 
     // Merge videos from subscribed curated lists
     final subscribedListCache = ref.read(subscribedListVideoCacheProvider);
@@ -547,7 +550,7 @@ class HomeFeed extends _$HomeFeed {
       if (listIds.isNotEmpty) {
         videoListSources[video.id] = listIds;
 
-        if (!followingVideoIds.contains(video.id)) {
+        if (!followingVideoIds.contains(video.id.toLowerCase())) {
           // Video is ONLY in feed because of subscribed list, not from follows
           listOnlyVideoIds.add(video.id);
           followingVideos.add(video);
@@ -920,7 +923,7 @@ class HomeFeed extends _$HomeFeed {
         // Merge subscribed list videos
         final subscribedListCache = ref.read(subscribedListVideoCacheProvider);
         final subscribedVideos = subscribedListCache?.getVideos() ?? [];
-        final followingVideoIds = videos.map((v) => v.id).toSet();
+        final followingVideoIds = videos.map((v) => v.id.toLowerCase()).toSet();
         final listOnlyVideoIds = <String>{};
         final videoListSources = <String, Set<String>>{};
 
@@ -928,7 +931,7 @@ class HomeFeed extends _$HomeFeed {
           final listIds = subscribedListCache?.getListsForVideo(video.id) ?? {};
           if (listIds.isNotEmpty) {
             videoListSources[video.id] = listIds;
-            if (!followingVideoIds.contains(video.id)) {
+            if (!followingVideoIds.contains(video.id.toLowerCase())) {
               listOnlyVideoIds.add(video.id);
               videos.add(video);
             }

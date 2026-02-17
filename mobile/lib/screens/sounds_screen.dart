@@ -123,11 +123,6 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
       return;
     }
 
-    // Stop any currently playing preview
-    if (_previewingSoundId != null) {
-      await audioService.stop();
-    }
-
     // Check if sound has a URL to play
     if (sound.url == null || sound.url!.isEmpty) {
       Log.warning(
@@ -157,9 +152,9 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
     });
 
     try {
-      // Load and play the audio
+      // Stop any currently playing audio before loading a new track
+      await audioService.stop();
       await audioService.loadAudio(sound.url!);
-      await audioService.play();
 
       if (mounted) {
         setState(() {
@@ -167,6 +162,8 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
           _isLoadingPreview = false;
         });
       }
+
+      await audioService.play();
     } catch (e) {
       Log.error(
         'Failed to preview sound: $e',
@@ -174,16 +171,19 @@ class _SoundsScreenState extends ConsumerState<SoundsScreen> {
         category: LogCategory.ui,
       );
       if (mounted) {
-        setState(() {
-          _previewingSoundId = null;
-          _isLoadingPreview = false;
-        });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to play preview: ${e.toString()}'),
             duration: const Duration(seconds: 2),
           ),
         );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _previewingSoundId = null;
+          _isLoadingPreview = false;
+        });
       }
     }
   }

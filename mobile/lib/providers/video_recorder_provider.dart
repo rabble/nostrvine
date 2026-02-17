@@ -511,6 +511,13 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       video: videoResult,
       originalAspectRatio: _cameraService.cameraAspectRatio,
       targetAspectRatio: state.aspectRatio,
+      lensMetadata: _cameraService.currentLensMetadata,
+    );
+
+    Log.debug(
+      '📷 Lens metadata: ${_cameraService.currentLensMetadata?.toMap()}',
+      name: 'VideoRecorderNotifier',
+      category: .video,
     );
 
     Log.info(

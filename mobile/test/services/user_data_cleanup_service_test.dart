@@ -154,6 +154,100 @@ void main() {
         );
         expect(count2, equals(1));
       });
+
+      test(
+        'does NOT clear dynamic prefix keys without isIdentityChange',
+        () async {
+          // Set up dynamic pubkey-keyed caches
+          await prefs.setString(
+            'following_list_abc123',
+            '["pubkey1","pubkey2"]',
+          );
+          await prefs.setString(
+            'blossom_server_discovery_npub1abc',
+            'server_data',
+          );
+          await prefs.setString('relay_discovery_npub1abc', 'relay_data');
+          // Also set a static user-specific key
+          await prefs.setStringList('curated_lists', ['list1']);
+
+          // Default isIdentityChange=false (same-user logout)
+          await service.clearUserSpecificData(reason: 'explicit_logout');
+
+          // Static keys should be cleared
+          expect(prefs.containsKey('curated_lists'), isFalse);
+
+          // Dynamic prefix keys should be PRESERVED
+          expect(prefs.containsKey('following_list_abc123'), isTrue);
+          expect(
+            prefs.containsKey('blossom_server_discovery_npub1abc'),
+            isTrue,
+          );
+          expect(prefs.containsKey('relay_discovery_npub1abc'), isTrue);
+        },
+      );
+
+      test(
+        'clears dynamic prefix keys when isIdentityChange is true',
+        () async {
+          // Set up dynamic pubkey-keyed caches
+          await prefs.setString(
+            'following_list_abc123',
+            '["pubkey1","pubkey2"]',
+          );
+          await prefs.setString(
+            'blossom_server_discovery_npub1abc',
+            'server_data',
+          );
+          await prefs.setString('relay_discovery_npub1abc', 'relay_data');
+
+          await service.clearUserSpecificData(
+            reason: 'identity_change',
+            isIdentityChange: true,
+          );
+
+          // Dynamic prefix keys should be cleared on identity change
+          expect(prefs.containsKey('following_list_abc123'), isFalse);
+          expect(
+            prefs.containsKey('blossom_server_discovery_npub1abc'),
+            isFalse,
+          );
+          expect(prefs.containsKey('relay_discovery_npub1abc'), isFalse);
+        },
+      );
+
+      test(
+        'returns correct count including prefix keys on identity change',
+        () async {
+          await prefs.setStringList('curated_lists', ['list1']);
+          await prefs.setString('following_list_abc123', '["pubkey1"]');
+          await prefs.setString('relay_discovery_npub1abc', 'data');
+
+          final count = await service.clearUserSpecificData(
+            reason: 'identity_change',
+            isIdentityChange: true,
+          );
+
+          // 1 static + 2 prefix keys
+          expect(count, equals(3));
+        },
+      );
+
+      test('preserves non-matching prefix keys on identity change', () async {
+        // Set up a key that starts with a non-matching prefix
+        await prefs.setString('some_other_cache_abc', 'data');
+        await prefs.setString('following_list_abc123', '["pubkey1"]');
+
+        await service.clearUserSpecificData(
+          reason: 'identity_change',
+          isIdentityChange: true,
+        );
+
+        // Non-matching prefix should remain
+        expect(prefs.containsKey('some_other_cache_abc'), isTrue);
+        // Matching prefix should be cleared
+        expect(prefs.containsKey('following_list_abc123'), isFalse);
+      });
     });
 
     group('userSpecificKeys', () {
@@ -191,6 +285,24 @@ void main() {
         expect(keys, isNot(contains('relay_url')));
         expect(keys, isNot(contains('analytics_enabled')));
         expect(keys, isNot(contains('current_user_pubkey_hex')));
+      });
+    });
+
+    group('identityChangePrefixes', () {
+      test('contains expected prefix categories', () {
+        final prefixes = UserDataCleanupService.identityChangePrefixes;
+
+        expect(prefixes, contains('following_list_'));
+        expect(prefixes, contains('blossom_server_discovery_'));
+        expect(prefixes, contains('relay_discovery_'));
+      });
+
+      test('does NOT contain non-dynamic prefixes', () {
+        final prefixes = UserDataCleanupService.identityChangePrefixes;
+
+        // Static keys should not be in prefix list
+        expect(prefixes, isNot(contains('curated_lists')));
+        expect(prefixes, isNot(contains('seen_video_ids')));
       });
     });
   });

@@ -762,7 +762,7 @@ class ProfileFeed extends _$ProfileFeed {
           video.originalLikes != null ||
           video.originalComments != null ||
           video.originalReposts != null) {
-        _metadataCache[video.id] = _VideoMetadataCache(
+        _metadataCache[video.id.toLowerCase()] = _VideoMetadataCache(
           originalLoops: video.originalLoops,
           originalLikes: video.originalLikes,
           originalComments: video.originalComments,
@@ -775,7 +775,7 @@ class ProfileFeed extends _$ProfileFeed {
   /// Apply cached metadata to videos that may be missing it (from Nostr)
   List<VideoEvent> _applyMetadataCache(List<VideoEvent> videos) {
     return videos.map((video) {
-      final cached = _metadataCache[video.id];
+      final cached = _metadataCache[video.id.toLowerCase()];
       if (cached == null) return video;
 
       // Only apply if video is missing metadata but cache has it

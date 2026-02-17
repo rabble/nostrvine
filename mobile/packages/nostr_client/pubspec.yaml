@@ -2,12 +2,11 @@ name: nostr_client
 description: Nostr client abstraction layer for repositories
 version: 0.1.0+1
 publish_to: none
+resolution: workspace
 
 environment:
-  sdk: ^3.9.0
-  flutter: ">=3.27.0"
-
-resolution: workspace
+  sdk: ^3.11.0
+  flutter: ^3.41.1
 
 dependencies:
   crypto: ^3.0.7

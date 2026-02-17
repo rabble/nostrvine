@@ -713,7 +713,7 @@ void main() {
 
       final props = state.props;
 
-      expect(props.length, 16);
+      expect(props.length, 17);
       expect(props[0], isTrue); // isInitialized
       expect(props[1], isFalse); // isRecording
       expect(props[4], DivineCameraLens.back); // lens
@@ -1073,6 +1073,282 @@ void main() {
 
       expect(DivineCamera.instance.onStateChanged, isNull);
       expect(DivineCamera.instance.onRecordingAutoStopped, isNull);
+    });
+  });
+
+  group('CameraLensMetadata', () {
+    test('creates metadata with required lensType', () {
+      const metadata = CameraLensMetadata(lensType: 'back');
+
+      expect(metadata.lensType, 'back');
+      expect(metadata.focalLength, isNull);
+      expect(metadata.hasOpticalStabilization, isFalse);
+      expect(metadata.isLogicalCamera, isFalse);
+      expect(metadata.physicalCameraIds, isEmpty);
+    });
+
+    test('creates metadata with all fields', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'back',
+        focalLength: 4.5,
+        focalLengthEquivalent35mm: 26,
+        aperture: 1.8,
+        sensorWidth: 6.17,
+        sensorHeight: 4.55,
+        pixelArrayWidth: 4032,
+        pixelArrayHeight: 3024,
+        minFocusDistance: 10,
+        fieldOfView: 80,
+        hasOpticalStabilization: true,
+        isLogicalCamera: true,
+        physicalCameraIds: ['cam0', 'cam1'],
+      );
+
+      expect(metadata.lensType, 'back');
+      expect(metadata.focalLength, 4.5);
+      expect(metadata.focalLengthEquivalent35mm, 26.0);
+      expect(metadata.aperture, 1.8);
+      expect(metadata.sensorWidth, 6.17);
+      expect(metadata.sensorHeight, 4.55);
+      expect(metadata.pixelArrayWidth, 4032);
+      expect(metadata.pixelArrayHeight, 3024);
+      expect(metadata.minFocusDistance, 10.0);
+      expect(metadata.fieldOfView, 80.0);
+      expect(metadata.hasOpticalStabilization, isTrue);
+      expect(metadata.isLogicalCamera, isTrue);
+      expect(metadata.physicalCameraIds, ['cam0', 'cam1']);
+    });
+
+    test('fromMap creates metadata from map', () {
+      final map = {
+        'lensType': 'ultraWide',
+        'focalLength': 2.5,
+        'focalLengthEquivalent35mm': 13.0,
+        'aperture': 2.2,
+        'sensorWidth': 5.0,
+        'sensorHeight': 3.75,
+        'pixelArrayWidth': 3024,
+        'pixelArrayHeight': 2268,
+        'minFocusDistance': 25.0,
+        'fieldOfView': 120.0,
+        'hasOpticalStabilization': false,
+        'isLogicalCamera': false,
+        'physicalCameraIds': <String>[],
+      };
+
+      final metadata = CameraLensMetadata.fromMap(map);
+
+      expect(metadata.lensType, 'ultraWide');
+      expect(metadata.focalLength, 2.5);
+      expect(metadata.focalLengthEquivalent35mm, 13.0);
+      expect(metadata.aperture, 2.2);
+      expect(metadata.sensorWidth, 5.0);
+      expect(metadata.sensorHeight, 3.75);
+      expect(metadata.pixelArrayWidth, 3024);
+      expect(metadata.pixelArrayHeight, 2268);
+      expect(metadata.minFocusDistance, 25.0);
+      expect(metadata.fieldOfView, 120.0);
+      expect(metadata.hasOpticalStabilization, isFalse);
+      expect(metadata.isLogicalCamera, isFalse);
+      expect(metadata.physicalCameraIds, isEmpty);
+    });
+
+    test('fromMap with empty map uses defaults', () {
+      final metadata = CameraLensMetadata.fromMap(const {});
+
+      expect(metadata.lensType, 'unknown');
+      expect(metadata.focalLength, isNull);
+      expect(metadata.hasOpticalStabilization, isFalse);
+      expect(metadata.isLogicalCamera, isFalse);
+      expect(metadata.physicalCameraIds, isEmpty);
+    });
+
+    test('fromMap handles physicalCameraIds with mixed types', () {
+      final map = {
+        'lensType': 'back',
+        'physicalCameraIds': ['cam0', 123, 'cam1', null],
+      };
+
+      final metadata = CameraLensMetadata.fromMap(map);
+
+      expect(metadata.physicalCameraIds, ['cam0', 'cam1']);
+    });
+
+    test('toMap converts metadata to map', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'front',
+        focalLength: 3,
+        focalLengthEquivalent35mm: 22,
+        aperture: 2,
+        sensorWidth: 4,
+        sensorHeight: 3,
+        pixelArrayWidth: 2048,
+        pixelArrayHeight: 1536,
+        minFocusDistance: 5,
+        fieldOfView: 90,
+        hasOpticalStabilization: true,
+        isLogicalCamera: true,
+        physicalCameraIds: ['a', 'b'],
+      );
+
+      final map = metadata.toMap();
+
+      expect(map['lensType'], 'front');
+      expect(map['focalLength'], 3.0);
+      expect(map['focalLengthEquivalent35mm'], 22.0);
+      expect(map['aperture'], 2.0);
+      expect(map['sensorWidth'], 4.0);
+      expect(map['sensorHeight'], 3.0);
+      expect(map['pixelArrayWidth'], 2048);
+      expect(map['pixelArrayHeight'], 1536);
+      expect(map['minFocusDistance'], 5.0);
+      expect(map['fieldOfView'], 90.0);
+      expect(map['hasOpticalStabilization'], isTrue);
+      expect(map['isLogicalCamera'], isTrue);
+      expect(map['physicalCameraIds'], ['a', 'b']);
+    });
+
+    test('megapixels returns correct value', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'back',
+        pixelArrayWidth: 4000,
+        pixelArrayHeight: 3000,
+      );
+
+      expect(metadata.megapixels, closeTo(12.0, 0.01));
+    });
+
+    test('megapixels returns null when dimensions missing', () {
+      const metadata = CameraLensMetadata(lensType: 'back');
+
+      expect(metadata.megapixels, isNull);
+    });
+
+    test('minFocusDistanceCm returns correct value', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'back',
+        minFocusDistance: 10, // 10 diopters = 10cm
+      );
+
+      expect(metadata.minFocusDistanceCm, closeTo(10.0, 0.01));
+    });
+
+    test('minFocusDistanceCm returns null for fixed focus', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'front',
+        minFocusDistance: 0,
+      );
+
+      expect(metadata.minFocusDistanceCm, isNull);
+    });
+
+    test('minFocusDistanceCm returns null when not set', () {
+      const metadata = CameraLensMetadata(lensType: 'front');
+
+      expect(metadata.minFocusDistanceCm, isNull);
+    });
+
+    test('isMacroCapable returns true for close focus', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'ultraWide',
+        minFocusDistance: 50, // 50 diopters = 2cm
+      );
+
+      expect(metadata.isMacroCapable, isTrue);
+    });
+
+    test('isMacroCapable returns false for normal focus', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'back',
+        minFocusDistance: 10, // 10 diopters = 10cm
+      );
+
+      expect(metadata.isMacroCapable, isFalse);
+    });
+
+    test('isMacroCapable returns false when focus not set', () {
+      const metadata = CameraLensMetadata(lensType: 'back');
+
+      expect(metadata.isMacroCapable, isFalse);
+    });
+
+    test('toString returns formatted string', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'back',
+        focalLength: 4.5,
+        aperture: 1.8,
+        pixelArrayWidth: 4000,
+        pixelArrayHeight: 3000,
+      );
+
+      final str = metadata.toString();
+
+      expect(str, contains('CameraLensMetadata'));
+      expect(str, contains('lensType: back'));
+      expect(str, contains('focalLength: 4.5mm'));
+      expect(str, contains('aperture: f/1.8'));
+      expect(str, contains('12.0MP'));
+    });
+
+    test('props returns correct list', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'back',
+      );
+
+      final props = metadata.props;
+
+      expect(props.length, 20);
+      expect(props[0], 'back');
+    });
+
+    test('equality works correctly', () {
+      const meta1 = CameraLensMetadata(lensType: 'back', focalLength: 4.5);
+      const meta2 = CameraLensMetadata(lensType: 'back', focalLength: 4.5);
+      const meta3 = CameraLensMetadata(lensType: 'front', focalLength: 4.5);
+
+      expect(meta1, equals(meta2));
+      expect(meta1, isNot(equals(meta3)));
+    });
+  });
+
+  group('CameraState with currentLensMetadata', () {
+    test('fromMap parses currentLensMetadata', () {
+      final map = {
+        'isInitialized': true,
+        'currentLensMetadata': {
+          'lensType': 'back',
+          'focalLength': 4.5,
+          'aperture': 1.8,
+        },
+      };
+
+      final state = CameraState.fromMap(map);
+
+      expect(state.currentLensMetadata, isNotNull);
+      expect(state.currentLensMetadata!.lensType, 'back');
+      expect(state.currentLensMetadata!.focalLength, 4.5);
+      expect(state.currentLensMetadata!.aperture, 1.8);
+    });
+
+    test('fromMap handles null currentLensMetadata', () {
+      final map = {
+        'isInitialized': true,
+        'currentLensMetadata': null,
+      };
+
+      final state = CameraState.fromMap(map);
+
+      expect(state.currentLensMetadata, isNull);
+    });
+
+    test('fromMap handles missing currentLensMetadata', () {
+      final map = {
+        'isInitialized': true,
+      };
+
+      final state = CameraState.fromMap(map);
+
+      expect(state.currentLensMetadata, isNull);
     });
   });
 }

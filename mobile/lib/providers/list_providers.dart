@@ -351,16 +351,16 @@ Stream<List<VideoEvent>> curatedListVideoEvents(Ref ref, String listId) async* {
 
     if (filters.isNotEmpty) {
       final eventStream = nostrService.subscribe(filters);
-      final seenIds = foundVideos.map((v) => v.id).toSet();
+      final seenIds = foundVideos.map((v) => v.id.toLowerCase()).toSet();
 
       await for (final event in eventStream) {
-        if (seenIds.contains(event.id)) continue;
+        if (seenIds.contains(event.id.toLowerCase())) continue;
 
         try {
           // Use permissive mode to accept all NIP-71 video kinds from curated lists
           final video = VideoEvent.fromNostrEvent(event, permissive: true);
           foundVideos.add(video);
-          seenIds.add(event.id);
+          seenIds.add(event.id.toLowerCase());
 
           // Also add to the video event service cache
           videoEventService.addVideoEvent(video);
@@ -550,16 +550,16 @@ Stream<List<VideoEvent>> videoEventsByIds(
 
     if (filters.isNotEmpty) {
       final eventStream = nostrService.subscribe(filters);
-      final seenIds = foundVideos.map((v) => v.id).toSet();
+      final seenIds = foundVideos.map((v) => v.id.toLowerCase()).toSet();
 
       await for (final event in eventStream) {
-        if (seenIds.contains(event.id)) continue;
+        if (seenIds.contains(event.id.toLowerCase())) continue;
 
         try {
           // Use permissive mode to accept all NIP-71 video kinds from external sources
           final video = VideoEvent.fromNostrEvent(event, permissive: true);
           foundVideos.add(video);
-          seenIds.add(event.id);
+          seenIds.add(event.id.toLowerCase());
 
           // Also add to the video event service cache
           videoEventService.addVideoEvent(video);

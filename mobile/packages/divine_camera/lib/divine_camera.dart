@@ -11,6 +11,7 @@ import 'package:flutter/widgets.dart';
 
 // Export models for external use
 export 'src/models/camera_lens.dart';
+export 'src/models/camera_lens_metadata.dart';
 export 'src/models/camera_state.dart';
 export 'src/models/flash_mode.dart';
 export 'src/models/video_quality.dart';

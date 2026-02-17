@@ -19,8 +19,8 @@ publish_to: "none" # Remove this line if you wish to publish to pub.dev
 version: 1.0.4+200
 
 environment:
-  sdk: ^3.10.0
-  flutter: ^3.38.3
+  sdk: ^3.11.0
+  flutter: ^3.41.1
 
 workspace:
   - packages/comments_repository
@@ -140,9 +140,9 @@ dependencies:
 
   # Desktop window management for proper window sizing
   window_manager: ^0.5.1
-  firebase_core: ^4.1.1
-  firebase_crashlytics: ^5.0.2
-  firebase_analytics: ^12.0.2
+  firebase_core: ^4.4.0
+  firebase_crashlytics: ^5.0.7
+  firebase_analytics: ^12.1.2
   go_router: ^16.2.4
   flutter_local_notifications: ^19.4.2
   package_info_plus: ^9.0.0
@@ -152,7 +152,7 @@ dependencies:
   drift_flutter: ^0.2.7
   sqlite3_flutter_libs: ^0.5.40
   video_player_web_hls: ^1.3.0
-  firebase_performance: ^0.11.1+1
+  firebase_performance: ^0.11.1+4
   convert: ^3.1.2
   just_audio: ^0.10.5
   audio_session: ^0.2.2
