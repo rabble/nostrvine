@@ -146,6 +146,15 @@ final class MentionSuggestionsCleared extends CommentsEvent {
   const MentionSuggestionsCleared();
 }
 
+/// Start the real-time comment subscription.
+///
+/// Dispatched after [CommentsLoadRequested] succeeds so that the `since`
+/// timestamp aligns with the initial load.  Opens a persistent Nostr
+/// subscription and routes incoming comments through [NewCommentReceived].
+final class CommentsSubscriptionRequested extends CommentsEvent {
+  const CommentsSubscriptionRequested();
+}
+
 /// A new comment was received from the real-time subscription
 final class NewCommentReceived extends CommentsEvent {
   const NewCommentReceived(this.comment);

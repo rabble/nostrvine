@@ -89,6 +89,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     );
     on<MentionRegistered>(_onMentionRegistered);
     on<MentionSuggestionsCleared>(_onMentionSuggestionsCleared);
+    on<CommentsSubscriptionRequested>(_onSubscriptionRequested);
     on<NewCommentReceived>(_onNewCommentReceived);
     on<NewCommentsAcknowledged>(_onNewCommentsAcknowledged);
   }
@@ -146,9 +147,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       );
 
       add(const CommentLikeCountsFetchRequested());
-
-      // Start real-time subscription for new comments
-      _startWatchingComments();
+      add(const CommentsSubscriptionRequested());
     } catch (e) {
       Log.error(
         'Error loading comments: $e',
@@ -690,9 +689,6 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         newCommentCount: state.newCommentCount + 1,
       ),
     );
-
-    // Fetch like counts for the new comment
-    add(const CommentLikeCountsFetchRequested());
   }
 
   void _onNewCommentsAcknowledged(
@@ -702,9 +698,17 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     emit(state.copyWith(newCommentCount: 0));
   }
 
-  void _startWatchingComments() {
+  /// Maximum number of real-time comments to accept per second.
+  /// Beyond this rate the stream is paused briefly to avoid UI thrashing
+  /// on viral videos.
+  static const _maxCommentsPerSecond = 10;
+
+  Future<void> _onSubscriptionRequested(
+    CommentsSubscriptionRequested event,
+    Emitter<CommentsState> emit,
+  ) async {
     // Cancel any existing subscription before starting a new one
-    _commentStreamSubscription?.cancel();
+    await _commentStreamSubscription?.cancel();
 
     try {
       final stream = _commentsRepository.watchComments(
@@ -714,8 +718,10 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         since: DateTime.now(),
       );
 
-      _commentStreamSubscription = stream.listen(
-        (comment) {
+      _commentStreamSubscription = _throttledListen(
+        stream,
+        maxPerSecond: _maxCommentsPerSecond,
+        onData: (comment) {
           add(NewCommentReceived(comment));
         },
         onError: (Object e) {
@@ -733,6 +739,43 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         category: LogCategory.ui,
       );
     }
+  }
+
+  /// Listens to [stream] but drops events that exceed [maxPerSecond].
+  ///
+  /// Uses a simple token-bucket approach: each second refills the budget.
+  /// Events arriving after the budget is exhausted are silently dropped
+  /// until the next second window, preventing UI thrashing on viral videos.
+  StreamSubscription<T> _throttledListen<T>(
+    Stream<T> stream, {
+    required int maxPerSecond,
+    required void Function(T) onData,
+    void Function(Object)? onError,
+  }) {
+    var budget = maxPerSecond;
+    Timer? refillTimer;
+
+    void startRefill() {
+      refillTimer?.cancel();
+      refillTimer = Timer.periodic(const Duration(seconds: 1), (_) {
+        budget = maxPerSecond;
+      });
+    }
+
+    startRefill();
+
+    return stream.listen(
+      (event) {
+        if (budget > 0) {
+          budget--;
+          onData(event);
+        }
+      },
+      onError: onError,
+      onDone: () {
+        refillTimer?.cancel();
+      },
+    );
   }
 
   @override

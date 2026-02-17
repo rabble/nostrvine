@@ -2139,8 +2139,9 @@ void main() {
       );
     });
 
-    group('real-time subscription lifecycle', () {
-      test('starts watching after successful load', () async {
+    group('CommentsSubscriptionRequested', () {
+      test('CommentsLoadRequested dispatches CommentsSubscriptionRequested '
+          'on success', () async {
         final comment = Comment(
           id: validId('comment1'),
           content: 'Test comment',
@@ -2243,6 +2244,52 @@ void main() {
           isTrue,
         );
         expect(bloc.state.newCommentCount, equals(1));
+
+        await streamController.close();
+        await bloc.close();
+      });
+
+      test('throttles comments exceeding rate limit', () async {
+        final streamController = StreamController<Comment>.broadcast();
+
+        when(
+          () => mockCommentsRepository.watchComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            since: any(named: 'since'),
+          ),
+        ).thenAnswer((_) => streamController.stream);
+
+        when(
+          () => mockCommentsRepository.loadComments(
+            rootEventId: any(named: 'rootEventId'),
+            rootEventKind: any(named: 'rootEventKind'),
+            rootAddressableId: any(named: 'rootAddressableId'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) async => CommentThread.empty(validId('root')));
+
+        final bloc = createBloc()..add(const CommentsLoadRequested());
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Emit more comments than the per-second budget (10)
+        for (var i = 0; i < 15; i++) {
+          streamController.add(
+            Comment(
+              id: validId('burst$i'),
+              content: 'Burst comment $i',
+              authorPubkey: validId('someone'),
+              createdAt: DateTime.now(),
+              rootEventId: validId('root'),
+              rootAuthorPubkey: validId('author'),
+            ),
+          );
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 100));
+
+        // Should have accepted at most 10 (the budget), not all 15
+        expect(bloc.state.commentsById.length, lessThanOrEqualTo(10));
 
         await streamController.close();
         await bloc.close();
