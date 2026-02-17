@@ -252,83 +252,121 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen>
 
             // Form
             Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      const SizedBox(height: 32),
+              child: CustomScrollView(
+                slivers: [
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment:
+                              CrossAxisAlignment.stretch,
+                          children: [
+                            const SizedBox(height: 32),
 
-                      // Email field
-                      DivineAuthTextField(
-                        label: 'Email',
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        autocorrect: false,
-                        validator: Validators.validateEmail,
-                      ),
-                      const SizedBox(height: 16),
+                            // Email field
+                            DivineAuthTextField(
+                              label: 'Email',
+                              controller: _emailController,
+                              keyboardType:
+                                  TextInputType.emailAddress,
+                              autocorrect: false,
+                              validator:
+                                  Validators.validateEmail,
+                            ),
+                            const SizedBox(height: 16),
 
-                      // Password field
-                      DivineAuthTextField(
-                        label: 'Password',
-                        controller: _passwordController,
-                        obscureText: true,
-                        validator: Validators.validatePassword,
-                      ),
-                      const SizedBox(height: 16),
+                            // Password field
+                            DivineAuthTextField(
+                              label: 'Password',
+                              controller: _passwordController,
+                              obscureText: true,
+                              validator:
+                                  Validators.validatePassword,
+                            ),
 
-                      // Confirm password (register only)
-                      AnimatedSize(
-                        duration: const Duration(milliseconds: 200),
-                        child: _tabController.index == 1
-                            ? Column(
-                                children: [
-                                  DivineAuthTextField(
-                                    label: 'Confirm Password',
-                                    controller:
-                                        _confirmPasswordController,
-                                    obscureText: true,
-                                    validator:
-                                        _validateConfirmPassword,
+                            // Forgot password (login only)
+                            if (_tabController.index == 0) ...[
+                              const SizedBox(height: 12),
+                              Center(
+                                child: DivineTextLink(
+                                  text: 'Forgot password?',
+                                  onTap:
+                                      _showForgotPasswordDialog,
+                                  style:
+                                      VineTheme.bodyMediumFont(
+                                    color: VineTheme
+                                        .onSurfaceMuted,
+                                  ).copyWith(
+                                    decoration: TextDecoration
+                                        .underline,
+                                    decorationColor: VineTheme
+                                        .onSurfaceMuted,
                                   ),
-                                  const SizedBox(height: 16),
-                                ],
-                              )
-                            : const SizedBox.shrink(),
-                      ),
+                                ),
+                              ),
+                            ],
 
-                      // Error message
-                      if (_errorMessage != null) ...[
-                        ErrorMessage(message: _errorMessage),
-                        const SizedBox(height: 16),
-                      ],
+                            const SizedBox(height: 16),
 
-                      // Submit button
-                      DivineButton(
-                        label: _tabController.index == 0
-                            ? 'Log In'
-                            : 'Create Account',
-                        expanded: true,
-                        isLoading: _isLoading,
-                        onPressed: _isLoading ? null : _handleSubmit,
-                      ),
+                            // Confirm password (register)
+                            AnimatedSize(
+                              duration: const Duration(
+                                milliseconds: 200,
+                              ),
+                              child:
+                                  _tabController.index == 1
+                                      ? Column(
+                                          children: [
+                                            DivineAuthTextField(
+                                              label:
+                                                  'Confirm Password',
+                                              controller:
+                                                  _confirmPasswordController,
+                                              obscureText: true,
+                                              validator:
+                                                  _validateConfirmPassword,
+                                            ),
+                                            const SizedBox(
+                                              height: 16,
+                                            ),
+                                          ],
+                                        )
+                                      : const SizedBox
+                                          .shrink(),
+                            ),
 
-                      const SizedBox(height: 24),
+                            // Push button to bottom
+                            const Spacer(),
 
-                      // Forgot password (login only)
-                      if (_tabController.index == 0)
-                        Center(
-                          child: DivineTextLink(
-                            text: 'Forgot Password?',
-                            onTap: _showForgotPasswordDialog,
-                          ),
+                            // Error message
+                            if (_errorMessage != null) ...[
+                              ErrorMessage(
+                                message: _errorMessage,
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+
+                            // Submit button
+                            DivineButton(
+                              label:
+                                  _tabController.index == 0
+                                      ? 'Log In'
+                                      : 'Create Account',
+                              expanded: true,
+                              isLoading: _isLoading,
+                              onPressed: _isLoading
+                                  ? null
+                                  : _handleSubmit,
+                            ),
+                          ],
                         ),
-                    ],
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ],
