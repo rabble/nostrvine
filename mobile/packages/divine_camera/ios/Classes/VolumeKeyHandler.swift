@@ -35,23 +35,19 @@ class VolumeKeyHandler: NSObject {
             return true
         }
         
-        do {
-            // Configure audio session
-            let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playAndRecord, mode: .videoRecording, options: [.defaultToSpeaker, .allowBluetooth, .allowBluetoothA2DP])
-            try audioSession.setActive(true)
-            
-            setupRemoteCommandCenter()
-            setupVolumeObserver()
-            
-            isEnabled = true
-            volumeKeysEnabled = true
-            NSLog("DivineCameraVolumeKeyHandler: Enabled")
-            return true
-        } catch {
-            NSLog("DivineCameraVolumeKeyHandler: Failed to enable: \(error)")
-            return false
-        }
+        // NOTE: We intentionally do NOT configure the audio session here.
+        // The camera already configures its own audio session for video recording.
+        // Setting .playAndRecord with Bluetooth options causes iOS to trigger
+        // "call start/end" sounds on Bluetooth headsets, which is undesirable.
+        // MPRemoteCommandCenter and volume KVO work without specific audio session setup.
+        
+        setupRemoteCommandCenter()
+        setupVolumeObserver()
+        
+        isEnabled = true
+        volumeKeysEnabled = true
+        NSLog("DivineCameraVolumeKeyHandler: Enabled")
+        return true
     }
     
     /// Disables volume button listening.
