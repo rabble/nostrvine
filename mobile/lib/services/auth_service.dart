@@ -124,6 +124,12 @@ class UserProfile {
   final String? nip05;
 }
 
+/// Callback to pre-fetch following list from REST API before auth state is set.
+///
+/// Called during login setup to populate SharedPreferences cache so the
+/// router redirect has accurate following data before it fires synchronously.
+typedef PreFetchFollowingCallback = Future<void> Function(String pubkeyHex);
+
 /// Main authentication service for the divine app
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via
 /// Riverpod
@@ -135,11 +141,13 @@ class AuthService implements BackgroundAwareService {
     FlutterSecureStorage? flutterSecureStorage,
     OAuthConfig? oauthConfig,
     PendingVerificationService? pendingVerificationService,
+    PreFetchFollowingCallback? preFetchFollowing,
   }) : _keyStorage = keyStorage ?? SecureKeyStorage(),
        _userDataCleanupService = userDataCleanupService,
        _oauthClient = oauthClient,
        _flutterSecureStorage = flutterSecureStorage,
        _pendingVerificationService = pendingVerificationService,
+       _preFetchFollowing = preFetchFollowing,
        _oauthConfig =
            oauthConfig ??
            const OAuthConfig(serverUrl: '', clientId: '', redirectUri: '');
@@ -148,6 +156,7 @@ class AuthService implements BackgroundAwareService {
   final KeycastOAuth? _oauthClient;
   final FlutterSecureStorage? _flutterSecureStorage;
   final PendingVerificationService? _pendingVerificationService;
+  final PreFetchFollowingCallback? _preFetchFollowing;
 
   AuthState _authState = AuthState.checking;
   SecureKeyContainer? _currentKeyContainer;
@@ -1869,6 +1878,7 @@ class AuthService implements BackgroundAwareService {
       if (shouldClean) {
         await _userDataCleanupService.clearUserSpecificData(
           reason: 'identity_change',
+          isIdentityChange: true,
         );
         // restore the TOS acceptance since we wouldn't be here otherwise
         await acceptTerms();
@@ -1879,6 +1889,25 @@ class AuthService implements BackgroundAwareService {
       );
 
       await prefs.setString(_kAuthSourceKey, source.code);
+
+      // Pre-fetch following list from REST API BEFORE setting auth state.
+      // The router redirect fires synchronously on auth state change and reads
+      // following_list_{pubkey} from SharedPreferences. If the cache is empty
+      // (identity change cleared it, or first login), the redirect sends the
+      // user to /explore instead of /home. By fetching here, we ensure the
+      // cache is populated before the redirect fires.
+      if (_preFetchFollowing != null) {
+        try {
+          await _preFetchFollowing(keyContainer.publicKeyHex);
+        } catch (e) {
+          Log.warning(
+            'Pre-fetch following list failed (will rely on '
+            'FollowRepository): $e',
+            name: 'AuthService',
+            category: LogCategory.auth,
+          );
+        }
+      }
 
       _setAuthState(AuthState.authenticated);
 

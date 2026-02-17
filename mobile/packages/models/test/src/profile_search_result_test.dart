@@ -104,6 +104,48 @@ void main() {
         expect(result.eventId, equals('fallback-id'));
       });
 
+      test('normalizes uppercase pubkey to lowercase', () {
+        final json = {
+          'pubkey':
+              'ABCDEF1234567890ABCDEF1234567890'
+              'ABCDEF1234567890ABCDEF1234567890',
+          'name': 'testuser',
+        };
+
+        final result = ProfileSearchResult.fromJson(json);
+
+        expect(
+          result.pubkey,
+          equals(
+            'abcdef1234567890abcdef1234567890'
+            'abcdef1234567890abcdef1234567890',
+          ),
+        );
+      });
+
+      test('normalizes uppercase eventId to lowercase', () {
+        final json = {
+          'pubkey': testPubkey,
+          'event_id': 'ABCDEF1234567890',
+        };
+
+        final result = ProfileSearchResult.fromJson(json);
+
+        expect(result.eventId, equals('abcdef1234567890'));
+      });
+
+      test('normalizes uppercase byte array pubkey to lowercase', () {
+        // 'ABCDEF' as ASCII codes: A=65, B=66, C=67, D=68, E=69, F=70
+        final json = {
+          'pubkey': [65, 66, 67, 68, 69, 70],
+          'name': 'testuser',
+        };
+
+        final result = ProfileSearchResult.fromJson(json);
+
+        expect(result.pubkey, equals('abcdef'));
+      });
+
       test('parses created_at as Unix timestamp', () {
         final json = {
           'pubkey': testPubkey,

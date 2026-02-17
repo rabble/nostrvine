@@ -2,6 +2,7 @@
 // ABOUTME: Replaces Provider MultiProvider setup with pure Riverpod dependency injection
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
@@ -566,6 +567,13 @@ AuthService authService(Ref ref) {
   final pendingVerificationService = ref.watch(
     pendingVerificationServiceProvider,
   );
+  // Pre-fetch following list from funnelcake REST API during login setup.
+  // This populates SharedPreferences BEFORE auth state is set, so the
+  // router redirect has accurate cache data and sends user to /home not
+  // /explore.
+  final analyticsService = ref.read(analyticsApiServiceProvider);
+  final prefs = ref.read(sharedPreferencesProvider);
+
   return AuthService(
     userDataCleanupService: userDataCleanupService,
     keyStorage: keyStorage,
@@ -573,6 +581,22 @@ AuthService authService(Ref ref) {
     flutterSecureStorage: flutterSecureStorage,
     oauthConfig: oauthConfig,
     pendingVerificationService: pendingVerificationService,
+    preFetchFollowing: (pubkeyHex) async {
+      final result = await analyticsService.getFollowing(
+        pubkeyHex,
+        limit: 5000,
+      );
+      if (result.pubkeys.isNotEmpty) {
+        final key = 'following_list_$pubkeyHex';
+        await prefs.setString(key, jsonEncode(result.pubkeys));
+        Log.info(
+          'Pre-fetched ${result.pubkeys.length} following for router '
+          'redirect cache',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
+    },
   );
 }
 
@@ -834,6 +858,9 @@ FollowRepository? followRepository(Ref ref) {
   final connectionStatus = ref.watch(connectionStatusServiceProvider);
   final pendingActionService = ref.watch(pendingActionServiceProvider);
 
+  // Get analytics API service for fast REST-based following list bootstrap
+  final analyticsService = ref.read(analyticsApiServiceProvider);
+
   final repository = FollowRepository(
     nostrClient: nostrClient,
     personalEventCache: personalEventCache,
@@ -848,6 +875,10 @@ FollowRepository? followRepository(Ref ref) {
             );
           }
         : null,
+    fetchFollowingFromApi: (pubkey) async {
+      final result = await analyticsService.getFollowing(pubkey, limit: 5000);
+      return result.pubkeys;
+    },
   );
 
   // Register executors with pending action service for sync

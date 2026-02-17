@@ -25,6 +25,10 @@ typedef IsOnlineCallback = bool Function();
 typedef QueueOfflineFollowCallback =
     Future<void> Function({required bool isFollow, required String pubkey});
 
+/// Callback to fetch following list from REST API (funnelcake)
+typedef FetchFollowingFromApiCallback =
+    Future<List<String>> Function(String pubkey);
+
 /// Repository for managing follow relationships.
 /// Single source of truth for follow data.
 ///
@@ -40,10 +44,12 @@ class FollowRepository {
     PersonalEventCacheService? personalEventCache,
     IsOnlineCallback? isOnline,
     QueueOfflineFollowCallback? queueOfflineAction,
+    FetchFollowingFromApiCallback? fetchFollowingFromApi,
   }) : _nostrClient = nostrClient,
        _personalEventCache = personalEventCache,
        _isOnline = isOnline,
-       _queueOfflineAction = queueOfflineAction;
+       _queueOfflineAction = queueOfflineAction,
+       _fetchFollowingFromApi = fetchFollowingFromApi;
 
   final NostrClient _nostrClient;
   final PersonalEventCacheService? _personalEventCache;
@@ -53,6 +59,9 @@ class FollowRepository {
 
   /// Callback to queue actions for offline sync
   final QueueOfflineFollowCallback? _queueOfflineAction;
+
+  /// Callback to fetch following list from REST API (fast, non-blocking)
+  final FetchFollowingFromApiCallback? _fetchFollowingFromApi;
 
   // BehaviorSubject replays last value to late subscribers, fixing race condition
   // where BLoC subscribes AFTER initial emission
@@ -274,7 +283,12 @@ class FollowRepository {
       // 2. Load from PersonalEventCache if available
       await _loadFromPersonalEventCache();
 
-      // 3. Subscribe to contact list for initial fetch and cross-device sync
+      // 3. If still empty, try REST API (funnelcake) for fast bootstrap
+      if (_followingPubkeys.isEmpty && _fetchFollowingFromApi != null) {
+        await _loadFromRestApi();
+      }
+
+      // 4. Subscribe to contact list for real-time sync and cross-device updates
       if (_nostrClient.hasKeys) {
         _subscribeToContactList();
       }
@@ -613,6 +627,52 @@ class FollowRepository {
     } catch (e) {
       Log.error(
         'Failed to load from PersonalEventCache: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Load following list from REST API (funnelcake) for fast bootstrap.
+  ///
+  /// Called only when local cache and PersonalEventCache are both empty
+  /// (e.g., first login or after identity change cleanup). This provides
+  /// the following list before the WebSocket subscription can deliver it.
+  Future<void> _loadFromRestApi() async {
+    try {
+      final currentUserPubkey = _nostrClient.publicKey;
+      if (currentUserPubkey.isEmpty) return;
+
+      Log.info(
+        'Loading following list from REST API (cache was empty)',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+
+      final pubkeys = await _fetchFollowingFromApi!(currentUserPubkey);
+
+      if (pubkeys.isNotEmpty) {
+        _followingPubkeys = pubkeys;
+        _emitFollowingList();
+
+        // Persist to SharedPreferences so redirect logic can use it
+        await _saveToLocalStorage();
+
+        Log.info(
+          'Loaded following from REST API: ${pubkeys.length} users',
+          name: 'FollowRepository',
+          category: LogCategory.system,
+        );
+      } else {
+        Log.debug(
+          'REST API returned empty following list',
+          name: 'FollowRepository',
+          category: LogCategory.system,
+        );
+      }
+    } catch (e) {
+      Log.warning(
+        'Failed to load following from REST API (will rely on relay): $e',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
