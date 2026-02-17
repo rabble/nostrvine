@@ -188,7 +188,6 @@ class _VideoMetadataTagsInputState
                     contentPadding: .zero,
                     textCapitalization: .none,
                     textInputAction: .done,
-                    maxLines: 1,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(
                         RegExp(r'[a-zA-Z0-9\s]'),
