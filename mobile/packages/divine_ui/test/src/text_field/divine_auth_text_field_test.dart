@@ -376,8 +376,7 @@ void main() {
       testWidgets('uses controller when provided', (
         tester,
       ) async {
-        final controller =
-            TextEditingController(text: 'Initial Value');
+        final controller = TextEditingController(text: 'Initial Value');
         await tester.pumpWidget(
           buildTestWidget(controller: controller),
         );
@@ -448,8 +447,7 @@ void main() {
               matching: find.byType(Container),
             ),
           );
-          final decoration =
-              container.decoration! as BoxDecoration;
+          final decoration = container.decoration! as BoxDecoration;
           expect(decoration.border, isNotNull);
           final border = decoration.border! as Border;
           expect(border.top.color, equals(VineTheme.error));
@@ -473,8 +471,7 @@ void main() {
               matching: find.byType(Container),
             ),
           );
-          final decoration =
-              container.decoration! as BoxDecoration;
+          final decoration = container.decoration! as BoxDecoration;
           expect(
             decoration.color,
             equals(VineTheme.errorOverlay),
@@ -510,8 +507,7 @@ void main() {
               matching: find.byType(Container),
             ),
           );
-          final decoration =
-              container.decoration! as BoxDecoration;
+          final decoration = container.decoration! as BoxDecoration;
           expect(decoration.border, isNull);
           expect(
             decoration.color,
@@ -534,11 +530,12 @@ void main() {
           await tester.pump();
 
           final labelText = tester.widget<AnimatedDefaultTextStyle>(
-            find.ancestor(
-              of: find.text('Test Label'),
-              matching:
-                  find.byType(AnimatedDefaultTextStyle),
-            ).first,
+            find
+                .ancestor(
+                  of: find.text('Test Label'),
+                  matching: find.byType(AnimatedDefaultTextStyle),
+                )
+                .first,
           );
           expect(
             labelText.style.color,
@@ -603,10 +600,8 @@ void main() {
       testWidgets('updates when controller changes', (
         tester,
       ) async {
-        final controller1 =
-            TextEditingController(text: 'First');
-        final controller2 =
-            TextEditingController(text: 'Second');
+        final controller1 = TextEditingController(text: 'First');
+        final controller2 = TextEditingController(text: 'Second');
 
         await tester.pumpWidget(
           buildTestWidget(controller: controller1),

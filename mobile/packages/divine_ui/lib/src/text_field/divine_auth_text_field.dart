@@ -268,8 +268,7 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
             ),
           ),
         ),
-        if (_hasError)
-          _ErrorSupportingText(errorText: widget.errorText!),
+        if (_hasError) _ErrorSupportingText(errorText: widget.errorText!),
       ],
     );
   }
@@ -304,16 +303,14 @@ class _AuthTextFieldContent extends StatelessWidget {
   static const double _labelTopFloating = _verticalPadding;
 
   /// Label top offset when centered with the input (26px).
-  static const double _labelTopCentered =
-      (_totalHeight - _inputLineHeight) / 2;
+  static const double _labelTopCentered = (_totalHeight - _inputLineHeight) / 2;
 
   /// Input top offset when the label is floating (36px).
   static const double _inputTopFloating =
       _verticalPadding + _labelLineHeight + _labelGap;
 
   /// Input top offset when centered, no floating label (26px).
-  static const double _inputTopCentered =
-      (_totalHeight - _inputLineHeight) / 2;
+  static const double _inputTopCentered = (_totalHeight - _inputLineHeight) / 2;
 
   @override
   Widget build(BuildContext context) {
@@ -332,9 +329,7 @@ class _AuthTextFieldContent extends StatelessWidget {
               curve: Curves.easeOut,
               style: isFloating
                   ? VineTheme.labelSmallFont(
-                      color: hasError
-                          ? VineTheme.error
-                          : VineTheme.primary,
+                      color: hasError ? VineTheme.error : VineTheme.primary,
                     )
                   : VineTheme.bodyLargeFont(
                       color: VineTheme.onSurfaceMuted,
