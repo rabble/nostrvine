@@ -66,6 +66,9 @@ class _MockNostrClient extends Mock implements NostrClient {
 
   @override
   int get connectedRelayCount => 1;
+
+  @override
+  List<String> get configuredRelays => <String>[];
 }
 
 class _MockUserProfileService extends Mock implements UserProfileService {}
