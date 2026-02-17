@@ -9,6 +9,7 @@ class MockDivineCameraPlatform
     implements DivineCameraPlatform {
   CameraState _state = const CameraState();
   void Function(VideoRecordingResult result)? _onRecordingAutoStopped;
+  void Function(RemoteRecordTrigger trigger)? _onRemoteRecordTrigger;
 
   @override
   void Function(VideoRecordingResult result)? get onRecordingAutoStopped =>
@@ -20,6 +21,24 @@ class MockDivineCameraPlatform
   ) {
     _onRecordingAutoStopped = callback;
   }
+
+  @override
+  void Function(RemoteRecordTrigger trigger)? get onRemoteRecordTrigger =>
+      _onRemoteRecordTrigger;
+
+  @override
+  set onRemoteRecordTrigger(
+    void Function(RemoteRecordTrigger trigger)? callback,
+  ) {
+    _onRemoteRecordTrigger = callback;
+  }
+
+  @override
+  Future<bool> setRemoteRecordControlEnabled({required bool enabled}) async =>
+      true;
+
+  @override
+  Future<bool> setVolumeKeysEnabled({required bool enabled}) async => true;
 
   @override
   Future<String?> getPlatformVersion() => Future.value('42');

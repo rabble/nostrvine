@@ -11,6 +11,7 @@ class MockDivineCameraPlatform
   CameraState _state = const CameraState();
   bool _isRecording = false;
   void Function(VideoRecordingResult result)? _onRecordingAutoStopped;
+  void Function(RemoteRecordTrigger trigger)? _onRemoteRecordTrigger;
 
   @override
   void Function(VideoRecordingResult result)? get onRecordingAutoStopped =>
@@ -21,6 +22,27 @@ class MockDivineCameraPlatform
     void Function(VideoRecordingResult result)? callback,
   ) {
     _onRecordingAutoStopped = callback;
+  }
+
+  @override
+  void Function(RemoteRecordTrigger trigger)? get onRemoteRecordTrigger =>
+      _onRemoteRecordTrigger;
+
+  @override
+  set onRemoteRecordTrigger(
+    void Function(RemoteRecordTrigger trigger)? callback,
+  ) {
+    _onRemoteRecordTrigger = callback;
+  }
+
+  @override
+  Future<bool> setRemoteRecordControlEnabled({required bool enabled}) async {
+    return true;
+  }
+
+  @override
+  Future<bool> setVolumeKeysEnabled({required bool enabled}) async {
+    return true;
   }
 
   @override
@@ -441,6 +463,76 @@ void main() {
         expect(receivedState!.isInitialized, isTrue);
       });
     });
+
+    group('remote record control', () {
+      test('setRemoteRecordControlEnabled enables control', () async {
+        await DivineCamera.instance.initialize();
+
+        final result = await DivineCamera.instance
+            .setRemoteRecordControlEnabled(enabled: true);
+
+        expect(result, isTrue);
+        expect(DivineCamera.instance.remoteRecordControlEnabled, isTrue);
+      });
+
+      test('setRemoteRecordControlEnabled disables control', () async {
+        await DivineCamera.instance.initialize();
+        await DivineCamera.instance.setRemoteRecordControlEnabled(
+          enabled: true,
+        );
+
+        final result = await DivineCamera.instance
+            .setRemoteRecordControlEnabled(enabled: false);
+
+        expect(result, isTrue);
+        expect(DivineCamera.instance.remoteRecordControlEnabled, isFalse);
+      });
+
+      test('setVolumeKeysEnabled enables volume keys', () async {
+        await DivineCamera.instance.initialize();
+
+        final result = await DivineCamera.instance.setVolumeKeysEnabled(
+          enabled: true,
+        );
+
+        expect(result, isTrue);
+      });
+
+      test('setVolumeKeysEnabled disables volume keys', () async {
+        await DivineCamera.instance.initialize();
+
+        final result = await DivineCamera.instance.setVolumeKeysEnabled(
+          enabled: false,
+        );
+
+        expect(result, isTrue);
+      });
+
+      test('onRemoteRecordTrigger callback can be set', () async {
+        await DivineCamera.instance.initialize();
+
+        RemoteRecordTrigger? receivedTrigger;
+        DivineCamera.instance.onRemoteRecordTrigger = (trigger) {
+          receivedTrigger = trigger;
+        };
+
+        // The platform callback is now set by DivineCamera - call it to
+        // simulate a native trigger event
+        final mockPlatform =
+            DivineCameraPlatform.instance as MockDivineCameraPlatform;
+        mockPlatform.onRemoteRecordTrigger?.call(
+          RemoteRecordTrigger.volumeDown,
+        );
+
+        expect(receivedTrigger, equals(RemoteRecordTrigger.volumeDown));
+      });
+
+      test('remoteRecordControlEnabled defaults to false', () async {
+        await DivineCamera.instance.initialize();
+
+        expect(DivineCamera.instance.remoteRecordControlEnabled, isFalse);
+      });
+    });
   });
 
   group('CameraState', () {
@@ -645,6 +737,46 @@ void main() {
       expect(DivineVideoQuality.uhd.value, 'uhd');
       expect(DivineVideoQuality.highest.value, 'highest');
       expect(DivineVideoQuality.lowest.value, 'lowest');
+    });
+  });
+
+  group(RemoteRecordTrigger, () {
+    test('fromNativeString returns correct trigger for volumeUp', () {
+      expect(
+        RemoteRecordTrigger.fromNativeString('volumeUp'),
+        equals(RemoteRecordTrigger.volumeUp),
+      );
+    });
+
+    test('fromNativeString returns correct trigger for volumeDown', () {
+      expect(
+        RemoteRecordTrigger.fromNativeString('volumeDown'),
+        equals(RemoteRecordTrigger.volumeDown),
+      );
+    });
+
+    test('fromNativeString returns correct trigger for bluetooth', () {
+      expect(
+        RemoteRecordTrigger.fromNativeString('bluetooth'),
+        equals(RemoteRecordTrigger.bluetooth),
+      );
+    });
+
+    test('fromNativeString defaults to volumeUp for unknown values', () {
+      expect(
+        RemoteRecordTrigger.fromNativeString('unknown'),
+        equals(RemoteRecordTrigger.volumeUp),
+      );
+      expect(
+        RemoteRecordTrigger.fromNativeString(''),
+        equals(RemoteRecordTrigger.volumeUp),
+      );
+    });
+
+    test('all trigger values are distinct', () {
+      const triggers = RemoteRecordTrigger.values;
+      expect(triggers.length, equals(3));
+      expect(triggers.toSet().length, equals(3));
     });
   });
 
