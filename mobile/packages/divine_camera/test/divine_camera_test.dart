@@ -200,6 +200,11 @@ void main() {
       DivineCameraPlatform.instance = mockPlatform;
     });
 
+    tearDown(() async {
+      // Reset DivineCamera singleton state between tests
+      await DivineCamera.instance.dispose();
+    });
+
     test('getPlatformVersion returns expected value', () async {
       expect(await DivineCamera.instance.getPlatformVersion(), '42');
     });
@@ -1051,6 +1056,11 @@ void main() {
     setUp(() {
       mockPlatform = MockDivineCameraPlatform();
       DivineCameraPlatform.instance = mockPlatform;
+    });
+
+    tearDown(() async {
+      // Reset DivineCamera singleton state between tests
+      await DivineCamera.instance.dispose();
     });
 
     test('onRecordingAutoStopped callback is invoked', () async {
