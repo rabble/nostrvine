@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:divine_camera/divine_camera.dart' show CameraLensMetadata;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -151,6 +152,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
     required model.AspectRatio targetAspectRatio,
     Duration? duration,
     String? thumbnailPath,
+    CameraLensMetadata? lensMetadata,
   }) {
     final clipDuration =
         duration ??
@@ -172,6 +174,7 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
       targetAspectRatio: targetAspectRatio,
       originalAspectRatio: originalAspectRatio,
       processingCompleter: processingCompleter,
+      lensMetadata: lensMetadata,
     );
 
     // Asynchronously trim the clip if it exceeds remaining duration

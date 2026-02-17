@@ -10,7 +10,7 @@ import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:divine_camera/divine_camera.dart'
-    show DivineCameraLens, DivineVideoQuality;
+    show CameraLensMetadata, DivineCameraLens, DivineVideoQuality;
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -717,6 +717,9 @@ class CameraMacOSService extends CameraService {
 
   @override
   List<DivineCameraLens> get availableLenses => [DivineCameraLens.front];
+
+  @override
+  CameraLensMetadata? get currentLensMetadata => null;
 
   @override
   String? get initializationError => _initializationError;

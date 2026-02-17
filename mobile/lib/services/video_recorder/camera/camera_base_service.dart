@@ -4,7 +4,7 @@
 import 'dart:io';
 
 import 'package:divine_camera/divine_camera.dart'
-    show DivineCameraLens, DivineVideoQuality;
+    show CameraLensMetadata, DivineCameraLens, DivineVideoQuality;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
@@ -108,6 +108,10 @@ abstract class CameraService {
 
   /// List of available camera lenses on this device.
   List<DivineCameraLens> get availableLenses;
+
+  /// Metadata for the currently active camera lens.
+  /// Returns null if metadata is not available.
+  CameraLensMetadata? get currentLensMetadata;
 
   /// Error message if initialization failed, null if successful.
   String? get initializationError;

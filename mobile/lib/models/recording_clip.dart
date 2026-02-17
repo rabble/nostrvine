@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:divine_camera/divine_camera.dart' show CameraLensMetadata;
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:path/path.dart' as p;
@@ -19,6 +20,7 @@ class RecordingClip {
     this.thumbnailPath,
     Duration? thumbnailTimestamp,
     this.processingCompleter,
+    this.lensMetadata,
   }) : _thumbnailTimestamp = thumbnailTimestamp,
        _originalAspectRatio = originalAspectRatio;
 
@@ -38,6 +40,9 @@ class RecordingClip {
 
   /// The target aspect ratio for this clip (used for deferred cropping)
   final model.AspectRatio targetAspectRatio;
+
+  /// Camera lens metadata at the time of recording (focal length, aperture, etc.)
+  final CameraLensMetadata? lensMetadata;
 
   double get durationInSeconds => duration.inMilliseconds / 1000.0;
   bool get isProcessing =>
@@ -65,6 +70,7 @@ class RecordingClip {
     double? originalAspectRatio,
     model.AspectRatio? targetAspectRatio,
     Completer<bool>? processingCompleter,
+    CameraLensMetadata? lensMetadata,
   }) {
     return RecordingClip(
       id: id ?? this.id,
@@ -76,6 +82,7 @@ class RecordingClip {
       originalAspectRatio: originalAspectRatio ?? _originalAspectRatio,
       targetAspectRatio: targetAspectRatio ?? this.targetAspectRatio,
       processingCompleter: processingCompleter ?? this.processingCompleter,
+      lensMetadata: lensMetadata ?? this.lensMetadata,
     );
   }
 
@@ -94,6 +101,7 @@ class RecordingClip {
       'thumbnailTimestampMs': _thumbnailTimestamp?.inMilliseconds,
       'originalAspectRatio': _originalAspectRatio,
       'targetAspectRatio': targetAspectRatio.name,
+      'lensMetadata': lensMetadata?.toMap(),
     };
   }
 
@@ -130,6 +138,11 @@ class RecordingClip {
         (e) => e.name == aspectRatioName,
         orElse: () => model.AspectRatio.square,
       ),
+      lensMetadata: json['lensMetadata'] != null
+          ? CameraLensMetadata.fromMap(
+              json['lensMetadata'] as Map<String, dynamic>,
+            )
+          : null,
     );
   }
 

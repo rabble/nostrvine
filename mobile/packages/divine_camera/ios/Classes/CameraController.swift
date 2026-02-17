@@ -167,6 +167,108 @@ class CameraController: NSObject {
               "ultraWide=\(hasUltraWideCamera), telephoto=\(hasTelephotoCamera), macro=\(hasMacroCamera)")
     }
     
+    /// Gets metadata for the currently active camera lens.
+    private func getCurrentLensMetadata() -> [String: Any]? {
+        guard let device = videoDevice else {
+            return nil
+        }
+        return extractCameraMetadata(device: device, lensType: currentLensType)
+    }
+    
+    /// Extracts metadata from an AVCaptureDevice.
+    /// For C2PA compliance, only values that iOS actually provides are included.
+    /// Estimated values (focalLength, sensorSize, minFocusDistance) are left as nil.
+    private func extractCameraMetadata(device: AVCaptureDevice, lensType: String) -> [String: Any] {
+        let format = device.activeFormat
+        let formatDescription = format.formatDescription
+        let dimensions = CMVideoFormatDescriptionGetDimensions(formatDescription)
+        
+        // iOS doesn't expose physical focal length directly
+        // This would need to come from EXIF data of captured images
+        let focalLength: Double? = nil
+        
+        // Aperture IS available on iOS via lensAperture property
+        let aperture: Double = Double(device.lensAperture)
+        
+        var fieldOfView: Double? = nil
+        
+        // Field of view is available on the format
+        let fov = format.videoFieldOfView
+        if fov > 0 {
+            fieldOfView = Double(fov)
+        }
+        
+        // Try to get more accurate field of view from device formats
+        if #available(iOS 13.0, *) {
+            // Get geometric distortion corrected field of view if available
+            if let videoFormat = device.formats.first(where: { $0 === format }) {
+                fieldOfView = Double(videoFormat.videoFieldOfView)
+            }
+        }
+        
+        // Min focus distance
+        // Note: iOS doesn't expose actual minimum focus distance values.
+        // For C2PA compliance, we leave this as nil rather than providing estimates.
+        let minFocusDistance: Double? = nil
+        
+        // Optical stabilization
+        let hasOpticalStabilization = device.activeFormat.isVideoStabilizationModeSupported(.cinematic) ||
+                                      device.activeFormat.isVideoStabilizationModeSupported(.standard)
+        
+        // Sensor size - iOS doesn't expose actual sensor dimensions
+        let sensorWidth: Double? = nil
+        let sensorHeight: Double? = nil
+        
+        // Calculate 35mm equivalent focal length from field of view
+        // This IS accurate as it's mathematically derived from FOV which iOS provides.
+        // Formula: FOV = 2 * arctan(sensor_diagonal / (2 * focal_length))
+        // For 35mm film: diagonal = 43.27mm
+        // Therefore: focal_length_35mm = 43.27 / (2 * tan(FOV/2))
+        var focalLengthEquivalent35mm: Double? = nil
+        if let fov = fieldOfView, fov > 0 {
+            let fovRadians = fov * .pi / 180.0
+            let equivalent = 43.27 / (2.0 * tan(fovRadians / 2.0))
+            focalLengthEquivalent35mm = equivalent
+        }
+        
+        // Check if this is a multi-camera logical device
+        var isLogicalCamera = false
+        var physicalCameraIds: [String] = []
+        if #available(iOS 13.0, *) {
+            let physicalDevices = device.constituentDevices
+            isLogicalCamera = physicalDevices.count > 1
+            physicalCameraIds = physicalDevices.map { $0.uniqueID }
+        }
+        
+        // Camera unique identifier
+        let cameraId = device.uniqueID
+        
+        // Exposure duration in seconds (live value)
+        let exposureDuration = CMTimeGetSeconds(device.exposureDuration)
+        
+        // ISO sensitivity (live value)
+        let iso = Double(device.iso)
+        
+        return [
+            "lensType": lensType,
+            "cameraId": cameraId,
+            "focalLength": focalLength as Any,
+            "focalLengthEquivalent35mm": focalLengthEquivalent35mm as Any,
+            "aperture": aperture,
+            "sensorWidth": sensorWidth as Any,
+            "sensorHeight": sensorHeight as Any,
+            "pixelArrayWidth": Int(dimensions.width),
+            "pixelArrayHeight": Int(dimensions.height),
+            "minFocusDistance": minFocusDistance as Any,
+            "fieldOfView": fieldOfView as Any,
+            "hasOpticalStabilization": hasOpticalStabilization,
+            "isLogicalCamera": isLogicalCamera,
+            "physicalCameraIds": physicalCameraIds,
+            "exposureDuration": exposureDuration,
+            "iso": iso
+        ]
+    }
+    
     /// Returns a list of available lens types on this device.
     private func getAvailableLenses() -> [String] {
         var lenses: [String] = []
@@ -1125,7 +1227,8 @@ class CameraController: NSObject {
             "isFocusPointSupported": isFocusPointSupported,
             "isExposurePointSupported": isExposurePointSupported,
             "textureId": textureId,
-            "availableLenses": getAvailableLenses()
+            "availableLenses": getAvailableLenses(),
+            "currentLensMetadata": getCurrentLensMetadata() as Any
         ]
     }
     
