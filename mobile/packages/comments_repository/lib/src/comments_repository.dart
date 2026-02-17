@@ -369,7 +369,13 @@ class CommentsRepository {
         subscriptionId: _watchSubscriptionId,
       );
 
+      // When dual-filter subscriptions are active (E + A tags), the same
+      // comment event can arrive from both filters. Deduplicate by event ID
+      // to prevent consumers from processing duplicates.
+      final seenIds = <String>{};
+
       return eventStream
+          .where((event) => seenIds.add(event.id))
           .map((event) => _eventToComment(event, rootEventId, rootEventKind))
           .where((comment) => comment != null)
           .cast<Comment>();

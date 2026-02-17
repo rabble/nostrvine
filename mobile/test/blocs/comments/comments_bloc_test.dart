@@ -2139,47 +2139,49 @@ void main() {
       );
     });
 
-    group('CommentsSubscriptionRequested', () {
-      test('CommentsLoadRequested dispatches CommentsSubscriptionRequested '
-          'on success', () async {
-        final comment = Comment(
-          id: validId('comment1'),
-          content: 'Test comment',
-          authorPubkey: validId('commenter'),
-          createdAt: DateTime.now(),
-          rootEventId: validId('root'),
-          rootAuthorPubkey: validId('author'),
-        );
-        final thread = CommentThread(
-          rootEventId: validId('root'),
-          comments: [comment],
-          totalCount: 1,
-          commentCache: {comment.id: comment},
-        );
+    group('real-time comment subscription', () {
+      test(
+        'CommentsLoadRequested starts watching comments on success',
+        () async {
+          final comment = Comment(
+            id: validId('comment1'),
+            content: 'Test comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          final thread = CommentThread(
+            rootEventId: validId('root'),
+            comments: [comment],
+            totalCount: 1,
+            commentCache: {comment.id: comment},
+          );
 
-        when(
-          () => mockCommentsRepository.loadComments(
-            rootEventId: any(named: 'rootEventId'),
-            rootEventKind: any(named: 'rootEventKind'),
-            rootAddressableId: any(named: 'rootAddressableId'),
-            limit: any(named: 'limit'),
-          ),
-        ).thenAnswer((_) async => thread);
+          when(
+            () => mockCommentsRepository.loadComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              limit: any(named: 'limit'),
+            ),
+          ).thenAnswer((_) async => thread);
 
-        final bloc = createBloc()..add(const CommentsLoadRequested());
-        await Future<void>.delayed(const Duration(milliseconds: 100));
+          final bloc = createBloc()..add(const CommentsLoadRequested());
+          await Future<void>.delayed(const Duration(milliseconds: 100));
 
-        verify(
-          () => mockCommentsRepository.watchComments(
-            rootEventId: any(named: 'rootEventId'),
-            rootEventKind: any(named: 'rootEventKind'),
-            rootAddressableId: any(named: 'rootAddressableId'),
-            since: any(named: 'since'),
-          ),
-        ).called(1);
+          verify(
+            () => mockCommentsRepository.watchComments(
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+              since: any(named: 'since'),
+            ),
+          ).called(1);
 
-        await bloc.close();
-      });
+          await bloc.close();
+        },
+      );
 
       test('stops watching on close', () async {
         final bloc = createBloc();

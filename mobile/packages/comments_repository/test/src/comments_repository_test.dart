@@ -1097,6 +1097,52 @@ void main() {
         },
       );
 
+      test(
+        'deduplicates events with the same ID from dual-filter subscriptions',
+        () async {
+          final controller = StreamController<Event>.broadcast();
+
+          when(
+            () => mockNostrClient.subscribe(
+              any(),
+              subscriptionId: any(named: 'subscriptionId'),
+            ),
+          ).thenAnswer((_) => controller.stream);
+
+          final stream = repository.watchComments(
+            rootEventId: testRootEventId,
+            rootEventKind: _testRootEventKind,
+            rootAddressableId: '34236:$testRootAuthorPubkey:video-dtag',
+            since: DateTime.fromMillisecondsSinceEpoch(1000000),
+          );
+
+          final comments = <Comment>[];
+          final sub = stream.listen(comments.add);
+
+          // Emit the same event twice (simulating E and A filter match)
+          final commentEvent = _createCommentEvent(
+            id: 'duplicate_event',
+            content: 'Arrived twice',
+            pubkey: testUserPubkey,
+            rootEventId: testRootEventId,
+            rootAuthorPubkey: testRootAuthorPubkey,
+            rootEventKind: _testRootEventKind,
+            createdAt: 5000,
+          );
+          controller
+            ..add(commentEvent)
+            ..add(commentEvent);
+
+          await Future<void>.delayed(Duration.zero);
+
+          expect(comments, hasLength(1));
+          expect(comments.first.content, equals('Arrived twice'));
+
+          await sub.cancel();
+          await controller.close();
+        },
+      );
+
       test('filters out null comments from malformed events', () async {
         final controller = StreamController<Event>.broadcast();
 

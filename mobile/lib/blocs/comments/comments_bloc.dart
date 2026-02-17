@@ -89,7 +89,6 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     );
     on<MentionRegistered>(_onMentionRegistered);
     on<MentionSuggestionsCleared>(_onMentionSuggestionsCleared);
-    on<CommentsSubscriptionRequested>(_onSubscriptionRequested);
     on<NewCommentReceived>(_onNewCommentReceived);
     on<NewCommentsAcknowledged>(_onNewCommentsAcknowledged);
   }
@@ -147,7 +146,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
       );
 
       add(const CommentLikeCountsFetchRequested());
-      add(const CommentsSubscriptionRequested());
+      _startWatchingComments();
     } catch (e) {
       Log.error(
         'Error loading comments: $e',
@@ -703,12 +702,15 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   /// on viral videos.
   static const _maxCommentsPerSecond = 10;
 
-  Future<void> _onSubscriptionRequested(
-    CommentsSubscriptionRequested event,
-    Emitter<CommentsState> emit,
-  ) async {
+  /// Starts the real-time comment subscription.
+  ///
+  /// Called directly from [_onLoadRequested] after a successful load so that
+  /// the `since` timestamp aligns with the initial load. Opens a persistent
+  /// Nostr subscription and routes incoming comments through
+  /// [NewCommentReceived].
+  void _startWatchingComments() {
     // Cancel any existing subscription before starting a new one
-    await _commentStreamSubscription?.cancel();
+    _commentStreamSubscription?.cancel();
 
     try {
       final stream = _commentsRepository.watchComments(
