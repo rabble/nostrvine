@@ -228,8 +228,12 @@ class _DivineAuthScreenState
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
-      body: SafeArea(
-        child: Column(
+      resizeToAvoidBottomInset: false,
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: SafeArea(
+          child: Column(
           children: [
             // Back button
             Align(
@@ -274,6 +278,7 @@ class _DivineAuthScreenState
             ),
           ],
         ),
+      ),
       ),
     );
   }
