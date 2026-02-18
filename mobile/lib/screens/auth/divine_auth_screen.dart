@@ -237,12 +237,14 @@ class _DivineAuthScreenState
         child: SafeArea(
           child: Column(
           children: [
-            // Back button
-            Align(
-              alignment: Alignment.topLeft,
-              child: Padding(
-                padding:
-                    const EdgeInsets.fromLTRB(16, 8, 16, 0),
+            // Back button row
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
                 child: DivineIconButton(
                   icon: DivineIconName.caretLeft,
                   type: DivineIconButtonType.secondary,
@@ -632,8 +634,6 @@ class _AuthFormContent extends StatelessWidget {
                 crossAxisAlignment:
                     CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 32),
-
                   // Title
                   Padding(
                     padding: const EdgeInsets.only(

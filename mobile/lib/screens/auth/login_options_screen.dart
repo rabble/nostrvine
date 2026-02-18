@@ -63,27 +63,29 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
-      body: Container(
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Back button
-              Align(
-                alignment: Alignment.topLeft,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                  child: DivineIconButton(
-                    icon: DivineIconName.caretLeft,
-                    type: DivineIconButtonType.secondary,
-                    size: DivineIconButtonSize.small,
-                    onPressed: () => context.pop(),
-                  ),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Back button row
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: DivineIconButton(
+                  icon: DivineIconName.caretLeft,
+                  type: DivineIconButtonType.secondary,
+                  size: DivineIconButtonSize.small,
+                  onPressed: () => context.pop(),
                 ),
               ),
+            ),
 
-              Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 28, 16, 0),
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.start,
                     children: [
@@ -205,8 +207,7 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 }
 

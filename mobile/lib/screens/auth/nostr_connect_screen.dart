@@ -233,25 +233,23 @@ class _NostrConnectScreenState
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // Close button
-            Align(
-              alignment: Alignment.topLeft,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                child: DivineIconButton(
-                  icon: DivineIconName.x,
-                  type: DivineIconButtonType.secondary,
-                  size: DivineIconButtonSize.small,
-                  onPressed: () => context.pop(),
-                ),
-              ),
-            ),
+            // Content fills entire safe area
+            _buildContent(),
 
-            // Content
-            Expanded(
-              child: _buildContent(),
+            // Close button overlays top-left
+            Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
+              child: DivineIconButton(
+                icon: DivineIconName.x,
+                type: DivineIconButtonType.secondary,
+                size: DivineIconButtonSize.small,
+                onPressed: () => context.pop(),
+              ),
             ),
           ],
         ),
@@ -287,18 +285,14 @@ class _NostrConnectScreenState
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 32),
-
-          // Title
-          Align(
-            alignment: Alignment.topLeft,
-            child: Text(
-              'Scan with your\nsigner app to connect.',
-              style: VineTheme.headlineLargeFont(),
-            ),
+          // Space for close button overlay
+          const SizedBox(height: 72),
+          Text(
+            'Scan with your\nsigner app to connect.',
+            style: VineTheme.headlineLargeFont(),
           ),
-
           const Spacer(),
           const CircularProgressIndicator(
             color: VineTheme.vineGreen,
@@ -322,23 +316,18 @@ class _NostrConnectScreenState
 
     return SingleChildScrollView(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Space for close button overlay
+          const SizedBox(height: 72),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 32),
-
-                // Title
-                Text(
-                  'Scan with your\nsigner app to connect.',
-                  style: VineTheme.headlineLargeFont(),
-                ),
-                const SizedBox(height: 32),
-              ],
+            child: Text(
+              'Scan with your\nsigner app to connect.',
+              style: VineTheme.headlineLargeFont(),
             ),
           ),
+          const SizedBox(height: 32),
 
           // QR card with border
           Padding(
@@ -454,18 +443,14 @@ class _NostrConnectScreenState
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 32),
-
-          // Title
-          Align(
-            alignment: Alignment.topLeft,
-            child: Text(
-              'Scan with your\nsigner app to connect.',
-              style: VineTheme.headlineLargeFont(),
-            ),
+          // Space for close button overlay
+          const SizedBox(height: 72),
+          Text(
+            'Scan with your\nsigner app to connect.',
+            style: VineTheme.headlineLargeFont(),
           ),
-
           const SizedBox(height: 32),
           const DivineSticker(sticker: DivineStickerName.policeSiren),
           const SizedBox(height: 32),
