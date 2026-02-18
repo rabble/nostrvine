@@ -16,6 +16,7 @@ import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
@@ -446,7 +447,19 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
   @override
   Widget build(BuildContext context) {
-    // Search always shows grid UI - videos open in fullscreen via push navigation
+    // Derive feed mode from URL (single source of truth)
+    final pageContext = ref.watch(pageContextProvider);
+    final isInFeedMode =
+        pageContext.whenOrNull(
+          data: (ctx) => ctx.type == RouteType.search && ctx.videoIndex != null,
+        ) ??
+        false;
+
+    // Show fullscreen video player when in feed mode
+    if (isInFeedMode) {
+      return _SearchFeedModeContent(searchTerm: _currentQuery);
+    }
+
     final searchBar = SizedBox(
       height: 48,
       child: TextField(
@@ -792,6 +805,45 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
               // Navigate using GoRouter
               context.go(HashtagScreenRouter.pathForTag(hashtag));
             },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SearchFeedModeContent extends ConsumerWidget {
+  const _SearchFeedModeContent({required this.searchTerm});
+
+  final String searchTerm;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final videos =
+        ref.watch(searchScreenVideosProvider) ?? const <VideoEvent>[];
+    final pageContext = ref.watch(pageContextProvider);
+    final startIndex =
+        pageContext.whenOrNull(data: (ctx) => ctx.videoIndex ?? 0) ?? 0;
+
+    if (videos.isEmpty || startIndex >= videos.length) {
+      return Center(
+        child: Text(
+          'No videos available',
+          style: TextStyle(color: VineTheme.whiteText),
+        ),
+      );
+    }
+
+    return ExploreVideoScreenPure(
+      startingVideo: videos[startIndex],
+      videoList: videos,
+      contextTitle: 'Search',
+      startingIndex: startIndex,
+      onNavigate: (index) {
+        context.go(
+          SearchScreenPure.pathForTerm(
+            term: searchTerm.isNotEmpty ? searchTerm : null,
+            index: index,
           ),
         );
       },
