@@ -230,11 +230,11 @@ class _FormData extends ConsumerWidget {
 
         // Expiration time selector
         const VideoMetadataExpirationSelector(),
-        const _Divider(enablePaddingBottom: true),
+        const _Divider(),
 
         // Collaborators
         const VideoMetadataCollaboratorsInput(),
-        const _Divider(enablePaddingTop: true, enablePaddingBottom: true),
+        const _Divider(),
 
         // Inspired By
         const VideoMetadataInspiredByInput(),

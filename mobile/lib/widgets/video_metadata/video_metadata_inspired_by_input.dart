@@ -40,50 +40,80 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
 
     final hasInspiredBy = inspiredByNpub != null || inspiredByVideo != null;
 
-    return Padding(
-      padding: const .symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return Semantics(
+      button: true,
+      // TODO(l10n): Replace with context.l10n when localization is added.
+      label: 'Set inspired by',
+      child: InkWell(
+        onTap: hasInspiredBy
+            ? null
+            : () => _selectInspiredByPerson(context, ref),
+        child: Padding(
+          padding: const .all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 8,
             children: [
-              Text(
-                // TODO(l10n): Replace with context.l10n
-                //   when localization is added.
-                'Inspired by',
-                style: VineTheme.labelSmallFont(
-                  color: VineTheme.onSurfaceVariant,
+              Row(
+                children: [
+                  Text(
+                    // TODO(l10n): Replace with context.l10n
+                    //   when localization is added.
+                    'Inspired by',
+                    style: VineTheme.labelSmallFont(
+                      color: VineTheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  VideoMetadataHelpButton(
+                    // TODO(l10n): Replace with context.l10n
+                    //   when localization is added.
+                    onTap: () => _showHelpDialog(context),
+                    tooltip: 'How inspiration credits work',
+                  ),
+                ],
+              ),
+
+              // Show current attribution or add button.
+              if (hasInspiredBy)
+                _InspiredByDisplay(
+                  inspiredByNpub: inspiredByNpub,
+                  inspiredByVideo: inspiredByVideo,
+                )
+              else
+                Row(
+                  mainAxisAlignment: .spaceBetween,
+                  children: [
+                    Flexible(
+                      child: Text(
+                        'None',
+                        style: VineTheme.titleFont(
+                          fontSize: 16,
+                          color: const Color(0xF2FFFFFF),
+                          letterSpacing: 0.15,
+                        ),
+                      ),
+                    ),
+                    SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: SizedBox(
+                        height: 18,
+                        width: 18,
+                        child: SvgPicture.asset(
+                          'assets/icon/caret_right.svg',
+                          colorFilter: const ColorFilter.mode(
+                            VineTheme.tabIndicatorGreen,
+                            .srcIn,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-              const SizedBox(width: 4),
-              VideoMetadataHelpButton(
-                // TODO(l10n): Replace with context.l10n
-                //   when localization is added.
-                onTap: () => _showHelpDialog(context),
-                tooltip: 'How inspiration credits work',
-              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            // TODO(l10n): Replace with context.l10n
-            //   when localization is added.
-            'Credit the creator or post that influenced this video.',
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
-          ),
-          const SizedBox(height: 14),
-
-          // Show current attribution or add button.
-          if (hasInspiredBy)
-            _InspiredByDisplay(
-              inspiredByNpub: inspiredByNpub,
-              inspiredByVideo: inspiredByVideo,
-            )
-          else
-            _AddInspiredByButton(
-              onPressed: () => _selectInspiredByPerson(context, ref),
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -125,13 +155,14 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          behavior: SnackBarBehavior.floating,
           // TODO(l10n): Replace with context.l10n
           //   when localization is added.
-          content: Text(
-            'This creator cannot be referenced.',
-            style: VineTheme.bodyMediumFont(),
+          content: DivineSnackbarContainer(
+            label: 'This creator cannot be referenced.',
           ),
-          backgroundColor: VineTheme.cardBackground,
         ),
       );
       return;
@@ -167,20 +198,20 @@ class _InspiredByDisplay extends ConsumerWidget {
     final pubkey = _pubkey;
 
     return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
         color: const Color(0xFF0B2A20),
-        border: Border.all(color: VineTheme.outlineVariant),
       ),
       child: Row(
+        spacing: 8,
+        mainAxisSize: .min,
         children: [
           // Avatar and name
           if (pubkey != null)
-            Expanded(child: _InspiredByProfileInfo(pubkey: pubkey))
+            Flexible(child: _InspiredByProfileInfo(pubkey: pubkey))
           else if (inspiredByNpub != null)
-            Expanded(child: _InspiredByNpubInfo(npub: inspiredByNpub!)),
+            Flexible(child: _InspiredByNpubInfo(npub: inspiredByNpub!)),
 
           // Remove button
           Semantics(
@@ -192,12 +223,12 @@ class _InspiredByDisplay extends ConsumerWidget {
               onTap: () =>
                   ref.read(videoEditorProvider.notifier).clearInspiredBy(),
               child: SizedBox(
-                width: 20,
-                height: 20,
+                width: 16,
+                height: 16,
                 child: SvgPicture.asset(
                   'assets/icon/close.svg',
                   colorFilter: const ColorFilter.mode(
-                    Color(0xFF818F8B),
+                    VineTheme.onSurfaceMuted,
                     BlendMode.srcIn,
                   ),
                 ),
@@ -222,39 +253,26 @@ class _InspiredByProfileInfo extends ConsumerWidget {
 
     return Row(
       mainAxisSize: MainAxisSize.min,
+      spacing: 8,
       children: [
         UserAvatar(
           imageUrl: profileAsync.value?.picture,
           name: profileAsync.value?.bestDisplayName,
-          size: 32,
+          size: 24,
         ),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              // TODO(l10n): Replace with context.l10n
-              //   when localization is added.
-              'Inspired by',
-              style: VineTheme.bodyFont(
-                color: VineTheme.onSurfaceMuted,
-                fontSize: 11,
-                height: 1.27,
-              ),
+        Flexible(
+          child: Text(
+            profileAsync.value?.bestDisplayName ??
+                '${pubkey.substring(0, 12)}...',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: VineTheme.bodyFont(
+              color: VineTheme.whiteText,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              height: 1.43,
             ),
-            Text(
-              profileAsync.value?.bestDisplayName ??
-                  '${pubkey.substring(0, 12)}...',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: VineTheme.bodyFont(
-                color: VineTheme.whiteText,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                height: 1.43,
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );
@@ -285,96 +303,22 @@ class _InspiredByNpubInfo extends ConsumerWidget {
         UserAvatar(
           imageUrl: profileAsync.value?.picture,
           name: profileAsync.value?.bestDisplayName,
-          size: 32,
+          size: 24,
         ),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                // TODO(l10n): Replace with context.l10n
-                //   when localization is added.
-                'Inspired by',
-                style: VineTheme.bodyFont(
-                  color: VineTheme.onSurfaceMuted,
-                  fontSize: 11,
-                  height: 1.27,
-                ),
-              ),
-              Text(
-                profileAsync.value?.bestDisplayName ?? truncatedNpub,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: VineTheme.bodyFont(
-                  color: VineTheme.whiteText,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  height: 1.43,
-                ),
-              ),
-            ],
+        Flexible(
+          child: Text(
+            profileAsync.value?.bestDisplayName ?? truncatedNpub,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: VineTheme.bodyFont(
+              color: VineTheme.whiteText,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              height: 1.43,
+            ),
           ),
         ),
       ],
-    );
-  }
-}
-
-/// Button to add an "Inspired By" reference.
-class _AddInspiredByButton extends StatelessWidget {
-  const _AddInspiredByButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          color: const Color(0x8C032017),
-          border: Border.all(color: VineTheme.outlineVariant),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 22,
-              height: 22,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(7),
-                color: const Color(0xFF0E2B21),
-              ),
-              child: const Icon(Icons.add, color: VineTheme.primary, size: 15),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              // TODO(l10n): Replace with context.l10n
-              //   when localization is added.
-              'Add inspiration credit',
-              style: VineTheme.bodyFont(
-                color: VineTheme.onSurfaceVariant,
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const Spacer(),
-            Text(
-              // TODO(l10n): Replace with context.l10n
-              //   when localization is added.
-              'One source',
-              style: VineTheme.bodyFont(
-                color: VineTheme.onSurfaceMuted,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -27,67 +27,92 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
     final collaborators = ref.watch(
       videoEditorProvider.select((s) => s.collaboratorPubkeys),
     );
-    final remainingSlots =
-        VideoEditorNotifier.maxCollaborators - collaborators.length;
 
-    return Padding(
-      padding: const .symmetric(horizontal: 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    final canAddCollaborators =
+        collaborators.length < VideoEditorNotifier.maxCollaborators;
+
+    return Semantics(
+      button: true,
+      // TODO(l10n): Replace with context.l10n when localization is added.
+      label: 'Add collaborator',
+      child: InkWell(
+        onTap: canAddCollaborators
+            ? () => _addCollaborator(context, ref)
+            : null,
+
+        child: Padding(
+          padding: const .all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            spacing: 8,
             children: [
-              Text(
-                // TODO(l10n): Replace with context.l10n
-                //   when localization is added.
-                'Collaborators',
-                style: VineTheme.labelSmallFont(
-                  color: VineTheme.onSurfaceVariant,
+              Row(
+                children: [
+                  Text(
+                    // TODO(l10n): Replace with context.l10n
+                    //   when localization is added.
+                    'Collaborators',
+                    style: VineTheme.labelSmallFont(
+                      color: VineTheme.onSurfaceVariant,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  VideoMetadataHelpButton(
+                    // TODO(l10n): Replace with context.l10n
+                    //   when localization is added.
+                    onTap: () => _showHelpDialog(context),
+                    tooltip: 'How collaborators work',
+                  ),
+                ],
+              ),
+              Row(
+                mainAxisAlignment: .spaceBetween,
+                children: [
+                  Flexible(
+                    child: Text(
+                      '${collaborators.length}/'
+                      '${VideoEditorNotifier.maxCollaborators} Collaborators',
+                      style: VineTheme.titleFont(
+                        fontSize: 16,
+                        color: const Color(0xF2FFFFFF),
+                        letterSpacing: 0.15,
+                      ),
+                    ),
+                  ),
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: SvgPicture.asset(
+                        'assets/icon/caret_right.svg',
+                        colorFilter: ColorFilter.mode(
+                          canAddCollaborators
+                              ? VineTheme.tabIndicatorGreen
+                              : VineTheme.outlineMuted,
+                          .srcIn,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              if (collaborators.isNotEmpty)
+                Padding(
+                  padding: const .only(top: 8.0),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: collaborators
+                        .map((pubkey) => _CollaboratorChip(pubkey: pubkey))
+                        .toList(),
+                  ),
                 ),
-              ),
-              const SizedBox(width: 4),
-              VideoMetadataHelpButton(
-                // TODO(l10n): Replace with context.l10n
-                //   when localization is added.
-                onTap: () => _showHelpDialog(context),
-                tooltip: 'How collaborators work',
-              ),
             ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            // TODO(l10n): Replace with context.l10n
-            //   when localization is added.
-            'Tag up to ${VideoEditorNotifier.maxCollaborators} mutual '
-            'follows as co-creators.',
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
-          ),
-
-          const SizedBox(height: 14),
-          if (collaborators.isNotEmpty)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0x6E032017),
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: VineTheme.outlineVariant),
-              ),
-              child: Wrap(
-                spacing: 8,
-                runSpacing: 8,
-                children: collaborators
-                    .map((pubkey) => _CollaboratorChip(pubkey: pubkey))
-                    .toList(),
-              ),
-            ),
-
-          if (collaborators.length < VideoEditorNotifier.maxCollaborators)
-            _AddCollaboratorButton(
-              onPressed: () => _addCollaborator(context, ref),
-              remainingSlots: remainingSlots,
-            ),
-        ],
+        ),
       ),
     );
   }
@@ -116,6 +141,7 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
       // TODO(l10n): Replace with context.l10n
       //   when localization is added.
       title: 'Add collaborator',
+      searchText: 'Mutual followers',
     );
 
     if (profile == null || !context.mounted) return;
@@ -129,15 +155,17 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          behavior: SnackBarBehavior.floating,
           // TODO(l10n): Replace with context.l10n
           //   when localization is added.
-          content: Text(
-            'You need to mutually follow '
-            '${profile.bestDisplayName} to add '
-            'them as a collaborator.',
-            style: VineTheme.bodyMediumFont(),
+          content: DivineSnackbarContainer(
+            label:
+                'You need to mutually follow '
+                '${profile.bestDisplayName} to add '
+                'them as a collaborator.',
           ),
-          backgroundColor: VineTheme.cardBackground,
         ),
       );
       return;
@@ -158,21 +186,20 @@ class _CollaboratorChip extends ConsumerWidget {
     final profileAsync = ref.watch(fetchUserProfileProvider(pubkey));
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const .symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: .circular(16),
         color: const Color(0xFF0B2A20),
-        border: Border.all(color: VineTheme.outlineVariant),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
+        spacing: 8,
         children: [
           UserAvatar(
             imageUrl: profileAsync.value?.picture,
             name: profileAsync.value?.bestDisplayName,
             size: 24,
           ),
-          const SizedBox(width: 6),
           Flexible(
             child: Text(
               profileAsync.value?.bestDisplayName ??
@@ -187,7 +214,6 @@ class _CollaboratorChip extends ConsumerWidget {
               ),
             ),
           ),
-          const SizedBox(width: 6),
           Semantics(
             // TODO(l10n): Replace with context.l10n
             //   when localization is added.
@@ -203,7 +229,7 @@ class _CollaboratorChip extends ConsumerWidget {
                 child: SvgPicture.asset(
                   'assets/icon/close.svg',
                   colorFilter: const ColorFilter.mode(
-                    Color(0xFF818F8B),
+                    VineTheme.onSurfaceMuted,
                     BlendMode.srcIn,
                   ),
                 ),

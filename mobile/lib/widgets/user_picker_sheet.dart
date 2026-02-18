@@ -6,6 +6,8 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
@@ -26,25 +28,27 @@ enum UserPickerFilterMode {
 Future<UserProfile?> showUserPickerSheet(
   BuildContext context, {
   required UserPickerFilterMode filterMode,
-  String? title,
+  required String title,
+  String searchText = 'Search by name',
 }) {
-  return showModalBottomSheet<UserProfile>(
+  return VineBottomSheet.show<UserProfile>(
     context: context,
-    isScrollControlled: true,
-    backgroundColor: VineTheme.backgroundColor,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+    initialChildSize: 1,
+    maxChildSize: 1,
+    minChildSize: 1,
+    title: Column(
+      spacing: 2,
+      children: [
+        Text(
+          title,
+          style: VineTheme.titleMediumFont(fontSize: 16, height: 1.5),
+        ),
+        Text(searchText, style: VineTheme.bodySmallFont()),
+      ],
     ),
-    builder: (_) => DraggableScrollableSheet(
-      expand: false,
-      initialChildSize: 0.7,
-      minChildSize: 0.4,
-      maxChildSize: 0.9,
-      builder: (context, scrollController) => UserPickerSheet(
-        filterMode: filterMode,
-        title: title,
-        scrollController: scrollController,
-      ),
+    buildScrollBody: (scrollController) => UserPickerSheet(
+      filterMode: filterMode,
+      scrollController: scrollController,
     ),
   );
 }
@@ -54,16 +58,12 @@ class UserPickerSheet extends ConsumerStatefulWidget {
   /// Creates a user picker bottom sheet.
   const UserPickerSheet({
     required this.filterMode,
-    this.title,
     this.scrollController,
     super.key,
   });
 
   /// How to filter search results.
   final UserPickerFilterMode filterMode;
-
-  /// Optional title displayed at the top.
-  final String? title;
 
   /// Scroll controller for the draggable sheet.
   final ScrollController? scrollController;
@@ -171,51 +171,58 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
 
   @override
   Widget build(BuildContext context) {
-    final defaultTitle =
-        widget.filterMode == UserPickerFilterMode.mutualFollowsOnly
-        ? 'Add collaborator'
-        : 'Search users';
+    final hintText = _useLocalSearch
+        ? 'Filter by name...'
+        : 'Search by name...';
 
     return Column(
       children: [
-        // Drag handle
-        const SizedBox(height: 8),
-        Container(
-          width: 40,
-          height: 4,
-          decoration: BoxDecoration(
-            color: VineTheme.onSurfaceMuted,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(height: 16),
-
-        // Title
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Text(
-            widget.title ?? defaultTitle,
-            style: VineTheme.bodyFont(
-              color: VineTheme.whiteText,
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              height: 1.33,
+        // Search field
+        Semantics(
+          textField: true,
+          label: hintText,
+          child: Container(
+            margin: .fromLTRB(16, 16, 16, 4),
+            decoration: BoxDecoration(
+              color: VineTheme.surfaceContainer,
+              borderRadius: .circular(20),
+            ),
+            child: TextField(
+              controller: _searchController,
+              textInputAction: .search,
+              onChanged: _onSearchChanged,
+              onSubmitted: _onSearchChanged,
+              cursorColor: VineTheme.vineGreen,
+              style: VineTheme.bodyFont(
+                color: VineTheme.onSurface,
+                fontSize: 16,
+                height: 1.5,
+              ),
+              decoration: InputDecoration(
+                hintText: hintText,
+                hintStyle: VineTheme.bodyFont(
+                  color: VineTheme.onSurfaceMuted,
+                  fontSize: 16,
+                  height: 1.5,
+                ),
+                prefixIcon: const Padding(
+                  padding: .only(left: 16, right: 8),
+                  child: Icon(
+                    Icons.search,
+                    color: VineTheme.onSurfaceMuted,
+                    size: 24,
+                  ),
+                ),
+                border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                disabledBorder: InputBorder.none,
+                filled: false,
+                contentPadding: const .symmetric(horizontal: 16, vertical: 14),
+              ),
             ),
           ),
         ),
-        const SizedBox(height: 12),
-
-        // Search field
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: DivineTextField(
-            controller: _searchController,
-            labelText: _useLocalSearch ? 'Filter by name' : 'Search by name',
-            textInputAction: TextInputAction.search,
-            onChanged: _onSearchChanged,
-          ),
-        ),
-        const SizedBox(height: 8),
 
         // Results list
         Expanded(
@@ -236,17 +243,19 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     }
 
     if (_followProfiles.isEmpty) {
-      return _buildEmptyFollowList();
+      return _EmptyFollowList();
     }
 
     if (_filteredFollowProfiles.isEmpty) {
       return _buildNoResults();
     }
 
-    return ListView.builder(
+    return ListView.separated(
       controller: widget.scrollController,
       itemCount: _filteredFollowProfiles.length,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const .symmetric(vertical: 32),
+      separatorBuilder: (context, index) =>
+          Divider(height: 40, thickness: 1, color: VineTheme.outlineDisabled),
       itemBuilder: (context, index) {
         final profile = _filteredFollowProfiles[index];
         return _UserSearchTile(
@@ -292,21 +301,6 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     );
   }
 
-  Widget _buildEmptyFollowList() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Text(
-          'No followed users found',
-          style: VineTheme.bodyFont(
-            color: VineTheme.onSurfaceMuted,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-
   Widget _buildErrorState() {
     return Center(
       child: Padding(
@@ -338,10 +332,12 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
   }
 
   Widget _buildResultsList(UserSearchState state) {
-    return ListView.builder(
+    return ListView.separated(
       controller: widget.scrollController,
       itemCount: state.results.length,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      padding: const .symmetric(vertical: 32),
+      separatorBuilder: (context, index) =>
+          Divider(height: 40, thickness: 1, color: VineTheme.outlineDisabled),
       itemBuilder: (context, index) {
         final profile = state.results[index];
         return _UserSearchTile(
@@ -362,50 +358,118 @@ class _UserSearchTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(
-          children: [
-            UserAvatar(
-              imageUrl: profile.picture,
-              name: profile.bestDisplayName,
-              size: 44,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    profile.bestDisplayName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: VineTheme.bodyFont(
-                      color: VineTheme.whiteText,
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      height: 1.33,
-                    ),
-                  ),
-                  if (profile.nip05 != null && profile.nip05!.isNotEmpty)
+    return Semantics(
+      button: true,
+      label: 'Select ${profile.bestDisplayName}',
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            spacing: 16,
+            children: [
+              UserAvatar(
+                imageUrl: profile.picture,
+                name: profile.bestDisplayName,
+                size: 40,
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: .start,
+                  children: [
                     Text(
-                      profile.nip05!,
+                      profile.bestDisplayName,
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: VineTheme.bodyFont(
-                        color: VineTheme.onSurfaceMuted,
-                        fontSize: 12,
-                        height: 1.33,
+                      overflow: .ellipsis,
+                      style: VineTheme.titleMediumFont(
+                        fontSize: 16,
+                        color: VineTheme.onSurface,
                       ),
                     ),
-                ],
+                    if (profile.nip05 != null && profile.nip05!.isNotEmpty)
+                      Text(
+                        profile.nip05!,
+                        maxLines: 1,
+                        overflow: .ellipsis,
+                        style: VineTheme.bodyMediumFont(
+                          color: VineTheme.onSurface,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+
+              Container(
+                padding: const .all(8),
+                decoration: ShapeDecoration(
+                  color: VineTheme.primary,
+                  shape: RoundedRectangleBorder(borderRadius: .circular(16)),
+                ),
+                child: SvgPicture.asset(
+                  'assets/icon/plus.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: const .mode(VineTheme.onPrimary, .srcIn),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyFollowList extends StatelessWidget {
+  const _EmptyFollowList({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisAlignment: .center,
+        children: [
+          Text(
+            'Your crew is out there',
+            style: VineTheme.headlineSmallFont(color: VineTheme.onSurface),
+            textAlign: .center,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Follow people you vibe with. '
+            'When they follow back, you can collab.',
+            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
+            textAlign: .center,
+          ),
+          const SizedBox(height: 32),
+          Semantics(
+            button: true,
+            label: 'Go back',
+            child: InkWell(
+              onTap: context.pop,
+              borderRadius: BorderRadius.circular(20),
+              child: Container(
+                padding: const .symmetric(horizontal: 24, vertical: 12),
+                decoration: ShapeDecoration(
+                  color: VineTheme.surfaceContainer,
+                  shape: RoundedRectangleBorder(
+                    side: BorderSide(width: 2, color: VineTheme.outlineMuted),
+                    borderRadius: .circular(20),
+                  ),
+                ),
+                child: Text(
+                  'Go back',
+                  textAlign: TextAlign.center,
+                  style: VineTheme.titleMediumFont(
+                    fontSize: 16,
+                    color: VineTheme.primary,
+                  ),
+                ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

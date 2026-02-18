@@ -99,10 +99,11 @@ class VineTheme {
   static TextStyle titleMediumFont({
     Color color = whiteText,
     double fontSize = 18,
+    double height = 24 / 18,
   }) => GoogleFonts.bricolageGrotesque(
     fontSize: fontSize,
     fontWeight: FontWeight.w800,
-    height: 24 / 18,
+    height: height,
     letterSpacing: 0.15,
     color: color,
   );
