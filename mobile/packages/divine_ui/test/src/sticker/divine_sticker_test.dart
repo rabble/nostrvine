@@ -32,8 +32,7 @@ class _TestAssetBundle extends CachingAssetBundle {
           <String, Object>{'asset': sticker.assetPath},
         ],
     };
-    _manifest =
-        const StandardMessageCodec().encodeMessage(manifest)!;
+    _manifest = const StandardMessageCodec().encodeMessage(manifest)!;
   }
 
   late final ByteData _manifest;
@@ -69,8 +68,7 @@ void main() {
     });
 
     test('all variants have unique file names', () {
-      final fileNames =
-          DivineStickerName.values.map((s) => s.fileName).toSet();
+      final fileNames = DivineStickerName.values.map((s) => s.fileName).toSet();
       expect(fileNames.length, equals(DivineStickerName.values.length));
     });
 
@@ -79,7 +77,8 @@ void main() {
         expect(
           sticker.fileName,
           matches(RegExp(r'^[a-z0-9_]+$')),
-          reason: '${sticker.name} fileName "${sticker.fileName}" '
+          reason:
+              '${sticker.name} fileName "${sticker.fileName}" '
               'is not snake_case',
         );
       }
