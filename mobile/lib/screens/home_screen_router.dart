@@ -45,13 +45,6 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
   int? _lastPrefetchIndex;
   final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
 
-  /// Named listener for proper cleanup in dispose
-  void _onPageScroll() {
-    // Guard against disposed controller
-    if (_controller == null) return;
-    _currentPageNotifier.value = _controller!.page?.round() ?? 0;
-  }
-
   @override
   void initState() {
     super.initState();
@@ -77,6 +70,11 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
     _controller?.dispose();
     _currentPageNotifier.dispose();
     super.dispose();
+  }
+
+  void _onPageScroll() {
+    if (_controller == null) return;
+    _currentPageNotifier.value = _controller!.page?.round() ?? 0;
   }
 
   static int _buildCount = 0;
@@ -259,6 +257,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                   final isActive = index == currentPage;
                   // ClipRRect prevents BoxFit.cover overflow from bleeding into
                   // adjacent pages during scroll, which would cause flicker.
+
                   return ClipRRect(
                     clipBehavior: .hardEdge,
                     child: VideoFeedItem(
