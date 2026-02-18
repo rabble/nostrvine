@@ -35,6 +35,9 @@ class VideoIndexState extends Equatable {
   /// Whether the video is currently loading.
   bool get isLoading => loadState == LoadState.loading;
 
+  /// Whether video loading is disabled (e.g., iOS simulator).
+  bool get isDisabled => loadState == LoadState.disabled;
+
   @override
   List<Object?> get props => [loadState, videoController, player];
 }

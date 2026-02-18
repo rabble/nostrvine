@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 
+import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:media_kit_video/media_kit_video.dart';
@@ -21,6 +23,11 @@ enum LoadState {
 
   /// An error occurred.
   error,
+
+  /// Video loading is disabled (e.g., iOS simulator).
+  ///
+  /// The feed UI still works but native video playback is skipped.
+  disabled,
 }
 
 /// Controller for a video feed with automatic preloading.
@@ -54,6 +61,36 @@ class VideoFeedController extends ChangeNotifier {
        ) {
     _initialize();
   }
+
+  static bool? _isIOSSimulatorCached;
+
+  /// Whether running on the iOS simulator.
+  ///
+  /// media_kit native players crash on iOS simulator due to unstable software
+  /// decoding, so we skip player creation entirely when this is true.
+  /// The feed UI (PageView, thumbnails) still works — only native playback
+  /// is disabled.
+  ///
+  /// Uses `device_info_plus` for reliable native detection via
+  /// `TARGET_OS_SIMULATOR`.
+  static Future<bool> get isIOSSimulator async {
+    if (_isIOSSimulatorCached != null) return _isIOSSimulatorCached!;
+    if (kIsWeb || !Platform.isIOS) {
+      _isIOSSimulatorCached = false;
+      return false;
+    }
+    try {
+      final info = await DeviceInfoPlugin().iosInfo;
+      _isIOSSimulatorCached = !info.isPhysicalDevice;
+    } on Exception {
+      _isIOSSimulatorCached = false;
+    }
+    return _isIOSSimulatorCached!;
+  }
+
+  /// Resets the cached simulator detection for testing.
+  @visibleForTesting
+  static void resetSimulatorDetection() => _isIOSSimulatorCached = null;
 
   /// The shared player pool (singleton by default).
   final PlayerPool pool;
@@ -309,6 +346,14 @@ class VideoFeedController extends ChangeNotifier {
   Future<void> _loadPlayer(int index) async {
     if (_isDisposed || _loadingIndices.contains(index)) return;
     if (index < 0 || index >= _videos.length) return;
+
+    // Skip native player creation on iOS simulator to prevent crashes.
+    // media_kit uses software decoding which is unstable on simulator.
+    if (await isIOSSimulator) {
+      _loadStates[index] = LoadState.disabled;
+      _notifyIndex(index);
+      return;
+    }
 
     _loadingIndices.add(index);
     _loadStates[index] = LoadState.loading;

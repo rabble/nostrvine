@@ -15,11 +15,15 @@ typedef VideoBuilder =
     );
 
 /// Builder for the overlay layer rendered on top of the video.
+///
+/// [videoController] and [player] are null when playback is disabled
+/// (e.g., on iOS simulator). Callers should handle the null case if they
+/// need player access.
 typedef OverlayBuilder =
     Widget Function(
       BuildContext context,
-      VideoController videoController,
-      Player player,
+      VideoController? videoController,
+      Player? player,
     );
 
 /// Builder for the error state.
@@ -100,6 +104,15 @@ class PooledVideoPlayer extends StatelessWidget {
                 () => feedController.onPageChanged(feedController.currentIndex),
               ) ??
               const _DefaultErrorState();
+        } else if (loadState == LoadState.disabled) {
+          // Playback disabled (e.g., iOS simulator) — show thumbnail + overlay
+          content = Stack(
+            fit: StackFit.expand,
+            children: [
+              _DefaultDisabledState(thumbnailUrl: thumbnailUrl),
+              if (overlayBuilder != null) overlayBuilder!(context, null, null),
+            ],
+          );
         } else if (videoController != null &&
             player != null &&
             loadState == LoadState.ready) {
@@ -158,6 +171,32 @@ class _DefaultLoadingState extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Default disabled state — thumbnail only, no spinner.
+///
+/// Shown when video playback is disabled (e.g., iOS simulator).
+class _DefaultDisabledState extends StatelessWidget {
+  const _DefaultDisabledState({this.thumbnailUrl});
+
+  final String? thumbnailUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: Colors.black,
+      child: thumbnailUrl != null
+          ? Image.network(
+              thumbnailUrl!,
+              fit: BoxFit.cover,
+              width: double.infinity,
+              height: double.infinity,
+              errorBuilder: (context, error, stackTrace) =>
+                  const SizedBox.shrink(),
+            )
+          : const SizedBox.shrink(),
     );
   }
 }
