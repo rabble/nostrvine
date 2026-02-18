@@ -88,14 +88,17 @@ class VideoFeedController extends ChangeNotifier {
     return _isIOSSimulatorCached!;
   }
 
+  /// The current simulator detection override, or `null` if not set.
+  @visibleForTesting
+  static bool? get simulatorDetectionOverride => _isIOSSimulatorCached;
+
   /// Resets or overrides the cached simulator detection for testing.
   ///
-  /// Call with no argument to clear the cache (triggers re-detection).
-  /// Pass [override] to force a specific value (e.g., `true` to simulate
-  /// the iOS simulator environment in tests).
+  /// Set to `null` to clear the cache (triggers re-detection).
+  /// Set to `true` to simulate the iOS simulator environment in tests.
   @visibleForTesting
-  static void resetSimulatorDetection({bool? override}) =>
-      _isIOSSimulatorCached = override;
+  static set simulatorDetectionOverride(bool? value) =>
+      _isIOSSimulatorCached = value;
 
   /// The shared player pool (singleton by default).
   final PlayerPool pool;

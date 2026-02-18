@@ -1564,18 +1564,18 @@ void main() {
     group('iOS simulator detection', () {
       tearDown(() {
         // Always reset after simulator tests
-        VideoFeedController.resetSimulatorDetection();
+        VideoFeedController.simulatorDetectionOverride = null;
       });
 
       test('isIOSSimulator returns false on non-iOS platforms', () async {
         // Tests run on macOS/Linux, so Platform.isIOS is false
-        VideoFeedController.resetSimulatorDetection();
+        VideoFeedController.simulatorDetectionOverride = null;
 
         expect(await VideoFeedController.isIOSSimulator, isFalse);
       });
 
       test('isIOSSimulator caches result after first call', () async {
-        VideoFeedController.resetSimulatorDetection();
+        VideoFeedController.simulatorDetectionOverride = null;
 
         final first = await VideoFeedController.isIOSSimulator;
         final second = await VideoFeedController.isIOSSimulator;
@@ -1585,12 +1585,12 @@ void main() {
 
       test('resetSimulatorDetection clears cached value', () async {
         // Force a cached value
-        VideoFeedController.resetSimulatorDetection(override: true);
+        VideoFeedController.simulatorDetectionOverride = true;
 
         expect(await VideoFeedController.isIOSSimulator, isTrue);
 
         // Reset
-        VideoFeedController.resetSimulatorDetection();
+        VideoFeedController.simulatorDetectionOverride = null;
 
         // On non-iOS, should re-detect as false
         expect(await VideoFeedController.isIOSSimulator, isFalse);
@@ -1599,11 +1599,11 @@ void main() {
       test(
         'resetSimulatorDetection with override forces specific value',
         () async {
-          VideoFeedController.resetSimulatorDetection(override: true);
+          VideoFeedController.simulatorDetectionOverride = true;
 
           expect(await VideoFeedController.isIOSSimulator, isTrue);
 
-          VideoFeedController.resetSimulatorDetection(override: false);
+          VideoFeedController.simulatorDetectionOverride = false;
 
           expect(await VideoFeedController.isIOSSimulator, isFalse);
         },
@@ -1613,7 +1613,7 @@ void main() {
         'sets LoadState.disabled when simulator is detected',
         () async {
           // Force simulator detection
-          VideoFeedController.resetSimulatorDetection(override: true);
+          VideoFeedController.simulatorDetectionOverride = true;
 
           final videos = createTestVideos(count: 3);
           final controller = VideoFeedController(videos: videos, pool: pool);
@@ -1632,7 +1632,7 @@ void main() {
       test(
         'does not create any players when simulator is detected',
         () async {
-          VideoFeedController.resetSimulatorDetection(override: true);
+          VideoFeedController.simulatorDetectionOverride = true;
 
           final videos = createTestVideos(count: 3);
           final controller = VideoFeedController(videos: videos, pool: pool);
@@ -1650,7 +1650,7 @@ void main() {
       test(
         'notifies index notifiers with disabled state',
         () async {
-          VideoFeedController.resetSimulatorDetection(override: true);
+          VideoFeedController.simulatorDetectionOverride = true;
 
           final videos = createTestVideos(count: 3);
           final controller = VideoFeedController(videos: videos, pool: pool);
@@ -1670,9 +1670,9 @@ void main() {
       test(
         'feed navigation still works when simulator is detected',
         () async {
-          VideoFeedController.resetSimulatorDetection(override: true);
+          VideoFeedController.simulatorDetectionOverride = true;
 
-          final videos = createTestVideos(count: 5);
+          final videos = createTestVideos();
           final controller = VideoFeedController(videos: videos, pool: pool);
           addTearDown(controller.dispose);
 
