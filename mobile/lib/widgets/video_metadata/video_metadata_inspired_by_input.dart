@@ -13,6 +13,9 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_help_sheet.dart';
+
+import 'video_metadata_help_button.dart';
 
 /// Input widget for setting "Inspired By" attribution.
 ///
@@ -48,15 +51,12 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
                 // TODO(l10n): Replace with context.l10n
                 //   when localization is added.
                 'Inspired by',
-                style: VineTheme.bodyFont(
-                  color: VineTheme.onSurface,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  height: 1.25,
+                style: VineTheme.labelSmallFont(
+                  color: VineTheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(width: 8),
-              _HelpButton(
+              const SizedBox(width: 4),
+              VideoMetadataHelpButton(
                 // TODO(l10n): Replace with context.l10n
                 //   when localization is added.
                 onTap: () => _showHelpDialog(context),
@@ -89,35 +89,19 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
   }
 
   void _showHelpDialog(BuildContext context) {
-    showDialog<void>(
+    VineBottomSheet.show(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: VineTheme.cardBackground,
-          title: Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            'Inspired by',
-            style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
-          ),
-          content: Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
+      expanded: false,
+      scrollable: false,
+      isScrollControlled: true,
+      body: VideoMetadataHelpSheet(
+        title: 'Inspired by',
+        message:
             'Use this to give attribution. Inspired-by credit is different '
             'from collaborators: it acknowledges influence, but does not tag '
             'someone as a co-creator.',
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                // TODO(l10n): Replace with context.l10n when localization is added.
-                'Got it',
-                style: VineTheme.bodyFont(color: VineTheme.primary),
-              ),
-            ),
-          ],
-        );
-      },
+        assetPath: 'assets/stickers/way.png',
+      ),
     );
   }
 
@@ -389,43 +373,6 @@ class _AddInspiredByButton extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HelpButton extends StatelessWidget {
-  const _HelpButton({required this.onTap, required this.tooltip});
-
-  final VoidCallback onTap;
-  final String tooltip;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            color: const Color(0x8C032017),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: VineTheme.outlineVariant),
-          ),
-          child: Center(
-            child: Text(
-              '?',
-              style: VineTheme.bodyFont(
-                color: VineTheme.onSurfaceVariant,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
         ),
       ),
     );

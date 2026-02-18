@@ -67,12 +67,8 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
               // TODO(l10n): Replace with context.l10n when localization is added.
               Text(
                 'Expiration',
-                style: GoogleFonts.inter(
-                  color: const Color(0xBFFFFFFF),
-                  fontSize: 11,
-                  fontWeight: .w600,
-                  height: 1.45,
-                  letterSpacing: 0.50,
+                style: VineTheme.labelSmallFont(
+                  color: VineTheme.onSurfaceVariant,
                 ),
               ),
               // Current selection with chevron icon

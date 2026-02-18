@@ -11,6 +11,8 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_help_button.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_help_sheet.dart';
 
 /// Input widget for adding and managing collaborators on a video.
 ///
@@ -39,15 +41,12 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
                 // TODO(l10n): Replace with context.l10n
                 //   when localization is added.
                 'Collaborators',
-                style: VineTheme.bodyFont(
-                  color: VineTheme.onSurface,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  height: 1.25,
+                style: VineTheme.labelSmallFont(
+                  color: VineTheme.onSurfaceVariant,
                 ),
               ),
-              const SizedBox(width: 8),
-              _HelpButton(
+              const SizedBox(width: 4),
+              VideoMetadataHelpButton(
                 // TODO(l10n): Replace with context.l10n
                 //   when localization is added.
                 onTap: () => _showHelpDialog(context),
@@ -94,35 +93,19 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
   }
 
   void _showHelpDialog(BuildContext context) {
-    showDialog<void>(
+    VineBottomSheet.show(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: VineTheme.cardBackground,
-          title: Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            'Collaborators',
-            style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
-          ),
-          content: Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
+      expanded: false,
+      scrollable: false,
+      isScrollControlled: true,
+      body: VideoMetadataHelpSheet(
+        title: 'Collaborators',
+        message:
             'Collaborators are tagged as co-creators on this post. '
-            'You can only add people you mutually follow, and they appear in '
-            'the post metadata when published.',
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                // TODO(l10n): Replace with context.l10n when localization is added.
-                'Got it',
-                style: VineTheme.bodyFont(color: VineTheme.primary),
-              ),
-            ),
-          ],
-        );
-      },
+            'You can only add people you mutually follow, and they appear '
+            'in the post metadata when published.',
+        assetPath: 'assets/stickers/stars.png',
+      ),
     );
   }
 
@@ -290,43 +273,6 @@ class _AddCollaboratorButton extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HelpButton extends StatelessWidget {
-  const _HelpButton({required this.onTap, required this.tooltip});
-
-  final VoidCallback onTap;
-  final String tooltip;
-
-  @override
-  Widget build(BuildContext context) {
-    return Tooltip(
-      message: tooltip,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Container(
-          width: 22,
-          height: 22,
-          decoration: BoxDecoration(
-            color: const Color(0x8C032017),
-            borderRadius: BorderRadius.circular(999),
-            border: Border.all(color: VineTheme.outlineVariant),
-          ),
-          child: Center(
-            child: Text(
-              '?',
-              style: VineTheme.bodyFont(
-                color: VineTheme.onSurfaceVariant,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
         ),
       ),
     );
