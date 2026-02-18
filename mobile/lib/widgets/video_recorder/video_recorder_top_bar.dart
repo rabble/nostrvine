@@ -1,11 +1,13 @@
 // ABOUTME: Top bar widget for video recorder screen
 // ABOUTME: Contains close button, segment-bar, and forward button
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_chip.dart';
 import 'package:openvine/widgets/video_editor_icon_button.dart';
 
@@ -13,6 +15,15 @@ import 'package:openvine/widgets/video_editor_icon_button.dart';
 class VideoRecorderTopBar extends ConsumerWidget {
   /// Creates a video recorder top bar widget.
   const VideoRecorderTopBar({super.key});
+
+  Future<void> _selectAudio(BuildContext context) async {
+    final result = await VineBottomSheet.show(
+      context: context,
+      body: const AudioSelectionBottomSheet(),
+    );
+
+    print(result); // TODO:
+  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -53,7 +64,11 @@ class VideoRecorderTopBar extends ConsumerWidget {
                         onTap: () => notifier.closeVideoRecorder(context),
                       ),
 
-                      const Flexible(child: VideoEditorAudioChip()),
+                      Flexible(
+                        child: VideoEditorAudioChip(
+                          onTap: () => _selectAudio(context),
+                        ),
+                      ),
 
                       // Next button
                       if (hasClips)
