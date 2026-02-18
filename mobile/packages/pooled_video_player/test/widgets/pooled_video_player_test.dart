@@ -412,6 +412,89 @@ void main() {
       });
     });
 
+    group('disabled state', () {
+      setUp(() {
+        indexNotifiers[0] = ValueNotifier(
+          const VideoIndexState(loadState: LoadState.disabled),
+        );
+      });
+
+      testWidgets('shows thumbnail without spinner when disabled', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildWidget(thumbnailUrl: 'https://example.com/thumb.jpg'),
+        );
+
+        // Should show Image (thumbnail) but no CircularProgressIndicator
+        expect(find.byType(Image), findsOneWidget);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+      });
+
+      testWidgets('shows overlayBuilder with null params when disabled', (
+        tester,
+      ) async {
+        VideoController? receivedController;
+        Player? receivedPlayer;
+
+        await tester.pumpWidget(
+          buildWidget(
+            thumbnailUrl: 'https://example.com/thumb.jpg',
+            overlayBuilder: (context, videoController, player) {
+              receivedController = videoController;
+              receivedPlayer = player;
+              return Container(key: const Key('overlay_widget'));
+            },
+          ),
+        );
+
+        expect(find.byKey(const Key('overlay_widget')), findsOneWidget);
+        expect(receivedController, isNull);
+        expect(receivedPlayer, isNull);
+      });
+
+      testWidgets('shows black background when no thumbnail', (tester) async {
+        await tester.pumpWidget(buildWidget());
+
+        expect(find.byType(ColoredBox), findsWidgets);
+        expect(find.byType(CircularProgressIndicator), findsNothing);
+      });
+
+      testWidgets('does not show video widget when disabled', (tester) async {
+        await tester.pumpWidget(buildWidget());
+
+        expect(find.byKey(const Key('video_widget')), findsNothing);
+      });
+
+      testWidgets('does not add gesture detector when disabled', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildWidget(enableTapToPause: true));
+
+        expect(find.byType(GestureDetector), findsNothing);
+      });
+
+      testWidgets(
+        'thumbnail errorBuilder returns SizedBox.shrink when disabled',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(thumbnailUrl: 'https://invalid-url.com/thumb.jpg'),
+          );
+
+          final image = tester.widget<Image>(find.byType(Image));
+          expect(image.errorBuilder, isNotNull);
+
+          final errorWidget = image.errorBuilder!(
+            tester.element(find.byType(Image)),
+            Exception('Failed to load'),
+            StackTrace.current,
+          );
+
+          expect(errorWidget, isA<SizedBox>());
+        },
+      );
+    });
+
     group('ValueListenableBuilder', () {
       testWidgets('rebuilds when index notifier value changes', (tester) async {
         // Start with loading state
