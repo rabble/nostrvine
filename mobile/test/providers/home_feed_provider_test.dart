@@ -74,6 +74,7 @@ void main() {
       when(mockNostrService.isInitialized).thenReturn(true);
       when(mockNostrService.hasKeys).thenReturn(true);
       when(mockNostrService.publicKey).thenReturn('test_pubkey');
+      when(mockNostrService.configuredRelays).thenReturn(<String>[]);
       when(
         mockNostrService.subscribe(
           any,
@@ -669,6 +670,7 @@ void main() {
       when(mockNostrService.isInitialized).thenReturn(true);
       when(mockNostrService.hasKeys).thenReturn(true);
       when(mockNostrService.publicKey).thenReturn('test_pubkey');
+      when(mockNostrService.configuredRelays).thenReturn(<String>[]);
       when(
         mockNostrService.subscribe(
           any,

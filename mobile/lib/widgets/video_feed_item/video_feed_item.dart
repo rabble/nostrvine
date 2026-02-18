@@ -9,6 +9,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
+import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
@@ -1391,7 +1392,18 @@ class VideoOverlayActions extends ConsumerWidget {
                         profile?.bestDisplayName ??
                         video.authorName ??
                         NostrKeyUtils.truncateNpub(video.pubkey);
-                    final loopCount = video.originalLoops ?? 0;
+                    final archivedLoops = video.originalLoops ?? 0;
+                    final liveViews =
+                        int.tryParse(video.rawTags['views'] ?? '') ?? 0;
+                    final isClassicVine =
+                        video.pubkey == AppConstants.classicVinesPubkey;
+                    final loopCount = isClassicVine
+                        ? archivedLoops + liveViews
+                        : (archivedLoops > 0 ? archivedLoops : liveViews);
+                    final hasLoopMetadata =
+                        video.originalLoops != null ||
+                        video.rawTags.containsKey('loops') ||
+                        video.rawTags.containsKey('views');
 
                     void navigateToProfile() {
                       Log.info(
@@ -1521,8 +1533,7 @@ class VideoOverlayActions extends ConsumerWidget {
                                   ],
                                 ),
                                 Text(
-                                  // Show loops if >= 100, otherwise show post date
-                                  loopCount >= 100
+                                  hasLoopMetadata
                                       ? '${StringUtils.formatCompactNumber(loopCount)} loops'
                                       : video.relativeTime,
                                   style: const TextStyle(

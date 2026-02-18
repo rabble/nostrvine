@@ -8,6 +8,7 @@ import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -72,6 +73,7 @@ enum RouteType {
   profileView, // Other user's profile (fullscreen, no bottom nav)
   curatedList, // Curated video list screen (NIP-51 kind 30005)
   discoverLists, // Discover public lists screen
+  creatorAnalytics, // Creator analytics dashboard (profile owner)
   sound, // Sound detail screen for audio reuse
   secureAccount,
   newVideoFeed,
@@ -227,6 +229,9 @@ RouteContext parseRoute(String path) {
 
     case 'settings':
       return const RouteContext(type: RouteType.settings);
+
+    case 'creator-analytics':
+      return const RouteContext(type: RouteType.creatorAnalytics);
 
     case 'relay-settings':
       return const RouteContext(type: RouteType.relaySettings);
@@ -470,6 +475,9 @@ String buildRoute(RouteContext context) {
 
     case RouteType.discoverLists:
       return DiscoverListsScreen.path;
+
+    case RouteType.creatorAnalytics:
+      return CreatorAnalyticsScreen.path;
 
     case RouteType.sound:
       return SoundDetailScreen.pathForId(context.soundId ?? '');
