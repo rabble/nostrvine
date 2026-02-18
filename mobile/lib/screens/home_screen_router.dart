@@ -45,6 +45,13 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
   int? _lastPrefetchIndex;
   final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
 
+  /// Named listener for proper cleanup in dispose
+  void _onPageScroll() {
+    // Guard against disposed controller
+    if (_controller == null) return;
+    _currentPageNotifier.value = _controller!.page?.round() ?? 0;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +73,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
 
   @override
   void dispose() {
+    _controller?.removeListener(_onPageScroll);
     _controller?.dispose();
     _currentPageNotifier.dispose();
     super.dispose();
@@ -145,9 +153,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
           _currentPageNotifier.value = safeIndex;
           // Listen for page changes to update ValueNotifier
           // (triggers only itemBuilder rebuild)
-          _controller!.addListener(() {
-            _currentPageNotifier.value = _controller!.page?.round() ?? 0;
-          });
+          _controller!.addListener(_onPageScroll);
         }
 
         // Sync controller when URL changes externally (back/forward/deeplink)
@@ -209,6 +215,9 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
             itemCount: videos.length,
             controller: _controller,
             scrollDirection: Axis.vertical,
+            // Pre-builds adjacent pages to prevent black flash during swipe
+            allowImplicitScrolling: true,
+            padEnds: false,
             onPageChanged: (newIndex) {
               // Guard: only navigate if URL doesn't match
               if (newIndex != urlIndex) {
@@ -244,23 +253,29 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
               );
             },
             itemBuilder: (context, index) {
-              // Use ValueListenableBuilder to only rebuild this item when page changes
-              return ValueListenableBuilder<int>(
-                valueListenable: _currentPageNotifier,
-                builder: (context, currentPage, _) {
-                  final isActive = index == currentPage;
+              // ClipRRect prevents BoxFit.cover overflow from bleeding into
+              // adjacent pages during scroll, which would cause flicker.
+              return ClipRRect(
+                clipBehavior: .hardEdge,
+                // Use ValueListenableBuilder to only rebuild this item when page changes
+                child: ValueListenableBuilder<int>(
+                  valueListenable: _currentPageNotifier,
+                  builder: (context, currentPage, _) {
+                    final isActive = index == currentPage;
 
-                  return VideoFeedItem(
-                    key: ValueKey('video-${videos[index].id}'),
-                    video: videos[index],
-                    index: index,
-                    hasBottomNavigation: false,
-                    contextTitle: '', // Home feed has no context title
-                    hideFollowButtonIfFollowing:
-                        true, // Home feed only shows followed users
-                    isActiveOverride: isActive,
-                  );
-                },
+                    return VideoFeedItem(
+                      key: ValueKey('video-${videos[index].id}'),
+                      video: videos[index],
+                      index: index,
+                      hasBottomNavigation: false,
+                      forceShowOverlay: true,
+                      contextTitle: '', // Home feed has no context title
+                      hideFollowButtonIfFollowing:
+                          true, // Home feed only shows followed users
+                      isActiveOverride: isActive,
+                    );
+                  },
+                ),
               );
             },
           ),
