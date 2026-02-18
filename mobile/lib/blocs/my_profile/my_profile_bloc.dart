@@ -41,11 +41,10 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
     final cachedProfile = await _profileRepository.getCachedProfile(
       pubkey: pubkey,
     );
-    final cachedUsername = _extractDivineUsername(cachedProfile?.nip05);
     emit(
       MyProfileLoading(
         profile: cachedProfile,
-        extractedUsername: cachedUsername,
+        extractedUsername: cachedProfile?.divineUsername,
       ),
     );
 
@@ -56,12 +55,11 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
       );
 
       if (freshProfile != null) {
-        final freshUsername = _extractDivineUsername(freshProfile.nip05);
         emit(
           MyProfileLoaded(
             profile: freshProfile,
             isFresh: true,
-            extractedUsername: freshUsername,
+            extractedUsername: freshProfile.divineUsername,
           ),
         );
       } else if (cachedProfile != null) {
@@ -69,7 +67,7 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
           MyProfileLoaded(
             profile: cachedProfile,
             isFresh: false,
-            extractedUsername: cachedUsername,
+            extractedUsername: cachedProfile.divineUsername,
           ),
         );
       } else {
@@ -81,36 +79,12 @@ class MyProfileBloc extends Bloc<MyProfileEvent, MyProfileState> {
           MyProfileLoaded(
             profile: cachedProfile,
             isFresh: false,
-            extractedUsername: cachedUsername,
+            extractedUsername: cachedProfile.divineUsername,
           ),
         );
       } else {
         emit(const MyProfileError(errorType: MyProfileErrorType.networkError));
       }
     }
-  }
-
-  /// Extracts a divine.video username from a NIP-05 identifier.
-  ///
-  /// Supports:
-  /// - New subdomain format: `_@username.divine.video`
-  /// - Legacy formats: `username@divine.video`, `username@openvine.co`
-  ///
-  /// Returns `null` if [nip05] is null or not a recognized identifier.
-  static String? _extractDivineUsername(String? nip05) {
-    if (nip05 == null || nip05.isEmpty) return null;
-
-    // New subdomain format: _@username.divine.video
-    final subdomainMatch = RegExp(
-      r'^_@([a-z0-9\-_.]+)\.divine\.video$',
-    ).firstMatch(nip05);
-    if (subdomainMatch != null) return subdomainMatch.group(1);
-
-    // Legacy format: username@divine.video or username@openvine.co
-    if (nip05.endsWith('@divine.video') || nip05.endsWith('@openvine.co')) {
-      return nip05.split('@')[0];
-    }
-
-    return null;
   }
 }

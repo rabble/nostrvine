@@ -12,12 +12,6 @@ sealed class MyProfileEvent extends Equatable {
 }
 
 /// Event triggered to load the current user's profile for editing.
-///
-/// This initiates the profile loading sequence:
-/// 1. Emit cached profile immediately (if available)
-/// 2. Fetch fresh profile from relay
-/// 3. Extract divine.video username from NIP-05 if present
-/// 4. Emit loaded state with profile and extracted username
 final class MyProfileLoadRequested extends MyProfileEvent {
   const MyProfileLoadRequested();
 }
