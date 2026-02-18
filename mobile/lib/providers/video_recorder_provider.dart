@@ -4,6 +4,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as model show AspectRatio;
@@ -386,6 +387,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
     _baseZoomLevel = state.zoomLevel;
     _isStartingRecording = true;
+    unawaited(HapticFeedback.lightImpact());
 
     // Handle timer countdown
     if (state.timerDuration != .off) {
@@ -409,6 +411,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         return;
       }
       state = state.copyWith(countdownValue: 0);
+      unawaited(HapticFeedback.lightImpact());
     }
 
     if (_isDestroyed) {
@@ -484,6 +487,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
     _isStoppingRecording = true;
+
+    unawaited(HapticFeedback.lightImpact());
 
     // Stop audio playback if active
     await _stopSoundPlayback();

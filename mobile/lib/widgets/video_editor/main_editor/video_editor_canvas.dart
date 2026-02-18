@@ -1,10 +1,12 @@
 // ABOUTME: Canvas widget wrapping ProImageEditor for the video editor.
 // ABOUTME: Handles layer manipulation callbacks and editor configuration.
 
+import 'dart:async';
 import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -25,7 +27,6 @@ import 'package:video_player/video_player.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_thumbnail.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/services/video_editor/video_editor_haptic_service.dart';
 import 'package:pro_image_editor/pro_image_editor.dart';
 
 /// The main canvas area for the video editor.
@@ -422,7 +423,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
             // Trigger haptic feedback when entering the remove area
             if (isOverRemoveArea && !_wasOverRemoveArea) {
-              VideoEditorHapticService.instance.layerOverRemoveArea();
+              unawaited(HapticFeedback.heavyImpact());
             }
             _wasOverRemoveArea = isOverRemoveArea;
 
@@ -467,7 +468,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           onCreateTextLayer: scope.onAddEditTextLayer,
           onEditTextLayer: scope.onAddEditTextLayer,
           helperLines: HelperLinesCallbacks(
-            onLineHit: VideoEditorHapticService.instance.guidelineHit,
+            onLineHit: HapticFeedback.lightImpact,
           ),
         ),
         paintEditorCallbacks: PaintEditorCallbacks(

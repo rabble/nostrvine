@@ -9,9 +9,6 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
-    <!-- Haptic feedback for video editor guideline snapping -->
-    <uses-permission android:name="android.permission.VIBRATE"/>
-
     <!-- Media/Storage Permissions for Profile Picture Selection -->
     <!-- For Android 13+ (API 33+) - Only images for profile pictures -->
     <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
