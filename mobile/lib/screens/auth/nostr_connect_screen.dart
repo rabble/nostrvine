@@ -168,61 +168,11 @@ class _NostrConnectScreenState
   Future<void> _showPasteBunkerDialog() async {
     final controller = TextEditingController();
 
-    final result = await showDialog<String>(
+    final result = await VineBottomSheet.show<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: VineTheme.cardBackground,
-        title: Text(
-          'Paste bunker:// URL',
-          style: VineTheme.headlineSmallFont(),
-        ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: VineTheme.bodyLargeFont(
-            color: VineTheme.onSurface,
-          ),
-          decoration: InputDecoration(
-            hintText: 'bunker://...',
-            hintStyle: VineTheme.bodyLargeFont(
-              color: VineTheme.onSurfaceMuted,
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderSide: const BorderSide(
-                color: VineTheme.outlineMuted,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: const BorderSide(
-                color: VineTheme.vineGreen,
-              ),
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'Cancel',
-              style: VineTheme.bodyMediumFont(
-                color: VineTheme.onSurfaceMuted,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: () =>
-                Navigator.pop(context, controller.text.trim()),
-            child: Text(
-              'Connect',
-              style: VineTheme.bodyMediumFont(
-                color: VineTheme.vineGreen,
-              ),
-            ),
-          ),
-        ],
-      ),
+      scrollable: false,
+      showHeaderDivider: false,
+      body: _PasteBunkerSheetContent(controller: controller),
     );
 
     if (result == null || result.isEmpty || !mounted) return;
@@ -711,6 +661,69 @@ class _CompatibleSignersTable extends StatelessWidget {
                         )
                       : const SizedBox.shrink(),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Bottom sheet content for pasting a bunker:// URL.
+class _PasteBunkerSheetContent extends StatefulWidget {
+  const _PasteBunkerSheetContent({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  State<_PasteBunkerSheetContent> createState() =>
+      _PasteBunkerSheetContentState();
+}
+
+class _PasteBunkerSheetContentState
+    extends State<_PasteBunkerSheetContent> {
+  final _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-focus the text field after the sheet animates in.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        0,
+        16,
+        MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Paste bunker:// URL',
+            style: VineTheme.headlineSmallFont(),
+          ),
+          const SizedBox(height: 24),
+          DivineAuthTextField(
+            label: 'bunker:// URL',
+            controller: widget.controller,
+            focusNode: _focusNode,
+            autocorrect: false,
+            keyboardType: TextInputType.url,
+            onSubmitted: (value) =>
+                Navigator.pop(context, value.trim()),
           ),
         ],
       ),
