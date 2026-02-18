@@ -34,39 +34,38 @@ void main() {
     });
 
     group('initState', () {
-      testWidgets(
-        'clears stale publish error state on screen init',
-        (tester) async {
-          final container = ProviderContainer(
-            overrides: [
-              clipManagerProvider.overrideWith(
-                () => _MockClipManagerNotifier([testClip]),
-              ),
-              videoPublishProvider.overrideWith(
-                () => _MockVideoPublishNotifier(
-                  const VideoPublishProviderState(
-                    publishState: VideoPublishState.error,
-                    errorMessage: 'Previous error',
-                  ),
+      testWidgets('clears stale publish error state on screen init', (
+        tester,
+      ) async {
+        final container = ProviderContainer(
+          overrides: [
+            clipManagerProvider.overrideWith(
+              () => _MockClipManagerNotifier([testClip]),
+            ),
+            videoPublishProvider.overrideWith(
+              () => _MockVideoPublishNotifier(
+                const VideoPublishProviderState(
+                  publishState: VideoPublishState.error,
+                  errorMessage: 'Previous error',
                 ),
               ),
-            ],
-          );
-          addTearDown(container.dispose);
-
-          await tester.pumpWidget(
-            UncontrolledProviderScope(
-              container: container,
-              child: const MaterialApp(home: VideoMetadataScreen()),
             ),
-          );
-          await tester.pumpAndSettle();
+          ],
+        );
+        addTearDown(container.dispose);
 
-          final state = container.read(videoPublishProvider);
-          expect(state.publishState, VideoPublishState.idle);
-          expect(state.errorMessage, isNull);
-        },
-      );
+        await tester.pumpWidget(
+          UncontrolledProviderScope(
+            container: container,
+            child: const MaterialApp(home: VideoMetadataScreen()),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final state = container.read(videoPublishProvider);
+        expect(state.publishState, VideoPublishState.idle);
+        expect(state.errorMessage, isNull);
+      });
     });
 
     group('renders', () {
