@@ -43,6 +43,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
   PageController? _controller;
   int? _lastUrlIndex;
   int? _lastPrefetchIndex;
+  int _currentPageIndex = 0;
 
   @override
   void initState() {
@@ -140,6 +141,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
           final safeIndex = urlIndex.clamp(0, itemCount - 1);
           _controller = PageController(initialPage: safeIndex);
           _lastUrlIndex = safeIndex;
+          _currentPageIndex = safeIndex;
         }
 
         // Sync controller when URL changes externally (back/forward/deeplink)
@@ -202,6 +204,14 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
             controller: _controller,
             scrollDirection: Axis.vertical,
             onPageChanged: (newIndex) {
+              // Update current page state to trigger rebuild with correct
+              // isActive values for all visible VideoFeedItems.
+              // Without this, itemBuilder never re-runs after swipe because
+              // nothing watched by this widget changes on scroll.
+              setState(() {
+                _currentPageIndex = newIndex;
+              });
+
               // Guard: only navigate if URL doesn't match
               if (newIndex != urlIndex) {
                 context.go(HomeScreenRouter.pathForIndex(newIndex));
@@ -236,11 +246,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
               );
             },
             itemBuilder: (context, index) {
-              // Use PageController as source of truth for active video,
-              // not URL index. This prevents race conditions when videos
-              // reorder and URL update is pending.
-              final currentPage = _controller?.page?.round() ?? urlIndex;
-              final isActive = index == currentPage;
+              final isActive = index == _currentPageIndex;
 
               return VideoFeedItem(
                 key: ValueKey('video-${videos[index].id}'),
