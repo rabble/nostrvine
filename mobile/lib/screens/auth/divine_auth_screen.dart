@@ -287,77 +287,58 @@ class _DivineAuthScreenState
     final resetEmailController = TextEditingController(
       text: _emailController.text,
     );
-    final dialogFormKey = GlobalKey<FormState>();
+    final sheetFormKey = GlobalKey<FormState>();
 
-    showDialog(
+    VineBottomSheet.show<void>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        backgroundColor: VineTheme.surfaceContainer,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
-        title: Text(
-          'Reset Password',
-          style: VineTheme.titleLargeFont(
-            color: VineTheme.onSurface,
-          ),
-        ),
-        content: Form(
-          key: dialogFormKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  'Enter your email address and we\'ll '
-                  'send you a link to reset your password.',
-                  style: VineTheme.bodyMediumFont(
-                    color: VineTheme.onSurfaceMuted,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                DivineAuthTextField(
-                  label: 'Email Address',
-                  controller: resetEmailController,
-                  keyboardType: TextInputType.emailAddress,
-                  autocorrect: false,
-                  validator: Validators.validateEmail,
-                ),
-              ],
-            ),
-          ),
-        ),
-        actionsPadding:
-            const EdgeInsets.fromLTRB(24, 0, 24, 16),
-        actions: [
-          Row(
+      scrollable: false,
+      showHeaderDivider: false,
+      body: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
+        child: Form(
+          key: sheetFormKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              Expanded(
-                child: DivineButton(
-                  label: 'Cancel',
-                  type: DivineButtonType.secondary,
-                  onPressed: dialogContext.pop,
-                ),
+              Text(
+                'Reset password',
+                style: VineTheme.headlineSmallFont(),
+                textAlign: TextAlign.center,
               ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: DivineButton(
-                  label: 'Send Link',
-                  onPressed: () async {
-                    if (dialogFormKey.currentState!
-                        .validate()) {
-                      final email = resetEmailController
-                          .text
-                          .trim();
-                      dialogContext.pop();
-                      await _performPasswordReset(email);
-                    }
-                  },
+              const SizedBox(height: 16),
+              Text(
+                "Enter your email address and we'll send "
+                'you a link to reset your password.',
+                style: VineTheme.bodyLargeFont(
+                  color: VineTheme.onSurfaceVariant,
                 ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 32),
+              DivineAuthTextField(
+                label: 'Email',
+                controller: resetEmailController,
+                keyboardType: TextInputType.emailAddress,
+                autocorrect: false,
+                validator: Validators.validateEmail,
+              ),
+              const SizedBox(height: 32),
+              DivineButton(
+                label: 'Send reset link',
+                expanded: true,
+                onPressed: () async {
+                  if (sheetFormKey.currentState!
+                      .validate()) {
+                    final email =
+                        resetEmailController.text.trim();
+                    Navigator.of(context).pop();
+                    await _performPasswordReset(email);
+                  }
+                },
               ),
             ],
           ),
-        ],
+        ),
       ),
     );
   }
