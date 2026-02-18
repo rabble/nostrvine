@@ -59,6 +59,8 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
           ref: ref,
           currentIndex: 0,
           videos: state.videos,
+          preInitBefore: 0,
+          preInitAfter: 1,
         );
       });
     });
@@ -203,8 +205,6 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
             itemCount: videos.length,
             controller: _controller,
             scrollDirection: Axis.vertical,
-            // Pre-builds adjacent pages to prevent black flash during swipe
-            allowImplicitScrolling: true,
             onPageChanged: (newIndex) {
               // Update current page state to trigger rebuild with correct
               // isActive values for all visible VideoFeedItems.
@@ -214,7 +214,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                 _currentPageIndex = newIndex;
               });
 
-              // Guard: only navigate if URL doesn't match
+              // Update URL for back navigation and deep linking
               if (newIndex != urlIndex) {
                 context.go(HomeScreenRouter.pathForIndex(newIndex));
               }
@@ -227,18 +227,26 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
               // Prefetch videos around current index
               checkForPrefetch(currentIndex: newIndex, videos: videos);
 
-              // Pre-initialize controllers for adjacent videos
+              // Pre-initialize controller for next video only (minimize
+              // concurrent decoders to avoid OOM on memory-constrained
+              // Android devices)
               preInitializeControllers(
                 ref: ref,
                 currentIndex: newIndex,
                 videos: videos,
+                preInitBefore: 0,
+                preInitAfter: 1,
               );
 
-              // Dispose controllers outside the keep range to free memory
+              // Dispose controllers outside a tight range to free memory.
+              // Android devices have limited heap (~192MB) and each
+              // ExoPlayer instance consumes significant native memory.
               disposeControllersOutsideRange(
                 ref: ref,
                 currentIndex: newIndex,
                 videos: videos,
+                keepBefore: 2,
+                keepAfter: 3,
               );
 
               Log.debug(
