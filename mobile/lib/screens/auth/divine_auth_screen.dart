@@ -235,28 +235,10 @@ class _DivineAuthScreenState
         onTap: () => FocusScope.of(context).unfocus(),
         behavior: HitTestBehavior.opaque,
         child: SafeArea(
-          child: Column(
-          children: [
-            // Back button row
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: DivineIconButton(
-                  icon: DivineIconName.caretLeft,
-                  type: DivineIconButtonType.secondary,
-                  size: DivineIconButtonSize.small,
-                  onPressed: () => context.pop(),
-                ),
-              ),
-            ),
-
-            // Scrollable form content
-            Expanded(
-              child: AnimatedSwitcher(
+          child: Stack(
+            children: [
+              // Scrollable form content fills entire safe area
+              AnimatedSwitcher(
                 duration: const Duration(
                   milliseconds: 250,
                 ),
@@ -279,10 +261,23 @@ class _DivineAuthScreenState
                   onSwitchMode: _switchMode,
                 ),
               ),
-            ),
-          ],
+
+              // Back button overlays top-left
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: DivineIconButton(
+                  icon: DivineIconName.caretLeft,
+                  type: DivineIconButtonType.secondary,
+                  size: DivineIconButtonSize.small,
+                  onPressed: () => context.pop(),
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
@@ -621,6 +616,7 @@ class _AuthFormContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
+      physics: const ClampingScrollPhysics(),
       slivers: [
         SliverFillRemaining(
           hasScrollBody: false,
@@ -634,6 +630,9 @@ class _AuthFormContent extends StatelessWidget {
                 crossAxisAlignment:
                     CrossAxisAlignment.stretch,
                 children: [
+                  // Space for back button overlay
+                  const SizedBox(height: 72),
+
                   // Title
                   Padding(
                     padding: const EdgeInsets.only(

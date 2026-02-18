@@ -62,31 +62,29 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
         onTap: () => FocusScope.of(context).unfocus(),
         behavior: HitTestBehavior.opaque,
         child: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
-              // Back button
-              Align(
-                alignment: Alignment.topLeft,
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: DivineIconButton(
-                    icon: DivineIconName.caretLeft,
-                    type: DivineIconButtonType.secondary,
-                    size: DivineIconButtonSize.small,
-                    onPressed: () => context.pop(),
-                  ),
-                ),
+              // Scrollable content fills entire safe area
+              _KeyImportFormContent(
+                formKey: _formKey,
+                keyController: _keyController,
+                isImporting: _isImporting,
+                onImport: _importKey,
+                onPaste: _pasteFromClipboard,
+                onSignUp: _navigateToSignUp,
               ),
 
-              // Scrollable content
-              Expanded(
-                child: _KeyImportFormContent(
-                  formKey: _formKey,
-                  keyController: _keyController,
-                  isImporting: _isImporting,
-                  onImport: _importKey,
-                  onPaste: _pasteFromClipboard,
-                  onSignUp: _navigateToSignUp,
+              // Back button overlays top-left
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
+                child: DivineIconButton(
+                  icon: DivineIconName.caretLeft,
+                  type: DivineIconButtonType.secondary,
+                  size: DivineIconButtonSize.small,
+                  onPressed: () => context.pop(),
                 ),
               ),
             ],
@@ -210,6 +208,7 @@ class _KeyImportFormContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CustomScrollView(
+      physics: const ClampingScrollPhysics(),
       slivers: [
         SliverFillRemaining(
           hasScrollBody: false,
@@ -220,7 +219,8 @@ class _KeyImportFormContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const SizedBox(height: 32),
+                  // Space for back button overlay
+                  const SizedBox(height: 72),
 
                   // Title
                   Text(
