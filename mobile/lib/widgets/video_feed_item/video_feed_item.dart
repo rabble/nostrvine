@@ -1311,18 +1311,10 @@ class VideoOverlayActions extends ConsumerWidget {
     // so the badge just needs the same base offset - no extra list header padding
     final hasListHeader =
         !isFullscreen && contextTitle != null && contextTitle!.isNotEmpty;
-    final topOffset = hasListHeader ? 80.0 : 16.0;
+    final topOffset = hasListHeader ? 80.0 : 8.0;
 
     // Calculate bottom offset based on navigation state
-    final bottomOffset = hasBottomNavigation
-        ? 14.0
-        : (isFullscreen ? 48.0 : 14.0);
-
-    // Read system view padding directly from the platform view, not from
-    // MediaQuery which may have been modified by SafeArea or other widgets.
-    final systemViewPadding = MediaQueryData.fromView(
-      View.of(context),
-    ).viewPadding;
+    final bottomOffset = 14.0;
 
     return Stack(
       children: [
@@ -1355,7 +1347,7 @@ class VideoOverlayActions extends ConsumerWidget {
         // ProofMode and Vine badges in upper right corner (tappable)
         if (!isPreviewMode)
           Positioned(
-            top: systemViewPadding.top + topOffset,
+            top: MediaQuery.viewPaddingOf(context).top + topOffset,
             right: 16,
             child: GestureDetector(
               onTap: () {
