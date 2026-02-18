@@ -115,4 +115,29 @@ abstract class CameraService {
 
   /// Error message if initialization failed, null if successful.
   String? get initializationError;
+
+  /// Enables or disables remote record control via volume buttons.
+  ///
+  /// When enabled, volume button presses will trigger the
+  /// [onRemoteRecordTrigger] callback instead of changing the system volume.
+  /// This allows users to start/stop recording using physical volume buttons
+  /// or Bluetooth accessories like clickers or earbuds.
+  ///
+  /// Returns `true` if successfully enabled/disabled.
+  Future<bool> setRemoteRecordControlEnabled({required bool enabled});
+
+  /// Enables or disables volume key interception.
+  ///
+  /// When disabled, volume buttons will change system volume instead of
+  /// triggering recording. Bluetooth media buttons are NOT affected.
+  /// Use this when a sound is selected and the user needs to adjust volume.
+  ///
+  /// Returns `true` if successfully set.
+  Future<bool> setVolumeKeysEnabled({required bool enabled});
+
+  /// Callback for when a remote record trigger is detected.
+  ///
+  /// This is called when the user presses a volume button or Bluetooth
+  /// remote while remote record control is enabled.
+  set onRemoteRecordTrigger(void Function()? callback);
 }

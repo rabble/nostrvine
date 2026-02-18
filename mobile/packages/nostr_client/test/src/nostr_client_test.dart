@@ -1210,6 +1210,92 @@ void main() {
       });
     });
 
+    group('sendProfile', () {
+      test('creates Kind 0 event and routes through publishEvent', () async {
+        final profileContent = {'display_name': 'Alice', 'about': 'Hello'};
+        final sentEvent = _createTestEvent(kind: EventKind.metadata);
+
+        when(
+          () => mockNostr.sendEvent(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => sentEvent);
+
+        final result = await client.sendProfile(
+          profileContent: profileContent,
+        );
+
+        expect(result, equals(sentEvent));
+        verify(
+          () => mockNostr.sendEvent(
+            any(
+              that: isA<Event>()
+                  .having((e) => e.kind, 'kind', EventKind.metadata)
+                  .having(
+                    (e) => e.content,
+                    'content',
+                    jsonEncode(profileContent),
+                  ),
+            ),
+          ),
+        ).called(1);
+      });
+
+      test('returns null when no relays connected and retry fails', () async {
+        when(() => mockRelayManager.connectedRelays).thenReturn([]);
+        when(
+          mockRelayManager.retryDisconnectedRelays,
+        ).thenAnswer((_) async {});
+
+        final result = await client.sendProfile(
+          profileContent: {'display_name': 'Alice'},
+        );
+
+        expect(result, isNull);
+        verify(mockRelayManager.retryDisconnectedRelays).called(1);
+        verifyNever(
+          () => mockNostr.sendEvent(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        );
+      });
+
+      test('retries disconnected relays and succeeds', () async {
+        final sentEvent = _createTestEvent(kind: EventKind.metadata);
+        final connectedRelays = ['wss://relay1.example.com'];
+
+        when(() => mockRelayManager.connectedRelays).thenReturn([]);
+        when(mockRelayManager.retryDisconnectedRelays).thenAnswer((_) async {
+          when(
+            () => mockRelayManager.connectedRelays,
+          ).thenReturn(connectedRelays);
+        });
+        when(
+          () => mockNostr.sendEvent(
+            any(),
+            tempRelays: any(named: 'tempRelays'),
+            targetRelays: any(named: 'targetRelays'),
+          ),
+        ).thenAnswer((_) async => sentEvent);
+
+        final result = await client.sendProfile(
+          profileContent: {'display_name': 'Alice'},
+        );
+
+        expect(result, equals(sentEvent));
+        verify(mockRelayManager.retryDisconnectedRelays).called(1);
+        verify(
+          () => mockNostr.sendEvent(
+            any(),
+          ),
+        ).called(1);
+      });
+    });
+
     group('sendRepost', () {
       test('sends repost successfully', () async {
         const eventId = 'event-to-repost';

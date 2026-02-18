@@ -5,6 +5,7 @@ import 'package:divine_camera/divine_camera_platform_interface.dart';
 import 'package:divine_camera/src/models/camera_lens.dart';
 import 'package:divine_camera/src/models/camera_state.dart';
 import 'package:divine_camera/src/models/flash_mode.dart';
+import 'package:divine_camera/src/models/remote_record_trigger.dart';
 import 'package:divine_camera/src/models/video_quality.dart';
 import 'package:divine_camera/src/models/video_recording_result.dart';
 import 'package:flutter/services.dart';
@@ -35,6 +36,20 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
     _onRecordingAutoStopped = callback;
   }
 
+  /// Callback for when a remote record trigger is detected.
+  void Function(RemoteRecordTrigger trigger)? _onRemoteRecordTrigger;
+
+  @override
+  void Function(RemoteRecordTrigger trigger)? get onRemoteRecordTrigger =>
+      _onRemoteRecordTrigger;
+
+  @override
+  set onRemoteRecordTrigger(
+    void Function(RemoteRecordTrigger trigger)? callback,
+  ) {
+    _onRemoteRecordTrigger = callback;
+  }
+
   /// Handles method calls from native platform.
   Future<dynamic> _handleMethodCall(MethodCall call) async {
     switch (call.method) {
@@ -43,6 +58,13 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
         if (args != null && onRecordingAutoStopped != null) {
           final result = VideoRecordingResult.fromMap(args);
           onRecordingAutoStopped!(result);
+        }
+        return null;
+      case 'onRemoteRecordTrigger':
+        final triggerType = call.arguments as String?;
+        if (triggerType != null && _onRemoteRecordTrigger != null) {
+          final trigger = RemoteRecordTrigger.fromNativeString(triggerType);
+          _onRemoteRecordTrigger!(trigger);
         }
         return null;
       default:
@@ -206,5 +228,23 @@ class MethodChannelDivineCamera extends DivineCameraPlatform {
   @override
   Widget buildPreview(int textureId) {
     return Texture(textureId: textureId);
+  }
+
+  @override
+  Future<bool> setRemoteRecordControlEnabled({required bool enabled}) async {
+    final result = await methodChannel.invokeMethod<bool>(
+      'setRemoteRecordControlEnabled',
+      {'enabled': enabled},
+    );
+    return result ?? false;
+  }
+
+  @override
+  Future<bool> setVolumeKeysEnabled({required bool enabled}) async {
+    final result = await methodChannel.invokeMethod<bool>(
+      'setVolumeKeysEnabled',
+      {'enabled': enabled},
+    );
+    return result ?? false;
   }
 }

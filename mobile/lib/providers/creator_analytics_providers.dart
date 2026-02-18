@@ -1,0 +1,73 @@
+// ABOUTME: Providers for creator analytics repository and feature toggles.
+// ABOUTME: Allows swapping between Funnelcake and fixture data sources.
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/legacy.dart';
+import 'package:models/models.dart';
+import 'package:openvine/features/creator_analytics/creator_analytics_repository.dart';
+import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/services/analytics_api_service.dart';
+
+/// Enables fixture analytics payload for local UI development.
+final useFixtureCreatorAnalyticsProvider = StateProvider<bool>((_) => false);
+
+/// Repository used by creator analytics screens.
+final creatorAnalyticsRepositoryProvider = Provider<CreatorAnalyticsRepository>(
+  (ref) {
+    final useFixture = ref.watch(useFixtureCreatorAnalyticsProvider);
+    if (useFixture) {
+      return _FixtureCreatorAnalyticsRepository();
+    }
+
+    final service = ref.watch(analyticsApiServiceProvider);
+    return FunnelcakeCreatorAnalyticsRepository(
+      AnalyticsApiCreatorAdapter(service),
+    );
+  },
+);
+
+class _FixtureCreatorAnalyticsRepository implements CreatorAnalyticsRepository {
+  @override
+  Future<CreatorAnalyticsSnapshot> fetchCreatorAnalytics(String pubkey) async {
+    final now = DateTime.now().millisecondsSinceEpoch ~/ 1000;
+    final videos = List.generate(6, (index) {
+      final views = 1200 - (index * 120);
+      return VideoEvent(
+        id: 'fixture-$index',
+        pubkey: pubkey,
+        createdAt: now - (index * 86400),
+        content: 'Fixture content $index',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(
+          (now - (index * 86400)) * 1000,
+        ),
+        title: 'Fixture Video $index',
+        rawTags: {'views': '$views', 'loops': '$views'},
+        originalLikes: 40 - index,
+        originalComments: 12 - (index ~/ 2),
+        originalReposts: 4 - (index ~/ 3),
+        originalLoops: views,
+      );
+    });
+
+    return CreatorAnalyticsSnapshot(
+      videos: videos,
+      socialCounts: const SocialCounts(
+        pubkey: 'fixture',
+        followerCount: 321,
+        followingCount: 87,
+      ),
+      diagnostics: CreatorAnalyticsDiagnostics(
+        totalVideos: videos.length,
+        videosWithAnyViews: videos.length,
+        videosMissingViews: 0,
+        videosHydratedByBulkStats: videos.length,
+        videosHydratedByViewsEndpoint: 0,
+        sourcesUsed: const {
+          AnalyticsDataSource.authorVideos,
+          AnalyticsDataSource.bulkVideoStats,
+        },
+        fetchedAt: DateTime.now(),
+      ),
+    );
+  }
+}

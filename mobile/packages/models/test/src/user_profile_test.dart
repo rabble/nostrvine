@@ -693,6 +693,79 @@ void main() {
       });
     });
 
+    group('divineUsername', () {
+      test('extracts username from subdomain format _@user.divine.video', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: '_@alice.divine.video',
+        );
+
+        expect(profile.divineUsername, equals('alice'));
+      });
+
+      test('extracts username from legacy format user@divine.video', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'bob@divine.video',
+        );
+
+        expect(profile.divineUsername, equals('bob'));
+      });
+
+      test('extracts username from legacy format user@openvine.co', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'charlie@openvine.co',
+        );
+
+        expect(profile.divineUsername, equals('charlie'));
+      });
+
+      test('returns null for non-divine NIP-05', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: 'user@example.com',
+        );
+
+        expect(profile.divineUsername, isNull);
+      });
+
+      test('returns null when nip05 is null', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+        );
+
+        expect(profile.divineUsername, isNull);
+      });
+
+      test('returns null when nip05 is empty', () {
+        final profile = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+          nip05: '',
+        );
+
+        expect(profile.divineUsername, isNull);
+      });
+    });
+
     group('copyWith', () {
       test('creates copy with updated fields', () {
         final original = UserProfile(

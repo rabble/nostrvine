@@ -277,7 +277,7 @@ void main() {
         expect(event.originalReposts, 2);
       });
 
-      test('handles empty strings as null in VideoEvent', () {
+      test('uses event id as fallback vineId when d tag is empty', () {
         final stats = VideoStats(
           id: 'event123',
           pubkey: 'pubkey456',
@@ -298,7 +298,7 @@ void main() {
         expect(event.title, isNull);
         expect(event.videoUrl, isNull);
         expect(event.thumbnailUrl, isNull);
-        expect(event.vineId, isNull);
+        expect(event.vineId, 'event123');
       });
 
       test('includes description in VideoEvent content field', () {
@@ -633,6 +633,40 @@ void main() {
 
       expect(videos.length, 1);
       expect(videos.first.title, 'Has Video');
+    });
+
+    test('getBulkVideoStats parses map-shaped stats payload', () async {
+      final mockResponse = jsonEncode({
+        'stats': {
+          'event-a': {
+            'reactions': 11,
+            'comments': 2,
+            'reposts': 3,
+            'loop_count': '77',
+            'views': 120,
+          },
+        },
+      });
+
+      final mockClient = MockClient((request) async {
+        expect(request.url.path, '/api/videos/stats/bulk');
+        return http.Response(mockResponse, 200);
+      });
+
+      final service = AnalyticsApiService(
+        baseUrl: 'https://funnelcake.test',
+        httpClient: mockClient,
+      );
+
+      final stats = await service.getBulkVideoStats(['event-a']);
+
+      expect(stats.length, 1);
+      expect(stats.containsKey('event-a'), isTrue);
+      expect(stats['event-a']!.reactions, 11);
+      expect(stats['event-a']!.comments, 2);
+      expect(stats['event-a']!.reposts, 3);
+      expect(stats['event-a']!.loops, 77);
+      expect(stats['event-a']!.views, 120);
     });
   });
 }

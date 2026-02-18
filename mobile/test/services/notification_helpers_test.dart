@@ -159,6 +159,155 @@ void main() {
     });
   });
 
+  group('extractAddressableId', () {
+    test(
+      'returns uppercase "A" tag value for NIP-22 comments on addressable events',
+      () {
+        final event = Event(
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+          1111,
+          [
+            ['A', '34236:author_pubkey:my-video-d-tag', ''],
+            ['K', '34236'],
+            ['a', '34236:author_pubkey:my-video-d-tag', ''],
+            ['k', '34236'],
+          ],
+          'Great video!',
+        );
+
+        final result = extractAddressableId(event);
+
+        expect(result, '34236:author_pubkey:my-video-d-tag');
+      },
+    );
+
+    test('prefers uppercase "A" over lowercase "a" tag', () {
+      final event = Event(
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        1111,
+        [
+          ['a', '34236:pubkey:lowercase-dtag', ''],
+          ['A', '34236:pubkey:uppercase-dtag', ''],
+        ],
+        'Comment',
+      );
+
+      final result = extractAddressableId(event);
+
+      expect(result, '34236:pubkey:uppercase-dtag');
+    });
+
+    test('returns lowercase "a" tag when no uppercase "A" exists', () {
+      final event = Event(
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        1111,
+        [
+          ['a', '34236:pubkey:some-dtag', ''],
+          ['k', '34236'],
+        ],
+        'Comment',
+      );
+
+      final result = extractAddressableId(event);
+
+      expect(result, '34236:pubkey:some-dtag');
+    });
+
+    test('returns null when no A or a tags exist', () {
+      final event = Event(
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        7,
+        [
+          ['e', 'video123'],
+          ['p', 'user456'],
+        ],
+        '+',
+      );
+
+      final result = extractAddressableId(event);
+
+      expect(result, isNull);
+    });
+
+    test('returns null when "A" tag has no value', () {
+      final event = Event(
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        1111,
+        [
+          ['A'],
+        ],
+        'Comment',
+      );
+
+      final result = extractAddressableId(event);
+
+      expect(result, isNull);
+    });
+
+    test('returns null when event has empty tags', () {
+      final event = Event(
+        'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        1111,
+        [],
+        'Comment',
+      );
+
+      final result = extractAddressableId(event);
+
+      expect(result, isNull);
+    });
+  });
+
+  group('parseAddressableId', () {
+    test('parses valid addressable ID into components', () {
+      final result = parseAddressableId('34236:abc123pubkey:my-video-id');
+
+      expect(result, isNotNull);
+      expect(result!.kind, equals(34236));
+      expect(result.pubkey, equals('abc123pubkey'));
+      expect(result.dTag, equals('my-video-id'));
+    });
+
+    test('handles d-tag containing colons', () {
+      final result = parseAddressableId('34236:pubkey123:d-tag:with:colons');
+
+      expect(result, isNotNull);
+      expect(result!.kind, equals(34236));
+      expect(result.pubkey, equals('pubkey123'));
+      expect(result.dTag, equals('d-tag:with:colons'));
+    });
+
+    test('returns null for invalid format with less than 3 parts', () {
+      expect(parseAddressableId('34236:pubkey'), isNull);
+      expect(parseAddressableId('34236'), isNull);
+      expect(parseAddressableId(''), isNull);
+    });
+
+    test('returns null when kind is not a number', () {
+      final result = parseAddressableId('notanumber:pubkey:dtag');
+
+      expect(result, isNull);
+    });
+
+    test('parses kind 30023 (long-form content) correctly', () {
+      final result = parseAddressableId('30023:pubkey:blog-post-slug');
+
+      expect(result, isNotNull);
+      expect(result!.kind, equals(30023));
+      expect(result.pubkey, equals('pubkey'));
+      expect(result.dTag, equals('blog-post-slug'));
+    });
+
+    test('handles empty d-tag', () {
+      final result = parseAddressableId('34236:pubkey:');
+
+      expect(result, isNotNull);
+      expect(result!.kind, equals(34236));
+      expect(result.pubkey, equals('pubkey'));
+      expect(result.dTag, isEmpty);
+    });
+  });
+
   group('resolveActorName', () {
     test('returns name when available', () {
       // Arrange

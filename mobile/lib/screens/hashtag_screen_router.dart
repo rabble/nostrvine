@@ -118,6 +118,7 @@ class _HashtagScreenRouterState extends ConsumerState<HashtagScreenRouter>
           videoList: videos,
           contextTitle: '#$hashtag',
           startingIndex: safeIndex,
+          useLocalActiveState: true,
           // Add pagination callback
           onLoadMore: () => ref.read(hashtagFeedProvider.notifier).loadMore(),
           // Add navigation callback to keep hashtag context when swiping

@@ -5,6 +5,7 @@ import 'package:divine_camera/divine_camera_method_channel.dart';
 import 'package:divine_camera/src/models/camera_lens.dart';
 import 'package:divine_camera/src/models/camera_state.dart';
 import 'package:divine_camera/src/models/flash_mode.dart';
+import 'package:divine_camera/src/models/remote_record_trigger.dart';
 import 'package:divine_camera/src/models/video_quality.dart';
 import 'package:divine_camera/src/models/video_recording_result.dart';
 import 'package:flutter/widgets.dart';
@@ -141,6 +142,44 @@ abstract class DivineCameraPlatform extends PlatformInterface {
   ) {
     throw UnimplementedError(
       'onRecordingAutoStopped has not been implemented.',
+    );
+  }
+
+  /// Callback for when a remote record trigger is detected (volume button
+  /// or Bluetooth remote).
+  void Function(RemoteRecordTrigger trigger)? get onRemoteRecordTrigger {
+    throw UnimplementedError(
+      'onRemoteRecordTrigger has not been implemented.',
+    );
+  }
+
+  /// Sets the callback for when a remote record trigger is detected.
+  set onRemoteRecordTrigger(
+    void Function(RemoteRecordTrigger trigger)? callback,
+  ) {
+    throw UnimplementedError(
+      'onRemoteRecordTrigger has not been implemented.',
+    );
+  }
+
+  /// Enables or disables remote record control via volume buttons.
+  ///
+  /// When enabled, volume button presses will trigger the
+  /// [onRemoteRecordTrigger] callback instead of changing the system volume.
+  Future<bool> setRemoteRecordControlEnabled({required bool enabled}) {
+    throw UnimplementedError(
+      'setRemoteRecordControlEnabled() has not been implemented.',
+    );
+  }
+
+  /// Enables or disables volume key interception.
+  ///
+  /// When disabled, volume buttons will change system volume instead of
+  /// triggering recording. Bluetooth media buttons are NOT affected.
+  /// Use this when a sound is selected and the user needs to adjust volume.
+  Future<bool> setVolumeKeysEnabled({required bool enabled}) {
+    throw UnimplementedError(
+      'setVolumeKeysEnabled() has not been implemented.',
     );
   }
 }

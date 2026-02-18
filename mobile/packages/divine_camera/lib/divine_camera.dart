@@ -5,6 +5,7 @@ import 'package:divine_camera/divine_camera_platform_interface.dart';
 import 'package:divine_camera/src/models/camera_lens.dart';
 import 'package:divine_camera/src/models/camera_state.dart';
 import 'package:divine_camera/src/models/flash_mode.dart';
+import 'package:divine_camera/src/models/remote_record_trigger.dart';
 import 'package:divine_camera/src/models/video_quality.dart';
 import 'package:divine_camera/src/models/video_recording_result.dart';
 import 'package:flutter/widgets.dart';
@@ -14,6 +15,7 @@ export 'src/models/camera_lens.dart';
 export 'src/models/camera_lens_metadata.dart';
 export 'src/models/camera_state.dart';
 export 'src/models/flash_mode.dart';
+export 'src/models/remote_record_trigger.dart';
 export 'src/models/video_quality.dart';
 export 'src/models/video_recording_result.dart';
 // Export widgets
@@ -38,6 +40,18 @@ class DivineCamera {
   /// Callback invoked when recording auto-stops due to max duration.
   void Function(VideoRecordingResult result)? onRecordingAutoStopped;
 
+  /// Callback invoked when a remote record trigger is detected.
+  ///
+  /// This includes volume button presses or Bluetooth remote triggers
+  /// when remote record control is enabled.
+  void Function(RemoteRecordTrigger trigger)? onRemoteRecordTrigger;
+
+  /// Whether remote record control is currently enabled.
+  bool _remoteRecordControlEnabled = false;
+
+  /// Whether remote record control is currently enabled.
+  bool get remoteRecordControlEnabled => _remoteRecordControlEnabled;
+
   /// The current camera state.
   CameraState _state = const CameraState();
 
@@ -60,6 +74,11 @@ class DivineCamera {
     _state = _state.copyWith(isRecording: false);
     _notifyStateChanged();
     onRecordingAutoStopped?.call(result);
+  }
+
+  /// Handles remote record trigger event from platform.
+  void _handleRemoteRecordTrigger(RemoteRecordTrigger trigger) {
+    onRemoteRecordTrigger?.call(trigger);
   }
 
   /// Returns the platform version.
@@ -90,6 +109,9 @@ class DivineCamera {
     // Register auto-stop callback with platform
     _platform.onRecordingAutoStopped = _handleAutoStop;
 
+    // Register remote record trigger callback with platform
+    _platform.onRemoteRecordTrigger = _handleRemoteRecordTrigger;
+
     // Store the mirror setting for preview widget
     _mirrorFrontCameraOutput = mirrorFrontCameraOutput;
 
@@ -114,7 +136,10 @@ class DivineCamera {
     // Clear listeners to prevent memory leaks
     onStateChanged = null;
     onRecordingAutoStopped = null;
+    onRemoteRecordTrigger = null;
     _platform.onRecordingAutoStopped = null;
+    _platform.onRemoteRecordTrigger = null;
+    _remoteRecordControlEnabled = false;
   }
 
   /// Sets the flash mode.
@@ -261,6 +286,38 @@ class DivineCamera {
         _state = await _platform.getCameraState();
         _notifyStateChanged();
     }
+  }
+
+  /// Enables or disables remote record control via volume buttons.
+  ///
+  /// When enabled, volume button presses will trigger the
+  /// [onRemoteRecordTrigger] callback instead of changing the system volume.
+  /// This allows users to start/stop recording using physical volume buttons
+  /// or Bluetooth accessories like clickers or earbuds.
+  ///
+  /// Returns `true` if successfully enabled/disabled.
+  Future<bool> setRemoteRecordControlEnabled({required bool enabled}) async {
+    final success = await _platform.setRemoteRecordControlEnabled(
+      enabled: enabled,
+    );
+    if (success) {
+      _remoteRecordControlEnabled = enabled;
+    }
+    return success;
+  }
+
+  /// Enables or disables volume key interception.
+  ///
+  /// When disabled, volume buttons will change system volume instead of
+  /// triggering recording. Bluetooth media buttons are NOT affected and will
+  /// continue to trigger recording.
+  ///
+  /// Use this when a sound is selected and the user needs to adjust volume
+  /// for the sound preview.
+  ///
+  /// Returns `true` if successfully set.
+  Future<bool> setVolumeKeysEnabled({required bool enabled}) async {
+    return _platform.setVolumeKeysEnabled(enabled: enabled);
   }
 
   /// The aspect ratio of the camera sensor.

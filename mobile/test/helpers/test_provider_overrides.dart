@@ -110,6 +110,7 @@ MockNostrClient createMockNostrService() {
   // Stub common properties
   when(mockNostr.isInitialized).thenReturn(true);
   when(mockNostr.connectedRelayCount).thenReturn(1);
+  when(mockNostr.configuredRelays).thenReturn(<String>[]);
 
   // Stub subscribe() to return empty stream (never null) so SubscriptionManager
   // and UserProfileService batch fetch do not get type 'Null' is not a subtype of type 'Stream<Event>'

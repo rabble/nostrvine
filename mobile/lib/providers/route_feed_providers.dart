@@ -91,13 +91,23 @@ final videosForExploreRouteProvider = Provider<AsyncValue<VideoFeedState>>((
         return const AsyncValue.loading();
       }
 
+      final brokenTrackerAsync = ref.watch(brokenVideoTrackerProvider);
+
       // Check if we have a tab-specific list (set when user enters feed mode)
       final tabVideos = ref.watch(exploreTabVideosProvider);
       if (tabVideos != null && tabVideos.isNotEmpty) {
-        // Use the tab's sorted list (preserves New Vines/Trending/Editor's Pick sort order)
+        // Filter broken videos to match ExploreVideoScreenPure's PageView.
+        // Both must use the same filtered list so URL indices align with
+        // the videos actually shown on screen.
+        final filteredTabVideos = brokenTrackerAsync.maybeWhen(
+          data: (tracker) => tabVideos
+              .where((video) => !tracker.isVideoBroken(video.id))
+              .toList(),
+          orElse: () => tabVideos,
+        );
         return AsyncValue.data(
           VideoFeedState(
-            videos: tabVideos,
+            videos: filteredTabVideos,
             hasMoreContent: true,
             lastUpdated: DateTime.now(),
           ),
@@ -106,7 +116,6 @@ final videosForExploreRouteProvider = Provider<AsyncValue<VideoFeedState>>((
 
       // No tab list - use default behavior (loop-count sorted)
       final eventsAsync = ref.watch(videoEventsProvider);
-      final brokenTrackerAsync = ref.watch(brokenVideoTrackerProvider);
 
       return eventsAsync.when(
         data: (videos) {

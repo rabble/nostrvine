@@ -59,7 +59,7 @@ final class AnalyticsApiServiceProvider
 }
 
 String _$analyticsApiServiceHash() =>
-    r'b47808c5318ce0b2f956bcd4b6f290e4dcf48846';
+    r'3b43956b3ec62bb486adfb07c2193dac55f6f54e';
 
 /// Provider for FunnelcakeApiClient (typed client for Funnelcake REST API)
 
@@ -112,7 +112,7 @@ final class FunnelcakeApiClientProvider
 }
 
 String _$funnelcakeApiClientHash() =>
-    r'9cd98ba74361b8894cce23c45d21a036a021a731';
+    r'ca05a6e880a17e8778fd64a6178b93dfa52d8d22';
 
 /// Single source of truth for Funnelcake REST API availability.
 ///

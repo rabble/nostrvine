@@ -566,6 +566,8 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
       videoList: videos,
       contextTitle: '', // Don't show context title for general explore feed
       startingIndex: startIndex,
+      useLocalActiveState: true,
+      onNavigate: (index) => context.go(ExploreScreen.pathForIndex(index)),
     );
   }
 

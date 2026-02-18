@@ -25,6 +25,7 @@ class DivineCameraPlugin :
     private lateinit var textureRegistry: TextureRegistry
     private var activity: Activity? = null
     private var cameraController: CameraController? = null
+    private var volumeKeyHandler: VolumeKeyHandler? = null
 
     override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
         channel = MethodChannel(flutterPluginBinding.binaryMessenger, "divine_camera")
@@ -105,6 +106,16 @@ class DivineCameraPlugin :
                 getCameraState(result)
             }
 
+            "setRemoteRecordControlEnabled" -> {
+                val enabled = call.argument<Boolean>("enabled") ?: false
+                setRemoteRecordControlEnabled(enabled, result)
+            }
+
+            "setVolumeKeysEnabled" -> {
+                val enabled = call.argument<Boolean>("enabled") ?: true
+                setVolumeKeysEnabled(enabled, result)
+            }
+
             else -> {
                 result.notImplemented()
             }
@@ -145,6 +156,8 @@ class DivineCameraPlugin :
 
     private fun disposeCamera(result: Result) {
         try {
+            volumeKeyHandler?.release()
+            volumeKeyHandler = null
             cameraController?.release()
             cameraController = null
             result.success(null)
@@ -316,8 +329,41 @@ class DivineCameraPlugin :
         }
     }
 
+    private fun setRemoteRecordControlEnabled(enabled: Boolean, result: Result) {
+        try {
+            if (enabled) {
+                if (volumeKeyHandler == null) {
+                    volumeKeyHandler = VolumeKeyHandler(context, activity) { triggerType ->
+                        // Send trigger event to Flutter on main thread
+                        android.os.Handler(android.os.Looper.getMainLooper()).post {
+                            channel.invokeMethod("onRemoteRecordTrigger", triggerType)
+                        }
+                    }
+                }
+                val success = volumeKeyHandler?.enable() ?: false
+                result.success(success)
+            } else {
+                volumeKeyHandler?.disable()
+                result.success(true)
+            }
+        } catch (e: Exception) {
+            result.error("REMOTE_CONTROL_ERROR", e.message, null)
+        }
+    }
+
+    private fun setVolumeKeysEnabled(enabled: Boolean, result: Result) {
+        try {
+            volumeKeyHandler?.setVolumeKeysEnabled(enabled)
+            result.success(true)
+        } catch (e: Exception) {
+            result.error("VOLUME_KEYS_ERROR", e.message, null)
+        }
+    }
+
     override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
         channel.setMethodCallHandler(null)
+        volumeKeyHandler?.release()
+        volumeKeyHandler = null
         cameraController?.release()
         cameraController = null
     }

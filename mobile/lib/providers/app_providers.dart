@@ -567,13 +567,9 @@ AuthService authService(Ref ref) {
   final pendingVerificationService = ref.watch(
     pendingVerificationServiceProvider,
   );
-  // Pre-fetch following list from funnelcake REST API during login setup.
-  // This populates SharedPreferences BEFORE auth state is set, so the
-  // router redirect has accurate cache data and sends user to /home not
-  // /explore.
-  final analyticsService = ref.read(analyticsApiServiceProvider);
-  final prefs = ref.read(sharedPreferencesProvider);
-
+  // NOTE: analyticsApiServiceProvider and sharedPreferencesProvider are
+  // resolved lazily inside the callback to avoid a circular dependency:
+  //   authService → analyticsApiService → nostrService → authService
   return AuthService(
     userDataCleanupService: userDataCleanupService,
     keyStorage: keyStorage,
@@ -582,6 +578,12 @@ AuthService authService(Ref ref) {
     oauthConfig: oauthConfig,
     pendingVerificationService: pendingVerificationService,
     preFetchFollowing: (pubkeyHex) async {
+      // Pre-fetch following list from funnelcake REST API during login setup.
+      // This populates SharedPreferences BEFORE auth state is set, so the
+      // router redirect has accurate cache data and sends user to /home not
+      // /explore.
+      final analyticsService = ref.read(analyticsApiServiceProvider);
+      final prefs = ref.read(sharedPreferencesProvider);
       final result = await analyticsService.getFollowing(
         pubkeyHex,
         limit: 5000,
