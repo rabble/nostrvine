@@ -450,10 +450,13 @@ class VideoFeedController extends ChangeNotifier {
     if (_isDisposed) return;
     _isDisposed = true;
 
-    // Release all players back to pool (stops playback and removes from pool)
-    // This ensures clean state when videos are reopened.
+    // Stop playback immediately, then release from pool asynchronously.
+    // player.stop() cuts audio on the native side right away.
+    // pool.release() handles the slower native resource teardown.
     for (var i = 0; i < _videos.length; i++) {
-      if (_loadedPlayers.containsKey(i)) {
+      final player = _loadedPlayers[i];
+      if (player != null) {
+        unawaited(player.player.stop());
         unawaited(pool.release(_videos[i].url));
       }
     }
