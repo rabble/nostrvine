@@ -368,6 +368,7 @@ class MockVideoEventService extends _i1.Mock implements _i6.VideoEventService {
     _i15.VideoSortField? sortBy,
     _i15.NIP50SortMode? nip50Sort,
     bool? force = false,
+    List<String>? collaboratorPubkeys,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#subscribeToVideoFeed, [], {
@@ -383,6 +384,7 @@ class MockVideoEventService extends _i1.Mock implements _i6.VideoEventService {
               #sortBy: sortBy,
               #nip50Sort: nip50Sort,
               #force: force,
+              #collaboratorPubkeys: collaboratorPubkeys,
             }),
             returnValue: _i14.Future<void>.value(),
             returnValueForMissingStub: _i14.Future<void>.value(),
@@ -1591,6 +1593,22 @@ class MockAnalyticsApiService extends _i1.Mock
           as _i14.Future<List<_i7.VideoEvent>>);
 
   @override
+  _i14.Future<List<_i7.VideoEvent>> getClassicVideosByHashtag({
+    required String? hashtag,
+    int? limit = 50,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#getClassicVideosByHashtag, [], {
+              #hashtag: hashtag,
+              #limit: limit,
+            }),
+            returnValue: _i14.Future<List<_i7.VideoEvent>>.value(
+              <_i7.VideoEvent>[],
+            ),
+          )
+          as _i14.Future<List<_i7.VideoEvent>>);
+
+  @override
   _i14.Future<List<_i7.VideoEvent>> searchVideos({
     required String? query,
     int? limit = 50,
@@ -1629,6 +1647,30 @@ class MockAnalyticsApiService extends _i1.Mock
             returnValue: _i14.Future<_i3.VideoStats?>.value(),
           )
           as _i14.Future<_i3.VideoStats?>);
+
+  @override
+  _i14.Future<int?> getVideoViews(String? eventId) =>
+      (super.noSuchMethod(
+            Invocation.method(#getVideoViews, [eventId]),
+            returnValue: _i14.Future<int?>.value(),
+          )
+          as _i14.Future<int?>);
+
+  @override
+  _i14.Future<Map<String, int>> getBulkVideoViews(
+    List<String>? eventIds, {
+    int? maxVideos = 20,
+    int? maxConcurrent = 8,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #getBulkVideoViews,
+              [eventIds],
+              {#maxVideos: maxVideos, #maxConcurrent: maxConcurrent},
+            ),
+            returnValue: _i14.Future<Map<String, int>>.value(<String, int>{}),
+          )
+          as _i14.Future<Map<String, int>>);
 
   @override
   _i14.Future<List<_i7.VideoEvent>> getVideosByAuthor({
@@ -2214,6 +2256,7 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
     required String? content,
     List<List<String>>? tags,
     String? biometricPrompt,
+    int? createdAt,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#createAndSignEvent, [], {
@@ -2221,6 +2264,7 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
               #content: content,
               #tags: tags,
               #biometricPrompt: biometricPrompt,
+              #createdAt: createdAt,
             }),
             returnValue: _i14.Future<_i13.Event?>.value(),
           )

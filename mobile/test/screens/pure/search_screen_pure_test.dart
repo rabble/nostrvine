@@ -8,6 +8,7 @@ import 'package:mocktail/mocktail.dart';
 import 'package:mockito/mockito.dart' as mockito;
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
@@ -103,6 +104,65 @@ void main() {
         ),
       );
     }
+
+    group('Feed mode', () {
+      Widget createFeedModeWidget({
+        required int videoIndex,
+        List<VideoEvent>? searchVideos,
+      }) {
+        final mockUserProfileService = createMockUserProfileService();
+        mockito
+            .when(mockUserProfileService.getDisplayName(mockito.any))
+            .thenReturn('');
+
+        return ProviderScope(
+          overrides: [
+            ...getStandardTestOverrides(
+              mockAuthService: createMockAuthService(),
+              mockUserProfileService: mockUserProfileService,
+            ),
+            profileRepositoryProvider.overrideWithValue(mockProfileRepository),
+            videoEventServiceProvider.overrideWithValue(fakeVideoEventService),
+            contentBlocklistServiceProvider.overrideWithValue(
+              mockBlocklistService,
+            ),
+            pageContextProvider.overrideWith((ref) {
+              return Stream.value(
+                RouteContext(
+                  type: RouteType.search,
+                  searchTerm: 'test',
+                  videoIndex: videoIndex,
+                ),
+              );
+            }),
+            searchScreenVideosProvider.overrideWith((ref) => searchVideos),
+          ],
+          child: MaterialApp(
+            theme: ThemeData.dark(),
+            home: const Scaffold(body: SearchScreenPure(embedded: true)),
+          ),
+        );
+      }
+
+      testWidgets(
+        'shows "No videos available" when videoIndex is set but no videos',
+        (tester) async {
+          await tester.pumpWidget(createFeedModeWidget(videoIndex: 0));
+          await tester.pumpAndSettle();
+
+          expect(find.text('No videos available'), findsOneWidget);
+          expect(find.text('Videos (0)'), findsNothing);
+        },
+      );
+
+      testWidgets('hides tabs when in feed mode', (tester) async {
+        await tester.pumpWidget(createFeedModeWidget(videoIndex: 0));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TabBar), findsNothing);
+        expect(find.byType(TextField), findsNothing);
+      });
+    });
 
     group('Tab count', () {
       testWidgets('all tabs show count in parentheses format even when empty', (

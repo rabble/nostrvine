@@ -6,13 +6,11 @@ import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 import 'package:likes_repository/likes_repository.dart';
-import 'package:models/models.dart'
-    hide LogCategory, CurationSet, CurationSetType, SampleCurationSets;
+import 'package:models/models.dart' hide LogCategory;
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:openvine/constants/app_constants.dart';
-import 'package:openvine/models/curation_set.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -425,7 +423,7 @@ class CurationService {
 
           // First pass: collect videos we have locally and track missing ones
           for (final vineData in vinesData) {
-            final eventId = vineData['eventId'] as String?;
+            final eventId = (vineData['eventId'] as String?)?.toLowerCase();
             final viewCount = vineData['views'] ?? 0;
 
             if (eventId != null) {
@@ -445,9 +443,9 @@ class CurationService {
                 category: LogCategory.system,
               );
 
-              // Find the video in our local cache
+              // Find the video in our local cache (case-insensitive)
               final localVideo = allVideos.firstWhere(
-                (video) => video.id == eventId,
+                (video) => video.id.toLowerCase() == eventId,
                 orElse: () => VideoEvent(
                   id: '',
                   pubkey: '',
@@ -570,9 +568,11 @@ class CurationService {
               );
 
               // Track videos that we failed to fetch - they likely no longer exist on relays
-              final fetchedIds = fetchedVideos.map((v) => v.id).toSet();
+              final fetchedIds = fetchedVideos
+                  .map((v) => v.id.toLowerCase())
+                  .toSet();
               final actuallyMissingIds = missingEventIds
-                  .where((id) => !fetchedIds.contains(id))
+                  .where((id) => !fetchedIds.contains(id.toLowerCase()))
                   .toSet();
 
               if (actuallyMissingIds.isNotEmpty) {
@@ -596,10 +596,10 @@ class CurationService {
             // Sort by the order from analytics API
             final orderedTrending = <VideoEvent>[];
             for (final vineData in vinesData) {
-              final eventId = vineData['eventId'] as String?;
+              final eventId = (vineData['eventId'] as String?)?.toLowerCase();
               if (eventId != null) {
                 final video = trending.firstWhere(
-                  (v) => v.id == eventId,
+                  (v) => v.id.toLowerCase() == eventId,
                   orElse: () => VideoEvent(
                     id: '',
                     pubkey: '',

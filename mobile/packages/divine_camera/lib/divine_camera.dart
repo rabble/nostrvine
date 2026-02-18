@@ -11,6 +11,7 @@ import 'package:flutter/widgets.dart';
 
 // Export models for external use
 export 'src/models/camera_lens.dart';
+export 'src/models/camera_lens_metadata.dart';
 export 'src/models/camera_state.dart';
 export 'src/models/flash_mode.dart';
 export 'src/models/video_quality.dart';
@@ -43,6 +44,14 @@ class DivineCamera {
   /// Gets the current camera state.
   CameraState get state => _state;
 
+  /// Whether the front camera video output should be mirrored.
+  /// When `true`, recorded video appears as mirror image (like preview).
+  /// When `false`, recorded video shows real-world orientation.
+  bool _mirrorFrontCameraOutput = false;
+
+  /// Gets whether the front camera video output is mirrored.
+  bool get mirrorFrontCameraOutput => _mirrorFrontCameraOutput;
+
   /// The platform interface instance.
   DivineCameraPlatform get _platform => DivineCameraPlatform.instance;
 
@@ -64,19 +73,31 @@ class DivineCamera {
   /// [videoQuality] specifies the video recording quality (default: FHD/1080p).
   /// [enableScreenFlash] enables using screen brightness as flash for
   /// front camera (default: true).
+  /// [mirrorFrontCameraOutput] controls whether the front camera video output
+  /// is horizontally mirrored.
+  /// When `true`, the recorded video appears
+  /// as a mirror image (like the preview).
+  /// When `false`, the video shows the real-world orientation (non-mirrored).
+  /// The preview is always mirrored.
+  ///
   /// Returns the initialized camera state.
   Future<CameraState> initialize({
     DivineCameraLens lens = DivineCameraLens.back,
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
     bool enableScreenFlash = true,
+    bool mirrorFrontCameraOutput = false,
   }) async {
     // Register auto-stop callback with platform
     _platform.onRecordingAutoStopped = _handleAutoStop;
+
+    // Store the mirror setting for preview widget
+    _mirrorFrontCameraOutput = mirrorFrontCameraOutput;
 
     _state = await _platform.initializeCamera(
       lens: lens,
       videoQuality: videoQuality,
       enableScreenFlash: enableScreenFlash,
+      mirrorFrontCameraOutput: mirrorFrontCameraOutput,
     );
     _notifyStateChanged();
     return _state;
@@ -153,6 +174,24 @@ class DivineCamera {
     _notifyStateChanged();
 
     _state = await _platform.switchCamera(newLens);
+    _state = _state.copyWith(isSwitchingCamera: false);
+    _notifyStateChanged();
+    return true;
+  }
+
+  /// Switches to a specific camera lens.
+  ///
+  /// [lens] the lens to switch to.
+  /// Returns true if successful.
+  Future<bool> setLens(DivineCameraLens lens) async {
+    if (lens == _state.lens) return true;
+    if (!_state.availableLenses.contains(lens)) return false;
+
+    // Set switching state to keep last frame visible
+    _state = _state.copyWith(isSwitchingCamera: true);
+    _notifyStateChanged();
+
+    _state = await _platform.switchCamera(lens);
     _state = _state.copyWith(isSwitchingCamera: false);
     _notifyStateChanged();
     return true;

@@ -95,7 +95,7 @@ void main() {
       ).thenAnswer((_) async => []);
       when(
         () => mockLocalStorage.watchLikedEventIds(),
-      ).thenAnswer((_) => Stream.value(<String>{}));
+      ).thenAnswer((_) => Stream.value(<String>[]));
       when(
         () => mockLocalStorage.isLiked(any()),
       ).thenAnswer((_) async => false);
@@ -1136,7 +1136,7 @@ void main() {
       test('returns stream from local storage when available', () async {
         when(
           () => mockLocalStorage.watchLikedEventIds(),
-        ).thenAnswer((_) => Stream.value(<String>{'event1', 'event2'}));
+        ).thenAnswer((_) => Stream.value(<String>['event1', 'event2']));
 
         repository = createRepository();
         expect(

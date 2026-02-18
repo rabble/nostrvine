@@ -3,7 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:openvine/models/notification_model.dart';
+import 'package:models/models.dart';
 import 'package:openvine/widgets/notification_list_item.dart';
 
 /// Helper to check if any RichText in the tree contains a given substring

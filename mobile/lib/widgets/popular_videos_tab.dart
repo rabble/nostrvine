@@ -3,21 +3,21 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/popular_videos_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
-import 'package:openvine/services/top_hashtags_service.dart';
-import 'package:openvine/services/screen_analytics_service.dart';
-import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
-import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/services/feed_performance_tracker.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/services/top_hashtags_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
+import 'package:openvine/widgets/scroll_to_hide_mixin.dart';
 import 'package:openvine/widgets/trending_hashtags_section.dart';
 import 'package:rxdart/rxdart.dart';
 
@@ -219,7 +219,7 @@ class _PopularVideosTrendingContentState
   Widget build(BuildContext context) {
     // Listen to provider changes and push to stream for fullscreen updates
     ref.listen(popularVideosFeedProvider, (previous, next) {
-      if (next.hasValue && next.value != null) {
+      if (next.hasValue) {
         _videosStreamController.add(next.value!.videos);
       }
     });

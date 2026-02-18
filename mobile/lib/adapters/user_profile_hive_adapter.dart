@@ -1,12 +1,15 @@
-// GENERATED CODE - DO NOT MODIFY BY HAND
+// ABOUTME: Manual Hive TypeAdapter for package:models UserProfile
+// ABOUTME: Preserves binary format of the generated adapter it replaces
 
-part of 'user_profile.dart';
+import 'package:hive_ce/hive.dart';
+import 'package:models/models.dart';
 
-// **************************************************************************
-// TypeAdapterGenerator
-// **************************************************************************
-
-class UserProfileAdapter extends TypeAdapter<UserProfile> {
+/// Manual Hive adapter for [UserProfile] from package:models.
+///
+/// This replaces the generated `UserProfileAdapter` that was in
+/// `lib/models/user_profile.g.dart`. Field indices and typeId are
+/// identical so existing Hive boxes remain readable.
+class UserProfileHiveAdapter extends TypeAdapter<UserProfile> {
   @override
   final typeId = 3;
 
@@ -71,7 +74,7 @@ class UserProfileAdapter extends TypeAdapter<UserProfile> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is UserProfileAdapter &&
+      other is UserProfileHiveAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

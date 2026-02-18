@@ -96,9 +96,13 @@ class ViewEventPublisher {
     }
 
     try {
+      final dTag = (video.vineId != null && video.vineId!.isNotEmpty)
+          ? video.vineId!
+          : video.id;
+
       // Build the addressable coordinate (a tag)
       // Format: "34236:author_pubkey:d_tag"
-      final aTag = '34236:${video.pubkey}:${video.vineId}';
+      final aTag = '34236:${video.pubkey}:$dTag';
 
       // Get relay hint
       String relayHint = _defaultRelayHint;
@@ -126,7 +130,7 @@ class ViewEventPublisher {
         category: LogCategory.video,
       );
       Log.verbose(
-        'View data: watched ${endSeconds - startSeconds}s, source=${_sourceToString(source)}',
+        'View data: watched ${endSeconds - startSeconds}s, source=${_sourceToString(source)}, d=$dTag',
         name: 'ViewEventPublisher',
         category: LogCategory.video,
       );
@@ -208,7 +212,10 @@ class ViewEventPublisher {
     }
 
     try {
-      final aTag = '34236:${video.pubkey}:${video.vineId}';
+      final dTag = (video.vineId != null && video.vineId!.isNotEmpty)
+          ? video.vineId!
+          : video.id;
+      final aTag = '34236:${video.pubkey}:$dTag';
 
       String relayHint = _defaultRelayHint;
       if (_nostrService.connectedRelays.isNotEmpty) {

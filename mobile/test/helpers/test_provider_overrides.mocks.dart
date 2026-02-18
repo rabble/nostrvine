@@ -16,10 +16,10 @@ import 'package:keycast_flutter/keycast_flutter.dart' as _i17;
 import 'package:media_cache/src/media_cache_manager.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i15;
+import 'package:models/models.dart' as _i19;
 import 'package:nostr_client/nostr_client.dart' as _i4;
 import 'package:nostr_sdk/filter.dart' as _i18;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i3;
-import 'package:openvine/models/user_profile.dart' as _i19;
 import 'package:openvine/services/auth_service.dart' as _i2;
 import 'package:openvine/services/blossom_auth_service.dart' as _i23;
 import 'package:openvine/services/blossom_server_discovery_service.dart'
@@ -62,34 +62,39 @@ class _FakeCountResult_2 extends _i1.SmartFake implements _i4.CountResult {
     : super(parent, parentInvocation);
 }
 
-class _FakeMediaCacheConfig_3 extends _i1.SmartFake
+class _FakeCacheMetrics_3 extends _i1.SmartFake implements _i5.CacheMetrics {
+  _FakeCacheMetrics_3(Object parent, Invocation parentInvocation)
+    : super(parent, parentInvocation);
+}
+
+class _FakeMediaCacheConfig_4 extends _i1.SmartFake
     implements _i5.MediaCacheConfig {
-  _FakeMediaCacheConfig_3(Object parent, Invocation parentInvocation)
+  _FakeMediaCacheConfig_4(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeConfig_4 extends _i1.SmartFake implements _i6.Config {
-  _FakeConfig_4(Object parent, Invocation parentInvocation)
+class _FakeConfig_5 extends _i1.SmartFake implements _i6.Config {
+  _FakeConfig_5(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeCacheStore_5 extends _i1.SmartFake implements _i7.CacheStore {
-  _FakeCacheStore_5(Object parent, Invocation parentInvocation)
+class _FakeCacheStore_6 extends _i1.SmartFake implements _i7.CacheStore {
+  _FakeCacheStore_6(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeWebHelper_6 extends _i1.SmartFake implements _i8.WebHelper {
-  _FakeWebHelper_6(Object parent, Invocation parentInvocation)
+class _FakeWebHelper_7 extends _i1.SmartFake implements _i8.WebHelper {
+  _FakeWebHelper_7(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeFile_7 extends _i1.SmartFake implements _i9.File {
-  _FakeFile_7(Object parent, Invocation parentInvocation)
+class _FakeFile_8 extends _i1.SmartFake implements _i9.File {
+  _FakeFile_8(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
-class _FakeFileInfo_8 extends _i1.SmartFake implements _i6.FileInfo {
-  _FakeFileInfo_8(Object parent, Invocation parentInvocation)
+class _FakeFileInfo_9 extends _i1.SmartFake implements _i6.FileInfo {
+  _FakeFileInfo_9(Object parent, Invocation parentInvocation)
     : super(parent, parentInvocation);
 }
 
@@ -686,6 +691,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
     required String? content,
     List<List<String>>? tags,
     String? biometricPrompt,
+    int? createdAt,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#createAndSignEvent, [], {
@@ -693,6 +699,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
               #content: content,
               #tags: tags,
               #biometricPrompt: biometricPrompt,
+              #createdAt: createdAt,
             }),
             returnValue: _i11.Future<_i3.Event?>.value(),
           )
@@ -1607,6 +1614,14 @@ class MockMediaCacheManager extends _i1.Mock implements _i5.MediaCacheManager {
   }
 
   @override
+  _i5.CacheMetrics get metrics =>
+      (super.noSuchMethod(
+            Invocation.getter(#metrics),
+            returnValue: _FakeCacheMetrics_3(this, Invocation.getter(#metrics)),
+          )
+          as _i5.CacheMetrics);
+
+  @override
   bool get isInitialized =>
       (super.noSuchMethod(Invocation.getter(#isInitialized), returnValue: false)
           as bool);
@@ -1615,7 +1630,7 @@ class MockMediaCacheManager extends _i1.Mock implements _i5.MediaCacheManager {
   _i5.MediaCacheConfig get mediaConfig =>
       (super.noSuchMethod(
             Invocation.getter(#mediaConfig),
-            returnValue: _FakeMediaCacheConfig_3(
+            returnValue: _FakeMediaCacheConfig_4(
               this,
               Invocation.getter(#mediaConfig),
             ),
@@ -1626,7 +1641,7 @@ class MockMediaCacheManager extends _i1.Mock implements _i5.MediaCacheManager {
   _i6.Config get config =>
       (super.noSuchMethod(
             Invocation.getter(#config),
-            returnValue: _FakeConfig_4(this, Invocation.getter(#config)),
+            returnValue: _FakeConfig_5(this, Invocation.getter(#config)),
           )
           as _i6.Config);
 
@@ -1634,7 +1649,7 @@ class MockMediaCacheManager extends _i1.Mock implements _i5.MediaCacheManager {
   _i7.CacheStore get store =>
       (super.noSuchMethod(
             Invocation.getter(#store),
-            returnValue: _FakeCacheStore_5(this, Invocation.getter(#store)),
+            returnValue: _FakeCacheStore_6(this, Invocation.getter(#store)),
           )
           as _i7.CacheStore);
 
@@ -1642,7 +1657,7 @@ class MockMediaCacheManager extends _i1.Mock implements _i5.MediaCacheManager {
   _i8.WebHelper get webHelper =>
       (super.noSuchMethod(
             Invocation.getter(#webHelper),
-            returnValue: _FakeWebHelper_6(this, Invocation.getter(#webHelper)),
+            returnValue: _FakeWebHelper_7(this, Invocation.getter(#webHelper)),
           )
           as _i8.WebHelper);
 
@@ -1749,7 +1764,7 @@ class MockMediaCacheManager extends _i1.Mock implements _i5.MediaCacheManager {
               {#key: key, #headers: headers},
             ),
             returnValue: _i11.Future<_i9.File>.value(
-              _FakeFile_7(
+              _FakeFile_8(
                 this,
                 Invocation.method(
                   #getSingleFile,
@@ -1804,7 +1819,7 @@ class MockMediaCacheManager extends _i1.Mock implements _i5.MediaCacheManager {
               {#key: key, #authHeaders: authHeaders, #force: force},
             ),
             returnValue: _i11.Future<_i6.FileInfo>.value(
-              _FakeFileInfo_8(
+              _FakeFileInfo_9(
                 this,
                 Invocation.method(
                   #downloadFile,
@@ -1860,7 +1875,7 @@ class MockMediaCacheManager extends _i1.Mock implements _i5.MediaCacheManager {
               },
             ),
             returnValue: _i11.Future<_i9.File>.value(
-              _FakeFile_7(
+              _FakeFile_8(
                 this,
                 Invocation.method(
                   #putFile,
@@ -1898,7 +1913,7 @@ class MockMediaCacheManager extends _i1.Mock implements _i5.MediaCacheManager {
               },
             ),
             returnValue: _i11.Future<_i9.File>.value(
-              _FakeFile_7(
+              _FakeFile_8(
                 this,
                 Invocation.method(
                   #putFileStream,

@@ -166,6 +166,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
       ),
       child: Scaffold(
         backgroundColor: backgroundColor,
+        resizeToAvoidBottomInset: false,
         body: Stack(
           fit: .expand,
           children: [

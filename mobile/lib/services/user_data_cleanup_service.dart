@@ -50,6 +50,16 @@ class UserDataCleanupService {
     'terms_accepted_at',
   ];
 
+  /// Key prefixes for dynamic user-specific data (keys that embed pubkey/npub).
+  /// Only cleared on identity change (different user), NOT on same-user logout.
+  /// These caches are keyed by pubkey so they can't leak between users, and the
+  /// redirect logic needs following_list_ at login time before relay responds.
+  static const List<String> identityChangePrefixes = [
+    'following_list_', // follow cache per pubkey
+    'blossom_server_discovery_', // blossom server cache per npub
+    'relay_discovery_', // relay discovery cache per npub
+  ];
+
   /// Checks if user-specific data should be cleared for the given pubkey.
   ///
   /// Returns true if:
@@ -90,10 +100,22 @@ class UserDataCleanupService {
   /// like relay URLs, analytics preferences, etc.
   ///
   /// Returns the number of keys that were cleared for tracking purposes.
-  Future<int> clearUserSpecificData({String? reason}) async {
+  /// Clears user-specific data from SharedPreferences.
+  ///
+  /// When [isIdentityChange] is true (different user logging in), also clears
+  /// dynamic pubkey-keyed caches (following_list_, relay/blossom discovery).
+  /// On same-user logout these are preserved so the redirect logic can use them
+  /// at login time before relay data is available.
+  Future<int> clearUserSpecificData({
+    String? reason,
+    bool isIdentityChange = false,
+  }) async {
     final cleanupReason = reason ?? 'unspecified';
     Log.info(
-      'Starting user data cleanup (reason: $cleanupReason, checking ${userSpecificKeys.length} keys)',
+      'Starting user data cleanup (reason: $cleanupReason, '
+      'identityChange: $isIdentityChange, '
+      'checking ${userSpecificKeys.length} keys'
+      '${isIdentityChange ? ' + ${identityChangePrefixes.length} prefixes' : ''})',
       name: 'UserDataCleanupService',
       category: LogCategory.auth,
     );
@@ -101,11 +123,29 @@ class UserDataCleanupService {
     int clearedCount = 0;
     final clearedKeys = <String>[];
 
+    // Clear exact-match keys (always)
     for (final key in userSpecificKeys) {
       if (_prefs.containsKey(key)) {
         await _prefs.remove(key);
         clearedCount++;
         clearedKeys.add(key);
+      }
+    }
+
+    // Clear prefix-matched dynamic keys only on identity change
+    // These are keyed by pubkey so they can't leak, and the redirect
+    // logic needs following_list_ at login time before relay responds
+    if (isIdentityChange) {
+      final allKeys = _prefs.getKeys();
+      for (final key in allKeys) {
+        for (final prefix in identityChangePrefixes) {
+          if (key.startsWith(prefix)) {
+            await _prefs.remove(key);
+            clearedCount++;
+            clearedKeys.add(key);
+            break;
+          }
+        }
       }
     }
 

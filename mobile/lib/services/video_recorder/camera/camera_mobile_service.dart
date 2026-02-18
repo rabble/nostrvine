@@ -1,13 +1,13 @@
 // ABOUTME: Mobile platform implementation of camera service using the camera package
 // ABOUTME: Handles camera initialization, switching, recording, and lifecycle management on mobile devices
 
+import 'package:divine_camera/divine_camera.dart';
 import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
-import 'package:divine_camera/divine_camera.dart';
 
 /// Mobile implementation of [CameraService] using the camera package.
 ///
@@ -24,17 +24,19 @@ class CameraMobileService extends CameraService {
   final _camera = DivineCamera.instance;
 
   @override
-  Future<void> initialize() async {
+  Future<void> initialize({
+    DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+  }) async {
     // Clear any previous error
     _initializationError = null;
 
     Log.info(
-      '📷 Initializing mobile camera',
+      '📷 Initializing mobile camera with quality: ${videoQuality.value}',
       name: 'CameraMobileService',
       category: .video,
     );
     try {
-      await _camera.initialize(lens: .front);
+      await _camera.initialize(lens: .front, videoQuality: videoQuality);
       _camera.onRecordingAutoStopped = (result) {
         onAutoStopped(EditorVideo.file(result.filePath));
       };
@@ -184,6 +186,36 @@ class CameraMobileService extends CameraService {
   }
 
   @override
+  Future<bool> setLens(DivineCameraLens lens) async {
+    if (!_isInitialized) return false;
+    try {
+      Log.info(
+        '📷 Switching to lens: ${lens.displayName}',
+        name: 'CameraMobileService',
+        category: .video,
+      );
+
+      final success = await _camera.setLens(lens);
+      if (success) {
+        onUpdateState(forceCameraRebuild: true);
+        Log.info(
+          '📷 Switched to lens: ${lens.displayName}',
+          name: 'CameraMobileService',
+          category: .video,
+        );
+      }
+      return success;
+    } catch (e) {
+      Log.error(
+        '📷 Failed to set lens: $e',
+        name: 'CameraMobileService',
+        category: .video,
+      );
+      return false;
+    }
+  }
+
+  @override
   Future<bool> startRecording({
     Duration? maxDuration,
     String? outputDirectory,
@@ -294,6 +326,16 @@ class CameraMobileService extends CameraService {
 
   @override
   bool get canSwitchCamera => _camera.canSwitchCamera;
+
+  @override
+  DivineCameraLens get currentLens => _camera.state.lens;
+
+  @override
+  List<DivineCameraLens> get availableLenses => _camera.state.availableLenses;
+
+  @override
+  CameraLensMetadata? get currentLensMetadata =>
+      _camera.state.currentLensMetadata;
 
   @override
   String? get initializationError => _initializationError;

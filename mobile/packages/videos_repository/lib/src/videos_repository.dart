@@ -623,4 +623,49 @@ class VideosRepository {
 
     return videos;
   }
+
+  /// Fetches videos where [taggedPubkey] appears in a p-tag.
+  ///
+  /// Uses Funnelcake REST API when available, with Nostr
+  /// relay p-tag query as fallback.
+  ///
+  /// The caller should client-side filter results to confirm
+  /// collaborator status (pubkey != event author).
+  Future<List<VideoEvent>> getCollabVideos({
+    required String taggedPubkey,
+    int limit = _defaultLimit,
+    int? until,
+  }) async {
+    // Try Funnelcake REST API first
+    if (_funnelcakeApiClient != null && _funnelcakeApiClient.isAvailable) {
+      try {
+        final stats = await _funnelcakeApiClient.getCollabVideos(
+          pubkey: taggedPubkey,
+          limit: limit,
+          before: until,
+        );
+        if (stats.isNotEmpty) {
+          return stats
+              .map((s) => s.toVideoEvent())
+              .where((v) => v.hasVideo)
+              .where((v) => !v.isExpired)
+              .where((v) => !(_blockFilter?.call(v.pubkey) ?? false))
+              .where((v) => !(_contentFilter?.call(v) ?? false))
+              .toList();
+        }
+      } on FunnelcakeException {
+        // Fall through to relay query
+      }
+    }
+
+    // Fallback: Nostr relay p-tag query
+    final filter = Filter(
+      kinds: [_videoKind],
+      p: [taggedPubkey],
+      limit: limit,
+      until: until,
+    );
+    final events = await _nostrClient.queryEvents([filter]);
+    return _transformAndFilter(events);
+  }
 }

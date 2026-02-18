@@ -34,9 +34,9 @@ android {
 
     defaultConfig {
         applicationId = "co.openvine.app"
-        // Explicitly set minSdk to 21 (Android 5.0) for broad device support
-        // This supports ~99% of active Android devices as of 2024
-        minSdk = flutter.minSdkVersion
+        // Minimum SDK 28 (Android 9.0) required by c2pa_flutter library
+        // This still supports ~95% of active Android devices as of 2024
+        minSdk = 28
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
@@ -90,6 +90,15 @@ android {
             pickFirsts.add("META-INF/LICENSE.txt")
             pickFirsts.add("META-INF/NOTICE")
             pickFirsts.add("META-INF/NOTICE.txt")
+            // Handle duplicate OSGI manifests from BouncyCastle
+            pickFirsts.add("META-INF/versions/9/OSGI-INF/MANIFEST.MF")
+        }
+        // Handle duplicate libc++_shared.so from c2pa-android and ffmpeg-kit
+        jniLibs {
+            pickFirsts.add("lib/arm64-v8a/libc++_shared.so")
+            pickFirsts.add("lib/armeabi-v7a/libc++_shared.so")
+            pickFirsts.add("lib/x86/libc++_shared.so")
+            pickFirsts.add("lib/x86_64/libc++_shared.so")
         }
     }
 }
@@ -103,11 +112,19 @@ configurations.all {
     exclude(group = "com.arthenica.ffmpegkit", module = "flutter")
     exclude(group = "com.arthenica.ffmpegkit", module = "ffmpeg-kit-android")
     exclude(group = "com.arthenica.ffmpegkit", module = "ffmpeg-kit-android-min")
+    // Exclude older BouncyCastle jdk15to18 versions to avoid conflicts with c2pa's jdk18on versions
+    exclude(group = "org.bouncycastle", module = "bcprov-jdk15to18")
+    exclude(group = "org.bouncycastle", module = "bcpkix-jdk15to18")
+    exclude(group = "org.bouncycastle", module = "bcutil-jdk15to18")
 }
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     implementation("androidx.multidex:multidex:2.0.1")
+
+    // BouncyCastle jdk18on for CertificateSigningService (replaces excluded jdk15to18 versions)
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.78.1")
+    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
 
     // ProofMode library for cryptographic proof generation
     // Upgraded to 1.0.25 to fix duplicate class issues with java-opentimestamps fat JAR
@@ -118,6 +135,11 @@ dependencies {
 
     // AndroidX AppCompat required by Zendesk SDK
     implementation("androidx.appcompat:appcompat:1.6.1")
+
+    // BouncyCastle for CSR generation
+    implementation("org.bouncycastle:bcprov-jdk18on:1.81")
+    implementation("org.bouncycastle:bcpkix-jdk18on:1.81")
+
 }
 
 // Note: android-libproofmode 1.0.25+ fixed duplicate class issues with java-opentimestamps

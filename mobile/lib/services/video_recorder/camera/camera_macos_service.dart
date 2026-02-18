@@ -9,6 +9,8 @@ import 'package:camera_macos_plus/camera_macos.dart';
 import 'package:flutter/widgets.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
+import 'package:divine_camera/divine_camera.dart'
+    show CameraLensMetadata, DivineCameraLens, DivineVideoQuality;
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
 import 'package:openvine/utils/path_resolver.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -41,9 +43,13 @@ class CameraMacOSService extends CameraService {
   bool _isInitialSetupCompleted = false;
   String? _initializationError;
   Timer? _autoStopTimer;
+  DivineVideoQuality _currentVideoQuality = DivineVideoQuality.fhd;
 
   @override
-  Future<void> initialize() async {
+  Future<void> initialize({
+    DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+  }) async {
+    _currentVideoQuality = videoQuality;
     if (_isInitialized) return;
 
     // Clear any previous error
@@ -163,6 +169,7 @@ class CameraMacOSService extends CameraService {
         cameraMacOSMode: CameraMacOSMode.video,
         deviceId: deviceId,
         audioDeviceId: audioDeviceId,
+        resolution: _getPictureResolution(_currentVideoQuality),
       );
       _isInitialized = true;
       _initializationError = null; // Clear error on success
@@ -395,7 +402,7 @@ class CameraMacOSService extends CameraService {
       await _configureAudioSessionForRecording();
 
       final baseDir = await getDocumentsPath();
-      final recordingsDir = Directory(p.join(baseDir, 'recordings'));
+      final recordingsDir = Directory(baseDir);
       if (!recordingsDir.existsSync()) {
         await recordingsDir.create(recursive: true);
       }
@@ -422,7 +429,10 @@ class CameraMacOSService extends CameraService {
             name: 'CameraMacOSService',
             category: .video,
           );
-          await stopRecording();
+          final result = await stopRecording();
+          if (result != null) {
+            onAutoStopped(result);
+          }
         });
       }
 
@@ -657,6 +667,20 @@ class CameraMacOSService extends CameraService {
     };
   }
 
+  /// Converts [DivineVideoQuality] to macOS [PictureResolution].
+  ///
+  /// Maps video quality settings to camera_macos resolution presets.
+  PictureResolution _getPictureResolution(DivineVideoQuality quality) {
+    return switch (quality) {
+      DivineVideoQuality.sd => PictureResolution.low, // 480p
+      DivineVideoQuality.hd => PictureResolution.high, // 720p
+      DivineVideoQuality.fhd => PictureResolution.veryHigh, // 1080p
+      DivineVideoQuality.uhd => PictureResolution.ultraHigh, // 4K
+      DivineVideoQuality.highest => PictureResolution.max,
+      DivineVideoQuality.lowest => PictureResolution.low,
+    };
+  }
+
   @override
   double get cameraAspectRatio => _cameraSensorSize.aspectRatio;
 
@@ -680,6 +704,22 @@ class CameraMacOSService extends CameraService {
   @override
   bool get canSwitchCamera =>
       _videoDevices != null && _videoDevices!.length > 1;
+
+  @override
+  Future<bool> setLens(DivineCameraLens lens) async {
+    // macOS doesn't support different lens types like mobile
+    // Only basic camera switching is supported
+    return false;
+  }
+
+  @override
+  DivineCameraLens get currentLens => DivineCameraLens.front;
+
+  @override
+  List<DivineCameraLens> get availableLenses => [DivineCameraLens.front];
+
+  @override
+  CameraLensMetadata? get currentLensMetadata => null;
 
   @override
   String? get initializationError => _initializationError;

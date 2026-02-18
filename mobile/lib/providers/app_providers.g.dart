@@ -1725,52 +1725,6 @@ abstract class _$BlocklistVersion extends $Notifier<int> {
   }
 }
 
-/// NIP-05 service for username availability checking
-
-@ProviderFor(nip05Service)
-const nip05ServiceProvider = Nip05ServiceProvider._();
-
-/// NIP-05 service for username availability checking
-
-final class Nip05ServiceProvider
-    extends $FunctionalProvider<Nip05Service, Nip05Service, Nip05Service>
-    with $Provider<Nip05Service> {
-  /// NIP-05 service for username availability checking
-  const Nip05ServiceProvider._()
-    : super(
-        from: null,
-        argument: null,
-        retry: null,
-        name: r'nip05ServiceProvider',
-        isAutoDispose: true,
-        dependencies: null,
-        $allTransitiveDependencies: null,
-      );
-
-  @override
-  String debugGetCreateSourceHash() => _$nip05ServiceHash();
-
-  @$internal
-  @override
-  $ProviderElement<Nip05Service> $createElement($ProviderPointer pointer) =>
-      $ProviderElement(pointer);
-
-  @override
-  Nip05Service create(Ref ref) {
-    return nip05Service(ref);
-  }
-
-  /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(Nip05Service value) {
-    return $ProviderOverride(
-      origin: this,
-      providerOverride: $SyncValueProvider<Nip05Service>(value),
-    );
-  }
-}
-
-String _$nip05ServiceHash() => r'b7f7e1471a3783305bf1070cb64f1b95c4bdb516';
-
 /// Draft storage service for persisting vine drafts
 
 @ProviderFor(draftStorageService)
@@ -1915,7 +1869,7 @@ final class AuthServiceProvider
   }
 }
 
-String _$authServiceHash() => r'2a8e1a700090afc3a4f2bd738032b7eef33f1c46';
+String _$authServiceHash() => r'50e8112a7c95a9a9ebff6f4fb649131e9874e676';
 
 /// Provider that returns current auth state and rebuilds when it changes.
 /// Widgets should watch this instead of authService.authState directly
@@ -2471,7 +2425,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'4da90451c0432828d297f3ba7350cc00873b6e7e';
+String _$followRepositoryHash() => r'dadc0598cb6bc48a4a6a1776f8c72117610aef2d';
 
 /// Provider for ProfileRepository instance
 ///

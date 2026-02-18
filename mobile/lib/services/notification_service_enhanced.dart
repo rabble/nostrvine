@@ -9,7 +9,7 @@ import 'package:hive_ce_flutter/hive_flutter.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/models/notification_model.dart';
+import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/notification_helpers.dart';
@@ -206,7 +206,7 @@ class NotificationServiceEnhanced {
   /// Subscribe to reposts
   void _subscribeToReposts(String userPubkey) {
     final filter = Filter(
-      kinds: [16], // Kind 16 = Generic Reposts (NIP-18)
+      kinds: [6, 16], // Kind 6 = Repost, Kind 16 = Generic Repost (NIP-18)
       // NO h filter - we query all relays
     );
 
@@ -219,26 +219,50 @@ class NotificationServiceEnhanced {
     _subscriptions['reposts'] = subscription;
   }
 
+  /// Resolve a video event from a Nostr event's tags
+  /// Tries event ID lookup (E/e tags) first, then addressable ID lookup (A/a tags)
+  /// Returns the (videoEvent, targetEventId) or null if not found
+  ({VideoEvent videoEvent, String targetEventId})? _resolveVideoEvent(
+    Event event,
+  ) {
+    // First try by event ID (E/e tags)
+    final videoEventId = extractVideoEventId(event);
+    if (videoEventId != null) {
+      final videoEvent = _videoService?.getVideoEventById(videoEventId);
+      if (videoEvent != null) {
+        return (videoEvent: videoEvent, targetEventId: videoEventId);
+      }
+    }
+
+    // Fall back to addressable ID (A/a tags) for kind 30000+ events
+    final addressableId = extractAddressableId(event);
+    if (addressableId != null) {
+      final parsed = parseAddressableId(addressableId);
+      if (parsed != null) {
+        final videoEvent = _videoService?.getVideoEventByVineId(parsed.dTag);
+        if (videoEvent != null) {
+          return (videoEvent: videoEvent, targetEventId: videoEvent.id);
+        }
+      }
+    }
+
+    return null;
+  }
+
   /// Handle reaction (like) events
   Future<void> _handleReactionEvent(Event event) async {
     // Check if this is a like (+ reaction)
     if (event.content != '+') return;
 
-    // Get the video that was liked
-    String? videoEventId;
-    for (final tag in event.tags) {
-      if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-        videoEventId = tag[1];
-        break;
-      }
-    }
-    if (videoEventId == null) return;
+    // Get the video that was liked (tries E/e tags then A/a tags)
+    final resolved = _resolveVideoEvent(event);
+    if (resolved == null) return;
 
-    // Get video info
-    final videoEvent = _videoService?.getVideoEventById(videoEventId);
+    final videoEvent = resolved.videoEvent;
+    final videoEventId = resolved.targetEventId;
 
     // CRITICAL: Only create notification if this is the current user's video
-    if (videoEvent == null || videoEvent.pubkey != _nostrService?.publicKey) {
+    if (videoEvent.pubkey != _nostrService?.publicKey) {
       return;
     }
 
@@ -264,21 +288,15 @@ class NotificationServiceEnhanced {
 
   /// Handle comment events
   Future<void> _handleCommentEvent(Event event) async {
-    // Check if this is a reply to a video
-    String? videoEventId;
-    for (final tag in event.tags) {
-      if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-        videoEventId = tag[1];
-        break;
-      }
-    }
-    if (videoEventId == null) return;
+    // Resolve video via E/e tags first, then A/a tags for addressable events
+    final resolved = _resolveVideoEvent(event);
+    if (resolved == null) return;
 
-    // Get video info
-    final videoEvent = _videoService?.getVideoEventById(videoEventId);
+    final videoEvent = resolved.videoEvent;
+    final videoEventId = resolved.targetEventId;
 
     // CRITICAL: Only create notification if this is the current user's video
-    if (videoEvent == null || videoEvent.pubkey != _nostrService?.publicKey) {
+    if (videoEvent.pubkey != _nostrService?.publicKey) {
       return;
     }
 
@@ -380,21 +398,15 @@ class NotificationServiceEnhanced {
 
   /// Handle repost events
   Future<void> _handleRepostEvent(Event event) async {
-    // Get the video that was reposted
-    String? videoEventId;
-    for (final tag in event.tags) {
-      if (tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
-        videoEventId = tag[1];
-        break;
-      }
-    }
-    if (videoEventId == null) return;
+    // Resolve video via E/e tags first, then A/a tags for addressable events
+    final resolved = _resolveVideoEvent(event);
+    if (resolved == null) return;
 
-    // Get video info
-    final videoEvent = _videoService?.getVideoEventById(videoEventId);
+    final videoEvent = resolved.videoEvent;
+    final videoEventId = resolved.targetEventId;
 
     // CRITICAL: Only create notification if this is the current user's video
-    if (videoEvent == null || videoEvent.pubkey != _nostrService?.publicKey) {
+    if (videoEvent.pubkey != _nostrService?.publicKey) {
       return;
     }
 

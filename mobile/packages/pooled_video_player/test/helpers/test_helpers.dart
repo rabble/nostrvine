@@ -348,6 +348,19 @@ class TestablePlayerPool extends PlayerPool {
   }
 
   @override
+  void stopAll() {
+    for (final player in _testPlayers.values) {
+      if (!player.isDisposed) {
+        try {
+          unawaited(player.player.stop());
+        } on Exception {
+          // Ignore errors during emergency stop
+        }
+      }
+    }
+  }
+
+  @override
   Future<void> dispose() async {
     for (final player in _testPlayers.values) {
       if (!player.isDisposed) {

@@ -2,7 +2,7 @@
 // ABOUTME: Extracted from NotificationServiceEnhanced to reduce duplication and improve testability
 
 import 'package:nostr_sdk/event.dart';
-import 'package:openvine/models/user_profile.dart';
+import 'package:models/models.dart';
 
 /// Extracts the video event ID from a Nostr event's tags
 /// For NIP-22 comments (kind 1111), looks for uppercase 'E' tag (root scope)
@@ -22,6 +22,45 @@ String? extractVideoEventId(Event event) {
     }
   }
   return null;
+}
+
+/// Extracts the addressable event reference from a Nostr event's tags
+/// For NIP-22 comments on addressable events (kind 30000+), looks for
+/// uppercase 'A' tag (root scope) first, then falls back to lowercase 'a'
+/// Returns the addressable ID string (format: "kind:pubkey:d-tag") or null
+String? extractAddressableId(Event event) {
+  // First try uppercase 'A' tag (NIP-22 root scope for addressable events)
+  for (final tag in event.tags) {
+    if (tag.isNotEmpty && tag[0] == 'A' && tag.length > 1) {
+      return tag[1];
+    }
+  }
+  // Fall back to lowercase 'a' tag (parent scope)
+  for (final tag in event.tags) {
+    if (tag.isNotEmpty && tag[0] == 'a' && tag.length > 1) {
+      return tag[1];
+    }
+  }
+  return null;
+}
+
+/// Parses an addressable event ID into its components
+/// Format: "kind:pubkey:d-tag"
+/// Returns (kind, pubkey, dTag) or null if the format is invalid
+({int kind, String pubkey, String dTag})? parseAddressableId(
+  String addressableId,
+) {
+  final parts = addressableId.split(':');
+  if (parts.length < 3) return null;
+
+  final kind = int.tryParse(parts[0]);
+  if (kind == null) return null;
+
+  final pubkey = parts[1];
+  // d-tag may contain colons, so rejoin remaining parts
+  final dTag = parts.sublist(2).join(':');
+
+  return (kind: kind, pubkey: pubkey, dTag: dTag);
 }
 
 /// Resolves the actor name from a user profile with fallback priority:

@@ -1,4 +1,6 @@
 appId: co.openvine.app
+env:
+  SEARCH_USER: "rabble"
 ---
 - launchApp:
     clearState: true

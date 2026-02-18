@@ -7,7 +7,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:nostr_sdk/filter.dart';
-import 'package:openvine/models/user_profile.dart';
+import 'package:models/models.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/analytics_api_service.dart';

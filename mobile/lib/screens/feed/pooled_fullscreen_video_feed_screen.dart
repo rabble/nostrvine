@@ -283,8 +283,16 @@ class _FullscreenFeedContentState extends State<FullscreenFeedContent> {
               controller: _controller,
               initialIndex: state.currentIndex,
               onActiveVideoChanged: (video, index) {
+                // Resolve the actual index in state.videos by ID,
+                // since pooledVideos filters out null-URL videos and
+                // indices may not match.
+                final actualIndex = state.videos.indexWhere(
+                  (v) => v.id == video.id,
+                );
                 context.read<FullscreenFeedBloc>().add(
-                  FullscreenFeedIndexChanged(index),
+                  FullscreenFeedIndexChanged(
+                    actualIndex >= 0 ? actualIndex : index,
+                  ),
                 );
               },
               onNearEnd: (_) {
@@ -294,7 +302,14 @@ class _FullscreenFeedContentState extends State<FullscreenFeedContent> {
               },
               nearEndThreshold: 2,
               itemBuilder: (context, video, index, {required isActive}) {
-                final originalEvent = state.videos[index];
+                // Look up by video ID instead of index, because
+                // pooledVideos filters out null-URL entries and indices
+                // may diverge from state.videos.
+                final originalEvent = state.videos.firstWhere(
+                  (v) => v.id == video.id,
+                  orElse: () =>
+                      state.videos[index.clamp(0, state.videos.length - 1)],
+                );
                 return _PooledFullscreenItem(
                   video: originalEvent,
                   index: index,

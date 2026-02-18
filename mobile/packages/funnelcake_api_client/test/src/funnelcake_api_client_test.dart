@@ -1323,6 +1323,193 @@ void main() {
       });
     });
 
+    group('getCollabVideos', () {
+      const validCollabResponse =
+          '''
+[
+  {
+    "id": "collab123def456",
+    "pubkey": "$testPubkey",
+    "created_at": 1700000000,
+    "kind": 34236,
+    "d_tag": "collab-video-1",
+    "title": "Collab Video",
+    "content": "A collab video",
+    "thumbnail": "https://example.com/thumb.jpg",
+    "video_url": "https://example.com/video.mp4",
+    "reactions": 50,
+    "comments": 5,
+    "reposts": 2,
+    "engagement_score": 57
+  }
+]
+''';
+
+      test('returns videos on successful response', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(validCollabResponse, 200),
+        );
+
+        final videos = await client.getCollabVideos(pubkey: testPubkey);
+
+        expect(videos, hasLength(1));
+        expect(videos.first.id, equals('collab123def456'));
+        expect(videos.first.title, equals('Collab Video'));
+      });
+
+      test('constructs correct URL with default limit', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.getCollabVideos(pubkey: testPubkey);
+
+        final captured = verify(
+          () => mockHttpClient.get(
+            captureAny(),
+            headers: any(named: 'headers'),
+          ),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.path, equals('/api/users/$testPubkey/collabs'));
+        expect(uri.queryParameters['limit'], equals('50'));
+      });
+
+      test('includes before parameter when provided', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('[]', 200),
+        );
+
+        await client.getCollabVideos(
+          pubkey: testPubkey,
+          before: 1700000000,
+        );
+
+        final captured = verify(
+          () => mockHttpClient.get(
+            captureAny(),
+            headers: any(named: 'headers'),
+          ),
+        ).captured;
+
+        final uri = captured.first as Uri;
+        expect(uri.queryParameters['before'], equals('1700000000'));
+      });
+
+      test('throws FunnelcakeNotConfiguredException when not available', () {
+        final emptyClient = FunnelcakeApiClient(
+          baseUrl: '',
+          httpClient: mockHttpClient,
+        );
+
+        expect(
+          () => emptyClient.getCollabVideos(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeNotConfiguredException>()),
+        );
+
+        emptyClient.dispose();
+      });
+
+      test('throws FunnelcakeException when pubkey is empty', () {
+        expect(
+          () => client.getCollabVideos(pubkey: ''),
+          throwsA(
+            isA<FunnelcakeException>().having(
+              (e) => e.message,
+              'message',
+              contains('Pubkey cannot be empty'),
+            ),
+          ),
+        );
+      });
+
+      test('throws FunnelcakeNotFoundException on 404', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response('Not found', 404),
+        );
+
+        expect(
+          () => client.getCollabVideos(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeNotFoundException>()),
+        );
+      });
+
+      test(
+        'throws FunnelcakeApiException on other error status codes',
+        () async {
+          when(
+            () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+          ).thenAnswer(
+            (_) async => http.Response('Internal Server Error', 500),
+          );
+
+          expect(
+            () => client.getCollabVideos(pubkey: testPubkey),
+            throwsA(
+              isA<FunnelcakeApiException>().having(
+                (e) => e.statusCode,
+                'statusCode',
+                equals(500),
+              ),
+            ),
+          );
+        },
+      );
+
+      test('throws FunnelcakeTimeoutException on timeout', () async {
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => throw TimeoutException('Request timed out'),
+        );
+
+        expect(
+          () => client.getCollabVideos(pubkey: testPubkey),
+          throwsA(isA<FunnelcakeTimeoutException>()),
+        );
+      });
+
+      test('filters out videos with empty id', () async {
+        const responseWithEmptyId =
+            '''
+[
+  {
+    "id": "",
+    "pubkey": "$testPubkey",
+    "created_at": 1700000000,
+    "kind": 34236,
+    "d_tag": "test",
+    "title": "Invalid",
+    "thumbnail": "https://example.com/thumb.jpg",
+    "video_url": "https://example.com/video.mp4",
+    "reactions": 0,
+    "comments": 0,
+    "reposts": 0,
+    "engagement_score": 0
+  }
+]
+''';
+        when(
+          () => mockHttpClient.get(any(), headers: any(named: 'headers')),
+        ).thenAnswer(
+          (_) async => http.Response(responseWithEmptyId, 200),
+        );
+
+        final videos = await client.getCollabVideos(pubkey: testPubkey);
+
+        expect(videos, isEmpty);
+      });
+    });
+
     group('dispose', () {
       test('does not close externally provided httpClient', () {
         client.dispose();

@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,11 +15,11 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
+import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
+import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/utils/search_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
@@ -62,7 +63,7 @@ class SearchScreenPure extends ConsumerStatefulWidget {
 }
 
 class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, GridPrefetchMixin {
   final TextEditingController _searchController = TextEditingController();
   final FocusNode _searchFocusNode = FocusNode();
   late TabController _tabController;
@@ -144,10 +145,15 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
   void _performSearch(String query, {bool updateUrl = true}) async {
     if (query.isEmpty) {
+      final videoEventService = ref.read(videoEventServiceProvider);
+      videoEventService.clearSearchResults();
+
       setState(() {
         _videoResults = [];
         _hashtagResults = [];
         _isSearching = false;
+        _isSearchingExternal = false;
+        _isSearchingWebSocket = false;
         _currentQuery = '';
       });
       _userSearchBloc.add(const UserSearchCleared());
@@ -434,11 +440,26 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     });
     // Update provider so active video system can access merged search results
     ref.read(searchScreenVideosProvider.notifier).state = uniqueVideos;
+
+    // Prefetch top video files for faster playback on tap
+    prefetchGridVideos(uniqueVideos);
   }
 
   @override
   Widget build(BuildContext context) {
-    // Search always shows grid UI - videos open in fullscreen via push navigation
+    // Derive feed mode from URL (single source of truth)
+    final pageContext = ref.watch(pageContextProvider);
+    final isInFeedMode =
+        pageContext.whenOrNull(
+          data: (ctx) => ctx.type == RouteType.search && ctx.videoIndex != null,
+        ) ??
+        false;
+
+    // Show fullscreen video player when in feed mode
+    if (isInFeedMode) {
+      return _SearchFeedModeContent(searchTerm: _currentQuery);
+    }
+
     final searchBar = SizedBox(
       height: 48,
       child: TextField(
@@ -540,8 +561,8 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     if (widget.embedded) {
       return BlocProvider.value(
         value: _userSearchBloc,
-        child: Container(
-          color: VineTheme.backgroundColor, // Ensure visible background
+        child: Material(
+          color: VineTheme.backgroundColor,
           child: Column(
             children: [
               Container(
@@ -675,15 +696,13 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
                 '🔍 SearchScreenPure: Tapped video at index $index',
                 category: LogCategory.video,
               );
-              // Push to fullscreen video feed (outside shell, no bottom nav)
-              context.push(
-                FullscreenVideoFeedScreen.path,
-                extra: FullscreenVideoFeedArgs(
-                  source: StaticFeedSource(videos),
-                  initialIndex: index,
-                  contextTitle: _currentQuery.isNotEmpty
-                      ? 'Search: $_currentQuery'
-                      : null,
+              // Pre-warm adjacent videos before navigation
+              prefetchAroundIndex(index, videos);
+              // Navigate using GoRouter to enable router-driven video playback
+              context.go(
+                SearchScreenPure.pathForTerm(
+                  term: _currentQuery.isNotEmpty ? _currentQuery : null,
+                  index: index,
                 ),
               );
             },
@@ -786,6 +805,45 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
               // Navigate using GoRouter
               context.go(HashtagScreenRouter.pathForTag(hashtag));
             },
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _SearchFeedModeContent extends ConsumerWidget {
+  const _SearchFeedModeContent({required this.searchTerm});
+
+  final String searchTerm;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final videos =
+        ref.watch(searchScreenVideosProvider) ?? const <VideoEvent>[];
+    final pageContext = ref.watch(pageContextProvider);
+    final startIndex =
+        pageContext.whenOrNull(data: (ctx) => ctx.videoIndex ?? 0) ?? 0;
+
+    if (videos.isEmpty || startIndex >= videos.length) {
+      return Center(
+        child: Text(
+          'No videos available',
+          style: TextStyle(color: VineTheme.whiteText),
+        ),
+      );
+    }
+
+    return ExploreVideoScreenPure(
+      startingVideo: videos[startIndex],
+      videoList: videos,
+      contextTitle: 'Search',
+      startingIndex: startIndex,
+      onNavigate: (index) {
+        context.go(
+          SearchScreenPure.pathForTerm(
+            term: searchTerm.isNotEmpty ? searchTerm : null,
+            index: index,
           ),
         );
       },

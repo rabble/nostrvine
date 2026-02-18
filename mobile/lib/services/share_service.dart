@@ -34,26 +34,21 @@ class ShareService {
     }
   }
 
-  /// Generate a web app link for a video
+  /// Generate a web app link for a video.
+  ///
+  /// Uses [VideoEvent.stableId] (d-tag) for addressable events so the URL
+  /// remains valid even if the user edits the video metadata.
+  ///
+  /// Requires funnelcake API to support d-tag lookups on /api/videos/{id}.
   String generateWebLink(VideoEvent video) {
-    return '$_appUrl/video/${video.id}';
+    return '$_appUrl/video/${video.stableId}';
   }
 
-  /// Generate shareable text content
+  /// Generate shareable text content.
+  ///
+  /// Returns only the web link so users can add their own context.
   String generateShareText(VideoEvent video) {
-    final content = video.content;
-    final webLink = generateWebLink(video);
-
-    // Extract hashtags for better sharing
-    final hashtags = _extractHashtags(content);
-    final hashtagText = hashtags.isNotEmpty ? ' ${hashtags.join(' ')}' : '';
-
-    // Truncate content if too long
-    final truncatedContent = content.length > 100
-        ? '${content.substring(0, 100)}...'
-        : content;
-
-    return '$truncatedContent$hashtagText\n\n$webLink';
+    return generateWebLink(video);
   }
 
   /// Copy link to clipboard
@@ -119,12 +114,6 @@ class ShareService {
       builder: (context) =>
           _ShareOptionsBottomSheet(video: video, shareService: this),
     );
-  }
-
-  /// Extract hashtags from content
-  List<String> _extractHashtags(String content) {
-    final regex = RegExp(r'#\w+');
-    return regex.allMatches(content).map((match) => match.group(0)!).toList();
   }
 }
 

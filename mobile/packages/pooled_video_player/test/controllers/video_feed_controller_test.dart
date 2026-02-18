@@ -1593,7 +1593,7 @@ void main() {
           );
           addTearDown(evictablePool.dispose);
 
-          final videos = createTestVideos(count: 5);
+          final videos = createTestVideos();
           final controller = VideoFeedController(
             videos: videos,
             pool: evictablePool,

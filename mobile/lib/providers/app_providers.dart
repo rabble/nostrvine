@@ -2,6 +2,7 @@
 // ABOUTME: Replaces Provider MultiProvider setup with pure Riverpod dependency injection
 
 import 'dart:async';
+import 'dart:convert';
 import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
@@ -49,7 +50,6 @@ import 'package:openvine/services/hashtag_cache_service.dart';
 import 'package:openvine/services/hashtag_service.dart';
 import 'package:openvine/services/media_auth_interceptor.dart';
 import 'package:openvine/services/mute_service.dart';
-import 'package:openvine/services/nip05_service.dart';
 import 'package:openvine/services/nip17_message_service.dart';
 import 'package:openvine/services/nip98_auth_service.dart';
 import 'package:openvine/services/notification_service_enhanced.dart';
@@ -538,12 +538,6 @@ class BlocklistVersion extends _$BlocklistVersion {
   void increment() => state++;
 }
 
-/// NIP-05 service for username availability checking
-@riverpod
-Nip05Service nip05Service(Ref ref) {
-  return Nip05Service();
-}
-
 /// Draft storage service for persisting vine drafts
 @riverpod
 Future<DraftStorageService> draftStorageService(Ref ref) async {
@@ -573,6 +567,9 @@ AuthService authService(Ref ref) {
   final pendingVerificationService = ref.watch(
     pendingVerificationServiceProvider,
   );
+  // NOTE: analyticsApiServiceProvider and sharedPreferencesProvider are
+  // resolved lazily inside the callback to avoid a circular dependency:
+  //   authService → analyticsApiService → nostrService → authService
   return AuthService(
     userDataCleanupService: userDataCleanupService,
     keyStorage: keyStorage,
@@ -580,6 +577,28 @@ AuthService authService(Ref ref) {
     flutterSecureStorage: flutterSecureStorage,
     oauthConfig: oauthConfig,
     pendingVerificationService: pendingVerificationService,
+    preFetchFollowing: (pubkeyHex) async {
+      // Pre-fetch following list from funnelcake REST API during login setup.
+      // This populates SharedPreferences BEFORE auth state is set, so the
+      // router redirect has accurate cache data and sends user to /home not
+      // /explore.
+      final analyticsService = ref.read(analyticsApiServiceProvider);
+      final prefs = ref.read(sharedPreferencesProvider);
+      final result = await analyticsService.getFollowing(
+        pubkeyHex,
+        limit: 5000,
+      );
+      if (result.pubkeys.isNotEmpty) {
+        final key = 'following_list_$pubkeyHex';
+        await prefs.setString(key, jsonEncode(result.pubkeys));
+        Log.info(
+          'Pre-fetched ${result.pubkeys.length} following for router '
+          'redirect cache',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+      }
+    },
   );
 }
 
@@ -841,6 +860,9 @@ FollowRepository? followRepository(Ref ref) {
   final connectionStatus = ref.watch(connectionStatusServiceProvider);
   final pendingActionService = ref.watch(pendingActionServiceProvider);
 
+  // Get analytics API service for fast REST-based following list bootstrap
+  final analyticsService = ref.read(analyticsApiServiceProvider);
+
   final repository = FollowRepository(
     nostrClient: nostrClient,
     personalEventCache: personalEventCache,
@@ -855,6 +877,10 @@ FollowRepository? followRepository(Ref ref) {
             );
           }
         : null,
+    fetchFollowingFromApi: (pubkey) async {
+      final result = await analyticsService.getFollowing(pubkey, limit: 5000);
+      return result.pubkeys;
+    },
   );
 
   // Register executors with pending action service for sync

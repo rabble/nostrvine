@@ -1,5 +1,7 @@
 // ABOUTME: BLoC for searching user profiles via ProfileRepository.
 
+import 'dart:developer' as developer;
+
 import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -24,7 +26,6 @@ EventTransformer<E> _debounceRestartable<E>() {
 }
 
 /// BLoC for searching user profiles.
-///
 class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
   UserSearchBloc({required ProfileRepository profileRepository})
     : _profileRepository = profileRepository,
@@ -60,6 +61,20 @@ class UserSearchBloc extends Bloc<UserSearchEvent, UserSearchState> {
         sortBy: 'followers',
         hasVideos: true,
       );
+
+      final withPic = results.where((p) => p.picture != null).length;
+      developer.log(
+        'Query "$query": ${results.length} results, '
+        '$withPic with picture',
+        name: 'UserSearchBloc',
+      );
+      for (final p in results) {
+        developer.log(
+          '  ${p.bestDisplayName}: picture=${p.picture ?? "null"}',
+          name: 'UserSearchBloc',
+        );
+      }
+
       emit(
         state.copyWith(
           status: UserSearchStatus.success,

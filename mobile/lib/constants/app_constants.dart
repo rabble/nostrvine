@@ -98,6 +98,12 @@ class AppConstants {
   /// Number of videos to preload after current position
   static const int preloadAfter = 3;
 
+  /// Maximum videos to prefetch from grid views (approx 3x3 visible area)
+  static const int gridPrefetchLimit = 9;
+
+  /// Minimum bandwidth (Mbps) required for speculative grid prefetching
+  static const double gridPrefetchMinBandwidthMbps = 1.5;
+
   // ============================================================================
   // NETWORK CONFIGURATION
   // ============================================================================

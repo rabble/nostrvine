@@ -66,6 +66,9 @@ class _MockNostrClient extends Mock implements NostrClient {
 
   @override
   int get connectedRelayCount => 1;
+
+  @override
+  List<String> get configuredRelays => <String>[];
 }
 
 class _MockUserProfileService extends Mock implements UserProfileService {}
@@ -259,7 +262,7 @@ void main() {
       mockLikesRepository = _MockLikesRepository();
       when(
         () => mockLikesRepository.watchLikedEventIds(),
-      ).thenAnswer((_) => const Stream<Set<String>>.empty());
+      ).thenAnswer((_) => const Stream<List<String>>.empty());
       when(
         () => mockLikesRepository.fetchUserLikes(any()),
       ).thenAnswer((_) async => <String>[]);
@@ -331,6 +334,7 @@ void main() {
                 onSetupProfile: () {},
                 onEditProfile: () {},
                 onOpenClips: () {},
+                onOpenAnalytics: () {},
               ),
             ),
           ),

@@ -61,6 +61,22 @@ void main() {
         expect(find.byType(GestureDetector), findsOneWidget);
       });
 
+      testWidgets('has Follow semantic label when not following', (
+        tester,
+      ) async {
+        when(() => mockMyFollowingBloc.state).thenReturn(
+          const MyFollowingState(
+            status: MyFollowingStatus.success,
+            followingPubkeys: [],
+          ),
+        );
+
+        await tester.pumpWidget(createTestWidget(pubkey: validPubkey('other')));
+        await tester.pump();
+
+        expect(find.bySemanticsLabel('Follow'), findsOneWidget);
+      });
+
       testWidgets('shows following icon when following', (tester) async {
         final otherPubkey = validPubkey('other');
         when(() => mockMyFollowingBloc.state).thenReturn(
@@ -76,6 +92,23 @@ void main() {
         // Button uses SVG icons now - find by SvgPicture widget
         expect(find.byType(SvgPicture), findsOneWidget);
         expect(find.byType(GestureDetector), findsOneWidget);
+      });
+
+      testWidgets('has Following semantic label when following', (
+        tester,
+      ) async {
+        final otherPubkey = validPubkey('other');
+        when(() => mockMyFollowingBloc.state).thenReturn(
+          MyFollowingState(
+            status: MyFollowingStatus.success,
+            followingPubkeys: [otherPubkey],
+          ),
+        );
+
+        await tester.pumpWidget(createTestWidget(pubkey: otherPubkey));
+        await tester.pump();
+
+        expect(find.bySemanticsLabel('Following'), findsOneWidget);
       });
     });
 

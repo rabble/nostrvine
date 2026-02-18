@@ -690,19 +690,19 @@ class NostrClient {
 
   /// Sends a user profile (Kind 0 metadata event).
   ///
-  /// Successfully sent events are cached locally with 1-day expiry.
+  /// Routes through [publishEvent] to ensure relay health checks and
+  /// reconnection logic run before broadcasting. Kind 0 is replaceable,
+  /// so the event is cached only on successful publish.
   Future<Event?> sendProfile({
     required Map<String, dynamic> profileContent,
   }) async {
-    final profileEvent = await _nostr.sendProfile(
-      content: jsonEncode(profileContent),
+    final event = Event(
+      publicKey,
+      EventKind.metadata,
+      [],
+      jsonEncode(profileContent),
     );
-
-    if (profileEvent != null) {
-      _cacheEvent(profileEvent);
-    }
-
-    return profileEvent;
+    return publishEvent(event);
   }
 
   /// Sends a repost

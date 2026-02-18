@@ -3,10 +3,9 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/config/bug_report_config.dart';
-import 'package:openvine/models/bug_report_data.dart';
-import 'package:openvine/models/log_entry.dart';
+import 'package:models/models.dart'
+    show BugReportData, LogCategory, LogEntry, LogLevel;
 import 'package:openvine/services/bug_report_service.dart';
-import 'package:openvine/utils/unified_logger.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

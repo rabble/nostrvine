@@ -33,6 +33,7 @@ class VideoStats {
     this.blurhash,
     this.trendingScore,
     this.loops,
+    this.rawTags = const {},
   });
 
   /// Creates a [VideoStats] from JSON response.
@@ -57,6 +58,8 @@ class VideoStats {
     } else {
       id = rawId?.toString() ?? '';
     }
+    // Normalize to lowercase per NIP-01 (Funnelcake may return uppercase hex)
+    id = id.toLowerCase();
 
     // Parse pubkey - same format as id
     String pubkey;
@@ -66,6 +69,8 @@ class VideoStats {
     } else {
       pubkey = rawPubkey?.toString() ?? '';
     }
+    // Normalize to lowercase per NIP-01 (Funnelcake may return uppercase hex)
+    pubkey = pubkey.toLowerCase();
 
     // Parse created_at - funnelcake returns Unix timestamp (int), not ISO
     DateTime createdAt;
@@ -111,8 +116,10 @@ class VideoStats {
     if (description != null && description.isEmpty) description = null;
 
     // Also check for blurhash and summary in tags (NIP-71 standard)
+    // Collect ALL tags into rawTags so nothing is lost (ProofMode, C2PA, etc.)
     String? blurhashFromTag;
     String? summaryFromTag;
+    final rawTags = <String, String>{};
 
     if (eventData['tags'] is List) {
       final tags = eventData['tags'] as List<dynamic>;
@@ -120,6 +127,10 @@ class VideoStats {
         if (tag is List && tag.length >= 2) {
           final tagName = tag[0].toString();
           final tagValue = tag[1].toString();
+
+          // Store every tag in rawTags for downstream consumers
+          rawTags[tagName] = tagValue;
+
           if (tagName == 'title' && title.isEmpty) title = tagValue;
           if ((tagName == 'thumb' || tagName == 'thumbnail') &&
               thumbnail.isEmpty) {
@@ -210,6 +221,7 @@ class VideoStats {
         statsData['trending_score'] ?? json['trending_score'],
       ),
       loops: loops,
+      rawTags: rawTags,
     );
   }
 
@@ -270,6 +282,10 @@ class VideoStats {
   /// Original loop count for classic Vines.
   final int? loops;
 
+  /// All Nostr event tags as a flat map, preserving tags (like ProofMode,
+  /// C2PA, verification) that don't have dedicated fields on this model.
+  final Map<String, String> rawTags;
+
   /// Converts this [VideoStats] to a [VideoEvent] for use in the app.
   ///
   /// Maps the Funnelcake API response fields to the corresponding
@@ -293,6 +309,7 @@ class VideoStats {
       originalComments: comments,
       originalReposts: reposts,
       originalLoops: loops,
+      rawTags: rawTags,
     );
   }
 

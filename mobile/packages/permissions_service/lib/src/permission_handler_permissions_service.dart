@@ -127,7 +127,9 @@ class PermissionHandlerPermissionsService implements PermissionsService {
   @visibleForTesting
   @internal
   PermissionStatus mapPermissionStatus(ph.PermissionStatus status) {
-    if (status.isGranted) {
+    // isGranted covers full access
+    // isLimited covers iOS 14+ "Limited Photos Access" - sufficient for saving
+    if (status.isGranted || status.isLimited) {
       return PermissionStatus.granted;
     }
 

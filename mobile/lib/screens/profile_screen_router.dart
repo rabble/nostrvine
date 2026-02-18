@@ -12,12 +12,14 @@ import 'package:openvine/blocs/background_publish/background_publish_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
+import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/environment_indicator.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_stats_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
+import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/profile_setup_screen.dart';
 import 'package:divine_ui/divine_ui.dart';
@@ -26,7 +28,7 @@ import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/profile/blocked_user_screen.dart';
-import 'package:openvine/widgets/profile/profile_grid_view.dart';
+import 'package:openvine/widgets/profile/profile_grid.dart';
 import 'package:openvine/widgets/profile/profile_loading_view.dart';
 import 'package:openvine/widgets/profile/profile_video_feed_view.dart';
 import 'package:openvine/widgets/vine_bottom_nav.dart';
@@ -168,6 +170,7 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
         onSetupProfile: _setupProfile,
         onEditProfile: _editProfile,
         onOpenClips: _openClips,
+        onOpenAnalytics: _openAnalytics,
         refreshNotifier: _refreshNotifier,
       ),
     };
@@ -375,6 +378,15 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
     context.push(ClipLibraryScreen.clipsPath);
   }
 
+  void _openAnalytics() {
+    final rootContext = NavigatorKeys.root.currentContext;
+    if (rootContext != null) {
+      GoRouter.of(rootContext).pushNamed(CreatorAnalyticsScreen.routeName);
+      return;
+    }
+    context.pushNamed(CreatorAnalyticsScreen.routeName);
+  }
+
   Future<void> _more(String userIdHex) async {
     final result = await VineBottomSheet.show<String>(
       context: context,
@@ -397,6 +409,19 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
                 ),
                 const SizedBox(width: 16),
                 Text('Edit profile', style: VineTheme.titleMediumFont()),
+              ],
+            ),
+          ),
+        ),
+        InkWell(
+          onTap: () => Navigator.of(context).pop('analytics'),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Row(
+              children: [
+                const Icon(Icons.analytics_outlined, size: 24),
+                const SizedBox(width: 16),
+                Text('Creator analytics', style: VineTheme.titleMediumFont()),
               ],
             ),
           ),
@@ -453,6 +478,8 @@ class _ProfileScreenRouterState extends ConsumerState<ProfileScreenRouter>
 
     if (result == 'edit') {
       _editProfile();
+    } else if (result == 'analytics') {
+      _openAnalytics();
     } else if (result == 'share') {
       await _shareProfile(userIdHex);
     } else if (result == 'copy_npub') {
@@ -481,6 +508,7 @@ class _ProfileContentView extends ConsumerWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
+    required this.onOpenAnalytics,
     required this.refreshNotifier,
   });
 
@@ -490,6 +518,7 @@ class _ProfileContentView extends ConsumerWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
+  final VoidCallback onOpenAnalytics;
   final ValueNotifier<int> refreshNotifier;
 
   @override
@@ -550,6 +579,7 @@ class _ProfileContentView extends ConsumerWidget {
       onSetupProfile: onSetupProfile,
       onEditProfile: onEditProfile,
       onOpenClips: onOpenClips,
+      onOpenAnalytics: onOpenAnalytics,
       refreshNotifier: refreshNotifier,
     );
   }
@@ -607,6 +637,7 @@ class _ProfileDataView extends ConsumerWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
+    required this.onOpenAnalytics,
     required this.refreshNotifier,
     this.displayName,
   });
@@ -620,6 +651,7 @@ class _ProfileDataView extends ConsumerWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
+  final VoidCallback onOpenAnalytics;
   final ValueNotifier<int> refreshNotifier;
 
   @override
@@ -670,6 +702,7 @@ class _ProfileDataView extends ConsumerWidget {
           onSetupProfile: onSetupProfile,
           onEditProfile: onEditProfile,
           onOpenClips: onOpenClips,
+          onOpenAnalytics: onOpenAnalytics,
           refreshNotifier: refreshNotifier,
         ),
       },
@@ -692,6 +725,7 @@ class ProfileViewSwitcher extends StatelessWidget {
     required this.onSetupProfile,
     required this.onEditProfile,
     required this.onOpenClips,
+    required this.onOpenAnalytics,
     this.refreshNotifier,
     this.displayName,
     super.key,
@@ -708,6 +742,7 @@ class ProfileViewSwitcher extends StatelessWidget {
   final VoidCallback onSetupProfile;
   final VoidCallback onEditProfile;
   final VoidCallback onOpenClips;
+  final VoidCallback onOpenAnalytics;
 
   /// Optional notifier to trigger BLoC refresh when its value changes.
   final ValueNotifier<int>? refreshNotifier;
@@ -742,6 +777,7 @@ class ProfileViewSwitcher extends StatelessWidget {
             onSetupProfile: onSetupProfile,
             onEditProfile: onEditProfile,
             onOpenClips: onOpenClips,
+            onOpenAnalytics: onOpenAnalytics,
             refreshNotifier: refreshNotifier,
           );
 

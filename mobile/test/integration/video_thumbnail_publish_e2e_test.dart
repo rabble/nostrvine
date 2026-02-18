@@ -39,6 +39,7 @@ class MockAuthService implements AuthService {
     required String content,
     List<List<String>>? tags,
     String? biometricPrompt,
+    int? createdAt,
   }) async {
     // Create a test event with deterministic ID
     final timestamp = DateTime.now().millisecondsSinceEpoch ~/ 1000;

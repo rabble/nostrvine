@@ -3,10 +3,15 @@
 
 import 'dart:io';
 
+import 'package:flutter/foundation.dart'
+    show TargetPlatform, defaultTargetPlatform;
+import 'package:flutter/services.dart';
 import 'package:gal/gal.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:path/path.dart' as p;
+import 'package:path_provider/path_provider.dart';
 import 'package:permissions_service/permissions_service.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
@@ -24,6 +29,11 @@ class GallerySaveSuccess extends GallerySaveResult {
 class GallerySaveFailure extends GallerySaveResult {
   const GallerySaveFailure(this.reason);
   final String reason;
+}
+
+/// Gallery permission was denied — UI should offer to open Settings.
+class GallerySavePermissionDenied extends GallerySaveResult {
+  const GallerySavePermissionDenied();
 }
 
 /// Service for saving videos to the device's camera roll/gallery.
@@ -55,44 +65,53 @@ class GallerySaveService {
     String albumName = 'diVine',
     VideoMetadata? metadata,
   }) async {
-    try {
-      String filePath;
+    // Declare filePath outside try so catch blocks can access it.
+    String? resolvedPath;
 
+    try {
       // Crop to aspect ratio if specified
       if (aspectRatio != null) {
-        filePath = await VideoEditorRenderService.cropToAspectRatio(
+        resolvedPath = await VideoEditorRenderService.cropToAspectRatio(
           video: video,
           aspectRatio: aspectRatio,
           metadata: metadata,
         );
       } else {
-        filePath = await video.safeFilePath();
+        resolvedPath = await video.safeFilePath();
       }
 
       // Verify the file exists
-      final file = File(filePath);
+      final file = File(resolvedPath);
       if (!file.existsSync()) {
         Log.warning(
-          'Cannot save to gallery: file does not exist at $filePath',
+          'Cannot save to gallery: file does not exist at $resolvedPath',
           name: 'GallerySaveService',
           category: LogCategory.video,
         );
         return const GallerySaveFailure('File does not exist');
       }
 
-      // Check gallery permission (should already be granted from camera flow)
-      final status = await _permissionsService.checkGalleryStatus();
-      if (status != PermissionStatus.granted) {
-        Log.warning(
-          'Gallery save skipped: permission not granted (status: $status)',
-          name: 'GallerySaveService',
-          category: LogCategory.video,
-        );
-        return const GallerySaveFailure('Permission denied');
+      // Check gallery permission.
+      // On desktop, permission_handler may not be available —
+      // fall back to Gal's own permission request or Downloads.
+      final permResult = await _checkPermission();
+      if (permResult != null) {
+        // Permission denied — on desktop, save to Downloads instead.
+        if (_isDesktop) {
+          return _saveToDownloads(resolvedPath);
+        }
+        return permResult;
       }
 
       // Save the video to the gallery
-      await Gal.putVideo(filePath, album: albumName);
+      // On iOS, don't use album parameter - it requires full photo library access
+      // With album, iOS shows a second permission dialog for full access
+      // Without album, it only needs photosAddOnly permission
+      if (Platform.isIOS) {
+        await Gal.putVideo(resolvedPath);
+      } else {
+        await Gal.putVideo(resolvedPath, album: albumName);
+      }
 
       Log.info(
         'Video saved to camera roll successfully',
@@ -107,6 +126,12 @@ class GallerySaveService {
         name: 'GallerySaveService',
         category: LogCategory.video,
       );
+
+      // On desktop, fall back to saving to Downloads folder
+      if (_isDesktop && resolvedPath != null) {
+        return _saveToDownloads(resolvedPath);
+      }
+
       return GallerySaveFailure('Gallery error: ${e.type.name}');
     } catch (e) {
       Log.warning(
@@ -114,7 +139,85 @@ class GallerySaveService {
         name: 'GallerySaveService',
         category: LogCategory.video,
       );
+
+      // On desktop, fall back to saving to Downloads folder
+      if (_isDesktop && resolvedPath != null) {
+        return _saveToDownloads(resolvedPath);
+      }
+
       return GallerySaveFailure('Unexpected error: $e');
+    }
+  }
+
+  /// Checks permission and returns null if granted,
+  /// or a failure result if denied.
+  Future<GallerySaveResult?> _checkPermission() async {
+    try {
+      final status = await _permissionsService.checkGalleryStatus();
+      if (status == PermissionStatus.granted) return null;
+
+      // Not granted yet — try requesting
+      if (status == PermissionStatus.canRequest) {
+        final requested = await _permissionsService.requestGalleryPermission();
+        if (requested == PermissionStatus.granted) return null;
+      }
+
+      // Permanently denied or still not granted
+      Log.warning(
+        'Gallery permission not granted (status: $status)',
+        name: 'GallerySaveService',
+        category: LogCategory.video,
+      );
+      return const GallerySavePermissionDenied();
+    } on MissingPluginException {
+      // Desktop: permission_handler not available.
+      // Use Gal's native permission request (triggers macOS TCC prompt).
+      final hasAccess = await Gal.hasAccess(toAlbum: true);
+      if (hasAccess) return null;
+
+      final granted = await Gal.requestAccess(toAlbum: true);
+      if (granted) return null;
+
+      Log.warning(
+        'Gallery access denied via Gal on this platform',
+        name: 'GallerySaveService',
+        category: LogCategory.video,
+      );
+      return const GallerySavePermissionDenied();
+    }
+  }
+
+  bool get _isDesktop =>
+      defaultTargetPlatform == TargetPlatform.macOS ||
+      defaultTargetPlatform == TargetPlatform.linux ||
+      defaultTargetPlatform == TargetPlatform.windows;
+
+  /// Falls back to copying the video to the user's Downloads folder.
+  Future<GallerySaveResult> _saveToDownloads(String filePath) async {
+    try {
+      final downloadsDir = await getDownloadsDirectory();
+      if (downloadsDir == null || !downloadsDir.existsSync()) {
+        return const GallerySaveFailure('Downloads folder not found');
+      }
+
+      final fileName = 'diVine_${DateTime.now().millisecondsSinceEpoch}.mp4';
+      final destPath = p.join(downloadsDir.path, fileName);
+      await File(filePath).copy(destPath);
+
+      Log.info(
+        'Video saved to Downloads: $destPath',
+        name: 'GallerySaveService',
+        category: LogCategory.video,
+      );
+
+      return const GallerySaveSuccess();
+    } catch (e) {
+      Log.warning(
+        'Failed to save to Downloads: $e',
+        name: 'GallerySaveService',
+        category: LogCategory.video,
+      );
+      return GallerySaveFailure('Could not save to Downloads: $e');
     }
   }
 }

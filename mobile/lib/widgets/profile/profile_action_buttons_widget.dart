@@ -15,6 +15,7 @@ class ProfileActionButtons extends StatelessWidget {
     this.displayName,
     this.onEditProfile,
     this.onOpenClips,
+    this.onOpenAnalytics,
     this.onBlockedTap,
     super.key,
   });
@@ -26,6 +27,7 @@ class ProfileActionButtons extends StatelessWidget {
   final String? displayName;
   final VoidCallback? onEditProfile;
   final VoidCallback? onOpenClips;
+  final VoidCallback? onOpenAnalytics;
 
   /// Callback when the Blocked button is tapped.
   final VoidCallback? onBlockedTap;
@@ -78,7 +80,7 @@ class ProfileActionButtons extends StatelessWidget {
               ),
             ),
           ),
-          const SizedBox(width: 16),
+          const SizedBox(width: 12),
           Expanded(
             child: OutlinedButton(
               key: const Key('library-button'),
@@ -121,6 +123,24 @@ class ProfileActionButtons extends StatelessWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: OutlinedButton(
+              onPressed: onOpenAnalytics,
+              style: OutlinedButton.styleFrom(
+                padding: EdgeInsets.zero,
+                backgroundColor: VineTheme.surfaceContainer,
+                foregroundColor: VineTheme.whiteText,
+                side: const BorderSide(color: VineTheme.outlineMuted, width: 2),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              child: const Icon(Icons.analytics_outlined, size: 20),
             ),
           ),
         ] else ...[

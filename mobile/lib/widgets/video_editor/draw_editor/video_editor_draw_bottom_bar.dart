@@ -53,9 +53,7 @@ class VideoEditorDrawBottomBar extends StatelessWidget {
       paintEditor
         ..setMode(config.mode)
         ..setOpacity(config.opacity)
-        ..setStrokeWidth(
-          config.strokeWidth * MediaQuery.devicePixelRatioOf(context),
-        );
+        ..setStrokeWidth(config.strokeWidth / scope.fittedBoxScale);
     }
   }
 

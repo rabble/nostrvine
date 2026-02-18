@@ -10,10 +10,17 @@ import 'package:openvine/services/bandwidth_tracker_service.dart';
 import 'package:openvine/services/m3u8_resolver_service.dart';
 import 'package:openvine/services/thumbnail_api_service.dart';
 
-/// Get quality string based on bandwidth tracker recommendation
-String? _getBandwidthBasedQuality() {
+/// Get quality string based on bandwidth tracker recommendation (3-tier)
+String _getBandwidthBasedQuality() {
   final tracker = bandwidthTracker;
-  return tracker.shouldUseHighQuality ? 'high' : 'low';
+  switch (tracker.recommendedQuality) {
+    case VideoQuality.high:
+      return 'high';
+    case VideoQuality.medium:
+      return 'medium';
+    case VideoQuality.low:
+      return 'low';
+  }
 }
 
 /// Extension methods for VideoEvent that require app-level dependencies.
@@ -186,15 +193,33 @@ extension VideoEventAppExtensions on VideoEvent {
 
   /// Get the optimal video URL for initial playback.
   ///
-  /// **Strategy**: Try original video first on all platforms.
-  /// Many Android devices CAN play the original codec fine.
-  /// HLS is used as a fallback only when codec errors occur.
+  /// **Strategy**: Use bandwidth-based quality selection for Divine videos.
+  /// The [BandwidthTrackerService] tracks TTFF across videos and picks
+  /// the right quality for the NEXT video:
+  /// - `> 4 Mbps` → original MP4 (full quality)
+  /// - `2-4 Mbps` → 720p variant (2.5 Mbps)
+  /// - `< 2 Mbps` → 480p variant (1 Mbps)
+  ///
+  /// Non-Divine videos always use original (no transcoded variants exist).
+  /// On first launch (no samples), defaults to 720p (safe middle ground).
   ///
   /// For HLS fallback on Android codec errors, see [getHlsFallbackUrl].
   String? getOptimalVideoUrlForPlatform() {
-    // Always try original video first - many devices can play it
-    // HLS fallback is handled in error recovery (see individual_video_providers.dart)
-    return videoUrl;
+    // Non-Divine videos: always use original (no transcoded variants)
+    if (!isFromDivineServer) return videoUrl;
+
+    final hash = _extractVideoHash(videoUrl);
+    if (hash == null) return videoUrl;
+
+    final quality = bandwidthTracker.recommendedQuality;
+    switch (quality) {
+      case VideoQuality.high:
+        return videoUrl; // Original full quality
+      case VideoQuality.medium:
+        return '$_divineMediaBase/$hash/720p';
+      case VideoQuality.low:
+        return '$_divineMediaBase/$hash/480p';
+    }
   }
 
   /// Get HLS fallback URL for Android codec errors.
@@ -203,6 +228,9 @@ extension VideoEventAppExtensions on VideoEvent {
   /// HLS transcoding provides H.264 Baseline Profile which is universally
   /// supported, unlike High Profile which some devices can't decode.
   ///
+  /// Uses 3-tier bandwidth quality: high (720p HLS), medium (720p HLS),
+  /// low (480p HLS).
+  ///
   /// Returns null if:
   /// - Not on Android
   /// - Video is not from Divine servers (no HLS available)
@@ -210,11 +238,14 @@ extension VideoEventAppExtensions on VideoEvent {
     if (!Platform.isAndroid) return null;
 
     final quality = _getBandwidthBasedQuality();
-    final hls = getHlsUrl(quality: quality);
+    // Map 3-tier quality to HLS stream quality
+    // 'medium' maps to 'high' HLS since 720p is already the "medium" tier
+    final hlsQuality = quality == 'low' ? 'low' : 'high';
+    final hls = getHlsUrl(quality: hlsQuality);
 
     if (hls != null) {
       developer.log(
-        '📱 Android: HLS fallback available ($quality quality): $hls',
+        '📱 Android: HLS fallback available ($quality -> $hlsQuality HLS): $hls',
         name: 'VideoEventExtensions',
       );
     }

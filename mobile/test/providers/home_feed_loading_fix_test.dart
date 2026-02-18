@@ -158,6 +158,18 @@ void main() {
         mockVideoEventService.debugDumpCdnDivineVideoThumbnails(),
       ).thenReturn(null);
 
+      // Setup AnalyticsApiService enrichment stubs (used by _enrichVideosWithBulkStats)
+      when(
+        mockAnalyticsApiService.getBulkVideoStats(argThat(isA<List<String>>())),
+      ).thenAnswer((_) async => <String, BulkVideoStatsEntry>{});
+      when(
+        mockAnalyticsApiService.getBulkVideoViews(
+          argThat(isA<List<String>>()),
+          maxVideos: anyNamed('maxVideos'),
+          maxConcurrent: anyNamed('maxConcurrent'),
+        ),
+      ).thenAnswer((_) async => <String, int>{});
+
       // Setup NostrClient stubs
       when(mockNostrService.isInitialized).thenReturn(true);
       when(mockNostrService.hasKeys).thenReturn(false);

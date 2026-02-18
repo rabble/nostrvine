@@ -210,25 +210,22 @@ class VideoSharingService {
     }
   }
 
-  /// Generate external share URL for the video
+  /// Generate external share URL for the video.
+  ///
+  /// Uses [VideoEvent.stableId] (d-tag) for addressable events so the URL
+  /// remains valid even if the user edits the video metadata.
+  ///
+  /// Requires funnelcake API to support d-tag lookups on /api/videos/{id}.
   String generateShareUrl(VideoEvent video) {
     const baseUrl = 'https://divine.video';
-    return '$baseUrl/video/${video.id}';
+    return '$baseUrl/video/${video.stableId}';
   }
 
   /// Generate share text for external sharing (social media, etc.)
+  ///
+  /// Returns only the share URL so users can add their own context.
   String generateShareText(VideoEvent video) {
-    final title = video.title ?? 'Check out this vine!';
-    final url = generateShareUrl(video);
-
-    var shareText = title;
-    if (video.hashtags.isNotEmpty) {
-      final hashtags = video.hashtags.map((tag) => '#$tag').join(' ');
-      shareText += '\n\n$hashtags';
-    }
-    shareText += '\n\nWatch on divine: $url';
-
-    return shareText;
+    return generateShareUrl(video);
   }
 
   /// Check if user has been shared with recently

@@ -4,6 +4,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/models/recording_clip.dart';
+import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
@@ -254,6 +255,63 @@ void main() {
       final clip = RecordingClip.fromJson(json, '/path/to');
 
       expect(clip.targetAspectRatio, equals(model.AspectRatio.square));
+    });
+
+    group('path round-trip for rendered videos', () {
+      test('round-trip resolves to documents directory '
+          'when video is in documents directory', () async {
+        final documentsPath = p.join('var', 'mobile', 'Documents');
+        final videoPath = p.join(documentsPath, 'divine_123456.mp4');
+        final thumbPath = p.join(documentsPath, 'thumb.jpg');
+        final clip = RecordingClip(
+          id: 'rendered-clip',
+          video: EditorVideo.file(videoPath),
+          duration: const Duration(seconds: 3),
+          recordedAt: DateTime(2025, 12, 13),
+          thumbnailPath: thumbPath,
+          targetAspectRatio: model.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        final json = clip.toJson();
+        final restored = RecordingClip.fromJson(json, documentsPath);
+
+        final originalPath = await clip.video.safeFilePath();
+        final restoredPath = await restored.video.safeFilePath();
+        expect(restoredPath, equals(originalPath));
+        expect(restored.thumbnailPath, equals(clip.thumbnailPath));
+      });
+
+      test('round-trip does NOT resolve to original path '
+          'when video is in temp directory', () async {
+        // This test documents the pre-fix behavior:
+        // A rendered video in /tmp would serialize to just the basename,
+        // but deserialize with the documents path, causing a mismatch.
+        final tempPath = p.join('tmp');
+        final documentsPath = p.join('var', 'mobile', 'Documents');
+        final clip = RecordingClip(
+          id: 'rendered-clip',
+          video: EditorVideo.file(p.join(tempPath, 'divine_123456.mp4')),
+          duration: const Duration(seconds: 3),
+          recordedAt: DateTime(2025, 12, 13),
+          targetAspectRatio: model.AspectRatio.vertical,
+          originalAspectRatio: 9 / 16,
+        );
+
+        final json = clip.toJson();
+        // fromJson resolves against documentsPath, not tempPath
+        final restored = RecordingClip.fromJson(json, documentsPath);
+
+        final originalPath = await clip.video.safeFilePath();
+        final restoredPath = await restored.video.safeFilePath();
+        // The paths will differ because the file was in /tmp
+        // but fromJson resolves to /var/mobile/Documents
+        expect(restoredPath, isNot(equals(originalPath)));
+        expect(
+          restoredPath,
+          equals(p.join(documentsPath, 'divine_123456.mp4')),
+        );
+      });
     });
   });
 }

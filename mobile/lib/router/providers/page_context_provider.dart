@@ -8,6 +8,7 @@ import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/screens/creator_analytics_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
@@ -72,6 +73,7 @@ enum RouteType {
   profileView, // Other user's profile (fullscreen, no bottom nav)
   curatedList, // Curated video list screen (NIP-51 kind 30005)
   discoverLists, // Discover public lists screen
+  creatorAnalytics, // Creator analytics dashboard (profile owner)
   sound, // Sound detail screen for audio reuse
   secureAccount,
   newVideoFeed,
@@ -90,6 +92,7 @@ class RouteContext {
     this.listId,
     this.soundId,
     this.videoId,
+    this.draftId,
   });
 
   final RouteType type;
@@ -100,6 +103,7 @@ class RouteContext {
   final String? listId;
   final String? soundId;
   final String? videoId;
+  final String? draftId;
 }
 
 /// Parse a URL path into a structured RouteContext
@@ -214,6 +218,10 @@ RouteContext parseRoute(String path) {
       return const RouteContext(type: RouteType.videoEditor);
 
     case 'video-clip-editor':
+      if (segments.length > 1) {
+        final draftId = Uri.decodeComponent(segments[1]);
+        return RouteContext(type: RouteType.videoClipEditor, draftId: draftId);
+      }
       return const RouteContext(type: RouteType.videoClipEditor);
 
     case 'video-metadata':
@@ -221,6 +229,9 @@ RouteContext parseRoute(String path) {
 
     case 'settings':
       return const RouteContext(type: RouteType.settings);
+
+    case 'creator-analytics':
+      return const RouteContext(type: RouteType.creatorAnalytics);
 
     case 'relay-settings':
       return const RouteContext(type: RouteType.relaySettings);
@@ -396,6 +407,9 @@ String buildRoute(RouteContext context) {
       return VideoEditorScreen.path;
 
     case RouteType.videoClipEditor:
+      if (context.draftId != null) {
+        return '${VideoClipEditorScreen.path}/${Uri.encodeComponent(context.draftId!)}';
+      }
       return VideoClipEditorScreen.path;
 
     case RouteType.videoMetadata:
@@ -462,6 +476,9 @@ String buildRoute(RouteContext context) {
     case RouteType.discoverLists:
       return DiscoverListsScreen.path;
 
+    case RouteType.creatorAnalytics:
+      return CreatorAnalyticsScreen.path;
+
     case RouteType.sound:
       return SoundDetailScreen.pathForId(context.soundId ?? '');
 
@@ -504,11 +521,7 @@ final pageContextProvider = StreamProvider<RouteContext>((ref) async* {
   // Emit a context immediately if the stream is a single-value Stream.value(...)
   // (In tests we often use Stream.value('/profile/npub...'))
   await for (final loc in locations) {
-    print('🟪 PAGE_CONTEXT DEBUG: Raw location = $loc');
     final ctx = parseRoute(loc);
-    print(
-      '🟪 PAGE_CONTEXT DEBUG: Parsed context = type=${ctx.type}, npub=${ctx.npub}, index=${ctx.videoIndex}',
-    );
     Log.info(
       'CTX derive: type=${ctx.type} npub=${ctx.npub} index=${ctx.videoIndex}',
       name: 'Route',

@@ -108,6 +108,68 @@ void main() {
         expect(repository.isFollowing(testTargetPubkey2), isTrue);
       });
 
+      test('loads following list from REST API when cache is empty', () async {
+        // No cached data in SharedPreferences or PersonalEventCache
+        // But REST API (funnelcake) has the following list
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          fetchFollowingFromApi: (pubkey) async {
+            return [testTargetPubkey, testTargetPubkey2];
+          },
+        );
+
+        await repository.initialize();
+
+        expect(repository.followingCount, 2);
+        expect(repository.isFollowing(testTargetPubkey), isTrue);
+        expect(repository.isFollowing(testTargetPubkey2), isTrue);
+
+        // Verify it was also saved to SharedPreferences for redirect logic
+        final prefs = await SharedPreferences.getInstance();
+        final cached = prefs.getString('following_list_$testCurrentUserPubkey');
+        expect(cached, isNotNull);
+      });
+
+      test('skips REST API when local cache already has data', () async {
+        var apiCalled = false;
+
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+        });
+
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          fetchFollowingFromApi: (pubkey) async {
+            apiCalled = true;
+            return [testTargetPubkey, testTargetPubkey2];
+          },
+        );
+
+        await repository.initialize();
+
+        // Should have loaded from cache, not called API
+        expect(apiCalled, isFalse);
+        expect(repository.followingCount, 1);
+      });
+
+      test('handles REST API failure gracefully', () async {
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+          fetchFollowingFromApi: (pubkey) async {
+            throw Exception('Network error');
+          },
+        );
+
+        // Should not throw, just log warning and continue
+        await repository.initialize();
+
+        expect(repository.isInitialized, isTrue);
+        expect(repository.followingCount, 0);
+      });
+
       test('does not reinitialize if already initialized', () async {
         await repository.initialize();
         expect(repository.isInitialized, isTrue);
@@ -985,6 +1047,123 @@ void main() {
 
         // Following list should remain empty (disposed before event processed)
         expect(repository.followingPubkeys, isEmpty);
+      });
+    });
+
+    group('isMutualFollow', () {
+      test('returns false when not following the target', () async {
+        await repository.initialize();
+
+        // We don't follow testTargetPubkey, so instant false
+        final result = await repository.isMutualFollow(testTargetPubkey);
+
+        expect(result, isFalse);
+
+        // Should not even query the relay since step 1 fails
+        verifyNever(() => mockNostrClient.queryEvents(any()));
+      });
+
+      test('returns true when mutual follow exists', () async {
+        // Set up: we follow testTargetPubkey
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+        });
+
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+        );
+
+        await repository.initialize();
+
+        // Mock: their Kind 3 event includes our pubkey
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [
+            Event(
+              testTargetPubkey,
+              3,
+              [
+                ['p', testCurrentUserPubkey],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ],
+        );
+
+        final result = await repository.isMutualFollow(testTargetPubkey);
+
+        expect(result, isTrue);
+      });
+
+      test('returns false when they do not follow us back', () async {
+        // Set up: we follow testTargetPubkey
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+        });
+
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+        );
+
+        await repository.initialize();
+
+        // isMutualFollow makes two queryEvents calls:
+        // 1. _fetchFollowers(ourPubkey) -> Filter(kinds:[3], #p:[ourPubkey])
+        // 2. _checkIfTheyFollowUs(pubkey) -> Filter(authors:[pubkey], kinds:[3])
+        // We need to return empty for _fetchFollowers (no one follows us)
+        // and return their contact list without our pubkey for the second.
+        var callCount = 0;
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer((_) async {
+          callCount++;
+          if (callCount == 1) {
+            // _fetchFollowers: no events found (nobody follows us)
+            return [];
+          }
+          // _checkIfTheyFollowUs: their contact list without our pubkey
+          return [
+            Event(
+              testTargetPubkey,
+              3,
+              [
+                [
+                  'p',
+                  'someoneelsepubkey1234567890123456789012345678901234567890',
+                ],
+              ],
+              '',
+              createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+            ),
+          ];
+        });
+
+        final result = await repository.isMutualFollow(testTargetPubkey);
+
+        expect(result, isFalse);
+      });
+
+      test('returns false on error', () async {
+        // Set up: we follow testTargetPubkey
+        SharedPreferences.setMockInitialValues({
+          'following_list_$testCurrentUserPubkey': '["$testTargetPubkey"]',
+        });
+
+        repository = FollowRepository(
+          nostrClient: mockNostrClient,
+          personalEventCache: mockPersonalEventCache,
+        );
+
+        await repository.initialize();
+
+        // Mock: relay query throws
+        when(
+          () => mockNostrClient.queryEvents(any()),
+        ).thenThrow(Exception('Network error'));
+
+        final result = await repository.isMutualFollow(testTargetPubkey);
+
+        expect(result, isFalse);
       });
     });
   });

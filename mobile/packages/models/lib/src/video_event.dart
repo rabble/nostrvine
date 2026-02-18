@@ -8,6 +8,7 @@ import 'dart:developer' as developer;
 import 'package:json_annotation/json_annotation.dart';
 import 'package:meta/meta.dart';
 import 'package:models/src/nip71_video_kinds.dart';
+import 'package:models/src/video_attribution.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 
 part 'video_event.g.dart';
@@ -56,6 +57,12 @@ class VideoEvent {
     this.nostrLikeCount,
     this.authorName,
     this.authorAvatar,
+    this.collaboratorPubkeys = const [],
+    this.inspiredByVideo,
+    this.inspiredByNpub,
+    this.nostrEventTags = const [],
+    this.textTrackRef,
+    this.textTrackContent,
   });
 
   /// Create VideoEvent from Nostr event
@@ -90,7 +97,7 @@ class VideoEvent {
       name: 'VideoEvent',
     );
 
-    final tags = <String, String>{};
+    final rawTags = <String, String>{};
     final hashtags = <String>[];
     final videoUrlCandidates = <String>[]; // Collect all video URL candidates
     String? videoUrl;
@@ -113,6 +120,9 @@ class VideoEvent {
     int? expirationTimestamp;
     String? audioEventId;
     String? audioEventRelay;
+    final collaboratorPubkeys = <String>[];
+    InspiredByInfo? inspiredByVideo;
+    String? textTrackRef;
 
     // Parse event tags according to NIP-71
     // Handle both List<String> and List<dynamic>
@@ -291,7 +301,7 @@ class VideoEvent {
           // We could use this for hover effects or preview on long-press.
           if (tagValue.isNotEmpty && tagValue.endsWith('.gif')) {
             // Store in tags for potential future use
-            tags['preview_gif'] = tagValue;
+            rawTags['preview_gif'] = tagValue;
             developer.log(
               '✅ Found preview GIF tag (not using as thumbnail): $tagValue',
               name: 'VideoEvent',
@@ -406,6 +416,32 @@ class VideoEvent {
               name: 'VideoEvent',
             );
           }
+        case 'p':
+          // NIP-71 p-tag: collaborator if pubkey differs from event author
+          if (tagValue.isNotEmpty && tagValue != event.pubkey) {
+            if (!collaboratorPubkeys.contains(tagValue)) {
+              collaboratorPubkeys.add(tagValue);
+            }
+          }
+        case 'a':
+          // NIP-33 addressable event reference
+          // Format: ['a', '34236:<pubkey>:<d-tag>', '<relay>', 'mention']
+          if (tagValue.isNotEmpty && tagValue.startsWith('34236:')) {
+            final relayHint = tag.length > 2 ? tag[2] : null;
+            inspiredByVideo ??= InspiredByInfo(
+              addressableId: tagValue,
+              relayUrl: relayHint != null && relayHint.isNotEmpty
+                  ? relayHint
+                  : null,
+            );
+          }
+        case 'text-track':
+          // Subtitle/caption track reference
+          // Format: ['text-track', '<coords-or-url>', '<relay>', 'captions',
+          //          '<lang>']
+          if (tagValue.isNotEmpty) {
+            textTrackRef ??= tagValue;
+          }
         default:
           // POSTEL'S LAW: Check if any unknown tag contains a valid video URL
           if (tagValue.isNotEmpty && _isValidVideoUrl(tagValue)) {
@@ -419,12 +455,23 @@ class VideoEvent {
       }
 
       // Store all tags for potential future use
-      tags[tagName] = tagValue;
+      rawTags[tagName] = tagValue;
+    }
+
+    // Scan content for NIP-27 nostr:npub1... references (Inspired By person)
+    String? inspiredByNpub;
+    final npubPattern = RegExp('nostr:(npub1[a-z0-9]+)');
+    final npubMatch = npubPattern.firstMatch(event.content);
+    if (npubMatch != null) {
+      inspiredByNpub = npubMatch.group(1);
     }
 
     final createdAtTimestamp = event.createdAt is DateTime
         ? (event.createdAt as DateTime).millisecondsSinceEpoch ~/ 1000
         : int.tryParse(event.createdAt.toString()) ?? 0;
+
+    final publishedAtTimestamp = int.tryParse(publishedAt ?? '');
+    final effectiveTimestamp = publishedAtTimestamp ?? createdAtTimestamp;
 
     developer.log('🔍 DEBUG: Final parsing results:', name: 'VideoEvent');
     developer.log('🔍 DEBUG: videoUrl = $videoUrl', name: 'VideoEvent');
@@ -514,9 +561,9 @@ class VideoEvent {
     }
 
     // DEBUG: Log full event for cdn.divine.video thumbnails
-    if (thumbnailUrl != null && thumbnailUrl!.contains('cdn.divine.video')) {
+    if (thumbnailUrl != null && thumbnailUrl!.contains('media.divine.video')) {
       developer.log(
-        '🔍 DEBUG cdn.divine.video thumbnail found!',
+        '🔍 DEBUG divine.video thumbnail found!',
         name: 'VideoEvent',
       );
       developer.log('🔍 Event ID: ${event.id}', name: 'VideoEvent');
@@ -540,9 +587,9 @@ class VideoEvent {
     return VideoEvent(
       id: event.id,
       pubkey: event.pubkey,
-      createdAt: createdAtTimestamp,
+      createdAt: effectiveTimestamp,
       content: event.content,
-      timestamp: DateTime.fromMillisecondsSinceEpoch(createdAtTimestamp * 1000),
+      timestamp: DateTime.fromMillisecondsSinceEpoch(effectiveTimestamp * 1000),
       title: title,
       videoUrl: videoUrl,
       thumbnailUrl: thumbnailUrl,
@@ -553,7 +600,7 @@ class VideoEvent {
       fileSize: fileSize,
       hashtags: hashtags,
       publishedAt: publishedAt,
-      rawTags: tags,
+      rawTags: rawTags,
       vineId: vineId,
       group: group,
       altText: altText,
@@ -565,6 +612,15 @@ class VideoEvent {
       expirationTimestamp: expirationTimestamp,
       audioEventId: audioEventId,
       audioEventRelay: audioEventRelay,
+      collaboratorPubkeys: collaboratorPubkeys,
+      inspiredByVideo: inspiredByVideo,
+      inspiredByNpub: inspiredByNpub,
+      nostrEventTags: event.tags
+          .map(
+            (t) => (t as List).map((e) => e.toString()).toList(),
+          )
+          .toList(),
+      textTrackRef: textTrackRef,
     );
   }
   final String id;
@@ -628,6 +684,40 @@ class VideoEvent {
   /// Author avatar URL (from Funnelcake API for classic Viners)
   final String? authorAvatar;
 
+  // Attribution fields (collaborators and Inspired By)
+  /// Pubkeys of collaborators (non-author p-tags).
+  final List<String> collaboratorPubkeys;
+
+  /// Reference to the video that inspired this one (a-tag with 34236: prefix).
+  final InspiredByInfo? inspiredByVideo;
+
+  /// NIP-27 npub reference in content
+  /// (Inspired By a person, not a specific video).
+  final String? inspiredByNpub;
+
+  /// Original event tags as `List<List<String>>` for republishing.
+  /// Preserved from the Nostr event so we can rebuild the event with new tags.
+  @JsonKey(includeToJson: false, includeFromJson: false)
+  final List<List<String>> nostrEventTags;
+
+  /// Addressable coordinates or URL for text-track subtitle reference.
+  /// Format: `39307:<pubkey>:subtitles:<video-d-tag>` or HTTP URL.
+  final String? textTrackRef;
+
+  /// Embedded VTT content from funnelcake REST API (skips relay fetch).
+  final String? textTrackContent;
+
+  /// Whether this video has subtitle/caption data available.
+  bool get hasSubtitles =>
+      (textTrackRef != null && textTrackRef!.isNotEmpty) ||
+      (textTrackContent != null && textTrackContent!.isNotEmpty);
+
+  /// Whether this video has collaborators.
+  bool get hasCollaborators => collaboratorPubkeys.isNotEmpty;
+
+  /// Whether this video has any Inspired By attribution.
+  bool get hasInspiredBy => inspiredByVideo != null || inspiredByNpub != null;
+
   /// NIP-40: Check if this event has expired
   /// Returns true if expiration timestamp is set and current time >= expiration
   bool get isExpired {
@@ -667,6 +757,11 @@ class VideoEvent {
     return rawTags['pgp_fingerprint'];
   }
 
+  /// ProofMode: Get C2PA Manifest Id
+  String? get proofModeC2paManifestId {
+    return rawTags['c2pa_manifest_id'];
+  }
+
   String? get addressableId => vineId != null
       ? AId(
           kind: EventKind.videoVertical,
@@ -680,7 +775,8 @@ class VideoEvent {
     return proofModeVerificationLevel != null ||
         proofModeManifest != null ||
         proofModePgpFingerprint != null ||
-        proofModeDeviceAttestation != null;
+        proofModeDeviceAttestation != null ||
+        proofModeC2paManifestId != null;
   }
 
   /// ProofMode: Check if video is verified mobile (highest level)
@@ -970,6 +1066,12 @@ class VideoEvent {
     int? nostrLikeCount,
     String? authorName,
     String? authorAvatar,
+    List<String>? collaboratorPubkeys,
+    InspiredByInfo? inspiredByVideo,
+    String? inspiredByNpub,
+    List<List<String>>? nostrEventTags,
+    String? textTrackRef,
+    String? textTrackContent,
   }) => VideoEvent(
     id: id ?? this.id,
     pubkey: pubkey ?? this.pubkey,
@@ -1008,6 +1110,12 @@ class VideoEvent {
     nostrLikeCount: nostrLikeCount ?? this.nostrLikeCount,
     authorName: authorName ?? this.authorName,
     authorAvatar: authorAvatar ?? this.authorAvatar,
+    collaboratorPubkeys: collaboratorPubkeys ?? this.collaboratorPubkeys,
+    inspiredByVideo: inspiredByVideo ?? this.inspiredByVideo,
+    inspiredByNpub: inspiredByNpub ?? this.inspiredByNpub,
+    nostrEventTags: nostrEventTags ?? this.nostrEventTags,
+    textTrackRef: textTrackRef ?? this.textTrackRef,
+    textTrackContent: textTrackContent ?? this.textTrackContent,
   );
 
   @override
