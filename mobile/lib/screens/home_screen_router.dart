@@ -43,6 +43,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
   PageController? _controller;
   int? _lastUrlIndex;
   int? _lastPrefetchIndex;
+  final ValueNotifier<int> _currentPageNotifier = ValueNotifier<int>(0);
 
   @override
   void initState() {
@@ -66,6 +67,7 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
   @override
   void dispose() {
     _controller?.dispose();
+    _currentPageNotifier.dispose();
     super.dispose();
   }
 
@@ -140,6 +142,12 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
           final safeIndex = urlIndex.clamp(0, itemCount - 1);
           _controller = PageController(initialPage: safeIndex);
           _lastUrlIndex = safeIndex;
+          _currentPageNotifier.value = safeIndex;
+          // Listen for page changes to update ValueNotifier
+          // (triggers only itemBuilder rebuild)
+          _controller!.addListener(() {
+            _currentPageNotifier.value = _controller!.page?.round() ?? 0;
+          });
         }
 
         // Sync controller when URL changes externally (back/forward/deeplink)
@@ -236,21 +244,23 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
               );
             },
             itemBuilder: (context, index) {
-              // Use PageController as source of truth for active video,
-              // not URL index. This prevents race conditions when videos
-              // reorder and URL update is pending.
-              final currentPage = _controller?.page?.round() ?? urlIndex;
-              final isActive = index == currentPage;
+              // Use ValueListenableBuilder to only rebuild this item when page changes
+              return ValueListenableBuilder<int>(
+                valueListenable: _currentPageNotifier,
+                builder: (context, currentPage, _) {
+                  final isActive = index == currentPage;
 
-              return VideoFeedItem(
-                key: ValueKey('video-${videos[index].id}'),
-                video: videos[index],
-                index: index,
-                hasBottomNavigation: false,
-                contextTitle: '', // Home feed has no context title
-                hideFollowButtonIfFollowing:
-                    true, // Home feed only shows followed users
-                isActiveOverride: isActive,
+                  return VideoFeedItem(
+                    key: ValueKey('video-${videos[index].id}'),
+                    video: videos[index],
+                    index: index,
+                    hasBottomNavigation: false,
+                    contextTitle: '', // Home feed has no context title
+                    hideFollowButtonIfFollowing:
+                        true, // Home feed only shows followed users
+                    isActiveOverride: isActive,
+                  );
+                },
               );
             },
           ),
