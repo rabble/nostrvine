@@ -93,6 +93,7 @@ class VideoPublishService {
           '⚠️ User not authenticated, cannot publish',
           category: .video,
         );
+        _backgroundUploadId = null;
         // TODO(l10n): Replace with context.l10n when localization is added.
         return const PublishError('Please sign in to publish videos.');
       }
@@ -102,6 +103,7 @@ class VideoPublishService {
       final pendingUpload = await _getOrCreateUpload(pubkey, draft);
       if (pendingUpload == null) {
         Log.error('❌ Upload creation failed', category: .video);
+        _backgroundUploadId = null;
         // TODO(l10n): Replace with context.l10n when localization is added.
         return const PublishError('Failed to upload video. Please try again.');
       }
@@ -190,6 +192,7 @@ class VideoPublishService {
 
     // If failed, return error
     if (upload.status == .failed) {
+      _backgroundUploadId = null; // Clear failed upload ID
       /// TODO(l10n): Replace with context.l10n when localization is added.
       return PublishError(
         'Upload failed: ${upload.errorMessage ?? "Unknown error"}',
@@ -203,6 +206,7 @@ class VideoPublishService {
         final failedUpload = uploadManager.getUpload(_backgroundUploadId!);
 
         /// TODO(l10n): Replace with context.l10n when localization is added.
+        _backgroundUploadId = null; // Clear failed upload ID
         return PublishError(
           'Upload failed: ${failedUpload?.errorMessage ?? "Unknown error"}',
         );
@@ -284,6 +288,7 @@ class VideoPublishService {
     if (_backgroundUploadId == null) {
       Log.warning('⚠️ No background upload to retry', category: .video);
 
+      _backgroundUploadId = null; // Clear any stale upload ID
       /// TODO(l10n): Replace with context.l10n when localization is added.
       return const PublishError('No upload to retry.');
     }
@@ -295,6 +300,7 @@ class VideoPublishService {
 
       if (!success) {
         final upload = uploadManager.getUpload(_backgroundUploadId!);
+        _backgroundUploadId = null;
 
         /// TODO(l10n): Replace with context.l10n when localization is added.
         return PublishError(
@@ -317,6 +323,7 @@ class VideoPublishService {
     StackTrace stackTrace,
     VineDraft draft,
   ) async {
+    _backgroundUploadId = null;
     Log.error('📝 Publish failed: $e\n$stackTrace', category: .video);
 
     // Save failed state to draft
