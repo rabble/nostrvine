@@ -38,7 +38,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
     final hasInspiredBy = inspiredByNpub != null || inspiredByVideo != null;
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const .symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

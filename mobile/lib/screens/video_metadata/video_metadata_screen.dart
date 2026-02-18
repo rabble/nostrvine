@@ -76,7 +76,7 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
         child: Stack(
           children: [
             Scaffold(
-              backgroundColor: Colors.transparent,
+              backgroundColor: VineTheme.surfaceContainerHigh,
               appBar: AppBar(
                 backgroundColor: Colors.transparent,
                 surfaceTintColor: Colors.transparent,
@@ -111,9 +111,9 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
                       child: Column(
                         mainAxisSize: .min,
                         crossAxisAlignment: .stretch,
+                        spacing: 16,
                         children: [
                           const _InfoBanner(),
-                          const SizedBox(height: 16),
 
                           // Video preview at top
                           const VideoMetadataClipPreview(),
@@ -145,11 +145,23 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
 /// A subtle divider line for separating metadata sections.
 class _Divider extends StatelessWidget {
   /// Creates a divider widget.
-  const _Divider();
+  const _Divider({
+    this.enablePaddingTop = false,
+    this.enablePaddingBottom = false,
+  });
+
+  final bool enablePaddingTop;
+  final bool enablePaddingBottom;
 
   @override
   Widget build(BuildContext context) {
-    return const Divider(thickness: 0, height: 1, color: Color(0xFF001A12));
+    return Padding(
+      padding: .only(
+        top: enablePaddingTop ? 16 : 0.0,
+        bottom: enablePaddingBottom ? 16 : 0,
+      ),
+      child: const Divider(thickness: 0, height: 1, color: Color(0xFF001A12)),
+    );
   }
 }
 
@@ -173,7 +185,6 @@ class _FormData extends ConsumerWidget {
     return Column(
       mainAxisSize: .min,
       crossAxisAlignment: .stretch,
-      spacing: 16,
       children: [
         const _MetadataLimitWarning(),
 
@@ -211,23 +222,23 @@ class _FormData extends ConsumerWidget {
                 .updateMetadata(description: value);
           },
         ),
-        const _Divider(),
+        const _Divider(enablePaddingBottom: true),
 
         // Hashtags input
         const VideoMetadataTagsInput(),
-        const _Divider(),
+        const _Divider(enablePaddingTop: true),
 
         // Expiration time selector
-        VideoMetadataExpirationSelector(),
-        const _Divider(),
+        const VideoMetadataExpirationSelector(),
+        const _Divider(enablePaddingBottom: true),
 
         // Collaborators
-        VideoMetadataCollaboratorsInput(),
-        const _Divider(),
+        const VideoMetadataCollaboratorsInput(),
+        const _Divider(enablePaddingTop: true, enablePaddingBottom: true),
 
         // Inspired By
-        VideoMetadataInspiredByInput(),
-        SizedBox(height: 32),
+        const VideoMetadataInspiredByInput(),
+        const SizedBox(height: 48),
       ],
     );
   }
@@ -277,7 +288,7 @@ class _MetadataLimitWarning extends ConsumerWidget {
     if (!limitReached) return const SizedBox.shrink();
 
     return Container(
-      margin: const .symmetric(horizontal: 16),
+      margin: const .all(16),
       padding: const .all(14),
       decoration: BoxDecoration(
         color: const Color(0xFF4A1C00),

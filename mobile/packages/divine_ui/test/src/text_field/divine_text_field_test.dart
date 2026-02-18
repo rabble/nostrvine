@@ -21,7 +21,7 @@ void main() {
         theme: VineTheme.theme,
         home: Scaffold(
           body: DivineTextField(
-            label: label,
+            labelText: label,
             controller: controller,
             focusNode: focusNode,
             readOnly: readOnly,
