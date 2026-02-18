@@ -18,12 +18,15 @@ class VideoEditorAudioChip extends StatelessWidget {
         crossAxisAlignment: .center,
         spacing: 8,
         children: [
-          Container(
-            width: 24,
-            height: 24,
-            clipBehavior: Clip.antiAlias,
-            decoration: BoxDecoration(),
-            child: Stack(),
+          Row(
+            spacing: 1,
+            children: [
+              const _AudioBar(height: 7),
+              const _AudioBar(height: 16),
+              const _AudioBar(height: 13),
+              const _AudioBar(height: 7),
+              const _AudioBar(height: 10),
+            ],
           ),
           Flexible(
             child: Text(
@@ -38,6 +41,25 @@ class VideoEditorAudioChip extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _AudioBar extends StatelessWidget {
+  const _AudioBar({required this.height});
+
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: Duration(milliseconds: 150),
+      width: 2,
+      height: height,
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9F7F6),
+        borderRadius: .circular(2),
       ),
     );
   }
