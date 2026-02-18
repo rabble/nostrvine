@@ -466,13 +466,9 @@ class _NostrConnectScreenState
             ),
           ),
 
-          const Spacer(),
-          const DivineIcon(
-            icon: DivineIconName.warningCircle,
-            color: VineTheme.error,
-            size: 64,
-          ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 32),
+          const DivineSticker(sticker: DivineStickerName.policeSiren),
+          const SizedBox(height: 32),
           Text(
             title,
             style: VineTheme.headlineSmallFont(),
@@ -485,13 +481,13 @@ class _NostrConnectScreenState
               color: VineTheme.onSurfaceVariant,
             ),
           ),
-          const SizedBox(height: 32),
+          const Spacer(),
           DivineButton(
             label: 'Try again',
-            leadingIcon: DivineIconName.arrowCounterClockwise,
+            expanded: true,
             onPressed: _retry,
           ),
-          const Spacer(),
+          const SizedBox(height: 16),
         ],
       ),
     );
