@@ -210,60 +210,58 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
           backgroundColor: VineTheme.vineGreen,
           semanticsLabel: 'searching for more videos',
           onRefresh: () => ref.read(homeRefreshControllerProvider).refresh(),
-          child: PageView.builder(
-            key: const Key('home-video-page-view'),
-            itemCount: videos.length,
-            controller: _controller,
-            scrollDirection: Axis.vertical,
-            // Pre-builds adjacent pages to prevent black flash during swipe
-            allowImplicitScrolling: true,
-            padEnds: false,
-            onPageChanged: (newIndex) {
-              // Guard: only navigate if URL doesn't match
-              if (newIndex != urlIndex) {
-                context.go(HomeScreenRouter.pathForIndex(newIndex));
-              }
+          child: ValueListenableBuilder<int>(
+            valueListenable: _currentPageNotifier,
+            builder: (context, currentPage, _) {
+              return PageView.builder(
+                key: const Key('home-video-page-view'),
+                itemCount: videos.length,
+                controller: _controller,
+                scrollDirection: Axis.vertical,
+                // Pre-builds adjacent pages to prevent black flash during swipe
+                allowImplicitScrolling: true,
+                padEnds: false,
+                onPageChanged: (newIndex) {
+                  // Guard: only navigate if URL doesn't match
+                  if (newIndex != urlIndex) {
+                    context.go(HomeScreenRouter.pathForIndex(newIndex));
+                  }
 
-              // Trigger pagination near end
-              if (newIndex >= itemCount - 2) {
-                ref.read(homePaginationControllerProvider).maybeLoadMore();
-              }
+                  // Trigger pagination near end
+                  if (newIndex >= itemCount - 2) {
+                    ref.read(homePaginationControllerProvider).maybeLoadMore();
+                  }
 
-              // Prefetch videos around current index
-              checkForPrefetch(currentIndex: newIndex, videos: videos);
+                  // Prefetch videos around current index
+                  checkForPrefetch(currentIndex: newIndex, videos: videos);
 
-              // Pre-initialize controllers for adjacent videos
-              preInitializeControllers(
-                ref: ref,
-                currentIndex: newIndex,
-                videos: videos,
-              );
+                  // Pre-initialize controllers for adjacent videos
+                  preInitializeControllers(
+                    ref: ref,
+                    currentIndex: newIndex,
+                    videos: videos,
+                  );
 
-              // Dispose controllers outside the keep range to free memory
-              disposeControllersOutsideRange(
-                ref: ref,
-                currentIndex: newIndex,
-                videos: videos,
-              );
+                  // Dispose controllers outside the keep range to free memory
+                  disposeControllersOutsideRange(
+                    ref: ref,
+                    currentIndex: newIndex,
+                    videos: videos,
+                  );
 
-              Log.debug(
-                '📄 Page changed to index $newIndex (${videos[newIndex].id}...)',
-                name: 'HomeScreenRouter',
-                category: LogCategory.video,
-              );
-            },
-            itemBuilder: (context, index) {
-              // ClipRRect prevents BoxFit.cover overflow from bleeding into
-              // adjacent pages during scroll, which would cause flicker.
-              return ClipRRect(
-                clipBehavior: .hardEdge,
-                // Use ValueListenableBuilder to only rebuild this item when page changes
-                child: ValueListenableBuilder<int>(
-                  valueListenable: _currentPageNotifier,
-                  builder: (context, currentPage, _) {
-                    final isActive = index == currentPage;
-
-                    return VideoFeedItem(
+                  Log.debug(
+                    '📄 Page changed to index $newIndex (${videos[newIndex].id}...)',
+                    name: 'HomeScreenRouter',
+                    category: LogCategory.video,
+                  );
+                },
+                itemBuilder: (context, index) {
+                  final isActive = index == currentPage;
+                  // ClipRRect prevents BoxFit.cover overflow from bleeding into
+                  // adjacent pages during scroll, which would cause flicker.
+                  return ClipRRect(
+                    clipBehavior: .hardEdge,
+                    child: VideoFeedItem(
                       key: ValueKey('video-${videos[index].id}'),
                       video: videos[index],
                       index: index,
@@ -273,9 +271,9 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
                       hideFollowButtonIfFollowing:
                           true, // Home feed only shows followed users
                       isActiveOverride: isActive,
-                    );
-                  },
-                ),
+                    ),
+                  );
+                },
               );
             },
           ),
