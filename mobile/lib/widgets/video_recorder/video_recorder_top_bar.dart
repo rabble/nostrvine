@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/video_editor/audio_editor/video_editor_audio_chip.dart';
 import 'package:openvine/widgets/video_editor_icon_button.dart';
 
 /// Top bar with close button, segment bar, and forward button.
@@ -51,6 +52,8 @@ class VideoRecorderTopBar extends ConsumerWidget {
                         iconPath: 'assets/icon/close.svg',
                         onTap: () => notifier.closeVideoRecorder(context),
                       ),
+
+                      const Flexible(child: VideoEditorAudioChip()),
 
                       // Next button
                       if (hasClips)
