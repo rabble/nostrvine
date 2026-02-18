@@ -531,6 +531,10 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         category: .video,
       );
 
+      // Disable volume key interception during countdown so users can
+      // adjust volume before recording starts
+      await _cameraService.setVolumeKeysEnabled(enabled: false);
+
       // Set recording state during countdown so UI shows countdown
       state = state.copyWith(recordingState: .recording);
 
@@ -541,9 +545,17 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       if (_isDestroyed) {
         _isStartingRecording = false;
         state = state.copyWith(recordingState: .idle);
+        // Re-enable volume keys on early exit
+        await _cameraService.setVolumeKeysEnabled(enabled: true);
         return;
       }
       state = state.copyWith(countdownValue: 0);
+
+      // Re-enable volume key interception after countdown
+      // (unless a sound is selected, then keep them disabled)
+      if (!_remoteRecordPausedForSound) {
+        await _cameraService.setVolumeKeysEnabled(enabled: true);
+      }
     }
 
     if (_isDestroyed) {
