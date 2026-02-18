@@ -122,6 +122,10 @@ class DivineSticker extends StatelessWidget {
       width: size,
       height: size,
       fit: BoxFit.contain,
+      errorBuilder: (context, error, stackTrace) {
+        assert(false, 'Failed to load sticker ${sticker.assetPath}: $error');
+        return SizedBox(width: size, height: size);
+      },
     );
   }
 }

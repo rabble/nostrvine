@@ -293,13 +293,29 @@ class _DivineAuthScreenState
       context: context,
       scrollable: false,
       showHeaderDivider: false,
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 32, 16, 16),
-        child: Form(
+      body: Builder(
+        builder: (context) {
+          final bottomInset =
+              MediaQuery.of(context).viewInsets.bottom;
+          return GestureDetector(
+            onTap: () =>
+                FocusScope.of(context).unfocus(),
+            child: SingleChildScrollView(
+            padding: EdgeInsets.fromLTRB(
+              16,
+              32,
+              16,
+              16 + bottomInset,
+            ),
+            child: Form(
           key: sheetFormKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              const DivineSticker(
+                sticker: DivineStickerName.forgotPasswordAlt,
+              ),
+              const SizedBox(height: 16),
               Text(
                 'Reset password',
                 style: VineTheme.headlineSmallFont(),
@@ -339,6 +355,9 @@ class _DivineAuthScreenState
             ],
           ),
         ),
+            ),
+          );
+        },
       ),
     );
   }
