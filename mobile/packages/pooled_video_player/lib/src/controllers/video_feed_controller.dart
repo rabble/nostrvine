@@ -431,6 +431,14 @@ class VideoFeedController extends ChangeNotifier {
     _stopPositionTimer(index);
     unawaited(_bufferSubscriptions[index]?.cancel());
     _bufferSubscriptions.remove(index);
+
+    // Release the player back to the pool so it doesn't count against
+    // maxPlayers. Without this, orphaned pool entries accumulate during
+    // swiping and LRU eviction disposes players still in active use.
+    if (_loadedPlayers.containsKey(index) && index < _videos.length) {
+      unawaited(pool.release(_videos[index].url));
+    }
+
     _loadedPlayers.remove(index);
     _loadStates.remove(index);
     _loadingIndices.remove(index);
