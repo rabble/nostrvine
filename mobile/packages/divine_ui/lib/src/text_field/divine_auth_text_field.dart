@@ -132,10 +132,12 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
   late TextEditingController _controller;
   bool _isObscured = true;
   bool _hasFocus = false;
+  String? _validatorError;
 
   bool get _hasText => _controller.text.isNotEmpty;
   bool get _isFloating => _hasFocus || _hasText;
-  bool get _hasError => widget.errorText != null;
+  String? get _effectiveError => widget.errorText ?? _validatorError;
+  bool get _hasError => _effectiveError != null;
 
   @override
   void initState() {
@@ -178,7 +180,26 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
   }
 
   void _handleTextChange() {
-    setState(() {});
+    // Clear validator error when user edits the field.
+    if (_validatorError != null) {
+      setState(() => _validatorError = null);
+    } else {
+      setState(() {});
+    }
+  }
+
+  /// Wraps the validator to capture its error message for display
+  /// via the error supporting text instead of the built-in error.
+  String? _wrappedValidator(String? value) {
+    final error = widget.validator?.call(value);
+    // Schedule a post-frame callback to update error state after validation,
+    // since setState cannot be called during build/validation.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _validatorError != error) {
+        setState(() => _validatorError = error);
+      }
+    });
+    return error;
   }
 
   void _handleContainerTap() {
@@ -246,7 +267,7 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
                         textInputAction: widget.textInputAction,
                         textCapitalization: widget.textCapitalization,
                         inputFormatters: widget.inputFormatters,
-                        validator: widget.validator,
+                        validator: _wrappedValidator,
                         onTap: widget.onTap,
                         onChanged: widget.onChanged,
                         onSubmitted: widget.onSubmitted,
@@ -268,7 +289,7 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
             ),
           ),
         ),
-        if (_hasError) _ErrorSupportingText(errorText: widget.errorText!),
+        if (_hasError) _ErrorSupportingText(errorText: _effectiveError!),
       ],
     );
   }
@@ -425,7 +446,9 @@ class _AuthTextFieldInput extends StatelessWidget {
         focusedErrorBorder: InputBorder.none,
         disabledBorder: InputBorder.none,
         filled: false,
-        errorStyle: VineTheme.bodySmallFont(color: VineTheme.error),
+        // Hide the built-in error text from TextFormField.
+        // Error display is handled by _ErrorSupportingText via errorText.
+        errorStyle: const TextStyle(fontSize: 0, height: 0),
       ),
     );
   }
