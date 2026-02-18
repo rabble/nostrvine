@@ -83,30 +83,23 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
                     child: Text(
                       currentOption.description,
                       style: VineTheme.titleFont(
-                        fontSize: 17,
+                        fontSize: 16,
                         color: const Color(0xF2FFFFFF),
                         letterSpacing: 0.15,
                       ),
                     ),
                   ),
-                  Container(
-                    width: 30,
-                    height: 30,
-                    decoration: BoxDecoration(
-                      color: const Color(0x8C032017),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: VineTheme.outlineVariant),
-                    ),
-                    child: Center(
-                      child: SizedBox(
-                        height: 18,
-                        width: 18,
-                        child: SvgPicture.asset(
-                          'assets/icon/caret_right.svg',
-                          colorFilter: const ColorFilter.mode(
-                            VineTheme.tabIndicatorGreen,
-                            .srcIn,
-                          ),
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: SizedBox(
+                      height: 18,
+                      width: 18,
+                      child: SvgPicture.asset(
+                        'assets/icon/caret_right.svg',
+                        colorFilter: const ColorFilter.mode(
+                          VineTheme.tabIndicatorGreen,
+                          .srcIn,
                         ),
                       ),
                     ),

@@ -19,6 +19,7 @@ class VideoMetadataClipPreview extends ConsumerWidget {
 
   /// Opens the full-screen video preview with a fade transition.
   Future<void> _openPreview(BuildContext context, RecordingClip clip) async {
+    FocusManager.instance.primaryFocus?.unfocus();
     await Navigator.push(
       context,
       PageRouteBuilder<void>(
@@ -47,79 +48,58 @@ class VideoMetadataClipPreview extends ConsumerWidget {
       ),
     );
 
-    return Padding(
-      padding: const .symmetric(vertical: 18),
-      child: Center(
-        child: DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
-            border: Border.all(color: const Color(0xFF205040)),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x52000000),
-                blurRadius: 20,
-                offset: Offset(0, 8),
-              ),
-            ],
-          ),
-          child: SizedBox(
-            height: 200,
-            // Hero animation to preview screen
-            child: Hero(
-              tag: 'Video-metadata-clip-preview-video',
-              // Use linear flight path instead of curved arc
-              createRectTween: (begin, end) =>
-                  RectTween(begin: begin, end: end),
-              child: AspectRatio(
-                aspectRatio: clip.targetAspectRatio.value,
-                child: ClipRRect(
-                  borderRadius: .circular(16),
-                  child: Semantics(
-                    button: true,
-                    // TODO(l10n): Replace with context.l10n when localization
-                    // is added.
-                    label: 'Open post preview screen',
-                    child: GestureDetector(
-                      onTap: state.finalRenderedClip != null
-                          ? () =>
-                                _openPreview(context, state.finalRenderedClip!)
-                          : null,
-                      child: Stack(
-                        children: [
-                          // Video thumbnail or placeholder
-                          AnimatedSwitcher(
-                            layoutBuilder: (currentChild, previousChildren) =>
-                                Stack(
-                                  fit: .expand,
-                                  alignment: .center,
-                                  children: [
-                                    ...previousChildren,
-                                    ?currentChild,
-                                  ],
+    return Center(
+      child: SizedBox(
+        height: 200,
+        // Hero animation to preview screen
+        child: Hero(
+          tag: 'Video-metadata-clip-preview-video',
+          // Use linear flight path instead of curved arc
+          createRectTween: (begin, end) => RectTween(begin: begin, end: end),
+          child: AspectRatio(
+            aspectRatio: clip.targetAspectRatio.value,
+            child: ClipRRect(
+              borderRadius: .circular(16),
+              child: Semantics(
+                button: true,
+                // TODO(l10n): Replace with context.l10n when localization
+                // is added.
+                label: 'Open post preview screen',
+                child: GestureDetector(
+                  onTap: state.finalRenderedClip != null
+                      ? () => _openPreview(context, state.finalRenderedClip!)
+                      : null,
+                  child: Stack(
+                    children: [
+                      // Video thumbnail or placeholder
+                      AnimatedSwitcher(
+                        layoutBuilder: (currentChild, previousChildren) =>
+                            Stack(
+                              fit: .expand,
+                              alignment: .center,
+                              children: [...previousChildren, ?currentChild],
+                            ),
+                        duration: const Duration(milliseconds: 150),
+                        child: clip.thumbnailPath != null
+                            ? // Video thumbnail image
+                              VideoMetadataPreviewThumbnail(clip: clip)
+                            : // Fallback placeholder
+                              ColoredBox(
+                                color: Colors.grey.shade400,
+                                child: const Icon(
+                                  Icons.play_circle_outline,
+                                  size: 64,
+                                  color: Colors.white,
                                 ),
-                            duration: const Duration(milliseconds: 150),
-                            child: clip.thumbnailPath != null
-                                ? // Video thumbnail image
-                                  VideoMetadataPreviewThumbnail(clip: clip)
-                                : // Fallback placeholder
-                                  ColoredBox(
-                                    color: Colors.grey.shade400,
-                                    child: const Icon(
-                                      Icons.play_circle_outline,
-                                      size: 64,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                          ),
-                          // Processing overlay with play button
-                          VideoClipEditorProcessingOverlay(
-                            clip: clip,
-                            isProcessing: state.isProcessing,
-                            inactivePlaceholder: _PlayIndicator(clip: clip),
-                          ),
-                        ],
+                              ),
                       ),
-                    ),
+                      // Processing overlay with play button
+                      VideoClipEditorProcessingOverlay(
+                        clip: clip,
+                        isProcessing: state.isProcessing,
+                        inactivePlaceholder: _PlayIndicator(clip: clip),
+                      ),
+                    ],
                   ),
                 ),
               ),

@@ -29,10 +29,9 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
         VideoEditorNotifier.maxCollaborators - collaborators.length;
 
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const .symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 12,
         children: [
           Row(
             children: [
@@ -56,6 +55,7 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 8),
           Text(
             // TODO(l10n): Replace with context.l10n
             //   when localization is added.
@@ -64,6 +64,7 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
             style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
           ),
 
+          const SizedBox(height: 14),
           if (collaborators.isNotEmpty)
             Container(
               width: double.infinity,

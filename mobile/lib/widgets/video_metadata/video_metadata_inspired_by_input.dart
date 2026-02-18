@@ -41,7 +41,6 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
       padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 12,
         children: [
           Row(
             children: [
@@ -65,12 +64,14 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
               ),
             ],
           ),
+          const SizedBox(height: 8),
           Text(
             // TODO(l10n): Replace with context.l10n
             //   when localization is added.
             'Credit the creator or post that influenced this video.',
             style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
           ),
+          const SizedBox(height: 14),
 
           // Show current attribution or add button.
           if (hasInspiredBy)

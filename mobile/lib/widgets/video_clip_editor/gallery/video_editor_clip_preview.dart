@@ -332,17 +332,6 @@ class _ClipThumbnail extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (clip.thumbnailPath == null) {
-      return Container(
-        color: Colors.grey.shade400,
-        child: const Icon(
-          Icons.play_circle_outline,
-          size: 64,
-          color: Colors.white,
-        ),
-      );
-    }
-
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 150),
       layoutBuilder: (current, previous) => Stack(
@@ -350,11 +339,20 @@ class _ClipThumbnail extends StatelessWidget {
         fit: .expand,
         children: <Widget>[...previous, ?current],
       ),
-      child: Image.file(
-        File(clip.thumbnailPath!),
-        key: ValueKey('${clip.id}-${clip.thumbnailPath}'),
-        fit: .cover,
-      ),
+      child: clip.thumbnailPath == null
+          ? Container(
+              color: Colors.grey.shade700,
+              child: const Icon(
+                Icons.play_circle_outline,
+                size: 64,
+                color: Colors.white,
+              ),
+            )
+          : Image.file(
+              File(clip.thumbnailPath!),
+              key: ValueKey('${clip.id}-${clip.thumbnailPath}'),
+              fit: .cover,
+            ),
     );
   }
 }
