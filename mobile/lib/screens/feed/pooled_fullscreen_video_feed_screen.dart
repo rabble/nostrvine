@@ -328,6 +328,7 @@ class _FullscreenAppBar extends ConsumerWidget implements PreferredSizeWidget {
       titleWidget: const SizedBox.shrink(),
       showBackButton: true,
       onBackPressed: context.pop,
+      backButtonSemanticLabel: 'Close video player',
       backgroundMode: DiVineAppBarBackgroundMode.transparent,
       style: _style,
       actions: _buildEditAction(context, ref),
