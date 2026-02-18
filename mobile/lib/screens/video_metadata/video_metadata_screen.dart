@@ -111,12 +111,12 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
                       child: Column(
                         mainAxisSize: .min,
                         crossAxisAlignment: .stretch,
-                        spacing: 16,
                         children: [
-                          const _InfoBanner(),
-
                           // Video preview at top
-                          const VideoMetadataClipPreview(),
+                          Padding(
+                            padding: const EdgeInsets.only(top: 8, bottom: 16),
+                            child: const VideoMetadataClipPreview(),
+                          ),
 
                           // Form fields
                           _FormData(
@@ -240,37 +240,6 @@ class _FormData extends ConsumerWidget {
         const VideoMetadataInspiredByInput(),
         const SizedBox(height: 48),
       ],
-    );
-  }
-}
-
-class _InfoBanner extends StatelessWidget {
-  const _InfoBanner();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const .fromLTRB(16, 14, 16, 14),
-      margin: const .symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: const Color(0xAA032017),
-        border: .all(color: VineTheme.outlineVariant),
-        borderRadius: .circular(24),
-      ),
-      child: Column(
-        crossAxisAlignment: .start,
-        spacing: 4,
-        children: [
-          Text(
-            'Ready to publish?',
-            style: VineTheme.titleSmallFont(color: VineTheme.onSurface),
-          ),
-          Text(
-            'Add context and credits so people can discover your post.',
-            style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
-          ),
-        ],
-      ),
     );
   }
 }
