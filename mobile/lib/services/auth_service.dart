@@ -130,6 +130,11 @@ class UserProfile {
 /// router redirect has accurate following data before it fires synchronously.
 typedef PreFetchFollowingCallback = Future<void> Function(String pubkeyHex);
 
+/// Callback invoked when NIP-65 relay discovery completes with a non-empty list.
+/// Used by NostrService to add discovered relays to the current client without
+/// blocking app startup.
+typedef UserRelaysDiscoveredCallback = void Function(List<String> relayUrls);
+
 /// Main authentication service for the divine app
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via
 /// Riverpod
@@ -177,6 +182,10 @@ class AuthService implements BackgroundAwareService {
   List<DiscoveredRelay> _userRelays = [];
   bool _hasExistingProfile = false;
   final RelayDiscoveryService _relayDiscoveryService = RelayDiscoveryService();
+
+  /// Callback registered by NostrService to add discovered relays to the client
+  /// when discovery completes (avoids race where client is built before discovery).
+  UserRelaysDiscoveredCallback? _onUserRelaysDiscovered;
 
   // Blossom server discovery state (kind 10063 / BUD-03)
   List<DiscoveredBlossomServer> _userBlossomServers = [];
@@ -238,6 +247,16 @@ class AuthService implements BackgroundAwareService {
 
   /// Get discovered user relays (NIP-65)
   List<DiscoveredRelay> get userRelays => List.unmodifiable(_userRelays);
+
+  /// Register a callback to be invoked when NIP-65 relay discovery completes
+  /// with a non-empty list. Pass [null] to unregister.
+  /// NostrService uses this to add discovered relays to the current client
+  /// without blocking app startup.
+  void registerUserRelaysDiscoveredCallback(
+    UserRelaysDiscoveredCallback? callback,
+  ) {
+    _onUserRelaysDiscovered = callback;
+  }
 
   /// Check if user has an existing profile (kind 0)
   bool get hasExistingProfile => _hasExistingProfile;
@@ -1562,6 +1581,10 @@ class AuthService implements BackgroundAwareService {
       _currentProfile = null;
       _lastError = null;
 
+      // Unregister relay-discovery callback so we don't hold a client reference
+      _onUserRelaysDiscovered = null;
+      _userRelays = [];
+
       // Clean up bunker signer if active
       if (_bunkerSigner != null) {
         _bunkerSigner!.close();
@@ -2046,6 +2069,10 @@ class AuthService implements BackgroundAwareService {
             category: LogCategory.auth,
           );
         }
+
+        // Notify NostrService so it can add these relays to the current client
+        final urls = _userRelays.map((r) => r.url).toList();
+        _onUserRelaysDiscovered?.call(urls);
       } else {
         _userRelays = [];
 
