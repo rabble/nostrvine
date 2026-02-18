@@ -1318,6 +1318,12 @@ class VideoOverlayActions extends ConsumerWidget {
         ? 14.0
         : (isFullscreen ? 48.0 : 14.0);
 
+    // Read system view padding directly from the platform view, not from
+    // MediaQuery which may have been modified by SafeArea or other widgets.
+    final systemViewPadding = MediaQueryData.fromView(
+      View.of(context),
+    ).viewPadding;
+
     return Stack(
       children: [
         // Bottom gradient overlay (sits below UI elements, only overlays video)
@@ -1349,7 +1355,7 @@ class VideoOverlayActions extends ConsumerWidget {
         // ProofMode and Vine badges in upper right corner (tappable)
         if (!isPreviewMode)
           Positioned(
-            top: MediaQuery.viewPaddingOf(context).top + topOffset,
+            top: systemViewPadding.top + topOffset,
             right: 16,
             child: GestureDetector(
               onTap: () {
