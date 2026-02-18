@@ -421,7 +421,7 @@ class _UserSearchTile extends StatelessWidget {
 }
 
 class _EmptyFollowList extends StatelessWidget {
-  const _EmptyFollowList({super.key});
+  const _EmptyFollowList();
 
   @override
   Widget build(BuildContext context) {
