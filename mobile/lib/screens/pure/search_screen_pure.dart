@@ -839,6 +839,7 @@ class _SearchFeedModeContent extends ConsumerWidget {
       videoList: videos,
       contextTitle: 'Search',
       startingIndex: startIndex,
+      useLocalActiveState: true,
       onNavigate: (index) {
         context.go(
           SearchScreenPure.pathForTerm(

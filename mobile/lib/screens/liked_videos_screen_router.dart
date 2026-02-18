@@ -214,6 +214,7 @@ class _LikedVideosFeedViewState extends ConsumerState<_LikedVideosFeedView> {
           videoList: videos,
           contextTitle: 'Liked Videos',
           startingIndex: safeIndex,
+          useLocalActiveState: true,
           onNavigate: (index) =>
               context.go(LikedVideosScreenRouter.pathForIndex(index)),
         );
