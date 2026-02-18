@@ -251,7 +251,6 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
               final isActive = index == _currentPageIndex;
 
               return ClipRRect(
-                clipBehavior: .hardEdge,
                 child: VideoFeedItem(
                   key: ValueKey('video-${videos[index].id}'),
                   video: videos[index],
