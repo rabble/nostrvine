@@ -1444,6 +1444,152 @@ void main() {
       });
     });
 
+    group('audio leak prevention', () {
+      test(
+        'non-current video is paused without volume when buffer ready',
+        () async {
+          // preloadBehind=0, preloadAhead=2 → loads indices 0, 1, 2.
+          // Default isBuffering=false means _onBufferReady fires during load.
+          final videos = createTestVideos(count: 3);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: pool,
+            preloadBehind: 0,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          // Video 1 is a preloaded (non-current) video.
+          final setup1 = playerSetups[videos[1].url]!;
+
+          // Non-current video should be paused by _onBufferReady.
+          verify(setup1.player.pause).called(1);
+
+          // Volume should never have been set to 100 — only setVolume(0)
+          // during the loading phase.
+          verifyNever(() => setup1.player.setVolume(100));
+
+          controller.dispose();
+        },
+      );
+
+      test(
+        'current video plays at volume 100 when buffer ready',
+        () async {
+          final videos = createTestVideos(count: 1);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: pool,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          final setup0 = playerSetups[videos[0].url]!;
+
+          // Current video should get volume 100 from _onBufferReady.
+          verify(() => setup0.player.setVolume(100)).called(1);
+
+          // Current video should NOT be paused by _onBufferReady.
+          verifyNever(setup0.player.pause);
+
+          controller.dispose();
+        },
+      );
+
+      test(
+        '_releasePlayer mutes and pauses player before releasing',
+        () async {
+          final videos = createTestVideos(count: 10);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: pool,
+            preloadBehind: 0,
+            preloadAhead: 1,
+          );
+
+          // Wait for initial load (indices 0, 1).
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          final setup0 = playerSetups[videos[0].url]!;
+
+          // Clear interactions so we can verify release-specific calls.
+          clearInteractions(setup0.player);
+
+          // Navigate far enough that video 0 leaves the preload window.
+          controller.onPageChanged(5);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // _releasePlayer should mute and pause before removing.
+          verify(() => setup0.player.setVolume(0)).called(1);
+          verify(setup0.player.pause).called(1);
+
+          controller.dispose();
+        },
+      );
+
+      test(
+        'dispose mutes all loaded players before releasing from pool',
+        () async {
+          final videos = createTestVideos(count: 3);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: pool,
+            preloadBehind: 0,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          // Clear interactions from the loading phase.
+          for (final setup in playerSetups.values) {
+            clearInteractions(setup.player);
+          }
+
+          controller.dispose();
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Every loaded player should have been muted and paused.
+          for (final setup in playerSetups.values) {
+            verify(() => setup.player.setVolume(0)).called(1);
+            verify(setup.player.pause).called(1);
+          }
+        },
+      );
+
+      test(
+        'dispose notifies index listeners with empty $VideoIndexState '
+        'before releasing players',
+        () async {
+          final videos = createTestVideos(count: 2);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: pool,
+            preloadBehind: 0,
+          );
+
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          // Grab notifiers while controller is still alive.
+          final notifier0 = controller.getIndexNotifier(0);
+          final notifier1 = controller.getIndexNotifier(1);
+
+          // Verify they currently have non-default state (loading or ready).
+          expect(notifier0.value.loadState, isNot(equals(LoadState.none)));
+
+          controller.dispose();
+
+          // Both notifiers should now hold empty state
+          // (null controller/player).
+          expect(notifier0.value.loadState, equals(LoadState.none));
+          expect(notifier0.value.videoController, isNull);
+          expect(notifier0.value.player, isNull);
+
+          expect(notifier1.value.loadState, equals(LoadState.none));
+          expect(notifier1.value.videoController, isNull);
+          expect(notifier1.value.player, isNull);
+        },
+      );
+    });
+
     group('HLS streaming support', () {
       test('accepts HLS URLs with .m3u8 extension', () {
         final hlsVideos = [
