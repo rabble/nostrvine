@@ -1234,12 +1234,12 @@ class _SafeVideoPlayer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Check the disposed-controllers set. This is marked synchronously in
+    // Check the disposed-controllers tracker. This is marked synchronously in
     // Riverpod's onDispose, so it is always up-to-date BEFORE the deferred
     // controller.dispose() microtask removes the native player.
     final isDisposed = ref.watch(
       disposedControllersProvider.select(
-        (disposed) => disposed.contains(videoId),
+        (tracker) => tracker.contains(videoId),
       ),
     );
 
