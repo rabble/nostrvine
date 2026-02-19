@@ -2839,6 +2839,165 @@ void main() {
       });
     });
 
+    group('platform filtering', () {
+      test('filters videos when platform filter returns true', () async {
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          platformFilter: (video) => video.isWebM,
+        );
+
+        final webmEvent = _createVideoEvent(
+          id: 'webm-video',
+          pubkey: 'user-1',
+          videoUrl: 'https://example.com/video.webm',
+          createdAt: 1704067201,
+        );
+        final mp4Event = _createVideoEvent(
+          id: 'mp4-video',
+          pubkey: 'user-2',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [webmEvent, mp4Event],
+        );
+
+        final result = await repositoryWithFilter.getNewVideos();
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('mp4-video'));
+      });
+
+      test('does not filter when platform filter is null', () async {
+        final webmEvent = _createVideoEvent(
+          id: 'webm-video',
+          pubkey: 'user-1',
+          videoUrl: 'https://example.com/video.webm',
+          createdAt: 1704067201,
+        );
+        final mp4Event = _createVideoEvent(
+          id: 'mp4-video',
+          pubkey: 'user-2',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [webmEvent, mp4Event],
+        );
+
+        final result = await repository.getNewVideos();
+
+        expect(result, hasLength(2));
+      });
+
+      test('filters WebM from Funnelcake API results', () async {
+        final mockFunnelcakeClient = MockFunnelcakeApiClient();
+        when(() => mockFunnelcakeClient.isAvailable).thenReturn(true);
+        when(
+          () => mockFunnelcakeClient.getRecentVideos(
+            limit: any(named: 'limit'),
+            before: any(named: 'before'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            _createVideoStats(
+              id: 'webm-video',
+              pubkey: 'user-1',
+              dTag: 'webm-video',
+              videoUrl: 'https://example.com/video.webm',
+            ),
+            _createVideoStats(
+              id: 'mp4-video',
+              pubkey: 'user-2',
+              dTag: 'mp4-video',
+              videoUrl: 'https://example.com/video.mp4',
+            ),
+          ],
+        );
+
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          funnelcakeApiClient: mockFunnelcakeClient,
+          platformFilter: (video) => video.isWebM,
+        );
+
+        final result = await repositoryWithFilter.getNewVideos();
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('mp4-video'));
+      });
+
+      test('filters WebM from home feed', () async {
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          platformFilter: (video) => video.isWebM,
+        );
+
+        final webmEvent = _createVideoEvent(
+          id: 'webm-video',
+          pubkey: 'user-1',
+          videoUrl: 'https://example.com/video.webm',
+          createdAt: 1704067201,
+        );
+        final mp4Event = _createVideoEvent(
+          id: 'mp4-video',
+          pubkey: 'user-1',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [webmEvent, mp4Event],
+        );
+
+        final result = await repositoryWithFilter.getHomeFeedVideos(
+          authors: ['user-1'],
+        );
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('mp4-video'));
+      });
+
+      test('filters WebM from popular videos', () async {
+        final repositoryWithFilter = VideosRepository(
+          nostrClient: mockNostrClient,
+          platformFilter: (video) => video.isWebM,
+        );
+
+        final webmEvent = _createVideoEvent(
+          id: 'webm-video',
+          pubkey: 'user-1',
+          videoUrl: 'https://example.com/video.webm',
+          createdAt: 1704067201,
+        );
+        final mp4Event = _createVideoEvent(
+          id: 'mp4-video',
+          pubkey: 'user-2',
+          videoUrl: 'https://example.com/video.mp4',
+          createdAt: 1704067200,
+        );
+
+        // NIP-50 call (with useCache: false) returns empty
+        when(
+          () => mockNostrClient.queryEvents(
+            any(),
+            useCache: any(named: 'useCache'),
+          ),
+        ).thenAnswer((_) async => <Event>[]);
+        // Fallback call returns videos
+        when(() => mockNostrClient.queryEvents(any())).thenAnswer(
+          (_) async => [webmEvent, mp4Event],
+        );
+
+        final result = await repositoryWithFilter.getPopularVideos();
+
+        expect(result, hasLength(1));
+        expect(result.first.id, equals('mp4-video'));
+      });
+    });
+
     group('local storage caching', () {
       late MockVideoLocalStorage mockLocalStorage;
 

@@ -58,6 +58,7 @@ import 'package:openvine/services/password_reset_listener.dart';
 import 'package:openvine/services/pending_action_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
+import 'package:openvine/services/platform_video_filter.dart';
 import 'package:openvine/services/profile_cache_service.dart';
 import 'package:openvine/services/relay_capability_service.dart';
 import 'package:openvine/services/relay_statistics_service.dart';
@@ -1419,6 +1420,7 @@ VideosRepository videosRepository(Ref ref) {
     localStorage: localStorage,
     blockFilter: createBlocklistFilter(blocklistService),
     contentFilter: createNsfwFilter(ageVerificationService),
+    platformFilter: createPlatformVideoFilter(),
   );
 }
 

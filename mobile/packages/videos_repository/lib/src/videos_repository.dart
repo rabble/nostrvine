@@ -11,6 +11,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:videos_repository/src/video_content_filter.dart';
 import 'package:videos_repository/src/video_event_filter.dart';
 import 'package:videos_repository/src/video_local_storage.dart';
+import 'package:videos_repository/src/video_platform_filter.dart';
 
 export 'package:models/src/nip71_video_kinds.dart' show NIP71VideoKinds;
 
@@ -44,17 +45,20 @@ class VideosRepository {
     VideoLocalStorage? localStorage,
     BlockedVideoFilter? blockFilter,
     VideoContentFilter? contentFilter,
+    VideoPlatformFilter? platformFilter,
     FunnelcakeApiClient? funnelcakeApiClient,
   }) : _nostrClient = nostrClient,
        _localStorage = localStorage,
        _blockFilter = blockFilter,
        _contentFilter = contentFilter,
+       _platformFilter = platformFilter,
        _funnelcakeApiClient = funnelcakeApiClient;
 
   final NostrClient _nostrClient;
   final VideoLocalStorage? _localStorage;
   final BlockedVideoFilter? _blockFilter;
   final VideoContentFilter? _contentFilter;
+  final VideoPlatformFilter? _platformFilter;
   final FunnelcakeApiClient? _funnelcakeApiClient;
 
   /// Fetches videos from followed users for the home feed.
@@ -501,11 +505,12 @@ class VideosRepository {
               dTag: video.vineId!,
             ).toAString();
 
-            // Apply content filter if configured
+            // Apply filters
             if (_blockFilter?.call(video.pubkey) ?? false) continue;
             if (!video.hasVideo) continue;
             if (video.isExpired) continue;
             if (_contentFilter?.call(video) ?? false) continue;
+            if (_platformFilter?.call(video) ?? false) continue;
 
             foundVideos[videoAddressableId] = video;
           }
@@ -550,6 +555,9 @@ class VideosRepository {
       // Content filter - check parsed video (NSFW, etc.)
       if (_contentFilter?.call(video) ?? false) continue;
 
+      // Platform filter - check format compatibility (e.g. WebM on iOS/macOS)
+      if (_platformFilter?.call(video) ?? false) continue;
+
       videos.add(video);
     }
 
@@ -585,6 +593,9 @@ class VideosRepository {
 
     // Content filter - check parsed video (NSFW, etc.)
     if (_contentFilter?.call(video) ?? false) return null;
+
+    // Platform filter - check format compatibility (e.g. WebM on iOS/macOS)
+    if (_platformFilter?.call(video) ?? false) return null;
 
     return video;
   }
@@ -651,6 +662,7 @@ class VideosRepository {
               .where((v) => !v.isExpired)
               .where((v) => !(_blockFilter?.call(v.pubkey) ?? false))
               .where((v) => !(_contentFilter?.call(v) ?? false))
+              .where((v) => !(_platformFilter?.call(v) ?? false))
               .toList();
         }
       } on FunnelcakeException {
