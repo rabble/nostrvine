@@ -19,7 +19,11 @@ class VideoRecorderTopBar extends ConsumerWidget {
   Future<void> _selectAudio(BuildContext context) async {
     final result = await VineBottomSheet.show(
       context: context,
-      body: const AudioSelectionBottomSheet(),
+      maxChildSize: 1,
+      initialChildSize: 1,
+      minChildSize: 0.8,
+      buildScrollBody: (scrollController) =>
+          AudioSelectionBottomSheet(scrollController: scrollController),
     );
 
     print(result); // TODO:
