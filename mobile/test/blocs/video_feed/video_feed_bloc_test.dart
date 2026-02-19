@@ -616,6 +616,121 @@ void main() {
       );
     });
 
+    group('VideoFeedFollowingListChanged', () {
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'refreshes home feed when following list changes',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(['new-author']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => videos);
+        },
+        build: createBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.home,
+          videos: createTestVideos(3),
+        ),
+        act: (bloc) {
+          // First emission is skipped (matches BehaviorSubject replay)
+          followingController.add([]);
+          // Second emission triggers the handler
+          followingController.add(['new-author']);
+        },
+        expect: () => [
+          const VideoFeedState(
+            status: VideoFeedStatus.loading,
+            mode: FeedMode.home,
+            videos: [],
+            hasMore: true,
+          ),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'videos count', pageSize)
+              .having((s) => s.mode, 'mode', FeedMode.home),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'does nothing when mode is not home',
+        build: createBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.latest,
+          videos: createTestVideos(5),
+        ),
+        act: (bloc) {
+          followingController.add([]);
+          followingController.add(['new-author']);
+        },
+        expect: () => <VideoFeedState>[],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'does nothing when feed is still loading',
+        build: createBloc,
+        seed: () => const VideoFeedState(
+          status: VideoFeedStatus.loading,
+          mode: FeedMode.home,
+        ),
+        act: (bloc) {
+          followingController.add([]);
+          followingController.add(['new-author']);
+        },
+        expect: () => <VideoFeedState>[],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'transitions from noFollowedUsers to loaded feed',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(['first-follow']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => videos);
+        },
+        build: createBloc,
+        seed: () => const VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.home,
+          videos: [],
+          hasMore: false,
+          error: VideoFeedError.noFollowedUsers,
+        ),
+        act: (bloc) {
+          followingController.add([]);
+          followingController.add(['first-follow']);
+        },
+        expect: () => [
+          const VideoFeedState(
+            status: VideoFeedStatus.loading,
+            mode: FeedMode.home,
+            videos: [],
+            hasMore: true,
+          ),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'videos count', pageSize)
+              .having((s) => s.error, 'error', isNull),
+        ],
+      );
+    });
+
     group('close', () {
       test('cancels following subscription', () async {
         final bloc = createBloc();

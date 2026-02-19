@@ -35,10 +35,18 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     on<VideoFeedModeChanged>(_onModeChanged);
     on<VideoFeedLoadMoreRequested>(_onLoadMoreRequested);
     on<VideoFeedRefreshRequested>(_onRefreshRequested);
+    on<VideoFeedFollowingListChanged>(_onFollowingListChanged);
+
+    // Skip the first emission (BehaviorSubject replays its seed/last value)
+    // to avoid a redundant refresh on bloc creation.
+    _followingSubscription = _followRepository.followingStream
+        .skip(1)
+        .listen((pubkeys) => add(VideoFeedFollowingListChanged(pubkeys)));
   }
 
   final VideosRepository _videosRepository;
   final FollowRepository _followRepository;
+  StreamSubscription<List<String>>? _followingSubscription;
 
   /// Handle feed started event.
   Future<void> _onStarted(
@@ -136,6 +144,35 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     );
 
     await _loadVideos(state.mode, emit);
+  }
+
+  /// Handle following list changes from [FollowRepository].
+  ///
+  /// Only refreshes when the current mode is [FeedMode.home] and the
+  /// feed has already been loaded (avoids double-loading on startup).
+  Future<void> _onFollowingListChanged(
+    VideoFeedFollowingListChanged event,
+    Emitter<VideoFeedState> emit,
+  ) async {
+    if (state.mode != FeedMode.home) return;
+    if (state.status == VideoFeedStatus.loading) return;
+
+    emit(
+      state.copyWith(
+        status: VideoFeedStatus.loading,
+        videos: [],
+        hasMore: true,
+        clearError: true,
+      ),
+    );
+
+    await _loadVideos(FeedMode.home, emit);
+  }
+
+  @override
+  Future<void> close() {
+    _followingSubscription?.cancel();
+    return super.close();
   }
 
   /// Load videos for the specified mode.
