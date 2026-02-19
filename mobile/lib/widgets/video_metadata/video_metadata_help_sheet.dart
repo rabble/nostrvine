@@ -43,6 +43,7 @@ class VideoMetadataHelpSheet extends StatelessWidget {
 
             Semantics(
               button: true,
+              // TODO(l10n): Replace with context.l10n when localization is added.
               label: 'Dismiss help dialog',
               child: Material(
                 color: VineTheme.surfaceContainer,
@@ -57,6 +58,7 @@ class VideoMetadataHelpSheet extends StatelessWidget {
                     width: double.infinity,
                     padding: const .symmetric(horizontal: 24, vertical: 12),
                     child: Text(
+                      // TODO(l10n): Replace with context.l10n when localization is added.
                       'Got it!',
                       textAlign: TextAlign.center,
                       style: VineTheme.titleMediumFont(

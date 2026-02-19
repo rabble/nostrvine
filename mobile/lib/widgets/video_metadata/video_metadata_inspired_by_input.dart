@@ -52,13 +52,12 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
           padding: const .all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 16,
+            spacing: hasInspiredBy ? 16 : 8,
             children: [
               Row(
                 children: [
                   Text(
-                    // TODO(l10n): Replace with context.l10n
-                    //   when localization is added.
+                    // TODO(l10n): Replace with context.l10n when localization is added.
                     'Inspired by',
                     style: VineTheme.labelSmallFont(
                       color: VineTheme.onSurfaceVariant,
@@ -66,9 +65,8 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
                   ),
                   const SizedBox(width: 4),
                   VideoMetadataHelpButton(
-                    // TODO(l10n): Replace with context.l10n
-                    //   when localization is added.
                     onTap: () => _showHelpDialog(context),
+                    // TODO(l10n): Replace with context.l10n when localization is added.
                     tooltip: 'How inspiration credits work',
                   ),
                 ],
@@ -86,6 +84,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
                   children: [
                     Flexible(
                       child: Text(
+                        // TODO(l10n): Replace with context.l10n when localization is added.
                         'None',
                         style: VineTheme.titleFont(
                           fontSize: 16,
@@ -125,6 +124,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
       scrollable: false,
       isScrollControlled: true,
       body: VideoMetadataHelpSheet(
+        // TODO(l10n): Replace with context.l10n when localization is added.
         title: 'Inspired by',
         message:
             'Use this to give attribution. Inspired-by credit is different '
@@ -143,8 +143,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
       context,
       filterMode: UserPickerFilterMode.allUsers,
       autoFocus: true,
-      // TODO(l10n): Replace with context.l10n
-      //   when localization is added.
+      // TODO(l10n): Replace with context.l10n when localization is added.
       title: 'Inspired by',
     );
 
@@ -159,8 +158,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           behavior: SnackBarBehavior.floating,
-          // TODO(l10n): Replace with context.l10n
-          //   when localization is added.
+          // TODO(l10n): Replace with context.l10n when localization is added.
           content: DivineSnackbarContainer(
             label: 'This creator cannot be referenced.',
           ),
@@ -216,8 +214,7 @@ class _InspiredByDisplay extends ConsumerWidget {
 
           // Remove button
           Semantics(
-            // TODO(l10n): Replace with context.l10n
-            //   when localization is added.
+            // TODO(l10n): Replace with context.l10n when localization is added.
             label: 'Remove inspired by',
             button: true,
             child: GestureDetector(

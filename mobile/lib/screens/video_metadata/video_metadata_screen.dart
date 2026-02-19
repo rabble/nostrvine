@@ -113,9 +113,9 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
                         crossAxisAlignment: .stretch,
                         children: [
                           // Video preview at top
-                          Padding(
-                            padding: const EdgeInsets.only(top: 8, bottom: 16),
-                            child: const VideoMetadataClipPreview(),
+                          const Padding(
+                            padding: EdgeInsets.only(top: 8, bottom: 16),
+                            child: VideoMetadataClipPreview(),
                           ),
 
                           // Form fields

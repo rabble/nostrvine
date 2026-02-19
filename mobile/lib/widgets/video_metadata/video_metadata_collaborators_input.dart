@@ -31,20 +31,19 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
     final canAddCollaborators =
         collaborators.length < VideoEditorNotifier.maxCollaborators;
 
-    return Padding(
-      padding: const .all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        spacing: 16,
-        children: [
-          Semantics(
-            button: true,
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            label: 'Add collaborator',
-            child: InkWell(
-              onTap: canAddCollaborators
-                  ? () => _addCollaborator(context, ref)
-                  : null,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          button: true,
+          // TODO(l10n): Replace with context.l10n when localization is added.
+          label: 'Add collaborator',
+          child: InkWell(
+            onTap: canAddCollaborators
+                ? () => _addCollaborator(context, ref)
+                : null,
+            child: Padding(
+              padding: const .all(16),
               child: Column(
                 spacing: 8,
                 children: [
@@ -104,17 +103,20 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
               ),
             ),
           ),
+        ),
 
-          if (collaborators.isNotEmpty)
-            Wrap(
+        if (collaborators.isNotEmpty)
+          Padding(
+            padding: const .fromLTRB(16, 0, 16, 16),
+            child: Wrap(
               spacing: 8,
               runSpacing: 8,
               children: collaborators
                   .map((pubkey) => _CollaboratorChip(pubkey: pubkey))
                   .toList(),
             ),
-        ],
-      ),
+          ),
+      ],
     );
   }
 
@@ -125,6 +127,7 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
       scrollable: false,
       isScrollControlled: true,
       body: VideoMetadataHelpSheet(
+        // TODO(l10n): Replace with context.l10n when localization is added.
         title: 'Collaborators',
         message:
             'Collaborators are tagged as co-creators on this post. '
@@ -139,8 +142,7 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
     final profile = await showUserPickerSheet(
       context,
       filterMode: UserPickerFilterMode.mutualFollowsOnly,
-      // TODO(l10n): Replace with context.l10n
-      //   when localization is added.
+      // TODO(l10n): Replace with context.l10n when localization is added.
       title: 'Add collaborator',
       searchText: 'Mutual followers',
     );
@@ -159,9 +161,8 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
           backgroundColor: Colors.transparent,
           elevation: 0,
           behavior: SnackBarBehavior.floating,
-          // TODO(l10n): Replace with context.l10n
-          //   when localization is added.
           content: DivineSnackbarContainer(
+            // TODO(l10n): Replace with context.l10n when localization is added.
             label:
                 'You need to mutually follow '
                 '${profile.bestDisplayName} to add '
@@ -216,8 +217,7 @@ class _CollaboratorChip extends ConsumerWidget {
             ),
           ),
           Semantics(
-            // TODO(l10n): Replace with context.l10n
-            //   when localization is added.
+            // TODO(l10n): Replace with context.l10n when localization is added.
             label: 'Remove collaborator',
             button: true,
             child: GestureDetector(
