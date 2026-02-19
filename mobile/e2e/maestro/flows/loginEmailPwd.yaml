@@ -16,15 +16,15 @@ env:
 - runFlow: "../asserts/assertSplash.yaml"
 - runFlow: "../asserts/assertLogin.yaml"
 
-# 2. Tap on I am 16 and I agree, tap on "Have an account? Log in": User is directed to the Welcome back screen
+# 2. Tap on I am 16 and I agree, tap on "Have an account? Sign in": User is directed to the Welcome back screen
 - tapOn: I am 16 years or older
 - tapOn: "I agree to the "
-- assertVisible: Have an account? Log In
-- tapOn: Have an account? Log In
+- tapOn: Sign in
+
 - runFlow: ../asserts/assertWelcomeBack.yaml
 
-# 3. Tap "Continue with Email": The login screen is presented
-- tapOn: Continue with Email
+# 3. Tap "Continue with email": The login screen is presented
+- tapOn: Continue with email
 - runFlow: ../asserts/assertLogInWithEmail.yaml
 
 # 4. Input Email and Password, and tap on "Log In": User is redirected to the Explore screen, New tab
@@ -32,7 +32,15 @@ env:
 - inputText: ${USER_EMAIL}
 - tapOn: Password
 - inputText: ${USER_PWD}
-- tapOn: Log In
+- runFlow:
+    when:
+      visible: Back
+    commands:
+      - tapOn:
+          id: input_method_nav_back
+- tapOn:
+    text: Sign in
+    index: 1
 - waitForAnimationToEnd
 - runFlow:
     when:
