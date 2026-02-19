@@ -62,79 +62,6 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     Log.info('📹 Initialized', name: 'VideoRecorderScreen', category: .video);
   }
 
-  /// Listens to sound selection changes and extracts waveform data.
-  void _setupSoundWaveformListener() {
-    Log.info(
-      '🎵 _setupSoundWaveformListener called',
-      name: 'VideoRecorderScreen',
-      category: LogCategory.video,
-    );
-
-    // Handle initial sound if already selected
-    final initialSound = ref.read(selectedSoundProvider);
-    Log.info(
-      '🎵 initialSound: ${initialSound?.id ?? 'null'}',
-      name: 'VideoRecorderScreen',
-      category: LogCategory.video,
-    );
-    _triggerWaveformExtraction(initialSound);
-
-    // Listen for future changes using listenManual (works outside build phase)
-    _soundSubscription = ref.listenManual<AudioEvent?>(selectedSoundProvider, (
-      previous,
-      next,
-    ) {
-      Log.info(
-        '🎵 Sound changed: ${previous?.id ?? 'null'} → ${next?.id ?? 'null'}',
-        name: 'VideoRecorderScreen',
-        category: LogCategory.video,
-      );
-      _triggerWaveformExtraction(next);
-    });
-  }
-
-  /// Triggers waveform extraction for the given sound.
-  void _triggerWaveformExtraction(AudioEvent? sound) {
-    Log.info(
-      '🎵 _triggerWaveformExtraction: ${sound?.id ?? 'null'}, '
-      'isBundled: ${sound?.isBundled}, url: ${sound?.url}',
-      name: 'VideoRecorderScreen',
-      category: LogCategory.video,
-    );
-
-    if (sound == null) {
-      _soundWaveformBloc.add(const SoundWaveformClear());
-      return;
-    }
-
-    // Handle bundled sounds (from app assets)
-    if (sound.isBundled) {
-      final assetPath = sound.assetPath;
-      Log.info(
-        '🎵 Bundled sound assetPath: $assetPath',
-        name: 'VideoRecorderScreen',
-        category: LogCategory.video,
-      );
-      if (assetPath != null) {
-        _soundWaveformBloc.add(
-          SoundWaveformExtract(
-            path: assetPath,
-            soundId: sound.id,
-            isAsset: true,
-          ),
-        );
-      }
-      return;
-    }
-
-    // Handle network sounds
-    if (sound.url != null) {
-      _soundWaveformBloc.add(
-        SoundWaveformExtract(path: sound.url!, soundId: sound.id),
-      );
-    }
-  }
-
   /// Initialize camera and handle permission failures
   Future<void> _initializeCamera() async {
     Log.info(
@@ -214,6 +141,79 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
         '📹 Failed to dispose video controllers: $e',
         name: 'VideoRecorderScreen',
         category: .video,
+      );
+    }
+  }
+
+  /// Listens to sound selection changes and extracts waveform data.
+  void _setupSoundWaveformListener() {
+    Log.info(
+      '🎵 _setupSoundWaveformListener called',
+      name: 'VideoRecorderScreen',
+      category: LogCategory.video,
+    );
+
+    // Handle initial sound if already selected
+    final initialSound = ref.read(selectedSoundProvider);
+    Log.info(
+      '🎵 initialSound: ${initialSound?.id ?? 'null'}',
+      name: 'VideoRecorderScreen',
+      category: LogCategory.video,
+    );
+    _triggerWaveformExtraction(initialSound);
+
+    // Listen for future changes using listenManual (works outside build phase)
+    _soundSubscription = ref.listenManual<AudioEvent?>(selectedSoundProvider, (
+      previous,
+      next,
+    ) {
+      Log.info(
+        '🎵 Sound changed: ${previous?.id ?? 'null'} → ${next?.id ?? 'null'}',
+        name: 'VideoRecorderScreen',
+        category: LogCategory.video,
+      );
+      _triggerWaveformExtraction(next);
+    });
+  }
+
+  /// Triggers waveform extraction for the given sound.
+  void _triggerWaveformExtraction(AudioEvent? sound) {
+    Log.info(
+      '🎵 _triggerWaveformExtraction: ${sound?.id ?? 'null'}, '
+      'isBundled: ${sound?.isBundled}, url: ${sound?.url}',
+      name: 'VideoRecorderScreen',
+      category: LogCategory.video,
+    );
+
+    if (sound == null) {
+      _soundWaveformBloc.add(const SoundWaveformClear());
+      return;
+    }
+
+    // Handle bundled sounds (from app assets)
+    if (sound.isBundled) {
+      final assetPath = sound.assetPath;
+      Log.info(
+        '🎵 Bundled sound assetPath: $assetPath',
+        name: 'VideoRecorderScreen',
+        category: LogCategory.video,
+      );
+      if (assetPath != null) {
+        _soundWaveformBloc.add(
+          SoundWaveformExtract(
+            path: assetPath,
+            soundId: sound.id,
+            isAsset: true,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Handle network sounds
+    if (sound.url != null) {
+      _soundWaveformBloc.add(
+        SoundWaveformExtract(path: sound.url!, soundId: sound.id),
       );
     }
   }
