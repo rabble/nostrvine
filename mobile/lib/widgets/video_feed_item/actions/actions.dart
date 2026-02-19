@@ -7,5 +7,6 @@ export 'like_action_button.dart';
 export 'repost_action_button.dart';
 export 'report_action_button.dart';
 export 'share_action_button.dart';
+export 'video_action_button.dart';
 export 'video_description_overlay.dart';
 export 'video_edit_button.dart';

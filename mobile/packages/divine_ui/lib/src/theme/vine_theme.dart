@@ -347,6 +347,9 @@ class VineTheme {
   /// Scrim at 15% opacity (black 15%).
   static const Color scrim15 = Color(0x26000000);
 
+  /// Scrim at 30% opacity (black 30%).
+  static const Color scrim30 = Color(0x4D000000);
+
   /// Scrim at 65% opacity (black 65%).
   static const Color scrim65 = Color(0xA6000000);
 

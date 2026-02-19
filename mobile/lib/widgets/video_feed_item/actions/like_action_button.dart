@@ -1,13 +1,12 @@
 // ABOUTME: Like action button for video feed overlay.
 // ABOUTME: Displays heart icon with like count, handles toggle like action.
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
-import 'package:models/models.dart' hide LogCategory;
+import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
-import 'package:openvine/utils/string_utils.dart';
-import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 
 /// Like action button with count display for video overlay.
 ///
@@ -15,7 +14,6 @@ import 'package:openvine/utils/unified_logger.dart';
 /// Displays the total like count combining Nostr likes and original Vine likes.
 ///
 /// Requires [VideoInteractionsBloc] to be provided in the widget tree.
-/// Shows a disabled state when the bloc is not available.
 class LikeActionButton extends StatelessWidget {
   const LikeActionButton({required this.video, super.key});
 
@@ -23,118 +21,26 @@ class LikeActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final interactionsBloc = context.read<VideoInteractionsBloc?>();
-
-    if (interactionsBloc == null) {
-      // No bloc available - show disabled state with original likes only
-      return _buildButton(
-        context: context,
-        isLiked: false,
-        isLikeInProgress: false,
-        totalLikes: video.originalLikes ?? 0,
-        onPressed: null,
-      );
-    }
-
     return BlocBuilder<VideoInteractionsBloc, VideoInteractionsState>(
       builder: (context, state) {
         final isLiked = state.isLiked;
-        final isLikeInProgress = state.isLikeInProgress;
         final likeCount = state.likeCount ?? 0;
         final totalLikes = likeCount + (video.originalLikes ?? 0);
 
-        return _buildButton(
-          context: context,
-          isLiked: isLiked,
-          isLikeInProgress: isLikeInProgress,
-          totalLikes: totalLikes,
+        return VideoActionButton(
+          iconAsset: 'assets/icon/content-controls/like.svg',
+          semanticIdentifier: 'like_button',
+          semanticLabel: isLiked ? 'Unlike video' : 'Like video',
+          iconColor: isLiked ? VineTheme.likeRed : VineTheme.whiteText,
+          isLoading: state.isLikeInProgress,
+          count: totalLikes,
           onPressed: () {
-            Log.info(
-              '❤️ Like button tapped for ${video.id}',
-              name: 'LikeActionButton',
-              category: LogCategory.ui,
-            );
             context.read<VideoInteractionsBloc>().add(
               const VideoInteractionsLikeToggled(),
             );
           },
         );
       },
-    );
-  }
-
-  Widget _buildButton({
-    required BuildContext context,
-    required bool isLiked,
-    required bool isLikeInProgress,
-    required int totalLikes,
-    required VoidCallback? onPressed,
-  }) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Semantics(
-          identifier: 'like_button',
-          container: true,
-          explicitChildNodes: true,
-          button: true,
-          label: isLiked ? 'Unlike video' : 'Like video',
-          child: IconButton(
-            padding: const EdgeInsets.all(8),
-            constraints: const BoxConstraints.tightFor(width: 48, height: 48),
-            style: IconButton.styleFrom(
-              highlightColor: Colors.transparent,
-              splashFactory: NoSplash.splashFactory,
-            ),
-            onPressed: isLikeInProgress || onPressed == null ? null : onPressed,
-            icon: isLikeInProgress
-                ? const SizedBox(
-                    width: 32,
-                    height: 32,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: Colors.white,
-                    ),
-                  )
-                : DecoratedBox(
-                    decoration: BoxDecoration(
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.15),
-                          blurRadius: 15,
-                          spreadRadius: 1,
-                        ),
-                      ],
-                    ),
-                    child: SvgPicture.asset(
-                      'assets/icon/content-controls/like.svg',
-                      width: 32,
-                      height: 32,
-                      colorFilter: ColorFilter.mode(
-                        isLiked ? Colors.red : Colors.white,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-          ),
-        ),
-        // Show total like count: new likes + original Vine likes
-        if (totalLikes > 0)
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              StringUtils.formatCompactNumber(totalLikes),
-              style: const TextStyle(
-                fontFamily: 'Bricolage Grotesque',
-                color: Colors.white,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                height: 1,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-      ],
     );
   }
 }
