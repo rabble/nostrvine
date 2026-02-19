@@ -40,9 +40,7 @@ void main() {
         ),
       ],
     );
-    return ProviderScope(
-      child: MaterialApp.router(routerConfig: router),
-    );
+    return ProviderScope(child: MaterialApp.router(routerConfig: router));
   }
 
   group(VideoMetadataHelpSheet, () {

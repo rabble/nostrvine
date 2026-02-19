@@ -443,6 +443,68 @@ void main() {
         expect(textField.autofocus, isFalse);
       });
     });
+
+    group('excludePubkeys', () {
+      testWidgets('shows excluded users as disabled with check icon', (
+        tester,
+      ) async {
+        final followPubkeys = ['pubkey1', 'pubkey2'];
+        final profiles = [
+          UserProfile(
+            pubkey: 'pubkey1',
+            name: 'Already Selected',
+            rawData: const {'name': 'Already Selected'},
+            createdAt: DateTime.now(),
+            eventId: 'event1',
+          ),
+          UserProfile(
+            pubkey: 'pubkey2',
+            name: 'Available User',
+            rawData: const {'name': 'Available User'},
+            createdAt: DateTime.now(),
+            eventId: 'event2',
+          ),
+        ];
+
+        final mockFollowRepo = _createMockFollowRepository(
+          followingPubkeys: followPubkeys,
+        );
+
+        final mockProfileRepo = _createMockProfileRepository();
+        when(
+          () => mockProfileRepo.getCachedProfile(pubkey: 'pubkey1'),
+        ).thenAnswer((_) async => profiles[0]);
+        when(
+          () => mockProfileRepo.getCachedProfile(pubkey: 'pubkey2'),
+        ).thenAnswer((_) async => profiles[1]);
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              profileRepositoryProvider.overrideWithValue(mockProfileRepo),
+              followRepositoryProvider.overrideWithValue(mockFollowRepo),
+            ],
+            child: const MaterialApp(
+              home: Scaffold(
+                body: UserPickerSheet(
+                  filterMode: UserPickerFilterMode.mutualFollowsOnly,
+                  excludePubkeys: {'pubkey1'},
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Both users should be visible
+        expect(find.text('Already Selected'), findsOneWidget);
+        expect(find.text('Available User'), findsOneWidget);
+
+        // Check icon should be shown for excluded user
+        expect(find.byIcon(Icons.check), findsOneWidget);
+      });
+    });
   });
 
   group(UserPickerFilterMode, () {

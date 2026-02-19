@@ -39,7 +39,7 @@ Future<UserProfile?> showUserPickerSheet(
     context: context,
     initialChildSize: 1,
     maxChildSize: 1,
-    minChildSize: 1,
+    minChildSize: 0.8,
     title: Column(
       spacing: 2,
       children: [
@@ -125,10 +125,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     );
     final results = await Future.wait(futures);
 
-    final profiles = results
-        .whereType<UserProfile>()
-        .where((p) => !widget.excludePubkeys.contains(p.pubkey))
-        .toList();
+    final profiles = results.whereType<UserProfile>().toList();
 
     // Sort by display name for a nice default list
     profiles.sort(
@@ -250,6 +247,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                   followProfiles: _followProfiles,
                   filteredFollowProfiles: _filteredFollowProfiles,
                   onUserSelected: _onUserSelected,
+                  excludePubkeys: widget.excludePubkeys,
                 )
               : _NetworkResults(
                   searchBloc: _searchBloc,
@@ -265,27 +263,43 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
 
 /// A tile displaying a user profile in the search results.
 class _UserSearchTile extends StatelessWidget {
-  const _UserSearchTile({required this.profile, required this.onTap});
+  const _UserSearchTile({
+    required this.profile,
+    required this.onTap,
+    this.isDisabled = false,
+  });
 
   final UserProfile profile;
   final VoidCallback onTap;
 
+  /// Whether this user is already selected and cannot be tapped.
+  final bool isDisabled;
+
   @override
   Widget build(BuildContext context) {
+    final textColor = isDisabled
+        ? VineTheme.onSurfaceMuted
+        : VineTheme.onSurface;
+
     return Semantics(
-      button: true,
-      label: 'Select ${profile.bestDisplayName}',
+      button: !isDisabled,
+      label: isDisabled
+          ? '${profile.bestDisplayName} already added'
+          : 'Select ${profile.bestDisplayName}',
       child: InkWell(
-        onTap: onTap,
+        onTap: isDisabled ? null : onTap,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             spacing: 16,
             children: [
-              UserAvatar(
-                imageUrl: profile.picture,
-                name: profile.bestDisplayName,
-                size: 40,
+              Opacity(
+                opacity: isDisabled ? 0.5 : 1.0,
+                child: UserAvatar(
+                  imageUrl: profile.picture,
+                  name: profile.bestDisplayName,
+                  size: 40,
+                ),
               ),
               Expanded(
                 child: Column(
@@ -297,7 +311,7 @@ class _UserSearchTile extends StatelessWidget {
                       overflow: .ellipsis,
                       style: VineTheme.titleMediumFont(
                         fontSize: 16,
-                        color: VineTheme.onSurface,
+                        color: textColor,
                       ),
                     ),
                     if (profile.nip05 != null && profile.nip05!.isNotEmpty)
@@ -305,27 +319,39 @@ class _UserSearchTile extends StatelessWidget {
                         profile.nip05!,
                         maxLines: 1,
                         overflow: .ellipsis,
-                        style: VineTheme.bodyMediumFont(
-                          color: VineTheme.onSurface,
-                        ),
+                        style: VineTheme.bodyMediumFont(color: textColor),
                       ),
                   ],
                 ),
               ),
 
-              Container(
-                padding: const .all(8),
-                decoration: ShapeDecoration(
-                  color: VineTheme.primary,
-                  shape: RoundedRectangleBorder(borderRadius: .circular(16)),
+              if (isDisabled)
+                Container(
+                  padding: const .all(8),
+                  decoration: ShapeDecoration(
+                    color: VineTheme.surfaceContainer,
+                    shape: RoundedRectangleBorder(borderRadius: .circular(16)),
+                  ),
+                  child: const Icon(
+                    Icons.check,
+                    size: 24,
+                    color: VineTheme.onSurfaceMuted,
+                  ),
+                )
+              else
+                Container(
+                  padding: const .all(8),
+                  decoration: ShapeDecoration(
+                    color: VineTheme.primary,
+                    shape: RoundedRectangleBorder(borderRadius: .circular(16)),
+                  ),
+                  child: SvgPicture.asset(
+                    'assets/icon/plus.svg',
+                    width: 24,
+                    height: 24,
+                    colorFilter: const .mode(VineTheme.onPrimary, .srcIn),
+                  ),
                 ),
-                child: SvgPicture.asset(
-                  'assets/icon/plus.svg',
-                  width: 24,
-                  height: 24,
-                  colorFilter: const .mode(VineTheme.onPrimary, .srcIn),
-                ),
-              ),
             ],
           ),
         ),
@@ -454,11 +480,13 @@ class _ResultsList extends StatelessWidget {
     required this.scrollController,
     required this.results,
     required this.onUserSelected,
+    this.excludePubkeys = const {},
   });
 
   final ScrollController? scrollController;
   final List<UserProfile> results;
   final ValueChanged<UserProfile> onUserSelected;
+  final Set<String> excludePubkeys;
 
   @override
   Widget build(BuildContext context) {
@@ -470,9 +498,11 @@ class _ResultsList extends StatelessWidget {
           Divider(height: 40, thickness: 1, color: VineTheme.outlineDisabled),
       itemBuilder: (context, index) {
         final profile = results[index];
+        final isDisabled = excludePubkeys.contains(profile.pubkey);
         return _UserSearchTile(
           profile: profile,
           onTap: () => onUserSelected(profile),
+          isDisabled: isDisabled,
         );
       },
     );
@@ -504,15 +534,13 @@ class _NetworkResults extends StatelessWidget {
           ),
           UserSearchStatus.failure => const _ErrorState(),
           UserSearchStatus.success => () {
-            final filtered = state.results
-                .where((p) => !excludePubkeys.contains(p.pubkey))
-                .toList();
-            return filtered.isEmpty
+            return state.results.isEmpty
                 ? const _NoResults()
                 : _ResultsList(
                     scrollController: scrollController,
-                    results: filtered,
+                    results: state.results,
                     onUserSelected: onUserSelected,
+                    excludePubkeys: excludePubkeys,
                   );
           }(),
         };
@@ -528,6 +556,7 @@ class _LocalResults extends StatelessWidget {
     required this.followProfiles,
     required this.filteredFollowProfiles,
     required this.onUserSelected,
+    this.excludePubkeys = const {},
   });
 
   final ScrollController? scrollController;
@@ -535,6 +564,7 @@ class _LocalResults extends StatelessWidget {
   final List<UserProfile> followProfiles;
   final List<UserProfile> filteredFollowProfiles;
   final ValueChanged<UserProfile> onUserSelected;
+  final Set<String> excludePubkeys;
 
   @override
   Widget build(BuildContext context) {
@@ -560,9 +590,11 @@ class _LocalResults extends StatelessWidget {
           Divider(height: 40, thickness: 1, color: VineTheme.outlineDisabled),
       itemBuilder: (context, index) {
         final profile = filteredFollowProfiles[index];
+        final isDisabled = excludePubkeys.contains(profile.pubkey);
         return _UserSearchTile(
           profile: profile,
           onTap: () => onUserSelected(profile),
+          isDisabled: isDisabled,
         );
       },
     );
