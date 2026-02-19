@@ -73,6 +73,7 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
               // Current selection with chevron icon
               Row(
                 mainAxisAlignment: .spaceBetween,
+                crossAxisAlignment: .center,
                 children: [
                   Flexible(
                     child: Text(

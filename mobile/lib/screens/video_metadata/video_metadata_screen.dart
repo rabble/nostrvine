@@ -162,8 +162,8 @@ class _Divider extends StatelessWidget {
   Widget build(BuildContext context) {
     return Padding(
       padding: .only(
-        top: enablePaddingTop ? 16 : 0.0,
-        bottom: enablePaddingBottom ? 16 : 0,
+        top: enablePaddingTop ? 12 : 0.0,
+        bottom: enablePaddingBottom ? 12 : 0,
       ),
       child: const Divider(
         thickness: 0,
