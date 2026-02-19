@@ -162,42 +162,11 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
   Future<void> _showPasteBunkerDialog() async {
     final controller = TextEditingController();
 
-    final result = await showDialog<String>(
+    final result = await VineBottomSheet.show<String>(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: Colors.grey[900],
-        title: const Text(
-          'Paste bunker:// URL',
-          style: TextStyle(color: Colors.white),
-        ),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          style: const TextStyle(color: Colors.white),
-          decoration: InputDecoration(
-            hintText: 'bunker://...',
-            hintStyle: TextStyle(color: Colors.grey[600]),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey[700]!),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderSide: const BorderSide(color: VineTheme.vineGreen),
-              borderRadius: BorderRadius.circular(8),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, controller.text.trim()),
-            child: const Text('Connect'),
-          ),
-        ],
-      ),
+      scrollable: false,
+      showHeaderDivider: false,
+      body: _PasteBunkerSheetContent(controller: controller),
     );
 
     if (result == null || result.isEmpty || !mounted) return;
@@ -206,9 +175,11 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
     if (!NostrRemoteSignerInfo.isBunkerUrl(result)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid bunker URL. It should start with bunker://'),
-          backgroundColor: Colors.red,
+        SnackBar(
+          content: const Text(
+            'Invalid bunker URL. It should start with bunker://',
+          ),
+          backgroundColor: VineTheme.error,
         ),
       );
       return;
@@ -252,255 +223,507 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () => context.pop(),
-        ),
-        title: const Text(
-          'Connect Signer App',
-          style: TextStyle(color: Colors.white),
-        ),
-      ),
+      backgroundColor: VineTheme.surfaceBackground,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24),
-          child: _buildContent(),
+        child: Stack(
+          children: [
+            // Content fills entire safe area
+            switch (_sessionState) {
+              NostrConnectState.idle || NostrConnectState.generating =>
+                const _ConnectLoadingView(message: 'Generating connection...'),
+              NostrConnectState.listening => _ConnectQrCodeView(
+                connectUrl: _connectUrl ?? '',
+                elapsedTimer: _elapsedTimer,
+                onCopyUrl: _copyUrl,
+                onShareUrl: _shareUrl,
+                onAddBunker: _showPasteBunkerDialog,
+              ),
+              NostrConnectState.connected => const _ConnectLoadingView(
+                message: 'Connected! Authenticating...',
+              ),
+              NostrConnectState.timeout => _ConnectErrorView(
+                title: 'Connection timed out',
+                message:
+                    'Make sure you approved the connection '
+                    'in your signer app.',
+                onRetry: _retry,
+              ),
+              NostrConnectState.cancelled => _ConnectErrorView(
+                title: 'Connection cancelled',
+                message: 'The connection was cancelled.',
+                onRetry: _retry,
+              ),
+              NostrConnectState.error => _ConnectErrorView(
+                title: 'Connection failed',
+                message: _errorMessage ?? 'An unknown error occurred.',
+                onRetry: _retry,
+              ),
+            },
+
+            // Close button overlays top-left
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: DivineIconButton(
+                icon: DivineIconName.x,
+                type: DivineIconButtonType.secondary,
+                size: DivineIconButtonSize.small,
+                onPressed: () => context.pop(),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildContent() {
-    switch (_sessionState) {
-      case NostrConnectState.idle:
-      case NostrConnectState.generating:
-        return _buildLoading('Generating connection...');
+/// Loading view shown while generating or authenticating.
+class _ConnectLoadingView extends StatelessWidget {
+  const _ConnectLoadingView({required this.message});
 
-      case NostrConnectState.listening:
-        return _buildQrCode();
+  final String message;
 
-      case NostrConnectState.connected:
-        return _buildLoading('Connected! Authenticating...');
-
-      case NostrConnectState.timeout:
-        return _buildError(
-          'Connection timed out',
-          'Make sure you approved the connection in your signer app.',
-        );
-
-      case NostrConnectState.cancelled:
-        return _buildError(
-          'Connection cancelled',
-          'The connection was cancelled.',
-        );
-
-      case NostrConnectState.error:
-        return _buildError(
-          'Connection failed',
-          _errorMessage ?? 'An unknown error occurred.',
-        );
-    }
-  }
-
-  Widget _buildLoading(String message) {
-    return Center(
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Space for close button overlay
+          const SizedBox(height: 72),
+          Text(
+            'Scan with your\nsigner app to connect.',
+            style: VineTheme.headlineLargeFont(),
+          ),
+          const Spacer(),
           const CircularProgressIndicator(color: VineTheme.vineGreen),
           const SizedBox(height: 24),
           Text(
             message,
-            style: const TextStyle(color: Colors.white70, fontSize: 16),
+            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
           ),
+          const Spacer(),
         ],
       ),
     );
   }
+}
 
-  Widget _buildQrCode() {
-    final elapsed = _elapsedTimer.elapsed;
+/// QR code view shown when listening for a signer connection.
+class _ConnectQrCodeView extends StatelessWidget {
+  const _ConnectQrCodeView({
+    required this.connectUrl,
+    required this.elapsedTimer,
+    required this.onCopyUrl,
+    required this.onShareUrl,
+    required this.onAddBunker,
+  });
+
+  final String connectUrl;
+  final Stopwatch elapsedTimer;
+  final VoidCallback onCopyUrl;
+  final VoidCallback onShareUrl;
+  final VoidCallback onAddBunker;
+
+  @override
+  Widget build(BuildContext context) {
+    final elapsed = elapsedTimer.elapsed;
     final elapsedText = '${elapsed.inSeconds}s';
 
     return SingleChildScrollView(
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const SizedBox(height: 16),
-
-          // Instructions
-          const Text(
-            'Scan this QR code with your\nsigner app to connect',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
+          // Space for close button overlay
+          const SizedBox(height: 72),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              'Scan with your\nsigner app to connect.',
+              style: VineTheme.headlineLargeFont(),
             ),
-          ),
-          const SizedBox(height: 24),
-
-          // QR Code with white background for scannability
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: QrImageView(
-              data: _connectUrl ?? '',
-              version: QrVersions.auto,
-              size: 240,
-              backgroundColor: Colors.white,
-              errorCorrectionLevel: QrErrorCorrectLevel.M,
-            ),
-          ),
-          const SizedBox(height: 24),
-
-          // Waiting indicator
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: VineTheme.vineGreen,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Waiting for connection... $elapsedText',
-                style: const TextStyle(color: Colors.white70, fontSize: 14),
-              ),
-            ],
           ),
           const SizedBox(height: 32),
 
-          // Action buttons
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _copyUrl,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white54),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  icon: const Icon(Icons.copy, size: 18),
-                  label: const Text('Copy URL'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _shareUrl,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.white,
-                    side: const BorderSide(color: Colors.white54),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                  icon: const Icon(Icons.share, size: 18),
-                  label: const Text('Share'),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Paste bunker URL option
-          TextButton.icon(
-            onPressed: _showPasteBunkerDialog,
-            icon: const Icon(Icons.content_paste, size: 18),
-            label: const Text('Have a bunker:// URL? Paste it here'),
-            style: TextButton.styleFrom(foregroundColor: Colors.white70),
+          // QR card with border
+          _QrCodeCard(
+            connectUrl: connectUrl,
+            elapsedText: elapsedText,
+            onCopyUrl: onCopyUrl,
+            onShareUrl: onShareUrl,
+            onAddBunker: onAddBunker,
           ),
           const SizedBox(height: 24),
 
-          // Supported signers
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Compatible signer apps:',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                _buildSignerItem('Amber', 'Android'),
-                _buildSignerItem('nsecBunker', 'Web / Self-hosted'),
-                _buildSignerItem('Primal', 'iOS / Android / Web'),
-                _buildSignerItem('Nostr Connect', 'iOS / Android'),
-              ],
-            ),
-          ),
+          // Compatible signers table
+          const _CompatibleSignersTable(),
           const SizedBox(height: 24),
         ],
       ),
     );
   }
+}
 
-  Widget _buildSignerItem(String name, String platform) {
+/// The bordered card containing the QR code and action links.
+class _QrCodeCard extends StatelessWidget {
+  const _QrCodeCard({
+    required this.connectUrl,
+    required this.elapsedText,
+    required this.onCopyUrl,
+    required this.onShareUrl,
+    required this.onAddBunker,
+  });
+
+  final String connectUrl;
+  final String elapsedText;
+  final VoidCallback onCopyUrl;
+  final VoidCallback onShareUrl;
+  final VoidCallback onAddBunker;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
-      child: Row(
-        children: [
-          const Icon(Icons.check_circle, color: VineTheme.vineGreen, size: 16),
-          const SizedBox(width: 8),
-          Text(name, style: const TextStyle(color: Colors.white, fontSize: 14)),
-          const SizedBox(width: 8),
-          Text(
-            '($platform)',
-            style: const TextStyle(color: Colors.white54, fontSize: 12),
-          ),
-        ],
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: VineTheme.surfaceBackground,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: VineTheme.outlineMuted),
+        ),
+        child: Column(
+          children: [
+            // QR section
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 80, 16, 50),
+              child: Column(
+                children: [
+                  // QR Code
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: VineTheme.whiteText,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: QrImageView(
+                      data: connectUrl,
+                      version: QrVersions.auto,
+                      size: 208,
+                      backgroundColor: VineTheme.whiteText,
+                      errorCorrectionLevel: QrErrorCorrectLevel.M,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Spinner
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: VineTheme.vineGreen,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Waiting text
+                  Text(
+                    'Waiting for connection... $elapsedText',
+                    style: VineTheme.labelMediumFont(
+                      color: VineTheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Divider
+            Container(height: 1, color: VineTheme.outlineMuted),
+
+            // Action buttons row
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _ActionLink(
+                      icon: DivineIconName.linkSimple,
+                      label: 'Copy URL',
+                      onTap: onCopyUrl,
+                    ),
+                  ),
+                  Expanded(
+                    child: _ActionLink(
+                      icon: DivineIconName.shareFat,
+                      label: 'Share',
+                      onTap: onShareUrl,
+                    ),
+                  ),
+                  Expanded(
+                    child: _ActionLink(
+                      icon: DivineIconName.plus,
+                      label: 'Add bunker',
+                      onTap: onAddBunker,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
+}
 
-  Widget _buildError(String title, String message) {
-    return Center(
+/// Error view shown on timeout, cancellation, or failure.
+class _ConnectErrorView extends StatelessWidget {
+  const _ConnectErrorView({
+    required this.title,
+    required this.message,
+    required this.onRetry,
+  });
+
+  final String title;
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline, color: Colors.red, size: 64),
-          const SizedBox(height: 24),
+          // Space for close button overlay
+          const SizedBox(height: 72),
           Text(
-            title,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
+            'Scan with your\nsigner app to connect.',
+            style: VineTheme.headlineLargeFont(),
           ),
+          const SizedBox(height: 32),
+          const DivineSticker(sticker: DivineStickerName.policeSiren),
+          const SizedBox(height: 32),
+          Text(title, style: VineTheme.headlineSmallFont()),
           const SizedBox(height: 12),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: const TextStyle(color: Colors.white70, fontSize: 14),
+            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
           ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: _retry,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: VineTheme.vineGreen,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+          const Spacer(),
+          DivineButton(label: 'Try again', expanded: true, onPressed: onRetry),
+          const SizedBox(height: 16),
+        ],
+      ),
+    );
+  }
+}
+
+/// A vertically stacked icon + label link used in the action row.
+class _ActionLink extends StatelessWidget {
+  const _ActionLink({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  final DivineIconName icon;
+  final String label;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          DivineIcon(icon: icon, color: VineTheme.vineGreen, size: 24),
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: VineTheme.titleSmallFont(color: VineTheme.vineGreen),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Table showing compatible signer apps and their platform support.
+class _CompatibleSignersTable extends StatelessWidget {
+  const _CompatibleSignersTable();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      children: [
+        // Header row
+        _SignerRow(
+          name: 'Compatible Signer apps',
+          isHeader: true,
+          android: true,
+          ios: true,
+          web: true,
+        ),
+        Divider(height: 1, color: VineTheme.outlineMuted),
+        // Amber - Android only
+        _SignerRow(name: 'Amber', android: true),
+        Divider(height: 1, color: VineTheme.outlineMuted),
+        // Primal - all platforms
+        _SignerRow(name: 'Primal', android: true, ios: true, web: true),
+        Divider(height: 1, color: VineTheme.outlineMuted),
+        // Nostr Connect - Android & iOS
+        _SignerRow(name: 'Nostr Connect', android: true, ios: true),
+        Divider(height: 1, color: VineTheme.outlineMuted),
+        // nsecBunker - Web only
+        _SignerRow(name: 'nsecBunker', web: true),
+      ],
+    );
+  }
+}
+
+/// A single row in the compatible signers table.
+class _SignerRow extends StatelessWidget {
+  const _SignerRow({
+    required this.name,
+    this.isHeader = false,
+    this.android = false,
+    this.ios = false,
+    this.web = false,
+  });
+
+  final String name;
+  final bool isHeader;
+  final bool android;
+  final bool ios;
+  final bool web;
+
+  @override
+  Widget build(BuildContext context) {
+    final textStyle = isHeader
+        ? VineTheme.labelMediumFont(color: VineTheme.onSurfaceMuted)
+        : VineTheme.titleSmallFont(color: VineTheme.onSurface);
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      child: Row(
+        children: [
+          Expanded(flex: 3, child: Text(name, style: textStyle)),
+          Expanded(
+            child: _PlatformCell(
+              isHeader: isHeader,
+              headerIcon: DivineIconName.androidLogo,
+              isSupported: android,
             ),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Try Again'),
+          ),
+          Expanded(
+            child: _PlatformCell(
+              isHeader: isHeader,
+              headerIcon: DivineIconName.appleLogo,
+              isSupported: ios,
+            ),
+          ),
+          Expanded(
+            child: _PlatformCell(
+              isHeader: isHeader,
+              headerIcon: DivineIconName.globe,
+              isSupported: web,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A single platform cell in the signers table row.
+class _PlatformCell extends StatelessWidget {
+  const _PlatformCell({
+    required this.isHeader,
+    required this.headerIcon,
+    required this.isSupported,
+  });
+
+  final bool isHeader;
+  final DivineIconName headerIcon;
+  final bool isSupported;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerRight,
+      child: isHeader
+          ? DivineIcon(
+              icon: headerIcon,
+              color: VineTheme.onSurfaceMuted,
+              size: 20,
+            )
+          : isSupported
+          ? const DivineIcon(
+              icon: DivineIconName.check,
+              color: VineTheme.vineGreen,
+              size: 20,
+            )
+          : const SizedBox.shrink(),
+    );
+  }
+}
+
+/// Bottom sheet content for pasting a bunker:// URL.
+class _PasteBunkerSheetContent extends StatefulWidget {
+  const _PasteBunkerSheetContent({required this.controller});
+
+  final TextEditingController controller;
+
+  @override
+  State<_PasteBunkerSheetContent> createState() =>
+      _PasteBunkerSheetContentState();
+}
+
+class _PasteBunkerSheetContentState extends State<_PasteBunkerSheetContent> {
+  final _focusNode = FocusNode();
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-focus the text field after the sheet animates in.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _focusNode.requestFocus();
+    });
+  }
+
+  @override
+  void dispose() {
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        16,
+        0,
+        16,
+        MediaQuery.of(context).viewInsets.bottom + 16,
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Paste bunker:// URL', style: VineTheme.headlineSmallFont()),
+          const SizedBox(height: 24),
+          DivineAuthTextField(
+            label: 'bunker:// URL',
+            controller: widget.controller,
+            focusNode: _focusNode,
+            autocorrect: false,
+            keyboardType: TextInputType.url,
+            onSubmitted: (value) => context.pop(value.trim()),
           ),
         ],
       ),

@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
@@ -53,6 +54,12 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   // Flag to prevent multiple simultaneous stopRecording calls
   bool _isStoppingRecording = false;
 
+  // Flag to track if remote record control is currently enabled
+  bool _remoteRecordControlEnabled = false;
+
+  // Flag to track if remote control is paused due to sound selection
+  bool _remoteRecordPausedForSound = false;
+
   @override
   VideoRecorderProviderState build() {
     _cameraService =
@@ -70,6 +77,11 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
           },
           onAutoStopped: stopRecording,
         );
+
+    // Listen for sound selection changes to pause/resume remote control
+    ref.listen<AudioEvent?>(selectedSoundProvider, (previous, next) {
+      _handleSoundSelectionChanged(previous, next);
+    });
 
     // Setup cleanup when provider is disposed
     ref.onDispose(() async {
@@ -151,6 +163,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       aspectRatio: clips.isNotEmpty ? clips.first.targetAspectRatio : null,
     );
 
+    // Enable remote record control if user preference is enabled
+    await _setupRemoteRecordControl();
+
     Log.info(
       '✅ Video recorder initialized successfully',
       name: 'VideoRecorderNotifier',
@@ -178,7 +193,127 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     _focusPointTimer?.cancel();
     await _audioPlaybackService?.dispose();
     _audioPlaybackService = null;
+    await _disableRemoteRecordControl();
     await _cameraService.dispose();
+  }
+
+  /// Set up remote record control (volume buttons / Bluetooth accessories).
+  ///
+  /// Always enabled - allows triggering recording via volume buttons or
+  /// Bluetooth accessories.
+  Future<void> _setupRemoteRecordControl() async {
+    // Set up callback before enabling
+    _cameraService.onRemoteRecordTrigger = () {
+      Log.info(
+        '🎮 Remote record trigger received! Calling toggleRecording...',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+      toggleRecording();
+    };
+
+    final success = await _cameraService.setRemoteRecordControlEnabled(
+      enabled: true,
+    );
+    _remoteRecordControlEnabled = success;
+
+    if (success) {
+      Log.info(
+        '🎮 Remote record control enabled (volume buttons / Bluetooth)',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+    } else {
+      Log.warning(
+        '⚠️ Failed to enable remote record control',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+    }
+  }
+
+  /// Disable remote record control.
+  Future<void> _disableRemoteRecordControl() async {
+    if (_remoteRecordControlEnabled) {
+      await _cameraService.setRemoteRecordControlEnabled(enabled: false);
+      _cameraService.onRemoteRecordTrigger = null;
+      _remoteRecordControlEnabled = false;
+      Log.debug(
+        '🎮 Remote record control disabled',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+    }
+  }
+
+  /// Handle sound selection changes to enable/disable volume keys.
+  ///
+  /// When a sound is selected, volume buttons should adjust volume for preview.
+  /// Bluetooth media buttons continue to work for recording control.
+  /// When sound is cleared, re-enable volume key interception.
+  void _handleSoundSelectionChanged(AudioEvent? previous, AudioEvent? next) {
+    if (next != null && previous == null) {
+      // Sound was selected - disable volume key interception only
+      // Bluetooth media buttons still work for recording control
+      _remoteRecordPausedForSound = true;
+      _cameraService.setVolumeKeysEnabled(enabled: false);
+      Log.debug(
+        '🎵 Sound selected - volume keys disabled (Bluetooth still works)',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+    } else if (next == null && previous != null) {
+      // Sound was cleared - re-enable volume key interception
+      _remoteRecordPausedForSound = false;
+      _cameraService.setVolumeKeysEnabled(enabled: true);
+      Log.debug(
+        '🎵 Sound cleared - volume keys re-enabled',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+    }
+  }
+
+  /// Temporarily pause remote record control.
+  ///
+  /// Call this when opening screens that need audio playback (e.g., SoundsScreen).
+  /// The MediaSession used for Bluetooth remotes can interfere with audio playback.
+  /// Call [resumeRemoteRecordControl] when returning to the camera.
+  Future<void> pauseRemoteRecordControl() async {
+    if (_remoteRecordControlEnabled) {
+      await _cameraService.setRemoteRecordControlEnabled(enabled: false);
+      Log.debug(
+        '🎮 Remote record control paused (for audio playback)',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+    }
+  }
+
+  /// Resume remote record control after pausing.
+  ///
+  /// Call this when returning from screens that needed audio playback.
+  /// If a sound is currently selected, volume keys will remain disabled
+  /// but Bluetooth media buttons will work.
+  Future<void> resumeRemoteRecordControl() async {
+    if (_remoteRecordControlEnabled) {
+      await _cameraService.setRemoteRecordControlEnabled(enabled: true);
+      Log.debug(
+        '🎮 Remote record control resumed',
+        name: 'VideoRecorderNotifier',
+        category: .video,
+      );
+
+      // If a sound is selected, keep volume keys disabled
+      if (_remoteRecordPausedForSound) {
+        await _cameraService.setVolumeKeysEnabled(enabled: false);
+        Log.debug(
+          '🎮 Volume keys re-disabled (sound is selected)',
+          name: 'VideoRecorderNotifier',
+          category: .video,
+        );
+      }
+    }
   }
 
   /// Toggle flash mode between `off`, `torch`, and `auto`.
@@ -396,6 +531,10 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         category: .video,
       );
 
+      // Disable volume key interception during countdown so users can
+      // adjust volume before recording starts
+      await _cameraService.setVolumeKeysEnabled(enabled: false);
+
       // Set recording state during countdown so UI shows countdown
       state = state.copyWith(recordingState: .recording);
 
@@ -406,9 +545,17 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       if (_isDestroyed) {
         _isStartingRecording = false;
         state = state.copyWith(recordingState: .idle);
+        // Re-enable volume keys on early exit
+        await _cameraService.setVolumeKeysEnabled(enabled: true);
         return;
       }
       state = state.copyWith(countdownValue: 0);
+
+      // Re-enable volume key interception after countdown
+      // (unless a sound is selected, then keep them disabled)
+      if (!_remoteRecordPausedForSound) {
+        await _cameraService.setVolumeKeysEnabled(enabled: true);
+      }
     }
 
     if (_isDestroyed) {

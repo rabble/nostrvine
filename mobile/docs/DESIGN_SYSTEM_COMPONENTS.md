@@ -58,7 +58,8 @@ Complete dark-mode design system providing:
 
 | Component | Description |
 |-----------|-------------|
-| `DivineTextField` | Themed text input field |
+| `DivineAuthTextField` | Text input field for auth screens (sign-in/sign-up) |
+| `DivineTextField` | **Deprecated** — delegates to `DivineAuthTextField` |
 
 ### Feedback
 

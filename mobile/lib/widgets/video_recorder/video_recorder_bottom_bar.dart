@@ -35,7 +35,11 @@ class VideoRecorderBottomBar extends ConsumerWidget {
   }
 
   /// Show more options menu
-  Future<void> _showMoreOptions(BuildContext context, WidgetRef ref) async {
+  Future<void> _showMoreOptions(
+    BuildContext context,
+    WidgetRef ref,
+    VideoRecorderNotifier videoRecorderNotifier,
+  ) async {
     final clipManager = ref.read(
       clipManagerProvider.select(
         (p) => (hasClips: p.hasClips, clipCount: p.clipCount),
@@ -43,7 +47,9 @@ class VideoRecorderBottomBar extends ConsumerWidget {
     );
     final clipsNotifier = ref.read(clipManagerProvider.notifier);
 
-    VineBottomSheetActionMenu.show(
+    videoRecorderNotifier.pauseRemoteRecordControl();
+
+    await VineBottomSheetActionMenu.show(
       context: context,
       options: [
         VineBottomSheetActionData(
@@ -94,6 +100,8 @@ class VideoRecorderBottomBar extends ConsumerWidget {
         ),
       ],
     );
+
+    videoRecorderNotifier.resumeRemoteRecordControl();
   }
 
   @override
@@ -173,7 +181,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
                   // TODO(l10n): Replace with context.l10n
                   // when localization is added.
                   tooltip: 'More options',
-                  onPressed: () => _showMoreOptions(context, ref),
+                  onPressed: () => _showMoreOptions(context, ref, notifier),
                 ),
               ],
             ),

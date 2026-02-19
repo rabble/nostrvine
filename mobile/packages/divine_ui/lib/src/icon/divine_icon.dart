@@ -7,6 +7,8 @@ import 'package:flutter_svg/flutter_svg.dart';
 ///
 /// Each value maps to an SVG asset in `assets/icon/`.
 enum DivineIconName {
+  androidLogo('AndroidLogo'),
+  appleLogo('AppleLogo'),
   arrowArcLeft('arrow_arc_left'),
   arrowArcRight('arrow_arc_right'),
   arrowBendDownLeft('arrow_bend_down_left'),
@@ -85,6 +87,7 @@ enum DivineIconName {
   gear('gear'),
   gearSix('gear_six'),
   gif('gif'),
+  globe('Globe'),
   handPointing('hand_pointing'),
   headphones('headphones'),
   heart('heart'),

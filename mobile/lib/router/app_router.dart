@@ -52,6 +52,10 @@ import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
 
+/// Global route observer for [RouteAware] subscribers (e.g. pausing video
+/// when a new route is pushed on top of the feed).
+final routeObserver = RouteObserver<ModalRoute<dynamic>>();
+
 // Track if we've done initial navigation to avoid redirect loops
 bool _hasNavigated = false;
 
@@ -72,6 +76,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     // Start at /welcome - redirect logic will navigate to appropriate route
     initialLocation: WelcomeScreen.path,
     observers: [
+      routeObserver,
       PageLoadObserver(),
       VideoStopNavigatorObserver(),
       FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),

@@ -15,10 +15,9 @@ class VideoRecorderMobilePreview extends ConsumerWidget {
       onScaleStart: notifier.handleScaleStart,
       onScaleUpdate: notifier.handleScaleUpdate,
       onTap: (localPosition, normalizedPosition) async {
-        await Future.wait([
-          notifier.setFocusPoint(normalizedPosition),
-          notifier.setExposurePoint(normalizedPosition),
-        ]);
+        // setFocusPoint already combines AF + AE metering.
+        // No need to call setExposurePoint separately.
+        await notifier.setFocusPoint(normalizedPosition);
       },
       loadingWidget: Container(color: const Color(0xFF141414)),
     );

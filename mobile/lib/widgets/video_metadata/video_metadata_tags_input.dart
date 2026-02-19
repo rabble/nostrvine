@@ -180,15 +180,14 @@ class _VideoMetadataTagsInputState
                 ...tags.map((tag) => _TagChip(tag: tag)),
                 // Show input field if under limit
                 if (tags.length < VideoEditorConstants.tagLimit)
-                  DivineTextField(
+                  DivineAuthTextField(
                     controller: _controller,
                     focusNode: _focusNode,
                     // TODO(l10n): Replace with context.l10n when localization is added.
-                    labelText: tags.isEmpty ? 'Tags' : null,
+                    label: tags.isEmpty ? 'Tags' : null,
                     contentPadding: .zero,
                     textCapitalization: .none,
                     textInputAction: .done,
-                    maxLines: 1,
                     inputFormatters: [
                       FilteringTextInputFormatter.allow(
                         RegExp(r'[a-zA-Z0-9\s]'),

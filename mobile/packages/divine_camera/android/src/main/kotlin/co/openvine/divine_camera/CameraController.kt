@@ -21,7 +21,9 @@ import android.util.Log
 import android.view.Surface
 import android.view.WindowManager
 import androidx.camera.camera2.interop.Camera2CameraInfo
+import androidx.camera.camera2.interop.Camera2CameraControl
 import androidx.camera.camera2.interop.Camera2Interop
+import androidx.camera.camera2.interop.CaptureRequestOptions
 import androidx.camera.core.*
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.video.*
@@ -1022,18 +1024,43 @@ class CameraController(
 
     /**
      * Sets the focus point in normalized coordinates (0.0-1.0).
+     * Uses CameraX FocusMeteringAction with explicit AF+AE flags and spot metering.
+     * Focus is locked for 3 seconds, then returns to continuous auto-focus.
      */
     fun setFocusPoint(x: Float, y: Float): Boolean {
         val cam = camera ?: return false
 
         return try {
+            // SurfaceOrientedMeteringPointFactory with (1f, 1f) accepts normalized 0-1 coordinates
             val factory = SurfaceOrientedMeteringPointFactory(1f, 1f)
-            val point = factory.createPoint(x, y)
-            val action = FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AF)
+            
+            // Create a SMALL metering point (10% of frame) for spot-metering like native camera
+            // The third parameter is the size of the metering region (0.0 to 1.0)
+            // Smaller = more precise exposure adjustment at tap point
+            val point = factory.createPoint(x, y, 0.1f)
+            
+            // Use all three flags for complete metering adjustment:
+            // FLAG_AF = Autofocus (focus on tap point)
+            // FLAG_AE = Auto Exposure (adjust brightness/contrast based on tap point)
+            // FLAG_AWB = Auto White Balance (adjust color temperature)
+            val action = FocusMeteringAction.Builder(
+                point, 
+                FocusMeteringAction.FLAG_AF or FocusMeteringAction.FLAG_AE or FocusMeteringAction.FLAG_AWB
+            )
                 .setAutoCancelDuration(3, java.util.concurrent.TimeUnit.SECONDS)
                 .build()
-            cam.cameraControl.startFocusAndMetering(action)
-            Log.d(TAG, "Focus point set: ($x, $y)")
+            
+            val future = cam.cameraControl.startFocusAndMetering(action)
+            future.addListener({
+                try {
+                    val result = future.get()
+                    Log.d(TAG, "Focus+AE ${if (result.isFocusSuccessful) "successful" else "adjusting"} at: ($x, $y)")
+                } catch (e: Exception) {
+                    Log.d(TAG, "Focus check: ${e.message}")
+                }
+            }, ContextCompat.getMainExecutor(context))
+            
+            Log.d(TAG, "Focus point set: ($x, $y) with FLAG_AF|FLAG_AE, 10% spot metering")
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set focus point", e)
@@ -1043,21 +1070,42 @@ class CameraController(
 
     /**
      * Sets the exposure point in normalized coordinates (0.0-1.0).
+     * For exposure-only adjustment without changing focus.
      */
     fun setExposurePoint(x: Float, y: Float): Boolean {
         val cam = camera ?: return false
 
         return try {
+            // SurfaceOrientedMeteringPointFactory with (1f, 1f) accepts normalized 0-1 coordinates
             val factory = SurfaceOrientedMeteringPointFactory(1f, 1f)
             val point = factory.createPoint(x, y)
+            
             val action = FocusMeteringAction.Builder(point, FocusMeteringAction.FLAG_AE)
-                .setAutoCancelDuration(3, java.util.concurrent.TimeUnit.SECONDS)
+                // Keep exposure locked for 5 seconds before returning to auto
+                .setAutoCancelDuration(5, java.util.concurrent.TimeUnit.SECONDS)
                 .build()
             cam.cameraControl.startFocusAndMetering(action)
             Log.d(TAG, "Exposure point set: ($x, $y)")
             true
         } catch (e: Exception) {
             Log.e(TAG, "Failed to set exposure point", e)
+            false
+        }
+    }
+    
+    /**
+     * Cancels any active focus/metering lock and returns to continuous auto-focus.
+     * Call this when you want to reset focus behavior after a tap-to-focus.
+     */
+    fun cancelFocusAndMetering(): Boolean {
+        val cam = camera ?: return false
+        
+        return try {
+            cam.cameraControl.cancelFocusAndMetering()
+            Log.d(TAG, "Focus and metering cancelled - returning to continuous auto-focus")
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to cancel focus and metering", e)
             false
         }
     }

@@ -27,6 +27,7 @@ void main() {
       service = UserProfileService(
         mockNostrService,
         subscriptionManager: mockSubscriptionManager,
+        skipIndexerFallback: true, // Avoid temp client in mocked tests
       );
     });
 

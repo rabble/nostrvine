@@ -47,6 +47,30 @@ class NostrService extends _$NostrService {
       rpcSigner: authService.rpcSigner,
     );
 
+    // Register callback so when NIP-65 discovery completes later, we add those
+    // relays to this client (fixes race where discovery finishes after client build)
+    authService.registerUserRelaysDiscoveredCallback((relayUrls) {
+      if (relayUrls.isEmpty) return;
+      Future.microtask(() async {
+        try {
+          final added = await client.addRelays(relayUrls);
+          if (added > 0) {
+            Log.info(
+              '[NostrService] Added $added discovered relay(s) after NIP-65 discovery',
+              name: 'NostrService',
+              category: LogCategory.system,
+            );
+          }
+        } catch (e) {
+          Log.warning(
+            '[NostrService] Failed to add discovered relays: $e',
+            name: 'NostrService',
+            category: LogCategory.system,
+          );
+        }
+      });
+    });
+
     // Schedule initialization after build completes
     // Add user relays BEFORE initialize() to avoid race condition
     Future.microtask(() async {
@@ -73,6 +97,7 @@ class NostrService extends _$NostrService {
 
     // Capture client reference for disposal - can't access state inside onDispose
     ref.onDispose(() {
+      ref.read(authServiceProvider).registerUserRelaysDiscoveredCallback(null);
       _authSubscription?.cancel();
       client.dispose();
     });
@@ -92,6 +117,8 @@ class NostrService extends _$NostrService {
         category: LogCategory.system,
       );
 
+      // Unregister callback for old client before disposing it
+      authService.registerUserRelaysDiscoveredCallback(null);
       state.dispose();
 
       // Create new client with updated signer and public key
@@ -113,6 +140,29 @@ class NostrService extends _$NostrService {
         dbClient: dbClient,
         rpcSigner: authService.rpcSigner,
       );
+
+      // Register callback for new client so later discovery adds relays to it
+      authService.registerUserRelaysDiscoveredCallback((relayUrls) {
+        if (relayUrls.isEmpty) return;
+        Future.microtask(() async {
+          try {
+            final added = await newClient.addRelays(relayUrls);
+            if (added > 0) {
+              Log.info(
+                '[NostrService] Added $added discovered relay(s) after NIP-65 discovery',
+                name: 'NostrService',
+                category: LogCategory.system,
+              );
+            }
+          } catch (e) {
+            Log.warning(
+              '[NostrService] Failed to add discovered relays: $e',
+              name: 'NostrService',
+              category: LogCategory.system,
+            );
+          }
+        });
+      });
 
       _lastPubkey = currentPubkey;
 

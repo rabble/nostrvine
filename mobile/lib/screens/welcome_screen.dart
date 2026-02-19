@@ -4,6 +4,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/services/auth_service.dart';
@@ -69,162 +70,116 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
     final authService = ref.watch(authServiceProvider);
 
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [Color(0xFF00AB82), Color(0xFF009870)],
-          ),
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isSmallScreen = constraints.maxHeight < 700;
-              final iconSize = isSmallScreen ? 160.0 : 224.0;
-              final wordmarkWidth = isSmallScreen ? 100.0 : 130.0;
+      backgroundColor: VineTheme.surfaceBackground,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 60, 16, 16),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: 600,
+                        minHeight: constraints.maxHeight - 76,
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // Top section with branding
+                          Column(
+                            children: [
+                              // Logo
+                              SvgPicture.asset(
+                                'assets/icon/logo.svg',
+                                height: 50,
+                              ),
+                              const SizedBox(height: 24),
+                              Text(
+                                'Create and share short videos\non the decentralized web',
+                                style: VineTheme.titleMediumFont(),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
+                          ),
 
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Padding(
-                    padding: const EdgeInsets.all(24),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 600),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Top section with branding
-                            Column(
-                              children: [
-                                // No top margin on phones, keep margin on tablets
-                                SizedBox(
-                                  height:
-                                      MediaQuery.of(context).size.width < 600
-                                      ? 0
-                                      : 40,
-                                ),
-                                // App branding - Divine icon (responsive sizing)
-                                Image.asset(
-                                  'assets/icon/divine_icon_transparent.png',
-                                  height: iconSize,
-                                  fit: BoxFit.contain,
-                                ),
-                                // Wordmark logo - positioned close to icon above
-                                Image.asset(
-                                  'assets/icon/divine_wordmark.png',
-                                  width: wordmarkWidth,
-                                  fit: BoxFit.contain,
-                                ),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'Create and share short videos\non the decentralized web',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    color: Color(0xFFF5F6EA),
+                          // Bottom section with TOS and buttons
+                          Column(
+                            children: [
+                              // Age verification and TOS acceptance
+                              _TermsCheckboxSection(
+                                isOver16: _isOver16,
+                                agreedToTerms: _agreedToTerms,
+                                onOver16Changed: (value) =>
+                                    setState(() => _isOver16 = value),
+                                onAgreedToTermsChanged: (value) =>
+                                    setState(() => _agreedToTerms = value),
+                              ),
+
+                              const SizedBox(height: 32),
+
+                              // Main action buttons - show based on auth state
+                              _WelcomeActionSection(
+                                authState: authState,
+                                lastError: authService.lastError,
+                                canProceed: _canProceed,
+                                isAccepting: _isAccepting,
+                                hasSavedKeys: _hasSavedKeys,
+                                savedNpub: _savedNpub,
+                                onContinue: () => _handleContinue(context),
+                              ),
+
+                              const SizedBox(height: 24),
+
+                              // Login option for existing users
+                              Text.rich(
+                                TextSpan(
+                                  style: VineTheme.bodyLargeFont(
+                                    color: _canProceed
+                                        ? VineTheme.onSurfaceVariant
+                                        : VineTheme.onSurfaceDisabled,
                                   ),
-                                  textAlign: TextAlign.center,
+                                  children: [
+                                    const TextSpan(text: 'Have an account? '),
+                                    DivineTextLink.span(
+                                      text: 'Sign in',
+                                      onTap: _canProceed
+                                          ? () {
+                                              authService.acceptTerms();
+                                              context.push(
+                                                WelcomeScreen.loginOptionsPath,
+                                              );
+                                            }
+                                          : null,
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
+                              ),
 
-                            // Bottom section with TOS and buttons
-                            Column(
-                              children: [
-                                // Age verification and TOS acceptance
-                                _TermsCheckboxSection(
-                                  isOver16: _isOver16,
-                                  agreedToTerms: _agreedToTerms,
-                                  onOver16Changed: (value) =>
-                                      setState(() => _isOver16 = value),
-                                  onAgreedToTermsChanged: (value) =>
-                                      setState(() => _agreedToTerms = value),
-                                ),
-
-                                const SizedBox(height: 32),
-
-                                // Main action buttons - show based on auth state
-                                _WelcomeActionSection(
-                                  authState: authState,
-                                  lastError: authService.lastError,
-                                  canProceed: _canProceed,
-                                  isAccepting: _isAccepting,
-                                  hasSavedKeys: _hasSavedKeys,
-                                  savedNpub: _savedNpub,
-                                  onContinue: () => _handleContinue(context),
-                                ),
-
-                                const SizedBox(height: 24),
-
-                                // Login option for existing users
-                                TextButton(
+                              // Start fresh option - only show when saved keys exist
+                              if (_hasSavedKeys) ...[
+                                const SizedBox(height: 8),
+                                DivineButton(
+                                  label: 'Start with a new identity',
+                                  type: DivineButtonType.link,
+                                  size: DivineButtonSize.small,
                                   onPressed: _canProceed
-                                      ? () {
-                                          authService.acceptTerms();
-                                          context.push(
-                                            WelcomeScreen.loginOptionsPath,
-                                          );
-                                        }
+                                      ? () => _handleStartFresh(context)
                                       : null,
-                                  child: Text(
-                                    'Have an account? Log In',
-                                    style: TextStyle(
-                                      color: _canProceed
-                                          ? Colors.white
-                                          : Colors.white.withValues(alpha: 0.5),
-                                      fontSize: 16,
-                                      decoration: TextDecoration.underline,
-                                      decorationColor: _canProceed
-                                          ? Colors.white
-                                          : Colors.white.withValues(alpha: 0.5),
-                                    ),
-                                  ),
                                 ),
-
-                                // Start fresh option - only show when saved keys exist
-                                if (_hasSavedKeys) ...[
-                                  const SizedBox(height: 8),
-                                  TextButton(
-                                    onPressed: _canProceed
-                                        ? () => _handleStartFresh(context)
-                                        : null,
-                                    child: Text(
-                                      'Start with a new identity',
-                                      style: TextStyle(
-                                        color: _canProceed
-                                            ? Colors.white.withValues(
-                                                alpha: 0.7,
-                                              )
-                                            : Colors.white.withValues(
-                                                alpha: 0.4,
-                                              ),
-                                        fontSize: 14,
-                                        decoration: TextDecoration.underline,
-                                        decorationColor: _canProceed
-                                            ? Colors.white.withValues(
-                                                alpha: 0.7,
-                                              )
-                                            : Colors.white.withValues(
-                                                alpha: 0.4,
-                                              ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
                               ],
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -245,7 +200,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to continue: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }
@@ -262,28 +217,34 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
-        title: const Text(
+        title: Text(
           'Start with New Identity?',
-          style: TextStyle(color: Colors.white),
+          style: VineTheme.headlineSmallFont(),
         ),
-        content: const Text(
+        content: Text(
           'This will:\n\n'
           '• Delete your current keys from this device\n'
           '• Generate a completely new Nostr identity\n'
-          '• You will NOT be able to access your previous account unless you have a backup of your nsec\n\n'
-          'Are you sure you want to start fresh?',
-          style: TextStyle(color: Colors.grey, height: 1.5),
+          '• You will NOT be able to access your previous '
+          'account unless you have a backup of your nsec'
+          '\n\nAre you sure you want to start fresh?',
+          style: VineTheme.bodyMediumFont(
+            color: VineTheme.onSurfaceVariant,
+          ).copyWith(height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              'Cancel',
+              style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
+            ),
           ),
           TextButton(
             onPressed: () => context.pop(true),
-            child: const Text(
+            child: Text(
               'Start Fresh',
-              style: TextStyle(color: Colors.orange),
+              style: VineTheme.bodyMediumFont(color: VineTheme.error),
             ),
           ),
         ],
@@ -313,7 +274,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to start fresh: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }
@@ -389,9 +350,8 @@ class _ActionButton extends StatelessWidget {
   final VoidCallback onPressed;
 
   String _getButtonText() {
-    if (!enabled) return 'Accept Terms to Continue';
-    if (hasSavedKeys) return 'Continue with Saved Keys';
-    return 'Get Started';
+    if (enabled) return 'Continue';
+    return 'Accept terms & continue';
   }
 
   @override
@@ -402,48 +362,26 @@ class _ActionButton extends StatelessWidget {
 
     return Column(
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: ElevatedButton(
-            onPressed: enabled ? onPressed : null,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: VineTheme.vineGreen,
-              disabledBackgroundColor: Colors.white.withValues(alpha: 0.7),
-              disabledForegroundColor: VineTheme.vineGreen.withValues(
-                alpha: 0.7,
-              ),
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
+        if (isLoading)
+          const SizedBox(
+            height: 48,
+            width: 48,
+            child: CircularProgressIndicator(
+              color: VineTheme.primary,
+              strokeWidth: 2,
             ),
-            child: isLoading
-                ? const SizedBox(
-                    height: 20,
-                    width: 20,
-                    child: CircularProgressIndicator(
-                      color: VineTheme.vineGreen,
-                      strokeWidth: 2,
-                    ),
-                  )
-                : Text(
-                    _getButtonText(),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+          )
+        else
+          DivineButton(
+            label: _getButtonText(),
+            expanded: true,
+            onPressed: enabled ? onPressed : null,
           ),
-        ),
         if (hasSavedKeys && maskedNpub != null && enabled) ...[
           const SizedBox(height: 8),
           Text(
             'Resume as $maskedNpub',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white.withValues(alpha: 0.7),
-            ),
+            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
           ),
         ],
       ],
@@ -473,118 +411,65 @@ class _TermsCheckboxSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Age verification checkbox
-          InkWell(
-            onTap: () => onOver16Changed(!isOver16),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
-                    value: isOver16,
-                    onChanged: (value) => onOver16Changed(value ?? false),
-                    fillColor: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return Colors.white;
-                      }
-                      return Colors.transparent;
-                    }),
-                    checkColor: VineTheme.vineGreen,
-                    side: const BorderSide(color: Colors.white, width: 2),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Expanded(
-                  child: Text(
-                    'I am 16 years or older',
-                    style: TextStyle(color: VineTheme.whiteText, fontSize: 14),
-                  ),
-                ),
-              ],
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Age verification checkbox
+        DivineRowCheckbox(
+          state: isOver16
+              ? DivineCheckboxState.selected
+              : DivineCheckboxState.unselected,
+          onChanged: (value) => onOver16Changed(value),
+          label: Text(
+            'I am 16 years or older',
+            style: VineTheme.bodyLargeFont(),
           ),
-          const SizedBox(height: 16),
+        ),
+        const SizedBox(height: 16),
 
-          // TOS acceptance checkbox with links
-          InkWell(
-            onTap: () => onAgreedToTermsChanged(!agreedToTerms),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+        // TOS acceptance checkbox with links
+        DivineRowCheckbox(
+          state: agreedToTerms
+              ? DivineCheckboxState.selected
+              : DivineCheckboxState.unselected,
+          onChanged: (value) => onAgreedToTermsChanged(value),
+          crossAxisAlignment: CrossAxisAlignment.start,
+          label: RichText(
+            text: TextSpan(
+              style: VineTheme.bodyLargeFont(),
               children: [
-                SizedBox(
-                  width: 24,
-                  height: 24,
-                  child: Checkbox(
-                    value: agreedToTerms,
-                    onChanged: (value) =>
-                        onAgreedToTermsChanged(value ?? false),
-                    fillColor: WidgetStateProperty.resolveWith((states) {
-                      if (states.contains(WidgetState.selected)) {
-                        return Colors.white;
-                      }
-                      return Colors.transparent;
-                    }),
-                    checkColor: VineTheme.vineGreen,
-                    side: const BorderSide(color: Colors.white, width: 2),
+                const TextSpan(text: 'I agree to the '),
+                TextSpan(
+                  text: 'Terms of Service',
+                  style: VineTheme.bodyLargeFont().copyWith(
+                    decoration: TextDecoration.underline,
                   ),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () => _openUrl('https://divine.video/terms'),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: RichText(
-                    text: TextSpan(
-                      style: const TextStyle(
-                        color: VineTheme.whiteText,
-                        fontSize: 14,
-                      ),
-                      children: [
-                        const TextSpan(text: 'I agree to the '),
-                        TextSpan(
-                          text: 'Terms of Service',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            decoration: TextDecoration.underline,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () =>
-                                _openUrl('https://divine.video/terms'),
-                        ),
-                        const TextSpan(text: ', '),
-                        TextSpan(
-                          text: 'Privacy Policy',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            decoration: TextDecoration.underline,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () =>
-                                _openUrl('https://divine.video/privacy'),
-                        ),
-                        const TextSpan(text: ', and '),
-                        TextSpan(
-                          text: 'Safety Standards',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            decoration: TextDecoration.underline,
-                          ),
-                          recognizer: TapGestureRecognizer()
-                            ..onTap = () =>
-                                _openUrl('https://divine.video/safety'),
-                        ),
-                      ],
-                    ),
+                const TextSpan(text: ', '),
+                TextSpan(
+                  text: 'Privacy Policy',
+                  style: VineTheme.bodyLargeFont().copyWith(
+                    decoration: TextDecoration.underline,
                   ),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () => _openUrl('https://divine.video/privacy'),
+                ),
+                const TextSpan(text: ', and '),
+                TextSpan(
+                  text: 'Safety Standards',
+                  style: VineTheme.bodyLargeFont().copyWith(
+                    decoration: TextDecoration.underline,
+                  ),
+                  recognizer: TapGestureRecognizer()
+                    ..onTap = () => _openUrl('https://divine.video/safety'),
                 ),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

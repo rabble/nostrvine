@@ -40,6 +40,23 @@ class CameraMobileService extends CameraService {
       _camera.onRecordingAutoStopped = (result) {
         onAutoStopped(EditorVideo.file(result.filePath));
       };
+      // Re-apply remote record trigger callback (gets cleared on dispose)
+      if (_remoteRecordTriggerCallback != null) {
+        final callback = _remoteRecordTriggerCallback!;
+        _camera.onRemoteRecordTrigger = (trigger) {
+          Log.info(
+            '🎮 Native remote trigger received: $trigger',
+            name: 'CameraMobileService',
+            category: .video,
+          );
+          callback();
+        };
+        Log.debug(
+          '🎮 Remote record trigger callback re-applied after initialize',
+          name: 'CameraMobileService',
+          category: .video,
+        );
+      }
       _isInitialized = true;
     } catch (e) {
       _initializationError = 'Camera initialization failed: $e';
@@ -339,4 +356,71 @@ class CameraMobileService extends CameraService {
 
   @override
   String? get initializationError => _initializationError;
+
+  void Function()? _remoteRecordTriggerCallback;
+
+  @override
+  set onRemoteRecordTrigger(void Function()? callback) {
+    _remoteRecordTriggerCallback = callback;
+    // Connect to native callback with logging
+    _camera.onRemoteRecordTrigger = callback != null
+        ? (trigger) {
+            Log.info(
+              '🎮 Native remote trigger received: $trigger',
+              name: 'CameraMobileService',
+              category: .video,
+            );
+            callback();
+          }
+        : null;
+    Log.debug(
+      '🎮 Remote record trigger callback ${callback != null ? 'set' : 'cleared'}',
+      name: 'CameraMobileService',
+      category: .video,
+    );
+  }
+
+  @override
+  Future<bool> setRemoteRecordControlEnabled({required bool enabled}) async {
+    if (!_isInitialized) return false;
+    try {
+      Log.info(
+        '📷 Setting remote record control: ${enabled ? 'enabled' : 'disabled'}',
+        name: 'CameraMobileService',
+        category: LogCategory.video,
+      );
+      final success = await _camera.setRemoteRecordControlEnabled(
+        enabled: enabled,
+      );
+      return success;
+    } catch (e) {
+      Log.error(
+        '📷 Failed to set remote record control: $e',
+        name: 'CameraMobileService',
+        category: LogCategory.video,
+      );
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> setVolumeKeysEnabled({required bool enabled}) async {
+    if (!_isInitialized) return false;
+    try {
+      Log.debug(
+        '📷 Setting volume keys: ${enabled ? 'enabled' : 'disabled'}',
+        name: 'CameraMobileService',
+        category: LogCategory.video,
+      );
+      final success = await _camera.setVolumeKeysEnabled(enabled: enabled);
+      return success;
+    } catch (e) {
+      Log.error(
+        '📷 Failed to set volume keys enabled: $e',
+        name: 'CameraMobileService',
+        category: LogCategory.video,
+      );
+      return false;
+    }
+  }
 }
