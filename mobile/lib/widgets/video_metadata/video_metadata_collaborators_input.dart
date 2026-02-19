@@ -31,88 +31,89 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
     final canAddCollaborators =
         collaborators.length < VideoEditorNotifier.maxCollaborators;
 
-    return Semantics(
-      button: true,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Add collaborator',
-      child: InkWell(
-        onTap: canAddCollaborators
-            ? () => _addCollaborator(context, ref)
-            : null,
-
-        child: Padding(
-          padding: const .all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 8,
-            children: [
-              Row(
+    return Padding(
+      padding: const .all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        spacing: 16,
+        children: [
+          Semantics(
+            button: true,
+            // TODO(l10n): Replace with context.l10n when localization is added.
+            label: 'Add collaborator',
+            child: InkWell(
+              onTap: canAddCollaborators
+                  ? () => _addCollaborator(context, ref)
+                  : null,
+              child: Column(
+                spacing: 8,
                 children: [
-                  Text(
-                    // TODO(l10n): Replace with context.l10n
-                    //   when localization is added.
-                    'Collaborators',
-                    style: VineTheme.labelSmallFont(
-                      color: VineTheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  VideoMetadataHelpButton(
-                    // TODO(l10n): Replace with context.l10n
-                    //   when localization is added.
-                    onTap: () => _showHelpDialog(context),
-                    tooltip: 'How collaborators work',
-                  ),
-                ],
-              ),
-              Row(
-                mainAxisAlignment: .spaceBetween,
-                children: [
-                  Flexible(
-                    child: Text(
-                      '${collaborators.length}/'
-                      '${VideoEditorNotifier.maxCollaborators} Collaborators',
-                      style: VineTheme.titleFont(
-                        fontSize: 16,
-                        color: const Color(0xF2FFFFFF),
-                        letterSpacing: 0.15,
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: SizedBox(
-                      height: 18,
-                      width: 18,
-                      child: SvgPicture.asset(
-                        'assets/icon/caret_right.svg',
-                        colorFilter: ColorFilter.mode(
-                          canAddCollaborators
-                              ? VineTheme.tabIndicatorGreen
-                              : VineTheme.outlineMuted,
-                          .srcIn,
+                  Row(
+                    children: [
+                      Text(
+                        // TODO(l10n): Replace with context.l10n
+                        //   when localization is added.
+                        'Collaborators',
+                        style: VineTheme.labelSmallFont(
+                          color: VineTheme.onSurfaceVariant,
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 4),
+                      VideoMetadataHelpButton(
+                        // TODO(l10n): Replace with context.l10n
+                        //   when localization is added.
+                        onTap: () => _showHelpDialog(context),
+                        tooltip: 'How collaborators work',
+                      ),
+                    ],
+                  ),
+                  Row(
+                    mainAxisAlignment: .spaceBetween,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          '${collaborators.length}/'
+                          '${VideoEditorNotifier.maxCollaborators} Collaborators',
+                          style: VineTheme.titleFont(
+                            fontSize: 16,
+                            color: VineTheme.onSurface,
+                            letterSpacing: 0.15,
+                          ),
+                        ),
+                      ),
+                      SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: SvgPicture.asset(
+                            'assets/icon/caret_right.svg',
+                            colorFilter: ColorFilter.mode(
+                              canAddCollaborators
+                                  ? VineTheme.tabIndicatorGreen
+                                  : VineTheme.outlineMuted,
+                              .srcIn,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
-
-              if (collaborators.isNotEmpty)
-                Padding(
-                  padding: const .only(top: 8.0),
-                  child: Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: collaborators
-                        .map((pubkey) => _CollaboratorChip(pubkey: pubkey))
-                        .toList(),
-                  ),
-                ),
-            ],
+            ),
           ),
-        ),
+
+          if (collaborators.isNotEmpty)
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: collaborators
+                  .map((pubkey) => _CollaboratorChip(pubkey: pubkey))
+                  .toList(),
+            ),
+        ],
       ),
     );
   }

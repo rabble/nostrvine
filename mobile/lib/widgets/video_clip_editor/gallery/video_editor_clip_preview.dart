@@ -3,6 +3,7 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/models/recording_clip.dart';
@@ -341,11 +342,11 @@ class _ClipThumbnail extends StatelessWidget {
       ),
       child: clip.thumbnailPath == null
           ? Container(
-              color: Colors.grey.shade700,
+              color: VineTheme.onSurfaceMuted,
               child: const Icon(
                 Icons.play_circle_outline,
                 size: 64,
-                color: Colors.white,
+                color: VineTheme.whiteText,
               ),
             )
           : Image.file(

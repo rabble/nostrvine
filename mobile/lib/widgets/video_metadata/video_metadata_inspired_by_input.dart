@@ -52,7 +52,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
           padding: const .all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            spacing: 8,
+            spacing: 16,
             children: [
               Row(
                 children: [
@@ -89,7 +89,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
                         'None',
                         style: VineTheme.titleFont(
                           fontSize: 16,
-                          color: const Color(0xF2FFFFFF),
+                          color: VineTheme.onSurface,
                           letterSpacing: 0.15,
                         ),
                       ),
@@ -142,6 +142,7 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
     final profile = await showUserPickerSheet(
       context,
       filterMode: UserPickerFilterMode.allUsers,
+      autoFocus: true,
       // TODO(l10n): Replace with context.l10n
       //   when localization is added.
       title: 'Inspired by',

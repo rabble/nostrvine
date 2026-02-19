@@ -141,7 +141,7 @@ class _DiscardButton extends ConsumerWidget {
       },
       style: OutlinedButton.styleFrom(
         backgroundColor: Color(0xFF032017),
-        side: BorderSide(width: 2, color: const Color(0xFF0E2B21)),
+        side: BorderSide(width: 2, color: VineTheme.containerLow),
         padding: const .symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: .circular(20)),
       ),

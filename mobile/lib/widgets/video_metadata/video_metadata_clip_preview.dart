@@ -1,3 +1,4 @@
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
@@ -85,11 +86,11 @@ class VideoMetadataClipPreview extends ConsumerWidget {
                               VideoMetadataPreviewThumbnail(clip: clip)
                             : // Fallback placeholder
                               ColoredBox(
-                                color: Colors.grey.shade400,
+                                color: VineTheme.onSurfaceMuted,
                                 child: const Icon(
                                   Icons.play_circle_outline,
                                   size: 64,
-                                  color: Colors.white,
+                                  color: VineTheme.whiteText,
                                 ),
                               ),
                       ),
@@ -132,7 +133,7 @@ class _PlayIndicator extends StatelessWidget {
           height: 24,
           child: SvgPicture.asset(
             'assets/icon/play.svg',
-            colorFilter: const .mode(Colors.white, .srcIn),
+            colorFilter: const .mode(VineTheme.whiteText, .srcIn),
           ),
         ),
       ),

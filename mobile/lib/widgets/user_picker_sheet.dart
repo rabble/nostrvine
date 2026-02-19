@@ -29,6 +29,7 @@ Future<UserProfile?> showUserPickerSheet(
   BuildContext context, {
   required UserPickerFilterMode filterMode,
   required String title,
+  bool autoFocus = false,
   String searchText = 'Search by name',
 }) {
   return VineBottomSheet.show<UserProfile>(
@@ -49,6 +50,7 @@ Future<UserProfile?> showUserPickerSheet(
     buildScrollBody: (scrollController) => UserPickerSheet(
       filterMode: filterMode,
       scrollController: scrollController,
+      autoFocus: autoFocus,
     ),
   );
 }
@@ -59,6 +61,7 @@ class UserPickerSheet extends ConsumerStatefulWidget {
   const UserPickerSheet({
     required this.filterMode,
     this.scrollController,
+    this.autoFocus = false,
     super.key,
   });
 
@@ -67,6 +70,8 @@ class UserPickerSheet extends ConsumerStatefulWidget {
 
   /// Scroll controller for the draggable sheet.
   final ScrollController? scrollController;
+
+  final bool autoFocus;
 
   @override
   ConsumerState<UserPickerSheet> createState() => _UserPickerSheetState();
@@ -188,6 +193,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
               borderRadius: .circular(20),
             ),
             child: TextField(
+              autofocus: widget.autoFocus,
               controller: _searchController,
               textInputAction: .search,
               onChanged: _onSearchChanged,
@@ -227,124 +233,20 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
         // Results list
         Expanded(
           child: _useLocalSearch
-              ? _buildLocalResults()
-              : _buildNetworkResults(),
+              ? _LocalResults(
+                  scrollController: widget.scrollController,
+                  followListLoaded: _followListLoaded,
+                  followProfiles: _followProfiles,
+                  filteredFollowProfiles: _filteredFollowProfiles,
+                  onUserSelected: _onUserSelected,
+                )
+              : _NetworkResults(
+                  searchBloc: _searchBloc,
+                  scrollController: widget.scrollController,
+                  onUserSelected: _onUserSelected,
+                ),
         ),
       ],
-    );
-  }
-
-  /// Builds the results list for local follow-list search.
-  Widget _buildLocalResults() {
-    if (!_followListLoaded) {
-      return const Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
-      );
-    }
-
-    if (_followProfiles.isEmpty) {
-      return _EmptyFollowList();
-    }
-
-    if (_filteredFollowProfiles.isEmpty) {
-      return _buildNoResults();
-    }
-
-    return ListView.separated(
-      controller: widget.scrollController,
-      itemCount: _filteredFollowProfiles.length,
-      padding: const .symmetric(vertical: 32),
-      separatorBuilder: (context, index) =>
-          Divider(height: 40, thickness: 1, color: VineTheme.outlineDisabled),
-      itemBuilder: (context, index) {
-        final profile = _filteredFollowProfiles[index];
-        return _UserSearchTile(
-          profile: profile,
-          onTap: () => _onUserSelected(profile),
-        );
-      },
-    );
-  }
-
-  /// Builds the results list using the network search BLoC.
-  Widget _buildNetworkResults() {
-    return BlocBuilder<UserSearchBloc, UserSearchState>(
-      bloc: _searchBloc,
-      builder: (context, state) {
-        return switch (state.status) {
-          UserSearchStatus.initial => _buildEmptyHint(),
-          UserSearchStatus.loading => const Center(
-            child: CircularProgressIndicator(color: VineTheme.vineGreen),
-          ),
-          UserSearchStatus.failure => _buildErrorState(),
-          UserSearchStatus.success =>
-            state.results.isEmpty
-                ? _buildNoResults()
-                : _buildResultsList(state),
-        };
-      },
-    );
-  }
-
-  Widget _buildEmptyHint() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Text(
-          'Type a name to search',
-          style: VineTheme.bodyFont(
-            color: VineTheme.onSurfaceMuted,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Text(
-          'Search failed. Please try again.',
-          style: VineTheme.bodyFont(
-            color: VineTheme.onSurfaceMuted,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNoResults() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Text(
-          'No users found',
-          style: VineTheme.bodyFont(
-            color: VineTheme.onSurfaceMuted,
-            fontSize: 14,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildResultsList(UserSearchState state) {
-    return ListView.separated(
-      controller: widget.scrollController,
-      itemCount: state.results.length,
-      padding: const .symmetric(vertical: 32),
-      separatorBuilder: (context, index) =>
-          Divider(height: 40, thickness: 1, color: VineTheme.outlineDisabled),
-      itemBuilder: (context, index) {
-        final profile = state.results[index];
-        return _UserSearchTile(
-          profile: profile,
-          onTap: () => _onUserSelected(profile),
-        );
-      },
     );
   }
 }
@@ -471,6 +373,180 @@ class _EmptyFollowList extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _EmptyHint extends StatelessWidget {
+  const _EmptyHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Text(
+          'Type a name to search',
+          style: VineTheme.bodyFont(
+            color: VineTheme.onSurfaceMuted,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorState extends StatelessWidget {
+  const _ErrorState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Text(
+          'Search failed. Please try again.',
+          style: VineTheme.bodyFont(
+            color: VineTheme.onSurfaceMuted,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NoResults extends StatelessWidget {
+  const _NoResults();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Text(
+          'No users found',
+          style: VineTheme.bodyFont(
+            color: VineTheme.onSurfaceMuted,
+            fontSize: 14,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ResultsList extends StatelessWidget {
+  const _ResultsList({
+    required this.scrollController,
+    required this.results,
+    required this.onUserSelected,
+  });
+
+  final ScrollController? scrollController;
+  final List<UserProfile> results;
+  final ValueChanged<UserProfile> onUserSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView.separated(
+      controller: scrollController,
+      itemCount: results.length,
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      separatorBuilder: (context, index) =>
+          Divider(height: 40, thickness: 1, color: VineTheme.outlineDisabled),
+      itemBuilder: (context, index) {
+        final profile = results[index];
+        return _UserSearchTile(
+          profile: profile,
+          onTap: () => onUserSelected(profile),
+        );
+      },
+    );
+  }
+}
+
+class _NetworkResults extends StatelessWidget {
+  const _NetworkResults({
+    required this.searchBloc,
+    required this.scrollController,
+    required this.onUserSelected,
+  });
+
+  final UserSearchBloc searchBloc;
+  final ScrollController? scrollController;
+  final ValueChanged<UserProfile> onUserSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<UserSearchBloc, UserSearchState>(
+      bloc: searchBloc,
+      builder: (context, state) {
+        return switch (state.status) {
+          UserSearchStatus.initial => const _EmptyHint(),
+          UserSearchStatus.loading => const Center(
+            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          ),
+          UserSearchStatus.failure => const _ErrorState(),
+          UserSearchStatus.success =>
+            state.results.isEmpty
+                ? const _NoResults()
+                : _ResultsList(
+                    scrollController: scrollController,
+                    results: state.results,
+                    onUserSelected: onUserSelected,
+                  ),
+        };
+      },
+    );
+  }
+}
+
+class _LocalResults extends StatelessWidget {
+  const _LocalResults({
+    required this.scrollController,
+    required this.followListLoaded,
+    required this.followProfiles,
+    required this.filteredFollowProfiles,
+    required this.onUserSelected,
+  });
+
+  final ScrollController? scrollController;
+  final bool followListLoaded;
+  final List<UserProfile> followProfiles;
+  final List<UserProfile> filteredFollowProfiles;
+  final ValueChanged<UserProfile> onUserSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!followListLoaded) {
+      return const Center(
+        child: CircularProgressIndicator(color: VineTheme.vineGreen),
+      );
+    }
+
+    if (followProfiles.isEmpty) {
+      return const _EmptyFollowList();
+    }
+
+    if (filteredFollowProfiles.isEmpty) {
+      return const _NoResults();
+    }
+
+    return ListView.separated(
+      controller: scrollController,
+      itemCount: filteredFollowProfiles.length,
+      padding: const EdgeInsets.symmetric(vertical: 32),
+      separatorBuilder: (context, index) =>
+          Divider(height: 40, thickness: 1, color: VineTheme.outlineDisabled),
+      itemBuilder: (context, index) {
+        final profile = filteredFollowProfiles[index];
+        return _UserSearchTile(
+          profile: profile,
+          onTap: () => onUserSelected(profile),
+        );
+      },
     );
   }
 }

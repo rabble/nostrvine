@@ -90,7 +90,7 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
                       child: Center(
                         child: SvgPicture.asset(
                           'assets/icon/CaretLeft.svg',
-                          colorFilter: const .mode(Colors.white, .srcIn),
+                          colorFilter: const .mode(VineTheme.whiteText, .srcIn),
                         ),
                       ),
                     ),
@@ -160,7 +160,11 @@ class _Divider extends StatelessWidget {
         top: enablePaddingTop ? 16 : 0.0,
         bottom: enablePaddingBottom ? 16 : 0,
       ),
-      child: const Divider(thickness: 0, height: 1, color: Color(0xFF001A12)),
+      child: const Divider(
+        thickness: 0,
+        height: 1,
+        color: VineTheme.outlineDisabled,
+      ),
     );
   }
 }

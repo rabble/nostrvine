@@ -79,7 +79,7 @@ class VideoMetadataExpirationSelector extends ConsumerWidget {
                       currentOption.description,
                       style: VineTheme.titleFont(
                         fontSize: 16,
-                        color: const Color(0xF2FFFFFF),
+                        color: VineTheme.onSurface,
                         letterSpacing: 0.15,
                       ),
                     ),

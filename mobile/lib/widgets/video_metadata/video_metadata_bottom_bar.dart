@@ -75,7 +75,7 @@ class _SaveForLaterButton extends ConsumerWidget {
             child: Container(
               decoration: BoxDecoration(
                 color: VineTheme.surfaceContainer,
-                border: Border.all(color: const Color(0xFF0E2B21), width: 2),
+                border: Border.all(color: VineTheme.containerLow, width: 2),
                 borderRadius: BorderRadius.circular(20),
               ),
               padding: const EdgeInsets.symmetric(vertical: 10),
@@ -93,12 +93,10 @@ class _SaveForLaterButton extends ConsumerWidget {
                     // is added.
                     : Text(
                         'Save for Later',
-                        style: GoogleFonts.bricolageGrotesque(
+                        style: VineTheme.titleMediumFont(
                           fontSize: 16,
-                          fontWeight: FontWeight.w800,
                           color: VineTheme.primary,
                           height: 1.33,
-                          letterSpacing: 0.15,
                         ),
                       ),
               ),
@@ -274,12 +272,10 @@ class _PostButton extends ConsumerWidget {
               // added.
               child: Text(
                 'Post',
-                style: GoogleFonts.bricolageGrotesque(
+                style: VineTheme.titleMediumFont(
                   fontSize: 16,
-                  fontWeight: FontWeight.w800,
-                  color: const Color(0xFF002C1C),
                   height: 1.33,
-                  letterSpacing: 0.15,
+                  color: VineTheme.onPrimary,
                 ),
               ),
             ),
