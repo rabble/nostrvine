@@ -2,6 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/widgets/video_editor_icon_button.dart';
 
 class AudioListTile extends StatelessWidget {
   const AudioListTile({
@@ -32,27 +33,17 @@ class AudioListTile extends StatelessWidget {
       child: ListTile(
         onTap: onSelect,
         minTileHeight: 48,
-        leading: Semantics(
-          button: true,
-          label: isPlaying ? 'Pause preview' : 'Play preview',
-          child: GestureDetector(
-            onTap: onPlayPause,
-            child: Container(
-              padding: const .all(12),
-              decoration: ShapeDecoration(
-                color: VineTheme.surfaceContainer,
-                shape: RoundedRectangleBorder(borderRadius: .circular(12)),
-              ),
-              child: SvgPicture.asset(
-                isPlaying
-                    ? 'assets/icon/pause_fill.svg'
-                    : 'assets/icon/play_fill.svg',
-                width: 16,
-                height: 16,
-                colorFilter: .mode(VineTheme.onSurface, .srcIn),
-              ),
-            ),
-          ),
+        leading: VideoEditorIconButton(
+          semanticLabel: isPlaying ? 'Pause preview' : 'Play preview',
+          onTap: onPlayPause,
+          iconPath: isPlaying
+              ? 'assets/icon/pause_fill.svg'
+              : 'assets/icon/play_fill.svg',
+          iconColor: VineTheme.onSurface,
+          backgroundColor: VineTheme.surfaceContainer,
+          iconSize: 16,
+          size: 40,
+          radius: 12,
         ),
         title: Text(
           audio.title ?? 'Untitled sound',
@@ -75,18 +66,13 @@ class AudioListTile extends StatelessWidget {
             ],
           ),
         ),
-        trailing: Container(
-          padding: const .all(8),
-          decoration: ShapeDecoration(
-            color: VineTheme.primary,
-            shape: RoundedRectangleBorder(borderRadius: .circular(16)),
-          ),
-          child: SvgPicture.asset(
-            'assets/icon/plus.svg',
-            width: 24,
-            height: 24,
-            colorFilter: const .mode(VineTheme.onPrimary, .srcIn),
-          ),
+        trailing: VideoEditorIconButton(
+          iconPath: 'assets/icon/plus.svg',
+          iconColor: VineTheme.onPrimary,
+          backgroundColor: VineTheme.primary,
+          iconSize: 24,
+          size: 40,
+          radius: 16,
         ),
       ),
     );
