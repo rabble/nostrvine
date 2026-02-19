@@ -176,8 +176,7 @@ class _BrokenAssetBundle extends CachingAssetBundle {
           <String, Object>{'asset': sticker.assetPath},
         ],
     };
-    _manifest =
-        const StandardMessageCodec().encodeMessage(manifest)!;
+    _manifest = const StandardMessageCodec().encodeMessage(manifest)!;
   }
 
   late final ByteData _manifest;
