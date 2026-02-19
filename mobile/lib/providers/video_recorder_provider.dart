@@ -14,6 +14,7 @@ import 'package:openvine/models/video_recorder/video_recorder_provider_state.dar
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:divine_camera/divine_camera.dart'
@@ -24,6 +25,9 @@ import 'package:openvine/services/video_recorder/camera/camera_base_service.dart
 import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
+
+/// SharedPreferences key for storing the last used camera lens.
+const _kLastUsedCameraLensKey = 'camera_last_used_lens';
 
 /// Notifier that wraps VideoRecorderNotifier and provides reactive updates.
 ///
@@ -123,14 +127,25 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   }) async {
     _isDestroyed = false;
 
+    // Load the last used camera lens from preferences
+    final prefs = ref.read(sharedPreferencesProvider);
+    final savedLensString = prefs.getString(_kLastUsedCameraLensKey);
+    final initialLens = savedLensString != null
+        ? DivineCameraLens.fromNativeString(savedLensString)
+        : DivineCameraLens.front;
+
     Log.info(
-      '📹 Initializing video recorder with quality: ${videoQuality.value}',
+      '📹 Initializing video recorder with quality: ${videoQuality.value}, '
+      'lens: ${initialLens.displayName}',
       name: 'VideoRecorderNotifier',
       category: .video,
     );
 
     try {
-      await _cameraService.initialize(videoQuality: videoQuality);
+      await _cameraService.initialize(
+        videoQuality: videoQuality,
+        initialLens: initialLens,
+      );
     } catch (e) {
       Log.error(
         '📹 Camera service initialization threw exception: $e',
@@ -377,6 +392,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     }
     _baseZoomLevel = 1;
 
+    // Save the new lens preference
+    await _saveCurrentLensPreference();
+
     Log.info(
       '🔄 Camera switched successfully - zoom reset to 1.0x',
       name: 'VideoRecorderNotifier',
@@ -404,6 +422,9 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
     }
     _baseZoomLevel = 1;
 
+    // Save the new lens preference
+    await _saveCurrentLensPreference();
+
     Log.info(
       '🔄 Lens switched to ${lens.displayName} - zoom reset to 1.0x',
       name: 'VideoRecorderNotifier',
@@ -419,6 +440,18 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
   /// List of available camera lenses on this device.
   List<DivineCameraLens> get availableLenses => _cameraService.availableLenses;
+
+  /// Saves the current camera lens to SharedPreferences.
+  Future<void> _saveCurrentLensPreference() async {
+    final lens = _cameraService.currentLens;
+    final prefs = ref.read(sharedPreferencesProvider);
+    await prefs.setString(_kLastUsedCameraLensKey, lens.toNativeString());
+    Log.debug(
+      '💾 Saved camera lens preference: ${lens.displayName}',
+      name: 'VideoRecorderNotifier',
+      category: .video,
+    );
+  }
 
   /// Set camera zoom level (within min/max bounds).
   Future<void> setZoomLevel(double value) async {

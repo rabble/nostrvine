@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for VideoRecorderProviderState and VideoRecorderNotifier
 // ABOUTME: Tests state getters, properties, and recording lifecycle
 
+import 'package:divine_camera/divine_camera.dart' show DivineCameraLens;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' show AspectRatio;
@@ -8,7 +9,9 @@ import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../mocks/mock_camera_service.dart';
 
@@ -16,8 +19,12 @@ import '../mocks/mock_camera_service.dart';
 class NotifierTestSetup {
   late MockCameraService mockCamera;
   late ProviderContainer container;
+  late SharedPreferences sharedPreferences;
 
   Future<void> setUp() async {
+    SharedPreferences.setMockInitialValues({});
+    sharedPreferences = await SharedPreferences.getInstance();
+
     mockCamera = MockCameraService.create(
       onUpdateState: ({forceCameraRebuild}) {},
       onAutoStopped: (_) {},
@@ -26,6 +33,7 @@ class NotifierTestSetup {
 
     container = ProviderContainer(
       overrides: [
+        sharedPreferencesProvider.overrideWithValue(sharedPreferences),
         videoRecorderProvider.overrideWith(
           () => VideoRecorderNotifier(mockCamera),
         ),
@@ -454,6 +462,122 @@ void main() {
         setup.container.read(videoRecorderProvider).recordingState,
         VideoRecorderState.idle,
       );
+    });
+  });
+
+  group('Camera Lens Persistence', () {
+    test('setLens saves lens preference to SharedPreferences', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final mockCamera = MockCameraService.create(
+        onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
+      );
+      await mockCamera.initialize();
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          videoRecorderProvider.overrideWith(
+            () => VideoRecorderNotifier(mockCamera),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(videoRecorderProvider.notifier).initialize();
+
+      // Set lens to back camera
+      await container
+          .read(videoRecorderProvider.notifier)
+          .setLens(DivineCameraLens.back);
+
+      // Verify preference was saved
+      expect(prefs.getString('camera_last_used_lens'), equals('back'));
+    });
+
+    test(
+      'switchCamera saves new lens preference to SharedPreferences',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+
+        final mockCamera = MockCameraService.create(
+          onUpdateState: ({forceCameraRebuild}) {},
+          onAutoStopped: (_) {},
+        );
+        await mockCamera.initialize();
+
+        final container = ProviderContainer(
+          overrides: [
+            sharedPreferencesProvider.overrideWithValue(prefs),
+            videoRecorderProvider.overrideWith(
+              () => VideoRecorderNotifier(mockCamera),
+            ),
+          ],
+        );
+        addTearDown(container.dispose);
+
+        await container.read(videoRecorderProvider.notifier).initialize();
+
+        // Switch camera (front -> back)
+        await container.read(videoRecorderProvider.notifier).switchCamera();
+
+        // Verify preference was saved for the new lens
+        expect(prefs.getString('camera_last_used_lens'), isNotNull);
+      },
+    );
+
+    test('initialize restores saved lens preference', () async {
+      // Pre-populate with back camera preference
+      SharedPreferences.setMockInitialValues({'camera_last_used_lens': 'back'});
+      final prefs = await SharedPreferences.getInstance();
+
+      final mockCamera = MockCameraService.create(
+        onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          videoRecorderProvider.overrideWith(
+            () => VideoRecorderNotifier(mockCamera),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(videoRecorderProvider.notifier).initialize();
+
+      // Verify mock camera was initialized with saved lens
+      expect(mockCamera.currentLens, equals(DivineCameraLens.back));
+    });
+
+    test('initialize uses front camera when no saved preference', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+
+      final mockCamera = MockCameraService.create(
+        onUpdateState: ({forceCameraRebuild}) {},
+        onAutoStopped: (_) {},
+      );
+
+      final container = ProviderContainer(
+        overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
+          videoRecorderProvider.overrideWith(
+            () => VideoRecorderNotifier(mockCamera),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      await container.read(videoRecorderProvider.notifier).initialize();
+
+      // Verify mock camera was initialized with default front lens
+      expect(mockCamera.currentLens, equals(DivineCameraLens.front));
     });
   });
 }
