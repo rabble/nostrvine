@@ -51,6 +51,8 @@ void main() {
                 return true;
               case 'setExposurePoint':
                 return true;
+              case 'cancelFocusAndMetering':
+                return true;
               case 'setZoomLevel':
                 return true;
               case 'switchCamera':
@@ -181,6 +183,12 @@ void main() {
 
     test('setExposurePoint returns true', () async {
       final result = await platform.setExposurePoint(const Offset(0.3, 0.7));
+
+      expect(result, isTrue);
+    });
+
+    test('cancelFocusAndMetering returns true', () async {
+      final result = await platform.cancelFocusAndMetering();
 
       expect(result, isTrue);
     });

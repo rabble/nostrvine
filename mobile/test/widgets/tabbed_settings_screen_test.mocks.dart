@@ -197,6 +197,14 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as String);
 
   @override
+  void registerUserRelaysDiscoveredCallback(
+    _i2.UserRelaysDiscoveredCallback? callback,
+  ) => super.noSuchMethod(
+    Invocation.method(#registerUserRelaysDiscoveredCallback, [callback]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   void clearError() => super.noSuchMethod(
     Invocation.method(#clearError, []),
     returnValueForMissingStub: null,

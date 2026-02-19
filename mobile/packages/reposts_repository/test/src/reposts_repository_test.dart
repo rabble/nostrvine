@@ -567,6 +567,117 @@ void main() {
 
         expect(count, equals(0));
       });
+
+      test('returns cached count when available after toggleRepost', () async {
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+        );
+
+        // Trigger a repost with currentCount: 6 → caches 6+1=7
+        await repository.toggleRepost(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+          currentCount: 6,
+        );
+
+        final count = await repository.getRepostCount(testAddressableId);
+
+        expect(count, equals(7));
+        verifyNever(() => mockNostrClient.countEvents(any()));
+      });
+
+      test('cached count clamps to zero for negative values', () async {
+        // Set up a repost record so unrepost succeeds
+        when(
+          () => mockNostrClient.deleteEvent(any()),
+        ).thenAnswer(
+          (_) async => createMockEvent(
+            id: 'deletion_event_id',
+            kind: EventKind.eventDeletion,
+            createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+          ),
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+        );
+
+        // First repost so there's something to unrepost
+        await repository.repostVideo(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+        );
+
+        // Trigger an unrepost with currentCount: 0 → caches max(0, 0-1) = 0
+        await repository.toggleRepost(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+          currentCount: 0,
+        );
+
+        final count = await repository.getRepostCount(testAddressableId);
+
+        expect(count, equals(0));
+      });
+    });
+
+    group('count caching via toggleRepost', () {
+      test(
+        'overrides relay count on subsequent getRepostCount calls',
+        () async {
+          when(
+            () => mockNostrClient.countEvents(any()),
+          ).thenAnswer(
+            (_) async => const CountResult(count: 10),
+          );
+
+          final repository = RepostsRepository(
+            nostrClient: mockNostrClient,
+          );
+
+          // First call hits relay
+          final relayCount = await repository.getRepostCount(testAddressableId);
+          expect(relayCount, equals(10));
+
+          // Repost with currentCount: 10 → caches 11
+          await repository.toggleRepost(
+            addressableId: testAddressableId,
+            originalAuthorPubkey: testAuthorPubkey,
+            currentCount: 10,
+          );
+
+          // Second call uses cache (11 from repost)
+          final cachedCount = await repository.getRepostCount(
+            testAddressableId,
+          );
+          expect(cachedCount, equals(11));
+        },
+      );
+
+      test('is cleared by clearCache', () async {
+        when(
+          () => mockNostrClient.countEvents(any()),
+        ).thenAnswer(
+          (_) async => const CountResult(count: 10),
+        );
+
+        final repository = RepostsRepository(
+          nostrClient: mockNostrClient,
+        );
+
+        // Repost with currentCount: 4 → caches 5
+        await repository.toggleRepost(
+          addressableId: testAddressableId,
+          originalAuthorPubkey: testAuthorPubkey,
+          currentCount: 4,
+        );
+        await repository.clearCache();
+
+        final count = await repository.getRepostCount(testAddressableId);
+
+        expect(count, equals(10));
+        verify(() => mockNostrClient.countEvents(any())).called(1);
+      });
     });
 
     group('getRepostCountByEventId', () {

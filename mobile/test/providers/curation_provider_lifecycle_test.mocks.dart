@@ -1830,6 +1830,14 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
           as String);
 
   @override
+  void registerUserRelaysDiscoveredCallback(
+    _i4.UserRelaysDiscoveredCallback? callback,
+  ) => super.noSuchMethod(
+    Invocation.method(#registerUserRelaysDiscoveredCallback, [callback]),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   void clearError() => super.noSuchMethod(
     Invocation.method(#clearError, []),
     returnValueForMissingStub: null,
@@ -2264,6 +2272,30 @@ class MockAnalyticsApiService extends _i1.Mock
             returnValue: _i9.Future<_i6.VideoStats?>.value(),
           )
           as _i9.Future<_i6.VideoStats?>);
+
+  @override
+  _i9.Future<int?> getVideoViews(String? eventId) =>
+      (super.noSuchMethod(
+            Invocation.method(#getVideoViews, [eventId]),
+            returnValue: _i9.Future<int?>.value(),
+          )
+          as _i9.Future<int?>);
+
+  @override
+  _i9.Future<Map<String, int>> getBulkVideoViews(
+    List<String>? eventIds, {
+    int? maxVideos = 20,
+    int? maxConcurrent = 8,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(
+              #getBulkVideoViews,
+              [eventIds],
+              {#maxVideos: maxVideos, #maxConcurrent: maxConcurrent},
+            ),
+            returnValue: _i9.Future<Map<String, int>>.value(<String, int>{}),
+          )
+          as _i9.Future<Map<String, int>>);
 
   @override
   _i9.Future<List<_i11.VideoEvent>> getVideosByAuthor({

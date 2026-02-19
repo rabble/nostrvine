@@ -139,10 +139,13 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
     if (blocklistService.hasMutedUs(profile.pubkey)) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
+        SnackBar(
           // TODO(l10n): Replace with context.l10n
           //   when localization is added.
-          content: Text('This creator cannot be referenced.'),
+          content: Text(
+            'This creator cannot be referenced.',
+            style: VineTheme.bodyMediumFont(),
+          ),
           backgroundColor: VineTheme.cardBackground,
         ),
       );
@@ -190,11 +193,9 @@ class _InspiredByDisplay extends ConsumerWidget {
         children: [
           // Avatar and name
           if (pubkey != null)
-            _InspiredByProfileInfo(pubkey: pubkey)
+            Expanded(child: _InspiredByProfileInfo(pubkey: pubkey))
           else if (inspiredByNpub != null)
-            _InspiredByNpubInfo(npub: inspiredByNpub!),
-
-          const Spacer(),
+            Expanded(child: _InspiredByNpubInfo(npub: inspiredByNpub!)),
 
           // Remove button
           Semantics(
@@ -275,49 +276,59 @@ class _InspiredByProfileInfo extends ConsumerWidget {
   }
 }
 
-/// Shows npub info when we only have an npub (person reference).
-class _InspiredByNpubInfo extends StatelessWidget {
+/// Shows profile info when we only have an npub (person reference).
+class _InspiredByNpubInfo extends ConsumerWidget {
   const _InspiredByNpubInfo({required this.npub});
 
   final String npub;
 
   @override
-  Widget build(BuildContext context) {
-    // Display truncated npub with ellipsis
-    final display = npub.length > 20
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Convert npub to hex pubkey for profile lookup
+    final hexPubkey = NostrKeyUtils.decode(npub);
+    final profileAsync = ref.watch(fetchUserProfileProvider(hexPubkey));
+
+    // Truncated npub for fallback display
+    final truncatedNpub = npub.length > 20
         ? '${npub.substring(0, 10)}...${npub.substring(npub.length - 8)}'
         : npub;
 
     return Row(
       mainAxisSize: MainAxisSize.min,
+      spacing: 8,
       children: [
-        const UserAvatar(size: 32),
-        const SizedBox(width: 8),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              // TODO(l10n): Replace with context.l10n
-              //   when localization is added.
-              'Inspired by',
-              style: VineTheme.bodyFont(
-                color: VineTheme.onSurfaceMuted,
-                fontSize: 11,
-                height: 1.27,
+        UserAvatar(
+          imageUrl: profileAsync.value?.picture,
+          name: profileAsync.value?.bestDisplayName,
+          size: 32,
+        ),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                // TODO(l10n): Replace with context.l10n
+                //   when localization is added.
+                'Inspired by',
+                style: VineTheme.bodyFont(
+                  color: VineTheme.onSurfaceMuted,
+                  fontSize: 11,
+                  height: 1.27,
+                ),
               ),
-            ),
-            Text(
-              display,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: VineTheme.bodyFont(
-                color: VineTheme.whiteText,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                height: 1.43,
+              Text(
+                profileAsync.value?.bestDisplayName ?? truncatedNpub,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: VineTheme.bodyFont(
+                  color: VineTheme.whiteText,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  height: 1.43,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );

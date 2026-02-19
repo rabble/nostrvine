@@ -4,6 +4,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart' as model;
 import 'package:openvine/models/recording_clip.dart';
+import 'package:path/path.dart' as p;
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 void main() {
@@ -259,13 +260,15 @@ void main() {
     group('path round-trip for rendered videos', () {
       test('round-trip resolves to documents directory '
           'when video is in documents directory', () async {
-        const documentsPath = '/var/mobile/Documents';
+        final documentsPath = p.join('var', 'mobile', 'Documents');
+        final videoPath = p.join(documentsPath, 'divine_123456.mp4');
+        final thumbPath = p.join(documentsPath, 'thumb.jpg');
         final clip = RecordingClip(
           id: 'rendered-clip',
-          video: EditorVideo.file('$documentsPath/divine_123456.mp4'),
+          video: EditorVideo.file(videoPath),
           duration: const Duration(seconds: 3),
           recordedAt: DateTime(2025, 12, 13),
-          thumbnailPath: '$documentsPath/thumb.jpg',
+          thumbnailPath: thumbPath,
           targetAspectRatio: model.AspectRatio.vertical,
           originalAspectRatio: 9 / 16,
         );
@@ -284,11 +287,11 @@ void main() {
         // This test documents the pre-fix behavior:
         // A rendered video in /tmp would serialize to just the basename,
         // but deserialize with the documents path, causing a mismatch.
-        const tempPath = '/tmp';
-        const documentsPath = '/var/mobile/Documents';
+        final tempPath = p.join('tmp');
+        final documentsPath = p.join('var', 'mobile', 'Documents');
         final clip = RecordingClip(
           id: 'rendered-clip',
-          video: EditorVideo.file('$tempPath/divine_123456.mp4'),
+          video: EditorVideo.file(p.join(tempPath, 'divine_123456.mp4')),
           duration: const Duration(seconds: 3),
           recordedAt: DateTime(2025, 12, 13),
           targetAspectRatio: model.AspectRatio.vertical,
@@ -304,7 +307,10 @@ void main() {
         // The paths will differ because the file was in /tmp
         // but fromJson resolves to /var/mobile/Documents
         expect(restoredPath, isNot(equals(originalPath)));
-        expect(restoredPath, equals('$documentsPath/divine_123456.mp4'));
+        expect(
+          restoredPath,
+          equals(p.join(documentsPath, 'divine_123456.mp4')),
+        );
       });
     });
   });

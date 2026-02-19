@@ -12,6 +12,7 @@ import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 /// Top bar with close button, clip counter, and done button.
 class VideoClipEditorTopBar extends ConsumerWidget {
@@ -94,6 +95,12 @@ class VideoClipEditorTopBar extends ConsumerWidget {
                           notifier.pauseVideo();
                           unawaited(notifier.startRenderVideo());
                           // TODO(@hm21): Replace with VideoEditorScreen.path
+                          Log.info(
+                            '📤 Navigating to metadata screen',
+                            name: 'VideoClipEditorTopBar',
+                            category: .video,
+                          );
+
                           context.push(VideoMetadataScreen.path);
                         },
                       ),

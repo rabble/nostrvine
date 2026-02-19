@@ -2,7 +2,7 @@
 // ABOUTME: Provides a fake camera service that doesn't require actual hardware
 
 import 'package:divine_camera/divine_camera.dart'
-    show DivineCameraLens, DivineVideoQuality;
+    show CameraLensMetadata, DivineCameraLens, DivineVideoQuality;
 import 'package:flutter/material.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/services/video_recorder/camera/camera_base_service.dart';
@@ -125,5 +125,23 @@ class MockCameraService extends CameraService {
   ];
 
   @override
+  CameraLensMetadata? get currentLensMetadata => null;
+
+  @override
   String? get initializationError => null;
+
+  @override
+  Future<bool> setRemoteRecordControlEnabled({required bool enabled}) async {
+    return true;
+  }
+
+  @override
+  Future<bool> setVolumeKeysEnabled({required bool enabled}) async {
+    return true;
+  }
+
+  @override
+  set onRemoteRecordTrigger(void Function()? callback) {
+    // Mock implementation - do nothing
+  }
 }

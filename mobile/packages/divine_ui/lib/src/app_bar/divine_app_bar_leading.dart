@@ -18,6 +18,7 @@ class DiVineAppBarLeading extends StatelessWidget {
     required this.leadingIcon,
     required this.onLeadingPressed,
     required this.style,
+    this.backButtonSemanticLabel,
     super.key,
   });
 
@@ -39,6 +40,12 @@ class DiVineAppBarLeading extends StatelessWidget {
   /// Called when the custom leading icon is tapped.
   final VoidCallback? onLeadingPressed;
 
+  /// Custom semantic label for the back button.
+  ///
+  /// When provided, overrides the default 'Go back' label and suppresses the
+  /// tooltip to avoid iOS merging both into the accessibility text.
+  final String? backButtonSemanticLabel;
+
   /// Style configuration.
   final DiVineAppBarStyle style;
 
@@ -54,8 +61,8 @@ class DiVineAppBarLeading extends StatelessWidget {
       return _LeadingIconButton(
         icon: const SvgIconSource(backIconAsset),
         onPressed: onBackPressed ?? () => Navigator.of(context).pop(),
-        semanticLabel: 'Go back',
-        tooltip: 'Back',
+        semanticLabel: backButtonSemanticLabel ?? 'Go back',
+        tooltip: backButtonSemanticLabel == null ? 'Back' : null,
         style: style,
       );
     }

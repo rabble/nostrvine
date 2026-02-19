@@ -112,12 +112,11 @@ class Nip98AuthService {
         category: LogCategory.system,
       );
 
-      // Parse URL to extract scheme + host + path only.
-      // relay.divine.video requires the u tag to EXCLUDE query parameters,
-      // which differs from the NIP-98 spec (that says include them).
-      // Fragments are also stripped since they aren't sent over HTTP.
-      final uri = Uri.parse(url);
-      final normalizedUrl = '${uri.scheme}://${uri.host}${uri.path}';
+      // Per NIP-98 spec, the u tag must include the full URL with query
+      // parameters. Only strip the fragment (not sent over HTTP).
+      final normalizedUrl = url.contains('#')
+          ? url.substring(0, url.indexOf('#'))
+          : url;
 
       // Create the authentication event
       final authEvent = await _createAuthEvent(
@@ -184,11 +183,15 @@ class Nip98AuthService {
         ['created_at', timestamp.toString()], // Creation timestamp
       ];
 
-      // Always include payload hash per NIP-98. For requests without a
-      // body (e.g. GET), use the SHA-256 of an empty string.
-      final payloadBytes = utf8.encode(payload ?? '');
-      final payloadHash = sha256.convert(payloadBytes);
-      tags.add(['payload', payloadHash.toString()]);
+      // Per NIP-98 spec, only include payload hash for requests with a body
+      // (POST, PUT, PATCH). Omit entirely for GET and DELETE.
+      if (method == HttpMethod.post ||
+          method == HttpMethod.put ||
+          method == HttpMethod.patch) {
+        final payloadBytes = utf8.encode(payload ?? '');
+        final payloadHash = sha256.convert(payloadBytes);
+        tags.add(['payload', payloadHash.toString()]);
+      }
 
       // Create the event
       final authEvent = await _authService.createAndSignEvent(
@@ -282,7 +285,7 @@ class Nip98AuthService {
         return false;
       }
 
-      // Check timestamp is recent (within 1 hour)
+      // Check timestamp is recent (within 60 seconds per NIP-98 spec)
       final tagTimestamp = int.tryParse(createdAtTag[1]);
       if (tagTimestamp == null) {
         Log.error(
@@ -295,8 +298,8 @@ class Nip98AuthService {
 
       final now = (DateTime.now().millisecondsSinceEpoch / 1000).round();
       final timeDiff = (now - tagTimestamp).abs();
-      if (timeDiff > 3600) {
-        // 1 hour
+      if (timeDiff > 60) {
+        // 60 seconds
         Log.error(
           'Timestamp too old: ${timeDiff}s',
           name: 'Nip98AuthService',

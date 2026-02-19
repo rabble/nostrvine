@@ -3,6 +3,7 @@
 // ABOUTME: Handles cache resolution, background caching, and loop enforcement
 
 import 'dart:async';
+import 'dart:collection';
 import 'dart:ui' show VoidCallback;
 
 import 'package:equatable/equatable.dart';
@@ -21,6 +22,13 @@ part 'fullscreen_feed_state.dart';
 /// TODO(product): Confirm with product - original Vine was 6.0s exactly.
 /// Current app uses 6.3s without clear documentation.
 const maxPlaybackDuration = Duration(seconds: 6);
+
+/// Maximum number of concurrent background cache downloads.
+///
+/// Limiting to 1 prevents background caching from competing with the
+/// foreground video stream for bandwidth, which causes jittery playback
+/// on first load.
+const _maxConcurrentCacheDownloads = 1;
 
 /// BLoC for managing fullscreen video feed playback.
 ///
@@ -67,6 +75,12 @@ class FullscreenFeedBloc
   final VoidCallback? _onLoadMore;
   final MediaCacheManager _mediaCache;
   final BlossomAuthService? _blossomAuthService;
+
+  /// Queue of video IDs waiting to be cached in the background.
+  final Queue<_CacheRequest> _cacheQueue = Queue<_CacheRequest>();
+
+  /// Number of downloads currently in progress.
+  int _activeCacheDownloads = 0;
 
   /// Handle feed started - subscribe to the videos stream using emit.forEach.
   ///
@@ -169,11 +183,11 @@ class FullscreenFeedBloc
     emit(state.copyWith(currentIndex: clampedIndex));
   }
 
-  /// Handle video ready for caching - trigger background caching.
+  /// Handle video ready for caching - enqueue for background caching.
   ///
   /// Called when the video player signals a video is ready for playback.
-  /// If the video is not already cached, downloads it in the background
-  /// for future instant playback.
+  /// Downloads are queued and processed one at a time to avoid competing
+  /// with the foreground video stream for bandwidth.
   Future<void> _onVideoCacheStarted(
     FullscreenFeedVideoCacheStarted event,
     Emitter<FullscreenFeedState> emit,
@@ -202,42 +216,83 @@ class FullscreenFeedBloc
       return;
     }
 
-    Log.debug(
-      'FullscreenFeedBloc: Background caching video ${video.id}',
-      name: 'FullscreenFeedBloc',
-      category: LogCategory.video,
+    // Skip if already queued
+    if (_cacheQueue.any((r) => r.videoId == video.id)) return;
+
+    _cacheQueue.add(
+      _CacheRequest(
+        videoId: video.id,
+        videoUrl: videoUrl,
+        sha256: video.sha256,
+      ),
     );
 
-    // Get auth headers if needed (for authenticated Blossom content)
-    Map<String, String>? authHeaders;
-    final blossomAuth = _blossomAuthService;
-    final sha256 = video.sha256;
-    if (blossomAuth != null && sha256 != null) {
-      final header = await blossomAuth.createGetAuthHeader(sha256Hash: sha256);
-      if (header != null) {
-        authHeaders = {'Authorization': header};
+    // Process queue if under concurrency limit
+    unawaited(_processCacheQueue());
+  }
+
+  /// Processes the background cache download queue, one at a time.
+  ///
+  /// This prevents multiple simultaneous downloads from saturating bandwidth
+  /// and causing jittery playback on the foreground video.
+  Future<void> _processCacheQueue() async {
+    if (_activeCacheDownloads >= _maxConcurrentCacheDownloads) return;
+    if (_cacheQueue.isEmpty) return;
+    if (isClosed) return;
+
+    _activeCacheDownloads++;
+    final request = _cacheQueue.removeFirst();
+
+    try {
+      // Re-check cache (may have been cached while queued)
+      if (_mediaCache.getCachedFileSync(request.videoId) != null) {
+        return;
+      }
+
+      Log.debug(
+        'FullscreenFeedBloc: Background caching video ${request.videoId}',
+        name: 'FullscreenFeedBloc',
+        category: LogCategory.video,
+      );
+
+      // Get auth headers if needed (for authenticated Blossom content)
+      Map<String, String>? authHeaders;
+      final blossomAuth = _blossomAuthService;
+      final sha256 = request.sha256;
+      if (blossomAuth != null && sha256 != null) {
+        final header = await blossomAuth.createGetAuthHeader(
+          sha256Hash: sha256,
+        );
+        if (header != null) {
+          authHeaders = {'Authorization': header};
+        }
+      }
+
+      await _mediaCache.downloadFile(
+        request.videoUrl,
+        key: request.videoId,
+        authHeaders: authHeaders,
+      );
+
+      Log.debug(
+        'FullscreenFeedBloc: Successfully cached video ${request.videoId}',
+        name: 'FullscreenFeedBloc',
+        category: LogCategory.video,
+      );
+    } on Exception catch (error) {
+      Log.error(
+        'FullscreenFeedBloc: Failed to cache video '
+        '${request.videoId}: $error',
+        name: 'FullscreenFeedBloc',
+        category: LogCategory.video,
+      );
+    } finally {
+      _activeCacheDownloads--;
+      // Process next item in queue
+      if (!isClosed) {
+        unawaited(_processCacheQueue());
       }
     }
-
-    // Cache in background (fire and forget)
-    unawaited(
-      _mediaCache
-          .downloadFile(videoUrl, key: video.id, authHeaders: authHeaders)
-          .then((_) {
-            Log.debug(
-              'FullscreenFeedBloc: Successfully cached video ${video.id}',
-              name: 'FullscreenFeedBloc',
-              category: LogCategory.video,
-            );
-          })
-          .catchError((Object error) {
-            Log.error(
-              'FullscreenFeedBloc: Failed to cache video ${video.id}: $error',
-              name: 'FullscreenFeedBloc',
-              category: LogCategory.video,
-            );
-          }),
-    );
   }
 
   /// Handle position update - check for loop enforcement.
@@ -269,4 +324,23 @@ class FullscreenFeedBloc
   ) {
     emit(state.copyWith(clearSeekCommand: true));
   }
+
+  @override
+  Future<void> close() {
+    _cacheQueue.clear();
+    return super.close();
+  }
+}
+
+/// A pending background cache download request.
+class _CacheRequest {
+  const _CacheRequest({
+    required this.videoId,
+    required this.videoUrl,
+    this.sha256,
+  });
+
+  final String videoId;
+  final String videoUrl;
+  final String? sha256;
 }

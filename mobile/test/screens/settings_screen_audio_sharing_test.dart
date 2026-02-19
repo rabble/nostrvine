@@ -114,13 +114,22 @@ void main() {
       await tester.pumpWidget(createTestWidget());
       await tester.pumpAndSettle();
 
-      // Find and tap the switch
+      // Find the switch
       final switchFinder = find.byWidgetPredicate(
         (widget) =>
             widget is SwitchListTile &&
             widget.title is Text &&
             (widget.title as Text).data == 'Make my audio available for reuse',
       );
+
+      // Scroll until the switch is visible before tapping
+      await tester.scrollUntilVisible(
+        switchFinder,
+        100,
+        scrollable: find.byType(Scrollable),
+      );
+      await tester.pumpAndSettle();
+
       await tester.tap(switchFinder);
       await tester.pumpAndSettle();
 

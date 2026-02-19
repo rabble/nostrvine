@@ -151,6 +151,7 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
             'You need to mutually follow '
             '${profile.bestDisplayName} to add '
             'them as a collaborator.',
+            style: VineTheme.bodyMediumFont(),
           ),
           backgroundColor: VineTheme.cardBackground,
         ),

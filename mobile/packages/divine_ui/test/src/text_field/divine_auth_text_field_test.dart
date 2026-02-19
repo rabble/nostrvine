@@ -17,6 +17,7 @@ void main() {
       ValueChanged<String>? onSubmitted,
       VoidCallback? onTap,
       String? errorText,
+      FormFieldValidator<String>? validator,
     }) {
       return MaterialApp(
         theme: VineTheme.theme,
@@ -34,6 +35,7 @@ void main() {
             onSubmitted: onSubmitted,
             onTap: onTap,
             errorText: errorText,
+            validator: validator,
           ),
         ),
       );
@@ -563,6 +565,100 @@ void main() {
             textField.cursorColor,
             equals(VineTheme.error),
           );
+        },
+      );
+    });
+
+    group('validator', () {
+      testWidgets(
+        'displays error from validator after validation',
+        (tester) async {
+          final formKey = GlobalKey<FormState>();
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: VineTheme.theme,
+              home: Scaffold(
+                body: Form(
+                  key: formKey,
+                  child: DivineAuthTextField(
+                    label: 'Email',
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email is required';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          // Trigger validation with empty field.
+          formKey.currentState!.validate();
+          await tester.pump();
+          // Post-frame callback fires on next pump.
+          await tester.pump();
+
+          // Two Text widgets: the hidden TextFormField error
+          // (zero-size) and the visible _ErrorSupportingText.
+          expect(
+            find.text('Email is required'),
+            findsNWidgets(2),
+          );
+          // Verify warning icon appears (from _ErrorSupportingText).
+          expect(find.byType(DivineIcon), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'clears validator error when user edits the field',
+        (tester) async {
+          final formKey = GlobalKey<FormState>();
+          final controller = TextEditingController();
+          await tester.pumpWidget(
+            MaterialApp(
+              theme: VineTheme.theme,
+              home: Scaffold(
+                body: Form(
+                  key: formKey,
+                  child: DivineAuthTextField(
+                    label: 'Email',
+                    controller: controller,
+                    validator: (value) {
+                      if (value == null || value.isEmpty) {
+                        return 'Email is required';
+                      }
+                      return null;
+                    },
+                  ),
+                ),
+              ),
+            ),
+          );
+
+          // Trigger validation to show error.
+          formKey.currentState!.validate();
+          await tester.pump();
+          await tester.pump();
+
+          expect(
+            find.text('Email is required'),
+            findsNWidgets(2),
+          );
+
+          // Type text to clear the validator error.
+          await tester.enterText(
+            find.byType(TextField),
+            'a',
+          );
+          await tester.pump();
+
+          // The visible _ErrorSupportingText and its warning
+          // icon should be gone.
+          expect(find.byType(DivineIcon), findsNothing);
+
+          controller.dispose();
         },
       );
     });

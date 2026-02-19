@@ -1,6 +1,7 @@
 import 'package:divine_camera/divine_camera.dart';
 import 'package:divine_camera/divine_camera_method_channel.dart';
 import 'package:divine_camera/divine_camera_platform_interface.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:plugin_platform_interface/plugin_platform_interface.dart';
@@ -11,6 +12,7 @@ class MockDivineCameraPlatform
   CameraState _state = const CameraState();
   bool _isRecording = false;
   void Function(VideoRecordingResult result)? _onRecordingAutoStopped;
+  void Function(RemoteRecordTrigger trigger)? _onRemoteRecordTrigger;
 
   @override
   void Function(VideoRecordingResult result)? get onRecordingAutoStopped =>
@@ -21,6 +23,27 @@ class MockDivineCameraPlatform
     void Function(VideoRecordingResult result)? callback,
   ) {
     _onRecordingAutoStopped = callback;
+  }
+
+  @override
+  void Function(RemoteRecordTrigger trigger)? get onRemoteRecordTrigger =>
+      _onRemoteRecordTrigger;
+
+  @override
+  set onRemoteRecordTrigger(
+    void Function(RemoteRecordTrigger trigger)? callback,
+  ) {
+    _onRemoteRecordTrigger = callback;
+  }
+
+  @override
+  Future<bool> setRemoteRecordControlEnabled({required bool enabled}) async {
+    return true;
+  }
+
+  @override
+  Future<bool> setVolumeKeysEnabled({required bool enabled}) async {
+    return true;
   }
 
   @override
@@ -70,6 +93,11 @@ class MockDivineCameraPlatform
 
   @override
   Future<bool> setExposurePoint(Offset offset) async {
+    return true;
+  }
+
+  @override
+  Future<bool> cancelFocusAndMetering() async {
     return true;
   }
 
@@ -131,6 +159,42 @@ void main() {
     test('$MethodChannelDivineCamera is the default instance', () {
       expect(initialPlatform, isInstanceOf<MethodChannelDivineCamera>());
     });
+
+    group('base class throws UnimplementedError', () {
+      late _BasePlatformForTesting basePlatform;
+
+      setUp(() {
+        basePlatform = _BasePlatformForTesting();
+      });
+
+      test('onRemoteRecordTrigger getter throws', () {
+        expect(
+          () => basePlatform.onRemoteRecordTrigger,
+          throwsUnimplementedError,
+        );
+      });
+
+      test('onRemoteRecordTrigger setter throws', () {
+        expect(
+          () => basePlatform.onRemoteRecordTrigger = (_) {},
+          throwsUnimplementedError,
+        );
+      });
+
+      test('setRemoteRecordControlEnabled throws', () {
+        expect(
+          () => basePlatform.setRemoteRecordControlEnabled(enabled: true),
+          throwsUnimplementedError,
+        );
+      });
+
+      test('setVolumeKeysEnabled throws', () {
+        expect(
+          () => basePlatform.setVolumeKeysEnabled(enabled: true),
+          throwsUnimplementedError,
+        );
+      });
+    });
   });
 
   group('DivineCamera', () {
@@ -139,6 +203,11 @@ void main() {
     setUp(() {
       mockPlatform = MockDivineCameraPlatform();
       DivineCameraPlatform.instance = mockPlatform;
+    });
+
+    tearDown(() async {
+      // Reset DivineCamera singleton state between tests
+      await DivineCamera.instance.dispose();
     });
 
     test('getPlatformVersion returns expected value', () async {
@@ -275,6 +344,14 @@ void main() {
         final success = await DivineCamera.instance.setExposurePoint(
           const Offset(0.3, 0.7),
         );
+
+        expect(success, isTrue);
+      });
+
+      test('cancels focus and metering successfully', () async {
+        await DivineCamera.instance.initialize();
+
+        final success = await DivineCamera.instance.cancelFocusAndMetering();
 
         expect(success, isTrue);
       });
@@ -439,6 +516,76 @@ void main() {
 
         expect(receivedState, isNotNull);
         expect(receivedState!.isInitialized, isTrue);
+      });
+    });
+
+    group('remote record control', () {
+      test('setRemoteRecordControlEnabled enables control', () async {
+        await DivineCamera.instance.initialize();
+
+        final result = await DivineCamera.instance
+            .setRemoteRecordControlEnabled(enabled: true);
+
+        expect(result, isTrue);
+        expect(DivineCamera.instance.remoteRecordControlEnabled, isTrue);
+      });
+
+      test('setRemoteRecordControlEnabled disables control', () async {
+        await DivineCamera.instance.initialize();
+        await DivineCamera.instance.setRemoteRecordControlEnabled(
+          enabled: true,
+        );
+
+        final result = await DivineCamera.instance
+            .setRemoteRecordControlEnabled(enabled: false);
+
+        expect(result, isTrue);
+        expect(DivineCamera.instance.remoteRecordControlEnabled, isFalse);
+      });
+
+      test('setVolumeKeysEnabled enables volume keys', () async {
+        await DivineCamera.instance.initialize();
+
+        final result = await DivineCamera.instance.setVolumeKeysEnabled(
+          enabled: true,
+        );
+
+        expect(result, isTrue);
+      });
+
+      test('setVolumeKeysEnabled disables volume keys', () async {
+        await DivineCamera.instance.initialize();
+
+        final result = await DivineCamera.instance.setVolumeKeysEnabled(
+          enabled: false,
+        );
+
+        expect(result, isTrue);
+      });
+
+      test('onRemoteRecordTrigger callback can be set', () async {
+        await DivineCamera.instance.initialize();
+
+        RemoteRecordTrigger? receivedTrigger;
+        DivineCamera.instance.onRemoteRecordTrigger = (trigger) {
+          receivedTrigger = trigger;
+        };
+
+        // The platform callback is now set by DivineCamera - call it to
+        // simulate a native trigger event
+        final mockPlatform =
+            DivineCameraPlatform.instance as MockDivineCameraPlatform;
+        mockPlatform.onRemoteRecordTrigger?.call(
+          RemoteRecordTrigger.volumeDown,
+        );
+
+        expect(receivedTrigger, equals(RemoteRecordTrigger.volumeDown));
+      });
+
+      test('remoteRecordControlEnabled defaults to false', () async {
+        await DivineCamera.instance.initialize();
+
+        expect(DivineCamera.instance.remoteRecordControlEnabled, isFalse);
       });
     });
   });
@@ -648,6 +795,67 @@ void main() {
     });
   });
 
+  group(RemoteRecordTrigger, () {
+    test('fromNativeString returns correct trigger for volumeUp', () {
+      expect(
+        RemoteRecordTrigger.fromNativeString('volumeUp'),
+        equals(RemoteRecordTrigger.volumeUp),
+      );
+    });
+
+    test('fromNativeString returns correct trigger for volumeDown', () {
+      expect(
+        RemoteRecordTrigger.fromNativeString('volumeDown'),
+        equals(RemoteRecordTrigger.volumeDown),
+      );
+    });
+
+    test('fromNativeString returns correct trigger for bluetooth', () {
+      expect(
+        RemoteRecordTrigger.fromNativeString('bluetooth'),
+        equals(RemoteRecordTrigger.bluetooth),
+      );
+    });
+
+    test('fromNativeString defaults to volumeUp for unknown values', () {
+      expect(
+        RemoteRecordTrigger.fromNativeString('unknown'),
+        equals(RemoteRecordTrigger.volumeUp),
+      );
+      expect(
+        RemoteRecordTrigger.fromNativeString(''),
+        equals(RemoteRecordTrigger.volumeUp),
+      );
+    });
+
+    test('all trigger values are distinct', () {
+      const triggers = RemoteRecordTrigger.values;
+      expect(triggers.length, equals(3));
+      expect(triggers.toSet().length, equals(3));
+    });
+
+    test('toNativeString returns correct string for volumeUp', () {
+      expect(
+        RemoteRecordTrigger.volumeUp.toNativeString(),
+        equals('volumeUp'),
+      );
+    });
+
+    test('toNativeString returns correct string for volumeDown', () {
+      expect(
+        RemoteRecordTrigger.volumeDown.toNativeString(),
+        equals('volumeDown'),
+      );
+    });
+
+    test('toNativeString returns correct string for bluetooth', () {
+      expect(
+        RemoteRecordTrigger.bluetooth.toNativeString(),
+        equals('bluetooth'),
+      );
+    });
+  });
+
   group('CameraState additional tests', () {
     test('toMap converts state to map', () {
       const state = CameraState(
@@ -713,7 +921,7 @@ void main() {
 
       final props = state.props;
 
-      expect(props.length, 16);
+      expect(props.length, 17);
       expect(props[0], isTrue); // isInitialized
       expect(props[1], isFalse); // isRecording
       expect(props[4], DivineCameraLens.back); // lens
@@ -861,6 +1069,11 @@ void main() {
     setUp(() {
       mockPlatform = MockDivineCameraPlatform();
       DivineCameraPlatform.instance = mockPlatform;
+    });
+
+    tearDown(() async {
+      // Reset DivineCamera singleton state between tests
+      await DivineCamera.instance.dispose();
     });
 
     test('onRecordingAutoStopped callback is invoked', () async {
@@ -1075,6 +1288,285 @@ void main() {
       expect(DivineCamera.instance.onRecordingAutoStopped, isNull);
     });
   });
+
+  group('CameraLensMetadata', () {
+    test('creates metadata with required lensType', () {
+      const metadata = CameraLensMetadata(lensType: 'back');
+
+      expect(metadata.lensType, 'back');
+      expect(metadata.focalLength, isNull);
+      expect(metadata.hasOpticalStabilization, isFalse);
+      expect(metadata.isLogicalCamera, isFalse);
+      expect(metadata.physicalCameraIds, isEmpty);
+    });
+
+    test('creates metadata with all fields', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'back',
+        focalLength: 4.5,
+        focalLengthEquivalent35mm: 26,
+        aperture: 1.8,
+        sensorWidth: 6.17,
+        sensorHeight: 4.55,
+        pixelArrayWidth: 4032,
+        pixelArrayHeight: 3024,
+        minFocusDistance: 10,
+        fieldOfView: 80,
+        hasOpticalStabilization: true,
+        isLogicalCamera: true,
+        physicalCameraIds: ['cam0', 'cam1'],
+      );
+
+      expect(metadata.lensType, 'back');
+      expect(metadata.focalLength, 4.5);
+      expect(metadata.focalLengthEquivalent35mm, 26.0);
+      expect(metadata.aperture, 1.8);
+      expect(metadata.sensorWidth, 6.17);
+      expect(metadata.sensorHeight, 4.55);
+      expect(metadata.pixelArrayWidth, 4032);
+      expect(metadata.pixelArrayHeight, 3024);
+      expect(metadata.minFocusDistance, 10.0);
+      expect(metadata.fieldOfView, 80.0);
+      expect(metadata.hasOpticalStabilization, isTrue);
+      expect(metadata.isLogicalCamera, isTrue);
+      expect(metadata.physicalCameraIds, ['cam0', 'cam1']);
+    });
+
+    test('fromMap creates metadata from map', () {
+      final map = {
+        'lensType': 'ultraWide',
+        'focalLength': 2.5,
+        'focalLengthEquivalent35mm': 13.0,
+        'aperture': 2.2,
+        'sensorWidth': 5.0,
+        'sensorHeight': 3.75,
+        'pixelArrayWidth': 3024,
+        'pixelArrayHeight': 2268,
+        'minFocusDistance': 25.0,
+        'fieldOfView': 120.0,
+        'hasOpticalStabilization': false,
+        'isLogicalCamera': false,
+        'physicalCameraIds': <String>[],
+      };
+
+      final metadata = CameraLensMetadata.fromMap(map);
+
+      expect(metadata.lensType, 'ultraWide');
+      expect(metadata.focalLength, 2.5);
+      expect(metadata.focalLengthEquivalent35mm, 13.0);
+      expect(metadata.aperture, 2.2);
+      expect(metadata.sensorWidth, 5.0);
+      expect(metadata.sensorHeight, 3.75);
+      expect(metadata.pixelArrayWidth, 3024);
+      expect(metadata.pixelArrayHeight, 2268);
+      expect(metadata.minFocusDistance, 25.0);
+      expect(metadata.fieldOfView, 120.0);
+      expect(metadata.hasOpticalStabilization, isFalse);
+      expect(metadata.isLogicalCamera, isFalse);
+      expect(metadata.physicalCameraIds, isEmpty);
+    });
+
+    test('fromMap with empty map uses defaults', () {
+      final metadata = CameraLensMetadata.fromMap(const {});
+
+      expect(metadata.lensType, 'unknown');
+      expect(metadata.focalLength, isNull);
+      expect(metadata.hasOpticalStabilization, isFalse);
+      expect(metadata.isLogicalCamera, isFalse);
+      expect(metadata.physicalCameraIds, isEmpty);
+    });
+
+    test('fromMap handles physicalCameraIds with mixed types', () {
+      final map = {
+        'lensType': 'back',
+        'physicalCameraIds': ['cam0', 123, 'cam1', null],
+      };
+
+      final metadata = CameraLensMetadata.fromMap(map);
+
+      expect(metadata.physicalCameraIds, ['cam0', 'cam1']);
+    });
+
+    test('toMap converts metadata to map', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'front',
+        focalLength: 3,
+        focalLengthEquivalent35mm: 22,
+        aperture: 2,
+        sensorWidth: 4,
+        sensorHeight: 3,
+        pixelArrayWidth: 2048,
+        pixelArrayHeight: 1536,
+        minFocusDistance: 5,
+        fieldOfView: 90,
+        hasOpticalStabilization: true,
+        isLogicalCamera: true,
+        physicalCameraIds: ['a', 'b'],
+      );
+
+      final map = metadata.toMap();
+
+      expect(map['lensType'], 'front');
+      expect(map['focalLength'], 3.0);
+      expect(map['focalLengthEquivalent35mm'], 22.0);
+      expect(map['aperture'], 2.0);
+      expect(map['sensorWidth'], 4.0);
+      expect(map['sensorHeight'], 3.0);
+      expect(map['pixelArrayWidth'], 2048);
+      expect(map['pixelArrayHeight'], 1536);
+      expect(map['minFocusDistance'], 5.0);
+      expect(map['fieldOfView'], 90.0);
+      expect(map['hasOpticalStabilization'], isTrue);
+      expect(map['isLogicalCamera'], isTrue);
+      expect(map['physicalCameraIds'], ['a', 'b']);
+    });
+
+    test('megapixels returns correct value', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'back',
+        pixelArrayWidth: 4000,
+        pixelArrayHeight: 3000,
+      );
+
+      expect(metadata.megapixels, closeTo(12.0, 0.01));
+    });
+
+    test('megapixels returns null when dimensions missing', () {
+      const metadata = CameraLensMetadata(lensType: 'back');
+
+      expect(metadata.megapixels, isNull);
+    });
+
+    test('minFocusDistanceCm returns correct value', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'back',
+        minFocusDistance: 10, // 10 diopters = 10cm
+      );
+
+      expect(metadata.minFocusDistanceCm, closeTo(10.0, 0.01));
+    });
+
+    test('minFocusDistanceCm returns null for fixed focus', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'front',
+        minFocusDistance: 0,
+      );
+
+      expect(metadata.minFocusDistanceCm, isNull);
+    });
+
+    test('minFocusDistanceCm returns null when not set', () {
+      const metadata = CameraLensMetadata(lensType: 'front');
+
+      expect(metadata.minFocusDistanceCm, isNull);
+    });
+
+    test('isMacroCapable returns true for close focus', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'ultraWide',
+        minFocusDistance: 50, // 50 diopters = 2cm
+      );
+
+      expect(metadata.isMacroCapable, isTrue);
+    });
+
+    test('isMacroCapable returns false for normal focus', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'back',
+        minFocusDistance: 10, // 10 diopters = 10cm
+      );
+
+      expect(metadata.isMacroCapable, isFalse);
+    });
+
+    test('isMacroCapable returns false when focus not set', () {
+      const metadata = CameraLensMetadata(lensType: 'back');
+
+      expect(metadata.isMacroCapable, isFalse);
+    });
+
+    test('toString returns formatted string', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'back',
+        focalLength: 4.5,
+        aperture: 1.8,
+        pixelArrayWidth: 4000,
+        pixelArrayHeight: 3000,
+      );
+
+      final str = metadata.toString();
+
+      expect(str, contains('CameraLensMetadata'));
+      expect(str, contains('lensType: back'));
+      expect(str, contains('focalLength: 4.5mm'));
+      expect(str, contains('aperture: f/1.8'));
+      expect(str, contains('12.0MP'));
+    });
+
+    test('props returns correct list', () {
+      const metadata = CameraLensMetadata(
+        lensType: 'back',
+      );
+
+      final props = metadata.props;
+
+      expect(props.length, 20);
+      expect(props[0], 'back');
+    });
+
+    test('equality works correctly', () {
+      const meta1 = CameraLensMetadata(lensType: 'back', focalLength: 4.5);
+      const meta2 = CameraLensMetadata(lensType: 'back', focalLength: 4.5);
+      const meta3 = CameraLensMetadata(lensType: 'front', focalLength: 4.5);
+
+      expect(meta1, equals(meta2));
+      expect(meta1, isNot(equals(meta3)));
+    });
+  });
+
+  group('CameraState with currentLensMetadata', () {
+    test('fromMap parses currentLensMetadata', () {
+      final map = {
+        'isInitialized': true,
+        'currentLensMetadata': {
+          'lensType': 'back',
+          'focalLength': 4.5,
+          'aperture': 1.8,
+        },
+      };
+
+      final state = CameraState.fromMap(map);
+
+      expect(state.currentLensMetadata, isNotNull);
+      expect(state.currentLensMetadata!.lensType, 'back');
+      expect(state.currentLensMetadata!.focalLength, 4.5);
+      expect(state.currentLensMetadata!.aperture, 1.8);
+    });
+
+    test('fromMap handles null currentLensMetadata', () {
+      final map = {
+        'isInitialized': true,
+        'currentLensMetadata': null,
+      };
+
+      final state = CameraState.fromMap(map);
+
+      expect(state.currentLensMetadata, isNull);
+    });
+
+    test('fromMap handles missing currentLensMetadata', () {
+      final map = {
+        'isInitialized': true,
+      };
+
+      final state = CameraState.fromMap(map);
+
+      expect(state.currentLensMetadata, isNull);
+    });
+  });
+
+  // MethodChannelDivineCamera Tests
+  _runMethodChannelTests();
 }
 
 /// Mock that doesn't support focus point
@@ -1123,4 +1615,200 @@ class _SingleCameraMock extends MockDivineCameraPlatform {
       hasBackCamera: true,
     );
   }
+}
+
+/// A class that directly extends DivineCameraPlatform for testing the base
+/// class methods that throw UnimplementedError.
+class _BasePlatformForTesting extends DivineCameraPlatform {}
+
+void _runMethodChannelTests() {
+  group(MethodChannelDivineCamera, () {
+    late MethodChannelDivineCamera methodChannelImpl;
+    late List<MethodCall> capturedCalls;
+
+    setUp(() {
+      methodChannelImpl = MethodChannelDivineCamera();
+      capturedCalls = <MethodCall>[];
+
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            methodChannelImpl.methodChannel,
+            (MethodCall methodCall) async {
+              capturedCalls.add(methodCall);
+              switch (methodCall.method) {
+                case 'setRemoteRecordControlEnabled':
+                  return true;
+                case 'setVolumeKeysEnabled':
+                  return true;
+                default:
+                  return null;
+              }
+            },
+          );
+    });
+
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            methodChannelImpl.methodChannel,
+            null,
+          );
+    });
+
+    test('onRemoteRecordTrigger getter returns null initially', () {
+      expect(methodChannelImpl.onRemoteRecordTrigger, isNull);
+    });
+
+    test('onRemoteRecordTrigger setter sets callback', () {
+      void callback(RemoteRecordTrigger trigger) {}
+      methodChannelImpl.onRemoteRecordTrigger = callback;
+      expect(methodChannelImpl.onRemoteRecordTrigger, equals(callback));
+    });
+
+    test('onRemoteRecordTrigger setter can clear callback', () {
+      void callback(RemoteRecordTrigger trigger) {}
+      methodChannelImpl
+        ..onRemoteRecordTrigger = callback
+        ..onRemoteRecordTrigger = null;
+      expect(methodChannelImpl.onRemoteRecordTrigger, isNull);
+    });
+
+    test('setRemoteRecordControlEnabled invokes method channel', () async {
+      final result = await methodChannelImpl.setRemoteRecordControlEnabled(
+        enabled: true,
+      );
+
+      expect(result, isTrue);
+      expect(capturedCalls, hasLength(1));
+      expect(capturedCalls.first.method, 'setRemoteRecordControlEnabled');
+      expect(capturedCalls.first.arguments, {'enabled': true});
+    });
+
+    test('setRemoteRecordControlEnabled with false', () async {
+      final result = await methodChannelImpl.setRemoteRecordControlEnabled(
+        enabled: false,
+      );
+
+      expect(result, isTrue);
+      expect(capturedCalls.first.arguments, {'enabled': false});
+    });
+
+    test('setVolumeKeysEnabled invokes method channel', () async {
+      final result = await methodChannelImpl.setVolumeKeysEnabled(
+        enabled: true,
+      );
+
+      expect(result, isTrue);
+      expect(capturedCalls, hasLength(1));
+      expect(capturedCalls.first.method, 'setVolumeKeysEnabled');
+      expect(capturedCalls.first.arguments, {'enabled': true});
+    });
+
+    test('setVolumeKeysEnabled with false', () async {
+      final result = await methodChannelImpl.setVolumeKeysEnabled(
+        enabled: false,
+      );
+
+      expect(result, isTrue);
+      expect(capturedCalls.first.arguments, {'enabled': false});
+    });
+
+    group('handleMethodCall', () {
+      test('handles onRemoteRecordTrigger callback', () async {
+        RemoteRecordTrigger? receivedTrigger;
+        methodChannelImpl.onRemoteRecordTrigger = (trigger) {
+          receivedTrigger = trigger;
+        };
+
+        final binaryMessenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+        // Simulate native calling back to Flutter
+        const codec = StandardMethodCodec();
+        final encoded = codec.encodeMethodCall(
+          const MethodCall('onRemoteRecordTrigger', 'volumeDown'),
+        );
+
+        await binaryMessenger.handlePlatformMessage(
+          'divine_camera',
+          encoded,
+          (_) {},
+        );
+
+        expect(receivedTrigger, equals(RemoteRecordTrigger.volumeDown));
+      });
+
+      test('handles onRemoteRecordTrigger with null callback', () async {
+        // Ensure no callback is set
+        methodChannelImpl.onRemoteRecordTrigger = null;
+
+        final binaryMessenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+        const codec = StandardMethodCodec();
+        final encoded = codec.encodeMethodCall(
+          const MethodCall('onRemoteRecordTrigger', 'volumeUp'),
+        );
+
+        await binaryMessenger.handlePlatformMessage(
+          'divine_camera',
+          encoded,
+          (_) {},
+        );
+
+        // Callback should still be null (not modified by the call)
+        expect(methodChannelImpl.onRemoteRecordTrigger, isNull);
+      });
+
+      test('handles onRemoteRecordTrigger with null trigger type', () async {
+        var callbackInvoked = false;
+        methodChannelImpl.onRemoteRecordTrigger = (_) {
+          callbackInvoked = true;
+        };
+
+        final binaryMessenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+        const codec = StandardMethodCodec();
+        // Pass null as the trigger type argument
+        final encoded = codec.encodeMethodCall(
+          const MethodCall('onRemoteRecordTrigger'),
+        );
+
+        await binaryMessenger.handlePlatformMessage(
+          'divine_camera',
+          encoded,
+          (_) {},
+        );
+
+        // Callback should NOT be invoked when trigger type is null
+        expect(callbackInvoked, isFalse);
+      });
+
+      test('handles unknown method call gracefully', () async {
+        // Set callbacks to verify they are NOT invoked for unknown methods
+        var remoteRecordTriggerInvoked = false;
+        methodChannelImpl.onRemoteRecordTrigger = (_) {
+          remoteRecordTriggerInvoked = true;
+        };
+
+        final binaryMessenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+
+        const codec = StandardMethodCodec();
+        final encoded = codec.encodeMethodCall(
+          const MethodCall('unknownMethod'),
+        );
+
+        await binaryMessenger.handlePlatformMessage(
+          'divine_camera',
+          encoded,
+          (_) {},
+        );
+
+        // No callbacks should have been invoked
+        expect(remoteRecordTriggerInvoked, isFalse);
+      });
+    });
+  });
 }

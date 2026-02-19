@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -32,8 +30,7 @@ class _TestAssetBundle extends CachingAssetBundle {
           <String, Object>{'asset': sticker.assetPath},
         ],
     };
-    _manifest =
-        const StandardMessageCodec().encodeMessage(manifest)!;
+    _manifest = const StandardMessageCodec().encodeMessage(manifest)!;
   }
 
   late final ByteData _manifest;
@@ -69,8 +66,7 @@ void main() {
     });
 
     test('all variants have unique file names', () {
-      final fileNames =
-          DivineStickerName.values.map((s) => s.fileName).toSet();
+      final fileNames = DivineStickerName.values.map((s) => s.fileName).toSet();
       expect(fileNames.length, equals(DivineStickerName.values.length));
     });
 
@@ -79,7 +75,8 @@ void main() {
         expect(
           sticker.fileName,
           matches(RegExp(r'^[a-z0-9_]+$')),
-          reason: '${sticker.name} fileName "${sticker.fileName}" '
+          reason:
+              '${sticker.name} fileName "${sticker.fileName}" '
               'is not snake_case',
         );
       }
@@ -139,5 +136,59 @@ void main() {
       final image = tester.widget<Image>(find.byType(Image));
       expect(image.fit, equals(BoxFit.contain));
     });
+
+    testWidgets(
+      'errorBuilder renders empty SizedBox on load failure',
+      (tester) async {
+        final brokenBundle = _BrokenAssetBundle();
+        await tester.pumpWidget(
+          MaterialApp(
+            home: DefaultAssetBundle(
+              bundle: brokenBundle,
+              child: const DivineSticker(
+                sticker: DivineStickerName.boom,
+              ),
+            ),
+          ),
+        );
+
+        // Pump to trigger image decode failure and errorBuilder.
+        await tester.pumpAndSettle();
+
+        // The fallback SizedBox (132x132) should be rendered.
+        final sizedBox = tester.widget<SizedBox>(
+          find.byType(SizedBox).last,
+        );
+        expect(sizedBox.width, equals(132));
+        expect(sizedBox.height, equals(132));
+      },
+    );
   });
+}
+
+/// An asset bundle that returns invalid image data to trigger
+/// [Image.asset] errorBuilder.
+class _BrokenAssetBundle extends CachingAssetBundle {
+  _BrokenAssetBundle() {
+    final manifest = <String, List<Map<String, Object>>>{
+      for (final sticker in DivineStickerName.values)
+        sticker.assetPath: [
+          <String, Object>{'asset': sticker.assetPath},
+        ],
+    };
+    _manifest = const StandardMessageCodec().encodeMessage(manifest)!;
+  }
+
+  late final ByteData _manifest;
+
+  @override
+  Future<ByteData> load(String key) {
+    if (key == 'AssetManifest.bin') {
+      return SynchronousFuture<ByteData>(_manifest);
+    }
+    // Return invalid bytes to trigger image decode failure.
+    return SynchronousFuture<ByteData>(
+      ByteData.sublistView(Uint8List.fromList([0, 0, 0])),
+    );
+  }
 }

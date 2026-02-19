@@ -14,12 +14,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:openvine/blocs/my_profile/my_profile_bloc.dart';
 import 'package:openvine/blocs/profile_editor/profile_editor_bloc.dart';
-import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/utils/user_profile_utils.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/nostr_info_sheet_content.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -47,17 +47,33 @@ class ProfileSetupScreen extends ConsumerWidget {
     final userProfileService = ref.watch(userProfileServiceProvider);
     final authService = ref.watch(authServiceProvider);
 
+    final pubkey = authService.currentPublicKeyHex;
+
     // Show loading until NostrClient has keys
-    if (profileRepository == null) {
+    if (profileRepository == null || pubkey == null) {
       return const BrandedLoadingScaffold();
     }
 
-    return BlocProvider<ProfileEditorBloc>(
-      create: (context) => ProfileEditorBloc(
-        profileRepository: profileRepository,
-        userProfileService: userProfileService,
-        hasExistingProfile: authService.hasExistingProfile,
-      ),
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<ProfileEditorBloc>(
+          create: (context) => ProfileEditorBloc(
+            profileRepository: profileRepository,
+            userProfileService: userProfileService,
+            hasExistingProfile: authService.hasExistingProfile,
+          ),
+        ),
+        BlocProvider<MyProfileBloc>(
+          create: (context) {
+            final bloc = MyProfileBloc(
+              profileRepository: profileRepository,
+              pubkey: pubkey,
+            );
+            if (!isNewUser) bloc.add(const MyProfileLoadRequested());
+            return bloc;
+          },
+        ),
+      ],
       child: ProfileSetupScreenView(isNewUser: isNewUser),
     );
   }
@@ -93,7 +109,6 @@ class _ProfileSetupScreenViewState
   @override
   void initState() {
     super.initState();
-    _loadExistingProfile();
     // Rebuild when display name changes so save button updates.
     _nameController.addListener(_onFocusChange);
     // Add focus listeners to update label colors
@@ -123,426 +138,392 @@ class _ProfileSetupScreenViewState
     super.dispose();
   }
 
-  Future<void> _loadExistingProfile() async {
-    if (!widget.isNewUser) {
-      // For imported users, try to load their existing profile
-      try {
-        final authService = ref.read(authServiceProvider);
-
-        if (authService.currentPublicKeyHex != null) {
-          final profileRepo = ref.read(profileRepositoryProvider);
-          // Return early if NostrClient doesn't have keys yet
-          if (profileRepo == null) return;
-          final repoProfile = await profileRepo.getCachedProfile(
-            pubkey: authService.currentPublicKeyHex!,
-          );
-          final profile = repoProfile != null
-              ? UserProfile.fromJson(repoProfile.toJson())
-              : null;
-          if (profile != null && mounted) {
-            setState(() {
-              // Use bestDisplayName which handles name/displayName fallback properly
-              _nameController.text = profile.displayName ?? profile.name ?? '';
-              _bioController.text = profile.about ?? '';
-              _pictureController.text = profile.picture ?? '';
-
-              // Extract username from NIP-05 if present
-              // Support both new subdomain format and legacy formats
-              if (profile.nip05 != null) {
-                String? username;
-                // New subdomain format: _@username.divine.video
-                final subdomainMatch = RegExp(
-                  r'^_@([a-z0-9\-_.]+)\.divine\.video$',
-                ).firstMatch(profile.nip05!);
-                if (subdomainMatch != null) {
-                  username = subdomainMatch.group(1);
-                }
-                // Old format: username@divine.video or username@openvine.co
-                else if (profile.nip05!.endsWith('@divine.video') ||
-                    profile.nip05!.endsWith('@openvine.co')) {
-                  username = profile.nip05!.split('@')[0];
-                }
-                if (username != null) {
-                  _nip05Controller.text = username;
-                  if (mounted) {
-                    context.read<ProfileEditorBloc>().add(
-                      InitialUsernameSet(username),
-                    );
-                  }
-                }
-              }
-
-              // Load profile color from banner field
-              _selectedProfileColor = profile.profileBackgroundColor;
-            });
-
-            Log.info(
-              '✅ Pre-filled profile setup form with existing data:',
-              name: 'ProfileSetupScreen',
-              category: LogCategory.ui,
-            );
-            Log.info(
-              '  - name: ${profile.name}',
-              name: 'ProfileSetupScreen',
-              category: LogCategory.ui,
-            );
-            Log.info(
-              '  - displayName: ${profile.displayName}',
-              name: 'ProfileSetupScreen',
-              category: LogCategory.ui,
-            );
-            Log.info(
-              '  - about: ${profile.about}',
-              name: 'ProfileSetupScreen',
-              category: LogCategory.ui,
-            );
-            Log.info(
-              '  - picture: ${profile.picture}',
-              name: 'ProfileSetupScreen',
-              category: LogCategory.ui,
-            );
-            Log.info(
-              '  - banner: ${profile.banner}',
-              name: 'ProfileSetupScreen',
-              category: LogCategory.ui,
-            );
-            Log.info(
-              '  - website: ${profile.website}',
-              name: 'ProfileSetupScreen',
-              category: LogCategory.ui,
-            );
-            Log.info(
-              '  - nip05: ${profile.nip05}',
-              name: 'ProfileSetupScreen',
-              category: LogCategory.ui,
-            );
-            Log.info(
-              '  - lud16: ${profile.lud16}',
-              name: 'ProfileSetupScreen',
-              category: LogCategory.ui,
-            );
-          }
-        }
-      } catch (e) {
-        Log.error(
-          'Failed to load existing profile: $e',
-          name: 'ProfileSetupScreen',
-          category: LogCategory.ui,
-        );
-      }
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final pubkey = ref.watch(authServiceProvider).currentPublicKeyHex;
 
-    return BlocConsumer<ProfileEditorBloc, ProfileEditorState>(
-      listenWhen: (prev, curr) => prev.status != curr.status,
-      listener: (context, state) {
-        if (state.status == ProfileEditorStatus.success) {
-          // Invalidate profile providers so profile screen refetches
-          final currentPubkey = ref
-              .read(authServiceProvider)
-              .currentPublicKeyHex;
-          if (currentPubkey != null) {
-            ref.invalidate(fetchUserProfileProvider(currentPubkey));
-            ref.invalidate(userProfileReactiveProvider(currentPubkey));
-          }
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<MyProfileBloc, MyProfileState>(
+          listenWhen: (prev, curr) => curr is MyProfileLoaded,
+          listener: (context, myProfileState) {
+            if (myProfileState is! MyProfileLoaded) return;
 
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: const BoxDecoration(
-                      color: VineTheme.vineGreen,
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.check,
-                      color: Colors.white,
-                      size: 17,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Profile published successfully!',
-                    style: TextStyle(color: VineTheme.vineGreen),
-                  ),
-                ],
-              ),
-              backgroundColor: Colors.white,
-            ),
-          );
-          if (widget.isNewUser) {
-            Navigator.of(context).popUntil((route) => route.isFirst);
-          } else {
-            if (context.canPop()) {
-              context.pop(true);
-            } else {
-              context.go('/');
+            final profile = myProfileState.profile;
+            final extractedUsername = myProfileState.extractedUsername;
+
+            setState(() {
+              _nameController.text = profile.displayName ?? profile.name ?? '';
+              _bioController.text = profile.about ?? '';
+              _pictureController.text = profile.picture ?? '';
+              _selectedProfileColor = profile.profileBackgroundColor;
+
+              if (extractedUsername != null) {
+                _nip05Controller.text = extractedUsername;
+              }
+            });
+
+            if (extractedUsername != null) {
+              context.read<ProfileEditorBloc>().add(
+                InitialUsernameSet(extractedUsername),
+              );
             }
-          }
-        } else if (state.status == ProfileEditorStatus.confirmationRequired) {
-          // Show confirmation dialog for blank profile overwrite warning
-          showDialog<void>(
-            context: context,
-            builder: (dialogContext) => AlertDialog(
-              backgroundColor: VineTheme.cardBackground,
-              title: const Text(
-                'Create new profile?',
-                style: TextStyle(color: VineTheme.whiteText),
-              ),
-              content: const Text(
-                "We didn't find an existing profile on your relays. Publishing will create a new profile. Continue?",
-                style: TextStyle(color: VineTheme.secondaryText),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  child: Text(
-                    'Cancel',
-                    style: TextStyle(color: VineTheme.lightText),
+          },
+        ),
+        BlocListener<ProfileEditorBloc, ProfileEditorState>(
+          listenWhen: (prev, curr) => prev.status != curr.status,
+          listener: (context, state) {
+            if (state.status == ProfileEditorStatus.success) {
+              // Invalidate profile providers so profile screen refetches
+              final currentPubkey = ref
+                  .read(authServiceProvider)
+                  .currentPublicKeyHex;
+              if (currentPubkey != null) {
+                ref.invalidate(fetchUserProfileProvider(currentPubkey));
+                ref.invalidate(userProfileReactiveProvider(currentPubkey));
+              }
+
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: const BoxDecoration(
+                          color: VineTheme.vineGreen,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.check,
+                          color: Colors.white,
+                          size: 17,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      const Text(
+                        'Profile published successfully!',
+                        style: TextStyle(color: VineTheme.vineGreen),
+                      ),
+                    ],
+                  ),
+                  backgroundColor: Colors.white,
+                ),
+              );
+              if (widget.isNewUser) {
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              } else {
+                if (context.canPop()) {
+                  context.pop(true);
+                } else {
+                  context.go('/');
+                }
+              }
+            } else if (state.status ==
+                ProfileEditorStatus.confirmationRequired) {
+              // Show confirmation dialog for blank profile overwrite
+              showDialog<void>(
+                context: context,
+                builder: (dialogContext) => AlertDialog(
+                  backgroundColor: VineTheme.cardBackground,
+                  title: const Text(
+                    'Create new profile?',
+                    style: TextStyle(color: VineTheme.whiteText),
+                  ),
+                  content: const Text(
+                    "We didn't find an existing profile on your "
+                    'relays. Publishing will create a new profile. '
+                    'Continue?',
+                    style: TextStyle(color: VineTheme.secondaryText),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(dialogContext).pop(),
+                      child: Text(
+                        'Cancel',
+                        style: TextStyle(color: VineTheme.lightText),
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(dialogContext).pop();
+                        context.read<ProfileEditorBloc>().add(
+                          const ProfileSaveConfirmed(),
+                        );
+                      },
+                      child: const Text(
+                        'Publish',
+                        style: TextStyle(color: VineTheme.vineGreen),
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            } else if (state.status == ProfileEditorStatus.failure) {
+              // Invalidate profile providers after rollback
+              final currentPubkey = ref
+                  .read(authServiceProvider)
+                  .currentPublicKeyHex;
+              if (currentPubkey != null) {
+                ref.invalidate(fetchUserProfileProvider(currentPubkey));
+                ref.invalidate(userProfileReactiveProvider(currentPubkey));
+              }
+              switch (state.error) {
+                case ProfileEditorError.usernameTaken:
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                        'Username was just taken. '
+                        'Please choose another.',
+                      ),
+                      backgroundColor: Colors.red[700],
+                      duration: const Duration(seconds: 3),
+                    ),
+                  );
+                case ProfileEditorError.usernameReserved:
+                  final username = state.username;
+                  showDialog<void>(
+                    context: context,
+                    builder: (context) => UsernameReservedDialog(username),
+                  );
+                case ProfileEditorError.claimFailed:
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text(
+                        'Failed to claim username. Please try again.',
+                      ),
+                      backgroundColor: Colors.red[700],
+                    ),
+                  );
+                case ProfileEditorError.publishFailed:
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'Failed to publish profile. Please try again.',
+                      ),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                case null:
+                  break;
+              }
+            }
+          },
+        ),
+      ],
+      child: BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
+        builder: (context, profileEditorState) {
+          return Scaffold(
+            backgroundColor: VineTheme.surfaceContainerHigh,
+            appBar: AppBar(
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              toolbarHeight: 72,
+              leadingWidth: 80,
+              centerTitle: true,
+              backgroundColor: Colors.transparent,
+              leading: IconButton(
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(),
+                icon: Container(
+                  width: 48,
+                  height: 48,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: VineTheme.scrim15,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: SvgPicture.asset(
+                    'assets/icon/CaretLeft.svg',
+                    width: 32,
+                    height: 32,
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
                   ),
                 ),
-                TextButton(
-                  onPressed: () {
-                    Navigator.of(dialogContext).pop();
-                    context.read<ProfileEditorBloc>().add(
-                      const ProfileSaveConfirmed(),
-                    );
-                  },
-                  child: const Text(
-                    'Publish',
-                    style: TextStyle(color: VineTheme.vineGreen),
+                onPressed: () {
+                  // Try to pop using context.pop() which GoRouter intercepts
+                  // This should work even if canPop() returns false
+                  try {
+                    context.pop();
+                  } catch (e) {
+                    // If pop fails, navigate to profile or home as fallback
+                    final authService = ref.read(authServiceProvider);
+                    final currentPubkey = authService.currentPublicKeyHex;
+                    if (currentPubkey != null) {
+                      final npub = authService.currentNpub;
+                      context.go('/profile/$npub');
+                    } else {
+                      context.go('/home/0');
+                    }
+                  }
+                },
+                tooltip: 'Back',
+              ),
+              title: Text('Edit Profile', style: VineTheme.titleMediumFont()),
+              actions: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 16),
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                    icon: Container(
+                      width: 48,
+                      height: 48,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: VineTheme.scrim15,
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: SvgPicture.asset(
+                        'assets/icon/info.svg',
+                        width: 32,
+                        height: 32,
+                        colorFilter: const ColorFilter.mode(
+                          Colors.white,
+                          BlendMode.srcIn,
+                        ),
+                      ),
+                    ),
+                    onPressed: () => _showNostrInfoSheet(context),
+                    tooltip: 'About Nostr',
                   ),
                 ),
               ],
             ),
-          );
-        } else if (state.status == ProfileEditorStatus.failure) {
-          // Invalidate profile providers after rollback so UI shows correct data
-          final currentPubkey = ref
-              .read(authServiceProvider)
-              .currentPublicKeyHex;
-          if (currentPubkey != null) {
-            ref.invalidate(fetchUserProfileProvider(currentPubkey));
-            ref.invalidate(userProfileReactiveProvider(currentPubkey));
-          }
-          switch (state.error) {
-            case ProfileEditorError.usernameTaken:
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text(
-                    'Username was just taken. Please choose another.',
-                  ),
-                  backgroundColor: Colors.red[700],
-                  duration: const Duration(seconds: 3),
-                ),
-              );
-            case ProfileEditorError.usernameReserved:
-              final username = state.username;
-              showDialog<void>(
-                context: context,
-                builder: (context) => UsernameReservedDialog(username),
-              );
-            case ProfileEditorError.claimFailed:
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text(
-                    'Failed to claim username. Please try again.',
-                  ),
-                  backgroundColor: Colors.red[700],
-                ),
-              );
-            case ProfileEditorError.publishFailed:
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Failed to publish profile. Please try again.'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            case null:
-              break;
-          }
-        }
-      },
-      builder: (context, profileEditorState) {
-        return Scaffold(
-          backgroundColor: VineTheme.surfaceContainerHigh,
-          appBar: AppBar(
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            toolbarHeight: 72,
-            leadingWidth: 80,
-            centerTitle: true,
-            backgroundColor: Colors.transparent,
-            leading: IconButton(
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-              icon: Container(
-                width: 48,
-                height: 48,
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: VineTheme.scrim15,
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: SvgPicture.asset(
-                  'assets/icon/CaretLeft.svg',
-                  width: 32,
-                  height: 32,
-                  colorFilter: const ColorFilter.mode(
-                    Colors.white,
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
-              onPressed: () {
-                // Try to pop using context.pop() which GoRouter intercepts
-                // This should work even if canPop() returns false
-                try {
-                  context.pop();
-                } catch (e) {
-                  // If pop fails, navigate to profile or home as fallback
-                  final authService = ref.read(authServiceProvider);
-                  final currentPubkey = authService.currentPublicKeyHex;
-                  if (currentPubkey != null) {
-                    final npub = authService.currentNpub;
-                    context.go('/profile/$npub');
-                  } else {
-                    context.go('/home/0');
-                  }
-                }
+            body: GestureDetector(
+              onTap: () {
+                // Dismiss keyboard when tapping outside text fields
+                FocusScope.of(context).unfocus();
               },
-              tooltip: 'Back',
-            ),
-            title: Text('Edit Profile', style: VineTheme.titleMediumFont()),
-            actions: [
-              Padding(
-                padding: const EdgeInsets.only(right: 16),
-                child: IconButton(
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                  icon: Container(
-                    width: 48,
-                    height: 48,
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: VineTheme.scrim15,
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: SvgPicture.asset(
-                      'assets/icon/info.svg',
-                      width: 32,
-                      height: 32,
-                      colorFilter: const ColorFilter.mode(
-                        Colors.white,
-                        BlendMode.srcIn,
-                      ),
-                    ),
-                  ),
-                  onPressed: () => _showNostrInfoSheet(context),
-                  tooltip: 'About Nostr',
-                ),
-              ),
-            ],
-          ),
-          body: GestureDetector(
-            onTap: () {
-              // Dismiss keyboard when tapping outside text fields
-              FocusScope.of(context).unfocus();
-            },
-            child: SafeArea(
-              bottom:
-                  false, // Don't add bottom padding - let content extend to bottom
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: const EdgeInsets.only(bottom: 24),
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 600),
-                      child: Theme(
-                        data: Theme.of(context).copyWith(
-                          textSelectionTheme: const TextSelectionThemeData(
-                            cursorColor: VineTheme.primary,
-                            selectionColor: Color(0xFF1C4430),
+              child: SafeArea(
+                bottom:
+                    false, // Don't add bottom padding - let content extend to bottom
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 24),
+                    child: Align(
+                      alignment: Alignment.topCenter,
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 600),
+                        child: Theme(
+                          data: Theme.of(context).copyWith(
+                            textSelectionTheme: const TextSelectionThemeData(
+                              cursorColor: VineTheme.primary,
+                              selectionColor: Color(0xFF1C4430),
+                            ),
                           ),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Profile Picture Section with overlapping buttons
-                            Center(
-                              child: SizedBox(
-                                // 144 avatar + 20 (half of 40px buttons extending below)
-                                height: 164,
-                                width: 144,
-                                child: Stack(
-                                  clipBehavior: Clip.none,
-                                  children: [
-                                    // Profile picture preview
-                                    Container(
-                                      width: 144,
-                                      height: 144,
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(33),
-                                        color: Colors.grey[800],
-                                        border: Border.all(
-                                          color: VineTheme.onSurfaceDisabled,
-                                          width: 1.64,
-                                        ),
-                                      ),
-                                      child: ClipRRect(
-                                        borderRadius: BorderRadius.circular(
-                                          31.36,
-                                        ),
-                                        child: _buildProfilePicturePreview(),
-                                      ),
-                                    ),
-                                    // Upload progress indicator
-                                    if (_isUploadingImage)
-                                      Positioned(
-                                        top: 0,
-                                        left: 0,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Profile Picture Section with overlapping buttons
+                              Center(
+                                child: SizedBox(
+                                  // 144 avatar + 20 (half of 40px buttons extending below)
+                                  height: 164,
+                                  width: 144,
+                                  child: Stack(
+                                    clipBehavior: Clip.none,
+                                    children: [
+                                      // Profile picture preview
+                                      Container(
                                         width: 144,
                                         height: 144,
-                                        child: DecoratedBox(
-                                          decoration: BoxDecoration(
-                                            borderRadius: BorderRadius.circular(
-                                              33,
-                                            ),
-                                            color: Colors.black.withValues(
-                                              alpha: 0.7,
-                                            ),
+                                        decoration: BoxDecoration(
+                                          borderRadius: BorderRadius.circular(
+                                            33,
                                           ),
-                                          child: const Center(
-                                            child: CircularProgressIndicator(
-                                              color: VineTheme.vineGreen,
-                                              strokeWidth: 3,
+                                          color: Colors.grey[800],
+                                          border: Border.all(
+                                            color: VineTheme.onSurfaceDisabled,
+                                            width: 1.64,
+                                          ),
+                                        ),
+                                        child: ClipRRect(
+                                          borderRadius: BorderRadius.circular(
+                                            31.36,
+                                          ),
+                                          child: _buildProfilePicturePreview(),
+                                        ),
+                                      ),
+                                      // Upload progress indicator
+                                      if (_isUploadingImage)
+                                        Positioned(
+                                          top: 0,
+                                          left: 0,
+                                          width: 144,
+                                          height: 144,
+                                          child: DecoratedBox(
+                                            decoration: BoxDecoration(
+                                              borderRadius:
+                                                  BorderRadius.circular(33),
+                                              color: Colors.black.withValues(
+                                                alpha: 0.7,
+                                              ),
+                                            ),
+                                            child: const Center(
+                                              child: CircularProgressIndicator(
+                                                color: VineTheme.vineGreen,
+                                                strokeWidth: 3,
+                                              ),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                    // Image source buttons - overlapping bottom of avatar
-                                    Positioned(
-                                      bottom: 0,
-                                      left: 0,
-                                      right: 0,
-                                      child: Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          // Show camera button on mobile only
-                                          if (!_isDesktopPlatform()) ...[
+                                      // Image source buttons - overlapping bottom of avatar
+                                      Positioned(
+                                        bottom: 0,
+                                        left: 0,
+                                        right: 0,
+                                        child: Row(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            // Show camera button on mobile only
+                                            if (!_isDesktopPlatform()) ...[
+                                              GestureDetector(
+                                                onTap: _isUploadingImage
+                                                    ? null
+                                                    : () => _pickImage(
+                                                        ImageSource.camera,
+                                                      ),
+                                                child: Container(
+                                                  width: 40,
+                                                  height: 40,
+                                                  decoration: BoxDecoration(
+                                                    color: VineTheme
+                                                        .surfaceContainer,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          16,
+                                                        ),
+                                                    border: Border.all(
+                                                      color: VineTheme
+                                                          .outlineMuted,
+                                                      width: 2,
+                                                    ),
+                                                  ),
+                                                  child: Center(
+                                                    child: SvgPicture.asset(
+                                                      'assets/icon/cameraPlus.svg',
+                                                      width: 24,
+                                                      height: 24,
+                                                      colorFilter:
+                                                          const ColorFilter.mode(
+                                                            VineTheme.primary,
+                                                            BlendMode.srcIn,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                            ],
                                             GestureDetector(
                                               onTap: _isUploadingImage
                                                   ? null
                                                   : () => _pickImage(
-                                                      ImageSource.camera,
+                                                      ImageSource.gallery,
                                                     ),
                                               child: Container(
                                                 width: 40,
@@ -560,7 +541,7 @@ class _ProfileSetupScreenViewState
                                                 ),
                                                 child: Center(
                                                   child: SvgPicture.asset(
-                                                    'assets/icon/cameraPlus.svg',
+                                                    'assets/icon/imagesSquare.svg',
                                                     width: 24,
                                                     height: 24,
                                                     colorFilter:
@@ -573,376 +554,349 @@ class _ProfileSetupScreenViewState
                                               ),
                                             ),
                                             const SizedBox(width: 12),
-                                          ],
-                                          GestureDetector(
-                                            onTap: _isUploadingImage
-                                                ? null
-                                                : () => _pickImage(
-                                                    ImageSource.gallery,
+                                            // URL input button
+                                            GestureDetector(
+                                              onTap: () =>
+                                                  _showImageUrlSheet(context),
+                                              child: Container(
+                                                width: 40,
+                                                height: 40,
+                                                decoration: BoxDecoration(
+                                                  color: VineTheme
+                                                      .surfaceContainer,
+                                                  borderRadius:
+                                                      BorderRadius.circular(16),
+                                                  border: Border.all(
+                                                    color:
+                                                        VineTheme.outlineMuted,
+                                                    width: 2,
                                                   ),
-                                            child: Container(
-                                              width: 40,
-                                              height: 40,
-                                              decoration: BoxDecoration(
-                                                color:
-                                                    VineTheme.surfaceContainer,
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                                border: Border.all(
-                                                  color: VineTheme.outlineMuted,
-                                                  width: 2,
                                                 ),
-                                              ),
-                                              child: Center(
-                                                child: SvgPicture.asset(
-                                                  'assets/icon/imagesSquare.svg',
-                                                  width: 24,
-                                                  height: 24,
-                                                  colorFilter:
-                                                      const ColorFilter.mode(
-                                                        VineTheme.primary,
-                                                        BlendMode.srcIn,
-                                                      ),
+                                                child: Center(
+                                                  child: SvgPicture.asset(
+                                                    'assets/icon/linkSimple.svg',
+                                                    width: 24,
+                                                    height: 24,
+                                                    colorFilter:
+                                                        const ColorFilter.mode(
+                                                          VineTheme.primary,
+                                                          BlendMode.srcIn,
+                                                        ),
+                                                  ),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                          const SizedBox(width: 12),
-                                          // URL input button
-                                          GestureDetector(
-                                            onTap: () =>
-                                                _showImageUrlSheet(context),
-                                            child: Container(
-                                              width: 40,
-                                              height: 40,
-                                              decoration: BoxDecoration(
-                                                color:
-                                                    VineTheme.surfaceContainer,
-                                                borderRadius:
-                                                    BorderRadius.circular(16),
-                                                border: Border.all(
-                                                  color: VineTheme.outlineMuted,
-                                                  width: 2,
-                                                ),
-                                              ),
-                                              child: Center(
-                                                child: SvgPicture.asset(
-                                                  'assets/icon/linkSimple.svg',
-                                                  width: 24,
-                                                  height: 24,
-                                                  colorFilter:
-                                                      const ColorFilter.mode(
-                                                        VineTheme.primary,
-                                                        BlendMode.srcIn,
-                                                      ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                          ],
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+
+                              // Display Name
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16),
+                                child: Text(
+                                  'Display Name',
+                                  style: VineTheme.labelMediumFont(
+                                    color: _nameFocusNode.hasFocus
+                                        ? VineTheme.primary
+                                        : VineTheme.onSurfaceMuted,
+                                  ),
+                                ),
+                              ),
+                              TextFormField(
+                                controller: _nameController,
+                                focusNode: _nameFocusNode,
+                                autofocus: false,
+                                autovalidateMode:
+                                    AutovalidateMode.onUserInteraction,
+                                style: VineTheme.bodyLargeFont(
+                                  color: VineTheme.onSurface,
+                                ),
+                                decoration: InputDecoration(
+                                  isCollapsed: true,
+                                  hintText: 'How should people know you?',
+                                  hintStyle: TextStyle(color: Colors.grey[600]),
+                                  border: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  enabledBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  errorBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedErrorBorder:
+                                      const UnderlineInputBorder(
+                                        borderRadius: BorderRadius.zero,
+                                        borderSide: BorderSide(
+                                          color: VineTheme.neutral10,
+                                        ),
+                                      ),
+                                  contentPadding: const EdgeInsets.all(16),
+                                ),
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) =>
+                                    FocusScope.of(context).nextFocus(),
+                                validator: (value) {
+                                  if (value == null || value.trim().isEmpty) {
+                                    return 'Please enter a display name';
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+
+                              // Bio
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                                child: Row(
+                                  mainAxisAlignment:
+                                      MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Text(
+                                      'Bio (Optional)',
+                                      style: VineTheme.labelMediumFont(
+                                        color: _bioFocusNode.hasFocus
+                                            ? VineTheme.primary
+                                            : VineTheme.onSurfaceMuted,
+                                      ),
+                                    ),
+                                    Text(
+                                      '${_bioController.text.length}/360',
+                                      style: VineTheme.labelMediumFont(
+                                        color: VineTheme.onSurfaceMuted,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 24),
-
-                            // Display Name
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16),
-                              child: Text(
-                                'Display Name',
-                                style: VineTheme.labelMediumFont(
-                                  color: _nameFocusNode.hasFocus
-                                      ? VineTheme.primary
-                                      : VineTheme.onSurfaceMuted,
+                              TextFormField(
+                                controller: _bioController,
+                                focusNode: _bioFocusNode,
+                                style: VineTheme.bodyLargeFont(
+                                  color: VineTheme.onSurface,
                                 ),
-                              ),
-                            ),
-                            TextFormField(
-                              controller: _nameController,
-                              focusNode: _nameFocusNode,
-                              autofocus: false,
-                              autovalidateMode:
-                                  AutovalidateMode.onUserInteraction,
-                              style: VineTheme.bodyLargeFont(
-                                color: VineTheme.onSurface,
-                              ),
-                              decoration: InputDecoration(
-                                isCollapsed: true,
-                                hintText: 'How should people know you?',
-                                hintStyle: TextStyle(color: Colors.grey[600]),
-                                border: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                enabledBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                focusedBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                errorBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                focusedErrorBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.all(16),
-                              ),
-                              textInputAction: TextInputAction.next,
-                              onFieldSubmitted: (_) =>
-                                  FocusScope.of(context).nextFocus(),
-                              validator: (value) {
-                                if (value == null || value.trim().isEmpty) {
-                                  return 'Please enter a display name';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Bio
-                            Padding(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 16,
-                              ),
-                              child: Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                children: [
-                                  Text(
-                                    'Bio (Optional)',
-                                    style: VineTheme.labelMediumFont(
-                                      color: _bioFocusNode.hasFocus
-                                          ? VineTheme.primary
-                                          : VineTheme.onSurfaceMuted,
+                                decoration: InputDecoration(
+                                  isCollapsed: true,
+                                  hintText: 'Tell people about yourself...',
+                                  hintStyle: TextStyle(color: Colors.grey[600]),
+                                  border: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
                                     ),
                                   ),
-                                  Text(
-                                    '${_bioController.text.length}/360',
-                                    style: VineTheme.labelMediumFont(
-                                      color: VineTheme.onSurfaceMuted,
+                                  enabledBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
                                     ),
                                   ),
-                                ],
+                                  focusedBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  errorBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedErrorBorder:
+                                      const UnderlineInputBorder(
+                                        borderRadius: BorderRadius.zero,
+                                        borderSide: BorderSide(
+                                          color: VineTheme.neutral10,
+                                        ),
+                                      ),
+                                  contentPadding: const EdgeInsets.all(16),
+                                  counterText: '',
+                                ),
+                                maxLines: null,
+                                minLines: 1,
+                                maxLength: 360,
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) =>
+                                    FocusScope.of(context).nextFocus(),
+                                onChanged: (_) => setState(() {}),
                               ),
-                            ),
-                            TextFormField(
-                              controller: _bioController,
-                              focusNode: _bioFocusNode,
-                              style: VineTheme.bodyLargeFont(
-                                color: VineTheme.onSurface,
-                              ),
-                              decoration: InputDecoration(
-                                isCollapsed: true,
-                                hintText: 'Tell people about yourself...',
-                                hintStyle: TextStyle(color: Colors.grey[600]),
-                                border: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                enabledBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                focusedBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                errorBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                focusedErrorBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.all(16),
-                                counterText: '',
-                              ),
-                              maxLines: null,
-                              minLines: 1,
-                              maxLength: 360,
-                              textInputAction: TextInputAction.next,
-                              onFieldSubmitted: (_) =>
-                                  FocusScope.of(context).nextFocus(),
-                              onChanged: (_) => setState(() {}),
-                            ),
-                            const SizedBox(height: 16),
+                              const SizedBox(height: 16),
 
-                            // Public key (npub) - read-only
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16),
-                              child: Text(
-                                'Public key (npub)',
-                                style: VineTheme.labelMediumFont(
+                              // Public key (npub) - read-only
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16),
+                                child: Text(
+                                  'Public key (npub)',
+                                  style: VineTheme.labelMediumFont(
+                                    color: VineTheme.onSurfaceMuted,
+                                  ),
+                                ),
+                              ),
+                              TextFormField(
+                                initialValue: ref
+                                    .watch(authServiceProvider)
+                                    .currentNpub,
+                                readOnly: true,
+                                maxLines: null,
+                                style: VineTheme.bodyLargeFont(
                                   color: VineTheme.onSurfaceMuted,
                                 ),
-                              ),
-                            ),
-                            TextFormField(
-                              initialValue: ref
-                                  .watch(authServiceProvider)
-                                  .currentNpub,
-                              readOnly: true,
-                              maxLines: null,
-                              style: VineTheme.bodyLargeFont(
-                                color: VineTheme.onSurfaceMuted,
-                              ),
-                              decoration: const InputDecoration(
-                                isCollapsed: true,
-                                border: UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
+                                decoration: const InputDecoration(
+                                  isCollapsed: true,
+                                  border: UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
                                   ),
-                                ),
-                                enabledBorder: UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
+                                  enabledBorder: UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
                                   ),
-                                ),
-                                focusedBorder: UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
+                                  focusedBorder: UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
                                   ),
+                                  contentPadding: EdgeInsets.all(16),
                                 ),
-                                contentPadding: EdgeInsets.all(16),
                               ),
-                            ),
-                            const SizedBox(height: 16),
+                              const SizedBox(height: 16),
 
-                            // NIP-05 Username (optional)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16),
-                              child: Text(
-                                'Username (Optional)',
-                                style: VineTheme.labelMediumFont(
-                                  color: _usernameFocusNode.hasFocus
-                                      ? VineTheme.primary
-                                      : VineTheme.onSurfaceMuted,
+                              // NIP-05 Username (optional)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16),
+                                child: Text(
+                                  'Username (Optional)',
+                                  style: VineTheme.labelMediumFont(
+                                    color: _usernameFocusNode.hasFocus
+                                        ? VineTheme.primary
+                                        : VineTheme.onSurfaceMuted,
+                                  ),
                                 ),
                               ),
-                            ),
-                            TextFormField(
-                              controller: _nip05Controller,
-                              focusNode: _usernameFocusNode,
-                              style: VineTheme.bodyLargeFont(
-                                color: VineTheme.onSurface,
+                              TextFormField(
+                                controller: _nip05Controller,
+                                focusNode: _usernameFocusNode,
+                                style: VineTheme.bodyLargeFont(
+                                  color: VineTheme.onSurface,
+                                ),
+                                autovalidateMode:
+                                    AutovalidateMode.onUserInteraction,
+                                decoration: InputDecoration(
+                                  isCollapsed: true,
+                                  hintText: 'username',
+                                  hintStyle: TextStyle(color: Colors.grey[600]),
+                                  border: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  enabledBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  errorBorder: const UnderlineInputBorder(
+                                    borderRadius: BorderRadius.zero,
+                                    borderSide: BorderSide(
+                                      color: VineTheme.neutral10,
+                                    ),
+                                  ),
+                                  focusedErrorBorder:
+                                      const UnderlineInputBorder(
+                                        borderRadius: BorderRadius.zero,
+                                        borderSide: BorderSide(
+                                          color: VineTheme.neutral10,
+                                        ),
+                                      ),
+                                  contentPadding: const EdgeInsets.all(16),
+                                  prefixText: '@',
+                                  prefixStyle: VineTheme.bodyLargeFont(
+                                    color: VineTheme.onSurfaceMuted,
+                                  ),
+                                  suffixText: '.divine.video',
+                                  suffixStyle: VineTheme.bodyLargeFont(
+                                    color: VineTheme.onSurfaceMuted,
+                                  ),
+                                  errorMaxLines: 2,
+                                ),
+                                textInputAction: TextInputAction.next,
+                                onFieldSubmitted: (_) =>
+                                    FocusScope.of(context).nextFocus(),
+                                onChanged: (value) => context
+                                    .read<ProfileEditorBloc>()
+                                    .add(UsernameChanged(value)),
                               ),
-                              autovalidateMode:
-                                  AutovalidateMode.onUserInteraction,
-                              decoration: InputDecoration(
-                                isCollapsed: true,
-                                hintText: 'username',
-                                hintStyle: TextStyle(color: Colors.grey[600]),
-                                border: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                enabledBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                focusedBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                errorBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                focusedErrorBorder: const UnderlineInputBorder(
-                                  borderRadius: BorderRadius.zero,
-                                  borderSide: BorderSide(
-                                    color: VineTheme.neutral10,
-                                  ),
-                                ),
-                                contentPadding: const EdgeInsets.all(16),
-                                prefixText: '@',
-                                prefixStyle: VineTheme.bodyLargeFont(
-                                  color: VineTheme.onSurfaceMuted,
-                                ),
-                                suffixText: '.divine.video',
-                                suffixStyle: VineTheme.bodyLargeFont(
-                                  color: VineTheme.onSurfaceMuted,
-                                ),
-                                errorMaxLines: 2,
+                              // Username status indicators
+                              BlocBuilder<
+                                ProfileEditorBloc,
+                                ProfileEditorState
+                              >(
+                                builder: (context, state) =>
+                                    UsernameStatusIndicator(
+                                      status: state.usernameStatus,
+                                      error: state.usernameError,
+                                    ),
                               ),
-                              textInputAction: TextInputAction.next,
-                              onFieldSubmitted: (_) =>
-                                  FocusScope.of(context).nextFocus(),
-                              onChanged: (value) => context
-                                  .read<ProfileEditorBloc>()
-                                  .add(UsernameChanged(value)),
-                            ),
-                            // Username status indicators
-                            BlocBuilder<ProfileEditorBloc, ProfileEditorState>(
-                              builder: (context, state) =>
-                                  UsernameStatusIndicator(
-                                    status: state.usernameStatus,
-                                    error: state.usernameError,
-                                  ),
-                            ),
 
-                            const SizedBox(height: 24),
+                              const SizedBox(height: 24),
 
-                            // Profile Color (optional)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 16),
-                              child: Text(
-                                'Profile Color (Optional)',
-                                style: VineTheme.labelMediumFont(
-                                  color: VineTheme.onSurfaceMuted,
+                              // Profile Color (optional)
+                              Padding(
+                                padding: const EdgeInsets.only(left: 16),
+                                child: Text(
+                                  'Profile Color (Optional)',
+                                  style: VineTheme.labelMediumFont(
+                                    color: VineTheme.onSurfaceMuted,
+                                  ),
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 8),
-                            _ProfileColorPicker(
-                              selectedColor: _selectedProfileColor,
-                              onColorChanged: (color) {
-                                setState(() {
-                                  _selectedProfileColor = color;
-                                });
-                              },
-                            ),
-                          ],
+                              const SizedBox(height: 8),
+                              _ProfileColorPicker(
+                                selectedColor: _selectedProfileColor,
+                                onColorChanged: (color) {
+                                  setState(() {
+                                    _selectedProfileColor = color;
+                                  });
+                                },
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -950,93 +904,83 @@ class _ProfileSetupScreenViewState
                 ),
               ),
             ),
-          ),
-          bottomNavigationBar: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      onPressed:
-                          profileEditorState.status ==
-                              ProfileEditorStatus.loading
-                          ? null
-                          : () {
-                              // Wait for any ongoing transitions before popping
-                              // This prevents navigation timing race condition
-                              WidgetsBinding.instance.addPostFrameCallback((_) {
-                                if (mounted) {
-                                  Navigator.of(context).pop();
-                                }
-                              });
-                            },
-                      style: OutlinedButton.styleFrom(
-                        backgroundColor: VineTheme.surfaceContainer,
-                        foregroundColor: VineTheme.vineGreen,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 12,
-                          horizontal: 16,
+            bottomNavigationBar: SafeArea(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed:
+                            profileEditorState.status ==
+                                ProfileEditorStatus.loading
+                            ? null
+                            : () {
+                                // Wait for any ongoing transitions before popping
+                                // This prevents navigation timing race condition
+                                WidgetsBinding.instance.addPostFrameCallback((
+                                  _,
+                                ) {
+                                  if (mounted) {
+                                    Navigator.of(context).pop();
+                                  }
+                                });
+                              },
+                        style: OutlinedButton.styleFrom(
+                          backgroundColor: VineTheme.surfaceContainer,
+                          foregroundColor: VineTheme.vineGreen,
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                            horizontal: 16,
+                          ),
+                          side: const BorderSide(
+                            color: VineTheme.outlineMuted,
+                            width: 2,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                          ),
                         ),
-                        side: const BorderSide(
-                          color: VineTheme.outlineMuted,
-                          width: 2,
+                        child: Text(
+                          'Cancel',
+                          style: VineTheme.titleMediumFont(
+                            color: VineTheme.vineGreen,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                      ),
-                      child: Text(
-                        'Cancel',
-                        style: VineTheme.titleMediumFont(
-                          color: VineTheme.vineGreen,
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  if (pubkey != null)
-                    Expanded(
-                      child: _SaveButton(
-                        canSave:
-                            _nameController.text.trim().isNotEmpty &&
-                            profileEditorState.isUsernameSaveReady,
-                        onSave: () => context.read<ProfileEditorBloc>().add(
-                          ProfileSaved(
-                            pubkey: pubkey,
-                            displayName: _nameController.text,
-                            about: _bioController.text,
-                            username: _nip05Controller.text,
-                            picture: _pictureController.text,
-                            banner: _selectedProfileColor != null
-                                ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
-                                : null,
+                    const SizedBox(width: 16),
+                    if (pubkey != null)
+                      Expanded(
+                        child: _SaveButton(
+                          canSave:
+                              _nameController.text.trim().isNotEmpty &&
+                              profileEditorState.isUsernameSaveReady,
+                          onSave: () => context.read<ProfileEditorBloc>().add(
+                            ProfileSaved(
+                              pubkey: pubkey,
+                              displayName: _nameController.text,
+                              about: _bioController.text,
+                              username: _nip05Controller.text,
+                              picture: _pictureController.text,
+                              banner: _selectedProfileColor != null
+                                  ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
+                                  : null,
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
-
-  // Skip button removed from UI - no longer needed
-  // void _skipProfileSetup() {
-  //   if (widget.isNewUser) {
-  //     // For new users, navigate back to the auth flow
-  //     // The auth service should already be in authenticated state
-  //     Navigator.of(context).popUntil((route) => route.isFirst);
-  //   } else {
-  //     // For existing users, just go back to previous screen
-  //     Navigator.of(context).pop();
-  //   }
-  // }
 
   Widget _buildProfilePicturePreview() {
     // Priority: selected image > uploaded URL > manual URL > placeholder

@@ -237,20 +237,22 @@ class VideoInteractionsBloc
     emit(state.copyWith(isRepostInProgress: true, clearError: true));
 
     try {
+      final currentCount = state.repostCount ?? 0;
       final isNowReposted = await _repostsRepository.toggleRepost(
         addressableId: _addressableId,
         originalAuthorPubkey: _authorPubkey,
         eventId: _eventId,
+        currentCount: currentCount,
       );
 
       // Update local state with new repost status and adjusted count
-      final currentCount = state.repostCount ?? 0;
       final newCount = isNowReposted ? currentCount + 1 : currentCount - 1;
+      final safeCount = newCount < 0 ? 0 : newCount;
 
       emit(
         state.copyWith(
           isReposted: isNowReposted,
-          repostCount: newCount < 0 ? 0 : newCount,
+          repostCount: safeCount,
           isRepostInProgress: false,
         ),
       );

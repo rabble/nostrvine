@@ -4,7 +4,7 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show ChangeNotifier, kIsWeb;
 import 'package:flutter_riverpod/legacy.dart';
 import 'package:video_player/video_player.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -53,15 +53,49 @@ final fallbackUrlCacheProvider = StateProvider<Map<String, String>>(
 /// Blossom fallback server URL
 const _blossomFallbackServer = 'https://media.divine.video';
 
-/// Track controllers that have been scheduled for disposal.
-/// This prevents race conditions where async callbacks try to use disposed
-/// controllers. Marked synchronously in `ref.onDispose` (before the deferred
+/// Tracks controllers that have been scheduled for disposal.
+///
+/// This is a ChangeNotifier-based tracker that can be updated synchronously
+/// from Riverpod lifecycle callbacks (onDispose) without using ref.read(),
+/// which is forbidden inside lifecycle methods.
+///
+/// The tracker is marked synchronously in `ref.onDispose` (before the deferred
 /// `controller.dispose()` microtask) so that widgets can check whether the
 /// native player is still alive before building [VideoPlayer].
-///
-/// Public so that widget-layer code (e.g. [_SafeVideoPlayer]) can read it
-/// via `ref.watch` / `ref.read`.
-final disposedControllersProvider = StateProvider<Set<String>>((ref) => {});
+class DisposedControllersTracker extends ChangeNotifier {
+  final _ids = <String>{};
+
+  /// Get a copy of the current disposed IDs.
+  Set<String> get ids => Set.unmodifiable(_ids);
+
+  /// Mark a controller as disposed. Safe to call from onDispose.
+  void markDisposed(String videoId) {
+    if (_ids.add(videoId)) {
+      notifyListeners();
+    }
+  }
+
+  /// Clear the disposed flag for a video (when creating a fresh controller).
+  void clearDisposed(String videoId) {
+    if (_ids.remove(videoId)) {
+      notifyListeners();
+    }
+  }
+
+  /// Check if a video controller is disposed.
+  bool contains(String videoId) => _ids.contains(videoId);
+}
+
+/// Global tracker instance - not a Riverpod provider, so it can be updated
+/// synchronously from onDispose callbacks without ref.read().
+final disposedControllersTracker = DisposedControllersTracker();
+
+/// Provider for widgets to watch disposed controllers reactively.
+/// Wraps the global tracker so widgets can use ref.watch() with select().
+final disposedControllersProvider =
+    ChangeNotifierProvider<DisposedControllersTracker>(
+      (ref) => disposedControllersTracker,
+    );
 
 /// Check if a video controller has been scheduled for disposal.
 /// Use this before any controller operation to prevent "No active player" crashes.
@@ -275,16 +309,8 @@ VideoPlayerController individualVideoController(
 
   // Clear the disposed flag for this video since we are creating a fresh
   // controller (handles retries and scroll-back scenarios).
-  try {
-    final currentDisposed = ref.read(disposedControllersProvider);
-    if (currentDisposed.contains(params.videoId)) {
-      ref.read(disposedControllersProvider.notifier).state = {
-        ...currentDisposed,
-      }..remove(params.videoId);
-    }
-  } catch (_) {
-    // Ignore - provider may not be available during startup
-  }
+  // Uses global tracker directly - safe and avoids ref.read() issues.
+  disposedControllersTracker.clearDisposed(params.videoId);
 
   Log.info(
     '🎬 Creating VideoPlayerController for video ${params.videoId.length > 8 ? params.videoId : params.videoId}...',
@@ -942,20 +968,10 @@ VideoPlayerController individualVideoController(
     // any widget that rebuilds before the microtask runs can check this
     // flag and avoid calling VideoPlayer with a stale controller.
     // This prevents the "No active player with ID" crash (Crashlytics issue).
-    try {
-      final currentDisposed = ref.read(disposedControllersProvider);
-      ref.read(disposedControllersProvider.notifier).state = {
-        ...currentDisposed,
-        params.videoId,
-      };
-    } catch (e) {
-      // Provider may already be disposed - ignore since this is cleanup code
-      Log.debug(
-        'Could not mark controller as disposed: $e',
-        name: 'IndividualVideoController',
-        category: LogCategory.video,
-      );
-    }
+    //
+    // Uses global tracker directly instead of ref.read() which is forbidden
+    // inside Riverpod lifecycle callbacks (onDispose, onCancel, etc.).
+    disposedControllersTracker.markDisposed(params.videoId);
 
     // Defer controller disposal to avoid triggering listener callbacks during lifecycle
     // This prevents "Cannot use Ref inside life-cycles" errors when listeners try to access providers

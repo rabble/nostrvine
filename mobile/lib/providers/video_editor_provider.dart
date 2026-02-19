@@ -24,6 +24,7 @@ import 'package:openvine/services/video_thumbnail_service.dart';
 import 'package:openvine/services/video_editor/video_editor_render_service.dart';
 import 'package:openvine/services/video_editor/video_editor_split_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:pro_image_editor/pro_image_editor.dart';
 import 'package:pro_video_editor/pro_video_editor.dart';
 
 final videoEditorProvider =
@@ -280,6 +281,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         category: .video,
       );
 
+      invalidateFinalRenderedClip();
       await autosaveChanges();
     } catch (e) {
       Log.error(
@@ -566,19 +568,22 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   /// Set the "Inspired By" reference to a specific video (a-tag).
   void setInspiredByVideo(InspiredByInfo info) {
-    state = state.copyWith(inspiredByVideo: info, inspiredByNpub: null);
+    state = state.copyWith(inspiredByVideo: info, clearInspiredByNpub: true);
     triggerAutosave();
   }
 
   /// Set the "Inspired By" reference to a person (NIP-27 npub in content).
   void setInspiredByPerson(String npub) {
-    state = state.copyWith(inspiredByNpub: npub, inspiredByVideo: null);
+    state = state.copyWith(inspiredByNpub: npub, clearInspiredByVideo: true);
     triggerAutosave();
   }
 
   /// Clear all "Inspired By" attribution.
   void clearInspiredBy() {
-    state = state.copyWith(inspiredByVideo: null, inspiredByNpub: null);
+    state = state.copyWith(
+      clearInspiredByVideo: true,
+      clearInspiredByNpub: true,
+    );
     triggerAutosave();
   }
 
@@ -619,7 +624,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       expireTime: state.expiration.value,
       selectedApproach: 'video',
       editorStateHistory: state.editorStateHistory,
-      editorEditingParameters: state.editorEditingParameters,
+      editorEditingParameters: state.editorEditingParameters?.toMap(),
       collaboratorPubkeys: state.collaboratorPubkeys,
       inspiredByVideo: inspiredByVideo,
       inspiredByNpub: state.inspiredByNpub,
@@ -650,7 +655,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   ///
   /// This stores the serialized editing parameters from ProImageEditor,
   /// enabling restoration of all applied effects when reopening a draft.
-  void updateEditorEditingParameters(Map<String, dynamic> editingParameters) {
+  void updateEditorEditingParameters(CompleteParameters editingParameters) {
     Log.debug(
       '🎨 Updated editor editing parameters',
       name: 'VideoEditorNotifier',
@@ -680,7 +685,6 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// Can be called from other providers (e.g., ClipManager) to trigger
   /// autosave after changes. Uses debouncing to batch rapid changes.
   void triggerAutosave() {
-    invalidateFinalRenderedClip();
     _autosaveTimer?.cancel();
     _autosaveTimer = Timer(_autosaveDebounce, () {
       if (!ref.mounted) return;
@@ -698,8 +702,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
   /// This method is typically called periodically or on significant changes
   /// to prevent data loss. Unlike [saveAsDraft], autosave uses a fixed
   /// [autoSaveId] to maintain a single recovery point.
-  Future<bool> autosaveChanges({bool clearFinalRenderedClip = true}) async {
-    if (clearFinalRenderedClip) invalidateFinalRenderedClip();
+  Future<bool> autosaveChanges() async {
     final clipCount = _clips.length;
     final hasTitle = state.title.isNotEmpty;
 
@@ -868,7 +871,9 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       allowAudioReuse: draft.allowAudioReuse,
       expiration: VideoMetadataExpiration.fromDuration(draft.expireTime),
       editorStateHistory: draft.editorStateHistory,
-      editorEditingParameters: draft.editorEditingParameters,
+      editorEditingParameters: CompleteParameters.fromMap(
+        draft.editorEditingParameters,
+      ),
       collaboratorPubkeys: draft.collaboratorPubkeys,
       inspiredByVideo: draft.inspiredByVideo,
       inspiredByNpub: draft.inspiredByNpub,
@@ -913,20 +918,28 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
 
   // === RENDERING & PUBLISHING ===
 
+  /// Set the processing state.
+  ///
+  /// Use this to mark that video processing has started before calling
+  /// [startRenderVideo], or to reset the state after processing completes.
+  void setProcessing(bool isProcessing) {
+    if (state.isProcessing == isProcessing) return;
+    state = state.copyWith(isProcessing: isProcessing);
+  }
+
   /// Render all clips into final video and prepare for publishing.
   ///
   /// Combines all clips, applies audio settings, generates proofmode
   /// attestation, and creates the final rendered clip for publishing.
   Future<void> startRenderVideo() async {
-    if (state.isProcessing) return;
-    if (state.finalRenderedClip != null) return;
+    if (state.isProcessing || state.finalRenderedClip != null) return;
 
     Log.info(
       '🎬 Starting final video render',
       name: 'VideoEditorNotifier',
       category: .video,
     );
-    state = state.copyWith(isProcessing: true);
+    setProcessing(true);
 
     // Render video and get proofmode data
     final (outputPath, proofManifestJson) = await _renderVideo();
@@ -967,17 +980,11 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
       thumbnailPath: _clips.first.thumbnailPath,
     );
 
-    Log.info(
-      '📤 Navigating to publish screen',
-      name: 'VideoEditorNotifier',
-      category: .video,
-    );
-
     state = state.copyWith(
       isProcessing: false,
       finalRenderedClip: finalRenderedClip,
     );
-    autosaveChanges(clearFinalRenderedClip: false);
+    autosaveChanges();
   }
 
   /// Cancel an ongoing video render operation.
@@ -1057,6 +1064,7 @@ class VideoEditorNotifier extends Notifier<VideoEditorProviderState> {
         aspectRatio: _clips.first.targetAspectRatio,
         enableAudio: !state.isMuted,
         usePersistentStorage: true,
+        parameters: state.editorEditingParameters,
       );
       String? proofManifestJson;
 

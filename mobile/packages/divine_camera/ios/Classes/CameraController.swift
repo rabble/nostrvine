@@ -167,6 +167,108 @@ class CameraController: NSObject {
               "ultraWide=\(hasUltraWideCamera), telephoto=\(hasTelephotoCamera), macro=\(hasMacroCamera)")
     }
     
+    /// Gets metadata for the currently active camera lens.
+    private func getCurrentLensMetadata() -> [String: Any]? {
+        guard let device = videoDevice else {
+            return nil
+        }
+        return extractCameraMetadata(device: device, lensType: currentLensType)
+    }
+    
+    /// Extracts metadata from an AVCaptureDevice.
+    /// For C2PA compliance, only values that iOS actually provides are included.
+    /// Estimated values (focalLength, sensorSize, minFocusDistance) are left as nil.
+    private func extractCameraMetadata(device: AVCaptureDevice, lensType: String) -> [String: Any] {
+        let format = device.activeFormat
+        let formatDescription = format.formatDescription
+        let dimensions = CMVideoFormatDescriptionGetDimensions(formatDescription)
+        
+        // iOS doesn't expose physical focal length directly
+        // This would need to come from EXIF data of captured images
+        let focalLength: Double? = nil
+        
+        // Aperture IS available on iOS via lensAperture property
+        let aperture: Double = Double(device.lensAperture)
+        
+        var fieldOfView: Double? = nil
+        
+        // Field of view is available on the format
+        let fov = format.videoFieldOfView
+        if fov > 0 {
+            fieldOfView = Double(fov)
+        }
+        
+        // Try to get more accurate field of view from device formats
+        if #available(iOS 13.0, *) {
+            // Get geometric distortion corrected field of view if available
+            if let videoFormat = device.formats.first(where: { $0 === format }) {
+                fieldOfView = Double(videoFormat.videoFieldOfView)
+            }
+        }
+        
+        // Min focus distance
+        // Note: iOS doesn't expose actual minimum focus distance values.
+        // For C2PA compliance, we leave this as nil rather than providing estimates.
+        let minFocusDistance: Double? = nil
+        
+        // Optical stabilization
+        let hasOpticalStabilization = device.activeFormat.isVideoStabilizationModeSupported(.cinematic) ||
+                                      device.activeFormat.isVideoStabilizationModeSupported(.standard)
+        
+        // Sensor size - iOS doesn't expose actual sensor dimensions
+        let sensorWidth: Double? = nil
+        let sensorHeight: Double? = nil
+        
+        // Calculate 35mm equivalent focal length from field of view
+        // This IS accurate as it's mathematically derived from FOV which iOS provides.
+        // Formula: FOV = 2 * arctan(sensor_diagonal / (2 * focal_length))
+        // For 35mm film: diagonal = 43.27mm
+        // Therefore: focal_length_35mm = 43.27 / (2 * tan(FOV/2))
+        var focalLengthEquivalent35mm: Double? = nil
+        if let fov = fieldOfView, fov > 0 {
+            let fovRadians = fov * .pi / 180.0
+            let equivalent = 43.27 / (2.0 * tan(fovRadians / 2.0))
+            focalLengthEquivalent35mm = equivalent
+        }
+        
+        // Check if this is a multi-camera logical device
+        var isLogicalCamera = false
+        var physicalCameraIds: [String] = []
+        if #available(iOS 13.0, *) {
+            let physicalDevices = device.constituentDevices
+            isLogicalCamera = physicalDevices.count > 1
+            physicalCameraIds = physicalDevices.map { $0.uniqueID }
+        }
+        
+        // Camera unique identifier
+        let cameraId = device.uniqueID
+        
+        // Exposure duration in seconds (live value)
+        let exposureDuration = CMTimeGetSeconds(device.exposureDuration)
+        
+        // ISO sensitivity (live value)
+        let iso = Double(device.iso)
+        
+        return [
+            "lensType": lensType,
+            "cameraId": cameraId,
+            "focalLength": focalLength as Any,
+            "focalLengthEquivalent35mm": focalLengthEquivalent35mm as Any,
+            "aperture": aperture,
+            "sensorWidth": sensorWidth as Any,
+            "sensorHeight": sensorHeight as Any,
+            "pixelArrayWidth": Int(dimensions.width),
+            "pixelArrayHeight": Int(dimensions.height),
+            "minFocusDistance": minFocusDistance as Any,
+            "fieldOfView": fieldOfView as Any,
+            "hasOpticalStabilization": hasOpticalStabilization,
+            "isLogicalCamera": isLogicalCamera,
+            "physicalCameraIds": physicalCameraIds,
+            "exposureDuration": exposureDuration,
+            "iso": iso
+        ]
+    }
+    
     /// Returns a list of available lens types on this device.
     private func getAvailableLenses() -> [String] {
         var lenses: [String] = []
@@ -791,17 +893,119 @@ class CameraController: NSObject {
         autoFlashTorchEnabled = false
     }
     
+    /// Work item for auto-cancel focus timer
+    private var focusAutoCancelWorkItem: DispatchWorkItem?
+    
+    /// Duration in seconds before focus returns to continuous auto-focus (like TikTok)
+    private let focusLockDuration: TimeInterval = 3.0
+    
     /// Sets the focus point in normalized coordinates (0.0-1.0).
+    /// Uses combined focus + exposure + white balance for best results.
+    /// Focus is locked for 3 seconds, then returns to continuous auto-focus.
+    ///
+    /// Note: Input coordinates are in display space (portrait mode).
+    /// iOS focusPointOfInterest uses sensor coordinates (landscape),
+    /// so we transform: display (x, y) → sensor (y, 1-x) for portrait mode.
     func setFocusPoint(x: CGFloat, y: CGFloat) -> Bool {
         guard let device = videoDevice, device.isFocusPointOfInterestSupported else {
             return false
         }
         
+        // Cancel any pending auto-cancel timer from previous tap
+        focusAutoCancelWorkItem?.cancel()
+        
+        // Transform display coordinates to sensor coordinates
+        // iOS sensor coordinate system is always landscape-oriented:
+        // - (0,0) is top-left of sensor (in landscape)
+        // - For portrait mode, we need to rotate the coordinates
+        // Display (x, y) → Sensor (y, 1-x) for portrait orientation
+        let sensorPoint = CGPoint(x: y, y: 1 - x)
+        
         do {
             try device.lockForConfiguration()
-            device.focusPointOfInterest = CGPoint(x: x, y: y)
+            
+            // Set focus point and trigger one-shot auto-focus
+            device.focusPointOfInterest = sensorPoint
             if device.isFocusModeSupported(.autoFocus) {
                 device.focusMode = .autoFocus
+            }
+            
+            // Also set exposure at the same point for consistent results
+            if device.isExposurePointOfInterestSupported {
+                device.exposurePointOfInterest = sensorPoint
+                if device.isExposureModeSupported(.autoExpose) {
+                    device.exposureMode = .autoExpose
+                }
+            }
+            
+            // Also trigger white balance adjustment (iOS doesn't have point of interest for WB,
+            // but setting to auto mode will let it recalculate based on scene)
+            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                device.whiteBalanceMode = .continuousAutoWhiteBalance
+            }
+            
+            device.unlockForConfiguration()
+            
+            // Schedule return to continuous auto-focus after focusLockDuration
+            let workItem = DispatchWorkItem { [weak self] in
+                self?.returnToContinuousAutoFocus()
+            }
+            focusAutoCancelWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + focusLockDuration, execute: workItem)
+            
+            return true
+        } catch {
+            return false
+        }
+    }
+    
+    /// Returns focus, exposure, and white balance to continuous auto mode.
+    private func returnToContinuousAutoFocus() {
+        guard let device = videoDevice else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            
+            // Return to continuous auto-focus
+            if device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusMode = .continuousAutoFocus
+            }
+            
+            // Return to continuous auto-exposure
+            if device.isExposureModeSupported(.continuousAutoExposure) {
+                device.exposureMode = .continuousAutoExposure
+            }
+            
+            // Ensure continuous auto white balance (should already be set, but ensure it)
+            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                device.whiteBalanceMode = .continuousAutoWhiteBalance
+            }
+            
+            device.unlockForConfiguration()
+        } catch {
+            // Silently fail
+        }
+    }
+    
+    /// Sets the exposure point in normalized coordinates (0.0-1.0).
+    /// For exposure-only adjustment without changing focus.
+    ///
+    /// Note: Input coordinates are in display space (portrait mode).
+    /// iOS exposurePointOfInterest uses sensor coordinates (landscape),
+    /// so we transform: display (x, y) → sensor (y, 1-x) for portrait mode.
+    func setExposurePoint(x: CGFloat, y: CGFloat) -> Bool {
+        guard let device = videoDevice, device.isExposurePointOfInterestSupported else {
+            return false
+        }
+        
+        // Transform display coordinates to sensor coordinates
+        let sensorPoint = CGPoint(x: y, y: 1 - x)
+        
+        do {
+            try device.lockForConfiguration()
+            device.exposurePointOfInterest = sensorPoint
+            if device.isExposureModeSupported(.autoExpose) {
+                device.exposureMode = .autoExpose
             }
             device.unlockForConfiguration()
             return true
@@ -810,18 +1014,28 @@ class CameraController: NSObject {
         }
     }
     
-    /// Sets the exposure point in normalized coordinates (0.0-1.0).
-    func setExposurePoint(x: CGFloat, y: CGFloat) -> Bool {
-        guard let device = videoDevice, device.isExposurePointOfInterestSupported else {
-            return false
-        }
+    /// Cancels any active focus/metering lock and returns to continuous auto-focus.
+    /// Call this when you want to reset focus behavior after a tap-to-focus.
+    func cancelFocusAndMetering() -> Bool {
+        // Cancel any pending auto-cancel timer
+        focusAutoCancelWorkItem?.cancel()
+        focusAutoCancelWorkItem = nil
+        
+        guard let device = videoDevice else { return false }
         
         do {
             try device.lockForConfiguration()
-            device.exposurePointOfInterest = CGPoint(x: x, y: y)
-            if device.isExposureModeSupported(.autoExpose) {
-                device.exposureMode = .autoExpose
+            
+            // Return to continuous auto-focus
+            if device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusMode = .continuousAutoFocus
             }
+            
+            // Return to continuous auto-exposure
+            if device.isExposureModeSupported(.continuousAutoExposure) {
+                device.exposureMode = .continuousAutoExposure
+            }
+            
             device.unlockForConfiguration()
             return true
         } catch {
@@ -1125,7 +1339,8 @@ class CameraController: NSObject {
             "isFocusPointSupported": isFocusPointSupported,
             "isExposurePointSupported": isExposurePointSupported,
             "textureId": textureId,
-            "availableLenses": getAvailableLenses()
+            "availableLenses": getAvailableLenses(),
+            "currentLensMetadata": getCurrentLensMetadata() as Any
         ]
     }
     
