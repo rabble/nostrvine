@@ -1403,7 +1403,7 @@ class VideoOverlayActions extends ConsumerWidget {
                           video.originalLoops != null ||
                           video.rawTags.containsKey('loops') ||
                           video.rawTags.containsKey('views');
-      
+
                       void navigateToProfile() {
                         Log.info(
                           '👤 User tapped profile: videoId=${video.id}, authorPubkey=${video.pubkey}',
@@ -1415,7 +1415,7 @@ class VideoOverlayActions extends ConsumerWidget {
                           context.push(OtherProfileScreen.pathForNpub(npub));
                         }
                       }
-      
+
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
@@ -1452,8 +1452,8 @@ class VideoOverlayActions extends ConsumerWidget {
                                               fit: BoxFit.cover,
                                               placeholder: (context, url) =>
                                                   Container(
-                                                    color:
-                                                        VineTheme.cardBackground,
+                                                    color: VineTheme
+                                                        .cardBackground,
                                                     child: const Icon(
                                                       Icons.person,
                                                       color: Colors.white54,
@@ -1489,7 +1489,8 @@ class VideoOverlayActions extends ConsumerWidget {
                                   top: 31,
                                   child: VideoFollowButton(
                                     pubkey: video.pubkey,
-                                    hideIfFollowing: hideFollowButtonIfFollowing,
+                                    hideIfFollowing:
+                                        hideFollowButtonIfFollowing,
                                   ),
                                 ),
                               ],
@@ -1565,13 +1566,15 @@ class VideoOverlayActions extends ConsumerWidget {
                               .read(curatedListsStateProvider.notifier)
                               .service,
                         );
-      
+
                         return ListAttributionChip(
                           listIds: listSources!,
                           listLookup: (listId) =>
                               curatedListService?.getListById(listId),
                           onListTap: (listId, listName) {
-                            final list = curatedListService?.getListById(listId);
+                            final list = curatedListService?.getListById(
+                              listId,
+                            );
                             Navigator.of(context).push(
                               MaterialPageRoute<void>(
                                 builder: (context) => CuratedListFeedScreen(
@@ -1630,7 +1633,10 @@ class VideoOverlayActions extends ConsumerWidget {
                     // Inspired-by attribution row (if video credits another creator)
                     if (video.hasInspiredBy) ...[
                       const SizedBox(height: 4),
-                      InspiredByAttributionRow(video: video, isActive: isActive),
+                      InspiredByAttributionRow(
+                        video: video,
+                        isActive: isActive,
+                      ),
                     ],
                     // Audio attribution row (if video uses external audio)
                     if (video.hasAudioReference) ...[
@@ -1660,7 +1666,7 @@ class VideoOverlayActions extends ConsumerWidget {
                     // Hide in fullscreen mode since it's shown in AppBar instead
                     if (!isFullscreen && !isPreviewMode)
                       _VideoEditButton(video: video),
-      
+
                     // Flag/Report button for content moderation
                     Semantics(
                       identifier: 'report_button',
@@ -1711,14 +1717,14 @@ class VideoOverlayActions extends ConsumerWidget {
                         ),
                       ),
                     ),
-      
+
                     const SizedBox(height: 4),
-      
+
                     // CC (subtitles) button
                     CcActionButton(video: video),
-      
+
                     const SizedBox(height: 4),
-      
+
                     // Share button
                     Semantics(
                       identifier: 'share_button',
@@ -1766,19 +1772,19 @@ class VideoOverlayActions extends ConsumerWidget {
                         ),
                       ),
                     ),
-      
+
                     const SizedBox(height: 4),
-      
+
                     // Repost button
                     RepostActionButton(video: video),
-      
+
                     const SizedBox(height: 4),
-      
+
                     // Comment button with count
                     _CommentActionButton(video: video, ref: ref),
-      
+
                     const SizedBox(height: 4),
-      
+
                     // Like button
                     LikeActionButton(video: video),
                   ],
