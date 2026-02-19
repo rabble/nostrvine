@@ -3841,7 +3841,7 @@ final class VideosRepositoryProvider
   }
 }
 
-String _$videosRepositoryHash() => r'b21ecf459b7186280630e67d72b5c27a3e73edd0';
+String _$videosRepositoryHash() => r'5b2a29f04cb9f73e51e2eec2a2fd24dc59f2f346';
 
 /// Provider for LikesRepository instance
 ///
