@@ -53,7 +53,7 @@ class VideoClipEditorSplitBar extends ConsumerWidget {
           activeTrackColor: VineTheme.tabIndicatorGreen,
           inactiveTrackColor: disabledColor,
           trackHeight: 8,
-          trackShape: const RoundedRectSliderTrackShape(),
+          trackShape: const UniformTrackShape(),
           thumbColor: handleColor,
           thumbShape: const _TallRectangularThumbShape(),
           overlayShape: .noOverlay,
@@ -116,5 +116,81 @@ class _TallRectangularThumbShape extends SliderComponentShape {
     final rRect = RRect.fromRectAndRadius(rect, const .circular(8));
 
     canvas.drawRRect(rRect, paint);
+  }
+}
+
+/// Custom track shape that renders both active and inactive tracks
+/// with the same height, unlike [RoundedRectSliderTrackShape] which
+/// makes the inactive track thinner.
+@visibleForTesting
+class UniformTrackShape extends SliderTrackShape {
+  /// Creates a uniform track shape for sliders.
+  const UniformTrackShape();
+
+  @override
+  Rect getPreferredRect({
+    required RenderBox parentBox,
+    Offset offset = Offset.zero,
+    required SliderThemeData sliderTheme,
+    bool isEnabled = false,
+    bool isDiscrete = false,
+  }) {
+    final trackHeight = sliderTheme.trackHeight ?? 8;
+    final trackTop = offset.dy + (parentBox.size.height - trackHeight) / 2;
+    return Rect.fromLTWH(
+      offset.dx,
+      trackTop,
+      parentBox.size.width,
+      trackHeight,
+    );
+  }
+
+  @override
+  void paint(
+    PaintingContext context,
+    Offset offset, {
+    required RenderBox parentBox,
+    required SliderThemeData sliderTheme,
+    required Animation<double> enableAnimation,
+    required Offset thumbCenter,
+    Offset? secondaryOffset,
+    bool isEnabled = false,
+    bool isDiscrete = false,
+    required TextDirection textDirection,
+  }) {
+    final trackHeight = sliderTheme.trackHeight ?? 8;
+    final trackRadius = Radius.circular(trackHeight / 2);
+    final trackTop = offset.dy + (parentBox.size.height - trackHeight) / 2;
+    final trackBottom = trackTop + trackHeight;
+    final trackLeft = offset.dx;
+    final trackRight = offset.dx + parentBox.size.width;
+
+    final canvas = context.canvas;
+
+    // Draw inactive track (right side) - flat left, rounded right
+    final inactiveTrackRect = RRect.fromLTRBAndCorners(
+      thumbCenter.dx,
+      trackTop,
+      trackRight,
+      trackBottom,
+      topRight: trackRadius,
+      bottomRight: trackRadius,
+    );
+    final inactivePaint = Paint()
+      ..color = sliderTheme.inactiveTrackColor ?? Colors.grey;
+    canvas.drawRRect(inactiveTrackRect, inactivePaint);
+
+    // Draw active track (left side) - rounded left, flat right
+    final activeTrackRect = RRect.fromLTRBAndCorners(
+      trackLeft,
+      trackTop,
+      thumbCenter.dx,
+      trackBottom,
+      topLeft: trackRadius,
+      bottomLeft: trackRadius,
+    );
+    final activePaint = Paint()
+      ..color = sliderTheme.activeTrackColor ?? Colors.blue;
+    canvas.drawRRect(activeTrackRect, activePaint);
   }
 }
