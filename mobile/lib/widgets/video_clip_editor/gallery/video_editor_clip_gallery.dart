@@ -36,6 +36,9 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
   late AnimationController _dragResetController;
   final _reorderController = ClipReorderController();
   int _lastClipIndex = 0;
+
+  /// Tracks whether pointer was over delete zone in the previous frame.
+  /// Used to deduplicate haptic feedback so it only fires once on entry.
   bool _wasOverDeleteZone = false;
 
   @override

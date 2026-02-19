@@ -93,6 +93,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   bool get _isLayerBeingTransformed => _selectedLayer != null;
 
   Layer? _selectedLayer;
+
+  /// Tracks whether pointer was over remove area in the previous frame.
+  /// Used to deduplicate haptic feedback so it only fires once on entry.
   bool _wasOverRemoveArea = false;
 
   @override
@@ -468,7 +471,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           onCreateTextLayer: scope.onAddEditTextLayer,
           onEditTextLayer: scope.onAddEditTextLayer,
           helperLines: HelperLinesCallbacks(
-            onLineHit: HapticFeedback.lightImpact,
+            onLineHit: () => unawaited(HapticFeedback.lightImpact()),
           ),
         ),
         paintEditorCallbacks: PaintEditorCallbacks(
