@@ -1316,52 +1316,52 @@ class VideoOverlayActions extends ConsumerWidget {
     // Calculate bottom offset based on navigation state
     final bottomOffset = 14.0;
 
-    return SafeArea(
-      child: Stack(
-        children: [
-          // Bottom gradient overlay (sits below UI elements, only overlays video)
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: IgnorePointer(
-              child: FractionallySizedBox(
-                widthFactor: 1.0,
-                child: SizedBox(
-                  height: MediaQuery.of(context).size.height / 4,
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.black.withValues(alpha: 0.0),
-                          Colors.black.withValues(alpha: 0.5),
-                        ],
-                      ),
+    return Stack(
+      children: [
+        // Bottom gradient overlay (sits below UI elements, only overlays video)
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: 0,
+          child: IgnorePointer(
+            child: FractionallySizedBox(
+              widthFactor: 1.0,
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height / 4,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        Colors.black.withValues(alpha: 0.0),
+                        Colors.black.withValues(alpha: 0.5),
+                      ],
                     ),
                   ),
                 ),
               ),
             ),
           ),
-          // ProofMode and Vine badges in upper right corner (tappable)
-          if (!isPreviewMode)
-            Positioned(
-              top: MediaQuery.viewPaddingOf(context).top + topOffset,
-              right: 16,
-              child: GestureDetector(
-                onTap: () {
-                  _showBadgeExplanationModal(context, ref, video, isActive);
-                },
-                child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
-              ),
-            ),
-          // Author info and video description overlay at bottom left
+        ),
+        // ProofMode and Vine badges in upper right corner (tappable)
+        if (!isPreviewMode)
           Positioned(
-            bottom: bottomOffset,
-            left: 16,
-            right: 80, // Leave space for action buttons
+            top: MediaQuery.viewPaddingOf(context).top + topOffset,
+            right: 16,
+            child: GestureDetector(
+              onTap: () {
+                _showBadgeExplanationModal(context, ref, video, isActive);
+              },
+              child: ProofModeBadgeRow(video: video, size: BadgeSize.small),
+            ),
+          ),
+        // Author info and video description overlay at bottom left
+        Positioned(
+          bottom: bottomOffset,
+          left: 16,
+          right: 80, // Leave space for action buttons
+          child: SafeArea(
             child: AnimatedOpacity(
               opacity: isActive ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 200),
@@ -1651,10 +1651,12 @@ class VideoOverlayActions extends ConsumerWidget {
               ),
             ),
           ),
-          // Action buttons at bottom right
-          Positioned(
-            bottom: bottomOffset,
-            right: 16,
+        ),
+        // Action buttons at bottom right
+        Positioned(
+          bottom: bottomOffset,
+          right: 16,
+          child: SafeArea(
             child: AnimatedOpacity(
               opacity: isActive ? 1.0 : 0.0,
               duration: const Duration(milliseconds: 200),
@@ -1792,8 +1794,8 @@ class VideoOverlayActions extends ConsumerWidget {
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
