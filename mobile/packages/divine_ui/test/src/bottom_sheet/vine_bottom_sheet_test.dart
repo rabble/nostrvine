@@ -251,8 +251,7 @@ void main() {
         expect(find.text('Fixed Modal Content'), findsOneWidget);
       });
 
-      testWidgets('calls onShow callback when showing sheet',
-          (tester) async {
+      testWidgets('calls onShow callback when showing sheet', (tester) async {
         var onShowCalled = false;
         await tester.pumpWidget(
           MaterialApp(

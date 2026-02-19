@@ -396,8 +396,9 @@ void main() {
     });
 
     group('loading state', () {
-      testWidgets('renders CircularProgressIndicator when isLoading',
-          (tester) async {
+      testWidgets('renders CircularProgressIndicator when isLoading', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           buildTestWidget(
             isLoading: true,
@@ -411,8 +412,9 @@ void main() {
         );
       });
 
-      testWidgets('does not render leading icon when isLoading',
-          (tester) async {
+      testWidgets('does not render leading icon when isLoading', (
+        tester,
+      ) async {
         await tester.pumpWidget(
           buildTestWidget(
             isLoading: true,
