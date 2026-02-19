@@ -18,9 +18,9 @@ appId: co.openvine.app
 
 - runFlow:
     when:
-      visible: Get Started
+      visible: Continue
     commands:
-      - tapOn: Get Started
+      - tapOn: Continue
 
 - runFlow:
     when:
