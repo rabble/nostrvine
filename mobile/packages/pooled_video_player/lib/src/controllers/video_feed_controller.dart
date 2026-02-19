@@ -154,13 +154,28 @@ class VideoFeedController extends ChangeNotifier {
   }
 
   /// Notifies the specific index's notifier of state changes.
+  ///
+  /// If the [PooledPlayer] for this index has been disposed (e.g. by pool
+  /// eviction), the state reports null controller/player to prevent the
+  /// [Video] widget from accessing disposed native resources.
   void _notifyIndex(int index) {
+    if (_isDisposed) return;
     final notifier = _indexNotifiers[index];
     if (notifier != null) {
+      final pooledPlayer = _loadedPlayers[index];
+      // A player that exists but was disposed (e.g. pool eviction) should
+      // report LoadState.none so the UI shows the placeholder, not a stale
+      // Video widget referencing disposed native resources.  When no player
+      // exists at all (error path, or not yet loaded), honour the stored
+      // _loadStates value so LoadState.error propagates correctly.
+      final isEvicted = pooledPlayer != null && pooledPlayer.isDisposed;
+      final isAlive = pooledPlayer != null && !pooledPlayer.isDisposed;
       notifier.value = VideoIndexState(
-        loadState: _loadStates[index] ?? LoadState.none,
-        videoController: _loadedPlayers[index]?.videoController,
-        player: _loadedPlayers[index]?.player,
+        loadState: isEvicted
+            ? LoadState.none
+            : (_loadStates[index] ?? LoadState.none),
+        videoController: isAlive ? pooledPlayer.videoController : null,
+        player: isAlive ? pooledPlayer.player : null,
       );
     }
   }
