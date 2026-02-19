@@ -75,9 +75,8 @@ class VideoActionButton extends StatelessWidget {
             ),
             onPressed: isLoading ? null : onPressed,
             icon: isLoading
-                ? const SizedBox(
-                    width: 32,
-                    height: 32,
+                ? const SizedBox.square(
+                    dimension: 32,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       color: VineTheme.whiteText,
@@ -107,14 +106,7 @@ class VideoActionButton extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 8),
             child: Text(
               StringUtils.formatCompactNumber(count),
-              style: const TextStyle(
-                fontFamily: 'Bricolage Grotesque',
-                color: VineTheme.whiteText,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                height: 1,
-                letterSpacing: 0.5,
-              ),
+              style: VineTheme.labelSmallFont(),
             ),
           ),
       ],

@@ -149,15 +149,7 @@ class _AuthorInfoSection extends ConsumerWidget {
                         _Nip05Badge(pubkey: video.pubkey),
                       ],
                     ),
-                    Text(
-                      video.relativeTime,
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        fontSize: 14,
-                        height: 20 / 14,
-                        color: VineTheme.onSurfaceVariant,
-                      ),
-                    ),
+                    Text(video.relativeTime, style: VineTheme.labelSmallFont()),
                   ],
                 ),
               ),
@@ -170,20 +162,8 @@ class _AuthorInfoSection extends ConsumerWidget {
           ClickableHashtagText(
             text: (video.content.isNotEmpty ? video.content : video.title ?? '')
                 .trim(),
-            style: const TextStyle(
-              fontFamily: 'Inter',
-              color: VineTheme.whiteText,
-              fontSize: 14,
-              height: 20 / 14,
-              letterSpacing: 0.25,
-            ),
-            hashtagStyle: TextStyle(
-              fontFamily: 'Inter',
-              color: VineTheme.vineGreen,
-              fontSize: 14,
-              height: 20 / 14,
-              letterSpacing: 0.25,
-            ),
+            style: VineTheme.bodyMediumFont(),
+            hashtagStyle: VineTheme.bodySmallFont(),
             maxLines: 3,
             overflow: TextOverflow.ellipsis,
           ),
@@ -207,9 +187,8 @@ class _AuthorAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      width: 58,
-      height: 58,
+    return SizedBox.square(
+      dimension: 58,
       child: Stack(
         clipBehavior: Clip.none,
         children: [
@@ -228,7 +207,7 @@ class _AuthorAvatar extends StatelessWidget {
                       width: 44,
                       height: 44,
                       fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
+                      placeholder: (context, url) => ColoredBox(
                         color: VineTheme.cardBackground,
                         child: const Icon(
                           Icons.person,
@@ -236,7 +215,7 @@ class _AuthorAvatar extends StatelessWidget {
                           size: 24,
                         ),
                       ),
-                      errorWidget: (context, url, error) => Container(
+                      errorWidget: (context, url, error) => ColoredBox(
                         color: VineTheme.cardBackground,
                         child: const Icon(
                           Icons.person,
@@ -275,16 +254,13 @@ class _ActionButtons extends StatelessWidget {
   Widget build(BuildContext context) {
     const gap = 24.0;
     return Column(
+      spacing: gap,
       mainAxisSize: MainAxisSize.min,
       children: [
         LikeActionButton(video: video),
-        const SizedBox(height: gap),
         CommentActionButton(video: video),
-        const SizedBox(height: gap),
         RepostActionButton(video: video),
-        const SizedBox(height: gap),
         ShareActionButton(video: video),
-        const SizedBox(height: gap),
         _MoreOptionsButton(video: video),
       ],
     );
