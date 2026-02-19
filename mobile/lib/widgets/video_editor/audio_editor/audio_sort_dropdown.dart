@@ -107,20 +107,14 @@ class _AudioSortDropdownState extends State<AudioSortDropdown> {
       link: _layerLink,
       child: GestureDetector(
         onTap: _toggleDropdown,
-        child: _DropdownButton(
-          label: widget.value.label,
-          isOpen: _isOpen,
-        ),
+        child: _DropdownButton(label: widget.value.label, isOpen: _isOpen),
       ),
     );
   }
 }
 
 class _DropdownButton extends StatelessWidget {
-  const _DropdownButton({
-    required this.label,
-    required this.isOpen,
-  });
+  const _DropdownButton({required this.label, required this.isOpen});
 
   final String label;
   final bool isOpen;
@@ -151,10 +145,7 @@ class _DropdownButton extends StatelessWidget {
             'assets/icon/funnel_simple.svg',
             width: 24,
             height: 24,
-            colorFilter: ColorFilter.mode(
-              VineTheme.vineGreen,
-              BlendMode.srcIn,
-            ),
+            colorFilter: ColorFilter.mode(VineTheme.vineGreen, BlendMode.srcIn),
           ),
           const SizedBox(width: 8),
           Text(
@@ -183,16 +174,8 @@ class _DropdownMenu extends StatelessWidget {
       decoration: BoxDecoration(
         color: VineTheme.surfaceContainer,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: VineTheme.outlineMuted,
-          width: 2,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x40000000),
-            blurRadius: 4,
-          ),
-        ],
+        border: Border.all(color: VineTheme.outlineMuted, width: 2),
+        boxShadow: const [BoxShadow(color: Color(0x40000000), blurRadius: 4)],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(14),
@@ -239,10 +222,7 @@ class _DropdownMenuItem extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: VineTheme.titleMediumFont(
-            fontSize: 16,
-            height: 1.5,
-          ).copyWith(
+          style: VineTheme.titleMediumFont(fontSize: 16, height: 1.5).copyWith(
             color: isSelected ? VineTheme.vineGreen : VineTheme.onSurface,
           ),
         ),
