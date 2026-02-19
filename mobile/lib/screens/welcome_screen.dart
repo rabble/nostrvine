@@ -237,18 +237,14 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
             onPressed: () => context.pop(false),
             child: Text(
               'Cancel',
-              style: VineTheme.bodyMediumFont(
-                color: VineTheme.onSurfaceMuted,
-              ),
+              style: VineTheme.bodyMediumFont(color: VineTheme.onSurfaceMuted),
             ),
           ),
           TextButton(
             onPressed: () => context.pop(true),
             child: Text(
               'Start Fresh',
-              style: VineTheme.bodyMediumFont(
-                color: VineTheme.error,
-              ),
+              style: VineTheme.bodyMediumFont(color: VineTheme.error),
             ),
           ),
         ],

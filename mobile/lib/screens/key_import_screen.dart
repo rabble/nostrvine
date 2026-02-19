@@ -145,8 +145,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
         // to profile
         final pubkeyHex = authService.currentPublicKeyHex;
         if (pubkeyHex != null) {
-          final userProfileService =
-              ref.read(userProfileServiceProvider);
+          final userProfileService = ref.read(userProfileServiceProvider);
           unawaited(userProfileService.fetchProfile(pubkeyHex));
           Log.info(
             '📥 Started background fetch for imported user profile',
@@ -158,8 +157,7 @@ class _KeyImportScreenState extends ConsumerState<KeyImportScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              result.errorMessage ??
-                  'Failed to import key or connect bunker',
+              result.errorMessage ?? 'Failed to import key or connect bunker',
             ),
             backgroundColor: VineTheme.error,
           ),
@@ -233,9 +231,7 @@ class _KeyImportFormContent extends StatelessWidget {
                   Text(
                     'Import your existing Nostr identity using '
                     'your private key or a bunker URL.',
-                    style: VineTheme.bodyLargeFont(
-                      color: VineTheme.onSurface,
-                    ),
+                    style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
                   ),
                   const SizedBox(height: 48),
 
@@ -324,7 +320,8 @@ class _SignUpPrompt extends StatelessWidget {
                 ).copyWith(fontWeight: FontWeight.bold),
               ),
               TextSpan(
-                text: "We'll automatically create one for "
+                text:
+                    "We'll automatically create one for "
                     'you when you sign up for diVine.',
                 style: VineTheme.bodyLargeFont(
                   color: VineTheme.onSurfaceVariant,

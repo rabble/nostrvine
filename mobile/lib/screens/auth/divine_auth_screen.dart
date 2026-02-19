@@ -28,18 +28,13 @@ class DivineAuthScreen extends ConsumerStatefulWidget {
   /// Initial mode for the auth screen.
   final AuthMode initialMode;
 
-  const DivineAuthScreen({
-    super.key,
-    this.initialMode = AuthMode.login,
-  });
+  const DivineAuthScreen({super.key, this.initialMode = AuthMode.login});
 
   @override
-  ConsumerState<DivineAuthScreen> createState() =>
-      _DivineAuthScreenState();
+  ConsumerState<DivineAuthScreen> createState() => _DivineAuthScreenState();
 }
 
-class _DivineAuthScreenState
-    extends ConsumerState<DivineAuthScreen> {
+class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen> {
   var _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -75,9 +70,7 @@ class _DivineAuthScreenState
 
   void _switchMode() {
     setState(() {
-      _mode = _mode == AuthMode.login
-          ? AuthMode.register
-          : AuthMode.login;
+      _mode = _mode == AuthMode.login ? AuthMode.register : AuthMode.login;
       _errorMessage = null;
       _confirmPasswordController.clear();
       _formKey.currentState?.reset();
@@ -111,9 +104,7 @@ class _DivineAuthScreenState
         name: 'DivineAuthScreen',
         category: LogCategory.auth,
       );
-      _setErrorMessage(
-        'An unexpected error occurred. Please try again.',
-      );
+      _setErrorMessage('An unexpected error occurred. Please try again.');
     } finally {
       if (mounted) {
         setState(() => _isLoading = false);
@@ -134,9 +125,7 @@ class _DivineAuthScreenState
 
     if (!result.success || result.code == null) {
       _setErrorMessage(
-        result.errorDescription ??
-            result.error ??
-            'Login failed',
+        result.errorDescription ?? result.error ?? 'Login failed',
       );
       return;
     }
@@ -156,16 +145,12 @@ class _DivineAuthScreenState
     );
 
     if (!result.success) {
-      _setErrorMessage(
-        result.error ?? 'Registration failed',
-      );
+      _setErrorMessage(result.error ?? 'Registration failed');
       return;
     }
 
-    if (result.verificationRequired &&
-        result.deviceCode != null) {
-      final pendingService =
-          ref.read(pendingVerificationServiceProvider);
+    if (result.verificationRequired && result.deviceCode != null) {
+      final pendingService = ref.read(pendingVerificationServiceProvider);
       await pendingService.save(
         deviceCode: result.deviceCode!,
         verifier: verifier,
@@ -182,9 +167,7 @@ class _DivineAuthScreenState
         );
       }
     } else {
-      _setErrorMessage(
-        'Registration complete. Please check your email.',
-      );
+      _setErrorMessage('Registration complete. Please check your email.');
     }
   }
 
@@ -199,8 +182,7 @@ class _DivineAuthScreenState
         verifier: verifier,
       );
 
-      final session =
-          KeycastSession.fromTokenResponse(tokenResponse);
+      final session = KeycastSession.fromTokenResponse(tokenResponse);
       final authService = ref.read(authServiceProvider);
       await authService.signInWithDivineOAuth(session);
 
@@ -238,9 +220,7 @@ class _DivineAuthScreenState
             children: [
               // Scrollable form content fills entire safe area
               AnimatedSwitcher(
-                duration: const Duration(
-                  milliseconds: 250,
-                ),
+                duration: const Duration(milliseconds: 250),
                 child: _AuthFormContent(
                   key: ValueKey(_mode),
                   formKey: _formKey,
@@ -248,14 +228,10 @@ class _DivineAuthScreenState
                   isLoading: _isLoading,
                   errorMessage: _errorMessage,
                   emailController: _emailController,
-                  passwordController:
-                      _passwordController,
-                  confirmPasswordController:
-                      _confirmPasswordController,
-                  onForgotPassword:
-                      _showForgotPasswordDialog,
-                  validateConfirmPassword:
-                      _validateConfirmPassword,
+                  passwordController: _passwordController,
+                  confirmPasswordController: _confirmPasswordController,
+                  onForgotPassword: _showForgotPasswordDialog,
+                  validateConfirmPassword: _validateConfirmPassword,
                   onSubmit: _handleSubmit,
                   onSwitchMode: _switchMode,
                 ),
@@ -334,29 +310,21 @@ class _AuthFormContent extends StatelessWidget {
         SliverFillRemaining(
           hasScrollBody: false,
           child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Form(
               key: formKey,
               child: Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.stretch,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   // Space for back button overlay
                   const SizedBox(height: 72),
 
                   // Title
                   Padding(
-                    padding: const EdgeInsets.only(
-                      bottom: 32,
-                    ),
+                    padding: const EdgeInsets.only(bottom: 32),
                     child: Text(
-                      isLogin
-                          ? 'Sign in'
-                          : 'Create account',
-                      style:
-                          VineTheme.headlineLargeFont(),
+                      isLogin ? 'Sign in' : 'Create account',
+                      style: VineTheme.headlineLargeFont(),
                     ),
                   ),
 
@@ -364,8 +332,7 @@ class _AuthFormContent extends StatelessWidget {
                   DivineAuthTextField(
                     label: 'Email',
                     controller: emailController,
-                    keyboardType:
-                        TextInputType.emailAddress,
+                    keyboardType: TextInputType.emailAddress,
                     autocorrect: false,
                     validator: Validators.validateEmail,
                   ),
@@ -376,8 +343,7 @@ class _AuthFormContent extends StatelessWidget {
                     label: 'Password',
                     controller: passwordController,
                     obscureText: true,
-                    validator:
-                        Validators.validatePassword,
+                    validator: Validators.validatePassword,
                   ),
 
                   // Forgot password (login only)
@@ -387,15 +353,13 @@ class _AuthFormContent extends StatelessWidget {
                       child: DivineTextLink(
                         text: 'Forgot password?',
                         onTap: onForgotPassword,
-                        style: VineTheme.bodyMediumFont(
-                          color:
-                              VineTheme.onSurfaceMuted,
-                        ).copyWith(
-                          decoration:
-                              TextDecoration.underline,
-                          decorationColor:
-                              VineTheme.onSurfaceMuted,
-                        ),
+                        style:
+                            VineTheme.bodyMediumFont(
+                              color: VineTheme.onSurfaceMuted,
+                            ).copyWith(
+                              decoration: TextDecoration.underline,
+                              decorationColor: VineTheme.onSurfaceMuted,
+                            ),
                       ),
                     ),
                   ],
@@ -405,11 +369,9 @@ class _AuthFormContent extends StatelessWidget {
                     const SizedBox(height: 16),
                     DivineAuthTextField(
                       label: 'Confirm Password',
-                      controller:
-                          confirmPasswordController,
+                      controller: confirmPasswordController,
                       obscureText: true,
-                      validator:
-                          validateConfirmPassword,
+                      validator: validateConfirmPassword,
                     ),
                   ],
 
@@ -419,29 +381,21 @@ class _AuthFormContent extends StatelessWidget {
 
                   // Error message
                   if (errorMessage != null) ...[
-                    ErrorMessage(
-                      message: errorMessage,
-                    ),
+                    ErrorMessage(message: errorMessage),
                     const SizedBox(height: 16),
                   ],
 
                   // Submit button
                   DivineButton(
-                    label: isLogin
-                        ? 'Sign in'
-                        : 'Create account',
+                    label: isLogin ? 'Sign in' : 'Create account',
                     expanded: true,
                     isLoading: isLoading,
-                    onPressed:
-                        isLoading ? null : onSubmit,
+                    onPressed: isLoading ? null : onSubmit,
                   ),
                   const SizedBox(height: 16),
 
                   // Mode switch link
-                  _AuthModeSwitchLink(
-                    isLogin: isLogin,
-                    onTap: onSwitchMode,
-                  ),
+                  _AuthModeSwitchLink(isLogin: isLogin, onTap: onSwitchMode),
                   const SizedBox(height: 16),
                 ],
               ),
@@ -458,18 +412,14 @@ class _AuthFormContent extends StatelessWidget {
 /// Shows "New to diVine? Create account" on login,
 /// and "Already have an account? Sign in" on register.
 class _AuthModeSwitchLink extends StatelessWidget {
-  const _AuthModeSwitchLink({
-    required this.isLogin,
-    required this.onTap,
-  });
+  const _AuthModeSwitchLink({required this.isLogin, required this.onTap});
 
   final bool isLogin;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    final prefix =
-        isLogin ? 'New to diVine? ' : 'Already have an account? ';
+    final prefix = isLogin ? 'New to diVine? ' : 'Already have an account? ';
     final action = isLogin ? 'Create account' : 'Sign in';
 
     return Center(
@@ -478,21 +428,17 @@ class _AuthModeSwitchLink extends StatelessWidget {
           children: [
             TextSpan(
               text: prefix,
-              style: VineTheme.bodyLargeFont(
-                color: VineTheme.onSurfaceVariant,
-              ),
+              style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
             ),
             TextSpan(
               text: action,
-              style: VineTheme.bodyLargeFont(
-                color: VineTheme.onSurfaceVariant,
-              ).copyWith(
-                decoration: TextDecoration.underline,
-                decorationColor: VineTheme.primary,
-                decorationThickness: 2,
-              ),
-              recognizer: TapGestureRecognizer()
-                ..onTap = onTap,
+              style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant)
+                  .copyWith(
+                    decoration: TextDecoration.underline,
+                    decorationColor: VineTheme.primary,
+                    decorationThickness: 2,
+                  ),
+              recognizer: TapGestureRecognizer()..onTap = onTap,
             ),
           ],
         ),

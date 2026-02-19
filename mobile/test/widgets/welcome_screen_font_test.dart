@@ -56,10 +56,7 @@ void main() {
         find.text('Create and share short videos\non the decentralized web'),
         findsOneWidget,
       );
-      expect(
-        find.textContaining('Have an account?'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('Have an account?'), findsOneWidget);
     });
   });
 }

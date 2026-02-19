@@ -68,9 +68,7 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
           children: [
             // Scrollable content fills entire safe area
             SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -87,9 +85,7 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
                   const SizedBox(height: 8),
                   Text(
                     'Choose how you want to sign in',
-                    style: VineTheme.bodyLargeFont(
-                      color: VineTheme.onSurface,
-                    ),
+                    style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
                   ),
                   const SizedBox(height: 48),
 
@@ -98,8 +94,7 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
                     label: 'Continue with email',
                     leadingIcon: DivineIconName.envelope,
                     expanded: true,
-                    onPressed: () =>
-                        context.push(WelcomeScreen.authNativePath),
+                    onPressed: () => context.push(WelcomeScreen.authNativePath),
                   ),
                   const SizedBox(height: 12),
                   Center(
@@ -123,9 +118,7 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
                         ),
                       ),
                       Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Text(
                           'or',
                           style: VineTheme.bodyMediumFont(
@@ -150,8 +143,7 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
                     type: DivineButtonType.secondary,
                     leadingIcon: DivineIconName.key,
                     expanded: true,
-                    onPressed: () =>
-                        context.push(KeyImportScreen.path),
+                    onPressed: () => context.push(KeyImportScreen.path),
                   ),
                   const SizedBox(height: 12),
                   Center(
@@ -171,8 +163,7 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
                     type: DivineButtonType.secondary,
                     leadingIcon: DivineIconName.linkSimple,
                     expanded: true,
-                    onPressed: () =>
-                        context.push(NostrConnectScreen.path),
+                    onPressed: () => context.push(NostrConnectScreen.path),
                   ),
                   const SizedBox(height: 12),
                   Center(
@@ -199,10 +190,7 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
 
             // Back button overlays top-left
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: DivineIconButton(
                 icon: DivineIconName.caretLeft,
                 type: DivineIconButtonType.secondary,

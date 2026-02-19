@@ -19,8 +19,7 @@ class WebAuthScreen extends ConsumerStatefulWidget {
 
 class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
     with TickerProviderStateMixin {
-  final TextEditingController _bunkerUriController =
-      TextEditingController();
+  final TextEditingController _bunkerUriController = TextEditingController();
   bool _isAuthenticating = false;
   String? _errorMessage;
 
@@ -75,8 +74,7 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
         // to trigger authenticated state
         if (webAuth.publicKey != null) {
           // Web authentication not supported in secure mode
-          final scaffoldMessenger =
-              ScaffoldMessenger.of(context);
+          final scaffoldMessenger = ScaffoldMessenger.of(context);
 
           scaffoldMessenger.showSnackBar(
             SnackBar(
@@ -99,9 +97,7 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(
-                'Authentication integration failed: $e',
-              ),
+              content: Text('Authentication integration failed: $e'),
               backgroundColor: VineTheme.error,
             ),
           );
@@ -118,8 +114,7 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
 
     try {
       final webAuth = ref.read(webAuthServiceProvider);
-      final result =
-          await webAuth.authenticateWithNip07();
+      final result = await webAuth.authenticateWithNip07();
 
       if (mounted) {
         if (result.success) {
@@ -161,8 +156,7 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
 
     try {
       final webAuth = ref.read(webAuthServiceProvider);
-      final result =
-          await webAuth.authenticateWithBunker(bunkerUri);
+      final result = await webAuth.authenticateWithBunker(bunkerUri);
 
       if (mounted) {
         if (result.success) {
@@ -190,8 +184,7 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
 
   Future<void> _pasteFromClipboard() async {
     try {
-      final clipboardData =
-          await Clipboard.getData(Clipboard.kTextPlain);
+      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
       if (clipboardData?.text != null && mounted) {
         _bunkerUriController.text = clipboardData!.text!;
       }
@@ -210,8 +203,7 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
       backgroundColor: VineTheme.surfaceBackground,
       body: Consumer(
         builder: (context, ref, child) {
-          final webAuth =
-              ref.watch(webAuthServiceProvider);
+          final webAuth = ref.watch(webAuthServiceProvider);
           return SafeArea(
             child: FadeTransition(
               opacity: _fadeAnimation,
@@ -223,14 +215,9 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
                       child: Center(
                         child: SingleChildScrollView(
                           child: ConstrainedBox(
-                            constraints:
-                                const BoxConstraints(
-                              maxWidth: 400,
-                            ),
+                            constraints: const BoxConstraints(maxWidth: 400),
                             child: Column(
-                              mainAxisAlignment:
-                                  MainAxisAlignment
-                                      .center,
+                              mainAxisAlignment: MainAxisAlignment.center,
                               children: [
                                 // Logo
                                 SvgPicture.asset(
@@ -240,63 +227,44 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
                                 const SizedBox(height: 24),
                                 Text(
                                   'Connect to divine',
-                                  style: VineTheme
-                                      .headlineLargeFont(),
+                                  style: VineTheme.headlineLargeFont(),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
                                   'Choose your preferred '
                                   'Nostr authentication '
                                   'method',
-                                  style: VineTheme
-                                      .bodyLargeFont(
-                                    color: VineTheme
-                                        .onSurfaceVariant,
+                                  style: VineTheme.bodyLargeFont(
+                                    color: VineTheme.onSurfaceVariant,
                                   ),
-                                  textAlign:
-                                      TextAlign.center,
+                                  textAlign: TextAlign.center,
                                 ),
                                 const SizedBox(height: 48),
 
                                 // NIP-07 Authentication
-                                if (webAuth
-                                    .isNip07Available) ...[
+                                if (webAuth.isNip07Available) ...[
                                   _Nip07AuthCard(
-                                    subtitle: webAuth
-                                        .getMethodDisplayName(
+                                    subtitle: webAuth.getMethodDisplayName(
                                       WebAuthMethod.nip07,
                                     ),
-                                    isAuthenticating:
-                                        _isAuthenticating,
-                                    onTap:
-                                        _authenticateWithNip07,
+                                    isAuthenticating: _isAuthenticating,
+                                    onTap: _authenticateWithNip07,
                                   ),
-                                  const SizedBox(
-                                    height: 16,
-                                  ),
+                                  const SizedBox(height: 16),
                                 ],
 
                                 // Bunker Authentication
                                 _BunkerAuthCard(
-                                  controller:
-                                      _bunkerUriController,
-                                  isAuthenticating:
-                                      _isAuthenticating,
-                                  onConnect:
-                                      _authenticateWithBunker,
-                                  onPaste:
-                                      _pasteFromClipboard,
+                                  controller: _bunkerUriController,
+                                  isAuthenticating: _isAuthenticating,
+                                  onConnect: _authenticateWithBunker,
+                                  onPaste: _pasteFromClipboard,
                                 ),
 
                                 // Error message
-                                if (_errorMessage !=
-                                    null) ...[
-                                  const SizedBox(
-                                    height: 24,
-                                  ),
-                                  _WebAuthErrorMessage(
-                                    message: _errorMessage!,
-                                  ),
+                                if (_errorMessage != null) ...[
+                                  const SizedBox(height: 24),
+                                  _WebAuthErrorMessage(message: _errorMessage!),
                                 ],
                               ],
                             ),
@@ -341,18 +309,14 @@ class _Nip07AuthCard extends StatelessWidget {
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(
-              color: VineTheme.primary,
-              width: 2,
-            ),
+            border: Border.all(color: VineTheme.primary, width: 2),
           ),
           child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: VineTheme.primary
-                      .withValues(alpha: 0.2),
+                  color: VineTheme.primary.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const DivineIcon(
@@ -363,32 +327,27 @@ class _Nip07AuthCard extends StatelessWidget {
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
-                  crossAxisAlignment:
-                      CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
                         Text(
                           'Browser Extension',
-                          style:
-                              VineTheme.titleSmallFont(),
+                          style: VineTheme.titleSmallFont(),
                         ),
                         const SizedBox(width: 8),
                         Container(
-                          padding:
-                              const EdgeInsets.symmetric(
+                          padding: const EdgeInsets.symmetric(
                             horizontal: 6,
                             vertical: 2,
                           ),
                           decoration: BoxDecoration(
                             color: VineTheme.primary,
-                            borderRadius:
-                                BorderRadius.circular(4),
+                            borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
                             'RECOMMENDED',
-                            style: VineTheme
-                                .labelSmallFont(
+                            style: VineTheme.labelSmallFont(
                               color: VineTheme.onPrimary,
                             ),
                           ),
@@ -456,8 +415,7 @@ class _BunkerAuthCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: VineTheme.vineGreen
-                        .withValues(alpha: 0.2),
+                    color: VineTheme.vineGreen.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: const DivineIcon(
@@ -468,18 +426,13 @@ class _BunkerAuthCard extends StatelessWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
-                    crossAxisAlignment:
-                        CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'nsec bunker',
-                        style: VineTheme.titleSmallFont(),
-                      ),
+                      Text('nsec bunker', style: VineTheme.titleSmallFont()),
                       Text(
                         'Connect to a remote signer',
                         style: VineTheme.bodyMediumFont(
-                          color:
-                              VineTheme.onSurfaceVariant,
+                          color: VineTheme.onSurfaceVariant,
                         ),
                       ),
                     ],
@@ -492,32 +445,25 @@ class _BunkerAuthCard extends StatelessWidget {
               controller: controller,
               enabled: !isAuthenticating,
               enableInteractiveSelection: true,
-              style: VineTheme.bodyMediumFont(
-                color: VineTheme.onSurface,
-              ),
+              style: VineTheme.bodyMediumFont(color: VineTheme.onSurface),
               decoration: InputDecoration(
-                hintText:
-                    'bunker://pubkey?relay=wss://...',
+                hintText: 'bunker://pubkey?relay=wss://...',
                 hintStyle: VineTheme.bodyMediumFont(
                   color: VineTheme.onSurfaceDisabled,
                 ),
                 filled: true,
                 fillColor: VineTheme.surfaceBackground,
                 border: OutlineInputBorder(
-                  borderRadius:
-                      BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide.none,
                 ),
                 suffixIcon: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     IconButton(
-                      onPressed: isAuthenticating
-                          ? null
-                          : onPaste,
+                      onPressed: isAuthenticating ? null : onPaste,
                       icon: const DivineIcon(
-                        icon:
-                            DivineIconName.clipboard,
+                        icon: DivineIconName.clipboard,
                         color: VineTheme.onSurfaceMuted,
                       ),
                       tooltip: 'Paste from clipboard',
@@ -532,8 +478,7 @@ class _BunkerAuthCard extends StatelessWidget {
               label: 'Connect to Bunker',
               expanded: true,
               isLoading: isAuthenticating,
-              onPressed:
-                  isAuthenticating ? null : onConnect,
+              onPressed: isAuthenticating ? null : onConnect,
             ),
           ],
         ),
@@ -555,9 +500,7 @@ class _WebAuthErrorMessage extends StatelessWidget {
       decoration: BoxDecoration(
         color: VineTheme.errorOverlay,
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: VineTheme.error,
-        ),
+        border: Border.all(color: VineTheme.error),
       ),
       child: Row(
         children: [
@@ -569,9 +512,7 @@ class _WebAuthErrorMessage extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: VineTheme.bodyMediumFont(
-                color: VineTheme.error,
-              ),
+              style: VineTheme.bodyMediumFont(color: VineTheme.error),
             ),
           ),
         ],
@@ -602,10 +543,7 @@ class _NostrHelpBox extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 8),
-              Text(
-                'New to Nostr?',
-                style: VineTheme.titleSmallFont(),
-              ),
+              Text('New to Nostr?', style: VineTheme.titleSmallFont()),
             ],
           ),
           const SizedBox(height: 8),
@@ -613,9 +551,7 @@ class _NostrHelpBox extends StatelessWidget {
             'Install a browser extension like Alby or '
             'nos2x for the easiest experience, or use '
             'nsec bunker for secure remote signing.',
-            style: VineTheme.bodySmallFont(
-              color: VineTheme.onSurfaceVariant,
-            ),
+            style: VineTheme.bodySmallFont(color: VineTheme.onSurfaceVariant),
           ),
         ],
       ),

@@ -27,12 +27,10 @@ class NostrConnectScreen extends ConsumerStatefulWidget {
   const NostrConnectScreen({super.key});
 
   @override
-  ConsumerState<NostrConnectScreen> createState() =>
-      _NostrConnectScreenState();
+  ConsumerState<NostrConnectScreen> createState() => _NostrConnectScreenState();
 }
 
-class _NostrConnectScreenState
-    extends ConsumerState<NostrConnectScreen> {
+class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
   String? _connectUrl;
   NostrConnectState _sessionState = NostrConnectState.idle;
   String? _errorMessage;
@@ -88,8 +86,7 @@ class _NostrConnectScreenState
 
       // Start the timer for UI updates
       _elapsedTimer.start();
-      _uiTimer =
-          Timer.periodic(const Duration(seconds: 1), (_) {
+      _uiTimer = Timer.periodic(const Duration(seconds: 1), (_) {
         if (mounted) setState(() {});
       });
 
@@ -158,10 +155,7 @@ class _NostrConnectScreenState
     if (_connectUrl == null) return;
 
     await SharePlus.instance.share(
-      ShareParams(
-        text: _connectUrl!,
-        title: 'Connect to diVine',
-      ),
+      ShareParams(text: _connectUrl!, title: 'Connect to diVine'),
     );
   }
 
@@ -205,8 +199,7 @@ class _NostrConnectScreenState
     // Authenticate with bunker URL
     try {
       final authService = ref.read(authServiceProvider);
-      final authResult =
-          await authService.connectWithBunker(result);
+      final authResult = await authService.connectWithBunker(result);
 
       if (!mounted) return;
 
@@ -215,8 +208,7 @@ class _NostrConnectScreenState
       } else {
         setState(() {
           _sessionState = NostrConnectState.error;
-          _errorMessage =
-              authResult.errorMessage ?? 'Failed to connect';
+          _errorMessage = authResult.errorMessage ?? 'Failed to connect';
         });
       }
     } catch (e) {
@@ -237,48 +229,40 @@ class _NostrConnectScreenState
           children: [
             // Content fills entire safe area
             switch (_sessionState) {
-              NostrConnectState.idle ||
-              NostrConnectState.generating =>
-                const _ConnectLoadingView(
-                  message: 'Generating connection...',
-                ),
+              NostrConnectState.idle || NostrConnectState.generating =>
+                const _ConnectLoadingView(message: 'Generating connection...'),
               NostrConnectState.listening => _ConnectQrCodeView(
-                  connectUrl: _connectUrl ?? '',
-                  elapsedTimer: _elapsedTimer,
-                  onCopyUrl: _copyUrl,
-                  onShareUrl: _shareUrl,
-                  onAddBunker: _showPasteBunkerDialog,
-                ),
-              NostrConnectState.connected =>
-                const _ConnectLoadingView(
-                  message: 'Connected! Authenticating...',
-                ),
+                connectUrl: _connectUrl ?? '',
+                elapsedTimer: _elapsedTimer,
+                onCopyUrl: _copyUrl,
+                onShareUrl: _shareUrl,
+                onAddBunker: _showPasteBunkerDialog,
+              ),
+              NostrConnectState.connected => const _ConnectLoadingView(
+                message: 'Connected! Authenticating...',
+              ),
               NostrConnectState.timeout => _ConnectErrorView(
-                  title: 'Connection timed out',
-                  message:
-                      'Make sure you approved the connection '
-                      'in your signer app.',
-                  onRetry: _retry,
-                ),
+                title: 'Connection timed out',
+                message:
+                    'Make sure you approved the connection '
+                    'in your signer app.',
+                onRetry: _retry,
+              ),
               NostrConnectState.cancelled => _ConnectErrorView(
-                  title: 'Connection cancelled',
-                  message: 'The connection was cancelled.',
-                  onRetry: _retry,
-                ),
+                title: 'Connection cancelled',
+                message: 'The connection was cancelled.',
+                onRetry: _retry,
+              ),
               NostrConnectState.error => _ConnectErrorView(
-                  title: 'Connection failed',
-                  message: _errorMessage ??
-                      'An unknown error occurred.',
-                  onRetry: _retry,
-                ),
+                title: 'Connection failed',
+                message: _errorMessage ?? 'An unknown error occurred.',
+                onRetry: _retry,
+              ),
             },
 
             // Close button overlays top-left
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 12,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: DivineIconButton(
                 icon: DivineIconName.x,
                 type: DivineIconButtonType.secondary,
@@ -313,15 +297,11 @@ class _ConnectLoadingView extends StatelessWidget {
             style: VineTheme.headlineLargeFont(),
           ),
           const Spacer(),
-          const CircularProgressIndicator(
-            color: VineTheme.vineGreen,
-          ),
+          const CircularProgressIndicator(color: VineTheme.vineGreen),
           const SizedBox(height: 24),
           Text(
             message,
-            style: VineTheme.bodyLargeFont(
-              color: VineTheme.onSurfaceVariant,
-            ),
+            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
           ),
           const Spacer(),
         ],
@@ -358,9 +338,7 @@ class _ConnectQrCodeView extends StatelessWidget {
           // Space for close button overlay
           const SizedBox(height: 72),
           Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 16,
-            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
               'Scan with your\nsigner app to connect.',
               style: VineTheme.headlineLargeFont(),
@@ -418,12 +396,7 @@ class _QrCodeCard extends StatelessWidget {
           children: [
             // QR section
             Padding(
-              padding: const EdgeInsets.fromLTRB(
-                16,
-                80,
-                16,
-                50,
-              ),
+              padding: const EdgeInsets.fromLTRB(16, 80, 16, 50),
               child: Column(
                 children: [
                   // QR Code
@@ -438,8 +411,7 @@ class _QrCodeCard extends StatelessWidget {
                       version: QrVersions.auto,
                       size: 208,
                       backgroundColor: VineTheme.whiteText,
-                      errorCorrectionLevel:
-                          QrErrorCorrectLevel.M,
+                      errorCorrectionLevel: QrErrorCorrectLevel.M,
                     ),
                   ),
                   const SizedBox(height: 24),
@@ -467,17 +439,11 @@ class _QrCodeCard extends StatelessWidget {
             ),
 
             // Divider
-            Container(
-              height: 1,
-              color: VineTheme.outlineMuted,
-            ),
+            Container(height: 1, color: VineTheme.outlineMuted),
 
             // Action buttons row
             Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
               child: Row(
                 children: [
                   Expanded(
@@ -537,28 +503,17 @@ class _ConnectErrorView extends StatelessWidget {
             style: VineTheme.headlineLargeFont(),
           ),
           const SizedBox(height: 32),
-          const DivineSticker(
-            sticker: DivineStickerName.policeSiren,
-          ),
+          const DivineSticker(sticker: DivineStickerName.policeSiren),
           const SizedBox(height: 32),
-          Text(
-            title,
-            style: VineTheme.headlineSmallFont(),
-          ),
+          Text(title, style: VineTheme.headlineSmallFont()),
           const SizedBox(height: 12),
           Text(
             message,
             textAlign: TextAlign.center,
-            style: VineTheme.bodyLargeFont(
-              color: VineTheme.onSurfaceVariant,
-            ),
+            style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
           ),
           const Spacer(),
-          DivineButton(
-            label: 'Try again',
-            expanded: true,
-            onPressed: onRetry,
-          ),
+          DivineButton(label: 'Try again', expanded: true, onPressed: onRetry),
           const SizedBox(height: 16),
         ],
       ),
@@ -586,17 +541,11 @@ class _ActionLink extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          DivineIcon(
-            icon: icon,
-            color: VineTheme.vineGreen,
-            size: 24,
-          ),
+          DivineIcon(icon: icon, color: VineTheme.vineGreen, size: 24),
           const SizedBox(height: 8),
           Text(
             label,
-            style: VineTheme.titleSmallFont(
-              color: VineTheme.vineGreen,
-            ),
+            style: VineTheme.titleSmallFont(color: VineTheme.vineGreen),
           ),
         ],
       ),
@@ -625,19 +574,10 @@ class _CompatibleSignersTable extends StatelessWidget {
         _SignerRow(name: 'Amber', android: true),
         Divider(height: 1, color: VineTheme.outlineMuted),
         // Primal - all platforms
-        _SignerRow(
-          name: 'Primal',
-          android: true,
-          ios: true,
-          web: true,
-        ),
+        _SignerRow(name: 'Primal', android: true, ios: true, web: true),
         Divider(height: 1, color: VineTheme.outlineMuted),
         // Nostr Connect - Android & iOS
-        _SignerRow(
-          name: 'Nostr Connect',
-          android: true,
-          ios: true,
-        ),
+        _SignerRow(name: 'Nostr Connect', android: true, ios: true),
         Divider(height: 1, color: VineTheme.outlineMuted),
         // nsecBunker - Web only
         _SignerRow(name: 'nsecBunker', web: true),
@@ -665,24 +605,14 @@ class _SignerRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final textStyle = isHeader
-        ? VineTheme.labelMediumFont(
-            color: VineTheme.onSurfaceMuted,
-          )
-        : VineTheme.titleSmallFont(
-            color: VineTheme.onSurface,
-          );
+        ? VineTheme.labelMediumFont(color: VineTheme.onSurfaceMuted)
+        : VineTheme.titleSmallFont(color: VineTheme.onSurface);
 
     return Padding(
-      padding: const EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: 12,
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         children: [
-          Expanded(
-            flex: 3,
-            child: Text(name, style: textStyle),
-          ),
+          Expanded(flex: 3, child: Text(name, style: textStyle)),
           Expanded(
             child: _PlatformCell(
               isHeader: isHeader,
@@ -733,12 +663,12 @@ class _PlatformCell extends StatelessWidget {
               size: 20,
             )
           : isSupported
-              ? const DivineIcon(
-                  icon: DivineIconName.check,
-                  color: VineTheme.vineGreen,
-                  size: 20,
-                )
-              : const SizedBox.shrink(),
+          ? const DivineIcon(
+              icon: DivineIconName.check,
+              color: VineTheme.vineGreen,
+              size: 20,
+            )
+          : const SizedBox.shrink(),
     );
   }
 }
@@ -754,8 +684,7 @@ class _PasteBunkerSheetContent extends StatefulWidget {
       _PasteBunkerSheetContentState();
 }
 
-class _PasteBunkerSheetContentState
-    extends State<_PasteBunkerSheetContent> {
+class _PasteBunkerSheetContentState extends State<_PasteBunkerSheetContent> {
   final _focusNode = FocusNode();
 
   @override
@@ -786,10 +715,7 @@ class _PasteBunkerSheetContentState
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Paste bunker:// URL',
-            style: VineTheme.headlineSmallFont(),
-          ),
+          Text('Paste bunker:// URL', style: VineTheme.headlineSmallFont()),
           const SizedBox(height: 24),
           DivineAuthTextField(
             label: 'bunker:// URL',
@@ -797,8 +723,7 @@ class _PasteBunkerSheetContentState
             focusNode: _focusNode,
             autocorrect: false,
             keyboardType: TextInputType.url,
-            onSubmitted: (value) =>
-                context.pop(value.trim()),
+            onSubmitted: (value) => context.pop(value.trim()),
           ),
         ],
       ),

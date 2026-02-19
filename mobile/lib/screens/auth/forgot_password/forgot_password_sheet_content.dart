@@ -5,8 +5,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:keycast_flutter/keycast_flutter.dart'
-    show ForgotPasswordResult;
+import 'package:keycast_flutter/keycast_flutter.dart' show ForgotPasswordResult;
 import 'package:openvine/utils/validators.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -35,8 +34,7 @@ class ForgotPasswordSheetContent extends StatefulWidget {
       _ForgotPasswordSheetContentState();
 }
 
-class _ForgotPasswordSheetContentState
-    extends State<ForgotPasswordSheetContent>
+class _ForgotPasswordSheetContentState extends State<ForgotPasswordSheetContent>
     with SingleTickerProviderStateMixin {
   late final TextEditingController _emailController;
   final _formKey = GlobalKey<FormState>();
@@ -53,9 +51,7 @@ class _ForgotPasswordSheetContentState
   @override
   void initState() {
     super.initState();
-    _emailController = TextEditingController(
-      text: widget.initialEmail,
-    );
+    _emailController = TextEditingController(text: widget.initialEmail);
     _controller = AnimationController(
       duration: const Duration(milliseconds: 600),
       vsync: this,
@@ -109,15 +105,12 @@ class _ForgotPasswordSheetContentState
         _transitionTo(ForgotPasswordMode.confirmation);
       } else {
         setState(() {
-          _errorMessage =
-              result.error ?? 'Failed to send reset email.';
+          _errorMessage = result.error ?? 'Failed to send reset email.';
         });
       }
     } catch (e) {
       if (mounted) {
-        setState(
-          () => _errorMessage = 'An unexpected error occurred.',
-        );
+        setState(() => _errorMessage = 'An unexpected error occurred.');
       }
     } finally {
       if (mounted) {
@@ -128,8 +121,7 @@ class _ForgotPasswordSheetContentState
 
   @override
   Widget build(BuildContext context) {
-    final isTransitioning =
-        _mode != ForgotPasswordMode.form;
+    final isTransitioning = _mode != ForgotPasswordMode.form;
 
     return AnimatedSize(
       duration: const Duration(milliseconds: 200),
@@ -140,26 +132,23 @@ class _ForgotPasswordSheetContentState
         builder: (context, child) {
           final opacity = isTransitioning
               ? (_displayedMode != ForgotPasswordMode.form
-                  ? _fadeInAnimation.value
-                  : 0.0)
+                    ? _fadeInAnimation.value
+                    : 0.0)
               : _fadeOutAnimation.value;
 
           return Opacity(
-            opacity: isTransitioning
-                ? opacity
-                : _fadeOutAnimation.value,
+            opacity: isTransitioning ? opacity : _fadeOutAnimation.value,
             child: switch (_displayedMode) {
               ForgotPasswordMode.form => _ForgotPasswordForm(
-                  formKey: _formKey,
-                  emailController: _emailController,
-                  errorMessage: _errorMessage,
-                  isSubmitting: _isSubmitting,
-                  onSubmit: _submit,
-                ),
-              ForgotPasswordMode.confirmation =>
-                _ForgotPasswordConfirmation(
-                  email: _emailController.text.trim(),
-                ),
+                formKey: _formKey,
+                emailController: _emailController,
+                errorMessage: _errorMessage,
+                isSubmitting: _isSubmitting,
+                onSubmit: _submit,
+              ),
+              ForgotPasswordMode.confirmation => _ForgotPasswordConfirmation(
+                email: _emailController.text.trim(),
+              ),
             },
           );
         },
@@ -190,20 +179,13 @@ class _ForgotPasswordForm extends StatelessWidget {
     return GestureDetector(
       onTap: () => FocusScope.of(context).unfocus(),
       child: SingleChildScrollView(
-        padding: EdgeInsets.fromLTRB(
-          16,
-          32,
-          16,
-          16 + bottomInset,
-        ),
+        padding: EdgeInsets.fromLTRB(16, 32, 16, 16 + bottomInset),
         child: Form(
           key: formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const DivineSticker(
-                sticker: DivineStickerName.forgotPasswordAlt,
-              ),
+              const DivineSticker(sticker: DivineStickerName.forgotPasswordAlt),
               const SizedBox(height: 16),
               Text(
                 'Reset password',
@@ -231,17 +213,13 @@ class _ForgotPasswordForm extends StatelessWidget {
                 const SizedBox(height: 16),
                 Text(
                   errorMessage!,
-                  style: VineTheme.bodyMediumFont(
-                    color: VineTheme.error,
-                  ),
+                  style: VineTheme.bodyMediumFont(color: VineTheme.error),
                   textAlign: TextAlign.center,
                 ),
               ],
               const SizedBox(height: 32),
               DivineButton(
-                label: isSubmitting
-                    ? 'Sending...'
-                    : 'Send reset link',
+                label: isSubmitting ? 'Sending...' : 'Send reset link',
                 expanded: true,
                 onPressed: isSubmitting ? null : onSubmit,
               ),
@@ -276,9 +254,7 @@ class _ForgotPasswordConfirmation extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const DivineSticker(
-            sticker: DivineStickerName.email,
-          ),
+          const DivineSticker(sticker: DivineStickerName.email),
           const SizedBox(height: 16),
           Text(
             'Email sent!',
@@ -288,13 +264,9 @@ class _ForgotPasswordConfirmation extends StatelessWidget {
           const SizedBox(height: 16),
           Text.rich(
             TextSpan(
-              style: VineTheme.bodyLargeFont(
-                color: VineTheme.onSurfaceVariant,
-              ),
+              style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
               children: [
-                const TextSpan(
-                  text: 'We sent a password reset link to ',
-                ),
+                const TextSpan(text: 'We sent a password reset link to '),
                 TextSpan(
                   text: email,
                   style: VineTheme.bodyLargeFont(
@@ -302,7 +274,8 @@ class _ForgotPasswordConfirmation extends StatelessWidget {
                   ).copyWith(fontWeight: FontWeight.bold),
                 ),
                 const TextSpan(
-                  text: '. Please click the link in your '
+                  text:
+                      '. Please click the link in your '
                       'email to update your password.',
                 ),
               ],
