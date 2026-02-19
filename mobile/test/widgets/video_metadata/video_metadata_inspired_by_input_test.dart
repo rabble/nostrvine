@@ -20,17 +20,15 @@ class _MockContentBlocklistService extends Mock
 
 /// Mock notifier for testing
 class _MockVideoEditorNotifier extends VideoEditorNotifier {
-  _MockVideoEditorNotifier(this._state, {this.onSetInspiredByPerson});
+  _MockVideoEditorNotifier(this._state);
 
   final VideoEditorProviderState _state;
-  final void Function(String npub)? onSetInspiredByPerson;
 
   @override
   VideoEditorProviderState build() => _state;
 
   @override
   void setInspiredByPerson(String npub) {
-    onSetInspiredByPerson?.call(npub);
     state = state.copyWith(inspiredByNpub: npub);
   }
 
