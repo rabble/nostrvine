@@ -282,7 +282,7 @@ class _MoreOptionsButton extends StatelessWidget {
         );
       },
       semanticLabel: 'More options',
-      backgroundColor: const Color(0x4D000000),
+      backgroundColor: VineTheme.scrim30,
     );
   }
 }

@@ -31,7 +31,7 @@ class LikeActionButton extends StatelessWidget {
           iconAsset: 'assets/icon/content-controls/like.svg',
           semanticIdentifier: 'like_button',
           semanticLabel: isLiked ? 'Unlike video' : 'Like video',
-          iconColor: isLiked ? Colors.red : VineTheme.whiteText,
+          iconColor: isLiked ? VineTheme.likeRed : VineTheme.whiteText,
           isLoading: state.isLikeInProgress,
           count: totalLikes,
           onPressed: () {

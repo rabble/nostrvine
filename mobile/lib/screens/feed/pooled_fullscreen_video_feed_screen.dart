@@ -331,7 +331,7 @@ class _FullscreenAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final VideoEvent? currentVideo;
 
   static const _style = DiVineAppBarStyle(
-    iconButtonBackgroundColor: Color(0x4D000000), // black with 0.3 alpha
+    iconButtonBackgroundColor: VineTheme.scrim30,
   );
 
   @override

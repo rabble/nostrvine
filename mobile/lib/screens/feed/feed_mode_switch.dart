@@ -143,7 +143,7 @@ class _MenuButton extends StatelessWidget {
       icon: const SvgIconSource('assets/icon/menu.svg'),
       onPressed: onTap,
       semanticLabel: 'Open menu',
-      backgroundColor: const Color(0x4D000000),
+      backgroundColor: VineTheme.scrim30,
     );
   }
 }
@@ -159,7 +159,7 @@ class _SearchButton extends StatelessWidget {
       icon: const SvgIconSource('assets/icon/search.svg'),
       onPressed: onTap,
       semanticLabel: 'Search',
-      backgroundColor: const Color(0x4D000000),
+      backgroundColor: VineTheme.scrim30,
     );
   }
 }
