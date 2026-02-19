@@ -36,7 +36,8 @@ class DivineSpriteCheckbox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // Sprite is 24x72 with three 24x24 sections stacked vertically
-    // Top (0-24): unselected, Middle (24-48): selected, Bottom (48-72): intermediate
+    // Top (0-24): unselected, Middle (24-48): selected,
+    // Bottom (48-72): intermediate
     final yOffset = switch (state) {
       DivineCheckboxState.unselected || DivineCheckboxState.disabled => 0.0,
       DivineCheckboxState.selected => -24.0,
