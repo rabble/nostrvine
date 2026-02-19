@@ -94,8 +94,8 @@ final disposedControllersTracker = DisposedControllersTracker();
 /// Wraps the global tracker so widgets can use ref.watch() with select().
 final disposedControllersProvider =
     ChangeNotifierProvider<DisposedControllersTracker>(
-  (ref) => disposedControllersTracker,
-);
+      (ref) => disposedControllersTracker,
+    );
 
 /// Check if a video controller has been scheduled for disposal.
 /// Use this before any controller operation to prevent "No active player" crashes.
