@@ -490,6 +490,10 @@ class _FittedVideoPlayer extends StatelessWidget {
     return Video(
       controller: videoController,
       fit: boxFit,
+      // Transparent fill so the loading placeholder behind the Video widget
+      // stays visible until the first video frame renders, preventing a
+      // black flash during the loading → playing transition.
+      fill: Colors.transparent,
       filterQuality: FilterQuality.high,
       controls: NoVideoControls,
     );
