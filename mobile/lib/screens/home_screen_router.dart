@@ -57,33 +57,87 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
   VideoFeedController? _feedController;
   List<VideoItem>? _lastPooledVideos;
   bool _isPausedByOverlay = false;
+  bool _isPausedByNavigation = false;
+  GoRouter? _router;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     routeObserver.subscribe(this, ModalRoute.of(context)!);
+
+    // GoRouter listener to detect cross-navigator navigation (e.g. home →
+    // profile-view). RouteAware alone doesn't work because the home screen
+    // lives inside a nested Navigator (ShellRoute tab) while profile-view
+    // is pushed on the root Navigator.
+    if (_router == null) {
+      _router = ref.read(goRouterProvider);
+      _router!.routerDelegate.addListener(_onRouterLocationChanged);
+    }
   }
 
   @override
   void dispose() {
+    _router?.routerDelegate.removeListener(_onRouterLocationChanged);
     routeObserver.unsubscribe(this);
     _feedController?.dispose();
     _controller?.dispose();
     super.dispose();
   }
 
-  // -- RouteAware callbacks ------------------------------------------------
+  // -- GoRouter location listener ------------------------------------------
+
+  void _onRouterLocationChanged() {
+    final location =
+        _router?.routeInformationProvider.value.uri.toString() ?? '';
+    final isOnHome = location.startsWith('/home');
+
+    if (!isOnHome && !_isPausedByNavigation) {
+      _isPausedByNavigation = true;
+      _feedController?.pause();
+      Log.debug(
+        'Paused: navigated away from home ($location)',
+        name: 'HomeScreenRouter',
+        category: LogCategory.video,
+      );
+    } else if (isOnHome && _isPausedByNavigation) {
+      _isPausedByNavigation = false;
+      // Only resume if not also paused by an overlay (drawer, modal).
+      if (!_isPausedByOverlay) {
+        _feedController?.play();
+      }
+      Log.debug(
+        'Resumed: navigated back to home ($location)',
+        name: 'HomeScreenRouter',
+        category: LogCategory.video,
+      );
+    }
+  }
+
+  // -- RouteAware callbacks (fallback for same-navigator pushes) -----------
 
   @override
   void didPushNext() {
-    // Another route was pushed on top (e.g. profile page) — pause playback.
+    // Another route was pushed on top within the same navigator.
     _feedController?.pause();
+    Log.debug(
+      'Paused via RouteAware.didPushNext',
+      name: 'HomeScreenRouter',
+      category: LogCategory.video,
+    );
   }
 
   @override
   void didPopNext() {
-    // A route was popped back to us — resume playback.
-    _feedController?.play();
+    // A route was popped back to us within the same navigator.
+    if (!_isPausedByNavigation && !_isPausedByOverlay) {
+      _feedController?.play();
+    }
+    Log.debug(
+      'didPopNext fired (isPausedByNav=$_isPausedByNavigation, '
+      'isPausedByOverlay=$_isPausedByOverlay)',
+      name: 'HomeScreenRouter',
+      category: LogCategory.video,
+    );
   }
 
   // -- Hot-reload safety ---------------------------------------------------
@@ -189,9 +243,22 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
     if (hasOverlay && !_isPausedByOverlay) {
       _isPausedByOverlay = true;
       _feedController?.pause();
+      Log.debug(
+        'Paused: overlay visible',
+        name: 'HomeScreenRouter',
+        category: LogCategory.video,
+      );
     } else if (!hasOverlay && _isPausedByOverlay) {
       _isPausedByOverlay = false;
-      _feedController?.play();
+      // Only resume if not also paused by navigation.
+      if (!_isPausedByNavigation) {
+        _feedController?.play();
+      }
+      Log.debug(
+        'Overlay dismissed (isPausedByNav=$_isPausedByNavigation)',
+        name: 'HomeScreenRouter',
+        category: LogCategory.video,
+      );
     }
   }
 
