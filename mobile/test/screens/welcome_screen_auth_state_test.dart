@@ -3,16 +3,17 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:openvine/providers/shared_preferences_provider.dart';
-import 'package:openvine/screens/welcome_screen.dart';
-import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/shared_preferences_provider.dart';
+import 'package:openvine/screens/welcome_screen.dart';
+import 'package:openvine/services/auth_service.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 @GenerateMocks([AuthService])
@@ -119,7 +120,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // Expect: Continue button shown (but disabled because TOS not accepted)
-      expect(find.byType(ElevatedButton), findsOneWidget);
+      expect(find.byType(DivineButton), findsOneWidget);
 
       // Expect: Create/Import buttons NOT shown
       expect(find.text('Create New Identity'), findsNothing);
@@ -191,11 +192,11 @@ void main() {
       await tester.pumpAndSettle();
 
       // Find the Continue button (shows "Accept Terms to Continue" when TOS not accepted)
-      final continueButton = find.byType(ElevatedButton);
+      final continueButton = find.byType(DivineButton);
       expect(continueButton, findsOneWidget);
 
       // Verify button is disabled (onPressed is null) because TOS not accepted
-      final ElevatedButton buttonWidget = tester.widget(continueButton);
+      final DivineButton buttonWidget = tester.widget(continueButton);
       expect(buttonWidget.onPressed, isNull);
     });
 
@@ -234,7 +235,7 @@ void main() {
 
         // Verify: Loading indicator shown initially (BrandedLoadingIndicator with GIF)
         expect(find.byType(BrandedLoadingIndicator), findsOneWidget);
-        expect(find.widgetWithText(ElevatedButton, 'Continue'), findsNothing);
+        expect(find.widgetWithText(DivineButton, 'Continue'), findsNothing);
 
         // Simulate auth state changing to AUTHENTICATED (like in real app)
         // First update the mock's return value, then emit on the stream
@@ -250,7 +251,7 @@ void main() {
         // Expect: Continue button should appear after auth completes (even if disabled)
         // The button shows "Accept Terms to Continue" when terms not accepted
         expect(
-          find.byType(ElevatedButton),
+          find.byType(DivineButton),
           findsOneWidget,
           reason:
               'Continue button widget should appear when auth state changes to authenticated',
@@ -263,7 +264,7 @@ void main() {
 
         // Verify the button shows proper text (may be disabled if terms not accepted)
         final buttonText = find.descendant(
-          of: find.byType(ElevatedButton),
+          of: find.byType(DivineButton),
           matching: find.byType(Text),
         );
         expect(

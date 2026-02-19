@@ -200,7 +200,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to continue: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }
@@ -217,28 +217,38 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: VineTheme.cardBackground,
-        title: const Text(
+        title: Text(
           'Start with New Identity?',
-          style: TextStyle(color: Colors.white),
+          style: VineTheme.headlineSmallFont(),
         ),
-        content: const Text(
+        content: Text(
           'This will:\n\n'
           '• Delete your current keys from this device\n'
           '• Generate a completely new Nostr identity\n'
-          '• You will NOT be able to access your previous account unless you have a backup of your nsec\n\n'
-          'Are you sure you want to start fresh?',
-          style: TextStyle(color: Colors.grey, height: 1.5),
+          '• You will NOT be able to access your previous '
+          'account unless you have a backup of your nsec'
+          '\n\nAre you sure you want to start fresh?',
+          style: VineTheme.bodyMediumFont(
+            color: VineTheme.onSurfaceVariant,
+          ).copyWith(height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => context.pop(false),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              'Cancel',
+              style: VineTheme.bodyMediumFont(
+                color: VineTheme.onSurfaceMuted,
+              ),
+            ),
           ),
           TextButton(
             onPressed: () => context.pop(true),
-            child: const Text(
+            child: Text(
               'Start Fresh',
-              style: TextStyle(color: Colors.orange),
+              style: VineTheme.bodyMediumFont(
+                color: VineTheme.error,
+              ),
             ),
           ),
         ],
@@ -268,7 +278,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to start fresh: $e'),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }

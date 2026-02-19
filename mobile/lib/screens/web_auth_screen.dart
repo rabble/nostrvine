@@ -19,7 +19,8 @@ class WebAuthScreen extends ConsumerStatefulWidget {
 
 class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
     with TickerProviderStateMixin {
-  final TextEditingController _bunkerUriController = TextEditingController();
+  final TextEditingController _bunkerUriController =
+      TextEditingController();
   bool _isAuthenticating = false;
   String? _errorMessage;
 
@@ -70,31 +71,38 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
       final webAuth = ref.read(webAuthServiceProvider);
 
       try {
-        // Set the public key in the main auth service to trigger authenticated state
+        // Set the public key in the main auth service
+        // to trigger authenticated state
         if (webAuth.publicKey != null) {
           // Web authentication not supported in secure mode
-          final scaffoldMessenger = ScaffoldMessenger.of(context);
+          final scaffoldMessenger =
+              ScaffoldMessenger.of(context);
 
           scaffoldMessenger.showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Web authentication not supported in secure mode. Please use mobile app for secure key management.',
+            SnackBar(
+              content: const Text(
+                'Web authentication not supported in secure '
+                'mode. Please use mobile app for secure '
+                'key management.',
               ),
-              backgroundColor: Colors.red,
+              backgroundColor: VineTheme.error,
             ),
           );
         }
       } catch (e) {
         Log.error(
-          'Failed to integrate web auth with main auth service: $e',
+          'Failed to integrate web auth with main auth '
+          'service: $e',
           name: 'WebAuthScreen',
           category: LogCategory.ui,
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Authentication integration failed: $e'),
-              backgroundColor: Colors.red,
+              content: Text(
+                'Authentication integration failed: $e',
+              ),
+              backgroundColor: VineTheme.error,
             ),
           );
         }
@@ -110,7 +118,8 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
 
     try {
       final webAuth = ref.read(webAuthServiceProvider);
-      final result = await webAuth.authenticateWithNip07();
+      final result =
+          await webAuth.authenticateWithNip07();
 
       if (mounted) {
         if (result.success) {
@@ -152,7 +161,8 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
 
     try {
       final webAuth = ref.read(webAuthServiceProvider);
-      final result = await webAuth.authenticateWithBunker(bunkerUri);
+      final result =
+          await webAuth.authenticateWithBunker(bunkerUri);
 
       if (mounted) {
         if (result.success) {
@@ -180,7 +190,8 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
 
   Future<void> _pasteFromClipboard() async {
     try {
-      final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+      final clipboardData =
+          await Clipboard.getData(Clipboard.kTextPlain);
       if (clipboardData?.text != null && mounted) {
         _bunkerUriController.text = clipboardData!.text!;
       }
@@ -194,355 +205,420 @@ class _WebAuthScreenState extends ConsumerState<WebAuthScreen>
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: VineTheme.surfaceBackground,
-    body: Consumer(
-      builder: (context, ref, child) {
-        final webAuth = ref.watch(webAuthServiceProvider);
-        return SafeArea(
-          child: FadeTransition(
-            opacity: _fadeAnimation,
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  Expanded(
-                    child: Center(
-                      child: SingleChildScrollView(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 400),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              // Logo
-                              SvgPicture.asset(
-                                'assets/icon/logo.svg',
-                                height: 50,
-                              ),
-                              const SizedBox(height: 24),
-                              const Text(
-                                'Connect to divine',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 32,
-                                  fontWeight: FontWeight.bold,
-                                  fontFamily: 'serif', // Fallback font
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: VineTheme.surfaceBackground,
+      body: Consumer(
+        builder: (context, ref, child) {
+          final webAuth =
+              ref.watch(webAuthServiceProvider);
+          return SafeArea(
+            child: FadeTransition(
+              opacity: _fadeAnimation,
+              child: Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Center(
+                        child: SingleChildScrollView(
+                          child: ConstrainedBox(
+                            constraints:
+                                const BoxConstraints(
+                              maxWidth: 400,
+                            ),
+                            child: Column(
+                              mainAxisAlignment:
+                                  MainAxisAlignment
+                                      .center,
+                              children: [
+                                // Logo
+                                SvgPicture.asset(
+                                  'assets/icon/logo.svg',
+                                  height: 50,
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Choose your preferred Nostr authentication method',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 16,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 48),
-
-                              // NIP-07 Authentication
-                              if (webAuth.isNip07Available) ...[
-                                _buildAuthMethodCard(
-                                  title: 'Browser Extension',
-                                  subtitle: webAuth.getMethodDisplayName(
-                                    WebAuthMethod.nip07,
-                                  ),
-                                  icon: Icons.extension,
-                                  color: Colors.blue,
-                                  onTap: _isAuthenticating
-                                      ? null
-                                      : _authenticateWithNip07,
-                                  isRecommended: true,
-                                ),
-                                const SizedBox(height: 16),
-                              ],
-
-                              // Bunker Authentication
-                              _buildBunkerAuthCard(webAuth),
-
-                              // Error message
-                              if (_errorMessage != null) ...[
                                 const SizedBox(height: 24),
-                                Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.red.withValues(alpha: 0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                      color: Colors.red,
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.error_outline,
-                                        color: Colors.red,
-                                      ),
-                                      const SizedBox(width: 12),
-                                      Expanded(
-                                        child: Text(
-                                          _errorMessage!,
-                                          style: const TextStyle(
-                                            color: Colors.red,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                Text(
+                                  'Connect to divine',
+                                  style: VineTheme
+                                      .headlineLargeFont(),
                                 ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Choose your preferred '
+                                  'Nostr authentication '
+                                  'method',
+                                  style: VineTheme
+                                      .bodyLargeFont(
+                                    color: VineTheme
+                                        .onSurfaceVariant,
+                                  ),
+                                  textAlign:
+                                      TextAlign.center,
+                                ),
+                                const SizedBox(height: 48),
+
+                                // NIP-07 Authentication
+                                if (webAuth
+                                    .isNip07Available) ...[
+                                  _Nip07AuthCard(
+                                    subtitle: webAuth
+                                        .getMethodDisplayName(
+                                      WebAuthMethod.nip07,
+                                    ),
+                                    isAuthenticating:
+                                        _isAuthenticating,
+                                    onTap:
+                                        _authenticateWithNip07,
+                                  ),
+                                  const SizedBox(
+                                    height: 16,
+                                  ),
+                                ],
+
+                                // Bunker Authentication
+                                _BunkerAuthCard(
+                                  controller:
+                                      _bunkerUriController,
+                                  isAuthenticating:
+                                      _isAuthenticating,
+                                  onConnect:
+                                      _authenticateWithBunker,
+                                  onPaste:
+                                      _pasteFromClipboard,
+                                ),
+
+                                // Error message
+                                if (_errorMessage !=
+                                    null) ...[
+                                  const SizedBox(
+                                    height: 24,
+                                  ),
+                                  _WebAuthErrorMessage(
+                                    message: _errorMessage!,
+                                  ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
 
-                  // Help text
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.05),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Column(
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline,
-                              color: Colors.blue,
-                              size: 20,
-                            ),
-                            SizedBox(width: 8),
-                            Text(
-                              'New to Nostr?',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ],
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Install a browser extension like Alby or nos2x for the easiest experience, or use nsec bunker for secure remote signing.',
-                          style: TextStyle(color: Colors.white70, fontSize: 14),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                    // Help text
+                    const _NostrHelpBox(),
+                  ],
+                ),
               ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// NIP-07 browser extension auth card.
+class _Nip07AuthCard extends StatelessWidget {
+  const _Nip07AuthCard({
+    required this.subtitle,
+    required this.isAuthenticating,
+    required this.onTap,
+  });
+
+  final String subtitle;
+  final bool isAuthenticating;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: VineTheme.surfaceContainer,
+      child: InkWell(
+        onTap: isAuthenticating ? null : onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(
+              color: VineTheme.primary,
+              width: 2,
             ),
           ),
-        );
-      },
-    ),
-  );
-
-  Widget _buildAuthMethodCard({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-    required VoidCallback? onTap,
-    bool isRecommended = false,
-  }) => Card(
-    color: Colors.white.withValues(alpha: 0.05),
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(8),
-      child: Container(
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(8),
-          border: isRecommended
-              ? Border.all(color: Colors.purple, width: 2)
-              : null,
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (isRecommended) ...[
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.purple,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: const Text(
-                            'RECOMMENDED',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    subtitle,
-                    style: const TextStyle(color: Colors.white70, fontSize: 14),
-                  ),
-                ],
-              ),
-            ),
-            if (_isAuthenticating && onTap != null)
-              const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            else
-              const Icon(
-                Icons.arrow_forward_ios,
-                color: Colors.white54,
-                size: 16,
-              ),
-          ],
-        ),
-      ),
-    ),
-  );
-
-  Widget _buildBunkerAuthCard(WebAuthService webAuth) => Card(
-    color: Colors.white.withValues(alpha: 0.05),
-    child: Padding(
-      padding: const EdgeInsets.all(20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+          child: Row(
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: Colors.orange.withValues(alpha: 0.2),
+                  color: VineTheme.primary
+                      .withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Icon(
-                  Icons.phone_android,
-                  color: Colors.orange,
-                  size: 24,
+                child: const DivineIcon(
+                  icon: DivineIconName.bracketsAngle,
+                  color: VineTheme.primary,
                 ),
               ),
               const SizedBox(width: 16),
-              const Expanded(
+              Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'nsec bunker',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    Row(
+                      children: [
+                        Text(
+                          'Browser Extension',
+                          style:
+                              VineTheme.titleSmallFont(),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          padding:
+                              const EdgeInsets.symmetric(
+                            horizontal: 6,
+                            vertical: 2,
+                          ),
+                          decoration: BoxDecoration(
+                            color: VineTheme.primary,
+                            borderRadius:
+                                BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            'RECOMMENDED',
+                            style: VineTheme
+                                .labelSmallFont(
+                              color: VineTheme.onPrimary,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 4),
                     Text(
-                      'Connect to a remote signer',
-                      style: TextStyle(color: Colors.white70, fontSize: 14),
+                      subtitle,
+                      style: VineTheme.bodyMediumFont(
+                        color: VineTheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
               ),
+              if (isAuthenticating)
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: VineTheme.onSurface,
+                  ),
+                )
+              else
+                const DivineIcon(
+                  icon: DivineIconName.caretRight,
+                  color: VineTheme.onSurfaceMuted,
+                  size: 16,
+                ),
             ],
           ),
-          const SizedBox(height: 16),
-          TextField(
-            controller: _bunkerUriController,
-            enabled: !_isAuthenticating,
-            enableInteractiveSelection: true,
-            style: const TextStyle(color: Colors.white),
-            decoration: InputDecoration(
-              hintText: 'bunker://pubkey?relay=wss://localhost:8080',
-              hintStyle: const TextStyle(color: Colors.white38),
-              filled: true,
-              fillColor: Colors.white.withValues(alpha: 0.05),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
-                borderSide: BorderSide.none,
-              ),
-              suffixIcon: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  IconButton(
-                    onPressed: _isAuthenticating ? null : _pasteFromClipboard,
-                    icon: const Icon(Icons.paste, color: Colors.white54),
-                    tooltip: 'Paste from clipboard',
+        ),
+      ),
+    );
+  }
+}
+
+/// Bunker authentication card with URI input.
+class _BunkerAuthCard extends StatelessWidget {
+  const _BunkerAuthCard({
+    required this.controller,
+    required this.isAuthenticating,
+    required this.onConnect,
+    required this.onPaste,
+  });
+
+  final TextEditingController controller;
+  final bool isAuthenticating;
+  final VoidCallback onConnect;
+  final VoidCallback onPaste;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      color: VineTheme.surfaceContainer,
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: VineTheme.vineGreen
+                        .withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(width: 8),
-                ],
-              ),
+                  child: const DivineIcon(
+                    icon: DivineIconName.linkSimple,
+                    color: VineTheme.vineGreen,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'nsec bunker',
+                        style: VineTheme.titleSmallFont(),
+                      ),
+                      Text(
+                        'Connect to a remote signer',
+                        style: VineTheme.bodyMediumFont(
+                          color:
+                              VineTheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton(
-              onPressed: _isAuthenticating ? null : _authenticateWithBunker,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orange,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+            const SizedBox(height: 16),
+            TextField(
+              controller: controller,
+              enabled: !isAuthenticating,
+              enableInteractiveSelection: true,
+              style: VineTheme.bodyMediumFont(
+                color: VineTheme.onSurface,
+              ),
+              decoration: InputDecoration(
+                hintText:
+                    'bunker://pubkey?relay=wss://...',
+                hintStyle: VineTheme.bodyMediumFont(
+                  color: VineTheme.onSurfaceDisabled,
+                ),
+                filled: true,
+                fillColor: VineTheme.surfaceBackground,
+                border: OutlineInputBorder(
+                  borderRadius:
+                      BorderRadius.circular(8),
+                  borderSide: BorderSide.none,
+                ),
+                suffixIcon: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      onPressed: isAuthenticating
+                          ? null
+                          : onPaste,
+                      icon: const DivineIcon(
+                        icon:
+                            DivineIconName.clipboard,
+                        color: VineTheme.onSurfaceMuted,
+                      ),
+                      tooltip: 'Paste from clipboard',
+                    ),
+                    const SizedBox(width: 8),
+                  ],
                 ),
               ),
-              child: _isAuthenticating
-                  ? const SizedBox(
-                      width: 20,
-                      height: 20,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                      ),
-                    )
-                  : const Text(
-                      'Connect to Bunker',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+            ),
+            const SizedBox(height: 12),
+            DivineButton(
+              label: 'Connect to Bunker',
+              expanded: true,
+              isLoading: isAuthenticating,
+              onPressed:
+                  isAuthenticating ? null : onConnect,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Error message container for web auth errors.
+class _WebAuthErrorMessage extends StatelessWidget {
+  const _WebAuthErrorMessage({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: VineTheme.errorOverlay,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: VineTheme.error,
+        ),
+      ),
+      child: Row(
+        children: [
+          const DivineIcon(
+            icon: DivineIconName.warningCircle,
+            color: VineTheme.error,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: VineTheme.bodyMediumFont(
+                color: VineTheme.error,
+              ),
             ),
           ),
         ],
       ),
-    ),
-  );
+    );
+  }
+}
+
+/// Help box explaining Nostr authentication options.
+class _NostrHelpBox extends StatelessWidget {
+  const _NostrHelpBox();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: VineTheme.surfaceContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              DivineIcon(
+                icon: DivineIconName.info,
+                color: VineTheme.primary,
+                size: 20,
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'New to Nostr?',
+                style: VineTheme.titleSmallFont(),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Install a browser extension like Alby or '
+            'nos2x for the easiest experience, or use '
+            'nsec bunker for secure remote signing.',
+            style: VineTheme.bodySmallFont(
+              color: VineTheme.onSurfaceVariant,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }

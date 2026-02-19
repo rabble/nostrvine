@@ -48,7 +48,7 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
             content: Text(
               result.errorMessage ?? 'Failed to connect with Amber',
             ),
-            backgroundColor: Colors.red,
+            backgroundColor: VineTheme.error,
           ),
         );
       }
@@ -64,150 +64,156 @@ class _LoginOptionsScreenState extends ConsumerState<LoginOptionsScreen> {
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            // Back button row
+            // Scrollable content fills entire safe area
+            SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Space for back button overlay
+                  const SizedBox(height: 72),
+
+                  // Header
+                  Text(
+                    'Sign in',
+                    style: VineTheme.headlineLargeFont(
+                      color: VineTheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Choose how you want to sign in',
+                    style: VineTheme.bodyLargeFont(
+                      color: VineTheme.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 48),
+
+                  // Primary: Login/Register with diVine
+                  DivineButton(
+                    label: 'Continue with email',
+                    leadingIcon: DivineIconName.envelope,
+                    expanded: true,
+                    onPressed: () =>
+                        context.push(WelcomeScreen.authNativePath),
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      'Login or create a new account',
+                      style: VineTheme.bodySmallFont(
+                        color: VineTheme.onSurfaceMuted,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Divider
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          color: VineTheme.outlineMuted,
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                        ),
+                        child: Text(
+                          'or',
+                          style: VineTheme.bodyMediumFont(
+                            color: VineTheme.onSurfaceMuted,
+                          ),
+                        ),
+                      ),
+                      Expanded(
+                        child: Container(
+                          height: 1,
+                          color: VineTheme.outlineMuted,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 32),
+
+                  // Secondary: Import Nostr Key
+                  DivineButton(
+                    label: 'Enter Nostr key',
+                    type: DivineButtonType.secondary,
+                    leadingIcon: DivineIconName.key,
+                    expanded: true,
+                    onPressed: () =>
+                        context.push(KeyImportScreen.path),
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      'Already have an nsec? Import it here',
+                      style: VineTheme.bodySmallFont(
+                        color: VineTheme.onSurfaceMuted,
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Tertiary: Connect with Signer App (NIP-46)
+                  DivineButton(
+                    label: 'Connect with Signer App',
+                    type: DivineButtonType.secondary,
+                    leadingIcon: DivineIconName.linkSimple,
+                    expanded: true,
+                    onPressed: () =>
+                        context.push(NostrConnectScreen.path),
+                  ),
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Text(
+                      'Use Amber, nsecBunker, or other '
+                      'NIP-46 signers',
+                      style: VineTheme.bodySmallFont(
+                        color: VineTheme.onSurfaceMuted,
+                      ),
+                    ),
+                  ),
+
+                  // Amber button (Android only)
+                  if (Platform.isAndroid) ...[
+                    const SizedBox(height: 24),
+                    _AmberButton(
+                      isConnecting: _isConnectingAmber,
+                      onPressed: _connectWithAmber,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // Back button overlays top-left
             Padding(
               padding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 12,
               ),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: DivineIconButton(
-                  icon: DivineIconName.caretLeft,
-                  type: DivineIconButtonType.secondary,
-                  size: DivineIconButtonSize.small,
-                  onPressed: () => context.pop(),
-                ),
+              child: DivineIconButton(
+                icon: DivineIconName.caretLeft,
+                type: DivineIconButtonType.secondary,
+                size: DivineIconButtonSize.small,
+                onPressed: () => context.pop(),
               ),
             ),
-
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    children: [
-                      // Header
-                      Align(
-                        alignment: Alignment.topLeft,
-                        child: Text(
-                          'Sign in',
-                          style: VineTheme.headlineLargeFont(
-                            color: VineTheme.onSurface,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Align(
-                        alignment: Alignment.topLeft,
-                        child: Text(
-                          'Choose how you want to sign in',
-                          style: VineTheme.bodyLargeFont(
-                            color: VineTheme.onSurface,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 48),
-
-                      // Primary: Login/Register with diVine
-                      DivineButton(
-                        label: 'Continue with email',
-                        leadingIcon: DivineIconName.envelope,
-                        expanded: true,
-                        onPressed: () =>
-                            context.push(WelcomeScreen.authNativePath),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Login or create a new account',
-                        style: VineTheme.bodySmallFont(
-                          color: VineTheme.onSurfaceMuted,
-                        ),
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Divider
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Container(
-                              height: 1,
-                              color: VineTheme.outlineMuted,
-                            ),
-                          ),
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            child: Text(
-                              'or',
-                              style: VineTheme.bodyMediumFont(
-                                color: VineTheme.onSurfaceMuted,
-                              ),
-                            ),
-                          ),
-                          Expanded(
-                            child: Container(
-                              height: 1,
-                              color: VineTheme.outlineMuted,
-                            ),
-                          ),
-                        ],
-                      ),
-
-                      const SizedBox(height: 32),
-
-                      // Secondary: Import Nostr Key
-                      DivineButton(
-                        label: 'Enter Nostr key',
-                        type: DivineButtonType.secondary,
-                        leadingIcon: DivineIconName.key,
-                        expanded: true,
-                        onPressed: () => context.push(KeyImportScreen.path),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Already have an nsec? Import it here',
-                        style: VineTheme.bodySmallFont(
-                          color: VineTheme.onSurfaceMuted,
-                        ),
-                      ),
-
-                      const SizedBox(height: 24),
-
-                      // Tertiary: Connect with Signer App (NIP-46)
-                      DivineButton(
-                        label: 'Connect with Signer App',
-                        type: DivineButtonType.secondary,
-                        leadingIcon: DivineIconName.linkSimple,
-                        expanded: true,
-                        onPressed: () => context.push(NostrConnectScreen.path),
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Use Amber, nsecBunker, or other NIP-46 signers',
-                        style: VineTheme.bodySmallFont(
-                          color: VineTheme.onSurfaceMuted,
-                        ),
-                      ),
-
-                      // Amber button (Android only)
-                      if (Platform.isAndroid) ...[
-                        const SizedBox(height: 24),
-                        _AmberButton(
-                          isConnecting: _isConnectingAmber,
-                          onPressed: _connectWithAmber,
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+          ],
         ),
-      );
+      ),
+    );
   }
 }
 
