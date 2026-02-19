@@ -1,8 +1,6 @@
 // ABOUTME: Tests for AudioSortDropdown widget.
 // ABOUTME: Validates dropdown rendering, option selection, and animations.
 
-import 'dart:ui' show SemanticsFlag;
-
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
