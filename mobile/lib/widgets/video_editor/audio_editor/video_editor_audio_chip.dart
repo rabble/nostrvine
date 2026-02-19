@@ -43,14 +43,16 @@ class VideoEditorAudioChip extends ConsumerWidget {
             Flexible(
               child: !hasSelectedSound
                   ? Text(
+                      // TODO(l10n): Replace with context.l10n when localization is added.
                       'Add audio',
-                      textAlign: TextAlign.center,
+                      textAlign: .center,
                       style: VineTheme.titleMediumFont(fontSize: 16),
                     )
                   : Text.rich(
                       TextSpan(
                         style: VineTheme.labelLargeFont(),
                         children: [
+                          // TODO(l10n): Replace with context.l10n when localization is added.
                           TextSpan(text: selectedSound.title ?? 'Untitled'),
                           if (selectedSound.source != null) ...[
                             const TextSpan(text: ' ∙ '),
@@ -61,9 +63,9 @@ class VideoEditorAudioChip extends ConsumerWidget {
                           ],
                         ],
                       ),
-                      textAlign: TextAlign.center,
+                      textAlign: .center,
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      overflow: .ellipsis,
                     ),
             ),
             if (hasSelectedSound)
@@ -104,7 +106,7 @@ class _AudioBar extends StatelessWidget {
       height: height,
       decoration: BoxDecoration(
         color: VineTheme.whiteText,
-        borderRadius: BorderRadius.circular(2),
+        borderRadius: .circular(2),
       ),
     );
   }

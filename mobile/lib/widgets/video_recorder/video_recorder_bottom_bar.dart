@@ -138,8 +138,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
                 // Flash toggle
                 _ActionButton(
                   iconPath: state.flashMode.iconPath,
-                  // TODO(l10n): Replace with context.l10n
-                  // when localization is added.
+                  // TODO(l10n): Replace with context.l10n when localization is added.
                   tooltip: 'Toggle flash',
                   onPressed: state.hasFlash ? notifier.toggleFlash : null,
                 ),
@@ -147,8 +146,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
                 // Timer toggle
                 _ActionButton(
                   iconPath: state.timer.iconPath,
-                  // TODO(l10n): Replace with context.l10n
-                  // when localization is added.
+                  // TODO(l10n): Replace with context.l10n when localization is added.
                   tooltip: 'Cycle timer',
                   onPressed: notifier.cycleTimer,
                 ),
@@ -158,8 +156,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
                   iconPath: state.aspectRatio == .square
                       ? 'assets/icon/crop_square.svg'
                       : 'assets/icon/crop_portrait.svg',
-                  // TODO(l10n): Replace with context.l10n
-                  // when localization is added.
+                  // TODO(l10n): Replace with context.l10n when localization is added.
                   tooltip: 'Toggle aspect ratio',
                   onPressed: !hasClips ? notifier.toggleAspectRatio : null,
                 ),
@@ -167,8 +164,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
                 // Flip camera
                 _ActionButton(
                   iconPath: 'assets/icon/refresh.svg',
-                  // TODO(l10n): Replace with context.l10n
-                  // when localization is added.
+                  // TODO(l10n): Replace with context.l10n when localization is added.
                   tooltip: 'Switch camera',
                   onPressed: state.canSwitchCamera
                       ? notifier.switchCamera
@@ -178,8 +174,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
                 // More options
                 _ActionButton(
                   iconPath: 'assets/icon/more_horiz.svg',
-                  // TODO(l10n): Replace with context.l10n
-                  // when localization is added.
+                  // TODO(l10n): Replace with context.l10n when localization is added.
                   tooltip: 'More options',
                   onPressed: () => _showMoreOptions(context, ref, notifier),
                 ),

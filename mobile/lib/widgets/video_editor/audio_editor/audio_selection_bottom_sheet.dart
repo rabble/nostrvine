@@ -50,7 +50,9 @@ class _AudioSelectionBottomSheetState
     if (_playingSoundId == sound.id) {
       if (audioService.isPlaying) {
         await audioService.stop();
-        setState(() => _playingSoundId = null);
+
+        if (mounted) setState(() => _playingSoundId = null);
+
         Log.debug(
           'Stopped preview: ${sound.title ?? sound.id}',
           name: 'AudioSelectionBottomSheet',
@@ -289,6 +291,7 @@ class _EmptyState extends StatelessWidget {
           Icon(Icons.music_off, size: 64, color: VineTheme.secondaryText),
           const SizedBox(height: 16),
           const Text(
+            // TODO(l10n): Replace with context.l10n when localization is added.
             'No sounds available',
             style: TextStyle(
               color: VineTheme.whiteText,
@@ -298,6 +301,7 @@ class _EmptyState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
+            // TODO(l10n): Replace with context.l10n when localization is added.
             'Sounds will appear here when creators share audio',
             style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
             textAlign: TextAlign.center,
@@ -320,6 +324,7 @@ class _NoResultsState extends StatelessWidget {
           Icon(Icons.search_off, size: 64, color: VineTheme.secondaryText),
           const SizedBox(height: 16),
           const Text(
+            // TODO(l10n): Replace with context.l10n when localization is added.
             'No sounds found',
             style: TextStyle(
               color: VineTheme.whiteText,
@@ -329,6 +334,7 @@ class _NoResultsState extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
+            // TODO(l10n): Replace with context.l10n when localization is added.
             'Try a different search term',
             style: TextStyle(color: VineTheme.secondaryText, fontSize: 14),
           ),
@@ -354,6 +360,7 @@ class _ErrorState extends ConsumerWidget {
             Icon(Icons.error_outline, size: 64, color: VineTheme.likeRed),
             const SizedBox(height: 16),
             const Text(
+              // TODO(l10n): Replace with context.l10n when localization is added.
               'Failed to load sounds',
               style: TextStyle(
                 color: VineTheme.whiteText,
@@ -375,6 +382,7 @@ class _ErrorState extends ConsumerWidget {
                 ref.invalidate(trendingSoundsProvider);
               },
               icon: const Icon(Icons.refresh),
+              // TODO(l10n): Replace with context.l10n when localization is added.
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: VineTheme.vineGreen,

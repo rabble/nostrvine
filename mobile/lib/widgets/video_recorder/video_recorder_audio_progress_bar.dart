@@ -115,13 +115,13 @@ class _EmptyWaveformPainter extends CustomPainter {
 
     final paint = Paint()
       ..color = barColor
-      ..style = PaintingStyle.fill;
+      ..style = .fill;
 
     for (var i = 0; i < barCount; i++) {
       final x = i * _WaveformConstants.barStep;
       canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(
+        .fromRectAndRadius(
+          .fromLTWH(
             x,
             halfHeight - _WaveformConstants.emptyBarHeight,
             _WaveformConstants.barWidth,
@@ -177,7 +177,7 @@ class _AudioWaveformProgress extends ConsumerWidget {
     return DecoratedBox(
       decoration: BoxDecoration(
         color: VineTheme.scrim15,
-        borderRadius: BorderRadius.circular(4),
+        borderRadius: .circular(4),
       ),
       child: CustomPaint(
         size: const Size(double.infinity, _WaveformConstants.waveformHeight),
@@ -368,13 +368,13 @@ class _WaveformProgressPainter extends CustomPainter {
       final isActive = x <= progressX;
       final paint = Paint()
         ..color = isActive ? activeColor : inactiveColor
-        ..style = PaintingStyle.fill;
+        ..style = .fill;
 
       // Draw single connected bar spanning both channels
       canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(x, topY, barWidth, totalHeight),
-          const Radius.circular(1),
+        .fromRectAndRadius(
+          .fromLTWH(x, topY, barWidth, totalHeight),
+          const .circular(1),
         ),
         paint,
       );

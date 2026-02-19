@@ -1,6 +1,5 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/widgets/video_editor_icon_button.dart';
 
@@ -34,6 +33,7 @@ class AudioListTile extends StatelessWidget {
         onTap: onSelect,
         minTileHeight: 48,
         leading: VideoEditorIconButton(
+          // TODO(l10n): Replace with context.l10n when localization is added.
           semanticLabel: isPlaying ? 'Pause preview' : 'Play preview',
           onTap: onPlayPause,
           iconPath: isPlaying
@@ -46,6 +46,7 @@ class AudioListTile extends StatelessWidget {
           radius: 12,
         ),
         title: Text(
+          // TODO(l10n): Replace with context.l10n when localization is added.
           audio.title ?? 'Untitled sound',
           style: VineTheme.titleMediumFont(fontSize: 16, height: 1.5),
           maxLines: 1,

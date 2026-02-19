@@ -186,6 +186,7 @@ class _DropdownButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
+      // TODO(l10n): Replace with context.l10n when localization is added.
       label: 'Sort by $label. Tap to change sort order',
       child: InkWell(
         onTap: onTap,
