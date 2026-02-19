@@ -4,6 +4,7 @@
 
 import 'dart:async';
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:models/models.dart' hide LogCategory;
@@ -33,7 +34,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
        super(const VideoFeedState()) {
     on<VideoFeedStarted>(_onStarted);
     on<VideoFeedModeChanged>(_onModeChanged);
-    on<VideoFeedLoadMoreRequested>(_onLoadMoreRequested);
+    on<VideoFeedLoadMoreRequested>(
+      _onLoadMoreRequested,
+      transformer: droppable(),
+    );
     on<VideoFeedRefreshRequested>(_onRefreshRequested);
   }
 
@@ -89,10 +93,14 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     emit(state.copyWith(isLoadingMore: true));
 
     try {
-      // Use cursor - 1 to ensure we don't include the last video again
-      // (until is inclusive on some relays)
-      final lastVideo = state.videos.last;
-      final cursor = lastVideo.createdAt - 1;
+      // Find the oldest createdAt among all loaded videos for the cursor.
+      // For popular feed (sorted by engagement), state.videos.last is the
+      // lowest-engagement video, not the oldest — using its createdAt would
+      // skip older popular videos.
+      final oldestCreatedAt = state.videos
+          .map((v) => v.createdAt)
+          .reduce((a, b) => a < b ? a : b);
+      final cursor = oldestCreatedAt - 1;
 
       final newVideos = await _fetchVideosForMode(state.mode, until: cursor);
 
@@ -101,13 +109,30 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
           .where((v) => v.videoUrl != null)
           .toList();
 
-      final updatedVideos = [...state.videos, ...validNewVideos]
-        ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      // Deduplicate by event ID. Funnelcake and Nostr can return
+      // overlapping videos when Funnelcake runs out and we fall through
+      // to Nostr. Without dedup, PooledVideoFeed's internal dedup
+      // causes a count mismatch that breaks the pagination trigger.
+      final seenIds = <String>{};
+      final updatedVideos = <VideoEvent>[];
+      for (final video in [...state.videos, ...validNewVideos]) {
+        if (seenIds.add(video.id)) {
+          updatedVideos.add(video);
+        }
+      }
+
+      // Only sort chronological feeds by createdAt.
+      // Popular feed preserves its engagement-based order.
+      if (state.mode != FeedMode.popular) {
+        updatedVideos.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      }
 
       emit(
         state.copyWith(
           videos: updatedVideos,
-          hasMore: newVideos.length == _pageSize,
+          // Only stop pagination when the server returns nothing.
+          // Fewer than _pageSize can happen due to server-side filtering.
+          hasMore: newVideos.isNotEmpty,
           isLoadingMore: false,
         ),
       );
@@ -165,7 +190,9 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
         state.copyWith(
           status: VideoFeedStatus.success,
           videos: validVideos,
-          hasMore: validVideos.length == _pageSize,
+          // Only stop pagination when no results at all.
+          // Fewer than _pageSize can happen due to server-side filtering.
+          hasMore: validVideos.isNotEmpty,
           clearError: true,
         ),
       );

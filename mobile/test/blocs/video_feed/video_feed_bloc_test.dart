@@ -284,7 +284,7 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
-        'sets hasMore to false when less than page size returned',
+        'keeps hasMore true when fewer than page size returned',
         setUp: () {
           final videos = createTestVideos(3); // Less than 5 (page size)
 
@@ -307,6 +307,32 @@ void main() {
           isA<VideoFeedState>()
               .having((s) => s.status, 'status', VideoFeedStatus.success)
               .having((s) => s.videos.length, 'videos count', 3)
+              .having((s) => s.hasMore, 'hasMore', true),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'sets hasMore to false when empty list returned',
+        setUp: () {
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => []);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const VideoFeedStarted()),
+        expect: () => [
+          const VideoFeedState(
+            status: VideoFeedStatus.loading,
+            mode: FeedMode.home,
+          ),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos, 'videos', isEmpty)
               .having((s) => s.hasMore, 'hasMore', false),
         ],
       );
@@ -462,9 +488,11 @@ void main() {
       );
 
       blocTest<VideoFeedBloc, VideoFeedState>(
-        'sets hasMore to false when returned videos less than page size',
+        'keeps hasMore true when fewer than page size returned from load more',
         setUp: () {
-          // Return fewer videos than page size with unique IDs
+          // Return fewer videos than page size with unique IDs.
+          // Server-side filtering can reduce the count below _pageSize
+          // even when more content exists.
           final moreVideos = createTestVideos(
             2,
             startTimestamp: 1000,
@@ -497,7 +525,138 @@ void main() {
           isA<VideoFeedState>()
               .having((s) => s.isLoadingMore, 'isLoadingMore', false)
               .having((s) => s.videos.length, 'videos count', pageSize + 2)
+              .having((s) => s.hasMore, 'hasMore', true),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'sets hasMore to false when empty list returned from load more',
+        setUp: () {
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => []);
+        },
+        build: createBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.home,
+          videos: createTestVideos(pageSize, startTimestamp: 2000),
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
+        expect: () => [
+          isA<VideoFeedState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<VideoFeedState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              .having((s) => s.videos.length, 'videos count', pageSize)
               .having((s) => s.hasMore, 'hasMore', false),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'drops concurrent requests via droppable transformer',
+        setUp: () {
+          final moreVideos = createTestVideos(
+            pageSize,
+            startTimestamp: 1000,
+            idPrefix: 'more',
+          );
+
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async {
+            // Simulate network delay
+            await Future<void>.delayed(const Duration(milliseconds: 50));
+            return moreVideos;
+          });
+        },
+        build: createBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.home,
+          videos: createTestVideos(pageSize, startTimestamp: 2000),
+          hasMore: true,
+        ),
+        act: (bloc) {
+          // Fire multiple events simultaneously — droppable should
+          // process only the first and drop the rest while it's running.
+          bloc
+            ..add(const VideoFeedLoadMoreRequested())
+            ..add(const VideoFeedLoadMoreRequested())
+            ..add(const VideoFeedLoadMoreRequested());
+        },
+        wait: const Duration(milliseconds: 200),
+        verify: (_) {
+          verify(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'deduplicates overlapping videos from Funnelcake and Nostr',
+        setUp: () {
+          // Return videos that partially overlap with existing ones.
+          // This happens when Funnelcake runs out and Nostr returns
+          // some of the same videos.
+          createTestVideos(3, startTimestamp: 2000, idPrefix: 'existing');
+          final overlappingVideos = [
+            // 2 duplicates (same IDs as existing)
+            ...createTestVideos(2, startTimestamp: 2000, idPrefix: 'existing'),
+            // 3 truly new
+            ...createTestVideos(3, startTimestamp: 1000, idPrefix: 'new'),
+          ];
+
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => overlappingVideos);
+        },
+        build: createBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.home,
+          videos: createTestVideos(
+            3,
+            startTimestamp: 2000,
+            idPrefix: 'existing',
+          ),
+          hasMore: true,
+        ),
+        act: (bloc) => bloc.add(const VideoFeedLoadMoreRequested()),
+        expect: () => [
+          isA<VideoFeedState>().having(
+            (s) => s.isLoadingMore,
+            'isLoadingMore',
+            true,
+          ),
+          isA<VideoFeedState>()
+              .having((s) => s.isLoadingMore, 'isLoadingMore', false)
+              // 3 existing + 3 new = 6 (2 duplicates removed)
+              .having((s) => s.videos.length, 'videos count', 6)
+              .having((s) => s.hasMore, 'hasMore', true),
         ],
       );
 
