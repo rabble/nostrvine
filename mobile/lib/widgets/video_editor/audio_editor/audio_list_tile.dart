@@ -78,14 +78,14 @@ class AudioListTile extends StatelessWidget {
         trailing: Container(
           padding: const .all(8),
           decoration: ShapeDecoration(
-            color: VineTheme.scrim15,
+            color: VineTheme.primary,
             shape: RoundedRectangleBorder(borderRadius: .circular(16)),
           ),
           child: SvgPicture.asset(
-            'assets/icon/add.svg',
+            'assets/icon/plus.svg',
             width: 24,
             height: 24,
-            colorFilter: .mode(VineTheme.onSurface, .srcIn),
+            colorFilter: const .mode(VineTheme.onPrimary, .srcIn),
           ),
         ),
       ),

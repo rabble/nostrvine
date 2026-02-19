@@ -25,7 +25,7 @@ class AudioSelectionBottomSheet extends ConsumerStatefulWidget {
 class _AudioSelectionBottomSheetState
     extends ConsumerState<AudioSelectionBottomSheet> {
   String _searchQuery = '';
-  AudioSortOption _sortOption = AudioSortOption.trending;
+  AudioSortOption _sortOption = AudioSortOption.newest;
   String? _playingSoundId;
   AudioPlaybackService? _audioService;
 
@@ -121,13 +121,6 @@ class _AudioSelectionBottomSheetState
   List<AudioEvent> _sortSounds(List<AudioEvent> sounds) {
     final sorted = List<AudioEvent>.from(sounds);
     switch (_sortOption) {
-      // TODO(@hm21): Implement filter options below
-      case AudioSortOption.trending:
-        // Keep original order (assumed to be trending)
-        break;
-      case AudioSortOption.mostPopular:
-        // Sort by some popularity metric if available
-        break;
       case AudioSortOption.newest:
         sorted.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       case AudioSortOption.longest:

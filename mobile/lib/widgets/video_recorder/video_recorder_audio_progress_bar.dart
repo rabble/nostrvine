@@ -50,8 +50,11 @@ class VideoRecorderAudioProgressBar extends ConsumerWidget {
       child: SafeArea(
         child: AnimatedSwitcher(
           duration: const Duration(milliseconds: 220),
+          switchInCurve: Curves.ease,
           child: !isRecording || selectedSound == null
-              ? const SizedBox.shrink()
+              ? const SizedBox.shrink(
+                  key: ValueKey('Empty-Video-Recorder-Audio-Track'),
+                )
               : BlocBuilder<SoundWaveformBloc, SoundWaveformState>(
                   builder: (context, waveformState) {
                     return switch (waveformState) {

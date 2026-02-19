@@ -4,8 +4,6 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 /// Sort options for the audio/sound list.
 enum AudioSortOption {
-  trending('Trending'),
-  mostPopular('Most Popular'),
   newest('Newest'),
   longest('Longest'),
   shortest('Shortest');

@@ -74,6 +74,7 @@ class VideoRecorderTopBar extends ConsumerWidget {
                         // TODO(l10n): Replace with context.l10n when localization is added.
                         semanticLabel: 'Close video recorder',
                         iconPath: 'assets/icon/close.svg',
+                        iconSize: 24,
                         onTap: () => notifier.closeVideoRecorder(context),
                       ),
 
@@ -84,62 +85,23 @@ class VideoRecorderTopBar extends ConsumerWidget {
                       ),
 
                       // Next button
-                      if (hasClips)
-                        _NextButton(
-                          onTap: () => notifier.openVideoEditor(context),
+                      Opacity(
+                        opacity: hasClips ? 1 : 0.32,
+                        child: VideoEditorIconButton(
+                          backgroundColor: VineTheme.inverseSurface,
+                          iconColor: VineTheme.inverseOnSurface,
+                          // TODO(l10n): Replace with context.l10n when localization is added.
+                          semanticLabel: 'Continue to video editor',
+                          iconPath: 'assets/icon/Check.svg',
+                          iconSize: 24,
+                          onTap: hasClips
+                              ? () => notifier.openVideoEditor(context)
+                              : null,
                         ),
+                      ),
                     ],
                   ),
                 ),
-        ),
-      ),
-    );
-  }
-}
-
-class _NextButton extends StatelessWidget {
-  const _NextButton({this.onTap});
-
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      // TODO(l10n): Replace with context.l10n when localization is added.
-      label: 'Continue to video editor',
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const .symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: .circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x1A000000),
-                offset: Offset(1, 1),
-                blurRadius: 1,
-              ),
-              BoxShadow(
-                color: Color(0x1A000000),
-                offset: Offset(0.4, 0.4),
-                blurRadius: 0.6,
-              ),
-            ],
-          ),
-          child: const Text(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            'Next',
-            style: TextStyle(
-              fontFamily: 'BricolageGrotesque',
-              fontSize: 18,
-              fontWeight: .w800,
-              height: 1.33,
-              letterSpacing: 0.15,
-              color: Color(0xFF00452D),
-            ),
-          ),
         ),
       ),
     );

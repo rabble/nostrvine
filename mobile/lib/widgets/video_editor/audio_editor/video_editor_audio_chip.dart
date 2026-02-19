@@ -19,7 +19,7 @@ class VideoEditorAudioChip extends ConsumerWidget {
       radius: 16,
       child: Container(
         constraints: BoxConstraints(minHeight: 48),
-        padding: const .symmetric(horizontal: 16, vertical: 8),
+        padding: const .fromLTRB(16, 8, 8, 8),
         decoration: ShapeDecoration(
           color: VineTheme.scrim15,
           shape: RoundedRectangleBorder(borderRadius: .circular(16)),
@@ -28,7 +28,6 @@ class VideoEditorAudioChip extends ConsumerWidget {
           mainAxisSize: .min,
           mainAxisAlignment: .center,
           crossAxisAlignment: .center,
-          spacing: 8,
           children: [
             Row(
               spacing: 1.5,
@@ -40,6 +39,7 @@ class VideoEditorAudioChip extends ConsumerWidget {
                 const _AudioBar(height: 10),
               ],
             ),
+            const SizedBox(width: 8),
             Flexible(
               child: !hasSelectedSound
                   ? Text(
@@ -69,7 +69,8 @@ class VideoEditorAudioChip extends ConsumerWidget {
             if (hasSelectedSound)
               GestureDetector(
                 onTap: () => ref.read(selectedSoundProvider.notifier).clear(),
-                child: DecoratedBox(
+                child: Container(
+                  padding: .all(8),
                   decoration: ShapeDecoration(
                     shape: RoundedRectangleBorder(borderRadius: .circular(16)),
                   ),
@@ -80,7 +81,9 @@ class VideoEditorAudioChip extends ConsumerWidget {
                     colorFilter: .mode(VineTheme.whiteText, .srcIn),
                   ),
                 ),
-              ),
+              )
+            else
+              const SizedBox(width: 8),
           ],
         ),
       ),
