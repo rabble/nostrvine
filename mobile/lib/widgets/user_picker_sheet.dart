@@ -25,12 +25,15 @@ enum UserPickerFilterMode {
 /// Shows a [UserPickerSheet] as a modal bottom sheet.
 ///
 /// Returns the selected [UserProfile] or null if dismissed.
+///
+/// Use [excludePubkeys] to filter out already-selected users from results.
 Future<UserProfile?> showUserPickerSheet(
   BuildContext context, {
   required UserPickerFilterMode filterMode,
   required String title,
   bool autoFocus = false,
   String searchText = 'Search by name',
+  Set<String> excludePubkeys = const {},
 }) {
   return VineBottomSheet.show<UserProfile>(
     context: context,
@@ -51,6 +54,7 @@ Future<UserProfile?> showUserPickerSheet(
       filterMode: filterMode,
       scrollController: scrollController,
       autoFocus: autoFocus,
+      excludePubkeys: excludePubkeys,
     ),
   );
 }
@@ -62,6 +66,7 @@ class UserPickerSheet extends ConsumerStatefulWidget {
     required this.filterMode,
     this.scrollController,
     this.autoFocus = false,
+    this.excludePubkeys = const {},
     super.key,
   });
 
@@ -72,6 +77,9 @@ class UserPickerSheet extends ConsumerStatefulWidget {
   final ScrollController? scrollController;
 
   final bool autoFocus;
+
+  /// Pubkeys to exclude from search results (already selected users).
+  final Set<String> excludePubkeys;
 
   @override
   ConsumerState<UserPickerSheet> createState() => _UserPickerSheetState();
@@ -117,7 +125,10 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
     );
     final results = await Future.wait(futures);
 
-    final profiles = results.whereType<UserProfile>().toList();
+    final profiles = results
+        .whereType<UserProfile>()
+        .where((p) => !widget.excludePubkeys.contains(p.pubkey))
+        .toList();
 
     // Sort by display name for a nice default list
     profiles.sort(
@@ -244,6 +255,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                   searchBloc: _searchBloc,
                   scrollController: widget.scrollController,
                   onUserSelected: _onUserSelected,
+                  excludePubkeys: widget.excludePubkeys,
                 ),
         ),
       ],
@@ -472,11 +484,13 @@ class _NetworkResults extends StatelessWidget {
     required this.searchBloc,
     required this.scrollController,
     required this.onUserSelected,
+    this.excludePubkeys = const {},
   });
 
   final UserSearchBloc searchBloc;
   final ScrollController? scrollController;
   final ValueChanged<UserProfile> onUserSelected;
+  final Set<String> excludePubkeys;
 
   @override
   Widget build(BuildContext context) {
@@ -489,14 +503,18 @@ class _NetworkResults extends StatelessWidget {
             child: CircularProgressIndicator(color: VineTheme.vineGreen),
           ),
           UserSearchStatus.failure => const _ErrorState(),
-          UserSearchStatus.success =>
-            state.results.isEmpty
+          UserSearchStatus.success => () {
+            final filtered = state.results
+                .where((p) => !excludePubkeys.contains(p.pubkey))
+                .toList();
+            return filtered.isEmpty
                 ? const _NoResults()
                 : _ResultsList(
                     scrollController: scrollController,
-                    results: state.results,
+                    results: filtered,
                     onUserSelected: onUserSelected,
-                  ),
+                  );
+          }(),
         };
       },
     );

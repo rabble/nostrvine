@@ -7,12 +7,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
-import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_help_button.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_help_sheet.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_user_chip.dart';
 
 /// Input widget for adding and managing collaborators on a video.
 ///
@@ -112,7 +111,17 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
               spacing: 8,
               runSpacing: 8,
               children: collaborators
-                  .map((pubkey) => _CollaboratorChip(pubkey: pubkey))
+                  .map(
+                    (pubkey) => VideoMetadataUserChip.fromPubkey(
+                      pubkey: pubkey,
+                      // TODO(l10n): Replace with context.l10n
+                      //   when localization is added.
+                      removeLabel: 'Remove collaborator',
+                      onRemove: () => ref
+                          .read(videoEditorProvider.notifier)
+                          .removeCollaborator(pubkey),
+                    ),
+                  )
                   .toList(),
             ),
           ),
@@ -139,12 +148,19 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
   }
 
   Future<void> _addCollaborator(BuildContext context, WidgetRef ref) async {
+    // Get current collaborators to exclude from picker
+    final currentCollaborators = ref
+        .read(videoEditorProvider)
+        .collaboratorPubkeys
+        .toSet();
+
     final profile = await showUserPickerSheet(
       context,
       filterMode: UserPickerFilterMode.mutualFollowsOnly,
       // TODO(l10n): Replace with context.l10n when localization is added.
       title: 'Add collaborator',
       searchText: 'Mutual followers',
+      excludePubkeys: currentCollaborators,
     );
 
     if (profile == null || !context.mounted) return;
@@ -174,71 +190,5 @@ class VideoMetadataCollaboratorsInput extends ConsumerWidget {
     }
 
     ref.read(videoEditorProvider.notifier).addCollaborator(profile.pubkey);
-  }
-}
-
-/// Chip showing a collaborator's avatar, name, and remove button.
-class _CollaboratorChip extends ConsumerWidget {
-  const _CollaboratorChip({required this.pubkey});
-
-  final String pubkey;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(fetchUserProfileProvider(pubkey));
-
-    return Container(
-      padding: const .symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: .circular(16),
-        color: const Color(0xFF0B2A20),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        spacing: 8,
-        children: [
-          UserAvatar(
-            imageUrl: profileAsync.value?.picture,
-            name: profileAsync.value?.bestDisplayName,
-            size: 24,
-          ),
-          Flexible(
-            child: Text(
-              profileAsync.value?.bestDisplayName ??
-                  '${pubkey.substring(0, 8)}...',
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: VineTheme.bodyFont(
-                color: VineTheme.whiteText,
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                height: 1.38,
-              ),
-            ),
-          ),
-          Semantics(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            label: 'Remove collaborator',
-            button: true,
-            child: GestureDetector(
-              onTap: () => ref
-                  .read(videoEditorProvider.notifier)
-                  .removeCollaborator(pubkey),
-              child: SizedBox(
-                width: 16,
-                height: 16,
-                child: SvgPicture.asset(
-                  'assets/icon/close.svg',
-                  colorFilter: const ColorFilter.mode(
-                    VineTheme.onSurfaceMuted,
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

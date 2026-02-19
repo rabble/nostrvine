@@ -8,12 +8,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
-import 'package:openvine/widgets/user_avatar.dart';
 import 'package:openvine/widgets/user_picker_sheet.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_help_sheet.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_user_chip.dart';
 
 import 'video_metadata_help_button.dart';
 
@@ -173,150 +172,37 @@ class VideoMetadataInspiredByInput extends ConsumerWidget {
   }
 }
 
-/// Displays the current "Inspired By" attribution with a remove
-/// button.
+/// Displays the current "Inspired By" attribution with a remove button.
 class _InspiredByDisplay extends ConsumerWidget {
   const _InspiredByDisplay({this.inspiredByNpub, this.inspiredByVideo});
 
   final String? inspiredByNpub;
   final InspiredByInfo? inspiredByVideo;
 
-  /// Extracts the pubkey for fetching the profile.
-  String? get _pubkey {
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Determine which chip variant to show
     if (inspiredByVideo != null) {
-      return inspiredByVideo!.creatorPubkey;
+      return VideoMetadataUserChip.fromPubkey(
+        pubkey: inspiredByVideo!.creatorPubkey,
+        // TODO(l10n): Replace with context.l10n when localization is added.
+        removeLabel: 'Remove inspired by',
+        onRemove: () =>
+            ref.read(videoEditorProvider.notifier).clearInspiredBy(),
+      );
     }
-    // inspiredByNpub is an npub - we need to look it up
-    // For display purposes we use it directly
-    return null;
-  }
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // If we have a pubkey from the video reference, fetch profile
-    final pubkey = _pubkey;
+    if (inspiredByNpub != null) {
+      return VideoMetadataUserChip.fromNpub(
+        npub: inspiredByNpub!,
+        // TODO(l10n): Replace with context.l10n when localization is added.
+        removeLabel: 'Remove inspired by',
+        onRemove: () =>
+            ref.read(videoEditorProvider.notifier).clearInspiredBy(),
+      );
+    }
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        color: const Color(0xFF0B2A20),
-      ),
-      child: Row(
-        spacing: 8,
-        mainAxisSize: .min,
-        children: [
-          // Avatar and name
-          if (pubkey != null)
-            Flexible(child: _InspiredByProfileInfo(pubkey: pubkey))
-          else if (inspiredByNpub != null)
-            Flexible(child: _InspiredByNpubInfo(npub: inspiredByNpub!)),
-
-          // Remove button
-          Semantics(
-            // TODO(l10n): Replace with context.l10n when localization is added.
-            label: 'Remove inspired by',
-            button: true,
-            child: GestureDetector(
-              onTap: () =>
-                  ref.read(videoEditorProvider.notifier).clearInspiredBy(),
-              child: SizedBox(
-                width: 16,
-                height: 16,
-                child: SvgPicture.asset(
-                  'assets/icon/close.svg',
-                  colorFilter: const ColorFilter.mode(
-                    VineTheme.onSurfaceMuted,
-                    BlendMode.srcIn,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Shows profile info when we have a hex pubkey (from video ref).
-class _InspiredByProfileInfo extends ConsumerWidget {
-  const _InspiredByProfileInfo({required this.pubkey});
-
-  final String pubkey;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final profileAsync = ref.watch(fetchUserProfileProvider(pubkey));
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      spacing: 8,
-      children: [
-        UserAvatar(
-          imageUrl: profileAsync.value?.picture,
-          name: profileAsync.value?.bestDisplayName,
-          size: 24,
-        ),
-        Flexible(
-          child: Text(
-            profileAsync.value?.bestDisplayName ??
-                '${pubkey.substring(0, 12)}...',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: VineTheme.bodyFont(
-              color: VineTheme.whiteText,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              height: 1.43,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-/// Shows profile info when we only have an npub (person reference).
-class _InspiredByNpubInfo extends ConsumerWidget {
-  const _InspiredByNpubInfo({required this.npub});
-
-  final String npub;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    // Convert npub to hex pubkey for profile lookup
-    final hexPubkey = NostrKeyUtils.decode(npub);
-    final profileAsync = ref.watch(fetchUserProfileProvider(hexPubkey));
-
-    // Truncated npub for fallback display
-    final truncatedNpub = npub.length > 20
-        ? '${npub.substring(0, 10)}...${npub.substring(npub.length - 8)}'
-        : npub;
-
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      spacing: 8,
-      children: [
-        UserAvatar(
-          imageUrl: profileAsync.value?.picture,
-          name: profileAsync.value?.bestDisplayName,
-          size: 24,
-        ),
-        Flexible(
-          child: Text(
-            profileAsync.value?.bestDisplayName ?? truncatedNpub,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: VineTheme.bodyFont(
-              color: VineTheme.whiteText,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              height: 1.43,
-            ),
-          ),
-        ),
-      ],
-    );
+    // Should not happen, but return empty container as fallback
+    return const SizedBox.shrink();
   }
 }
