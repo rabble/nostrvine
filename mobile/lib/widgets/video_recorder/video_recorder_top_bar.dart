@@ -4,7 +4,9 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
+import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_selection_bottom_sheet.dart';
@@ -16,8 +18,8 @@ class VideoRecorderTopBar extends ConsumerWidget {
   /// Creates a video recorder top bar widget.
   const VideoRecorderTopBar({super.key});
 
-  Future<void> _selectAudio(BuildContext context) async {
-    final result = await VineBottomSheet.show(
+  Future<void> _selectAudio(BuildContext context, WidgetRef ref) async {
+    final result = await VineBottomSheet.show<AudioEvent>(
       context: context,
       maxChildSize: 1,
       initialChildSize: 1,
@@ -26,7 +28,14 @@ class VideoRecorderTopBar extends ConsumerWidget {
           AudioSelectionBottomSheet(scrollController: scrollController),
     );
 
-    print(result); // TODO:
+    if (result != null) {
+      ref.read(selectedSoundProvider.notifier).select(result);
+      Log.info(
+        'Sound selected: ${result.title ?? result.id}',
+        name: 'VideoRecorderTopBar',
+        category: LogCategory.ui,
+      );
+    }
   }
 
   @override
@@ -70,7 +79,7 @@ class VideoRecorderTopBar extends ConsumerWidget {
 
                       Flexible(
                         child: VideoEditorAudioChip(
-                          onTap: () => _selectAudio(context),
+                          onTap: () => _selectAudio(context, ref),
                         ),
                       ),
 

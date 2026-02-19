@@ -68,8 +68,10 @@ class AudioListTile extends StatelessWidget {
                 text: _formatDuration(audio.duration),
                 style: const TextStyle(fontFeatures: [.tabularFigures()]),
               ),
-              const TextSpan(text: ' ∙ '),
-              const TextSpan(text: 'Source'),
+              if (audio.source != null) ...[
+                const TextSpan(text: ' ∙ '),
+                TextSpan(text: audio.source),
+              ],
             ],
           ),
         ),

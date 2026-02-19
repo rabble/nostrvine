@@ -7,6 +7,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/sound_library_service_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/services/audio_playback_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_list_tile.dart';
 import 'package:openvine/widgets/video_editor/audio_editor/audio_sort_dropdown.dart';
@@ -50,6 +51,11 @@ class _AudioSelectionBottomSheetState
       if (audioService.isPlaying) {
         await audioService.stop();
         setState(() => _playingSoundId = null);
+        Log.debug(
+          'Stopped preview: ${sound.title ?? sound.id}',
+          name: 'AudioSelectionBottomSheet',
+          category: LogCategory.ui,
+        );
       }
       return;
     }
@@ -58,8 +64,19 @@ class _AudioSelectionBottomSheetState
     await audioService.stop();
 
     if (sound.url == null || sound.url!.isEmpty) {
+      Log.warning(
+        'Cannot preview sound: no URL available (${sound.id})',
+        name: 'AudioSelectionBottomSheet',
+        category: LogCategory.ui,
+      );
       return;
     }
+
+    Log.debug(
+      'Starting preview: ${sound.title ?? sound.id}',
+      name: 'AudioSelectionBottomSheet',
+      category: LogCategory.ui,
+    );
 
     try {
       await audioService.loadAudio(sound.url!);
@@ -68,6 +85,11 @@ class _AudioSelectionBottomSheetState
       }
       await audioService.play();
     } catch (e) {
+      Log.error(
+        'Failed to preview sound: $e',
+        name: 'AudioSelectionBottomSheet',
+        category: LogCategory.ui,
+      );
     } finally {
       if (mounted) {
         setState(() => _playingSoundId = null);
@@ -76,6 +98,11 @@ class _AudioSelectionBottomSheetState
   }
 
   void _selectSound(AudioEvent sound) {
+    Log.info(
+      'Sound selected: ${sound.title ?? 'Untitled'} (${sound.id})',
+      name: 'AudioSelectionBottomSheet',
+      category: LogCategory.ui,
+    );
     _stopPlayback();
     context.pop(sound);
   }
@@ -94,6 +121,7 @@ class _AudioSelectionBottomSheetState
   List<AudioEvent> _sortSounds(List<AudioEvent> sounds) {
     final sorted = List<AudioEvent>.from(sounds);
     switch (_sortOption) {
+      // TODO(@hm21): Implement filter options below
       case AudioSortOption.trending:
         // Keep original order (assumed to be trending)
         break;

@@ -1,17 +1,24 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/svg.dart';
+import 'package:openvine/providers/sounds_providers.dart';
 
-class VideoEditorAudioChip extends StatelessWidget {
+class VideoEditorAudioChip extends ConsumerWidget {
   const VideoEditorAudioChip({super.key, required this.onTap});
 
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final selectedSound = ref.watch(selectedSoundProvider);
+    final hasSelectedSound = selectedSound != null;
+
     return InkWell(
       onTap: onTap,
       radius: 16,
       child: Container(
+        constraints: BoxConstraints(minHeight: 48),
         padding: const .symmetric(horizontal: 16, vertical: 8),
         decoration: ShapeDecoration(
           color: VineTheme.scrim15,
@@ -34,17 +41,46 @@ class VideoEditorAudioChip extends StatelessWidget {
               ],
             ),
             Flexible(
-              child: Text(
-                'Add audio',
-                textAlign: TextAlign.center,
-                style: VineTheme.titleMediumFont(
-                  fontSize: 16,
-                  color: Color(0xFFF9F7F6),
-                ),
-                maxLines: 1,
-                overflow: .ellipsis,
-              ),
+              child: !hasSelectedSound
+                  ? Text(
+                      'Add audio',
+                      textAlign: TextAlign.center,
+                      style: VineTheme.titleMediumFont(fontSize: 16),
+                    )
+                  : Text.rich(
+                      TextSpan(
+                        style: VineTheme.labelLargeFont(),
+                        children: [
+                          TextSpan(text: selectedSound.title ?? 'Untitled'),
+                          if (selectedSound.source != null) ...[
+                            const TextSpan(text: ' ∙ '),
+                            TextSpan(
+                              text: selectedSound.source,
+                              style: VineTheme.bodyMediumFont(),
+                            ),
+                          ],
+                        ],
+                      ),
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
             ),
+            if (hasSelectedSound)
+              GestureDetector(
+                onTap: () => ref.read(selectedSoundProvider.notifier).clear(),
+                child: DecoratedBox(
+                  decoration: ShapeDecoration(
+                    shape: RoundedRectangleBorder(borderRadius: .circular(16)),
+                  ),
+                  child: SvgPicture.asset(
+                    'assets/icon/close.svg',
+                    width: 16,
+                    height: 16,
+                    colorFilter: .mode(VineTheme.whiteText, .srcIn),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -64,8 +100,8 @@ class _AudioBar extends StatelessWidget {
       width: 2,
       height: height,
       decoration: BoxDecoration(
-        color: const Color(0xFFF9F7F6),
-        borderRadius: .circular(2),
+        color: VineTheme.whiteText,
+        borderRadius: BorderRadius.circular(2),
       ),
     );
   }
