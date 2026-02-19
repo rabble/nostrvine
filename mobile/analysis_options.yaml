@@ -1,0 +1,91 @@
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/*.gen.dart"
+    - "**/*.mocks.dart"
+    - "**/generated/**"
+    - "**/l10n/**"
+  errors:
+    # Treat as errors
+    invalid_annotation_target: ignore
+
+linter:
+  rules:
+    # --- Disabled ---
+    avoid_print: false
+    avoid_web_libraries_in_flutter: false
+    constant_identifier_names: false
+    depend_on_referenced_packages: false
+    type_annotate_public_apis: false
+    unintended_html_in_doc_comment: false
+    use_build_context_synchronously: false
+    use_colored_box: false
+
+    # --- Const Optimization ---
+    prefer_const_constructors: true
+    prefer_const_constructors_in_immutables: true
+    prefer_const_declarations: true
+    prefer_const_literals_to_create_immutables: true
+    unnecessary_const: true
+
+    # --- Final/Immutability ---
+    prefer_final_locals: true
+    prefer_final_in_for_each: true
+    unnecessary_late: true
+
+    # --- Modern Dart Syntax ---
+    use_super_parameters: true
+    unnecessary_new: true
+    unnecessary_this: true
+    use_enums: true
+
+    # --- String Handling ---
+    prefer_single_quotes: true
+    prefer_interpolation_to_compose_strings: true
+    unnecessary_string_interpolations: true
+    unnecessary_brace_in_string_interps: true
+
+    # --- Collection Literals ---
+    prefer_collection_literals: true
+    prefer_is_empty: true
+    prefer_is_not_empty: true
+    prefer_iterable_whereType: true
+    prefer_spread_collections: true
+    prefer_if_null_operators: true
+
+    # --- Flutter Widget Optimization ---
+    sort_child_properties_last: true
+    use_key_in_widget_constructors: true
+    use_decorated_box: true
+    sized_box_for_whitespace: true
+    sized_box_shrink_expand: true
+
+    # # --- Code Style ---
+    curly_braces_in_flow_control_structures: true
+    require_trailing_commas: true
+    eol_at_end_of_file: true
+    leading_newlines_in_multiline_strings: true
+    unnecessary_parenthesis: true
+    unnecessary_await_in_return: true
+    unnecessary_breaks: true
+    
+    # --- Null Safety ---
+    prefer_null_aware_operators: true
+    prefer_null_aware_method_calls: true
+    cast_nullable_to_non_nullable: true
+    null_check_on_nullable_type_parameter: true
+    
+    # --- Function/Method Style ---
+    prefer_expression_function_bodies: false
+    unnecessary_lambdas: true
+    avoid_void_async: true
+    
+    # --- Import Organization ---
+    combinators_ordering: true
+    directives_ordering: true
+    
+    # --- Deprecated API Handling ---
+    deprecated_member_use_from_same_package: true
