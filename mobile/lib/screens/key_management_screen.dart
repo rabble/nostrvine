@@ -7,7 +7,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:divine_ui/divine_ui.dart';
 
@@ -37,7 +36,6 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final keyManager = ref.watch(nostrKeyManagerProvider);
     final nostrService = ref.watch(nostrServiceProvider);
     final profileService = ref.watch(userProfileServiceProvider);
 
@@ -89,16 +87,11 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
               const SizedBox(height: 24),
 
               // Import existing key section
-              _buildImportSection(
-                context,
-                keyManager,
-                nostrService,
-                profileService,
-              ),
+              _buildImportSection(context, nostrService, profileService),
               const SizedBox(height: 24),
 
               // Export/Backup section
-              _buildExportSection(context, keyManager),
+              _buildExportSection(context),
             ],
           ),
         ),
@@ -146,7 +139,6 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
 
   Widget _buildImportSection(
     BuildContext context,
-    NostrKeyManager keyManager,
     nostrService,
     profileService,
   ) {
@@ -216,12 +208,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
                 child: ElevatedButton(
                   onPressed: _isProcessing
                       ? null
-                      : () => _importKey(
-                          context,
-                          keyManager,
-                          nostrService,
-                          profileService,
-                        ),
+                      : () => _importKey(context, nostrService, profileService),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: VineTheme.vineGreen,
                     foregroundColor: Colors.white,
@@ -282,7 +269,7 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
     );
   }
 
-  Widget _buildExportSection(BuildContext context, NostrKeyManager keyManager) {
+  Widget _buildExportSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -364,7 +351,6 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
 
   Future<void> _importKey(
     BuildContext context,
-    NostrKeyManager keyManager,
     nostrService,
     profileService,
   ) async {
@@ -428,15 +414,19 @@ class _KeyManagementScreenState extends ConsumerState<KeyManagementScreen> {
     setState(() => _isProcessing = true);
 
     try {
-      await keyManager.importFromNsec(nsec);
+      // Use AuthService for proper session setup and relay discovery
+      final authService = ref.read(authServiceProvider);
+      final result = await authService.importFromNsec(nsec);
 
-      // Optionally fetch profile after import if services are available
-      if (context.mounted &&
-          nostrService.isInitialized &&
-          keyManager.publicKey != null) {
+      if (!result.success) {
+        throw Exception(result.errorMessage ?? 'Failed to import key');
+      }
+
+      // Fetch profile after successful import (authService is source of truth)
+      if (context.mounted && authService.currentPublicKeyHex != null) {
         try {
           await profileService.fetchProfile(
-            keyManager.publicKey!,
+            authService.currentPublicKeyHex!,
             forceRefresh: false,
           );
         } catch (e) {
