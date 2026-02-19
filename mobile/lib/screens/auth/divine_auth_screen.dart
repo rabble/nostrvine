@@ -230,6 +230,8 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen> {
                   emailController: _emailController,
                   passwordController: _passwordController,
                   confirmPasswordController: _confirmPasswordController,
+                  passwordFocusNode: _passwordFocusNode,
+                  confirmPasswordFocusNode: _confirmPasswordFocusNode,
                   onForgotPassword: _showForgotPasswordDialog,
                   validateConfirmPassword: _validateConfirmPassword,
                   onSubmit: _handleSubmit,
@@ -283,6 +285,8 @@ class _AuthFormContent extends StatelessWidget {
     required this.emailController,
     required this.passwordController,
     required this.confirmPasswordController,
+    required this.passwordFocusNode,
+    required this.confirmPasswordFocusNode,
     required this.onForgotPassword,
     required this.validateConfirmPassword,
     required this.onSubmit,
@@ -297,6 +301,8 @@ class _AuthFormContent extends StatelessWidget {
   final TextEditingController emailController;
   final TextEditingController passwordController;
   final TextEditingController confirmPasswordController;
+  final FocusNode passwordFocusNode;
+  final FocusNode confirmPasswordFocusNode;
   final VoidCallback onForgotPassword;
   final FormFieldValidator<String> validateConfirmPassword;
   final VoidCallback onSubmit;
@@ -311,93 +317,119 @@ class _AuthFormContent extends StatelessWidget {
           hasScrollBody: false,
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Form(
-              key: formKey,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // Space for back button overlay
-                  const SizedBox(height: 72),
+            child: AutofillGroup(
+              child: Form(
+                key: formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Space for back button overlay
+                    const SizedBox(height: 72),
 
-                  // Title
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 32),
-                    child: Text(
-                      isLogin ? 'Sign in' : 'Create account',
-                      style: VineTheme.headlineLargeFont(),
-                    ),
-                  ),
-
-                  // Email field
-                  DivineAuthTextField(
-                    label: 'Email',
-                    controller: emailController,
-                    keyboardType: TextInputType.emailAddress,
-                    autocorrect: false,
-                    validator: Validators.validateEmail,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Password field
-                  DivineAuthTextField(
-                    label: 'Password',
-                    controller: passwordController,
-                    obscureText: true,
-                    validator: Validators.validatePassword,
-                  ),
-
-                  // Forgot password (login only)
-                  if (isLogin) ...[
-                    const SizedBox(height: 12),
-                    Center(
-                      child: DivineTextLink(
-                        text: 'Forgot password?',
-                        onTap: onForgotPassword,
-                        style:
-                            VineTheme.bodyMediumFont(
-                              color: VineTheme.onSurfaceMuted,
-                            ).copyWith(
-                              decoration: TextDecoration.underline,
-                              decorationColor: VineTheme.onSurfaceMuted,
-                            ),
+                    // Title
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 32),
+                      child: Text(
+                        isLogin ? 'Sign in' : 'Create account',
+                        style: VineTheme.headlineLargeFont(),
                       ),
                     ),
-                  ],
 
-                  // Confirm password (register)
-                  if (!isLogin) ...[
-                    const SizedBox(height: 16),
+                    // Email field
                     DivineAuthTextField(
-                      label: 'Confirm Password',
-                      controller: confirmPasswordController,
-                      obscureText: true,
-                      validator: validateConfirmPassword,
+                      label: 'Email',
+                      controller: emailController,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      autocorrect: false,
+                      autofillHints: const [AutofillHints.email],
+                      validator: Validators.validateEmail,
+                      onSubmitted: (_) => passwordFocusNode.requestFocus(),
                     ),
-                  ],
+                    const SizedBox(height: 16),
 
-                  // Push button to bottom
-                  const Spacer(),
-                  const SizedBox(height: 32),
+                    // Password field
+                    DivineAuthTextField(
+                      label: 'Password',
+                      controller: passwordController,
+                      focusNode: passwordFocusNode,
+                      obscureText: true,
+                      textInputAction: isLogin
+                          ? TextInputAction.done
+                          : TextInputAction.next,
+                      autofillHints: [
+                        if (isLogin)
+                          AutofillHints.password
+                        else
+                          AutofillHints.newPassword,
+                      ],
+                      validator: Validators.validatePassword,
+                      onSubmitted: (_) {
+                        if (isLogin) {
+                          onSubmit();
+                        } else {
+                          confirmPasswordFocusNode.requestFocus();
+                        }
+                      },
+                    ),
 
-                  // Error message
-                  if (errorMessage != null) ...[
-                    ErrorMessage(message: errorMessage),
+                    // Forgot password (login only)
+                    if (isLogin) ...[
+                      const SizedBox(height: 12),
+                      Center(
+                        child: DivineTextLink(
+                          text: 'Forgot password?',
+                          onTap: onForgotPassword,
+                          style:
+                              VineTheme.bodyMediumFont(
+                                color: VineTheme.onSurfaceMuted,
+                              ).copyWith(
+                                decoration: TextDecoration.underline,
+                                decorationColor: VineTheme.onSurfaceMuted,
+                              ),
+                        ),
+                      ),
+                    ],
+
+                    // Confirm password (register)
+                    if (!isLogin) ...[
+                      const SizedBox(height: 16),
+                      DivineAuthTextField(
+                        label: 'Confirm Password',
+                        controller: confirmPasswordController,
+                        focusNode: confirmPasswordFocusNode,
+                        obscureText: true,
+                        textInputAction: TextInputAction.done,
+                        autofillHints: const [AutofillHints.newPassword],
+                        validator: validateConfirmPassword,
+                        onSubmitted: (_) => onSubmit(),
+                      ),
+                    ],
+
+                    // Push button to bottom
+                    const Spacer(),
+                    const SizedBox(height: 32),
+
+                    // Error message
+                    if (errorMessage != null) ...[
+                      ErrorMessage(message: errorMessage),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Submit button
+                    DivineButton(
+                      label: isLogin ? 'Sign in' : 'Create account',
+                      expanded: true,
+                      isLoading: isLoading,
+                      onPressed: isLoading ? null : onSubmit,
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Mode switch link
+                    _AuthModeSwitchLink(isLogin: isLogin, onTap: onSwitchMode),
                     const SizedBox(height: 16),
                   ],
-
-                  // Submit button
-                  DivineButton(
-                    label: isLogin ? 'Sign in' : 'Create account',
-                    expanded: true,
-                    isLoading: isLoading,
-                    onPressed: isLoading ? null : onSubmit,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Mode switch link
-                  _AuthModeSwitchLink(isLogin: isLogin, onTap: onSwitchMode),
-                  const SizedBox(height: 16),
-                ],
+                ),
               ),
             ),
           ),
