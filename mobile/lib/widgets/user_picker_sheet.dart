@@ -256,6 +256,8 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
                   excludePubkeys: widget.excludePubkeys,
                 ),
         ),
+
+        SizedBox(height: MediaQuery.viewInsetsOf(context).bottom),
       ],
     );
   }
