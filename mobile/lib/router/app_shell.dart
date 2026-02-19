@@ -26,7 +26,9 @@ import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:openvine/providers/relay_notifications_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/widgets/notification_badge.dart';
 
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child, required this.currentIndex});
@@ -594,13 +596,16 @@ class AppShell extends ConsumerWidget {
                   ),
                 ),
               ),
-              _buildTabButton(
-                context,
-                ref,
-                'assets/icon/bell.svg',
-                2,
-                currentIndex,
-                'notifications_tab',
+              NotificationBadge(
+                count: ref.watch(relayNotificationUnreadCountProvider),
+                child: _buildTabButton(
+                  context,
+                  ref,
+                  'assets/icon/bell.svg',
+                  2,
+                  currentIndex,
+                  'notifications_tab',
+                ),
               ),
               _buildTabButton(
                 context,
