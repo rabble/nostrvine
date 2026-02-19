@@ -10,6 +10,7 @@ import 'package:nostr_sdk/filter.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:nostr_sdk/signer/pubkey_only_nostr_signer.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/profile_cache_service.dart';
 import 'package:openvine/services/subscription_manager.dart';
@@ -30,12 +31,18 @@ class UserProfileService extends ChangeNotifier {
     required SubscriptionManager subscriptionManager,
     AnalyticsApiService? analyticsApiService,
     bool funnelcakeAvailable = false,
+
+    /// When true, skips indexer fallback (avoids real WebSocket connections).
+    /// Use in tests that mock NostrClient.
+    bool skipIndexerFallback = false,
   }) : _subscriptionManager = subscriptionManager,
        _analyticsApiService = analyticsApiService,
-       _funnelcakeAvailable = funnelcakeAvailable;
+       _funnelcakeAvailable = funnelcakeAvailable,
+       _skipIndexerFallback = skipIndexerFallback;
   final NostrClient _nostrService;
   final AnalyticsApiService? _analyticsApiService;
   bool _funnelcakeAvailable;
+  final bool _skipIndexerFallback;
 
   /// Update funnelcake availability status (called from provider when it changes)
   void setFunnelcakeAvailable(bool available) {
@@ -932,75 +939,82 @@ class UserProfileService extends ChangeNotifier {
   }
 
   /// Query profile indexer relays for a kind 0 profile.
-  /// This is a fallback when the main relay doesn't have the profile.
-  /// Queries all indexers in PARALLEL for speed.
+  /// Uses a temporary NostrClient to avoid adding indexers to the main relay set,
+  /// which would trigger RelaySetChangeBridge, force reconnects, and feed resets.
+  /// This prevents lag and stale WebSocket issues for users who don't have
+  /// NIP-65 relay lists.
   Future<void> _queryIndexersForProfile(String pubkey) async {
+    if (_isDisposed) return;
+    if (_skipIndexerFallback) {
+      _pendingBatchPubkeys.add(pubkey);
+      _batchDebounceTimer?.cancel();
+      _batchDebounceTimer = Timer(const Duration(milliseconds: 200), () {
+        _executeBatchFetch();
+      });
+      return;
+    }
+
     Log.debug(
-      '🔍 Querying ${_profileIndexerRelays.length} indexers in parallel for profile: $pubkey',
+      '🔍 Querying ${_profileIndexerRelays.length} indexers for profile: $pubkey',
       name: 'UserProfileService',
       category: LogCategory.system,
     );
 
-    // Query all indexers in parallel
-    final futures = _profileIndexerRelays.map((indexerUrl) async {
-      try {
-        // Temporarily add the indexer relay
-        final added = await _nostrService.addRelay(indexerUrl);
-        if (!added) {
-          return null;
-        }
+    NostrClient? tempClient;
+    try {
+      tempClient = NostrClient(
+        config: NostrClientConfig(
+          signer: PubkeyOnlyNostrSigner(
+            '0000000000000000000000000000000000000000000000000000000000000000',
+          ),
+        ),
+        relayManagerConfig: RelayManagerConfig(
+          defaultRelayUrl: _profileIndexerRelays.first,
+          storage: InMemoryRelayStorage(),
+        ),
+      );
+      await tempClient.initialize();
 
-        // Create filter for kind 0 profile
-        final filter = Filter(kinds: [0], authors: [pubkey], limit: 1);
-
-        // Query with short timeout
-        final events = await _nostrService
-            .queryEvents([filter])
-            .timeout(const Duration(seconds: 3), onTimeout: () => <Event>[]);
-
-        // Remove the indexer relay after querying
-        await _nostrService.removeRelay(indexerUrl);
-
-        if (events.isNotEmpty) {
-          Log.info(
-            '✅ Found profile on indexer $indexerUrl: $pubkey',
-            name: 'UserProfileService',
-            category: LogCategory.system,
-          );
-          return events.first;
-        }
-        return null;
-      } catch (e) {
-        // Try to clean up relay connection
-        try {
-          await _nostrService.removeRelay(indexerUrl);
-        } catch (_) {}
-        return null;
+      // Add remaining indexers (first is already default)
+      for (var i = 1; i < _profileIndexerRelays.length; i++) {
+        await tempClient
+            .addRelay(_profileIndexerRelays[i])
+            .timeout(const Duration(seconds: 3), onTimeout: () => false);
       }
-    });
 
-    // Wait for all indexer queries in parallel, take first non-null result
-    final results = await Future.wait(futures);
-    final foundEvent = results.whereType<Event>().firstOrNull;
+      final filter = Filter(kinds: [0], authors: [pubkey], limit: 1);
+      final events = await tempClient
+          .queryEvents([filter])
+          .timeout(const Duration(seconds: 4), onTimeout: () => <Event>[]);
 
-    if (foundEvent != null) {
-      // Process the profile event (this will cache it and notify)
-      _handleProfileEvent(foundEvent);
-
-      // Clear attempt tracking since we found it
-      _fetchAttempts.remove(pubkey);
-      _pendingRequests.remove(pubkey);
-      return;
+      final foundEvent = events.isNotEmpty ? events.first : null;
+      if (foundEvent != null) {
+        Log.info(
+          '✅ Found profile on indexer: $pubkey',
+          name: 'UserProfileService',
+          category: LogCategory.system,
+        );
+        _handleProfileEvent(foundEvent);
+        _fetchAttempts.remove(pubkey);
+        _pendingRequests.remove(pubkey);
+        return;
+      }
+    } catch (e) {
+      Log.debug(
+        'Indexer profile query failed: $e',
+        name: 'UserProfileService',
+        category: LogCategory.system,
+      );
+    } finally {
+      tempClient?.dispose();
     }
 
-    // All indexers failed - increment attempt count and trigger retry logic
     Log.warning(
       '❌ Profile not found on any indexer: $pubkey',
       name: 'UserProfileService',
       category: LogCategory.system,
     );
 
-    // Re-add to batch for one more attempt (this will hit the attempts >= 2 case)
     _pendingBatchPubkeys.add(pubkey);
     _batchDebounceTimer?.cancel();
     _batchDebounceTimer = Timer(const Duration(milliseconds: 200), () {

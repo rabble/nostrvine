@@ -129,4 +129,19 @@ class MockCameraService extends CameraService {
 
   @override
   String? get initializationError => null;
+
+  @override
+  Future<bool> setRemoteRecordControlEnabled({required bool enabled}) async {
+    return true;
+  }
+
+  @override
+  Future<bool> setVolumeKeysEnabled({required bool enabled}) async {
+    return true;
+  }
+
+  @override
+  set onRemoteRecordTrigger(void Function()? callback) {
+    // Mock implementation - do nothing
+  }
 }

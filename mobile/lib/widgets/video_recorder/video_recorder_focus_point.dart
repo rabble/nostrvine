@@ -1,6 +1,10 @@
 // ABOUTME: Animated focus point indicator widget for camera tap-to-focus
 // ABOUTME: Shows a circular indicator at tap location with scale and fade animations
 
+import 'dart:io' show Platform;
+
+import 'package:divine_camera/divine_camera.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
@@ -21,6 +25,23 @@ class VideoRecorderFocusPoint extends ConsumerStatefulWidget {
 class _VideoRecorderFocusPointState
     extends ConsumerState<VideoRecorderFocusPoint> {
   Offset _lastVisiblePosition = .zero;
+
+  /// Whether the preview is currently being mirrored in Flutter.
+  /// Used to adjust focus indicator position.
+  // coverage:ignore-start
+  bool get _isPreviewMirrored {
+    if (kIsWeb) return false;
+    final camera = DivineCamera.instance;
+    final isFront = camera.lens == DivineCameraLens.front;
+    if (!isFront) return false;
+
+    // On iOS, mirror preview only when native isn't mirroring
+    if (Platform.isIOS) {
+      return !camera.mirrorFrontCameraOutput;
+    }
+    return false;
+  }
+  // coverage:ignore-end
 
   /// Transform camera coordinates to display coordinates based on
   /// FittedBox.cover
@@ -74,14 +95,24 @@ class _VideoRecorderFocusPointState
 
     // Transform camera coordinates to display coordinates
     final cameraPoint = isVisible ? state.focusPoint : _lastVisiblePosition;
-    final displayPosition = _cameraToDisplayCoordinates(
-      cropAspectRatio: state.aspectRatio,
-      sensorAspectRatio: state.sensorAspectRatio,
-      cameraPoint: cameraPoint,
-    );
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        var displayPosition = _cameraToDisplayCoordinates(
+          cropAspectRatio: constraints.biggest.aspectRatio,
+          sensorAspectRatio: state.sensorAspectRatio,
+          cameraPoint: cameraPoint,
+        );
+
+        // When the preview is mirrored, the focus point was flipped for the
+        // camera, but we need to show the indicator where the user tapped
+        // (which is the mirrored visual position)
+        // coverage:ignore-start
+        if (_isPreviewMirrored) {
+          displayPosition = Offset(1 - displayPosition.dx, displayPosition.dy);
+        }
+        // coverage:ignore-end
+
         // Convert normalized coordinates (0.0-1.0) to pixel coordinates
         final x = displayPosition.dx * constraints.maxWidth;
         final y = displayPosition.dy * constraints.maxHeight;

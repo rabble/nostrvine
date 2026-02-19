@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 /// A styled text field following the Divine design system.
 class DivineTextField extends StatelessWidget {
   /// Creates a Divine styled text field.
+  @Deprecated('Use DivineAuthTextField for auth screens')
   const DivineTextField({
     super.key,
     this.labelText,

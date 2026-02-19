@@ -37,8 +37,26 @@ class VideoRecorderBottomBar extends ConsumerWidget {
     );
   }
 
+  /// Opens the sounds screen for sound selection.
+  void _openSoundsScreen(
+    BuildContext context,
+    VideoRecorderNotifier videoRecorderNotifier,
+  ) async {
+    videoRecorderNotifier.pauseRemoteRecordControl();
+
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const SoundsScreen()));
+
+    videoRecorderNotifier.resumeRemoteRecordControl();
+  }
+
   /// Show more options menu
-  Future<void> _showMoreOptions(BuildContext context, WidgetRef ref) async {
+  Future<void> _showMoreOptions(
+    BuildContext context,
+    WidgetRef ref,
+    VideoRecorderNotifier videoRecorderNotifier,
+  ) async {
     final clipManager = ref.read(
       clipManagerProvider.select(
         (p) => (hasClips: p.hasClips, clipCount: p.clipCount),
@@ -46,7 +64,9 @@ class VideoRecorderBottomBar extends ConsumerWidget {
     );
     final clipsNotifier = ref.read(clipManagerProvider.notifier);
 
-    VineBottomSheetActionMenu.show(
+    videoRecorderNotifier.pauseRemoteRecordControl();
+
+    await VineBottomSheetActionMenu.show(
       context: context,
       options: [
         VineBottomSheetActionData(
@@ -97,6 +117,8 @@ class VideoRecorderBottomBar extends ConsumerWidget {
         ),
       ],
     );
+
+    videoRecorderNotifier.resumeRemoteRecordControl();
   }
 
   @override
@@ -174,7 +196,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
                       // TODO(l10n): Replace with context.l10n
                       // when localization is added.
                       tooltip: 'Select sound',
-                      onPressed: () => _openSoundsScreen(context),
+                      onPressed: () => _openSoundsScreen(context, notifier),
                       hasIndicator: selectedSound != null,
                     ),
 
@@ -195,7 +217,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
                       // TODO(l10n): Replace with context.l10n
                       // when localization is added.
                       tooltip: 'More options',
-                      onPressed: () => _showMoreOptions(context, ref),
+                      onPressed: () => _showMoreOptions(context, ref, notifier),
                     ),
                   ],
                 ),
@@ -205,13 +227,6 @@ class VideoRecorderBottomBar extends ConsumerWidget {
         ),
       ),
     );
-  }
-
-  /// Opens the sounds screen for sound selection.
-  void _openSoundsScreen(BuildContext context) {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const SoundsScreen()));
   }
 }
 

@@ -1234,12 +1234,12 @@ class _SafeVideoPlayer extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Check the disposed-controllers set. This is marked synchronously in
+    // Check the disposed-controllers tracker. This is marked synchronously in
     // Riverpod's onDispose, so it is always up-to-date BEFORE the deferred
     // controller.dispose() microtask removes the native player.
     final isDisposed = ref.watch(
       disposedControllersProvider.select(
-        (disposed) => disposed.contains(videoId),
+        (tracker) => tracker.contains(videoId),
       ),
     );
 
@@ -1311,12 +1311,10 @@ class VideoOverlayActions extends ConsumerWidget {
     // so the badge just needs the same base offset - no extra list header padding
     final hasListHeader =
         !isFullscreen && contextTitle != null && contextTitle!.isNotEmpty;
-    final topOffset = hasListHeader ? 80.0 : 16.0;
+    final topOffset = hasListHeader ? 80.0 : 8.0;
 
     // Calculate bottom offset based on navigation state
-    final bottomOffset = hasBottomNavigation
-        ? 14.0
-        : (isFullscreen ? 48.0 : 14.0);
+    final bottomOffset = 14.0;
 
     return Stack(
       children: [

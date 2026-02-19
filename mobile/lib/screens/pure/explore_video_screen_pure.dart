@@ -46,6 +46,7 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
     with PaginationMixin, VideoPrefetchMixin {
   late int _initialIndex;
   late int _currentPage; // Track current page for local active state management
+  late PageController _pageController;
 
   @override
   void initState() {
@@ -63,6 +64,7 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
     }
 
     _currentPage = _initialIndex;
+    _pageController = PageController(initialPage: _initialIndex);
 
     Log.info(
       '🎯 ExploreVideoScreenPure: Initialized with ${widget.videoList.length} videos, starting at index $_initialIndex, useLocalActiveState=${widget.useLocalActiveState}',
@@ -72,9 +74,9 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
 
   @override
   void dispose() {
-    // Router-driven state - no manual cleanup needed, URL navigation handles it
+    _pageController.dispose();
     Log.info(
-      '🛑 ExploreVideoScreenPure disposing - router handles state cleanup',
+      '🛑 ExploreVideoScreenPure disposing',
       name: 'ExploreVideoScreen',
       category: LogCategory.video,
     );
@@ -103,7 +105,7 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
       color: Colors.black,
       child: PageView.builder(
         itemCount: videos.length,
-        controller: PageController(initialPage: _initialIndex),
+        controller: _pageController,
         scrollDirection: Axis.vertical,
         onPageChanged: (index) {
           Log.debug(
@@ -140,18 +142,25 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
           // Prefetch videos around current index
           checkForPrefetch(currentIndex: index, videos: videos);
 
-          // Pre-initialize controllers for adjacent videos
+          // Pre-initialize controller for next video only (minimize
+          // concurrent decoders to avoid OOM on Android)
           preInitializeControllers(
             ref: ref,
             currentIndex: index,
             videos: videos,
+            preInitBefore: 0,
+            preInitAfter: 1,
           );
 
-          // Dispose controllers outside the keep range to free memory
+          // Dispose controllers outside a tight range to free memory.
+          // Android devices have limited heap and each ExoPlayer
+          // instance consumes significant native memory.
           disposeControllersOutsideRange(
             ref: ref,
             currentIndex: index,
             videos: videos,
+            keepBefore: 2,
+            keepAfter: 3,
           );
         },
         itemBuilder: (context, index) {

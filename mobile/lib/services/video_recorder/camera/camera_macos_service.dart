@@ -723,4 +723,21 @@ class CameraMacOSService extends CameraService {
 
   @override
   String? get initializationError => _initializationError;
+
+  @override
+  set onRemoteRecordTrigger(void Function()? callback) {
+    // Remote record control is not supported on macOS
+  }
+
+  @override
+  Future<bool> setRemoteRecordControlEnabled({required bool enabled}) async {
+    // Remote record control is not supported on macOS
+    return false;
+  }
+
+  @override
+  Future<bool> setVolumeKeysEnabled({required bool enabled}) async {
+    // Volume key control is not supported on macOS
+    return false;
+  }
 }

@@ -7,11 +7,14 @@ appId: co.openvine.app
 - assertVisible:
     text: "[0-9]+\nFollowing"
 - assertVisible: |-
+    Tab 1 of 4
     videos_tab
-    Tab 1 of 3
 - assertVisible: |-
+    Tab 2 of 4
     liked_tab
-    Tab 2 of 3
 - assertVisible: |-
+    Tab 3 of 4
     reposted_tab
-    Tab 3 of 3
+- assertVisible: |-
+    Tab 4 of 4
+    collabs_tab

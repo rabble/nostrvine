@@ -2,8 +2,6 @@ appId: co.openvine.app
 env:
   SEARCH_USER: "rabble"
 ---
-- launchApp:
-    clearState: true
 - runFlow: ../tests/loginFreshInstall.yaml
 - runFlow: ../tests/searchUsers.yaml
 

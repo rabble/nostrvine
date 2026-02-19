@@ -163,9 +163,11 @@ void main() {
         ),
       );
 
-      // Find and tap the delete button for the first tag
-      // (Sets don't guarantee order, so we just test that a tag was removed)
-      final deleteButton = find.byType(GestureDetector).last;
+      // Find and tap a delete button on one of the tag chips.
+      // The delete button uses Semantics(label: 'Delete'), so we
+      // find it by its semantic label to avoid fragile GestureDetector
+      // ordering that can break when child widgets add their own.
+      final deleteButton = find.bySemanticsLabel('Delete').first;
 
       await tester.tap(deleteButton);
       await tester.pump();

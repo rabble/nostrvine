@@ -343,6 +343,7 @@ class _FullscreenAppBar extends ConsumerWidget implements PreferredSizeWidget {
       titleWidget: const SizedBox.shrink(),
       showBackButton: true,
       onBackPressed: context.pop,
+      backButtonSemanticLabel: 'Close video player',
       backgroundMode: DiVineAppBarBackgroundMode.transparent,
       style: _style,
       actions: _buildEditAction(context, ref),
@@ -455,13 +456,18 @@ class _PooledFullscreenItemContent extends StatelessWidget {
           isPortrait: isPortrait,
         ),
         overlayBuilder: (context, videoController, player) =>
-            VideoOverlayActions(
-              video: video,
-              isVisible: isActive,
-              isActive: isActive,
-              hasBottomNavigation: false,
-              contextTitle: contextTitle,
-              isFullscreen: true,
+            // Restore original system view padding that may have been
+            // consumed by SafeArea or other widgets up the tree.
+            MediaQuery(
+              data: MediaQueryData.fromView(View.of(context)),
+              child: VideoOverlayActions(
+                video: video,
+                isVisible: isActive,
+                isActive: isActive,
+                hasBottomNavigation: false,
+                contextTitle: contextTitle,
+                isFullscreen: true,
+              ),
             ),
       ),
     );
