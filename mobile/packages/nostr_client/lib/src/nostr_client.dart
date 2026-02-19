@@ -9,6 +9,24 @@ import 'package:nostr_client/src/relay_manager.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:nostr_sdk/utils/hash_util.dart';
 
+/// Observer for NostrClient activity statistics.
+///
+/// Implement this interface and set it via [NostrClient.statisticsObserver]
+/// to receive callbacks for subscription and event activity.
+abstract class NostrClientStatisticsObserver {
+  /// Called when a new subscription is created
+  void onSubscriptionStarted(String subscriptionId);
+
+  /// Called when a subscription is closed
+  void onSubscriptionClosed(String subscriptionId);
+
+  /// Called when an event is received from a relay
+  void onEventReceived();
+
+  /// Called when an event is sent to relays
+  void onEventSent();
+}
+
 /// {@template nostr_client}
 /// Abstraction layer for Nostr communication
 ///
@@ -189,6 +207,12 @@ class NostrClient {
     await _relayManager.initialize();
   }
 
+  /// Optional observer for tracking statistics (subscriptions, events)
+  NostrClientStatisticsObserver? statisticsObserver;
+
+  /// Number of active subscriptions
+  int get activeSubscriptionCount => _subscriptionStreams.length;
+
   /// Map of subscription IDs to their filter hashes (for deduplication)
   final Map<String, String> _subscriptionFilters = {};
 
@@ -256,6 +280,8 @@ class NostrClient {
       // Cache replaceable events on success (not optimistically)
       _cacheEvent(sentEvent);
     }
+
+    statisticsObserver?.onEventSent();
 
     return sentEvent;
   }
@@ -481,6 +507,11 @@ class NostrClient {
       return _subscriptionStreams[id]!.stream;
     }
 
+    // Ensure relays are connected before subscribing
+    if (_relayManager.connectedRelays.isEmpty) {
+      unawaited(retryDisconnectedRelays());
+    }
+
     // Create new stream controller
     final controller = StreamController<Event>.broadcast();
     _subscriptionStreams[id] = controller;
@@ -508,6 +539,8 @@ class NostrClient {
         if (!controller.isClosed) {
           controller.add(event);
         }
+
+        statisticsObserver?.onEventReceived();
       },
       id: id,
       tempRelays: tempRelays,
@@ -518,11 +551,14 @@ class NostrClient {
     );
 
     // If nostr_sdk generated a different ID, update our mapping
-    if (actualId != id && actualId.isNotEmpty) {
+    final effectiveId = (actualId != id && actualId.isNotEmpty) ? actualId : id;
+    if (effectiveId != id) {
       _subscriptionStreams.remove(id);
-      _subscriptionStreams[actualId] = controller;
-      _subscriptionFilters[actualId] = filterHash;
+      _subscriptionStreams[effectiveId] = controller;
+      _subscriptionFilters[effectiveId] = filterHash;
     }
+
+    statisticsObserver?.onSubscriptionStarted(effectiveId);
 
     return controller.stream;
   }
@@ -535,6 +571,7 @@ class NostrClient {
       await controller.close();
     }
     _subscriptionFilters.remove(subscriptionId);
+    statisticsObserver?.onSubscriptionClosed(subscriptionId);
   }
 
   /// Closes all subscriptions
@@ -611,6 +648,15 @@ class NostrClient {
       return configuredRelays.first;
     }
     return 'wss://relay.divine.video';
+  }
+
+  /// Returns per-relay counters from the SDK's [RelayStatus].
+  ///
+  /// These are the actual per-relay statistics tracked by the SDK
+  /// (events received, queries sent, errors) — not app-level aggregates.
+  Map<String, ({int eventsReceived, int queriesSent, int errors})>
+  getRelayPoolCounters() {
+    return _relayManager.getRelayPoolCounters();
   }
 
   /// Gets relay statistics for diagnostics

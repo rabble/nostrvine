@@ -13,6 +13,7 @@ import 'dart:convert';
 
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:rxdart/rxdart.dart';
@@ -27,6 +28,10 @@ typedef QueueOfflineFollowCallback =
 
 /// Callback to fetch following list from REST API (funnelcake)
 typedef FetchFollowingFromApiCallback =
+    Future<List<String>> Function(String pubkey);
+
+/// Callback to fetch followers list from REST API (funnelcake)
+typedef FetchFollowersFromApiCallback =
     Future<List<String>> Function(String pubkey);
 
 /// Repository for managing follow relationships.
@@ -45,11 +50,13 @@ class FollowRepository {
     IsOnlineCallback? isOnline,
     QueueOfflineFollowCallback? queueOfflineAction,
     FetchFollowingFromApiCallback? fetchFollowingFromApi,
+    FetchFollowersFromApiCallback? fetchFollowersFromApi,
   }) : _nostrClient = nostrClient,
        _personalEventCache = personalEventCache,
        _isOnline = isOnline,
        _queueOfflineAction = queueOfflineAction,
-       _fetchFollowingFromApi = fetchFollowingFromApi;
+       _fetchFollowingFromApi = fetchFollowingFromApi,
+       _fetchFollowersFromApi = fetchFollowersFromApi;
 
   final NostrClient _nostrClient;
   final PersonalEventCacheService? _personalEventCache;
@@ -62,6 +69,9 @@ class FollowRepository {
 
   /// Callback to fetch following list from REST API (fast, non-blocking)
   final FetchFollowingFromApiCallback? _fetchFollowingFromApi;
+
+  /// Callback to fetch followers list from REST API (fast, non-blocking)
+  final FetchFollowersFromApiCallback? _fetchFollowersFromApi;
 
   // BehaviorSubject replays last value to late subscribers, fixing race condition
   // where BLoC subscribes AFTER initial emission
@@ -140,17 +150,46 @@ class FollowRepository {
   /// Timeout for fetching followers from relays
   static const _fetchFollowersTimeout = Duration(seconds: 5);
 
-  /// Fetch followers for a given pubkey from Nostr relays.
+  /// Fetch followers for a given pubkey.
   ///
-  /// Queries for Kind 3 (contact list) events that mention the target pubkey
-  /// in their 'p' tags - these are users who follow the target.
+  /// Tries REST API first (fast, indexed) then falls back to relay query
+  /// (Kind 3 events that mention the target pubkey in p-tags).
   ///
-  /// Returns empty list on timeout to prevent infinite loading.
+  /// Returns empty list on timeout or failure.
   Future<List<String>> _fetchFollowers(String pubkey) async {
     if (pubkey.isEmpty) {
       return [];
     }
 
+    // 1. Try REST API first (fast, pre-indexed)
+    if (_fetchFollowersFromApi != null) {
+      try {
+        final apiFollowers = await _fetchFollowersFromApi(pubkey);
+        if (apiFollowers.isNotEmpty) {
+          Log.info(
+            'Loaded ${apiFollowers.length} followers from REST API '
+            'for $pubkey',
+            name: 'FollowRepository',
+            category: LogCategory.system,
+          );
+          return apiFollowers;
+        }
+        Log.debug(
+          'REST API returned 0 followers for $pubkey, '
+          'trying relay fallback',
+          name: 'FollowRepository',
+          category: LogCategory.system,
+        );
+      } catch (e) {
+        Log.warning(
+          'REST API followers fetch failed, falling back to relay: $e',
+          name: 'FollowRepository',
+          category: LogCategory.system,
+        );
+      }
+    }
+
+    // 2. Fall back to relay query (Kind 3 events mentioning this pubkey)
     try {
       final events = await _nostrClient
           .queryEvents([
@@ -288,7 +327,15 @@ class FollowRepository {
         await _loadFromRestApi();
       }
 
-      // 4. Subscribe to contact list for real-time sync and cross-device updates
+      // 4. If still empty, query relays for kind 3 contact list directly.
+      // The REST API may not have indexed the user's contact list yet,
+      // but the relay has the authoritative kind 3 event.
+      if (_followingPubkeys.isEmpty && _nostrClient.hasKeys) {
+        await _loadFromRelay();
+      }
+
+      // 5. Subscribe to contact list for real-time sync and cross-device
+      // updates (fires on future changes, not initial load)
       if (_nostrClient.hasKeys) {
         _subscribeToContactList();
       }
@@ -704,10 +751,64 @@ class FollowRepository {
     }
   }
 
-  /// Subscribe to contact list for real time updates.
+  /// Query relays for the user's kind 3 contact list.
+  ///
+  /// Uses [ContactListCompletionHelper] (same proven approach as
+  /// SocialService) to do a one-shot query with proper EOSE handling.
+  /// Called when local cache and REST API are both empty.
+  Future<void> _loadFromRelay() async {
+    try {
+      final currentUserPubkey = _nostrClient.publicKey;
+      if (currentUserPubkey.isEmpty) return;
+
+      Log.info(
+        'Querying relay for kind 3 contact list '
+        '(REST API had no data)',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+
+      final eventStream = _nostrClient.subscribe([
+        Filter(authors: [currentUserPubkey], kinds: const [3], limit: 1),
+      ]);
+
+      final event = await ContactListCompletionHelper.queryContactList(
+        eventStream: eventStream,
+        pubkey: currentUserPubkey,
+        fallbackTimeoutSeconds: 8,
+      );
+
+      if (event != null) {
+        _processContactListEvent(event);
+
+        Log.info(
+          'Loaded following from relay kind 3: '
+          '${_followingPubkeys.length} users',
+          name: 'FollowRepository',
+          category: LogCategory.system,
+        );
+      } else {
+        Log.debug(
+          'No kind 3 contact list found on relay '
+          '(user may genuinely follow nobody)',
+          name: 'FollowRepository',
+          category: LogCategory.system,
+        );
+      }
+    } catch (e) {
+      Log.warning(
+        'Failed to load following from relay: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Subscribe to contact list for real-time sync and cross-device updates.
   ///
   /// Creates a long-running subscription to the current user's Kind 3 events.
-  /// When a newer contact list arrives (from another device), updates the local list.
+  /// When a newer contact list arrives (from another device or this one),
+  /// updates the local list.
   void _subscribeToContactList() {
     final currentUserPubkey = _nostrClient.publicKey;
     if (currentUserPubkey.isEmpty) return;

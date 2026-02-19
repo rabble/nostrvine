@@ -169,8 +169,11 @@ class SocialService {
       // Fetch from network
       final stats = await _fetchFollowerStats(pubkey);
 
-      // Cache the result
-      _followerStats[pubkey] = stats;
+      // Cache the result only if we got real data — avoid persisting
+      // zeros from failed relay queries so the next call retries.
+      if (stats['followers']! > 0 || stats['following']! > 0) {
+        _followerStats[pubkey] = stats;
+      }
 
       Log.debug(
         'Follower stats fetched: $stats',
@@ -191,11 +194,26 @@ class SocialService {
   /// Fetch follower stats from the network.
   ///
   /// Tries the REST API first (instant response) and falls back to
-  /// WebSocket queries if the REST API is unavailable.
+  /// WebSocket queries if the REST API is unavailable or returns
+  /// `following: 0` (which may indicate unindexed kind 3 data).
   Future<Map<String, int>> _fetchFollowerStats(String pubkey) async {
     // 1. Try REST API first (fast, non-blocking)
     final restResult = await _fetchFollowerStatsViaRest(pubkey);
     if (restResult != null) {
+      // If REST reports 0 following, verify via WebSocket. The REST API
+      // may not have indexed the user's kind 3 contact list yet.
+      if (restResult['following'] == 0) {
+        final wsFollowing = await _fetchFollowingCountViaWebSocket(pubkey);
+        if (wsFollowing > 0) {
+          Log.debug(
+            'REST reported 0 following but relay has $wsFollowing '
+            '— using relay data for $pubkey',
+            name: 'SocialService',
+            category: LogCategory.system,
+          );
+          return {...restResult, 'following': wsFollowing};
+        }
+      }
       return restResult;
     }
 
