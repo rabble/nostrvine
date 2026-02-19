@@ -274,6 +274,40 @@ void main() {
         expect(find.byKey(const Key('video_widget')), findsOneWidget);
         expect(find.byKey(const Key('overlay_widget')), findsOneWidget);
       });
+
+      testWidgets(
+        'renders default loading placeholder behind video to prevent '
+        'black flash',
+        (tester) async {
+          await tester.pumpWidget(buildWidget());
+
+          // Both the video widget AND the default loading placeholder
+          // (CircularProgressIndicator) should be in the widget tree.
+          // The placeholder stays behind the video so the thumbnail
+          // remains visible until the first video frame renders.
+          expect(find.byKey(const Key('video_widget')), findsOneWidget);
+          expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'renders custom loadingBuilder behind video to prevent black flash',
+        (tester) async {
+          await tester.pumpWidget(
+            buildWidget(
+              loadingBuilder: (context) => const Text(
+                'Custom Loading',
+                key: Key('custom_loading'),
+              ),
+            ),
+          );
+
+          // Both the video widget AND the custom loading builder output
+          // should be present in the widget tree when ready.
+          expect(find.byKey(const Key('video_widget')), findsOneWidget);
+          expect(find.byKey(const Key('custom_loading')), findsOneWidget);
+        },
+      );
     });
 
     group('error state', () {
