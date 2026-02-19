@@ -251,6 +251,35 @@ void main() {
         expect(find.text('Fixed Modal Content'), findsOneWidget);
       });
 
+      testWidgets('calls onShow callback when showing sheet',
+          (tester) async {
+        var onShowCalled = false;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    await VineBottomSheet.show<void>(
+                      context: context,
+                      title: const Text('Callback Sheet'),
+                      onShow: () => onShowCalled = true,
+                      children: const [Text('Content')],
+                    );
+                  },
+                  child: const Text('Show Sheet'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show Sheet'));
+        await tester.pumpAndSettle();
+
+        expect(onShowCalled, isTrue);
+      });
+
       testWidgets('shows sheet with body parameter', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
