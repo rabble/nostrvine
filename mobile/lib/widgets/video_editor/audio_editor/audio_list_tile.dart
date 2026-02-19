@@ -8,10 +8,14 @@ class AudioListTile extends StatelessWidget {
     super.key,
     required this.audio,
     required this.isPlaying,
+    required this.onPlayPause,
+    required this.onSelect,
   });
 
   final AudioEvent audio;
   final bool isPlaying;
+  final VoidCallback onPlayPause;
+  final VoidCallback onSelect;
 
   String _formatDuration(double? seconds) {
     if (seconds == null) return '--:--';
@@ -26,25 +30,35 @@ class AudioListTile extends StatelessWidget {
     return Padding(
       padding: const .symmetric(vertical: 20.0),
       child: ListTile(
+        onTap: onSelect,
         minTileHeight: 48,
-        leading: Container(
-          padding: const .all(12),
-          decoration: ShapeDecoration(
-            color: VineTheme.surfaceContainer,
-            shape: RoundedRectangleBorder(borderRadius: .circular(12)),
-          ),
-          child: SvgPicture.asset(
-            isPlaying
-                ? 'assets/icon/pause_fill.svg'
-                : 'assets/icon/play_fill.svg',
-            width: 16,
-            height: 16,
-            colorFilter: .mode(VineTheme.onSurface, .srcIn),
+        leading: Semantics(
+          button: true,
+          label: isPlaying ? 'Pause preview' : 'Play preview',
+          child: GestureDetector(
+            onTap: onPlayPause,
+            child: Container(
+              padding: const .all(12),
+              decoration: ShapeDecoration(
+                color: VineTheme.surfaceContainer,
+                shape: RoundedRectangleBorder(borderRadius: .circular(12)),
+              ),
+              child: SvgPicture.asset(
+                isPlaying
+                    ? 'assets/icon/pause_fill.svg'
+                    : 'assets/icon/play_fill.svg',
+                width: 16,
+                height: 16,
+                colorFilter: .mode(VineTheme.onSurface, .srcIn),
+              ),
+            ),
           ),
         ),
         title: Text(
           audio.title ?? 'Untitled sound',
           style: VineTheme.titleMediumFont(fontSize: 16, height: 1.5),
+          maxLines: 1,
+          overflow: .ellipsis,
         ),
         subtitle: Text.rich(
           TextSpan(

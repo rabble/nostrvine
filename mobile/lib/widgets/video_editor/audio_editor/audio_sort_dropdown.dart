@@ -14,7 +14,7 @@ enum AudioSortOption {
   final String label;
 }
 
-/// A dropdown button for selecting audio sort order.
+/// A dropdown button for selecting audio sort order with animations.
 class AudioSortDropdown extends StatefulWidget {
   const AudioSortDropdown({
     super.key,
@@ -29,10 +29,38 @@ class AudioSortDropdown extends StatefulWidget {
   State<AudioSortDropdown> createState() => _AudioSortDropdownState();
 }
 
-class _AudioSortDropdownState extends State<AudioSortDropdown> {
+class _AudioSortDropdownState extends State<AudioSortDropdown>
+    with SingleTickerProviderStateMixin {
   final LayerLink _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
+  late final AnimationController _animationController;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<Offset> _slideAnimation;
   bool _isOpen = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _fadeAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeOut,
+    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, -0.1), end: Offset.zero).animate(
+          CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+        );
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    _overlayEntry?.remove();
+    super.dispose();
+  }
 
   void _toggleDropdown() {
     if (_isOpen) {
@@ -45,13 +73,15 @@ class _AudioSortDropdownState extends State<AudioSortDropdown> {
   void _openDropdown() {
     _overlayEntry = _createOverlayEntry();
     Overlay.of(context).insert(_overlayEntry!);
-    setState(() => _isOpen = true);
+    _isOpen = true;
+    _animationController.forward();
   }
 
-  void _closeDropdown() {
+  Future<void> _closeDropdown() async {
+    await _animationController.reverse();
     _overlayEntry?.remove();
     _overlayEntry = null;
-    setState(() => _isOpen = false);
+    _isOpen = false;
   }
 
   void _selectOption(AudioSortOption option) {
@@ -64,95 +94,122 @@ class _AudioSortDropdownState extends State<AudioSortDropdown> {
     final size = renderBox.size;
 
     return OverlayEntry(
-      builder: (context) => Stack(
-        children: [
-          // Backdrop to close dropdown when tapping outside
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: _closeDropdown,
-              behavior: HitTestBehavior.opaque,
-              child: const ColoredBox(color: Colors.transparent),
-            ),
-          ),
-          // Dropdown menu
-          Positioned(
-            width: 200,
-            child: CompositedTransformFollower(
-              link: _layerLink,
-              showWhenUnlinked: false,
-              offset: Offset(0, size.height + 4),
-              child: Material(
-                color: Colors.transparent,
-                child: _DropdownMenu(
-                  selectedOption: widget.value,
-                  onOptionSelected: _selectOption,
-                ),
-              ),
-            ),
-          ),
-        ],
+      builder: (context) => _DropdownOverlay(
+        layerLink: _layerLink,
+        buttonSize: size,
+        slideAnimation: _slideAnimation,
+        fadeAnimation: _fadeAnimation,
+        selectedOption: widget.value,
+        onOptionSelected: _selectOption,
+        onClose: _closeDropdown,
       ),
     );
-  }
-
-  @override
-  void dispose() {
-    _closeDropdown();
-    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return CompositedTransformTarget(
       link: _layerLink,
-      child: GestureDetector(
-        onTap: _toggleDropdown,
-        child: _DropdownButton(label: widget.value.label, isOpen: _isOpen),
-      ),
+      child: _DropdownButton(label: widget.value.label, onTap: _toggleDropdown),
+    );
+  }
+}
+
+class _DropdownOverlay extends StatelessWidget {
+  const _DropdownOverlay({
+    required this.layerLink,
+    required this.buttonSize,
+    required this.slideAnimation,
+    required this.fadeAnimation,
+    required this.selectedOption,
+    required this.onOptionSelected,
+    required this.onClose,
+  });
+
+  final LayerLink layerLink;
+  final Size buttonSize;
+  final Animation<Offset> slideAnimation;
+  final Animation<double> fadeAnimation;
+  final AudioSortOption selectedOption;
+  final ValueChanged<AudioSortOption> onOptionSelected;
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        _DropdownBackdrop(onClose: onClose),
+        Positioned(
+          width: 240,
+          child: CompositedTransformFollower(
+            link: layerLink,
+            showWhenUnlinked: false,
+            offset: Offset(0, buttonSize.height + 4),
+            child: SlideTransition(
+              position: slideAnimation,
+              child: FadeTransition(
+                opacity: fadeAnimation,
+                child: Material(
+                  type: .transparency,
+                  child: _DropdownMenu(
+                    selectedOption: selectedOption,
+                    onOptionSelected: onOptionSelected,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DropdownBackdrop extends StatelessWidget {
+  const _DropdownBackdrop({required this.onClose});
+
+  final VoidCallback onClose;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: GestureDetector(onTap: onClose, behavior: .opaque),
     );
   }
 }
 
 class _DropdownButton extends StatelessWidget {
-  const _DropdownButton({required this.label, required this.isOpen});
+  const _DropdownButton({required this.label, required this.onTap});
 
   final String label;
-  final bool isOpen;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 12),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 1,
-            offset: Offset(1, 1),
+    return Semantics(
+      button: true,
+      label: 'Sort by $label. Tap to change sort order',
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const .symmetric(vertical: 12, horizontal: 16),
+          child: Row(
+            spacing: 8,
+            mainAxisSize: .min,
+            children: [
+              SvgPicture.asset(
+                'assets/icon/funnel_simple.svg',
+                width: 24,
+                height: 24,
+                colorFilter: .mode(VineTheme.primary, .srcIn),
+              ),
+              Text(
+                label,
+                style: VineTheme.titleMediumFont(fontSize: 16, height: 1.5),
+              ),
+            ],
           ),
-          BoxShadow(
-            color: Color(0x1A000000),
-            blurRadius: 0.6,
-            offset: Offset(0.4, 0.4),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SvgPicture.asset(
-            'assets/icon/funnel_simple.svg',
-            width: 24,
-            height: 24,
-            colorFilter: ColorFilter.mode(VineTheme.vineGreen, BlendMode.srcIn),
-          ),
-          const SizedBox(width: 8),
-          Text(
-            label,
-            style: VineTheme.titleMediumFont(fontSize: 16, height: 1.5),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -170,26 +227,26 @@ class _DropdownMenu extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 200,
+      margin: .symmetric(horizontal: 16),
       decoration: BoxDecoration(
         color: VineTheme.surfaceContainer,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: VineTheme.outlineMuted, width: 2),
-        boxShadow: const [BoxShadow(color: Color(0x40000000), blurRadius: 4)],
+        borderRadius: .circular(16),
+        border: .all(color: VineTheme.outlineMuted, width: 2),
+        boxShadow: const [BoxShadow(color: VineTheme.scrim15, blurRadius: 4)],
       ),
       child: ClipRRect(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: .circular(14),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: AudioSortOption.values.map((option) {
-            final isSelected = option == selectedOption;
-            return _DropdownMenuItem(
-              label: option.label,
-              isSelected: isSelected,
-              onTap: () => onOptionSelected(option),
-            );
-          }).toList(),
+          mainAxisSize: .min,
+          crossAxisAlignment: .stretch,
+          children: [
+            for (final option in AudioSortOption.values)
+              _DropdownMenuItem(
+                label: option.label,
+                isSelected: option == selectedOption,
+                onTap: () => onOptionSelected(option),
+              ),
+          ],
         ),
       ),
     );
@@ -209,21 +266,27 @@ class _DropdownMenuItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: isSelected ? VineTheme.vineGreen.withAlpha(25) : null,
-          border: Border(
-            top: BorderSide(color: VineTheme.outlineMuted),
-            bottom: BorderSide(color: VineTheme.outlineMuted),
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const .all(16),
+          decoration: BoxDecoration(
+            color: isSelected ? VineTheme.primary.withAlpha(25) : null,
+            border: Border(
+              top: BorderSide(color: VineTheme.outlineMuted),
+              bottom: BorderSide(color: VineTheme.outlineMuted),
+            ),
           ),
-        ),
-        child: Text(
-          label,
-          style: VineTheme.titleMediumFont(fontSize: 16, height: 1.5).copyWith(
-            color: isSelected ? VineTheme.vineGreen : VineTheme.onSurface,
+          child: Text(
+            label,
+            style: VineTheme.titleMediumFont(fontSize: 16, height: 1.5)
+                .copyWith(
+                  color: isSelected ? VineTheme.primary : VineTheme.onSurface,
+                ),
           ),
         ),
       ),
