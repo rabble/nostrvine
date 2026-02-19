@@ -13,6 +13,7 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
@@ -127,21 +128,40 @@ class FullscreenFeedContent extends StatefulWidget {
   State<FullscreenFeedContent> createState() => _FullscreenFeedContentState();
 }
 
-class _FullscreenFeedContentState extends State<FullscreenFeedContent> {
+class _FullscreenFeedContentState extends State<FullscreenFeedContent>
+    with RouteAware {
   VideoFeedController? _controller;
   List<VideoItem>? _lastPooledVideos;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Subscribe to route changes so we pause when a route is pushed on top
+    // (e.g. profile page) and resume when the user pops back.
+    routeObserver.subscribe(this, ModalRoute.of(context)!);
     // Initialize controller if BLoC already has videos on first build
     _initializeControllerIfNeeded();
   }
 
   @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _controller?.dispose();
     super.dispose();
+  }
+
+  // -- RouteAware callbacks --------------------------------------------------
+
+  @override
+  void didPushNext() {
+    // Another route was pushed on top (e.g. profile page) — pause playback.
+    _controller?.pause();
+  }
+
+  @override
+  void didPopNext() {
+    // A route was popped back to us — resume playback.
+    _controller?.play();
   }
 
   /// Initializes the controller if not already created and videos are available.

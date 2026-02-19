@@ -373,15 +373,16 @@ class VideoFeedController extends ChangeNotifier {
     onVideoReady?.call(index, player);
 
     if (index == _currentIndex && _isActive && !_isPaused) {
-      // This is the current video - play it
+      // This is the current video - play it with audio
       unawaited(player.setVolume(100));
 
       // Start position callback timer for current video
       _startPositionTimer(index);
     } else {
-      // Preloaded video - pause it
+      // Preloaded video - pause it and keep muted to prevent audio leaks.
+      // Volume will be set to 100 when this video becomes current via
+      // _playVideo().
       unawaited(player.pause());
-      unawaited(player.setVolume(100));
     }
 
     unawaited(_bufferSubscriptions[index]?.cancel());
@@ -428,6 +429,14 @@ class VideoFeedController extends ChangeNotifier {
   }
 
   void _releasePlayer(int index) {
+    // Stop audio before removing from tracking to prevent audio leaks.
+    // The player stays in the pool for reuse, but must be silent.
+    final player = _loadedPlayers[index]?.player;
+    if (player != null) {
+      unawaited(player.setVolume(0));
+      unawaited(player.pause());
+    }
+
     _stopPositionTimer(index);
     unawaited(_bufferSubscriptions[index]?.cancel());
     _bufferSubscriptions.remove(index);
@@ -440,38 +449,63 @@ class VideoFeedController extends ChangeNotifier {
   @override
   void dispose() {
     if (_isDisposed) return;
-    _isDisposed = true;
 
-    // Release all players back to pool (stops playback and removes from pool)
-    // This ensures clean state when videos are reopened.
-    for (var i = 0; i < _videos.length; i++) {
-      if (_loadedPlayers.containsKey(i)) {
-        unawaited(pool.release(_videos[i].url));
-      }
-    }
-
-    // Cancel all position timers
+    // Cancel all position timers first (they reference players).
     for (final timer in _positionTimers.values) {
       timer.cancel();
     }
     _positionTimers.clear();
 
-    // Cancel all subscriptions
+    // Cancel all buffer subscriptions.
     for (final subscription in _bufferSubscriptions.values) {
       unawaited(subscription.cancel());
     }
     _bufferSubscriptions.clear();
 
-    // Dispose index notifiers
+    // Stop audio on ALL loaded players immediately to prevent audio leaks
+    // during the async disposal that follows.
+    for (final pooledPlayer in _loadedPlayers.values) {
+      unawaited(pooledPlayer.player.setVolume(0));
+      unawaited(pooledPlayer.player.pause());
+    }
+
+    // Collect player URLs to release BEFORE clearing state, but release
+    // AFTER notifiers are disposed so no widget can rebuild with a stale
+    // VideoController.
+    final urlsToRelease = <String>[];
+    for (var i = 0; i < _videos.length; i++) {
+      if (_loadedPlayers.containsKey(i)) {
+        urlsToRelease.add(_videos[i].url);
+      }
+    }
+
+    // Clear loaded players so _notifyIndex reports null controllers.
+    _loadedPlayers.clear();
+    _loadStates.clear();
+    _loadingIndices.clear();
+
+    // Notify all index listeners that their video is gone.  This causes
+    // ValueListenableBuilder to rebuild with videoController == null,
+    // removing media_kit Video widgets from the tree BEFORE we dispose
+    // the underlying native players (which would otherwise dispose the
+    // internal ValueNotifier<int?> out from under a mounted widget).
+    for (final entry in _indexNotifiers.entries) {
+      entry.value.value = const VideoIndexState();
+    }
+
+    // Mark as disposed so no further _notifyIndex calls can fire.
+    _isDisposed = true;
+
+    // Dispose index notifiers (no widget should be listening now).
     for (final notifier in _indexNotifiers.values) {
       notifier.dispose();
     }
     _indexNotifiers.clear();
 
-    // Clear state
-    _loadedPlayers.clear();
-    _loadStates.clear();
-    _loadingIndices.clear();
+    // Now release players from pool (disposes native resources safely).
+    for (final url in urlsToRelease) {
+      unawaited(pool.release(url));
+    }
 
     super.dispose();
   }
