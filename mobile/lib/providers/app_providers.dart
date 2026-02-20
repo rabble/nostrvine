@@ -621,9 +621,14 @@ SeenVideosService seenVideosService(Ref ref) {
 }
 
 /// Content blocklist service for filtering unwanted content from feeds
+///
+/// Injects SharedPreferences for local block persistence across restarts.
+/// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+/// during app startup in main.dart.
 @riverpod
 ContentBlocklistService contentBlocklistService(Ref ref) {
-  return ContentBlocklistService();
+  final prefs = ref.watch(sharedPreferencesProvider);
+  return ContentBlocklistService(prefs: prefs);
 }
 
 /// Version counter to trigger rebuilds when blocklist changes.
@@ -1098,7 +1103,6 @@ ProfileRepository? profileRepository(Ref ref) {
 
   final nostrClient = ref.watch(nostrServiceProvider);
   final userProfilesDao = ref.watch(databaseProvider).userProfilesDao;
-  final blocklistService = ref.watch(contentBlocklistServiceProvider);
   final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
 
   return ProfileRepository(
@@ -1106,7 +1110,6 @@ ProfileRepository? profileRepository(Ref ref) {
     userProfilesDao: userProfilesDao,
     httpClient: Client(),
     funnelcakeApiClient: funnelcakeClient,
-    userBlockFilter: blocklistService.shouldFilterFromFeeds,
     profileSearchFilter: (query, profiles) =>
         SearchUtils.searchProfiles(query, profiles, limit: 50),
   );

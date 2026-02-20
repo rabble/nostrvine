@@ -516,77 +516,16 @@ void main() {
       );
 
       test(
-        'filters out blocked users when userBlockFilter is provided',
+        'enriches profiles missing picture from local cache',
         () async {
-          // Arrange
-          final mockProfileEvent1 = MockEvent();
-          final mockProfileEvent2 = MockEvent();
-          const blockedPubkey =
-              'blocked1e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
+          // Arrange - search result has no picture
+          final mockSearchEvent = MockEvent();
+          const searchPubkey =
+              'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
               'c3d4e5f6a1b2c3d4e5f6a1b2';
-          const allowedPubkey =
-              'allowed2e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
-              'c3d4e5f6a1b2c3d4e5f6a1b2';
-          const testEventId1 =
+          const searchEventId =
               'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
               'd3c4b5a6f1e2d3c4b5a6f1e2';
-          const testEventId2 =
-              'e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
-              'd3c4b5a6f1e2d3c4b5a6f1e2d3';
-
-          when(() => mockProfileEvent1.kind).thenReturn(0);
-          when(() => mockProfileEvent1.pubkey).thenReturn(blockedPubkey);
-          when(() => mockProfileEvent1.createdAt).thenReturn(1704067200);
-          when(() => mockProfileEvent1.id).thenReturn(testEventId1);
-          when(() => mockProfileEvent1.content).thenReturn(
-            jsonEncode({
-              'display_name': 'Alice Blocked',
-              'about': 'A blocked user',
-            }),
-          );
-
-          when(() => mockProfileEvent2.kind).thenReturn(0);
-          when(() => mockProfileEvent2.pubkey).thenReturn(allowedPubkey);
-          when(() => mockProfileEvent2.createdAt).thenReturn(1704067300);
-          when(() => mockProfileEvent2.id).thenReturn(testEventId2);
-          when(() => mockProfileEvent2.content).thenReturn(
-            jsonEncode({
-              'display_name': 'Alice Allowed',
-              'about': 'An allowed user',
-            }),
-          );
-
-          when(
-            () => mockNostrClient.queryUsers('alice', limit: 200),
-          ).thenAnswer((_) async => [mockProfileEvent1, mockProfileEvent2]);
-
-          // Create repository with block filter
-          final repoWithFilter = ProfileRepository(
-            nostrClient: mockNostrClient,
-            userProfilesDao: mockUserProfilesDao,
-            httpClient: mockHttpClient,
-            userBlockFilter: (pubkey) => pubkey == blockedPubkey,
-          );
-
-          // Act
-          final result = await repoWithFilter.searchUsers(query: 'alice');
-
-          // Assert
-          expect(result, hasLength(1));
-          expect(result.first.displayName, equals('Alice Allowed'));
-          expect(result.any((p) => p.pubkey == blockedPubkey), isFalse);
-        },
-      );
-
-      test('enriches profiles missing picture from local cache', () async {
-        // Arrange - search result has no picture
-        final mockSearchEvent = MockEvent();
-        const searchPubkey =
-            'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2'
-            'c3d4e5f6a1b2c3d4e5f6a1b2';
-        const searchEventId =
-            'f1e2d3c4b5a6f1e2d3c4b5a6f1e2d3c4b5a6f1e2'
-            'd3c4b5a6f1e2d3c4b5a6f1e2';
 
         when(() => mockSearchEvent.kind).thenReturn(0);
         when(() => mockSearchEvent.pubkey).thenReturn(searchPubkey);

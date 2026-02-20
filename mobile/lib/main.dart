@@ -668,7 +668,20 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             keyManager.publicKey!,
           );
           Log.info(
-            '[INIT] ✅ Mutual mute list sync started (background)',
+            '[INIT] Mutual mute list sync started (background)',
+            name: 'Main',
+            category: LogCategory.system,
+          );
+
+          // Also sync kind 30000 block lists from other users
+          final authService = ref.read(authServiceProvider);
+          await blocklistService.syncBlockListsInBackground(
+            nostrService,
+            authService,
+            keyManager.publicKey!,
+          );
+          Log.info(
+            '[INIT] Block list sync started (background)',
             name: 'Main',
             category: LogCategory.system,
           );

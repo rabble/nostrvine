@@ -57,22 +57,31 @@ class ProfileFollowersStat extends ConsumerWidget {
 }
 
 /// View widget for current user's followers stat.
-class _MyFollowersStatView extends StatelessWidget {
+class _MyFollowersStatView extends ConsumerWidget {
   const _MyFollowersStatView({required this.pubkey, required this.displayName});
 
   final String pubkey;
   final String? displayName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch blocklist to reactively update follower count
+    ref.watch(blocklistVersionProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+
     return BlocBuilder<MyFollowersBloc, MyFollowersState>(
       builder: (context, state) {
         final isLoading =
             state.status == MyFollowersStatus.initial ||
             state.status == MyFollowersStatus.loading;
+        final filteredCount = isLoading
+            ? null
+            : state.followersPubkeys
+                  .where((pk) => !blocklistService.isBlocked(pk))
+                  .length;
 
         return ProfileStatColumn(
-          count: isLoading ? null : state.followerCount,
+          count: filteredCount,
           label: 'Followers',
           isLoading: isLoading,
           onTap: () => context.push(
@@ -86,7 +95,7 @@ class _MyFollowersStatView extends StatelessWidget {
 }
 
 /// View widget for other user's followers stat.
-class _OthersFollowersStatView extends StatelessWidget {
+class _OthersFollowersStatView extends ConsumerWidget {
   const _OthersFollowersStatView({
     required this.pubkey,
     required this.displayName,
@@ -96,15 +105,24 @@ class _OthersFollowersStatView extends StatelessWidget {
   final String? displayName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch blocklist to reactively update follower count
+    ref.watch(blocklistVersionProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+
     return BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
       builder: (context, state) {
         final isLoading =
             state.status == OthersFollowersStatus.initial ||
             state.status == OthersFollowersStatus.loading;
+        final filteredCount = isLoading
+            ? null
+            : state.followersPubkeys
+                  .where((pk) => !blocklistService.isBlocked(pk))
+                  .length;
 
         return ProfileStatColumn(
-          count: isLoading ? null : state.followerCount,
+          count: filteredCount,
           label: 'Followers',
           isLoading: isLoading,
           onTap: () => context.push(

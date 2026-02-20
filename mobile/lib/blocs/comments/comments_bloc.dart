@@ -16,7 +16,6 @@ import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
-import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -39,7 +38,6 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     required AuthService authService,
     required LikesRepository likesRepository,
     required Future<ContentReportingService> contentReportingServiceFuture,
-    required Future<MuteService> muteServiceFuture,
     required ContentBlocklistService contentBlocklistService,
     required String rootEventId,
     required int rootEventKind,
@@ -52,7 +50,6 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
        _authService = authService,
        _likesRepository = likesRepository,
        _contentReportingServiceFuture = contentReportingServiceFuture,
-       _muteServiceFuture = muteServiceFuture,
        _contentBlocklistService = contentBlocklistService,
        _initialTotalCount = initialTotalCount,
        _userProfileService = userProfileService,
@@ -109,7 +106,6 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   StreamSubscription<Comment>? _commentStreamSubscription;
   final LikesRepository _likesRepository;
   final Future<ContentReportingService> _contentReportingServiceFuture;
-  final Future<MuteService> _muteServiceFuture;
   final ContentBlocklistService _contentBlocklistService;
   final UserProfileService? _userProfileService;
   final FollowRepository? _followRepository;
@@ -595,12 +591,14 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     Emitter<CommentsState> emit,
   ) async {
     try {
-      // Publish mute list update to relays
-      final muteService = await _muteServiceFuture;
-      await muteService.muteUser(event.authorPubkey);
-
-      // Block locally for immediate runtime filtering
+      // Block user via ContentBlocklistService (persists + publishes kind 30000)
       _contentBlocklistService.blockUser(event.authorPubkey);
+
+      // Unfollow the blocked user if currently following
+      final followRepo = _followRepository;
+      if (followRepo != null && followRepo.isFollowing(event.authorPubkey)) {
+        await followRepo.toggleFollow(event.authorPubkey);
+      }
 
       // Remove all comments by the blocked user
       final updatedCommentsById = Map<String, Comment>.from(state.commentsById)

@@ -19,9 +19,6 @@ const _usernameCheckUrl = 'https://names.divine.video/api/username/check';
 /// Keycast NIP-05 endpoint for checking username availability on login server.
 const _keycastNip05Url = 'https://login.divine.video/.well-known/nostr.json';
 
-/// Callback to check if a user should be filtered from results.
-typedef UserBlockFilter = bool Function(String pubkey);
-
 // TODO(search): Move ProfileSearchFilter to a shared package
 // (e.g., search_utils) when we need to reuse search logic across
 // multiple repositories.
@@ -38,20 +35,17 @@ class ProfileRepository {
     required UserProfilesDao userProfilesDao,
     required Client httpClient,
     FunnelcakeApiClient? funnelcakeApiClient,
-    UserBlockFilter? userBlockFilter,
     ProfileSearchFilter? profileSearchFilter,
   }) : _nostrClient = nostrClient,
        _userProfilesDao = userProfilesDao,
        _httpClient = httpClient,
        _funnelcakeApiClient = funnelcakeApiClient,
-       _userBlockFilter = userBlockFilter,
        _profileSearchFilter = profileSearchFilter;
 
   final NostrClient _nostrClient;
   final UserProfilesDao _userProfilesDao;
   final Client _httpClient;
   final FunnelcakeApiClient? _funnelcakeApiClient;
-  final UserBlockFilter? _userBlockFilter;
   final ProfileSearchFilter? _profileSearchFilter;
 
   /// Returns the cached profile from local storage (SQLite) only.
@@ -324,7 +318,6 @@ class ProfileRepository {
   ///
   /// Filters using [ProfileSearchFilter] if provided (only when no server-side
   /// sort is active), otherwise falls back to simple bestDisplayName matching.
-  /// If a [UserBlockFilter] was provided, blocked users are excluded.
   /// Returns list of [UserProfile] matching the search query.
   /// Returns empty list if query is empty or no results found.
   Future<List<UserProfile>> searchUsers({
@@ -396,23 +389,22 @@ class ProfileRepository {
     // Enrich profiles from local SQLite cache (fill in missing pictures, etc.)
     final enrichedProfiles = await _enrichFromCache(profiles);
 
-    // Filter out blocked users
-    final unblockedProfiles = enrichedProfiles.where((profile) {
-      return !(_userBlockFilter?.call(profile.pubkey) ?? false);
-    }).toList();
+    // Note: blocked users are NOT filtered from search results.
+    // Users need to find blocked profiles in search to unblock them.
+    // Block filtering is applied in video feeds (VideoEventService) instead.
 
     // When server-side sorting is active, trust server order
     if (useServerSort) {
-      return unblockedProfiles;
+      return enrichedProfiles;
     }
 
     // Use custom search filter if provided, otherwise simple contains match
     if (_profileSearchFilter != null) {
-      return _profileSearchFilter(query, unblockedProfiles);
+      return _profileSearchFilter(query, enrichedProfiles);
     }
 
     final queryLower = query.toLowerCase();
-    return unblockedProfiles.where((profile) {
+    return enrichedProfiles.where((profile) {
       return profile.bestDisplayName.toLowerCase().contains(queryLower);
     }).toList();
   }

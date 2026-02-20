@@ -1905,11 +1905,19 @@ final class SeenVideosServiceProvider
 String _$seenVideosServiceHash() => r'74099bd4d859b446a3fc0cf1a7f416756a104e43';
 
 /// Content blocklist service for filtering unwanted content from feeds
+///
+/// Injects SharedPreferences for local block persistence across restarts.
+/// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+/// during app startup in main.dart.
 
 @ProviderFor(contentBlocklistService)
 const contentBlocklistServiceProvider = ContentBlocklistServiceProvider._();
 
 /// Content blocklist service for filtering unwanted content from feeds
+///
+/// Injects SharedPreferences for local block persistence across restarts.
+/// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+/// during app startup in main.dart.
 
 final class ContentBlocklistServiceProvider
     extends
@@ -1920,6 +1928,10 @@ final class ContentBlocklistServiceProvider
         >
     with $Provider<ContentBlocklistService> {
   /// Content blocklist service for filtering unwanted content from feeds
+  ///
+  /// Injects SharedPreferences for local block persistence across restarts.
+  /// Nostr publishing (kind 30000) is initialized via [syncBlockListsInBackground]
+  /// during app startup in main.dart.
   const ContentBlocklistServiceProvider._()
     : super(
         from: null,
@@ -1955,7 +1967,7 @@ final class ContentBlocklistServiceProvider
 }
 
 String _$contentBlocklistServiceHash() =>
-    r'a05020e10b4402686d4630f99b020c4f0e58eab3';
+    r'f3d72c3f14c8b9f294ab31e60cf62e16640c6c32';
 
 /// Version counter to trigger rebuilds when blocklist changes.
 /// Widgets watching this will rebuild when block/unblock actions occur.

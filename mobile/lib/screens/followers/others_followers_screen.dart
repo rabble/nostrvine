@@ -58,14 +58,14 @@ class OthersFollowersScreen extends ConsumerWidget {
   }
 }
 
-class _OthersFollowersView extends StatelessWidget {
+class _OthersFollowersView extends ConsumerWidget {
   const _OthersFollowersView({required this.pubkey, required this.displayName});
 
   final String pubkey;
   final String? displayName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final appBarTitle = displayName?.isNotEmpty == true
         ? "$displayName's Followers"
         : 'Followers';
@@ -111,44 +111,36 @@ class _OthersFollowersView extends StatelessWidget {
               : 0,
         ),
       ),
-      body: MultiBlocListener(
-        listeners: [
-          BlocListener<MyFollowingBloc, MyFollowingState>(
-            listenWhen: (previous, current) =>
-                current.status == MyFollowingStatus.toggleFailure &&
-                previous.status != MyFollowingStatus.toggleFailure,
-            listener: (context, state) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text(_toggleFollowErrorMessage)),
-              );
-            },
-          ),
-        ],
-        child: BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
-          builder: (context, state) {
-            return switch (state.status) {
-              OthersFollowersStatus.initial || OthersFollowersStatus.loading =>
-                const Center(child: CircularProgressIndicator()),
-              OthersFollowersStatus.success => _FollowersListBody(
-                followers: state.followersPubkeys,
-                targetPubkey: pubkey,
-              ),
-              OthersFollowersStatus.failure => _FollowersErrorBody(
-                onRetry: () {
-                  final targetPubkey = context
-                      .read<OthersFollowersBloc>()
-                      .state
-                      .targetPubkey;
-                  if (targetPubkey != null) {
-                    context.read<OthersFollowersBloc>().add(
-                      OthersFollowersListLoadRequested(targetPubkey),
-                    );
-                  }
-                },
-              ),
-            };
-          },
-        ),
+      body: BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
+        builder: (context, state) {
+          // Watch blocklist to reactively filter blocked users from list
+          ref.watch(blocklistVersionProvider);
+          final blocklistService = ref.watch(contentBlocklistServiceProvider);
+
+          return switch (state.status) {
+            OthersFollowersStatus.initial || OthersFollowersStatus.loading =>
+              const Center(child: CircularProgressIndicator()),
+            OthersFollowersStatus.success => _FollowersListBody(
+              followers: state.followersPubkeys
+                  .where((pk) => !blocklistService.isBlocked(pk))
+                  .toList(),
+              targetPubkey: pubkey,
+            ),
+            OthersFollowersStatus.failure => _FollowersErrorBody(
+              onRetry: () {
+                final targetPubkey = context
+                    .read<OthersFollowersBloc>()
+                    .state
+                    .targetPubkey;
+                if (targetPubkey != null) {
+                  context.read<OthersFollowersBloc>().add(
+                    OthersFollowersListLoadRequested(targetPubkey),
+                  );
+                }
+              },
+            ),
+          };
+        },
       ),
     );
   }

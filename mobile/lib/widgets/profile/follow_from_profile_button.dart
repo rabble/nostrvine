@@ -48,6 +48,7 @@ class FollowFromProfileButton extends ConsumerWidget {
     // Watch blocklist to reactively update button state
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
     final isBlocked = blocklistService.isBlocked(pubkey);
+    final isBlockedByThem = blocklistService.hasBlockedUs(pubkey);
 
     return BlocProvider(
       create: (_) =>
@@ -58,6 +59,7 @@ class FollowFromProfileButton extends ConsumerWidget {
         displayName: displayName,
         currentUserPubkey: currentUserPubkey,
         isBlocked: isBlocked,
+        isBlockedByThem: isBlockedByThem,
         onBlockedTap: onBlockedTap,
       ),
     );
@@ -73,6 +75,7 @@ class FollowFromProfileButtonView extends StatelessWidget {
     required this.currentUserPubkey,
     super.key,
     this.isBlocked = false,
+    this.isBlockedByThem = false,
     this.onBlockedTap,
   });
 
@@ -85,15 +88,23 @@ class FollowFromProfileButtonView extends StatelessWidget {
   /// The current user's public key (used for optimistic follower count update).
   final String? currentUserPubkey;
 
-  /// Whether the user is blocked.
+  /// Whether the user is blocked by us.
   final bool isBlocked;
+
+  /// Whether the user has blocked us (prevents following).
+  final bool isBlockedByThem;
 
   /// Callback when the Blocked button is tapped.
   final VoidCallback? onBlockedTap;
 
   @override
   Widget build(BuildContext context) {
-    // Show Blocked state if user is blocked
+    // If the other user has blocked us, hide the follow button entirely
+    if (isBlockedByThem) {
+      return const SizedBox.shrink();
+    }
+
+    // Show Blocked state if user is blocked by us
     if (isBlocked) {
       return OutlinedButton(
         onPressed: onBlockedTap,

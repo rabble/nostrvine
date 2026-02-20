@@ -63,21 +63,30 @@ class ProfileFollowingStat extends ConsumerWidget {
 }
 
 /// View widget for current user's following stat.
-class _MyFollowingStatView extends StatelessWidget {
+class _MyFollowingStatView extends ConsumerWidget {
   const _MyFollowingStatView({required this.pubkey, required this.displayName});
 
   final String pubkey;
   final String? displayName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch blocklist to reactively update following count
+    ref.watch(blocklistVersionProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+
     return BlocBuilder<MyFollowingBloc, MyFollowingState>(
       builder: (context, state) {
         // MyFollowingBloc starts with success status (cached data)
         final isLoading = state.status == MyFollowingStatus.initial;
+        final filteredCount = isLoading
+            ? null
+            : state.followingPubkeys
+                  .where((pk) => !blocklistService.isBlocked(pk))
+                  .length;
 
         return ProfileStatColumn(
-          count: isLoading ? null : state.followingPubkeys.length,
+          count: filteredCount,
           label: 'Following',
           isLoading: isLoading,
           onTap: () => context.push(
@@ -91,7 +100,7 @@ class _MyFollowingStatView extends StatelessWidget {
 }
 
 /// View widget for other user's following stat.
-class _OthersFollowingStatView extends StatelessWidget {
+class _OthersFollowingStatView extends ConsumerWidget {
   const _OthersFollowingStatView({
     required this.pubkey,
     required this.displayName,
@@ -101,15 +110,24 @@ class _OthersFollowingStatView extends StatelessWidget {
   final String? displayName;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    // Watch blocklist to reactively update following count
+    ref.watch(blocklistVersionProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+
     return BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
       builder: (context, state) {
         final isLoading =
             state.status == OthersFollowingStatus.initial ||
             state.status == OthersFollowingStatus.loading;
+        final filteredCount = isLoading
+            ? null
+            : state.followingPubkeys
+                  .where((pk) => !blocklistService.isBlocked(pk))
+                  .length;
 
         return ProfileStatColumn(
-          count: isLoading ? null : state.followingPubkeys.length,
+          count: filteredCount,
           label: 'Following',
           isLoading: isLoading,
           onTap: () => context.push(

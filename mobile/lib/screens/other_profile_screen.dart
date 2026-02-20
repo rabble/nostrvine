@@ -223,14 +223,40 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           widget.pubkey,
           ourPubkey: nostrClient.publicKey,
         );
+
+        // Unfollow the blocked user if currently following
+        final followRepository = ref.read(followRepositoryProvider);
+        if (followRepository != null &&
+            followRepository.isFollowing(widget.pubkey)) {
+          await followRepository.toggleFollow(widget.pubkey);
+        }
+
         ref.read(blocklistVersionProvider.notifier).increment();
         if (mounted) {
+          final profile = ref
+              .read(userProfileReactiveProvider(widget.pubkey))
+              .value;
+          final name =
+              profile?.bestDisplayName ?? widget.displayNameHint ?? 'User';
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Blocked $name')));
           context.pop();
         }
       case MoreSheetResult.unblockConfirmed:
         final blocklistService = ref.read(contentBlocklistServiceProvider);
         blocklistService.unblockUser(widget.pubkey);
         ref.read(blocklistVersionProvider.notifier).increment();
+        if (mounted) {
+          final profile = ref
+              .read(userProfileReactiveProvider(widget.pubkey))
+              .value;
+          final name =
+              profile?.bestDisplayName ?? widget.displayNameHint ?? 'User';
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Unblocked $name')));
+        }
     }
   }
 

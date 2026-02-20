@@ -127,7 +127,6 @@ void main() {
       authService: mockAuthService,
       likesRepository: mockLikesRepository,
       contentReportingServiceFuture: Future.value(mockContentReportingService),
-      muteServiceFuture: Future.value(mockMuteService),
       contentBlocklistService: mockContentBlocklistService,
       rootEventId: rootEventId ?? validId('root'),
       rootEventKind: testRootEventKind,
@@ -2030,11 +2029,9 @@ void main() {
         'blocks user and removes their comments',
         setUp: () {
           when(
-            () => mockMuteService.muteUser(any()),
-          ).thenAnswer((_) async => true);
-          when(
             () => mockContentBlocklistService.blockUser(any()),
           ).thenReturn(null);
+          when(() => mockFollowRepository.isFollowing(any())).thenReturn(false);
         },
         build: createBloc,
         seed: () {
@@ -2108,7 +2105,6 @@ void main() {
               }),
         ],
         verify: (_) {
-          verify(() => mockMuteService.muteUser(validId('baduser'))).called(1);
           verify(
             () => mockContentBlocklistService.blockUser(validId('baduser')),
           ).called(1);
@@ -2119,7 +2115,7 @@ void main() {
         'emits error when blocking fails',
         setUp: () {
           when(
-            () => mockMuteService.muteUser(any()),
+            () => mockContentBlocklistService.blockUser(any()),
           ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
