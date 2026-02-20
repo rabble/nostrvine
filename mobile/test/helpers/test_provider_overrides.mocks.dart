@@ -4,9 +4,9 @@
 
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i11;
-import 'dart:io' as _i23;
-import 'dart:typed_data' as _i24;
-import 'dart:ui' as _i20;
+import 'dart:io' as _i22;
+import 'dart:typed_data' as _i23;
+import 'dart:ui' as _i19;
 
 import 'package:file/file.dart' as _i9;
 import 'package:flutter_cache_manager/flutter_cache_manager.dart' as _i6;
@@ -16,16 +16,15 @@ import 'package:keycast_flutter/keycast_flutter.dart' as _i16;
 import 'package:media_cache/src/media_cache_manager.dart' as _i5;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i14;
-import 'package:models/models.dart' as _i18;
+import 'package:models/models.dart' as _i17;
 import 'package:nostr_client/nostr_client.dart' as _i4;
-import 'package:nostr_sdk/filter.dart' as _i17;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i3;
 import 'package:openvine/services/auth_service.dart' as _i2;
-import 'package:openvine/services/blossom_auth_service.dart' as _i22;
-import 'package:openvine/services/profile_cache_service.dart' as _i19;
+import 'package:openvine/services/blossom_auth_service.dart' as _i21;
+import 'package:openvine/services/profile_cache_service.dart' as _i18;
 import 'package:openvine/services/relay_discovery_service.dart' as _i13;
 import 'package:openvine/services/social_service.dart' as _i12;
-import 'package:openvine/services/subscription_manager.dart' as _i21;
+import 'package:openvine/services/subscription_manager.dart' as _i20;
 import 'package:openvine/services/user_profile_service.dart' as _i15;
 import 'package:shared_preferences/shared_preferences.dart' as _i10;
 
@@ -873,7 +872,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
 
   @override
   _i11.Future<List<_i3.Event>> queryEvents(
-    List<_i17.Filter>? filters, {
+    List<_i3.Filter>? filters, {
     String? subscriptionId,
     List<String>? tempRelays,
     List<int>? relayTypes = const [1, 2, 3, 4],
@@ -898,7 +897,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
 
   @override
   _i11.Future<_i4.CountResult> countEvents(
-    List<_i17.Filter>? filters, {
+    List<_i3.Filter>? filters, {
     String? subscriptionId,
     List<String>? tempRelays,
     List<int>? relayTypes = const [1, 2, 3, 4],
@@ -962,7 +961,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
 
   @override
   _i11.Stream<_i3.Event> subscribe(
-    List<_i17.Filter>? filters, {
+    List<_i3.Filter>? filters, {
     String? subscriptionId,
     List<String>? tempRelays,
     List<String>? targetRelays,
@@ -1278,12 +1277,12 @@ class MockUserProfileService extends _i1.Mock
   }
 
   @override
-  Map<String, _i18.UserProfile> get allProfiles =>
+  Map<String, _i17.UserProfile> get allProfiles =>
       (super.noSuchMethod(
             Invocation.getter(#allProfiles),
-            returnValue: <String, _i18.UserProfile>{},
+            returnValue: <String, _i17.UserProfile>{},
           )
-          as Map<String, _i18.UserProfile>);
+          as Map<String, _i17.UserProfile>);
 
   @override
   bool get hasListeners =>
@@ -1297,16 +1296,16 @@ class MockUserProfileService extends _i1.Mock
   );
 
   @override
-  void setPersistentCache(_i19.ProfileCacheService? cacheService) =>
+  void setPersistentCache(_i18.ProfileCacheService? cacheService) =>
       super.noSuchMethod(
         Invocation.method(#setPersistentCache, [cacheService]),
         returnValueForMissingStub: null,
       );
 
   @override
-  _i18.UserProfile? getCachedProfile(String? pubkey) =>
+  _i17.UserProfile? getCachedProfile(String? pubkey) =>
       (super.noSuchMethod(Invocation.method(#getCachedProfile, [pubkey]))
-          as _i18.UserProfile?);
+          as _i17.UserProfile?);
 
   @override
   bool hasProfile(String? pubkey) =>
@@ -1331,7 +1330,7 @@ class MockUserProfileService extends _i1.Mock
   );
 
   @override
-  _i11.Future<void> updateCachedProfile(_i18.UserProfile? profile) =>
+  _i11.Future<void> updateCachedProfile(_i17.UserProfile? profile) =>
       (super.noSuchMethod(
             Invocation.method(#updateCachedProfile, [profile]),
             returnValue: _i11.Future<void>.value(),
@@ -1349,7 +1348,7 @@ class MockUserProfileService extends _i1.Mock
           as _i11.Future<void>);
 
   @override
-  _i11.Future<_i18.UserProfile?> fetchProfile(
+  _i11.Future<_i17.UserProfile?> fetchProfile(
     String? pubkey, {
     bool? forceRefresh = false,
   }) =>
@@ -1359,9 +1358,9 @@ class MockUserProfileService extends _i1.Mock
               [pubkey],
               {#forceRefresh: forceRefresh},
             ),
-            returnValue: _i11.Future<_i18.UserProfile?>.value(),
+            returnValue: _i11.Future<_i17.UserProfile?>.value(),
           )
-          as _i11.Future<_i18.UserProfile?>);
+          as _i11.Future<_i17.UserProfile?>);
 
   @override
   _i11.Future<void> prefetchProfilesImmediately(List<String>? pubkeys) =>
@@ -1406,17 +1405,17 @@ class MockUserProfileService extends _i1.Mock
   );
 
   @override
-  _i11.Future<List<_i18.UserProfile>> searchUsers(
+  _i11.Future<List<_i17.UserProfile>> searchUsers(
     String? query, {
     int? limit,
   }) =>
       (super.noSuchMethod(
             Invocation.method(#searchUsers, [query], {#limit: limit}),
-            returnValue: _i11.Future<List<_i18.UserProfile>>.value(
-              <_i18.UserProfile>[],
+            returnValue: _i11.Future<List<_i17.UserProfile>>.value(
+              <_i17.UserProfile>[],
             ),
           )
-          as _i11.Future<List<_i18.UserProfile>>);
+          as _i11.Future<List<_i17.UserProfile>>);
 
   @override
   void handleProfileEventForTesting(_i3.Event? event) => super.noSuchMethod(
@@ -1431,13 +1430,13 @@ class MockUserProfileService extends _i1.Mock
   );
 
   @override
-  void addListener(_i20.VoidCallback? listener) => super.noSuchMethod(
+  void addListener(_i19.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#addListener, [listener]),
     returnValueForMissingStub: null,
   );
 
   @override
-  void removeListener(_i20.VoidCallback? listener) => super.noSuchMethod(
+  void removeListener(_i19.VoidCallback? listener) => super.noSuchMethod(
     Invocation.method(#removeListener, [listener]),
     returnValueForMissingStub: null,
   );
@@ -1453,7 +1452,7 @@ class MockUserProfileService extends _i1.Mock
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockSubscriptionManager extends _i1.Mock
-    implements _i21.SubscriptionManager {
+    implements _i20.SubscriptionManager {
   MockSubscriptionManager() {
     _i1.throwOnMissingStub(this);
   }
@@ -1489,7 +1488,7 @@ class MockSubscriptionManager extends _i1.Mock
   @override
   _i11.Future<String> createSubscription({
     required String? name,
-    required List<_i17.Filter>? filters,
+    required List<_i3.Filter>? filters,
     required dynamic Function(_i3.Event)? onEvent,
     dynamic Function(dynamic)? onError,
     dynamic Function()? onComplete,
@@ -1572,7 +1571,7 @@ class MockSubscriptionManager extends _i1.Mock
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockBlossomAuthService extends _i1.Mock
-    implements _i22.BlossomAuthService {
+    implements _i21.BlossomAuthService {
   MockBlossomAuthService() {
     _i1.throwOnMissingStub(this);
   }
@@ -1686,12 +1685,12 @@ class MockMediaCacheManager extends _i1.Mock implements _i5.MediaCacheManager {
           as _i11.Future<void>);
 
   @override
-  _i23.File? getCachedFileSync(String? key) =>
+  _i22.File? getCachedFileSync(String? key) =>
       (super.noSuchMethod(Invocation.method(#getCachedFileSync, [key]))
-          as _i23.File?);
+          as _i22.File?);
 
   @override
-  _i11.Future<_i23.File?> cacheFile(
+  _i11.Future<_i22.File?> cacheFile(
     String? url, {
     required String? key,
     Map<String, String>? authHeaders,
@@ -1702,9 +1701,9 @@ class MockMediaCacheManager extends _i1.Mock implements _i5.MediaCacheManager {
               [url],
               {#key: key, #authHeaders: authHeaders},
             ),
-            returnValue: _i11.Future<_i23.File?>.value(),
+            returnValue: _i11.Future<_i22.File?>.value(),
           )
-          as _i11.Future<_i23.File?>);
+          as _i11.Future<_i22.File?>);
 
   @override
   _i11.Future<bool> isFileCached(String? key) =>
@@ -1872,7 +1871,7 @@ class MockMediaCacheManager extends _i1.Mock implements _i5.MediaCacheManager {
   @override
   _i11.Future<_i9.File> putFile(
     String? url,
-    _i24.Uint8List? fileBytes, {
+    _i23.Uint8List? fileBytes, {
     String? key,
     String? eTag,
     Duration? maxAge = const Duration(days: 30),
