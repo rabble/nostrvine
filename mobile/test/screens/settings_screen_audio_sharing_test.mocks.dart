@@ -5,16 +5,14 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i4;
 
-import 'package:keycast_flutter/keycast_flutter.dart' as _i9;
+import 'package:keycast_flutter/keycast_flutter.dart' as _i8;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i7;
+import 'package:mockito/src/dummies.dart' as _i6;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i3;
-import 'package:openvine/services/audio_sharing_preference_service.dart'
-    as _i10;
+import 'package:openvine/services/audio_sharing_preference_service.dart' as _i9;
 import 'package:openvine/services/auth_service.dart' as _i2;
-import 'package:openvine/services/blossom_server_discovery_service.dart' as _i6;
 import 'package:openvine/services/relay_discovery_service.dart' as _i5;
-import 'package:openvine/services/user_profile_service.dart' as _i8;
+import 'package:openvine/services/user_profile_service.dart' as _i7;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -117,22 +115,6 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as bool);
 
   @override
-  List<_i6.DiscoveredBlossomServer> get userBlossomServers =>
-      (super.noSuchMethod(
-            Invocation.getter(#userBlossomServers),
-            returnValue: <_i6.DiscoveredBlossomServer>[],
-          )
-          as List<_i6.DiscoveredBlossomServer>);
-
-  @override
-  bool get hasUserBlossomServers =>
-      (super.noSuchMethod(
-            Invocation.getter(#hasUserBlossomServers),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
   Map<String, dynamic> get userStats =>
       (super.noSuchMethod(
             Invocation.getter(#userStats),
@@ -144,7 +126,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
   String get serviceName =>
       (super.noSuchMethod(
             Invocation.getter(#serviceName),
-            returnValue: _i7.dummyValue<String>(
+            returnValue: _i6.dummyValue<String>(
               this,
               Invocation.getter(#serviceName),
             ),
@@ -324,7 +306,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
 
   @override
   _i4.Future<void> refreshCurrentProfile(
-    _i8.UserProfileService? userProfileService,
+    _i7.UserProfileService? userProfileService,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#refreshCurrentProfile, [userProfileService]),
@@ -343,7 +325,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i4.Future<void>);
 
   @override
-  _i4.Future<void> signInWithDivineOAuth(_i9.KeycastSession? session) =>
+  _i4.Future<void> signInWithDivineOAuth(_i8.KeycastSession? session) =>
       (super.noSuchMethod(
             Invocation.method(#signInWithDivineOAuth, [session]),
             returnValue: _i4.Future<void>.value(),
@@ -455,7 +437,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
 ///
 /// See the documentation for Mockito's code generation for more information.
 class MockAudioSharingPreferenceService extends _i1.Mock
-    implements _i10.AudioSharingPreferenceService {
+    implements _i9.AudioSharingPreferenceService {
   MockAudioSharingPreferenceService() {
     _i1.throwOnMissingStub(this);
   }

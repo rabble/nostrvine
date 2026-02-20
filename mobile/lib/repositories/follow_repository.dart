@@ -152,8 +152,10 @@ class FollowRepository {
 
   /// Fetch followers for a given pubkey.
   ///
-  /// Tries REST API first (fast, indexed) then falls back to relay query
-  /// (Kind 3 events that mention the target pubkey in p-tags).
+  /// Runs REST API and relay queries in parallel and merges results.
+  /// The REST API (Funnelcake) only indexes kind 3 events seen on the
+  /// divine relay, so follower lists are often incomplete. The relay query
+  /// reaches all connected relays for broader kind 3 coverage.
   ///
   /// Returns empty list on timeout or failure.
   Future<List<String>> _fetchFollowers(String pubkey) async {
@@ -161,48 +163,42 @@ class FollowRepository {
       return [];
     }
 
-    // 1. Try REST API first (fast, pre-indexed)
-    if (_fetchFollowersFromApi != null) {
-      try {
-        final apiFollowers = await _fetchFollowersFromApi(pubkey);
-        if (apiFollowers.isNotEmpty) {
-          Log.info(
-            'Loaded ${apiFollowers.length} followers from REST API '
-            'for $pubkey',
-            name: 'FollowRepository',
-            category: LogCategory.system,
-          );
-          return apiFollowers;
-        }
-        Log.debug(
-          'REST API returned 0 followers for $pubkey, '
-          'trying relay fallback',
-          name: 'FollowRepository',
-          category: LogCategory.system,
-        );
-      } catch (e) {
-        Log.warning(
-          'REST API followers fetch failed, falling back to relay: $e',
-          name: 'FollowRepository',
-          category: LogCategory.system,
-        );
-      }
-    }
+    // Run REST API and relay queries in parallel for best coverage
+    final apiFuture = _fetchFollowersFromApi != null
+        ? _fetchFollowersFromApi(pubkey).catchError((_) => <String>[])
+        : Future.value(<String>[]);
 
-    // 2. Fall back to relay query (Kind 3 events mentioning this pubkey)
+    final relayFuture = _fetchFollowersFromRelays(pubkey);
+
+    final results = await Future.wait([apiFuture, relayFuture]);
+    final apiFollowers = results[0];
+    final relayFollowers = results[1];
+
+    // Merge both sources (union of pubkeys)
+    final merged = <String>{...apiFollowers, ...relayFollowers};
+
+    Log.info(
+      'Followers for $pubkey: API=${apiFollowers.length}, '
+      'relays=${relayFollowers.length}, merged=${merged.length}',
+      name: 'FollowRepository',
+      category: LogCategory.system,
+    );
+
+    return merged.toList();
+  }
+
+  /// Query connected relays for kind 3 events mentioning a pubkey.
+  Future<List<String>> _fetchFollowersFromRelays(String pubkey) async {
     try {
       final events = await _nostrClient
           .queryEvents([
-            Filter(
-              kinds: const [3], // Contact lists
-              p: [pubkey], // Events that mention this pubkey
-            ),
+            Filter(kinds: const [3], p: [pubkey]),
           ])
           .timeout(
             _fetchFollowersTimeout,
             onTimeout: () {
               Log.warning(
-                'Followers query timed out for $pubkey',
+                'Followers relay query timed out for $pubkey',
                 name: 'FollowRepository',
                 category: LogCategory.system,
               );
@@ -210,18 +206,16 @@ class FollowRepository {
             },
           );
 
-      // Extract unique follower pubkeys (authors of events that follow target)
       final followers = <String>[];
       for (final event in events) {
         if (!followers.contains(event.pubkey)) {
           followers.add(event.pubkey);
         }
       }
-
       return followers;
     } on TimeoutException {
       Log.warning(
-        'Followers query timed out for $pubkey',
+        'Followers relay query timed out for $pubkey',
         name: 'FollowRepository',
         category: LogCategory.system,
       );
@@ -768,15 +762,20 @@ class FollowRepository {
         category: LogCategory.system,
       );
 
-      final eventStream = _nostrClient.subscribe([
-        Filter(authors: [currentUserPubkey], kinds: const [3], limit: 1),
+      // Query connected relays and indexer relays in parallel.
+      // Connected relays may not have the contact list yet (relay discovery
+      // runs in background and may not have completed), so also query indexer
+      // relays directly as a fallback.
+      final results = await Future.wait([
+        _loadContactListFromConnectedRelays(currentUserPubkey),
+        _loadContactListFromIndexer(currentUserPubkey),
       ]);
 
-      final event = await ContactListCompletionHelper.queryContactList(
-        eventStream: eventStream,
-        pubkey: currentUserPubkey,
-        fallbackTimeoutSeconds: 8,
-      );
+      // Use whichever returned a result (prefer the one with more p-tags)
+      final connectedResult = results[0];
+      final indexerResult = results[1];
+
+      final event = _pickBestContactList(connectedResult, indexerResult);
 
       if (event != null) {
         _processContactListEvent(event);
@@ -802,6 +801,140 @@ class FollowRepository {
         category: LogCategory.system,
       );
     }
+  }
+
+  /// Query connected relays for kind 3 contact list.
+  Future<Event?> _loadContactListFromConnectedRelays(String pubkey) async {
+    try {
+      final eventStream = _nostrClient.subscribe([
+        Filter(authors: [pubkey], kinds: const [3], limit: 1),
+      ]);
+
+      return await ContactListCompletionHelper.queryContactList(
+        eventStream: eventStream,
+        pubkey: pubkey,
+        fallbackTimeoutSeconds: 5,
+      );
+    } catch (e) {
+      Log.warning(
+        'Connected relay contact list query failed: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return null;
+    }
+  }
+
+  /// Indexer relays that broadly index kind 3 events.
+  static const _contactListIndexers = [
+    'wss://purplepag.es',
+    'wss://relay.damus.io',
+  ];
+
+  /// Query indexer relays directly for the user's kind 3 contact list.
+  ///
+  /// Connected relays may not be ready yet (relay discovery runs in
+  /// background), so this provides a reliable fallback via direct WebSocket.
+  Future<Event?> _loadContactListFromIndexer(String pubkey) async {
+    for (final indexerUrl in _contactListIndexers) {
+      try {
+        final event = await _queryIndexerForContactList(indexerUrl, pubkey);
+        if (event != null) {
+          Log.info(
+            'Got contact list from indexer $indexerUrl',
+            name: 'FollowRepository',
+            category: LogCategory.system,
+          );
+          return event;
+        }
+      } catch (e) {
+        Log.warning(
+          'Indexer $indexerUrl contact list query failed: $e',
+          name: 'FollowRepository',
+          category: LogCategory.system,
+        );
+      }
+    }
+    return null;
+  }
+
+  /// Query a single indexer relay for kind 3 via direct WebSocket.
+  Future<Event?> _queryIndexerForContactList(
+    String indexerUrl,
+    String pubkey,
+  ) async {
+    final relayStatus = RelayStatus(indexerUrl);
+    final relay = RelayBase(indexerUrl, relayStatus);
+    final completer = Completer<Event?>();
+    final subscriptionId = 'cl_${DateTime.now().millisecondsSinceEpoch}';
+    Event? bestEvent;
+
+    relay.onMessage = (relay, jsonMsg) async {
+      if (jsonMsg.isEmpty) return;
+
+      final messageType = jsonMsg[0] as String;
+
+      if (messageType == 'EVENT' && jsonMsg.length >= 3) {
+        final eventJson = jsonMsg[2] as Map<String, dynamic>;
+        try {
+          final event = Event.fromJson(eventJson);
+          if (bestEvent == null || event.createdAt > bestEvent!.createdAt) {
+            bestEvent = event;
+          }
+        } catch (e) {
+          Log.warning(
+            'Failed to parse kind 3 event from $indexerUrl: $e',
+            name: 'FollowRepository',
+            category: LogCategory.system,
+          );
+        }
+      } else if (messageType == 'EOSE') {
+        if (!completer.isCompleted) {
+          completer.complete(bestEvent);
+        }
+      }
+    };
+
+    try {
+      final filter = <String, dynamic>{
+        'kinds': <int>[3],
+        'authors': <String>[pubkey],
+        'limit': 1,
+      };
+      relay.pendingMessages.add(<dynamic>['REQ', subscriptionId, filter]);
+
+      final connected = await relay.connect();
+      if (!connected) return null;
+
+      final result = await completer.future.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => bestEvent,
+      );
+
+      await relay.send(<dynamic>['CLOSE', subscriptionId]);
+      return result;
+    } catch (e) {
+      Log.warning(
+        'Error querying $indexerUrl for contact list: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return bestEvent;
+    } finally {
+      try {
+        await relay.disconnect();
+      } catch (_) {}
+    }
+  }
+
+  /// Pick the best contact list from two sources.
+  /// Prefers the one with more p-tags (more complete list).
+  Event? _pickBestContactList(Event? a, Event? b) {
+    if (a == null) return b;
+    if (b == null) return a;
+    final aCount = a.tags.where((t) => t.isNotEmpty && t[0] == 'p').length;
+    final bCount = b.tags.where((t) => t.isNotEmpty && t[0] == 'p').length;
+    return bCount > aCount ? b : a;
   }
 
   /// Subscribe to contact list for real-time sync and cross-device updates.

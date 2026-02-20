@@ -7,20 +7,19 @@ import 'dart:async' as _i8;
 import 'dart:io' as _i14;
 
 import 'package:dio/dio.dart' as _i5;
-import 'package:keycast_flutter/keycast_flutter.dart' as _i13;
+import 'package:keycast_flutter/keycast_flutter.dart' as _i12;
 import 'package:mockito/mockito.dart' as _i1;
-import 'package:mockito/src/dummies.dart' as _i11;
+import 'package:mockito/src/dummies.dart' as _i10;
 import 'package:models/models.dart' as _i7;
-import 'package:nostr_client/nostr_client.dart' as _i4;
+import 'package:nostr_client/nostr_client.dart' as _i13;
+import 'package:nostr_client/src/models/models.dart' as _i4;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i3;
 import 'package:openvine/services/auth_service.dart' as _i2;
-import 'package:openvine/services/blossom_server_discovery_service.dart'
-    as _i10;
 import 'package:openvine/services/blossom_upload_service.dart' as _i6;
 import 'package:openvine/services/bug_report_service.dart' as _i17;
 import 'package:openvine/services/notification_service_enhanced.dart' as _i15;
 import 'package:openvine/services/relay_discovery_service.dart' as _i9;
-import 'package:openvine/services/user_profile_service.dart' as _i12;
+import 'package:openvine/services/user_profile_service.dart' as _i11;
 import 'package:openvine/services/video_event_service.dart' as _i16;
 
 // ignore_for_file: type=lint
@@ -162,22 +161,6 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as bool);
 
   @override
-  List<_i10.DiscoveredBlossomServer> get userBlossomServers =>
-      (super.noSuchMethod(
-            Invocation.getter(#userBlossomServers),
-            returnValue: <_i10.DiscoveredBlossomServer>[],
-          )
-          as List<_i10.DiscoveredBlossomServer>);
-
-  @override
-  bool get hasUserBlossomServers =>
-      (super.noSuchMethod(
-            Invocation.getter(#hasUserBlossomServers),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
   Map<String, dynamic> get userStats =>
       (super.noSuchMethod(
             Invocation.getter(#userStats),
@@ -189,7 +172,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
   String get serviceName =>
       (super.noSuchMethod(
             Invocation.getter(#serviceName),
-            returnValue: _i11.dummyValue<String>(
+            returnValue: _i10.dummyValue<String>(
               this,
               Invocation.getter(#serviceName),
             ),
@@ -369,7 +352,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
 
   @override
   _i8.Future<void> refreshCurrentProfile(
-    _i12.UserProfileService? userProfileService,
+    _i11.UserProfileService? userProfileService,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#refreshCurrentProfile, [userProfileService]),
@@ -388,7 +371,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
           as _i8.Future<void>);
 
   @override
-  _i8.Future<void> signInWithDivineOAuth(_i13.KeycastSession? session) =>
+  _i8.Future<void> signInWithDivineOAuth(_i12.KeycastSession? session) =>
       (super.noSuchMethod(
             Invocation.method(#signInWithDivineOAuth, [session]),
             returnValue: _i8.Future<void>.value(),
@@ -499,7 +482,7 @@ class MockAuthService extends _i1.Mock implements _i2.AuthService {
 /// A class which mocks [NostrClient].
 ///
 /// See the documentation for Mockito's code generation for more information.
-class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
+class MockNostrClient extends _i1.Mock implements _i13.NostrClient {
   MockNostrClient() {
     _i1.throwOnMissingStub(this);
   }
@@ -508,7 +491,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
   String get publicKey =>
       (super.noSuchMethod(
             Invocation.getter(#publicKey),
-            returnValue: _i11.dummyValue<String>(
+            returnValue: _i10.dummyValue<String>(
               this,
               Invocation.getter(#publicKey),
             ),
@@ -591,7 +574,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
   String get primaryRelay =>
       (super.noSuchMethod(
             Invocation.getter(#primaryRelay),
-            returnValue: _i11.dummyValue<String>(
+            returnValue: _i10.dummyValue<String>(
               this,
               Invocation.getter(#primaryRelay),
             ),
@@ -599,7 +582,7 @@ class MockNostrClient extends _i1.Mock implements _i4.NostrClient {
           as String);
 
   @override
-  set statisticsObserver(_i4.NostrClientStatisticsObserver? value) =>
+  set statisticsObserver(_i13.NostrClientStatisticsObserver? value) =>
       super.noSuchMethod(
         Invocation.setter(#statisticsObserver, value),
         returnValueForMissingStub: null,
@@ -1253,8 +1236,8 @@ class MockNotificationServiceEnhanced extends _i1.Mock
 
   @override
   _i8.Future<void> initialize({
-    required _i4.NostrClient? nostrService,
-    required _i12.UserProfileService? profileService,
+    required _i13.NostrClient? nostrService,
+    required _i11.UserProfileService? profileService,
     required _i16.VideoEventService? videoService,
   }) =>
       (super.noSuchMethod(

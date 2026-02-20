@@ -7,7 +7,6 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/blossom_server_discovery_service.dart';
 import 'package:openvine/services/performance_monitoring_service.dart';
 import 'package:openvine/utils/hash_util.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -85,57 +84,28 @@ class BlossomUploadService {
   /// Determine which Blossom server to use for upload
   ///
   /// Priority order:
-  /// 1. User's discovered Blossom servers (kind 10063) - try in priority order
-  /// 2. Custom configured server (if enabled in settings)
-  /// 3. Default diVine media server
+  /// 1. Custom configured server (if enabled in settings)
+  /// 2. Default diVine media server
   Future<List<String>> _getServerUrlsForUpload() async {
     final servers = <String>[];
 
-    // 1. Check for discovered Blossom servers (kind 10063 / BUD-03)
-    if (authService.hasUserBlossomServers == true) {
-      final userServers = authService.userBlossomServers;
-      // Sort by priority (lowest first)
-      final sortedServers = List<DiscoveredBlossomServer>.from(userServers);
-      sortedServers.sort((a, b) {
-        final aPriority = a.priority ?? 999;
-        final bPriority = b.priority ?? 999;
-        return aPriority.compareTo(bPriority);
-      });
-
-      servers.addAll(sortedServers.map((s) => s.url));
-
-      Log.info(
-        '🌸 Using ${servers.length} discovered Blossom servers (kind 10063)',
-        name: 'BlossomUploadService',
-        category: LogCategory.video,
-      );
-    }
-
-    // 2. Check for custom configured server
+    // 1. Check for custom configured server
     final isCustomServerEnabled = await isBlossomEnabled();
     if (isCustomServerEnabled) {
       final customServerUrl = await getBlossomServer();
       if (customServerUrl != null && customServerUrl.isNotEmpty) {
-        // Only add if not already in the list
-        if (!servers.contains(customServerUrl)) {
-          servers.add(customServerUrl);
-          Log.info(
-            '🔧 Adding custom configured server: $customServerUrl',
-            name: 'BlossomUploadService',
-            category: LogCategory.video,
-          );
-        }
+        servers.add(customServerUrl);
+        Log.info(
+          '🔧 Using custom configured server: $customServerUrl',
+          name: 'BlossomUploadService',
+          category: LogCategory.video,
+        );
       }
     }
 
-    // 3. Always add default diVine server as fallback
+    // 2. Always add default diVine server as fallback
     if (!servers.contains(defaultBlossomServer)) {
       servers.add(defaultBlossomServer);
-      Log.debug(
-        '🏠 Adding diVine fallback server: $defaultBlossomServer',
-        name: 'BlossomUploadService',
-        category: LogCategory.video,
-      );
     }
 
     return servers;

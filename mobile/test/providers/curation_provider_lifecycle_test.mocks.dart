@@ -6,7 +6,7 @@
 import 'dart:async' as _i9;
 import 'dart:ui' as _i12;
 
-import 'package:keycast_flutter/keycast_flutter.dart' as _i20;
+import 'package:keycast_flutter/keycast_flutter.dart' as _i19;
 import 'package:likes_repository/likes_repository.dart' as _i3;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i8;
@@ -17,12 +17,10 @@ import 'package:nostr_sdk/nostr_sdk.dart' as _i5;
 import 'package:openvine/services/age_verification_service.dart' as _i14;
 import 'package:openvine/services/analytics_api_service.dart' as _i6;
 import 'package:openvine/services/auth_service.dart' as _i4;
-import 'package:openvine/services/blossom_server_discovery_service.dart'
-    as _i18;
 import 'package:openvine/services/content_blocklist_service.dart' as _i13;
 import 'package:openvine/services/relay_discovery_service.dart' as _i17;
 import 'package:openvine/services/social_service.dart' as _i16;
-import 'package:openvine/services/user_profile_service.dart' as _i19;
+import 'package:openvine/services/user_profile_service.dart' as _i18;
 import 'package:openvine/services/video_event_service.dart' as _i10;
 import 'package:openvine/services/video_filter_builder.dart' as _i15;
 
@@ -1820,22 +1818,6 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
           as bool);
 
   @override
-  List<_i18.DiscoveredBlossomServer> get userBlossomServers =>
-      (super.noSuchMethod(
-            Invocation.getter(#userBlossomServers),
-            returnValue: <_i18.DiscoveredBlossomServer>[],
-          )
-          as List<_i18.DiscoveredBlossomServer>);
-
-  @override
-  bool get hasUserBlossomServers =>
-      (super.noSuchMethod(
-            Invocation.getter(#hasUserBlossomServers),
-            returnValue: false,
-          )
-          as bool);
-
-  @override
   Map<String, dynamic> get userStats =>
       (super.noSuchMethod(
             Invocation.getter(#userStats),
@@ -2027,7 +2009,7 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
 
   @override
   _i9.Future<void> refreshCurrentProfile(
-    _i19.UserProfileService? userProfileService,
+    _i18.UserProfileService? userProfileService,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#refreshCurrentProfile, [userProfileService]),
@@ -2046,7 +2028,7 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
           as _i9.Future<void>);
 
   @override
-  _i9.Future<void> signInWithDivineOAuth(_i20.KeycastSession? session) =>
+  _i9.Future<void> signInWithDivineOAuth(_i19.KeycastSession? session) =>
       (super.noSuchMethod(
             Invocation.method(#signInWithDivineOAuth, [session]),
             returnValue: _i9.Future<void>.value(),

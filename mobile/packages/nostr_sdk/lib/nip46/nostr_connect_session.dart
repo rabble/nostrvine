@@ -242,9 +242,21 @@ class NostrConnectSession {
   }
 
   Future<void> _connectToRelays() async {
-    for (final relayUrl in relays) {
-      final relay = await _connectToRelay(relayUrl);
-      _relays.add(relay);
+    // Connect to all relays in parallel for speed
+    final futures = relays.map((url) async {
+      try {
+        return await _connectToRelay(url);
+      } catch (e) {
+        log('[NostrConnectSession] Failed to connect to $url: $e');
+        return null;
+      }
+    });
+    final results = await Future.wait(futures.toList());
+    for (final relay in results) {
+      if (relay != null) _relays.add(relay);
+    }
+    if (_relays.isEmpty) {
+      throw StateError('Failed to connect to any relay');
     }
   }
 
