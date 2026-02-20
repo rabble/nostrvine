@@ -283,80 +283,71 @@ class _UserSearchTile extends StatelessWidget {
         ? VineTheme.onSurfaceMuted
         : VineTheme.onSurface;
 
-    return Semantics(
-      button: !isDisabled,
-      label: isDisabled
-          ? '${profile.bestDisplayName} already added'
-          : 'Select ${profile.bestDisplayName}',
-      child: InkWell(
-        onTap: isDisabled ? null : onTap,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            spacing: 16,
-            children: [
-              Opacity(
-                opacity: isDisabled ? 0.5 : 1.0,
-                child: UserAvatar(
-                  imageUrl: profile.picture,
-                  name: profile.bestDisplayName,
-                  size: 40,
-                ),
-              ),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: .start,
-                  children: [
-                    Text(
-                      profile.bestDisplayName,
-                      maxLines: 1,
-                      overflow: .ellipsis,
-                      style: VineTheme.titleMediumFont(
-                        fontSize: 16,
-                        color: textColor,
-                      ),
-                    ),
-                    if (profile.nip05 != null && profile.nip05!.isNotEmpty)
-                      Text(
-                        profile.nip05!,
-                        maxLines: 1,
-                        overflow: .ellipsis,
-                        style: VineTheme.bodyMediumFont(color: textColor),
-                      ),
-                  ],
-                ),
-              ),
-
-              if (isDisabled)
-                Container(
-                  padding: const .all(8),
-                  decoration: ShapeDecoration(
-                    color: VineTheme.surfaceContainer,
-                    shape: RoundedRectangleBorder(borderRadius: .circular(16)),
-                  ),
-                  child: const Icon(
-                    Icons.check,
-                    size: 24,
-                    color: VineTheme.onSurfaceMuted,
-                  ),
-                )
-              else
-                Container(
-                  padding: const .all(8),
-                  decoration: ShapeDecoration(
-                    color: VineTheme.primary,
-                    shape: RoundedRectangleBorder(borderRadius: .circular(16)),
-                  ),
-                  child: SvgPicture.asset(
-                    'assets/icon/plus.svg',
-                    width: 24,
-                    height: 24,
-                    colorFilter: const .mode(VineTheme.onPrimary, .srcIn),
-                  ),
-                ),
-            ],
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: Row(
+        spacing: 16,
+        children: [
+          Opacity(
+            opacity: isDisabled ? 0.5 : 1.0,
+            child: UserAvatar(
+              imageUrl: profile.picture,
+              name: profile.bestDisplayName,
+              size: 40,
+            ),
           ),
-        ),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: .start,
+              children: [
+                Text(
+                  profile.bestDisplayName,
+                  maxLines: 1,
+                  overflow: .ellipsis,
+                  style: VineTheme.titleMediumFont(
+                    fontSize: 16,
+                    color: textColor,
+                  ),
+                ),
+                if (profile.nip05 != null && profile.nip05!.isNotEmpty)
+                  Text(
+                    profile.nip05!,
+                    maxLines: 1,
+                    overflow: .ellipsis,
+                    style: VineTheme.bodyMediumFont(color: textColor),
+                  ),
+              ],
+            ),
+          ),
+
+          Semantics(
+            button: !isDisabled,
+            label: isDisabled
+                ? '${profile.bestDisplayName} already added'
+                : 'Select ${profile.bestDisplayName}',
+            child: InkWell(
+              onTap: isDisabled ? null : onTap,
+              child: Container(
+                padding: const .all(8),
+                decoration: ShapeDecoration(
+                  color: isDisabled
+                      ? VineTheme.surfaceContainer
+                      : VineTheme.primary,
+                  shape: RoundedRectangleBorder(borderRadius: .circular(16)),
+                ),
+                child: SvgPicture.asset(
+                  isDisabled ? 'assets/icon/Check.svg' : 'assets/icon/plus.svg',
+                  width: 24,
+                  height: 24,
+                  colorFilter: .mode(
+                    isDisabled ? VineTheme.onSurfaceMuted : VineTheme.onPrimary,
+                    .srcIn,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
