@@ -1361,286 +1361,294 @@ class VideoOverlayActions extends ConsumerWidget {
           bottom: bottomOffset,
           left: 16,
           right: 80, // Leave space for action buttons
-          child: AnimatedOpacity(
-            opacity: isActive ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 200),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Repost banner (if video is a repost)
-                if (video.isRepost && video.reposterPubkey != null) ...[
-                  VideoRepostHeader(reposterPubkey: video.reposterPubkey!),
-                  const SizedBox(height: 8),
-                ],
-                // Author avatar and info row
-                Consumer(
-                  builder: (context, ref, _) {
-                    final userProfileService = ref.watch(
-                      userProfileServiceProvider,
-                    );
-                    final profile = userProfileService.getCachedProfile(
-                      video.pubkey,
-                    );
-                    // Use embedded author data from REST API as fallback
-                    // This avoids WebSocket profile fetches for videos
-                    // that already have author_name/author_avatar embedded
-                    final avatarUrl = profile?.picture ?? video.authorAvatar;
-                    final displayName =
-                        profile?.bestDisplayName ??
-                        video.authorName ??
-                        NostrKeyUtils.truncateNpub(video.pubkey);
-                    final archivedLoops = video.originalLoops ?? 0;
-                    final liveViews =
-                        int.tryParse(video.rawTags['views'] ?? '') ?? 0;
-                    final isClassicVine =
-                        video.pubkey == AppConstants.classicVinesPubkey;
-                    final loopCount = isClassicVine
-                        ? archivedLoops + liveViews
-                        : (archivedLoops > 0 ? archivedLoops : liveViews);
-                    final hasLoopMetadata =
-                        video.originalLoops != null ||
-                        video.rawTags.containsKey('loops') ||
-                        video.rawTags.containsKey('views');
-
-                    void navigateToProfile() {
-                      Log.info(
-                        '👤 User tapped profile: videoId=${video.id}, authorPubkey=${video.pubkey}',
-                        name: 'VideoFeedItem',
-                        category: LogCategory.ui,
+          child: SafeArea(
+            child: AnimatedOpacity(
+              opacity: isActive ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Repost banner (if video is a repost)
+                  if (video.isRepost && video.reposterPubkey != null) ...[
+                    VideoRepostHeader(reposterPubkey: video.reposterPubkey!),
+                    const SizedBox(height: 8),
+                  ],
+                  // Author avatar and info row
+                  Consumer(
+                    builder: (context, ref, _) {
+                      final userProfileService = ref.watch(
+                        userProfileServiceProvider,
                       );
-                      final npub = normalizeToNpub(video.pubkey);
-                      if (npub != null) {
-                        context.push(OtherProfileScreen.pathForNpub(npub));
-                      }
-                    }
+                      final profile = userProfileService.getCachedProfile(
+                        video.pubkey,
+                      );
+                      // Use embedded author data from REST API as fallback
+                      // This avoids WebSocket profile fetches for videos
+                      // that already have author_name/author_avatar embedded
+                      final avatarUrl = profile?.picture ?? video.authorAvatar;
+                      final displayName =
+                          profile?.bestDisplayName ??
+                          video.authorName ??
+                          NostrKeyUtils.truncateNpub(video.pubkey);
+                      final archivedLoops = video.originalLoops ?? 0;
+                      final liveViews =
+                          int.tryParse(video.rawTags['views'] ?? '') ?? 0;
+                      final isClassicVine =
+                          video.pubkey == AppConstants.classicVinesPubkey;
+                      final loopCount = isClassicVine
+                          ? archivedLoops + liveViews
+                          : (archivedLoops > 0 ? archivedLoops : liveViews);
+                      final hasLoopMetadata =
+                          video.originalLoops != null ||
+                          video.rawTags.containsKey('loops') ||
+                          video.rawTags.containsKey('views');
 
-                    return Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        // Avatar with follow button overlay
-                        SizedBox(
-                          width:
-                              58, // 48 avatar + space for follow button overflow
-                          height: 58,
-                          child: Stack(
-                            clipBehavior: Clip.none,
-                            children: [
-                              // Avatar (tappable to go to profile)
-                              GestureDetector(
-                                onTap: navigateToProfile,
-                                child: Container(
-                                  width: 48,
-                                  height: 48,
-                                  decoration: BoxDecoration(
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: Colors.white,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(14),
-                                    child:
-                                        avatarUrl != null &&
-                                            avatarUrl.isNotEmpty
-                                        ? CachedNetworkImage(
-                                            imageUrl: avatarUrl,
-                                            width: 44,
-                                            height: 44,
-                                            fit: BoxFit.cover,
-                                            placeholder: (context, url) =>
-                                                Container(
-                                                  color:
-                                                      VineTheme.cardBackground,
-                                                  child: const Icon(
-                                                    Icons.person,
-                                                    color: Colors.white54,
-                                                    size: 24,
-                                                  ),
-                                                ),
-                                            errorWidget:
-                                                (context, url, error) =>
-                                                    Container(
-                                                      color: VineTheme
-                                                          .cardBackground,
-                                                      child: const Icon(
-                                                        Icons.person,
-                                                        color: Colors.white54,
-                                                        size: 24,
-                                                      ),
-                                                    ),
-                                          )
-                                        : Container(
-                                            color: VineTheme.cardBackground,
-                                            child: const Icon(
-                                              Icons.person,
-                                              color: Colors.white54,
-                                              size: 24,
-                                            ),
-                                          ),
-                                  ),
-                                ),
-                              ),
-                              // Follow button positioned at bottom-right of avatar
-                              Positioned(
-                                left: 31,
-                                top: 31,
-                                child: VideoFollowButton(
-                                  pubkey: video.pubkey,
-                                  hideIfFollowing: hideFollowButtonIfFollowing,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        // User name and loop count (tappable to go to profile)
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: navigateToProfile,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
+                      void navigateToProfile() {
+                        Log.info(
+                          '👤 User tapped profile: videoId=${video.id}, authorPubkey=${video.pubkey}',
+                          name: 'VideoFeedItem',
+                          category: LogCategory.ui,
+                        );
+                        final npub = normalizeToNpub(video.pubkey);
+                        if (npub != null) {
+                          context.push(OtherProfileScreen.pathForNpub(npub));
+                        }
+                      }
+
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: [
+                          // Avatar with follow button overlay
+                          SizedBox(
+                            width:
+                                58, // 48 avatar + space for follow button overflow
+                            height: 58,
+                            child: Stack(
+                              clipBehavior: Clip.none,
                               children: [
-                                Row(
-                                  children: [
-                                    Flexible(
-                                      child: Semantics(
-                                        identifier: 'video_author_name',
-                                        container: true,
-                                        explicitChildNodes: true,
-                                        label: 'Video author: $displayName',
-                                        child: Text(
-                                          displayName,
-                                          style: VineTheme.titleFont(
-                                            fontSize: 14,
-                                            height: 20 / 14,
-                                            color: Colors.white,
-                                          ),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
+                                // Avatar (tappable to go to profile)
+                                GestureDetector(
+                                  onTap: navigateToProfile,
+                                  child: Container(
+                                    width: 48,
+                                    height: 48,
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                        color: Colors.white,
+                                        width: 2,
                                       ),
                                     ),
-                                    // Use actual NIP-05 verification —
-                                    // only show badge when DNS lookup
-                                    // confirms the pubkey owns the claimed
-                                    // identifier (NIP-05 spec).
-                                    _Nip05Badge(pubkey: video.pubkey),
-                                  ],
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(14),
+                                      child:
+                                          avatarUrl != null &&
+                                              avatarUrl.isNotEmpty
+                                          ? CachedNetworkImage(
+                                              imageUrl: avatarUrl,
+                                              width: 44,
+                                              height: 44,
+                                              fit: BoxFit.cover,
+                                              placeholder: (context, url) =>
+                                                  Container(
+                                                    color: VineTheme
+                                                        .cardBackground,
+                                                    child: const Icon(
+                                                      Icons.person,
+                                                      color: Colors.white54,
+                                                      size: 24,
+                                                    ),
+                                                  ),
+                                              errorWidget:
+                                                  (context, url, error) =>
+                                                      Container(
+                                                        color: VineTheme
+                                                            .cardBackground,
+                                                        child: const Icon(
+                                                          Icons.person,
+                                                          color: Colors.white54,
+                                                          size: 24,
+                                                        ),
+                                                      ),
+                                            )
+                                          : Container(
+                                              color: VineTheme.cardBackground,
+                                              child: const Icon(
+                                                Icons.person,
+                                                color: Colors.white54,
+                                                size: 24,
+                                              ),
+                                            ),
+                                    ),
+                                  ),
                                 ),
-                                Text(
-                                  hasLoopMetadata
-                                      ? '${StringUtils.formatCompactNumber(loopCount)} loops'
-                                      : video.relativeTime,
-                                  style: const TextStyle(
-                                    fontFamily: 'Inter',
-                                    fontSize: 14,
-                                    height: 20 / 14,
-                                    color: Colors.white70,
+                                // Follow button positioned at bottom-right of avatar
+                                Positioned(
+                                  left: 31,
+                                  top: 31,
+                                  child: VideoFollowButton(
+                                    pubkey: video.pubkey,
+                                    hideIfFollowing:
+                                        hideFollowButtonIfFollowing,
                                   ),
                                 ),
                               ],
                             ),
                           ),
-                        ),
-                      ],
-                    );
-                  },
-                ),
-                // List attribution chip (shown when video is from subscribed curated list)
-                if (showListAttribution &&
-                    listSources != null &&
-                    listSources!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Consumer(
-                    builder: (context, ref, _) {
-                      final curatedListState = ref.watch(
-                        curatedListsStateProvider,
-                      );
-                      final curatedListService = curatedListState.whenOrNull(
-                        data: (_) => ref
-                            .read(curatedListsStateProvider.notifier)
-                            .service,
-                      );
-
-                      return ListAttributionChip(
-                        listIds: listSources!,
-                        listLookup: (listId) =>
-                            curatedListService?.getListById(listId),
-                        onListTap: (listId, listName) {
-                          final list = curatedListService?.getListById(listId);
-                          Navigator.of(context).push(
-                            MaterialPageRoute<void>(
-                              builder: (context) => CuratedListFeedScreen(
-                                listId: listId,
-                                listName: listName,
-                                videoIds: list?.videoEventIds,
-                                authorPubkey: list?.pubkey,
+                          const SizedBox(width: 6),
+                          // User name and loop count (tappable to go to profile)
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: navigateToProfile,
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Flexible(
+                                        child: Semantics(
+                                          identifier: 'video_author_name',
+                                          container: true,
+                                          explicitChildNodes: true,
+                                          label: 'Video author: $displayName',
+                                          child: Text(
+                                            displayName,
+                                            style: VineTheme.titleFont(
+                                              fontSize: 14,
+                                              height: 20 / 14,
+                                              color: Colors.white,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ),
+                                      // Use actual NIP-05 verification —
+                                      // only show badge when DNS lookup
+                                      // confirms the pubkey owns the claimed
+                                      // identifier (NIP-05 spec).
+                                      _Nip05Badge(pubkey: video.pubkey),
+                                    ],
+                                  ),
+                                  Text(
+                                    hasLoopMetadata
+                                        ? '${StringUtils.formatCompactNumber(loopCount)} loops'
+                                        : video.relativeTime,
+                                    style: const TextStyle(
+                                      fontFamily: 'Inter',
+                                      fontSize: 14,
+                                      height: 20 / 14,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          );
-                        },
+                          ),
+                        ],
                       );
                     },
                   ),
-                ],
-                // Video description with clickable hashtags (only if there's text content)
-                if (hasTextContent) ...[
-                  const SizedBox(
-                    height: 2,
-                  ), // 2px + 10px from avatar container = 12px total
-                  Semantics(
-                    identifier: 'video_description',
-                    container: true,
-                    explicitChildNodes: true,
-                    label:
-                        'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
-                    child: ClickableHashtagText(
-                      text:
-                          (video.content.isNotEmpty
-                                  ? video.content
-                                  : video.title ?? '')
-                              .trim(),
-                      style: const TextStyle(
-                        fontFamily: 'Inter',
-                        color: Colors.white,
-                        fontSize: 14,
-                        height: 20 / 14,
-                        letterSpacing: 0.25,
-                      ),
-                      hashtagStyle: TextStyle(
-                        fontFamily: 'Inter',
-                        color: VineTheme.vineGreen,
-                        fontSize: 14,
-                        height: 20 / 14,
-                        letterSpacing: 0.25,
-                      ),
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
+                  // List attribution chip (shown when video is from subscribed curated list)
+                  if (showListAttribution &&
+                      listSources != null &&
+                      listSources!.isNotEmpty) ...[
+                    const SizedBox(height: 8),
+                    Consumer(
+                      builder: (context, ref, _) {
+                        final curatedListState = ref.watch(
+                          curatedListsStateProvider,
+                        );
+                        final curatedListService = curatedListState.whenOrNull(
+                          data: (_) => ref
+                              .read(curatedListsStateProvider.notifier)
+                              .service,
+                        );
+
+                        return ListAttributionChip(
+                          listIds: listSources!,
+                          listLookup: (listId) =>
+                              curatedListService?.getListById(listId),
+                          onListTap: (listId, listName) {
+                            final list = curatedListService?.getListById(
+                              listId,
+                            );
+                            Navigator.of(context).push(
+                              MaterialPageRoute<void>(
+                                builder: (context) => CuratedListFeedScreen(
+                                  listId: listId,
+                                  listName: listName,
+                                  videoIds: list?.videoEventIds,
+                                  authorPubkey: list?.pubkey,
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      },
                     ),
-                  ),
-                  // Collaborator avatar row (if video has collaborators)
-                  if (video.hasCollaborators) ...[
-                    const SizedBox(height: 4),
-                    CollaboratorAvatarRow(video: video),
                   ],
-                  // Inspired-by attribution row (if video credits another creator)
-                  if (video.hasInspiredBy) ...[
-                    const SizedBox(height: 4),
-                    InspiredByAttributionRow(video: video, isActive: isActive),
+                  // Video description with clickable hashtags (only if there's text content)
+                  if (hasTextContent) ...[
+                    const SizedBox(
+                      height: 2,
+                    ), // 2px + 10px from avatar container = 12px total
+                    Semantics(
+                      identifier: 'video_description',
+                      container: true,
+                      explicitChildNodes: true,
+                      label:
+                          'Video description: ${(video.content.isNotEmpty ? video.content : video.title ?? '').trim()}',
+                      child: ClickableHashtagText(
+                        text:
+                            (video.content.isNotEmpty
+                                    ? video.content
+                                    : video.title ?? '')
+                                .trim(),
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          color: Colors.white,
+                          fontSize: 14,
+                          height: 20 / 14,
+                          letterSpacing: 0.25,
+                        ),
+                        hashtagStyle: TextStyle(
+                          fontFamily: 'Inter',
+                          color: VineTheme.vineGreen,
+                          fontSize: 14,
+                          height: 20 / 14,
+                          letterSpacing: 0.25,
+                        ),
+                        maxLines: 3,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    // Collaborator avatar row (if video has collaborators)
+                    if (video.hasCollaborators) ...[
+                      const SizedBox(height: 4),
+                      CollaboratorAvatarRow(video: video),
+                    ],
+                    // Inspired-by attribution row (if video credits another creator)
+                    if (video.hasInspiredBy) ...[
+                      const SizedBox(height: 4),
+                      InspiredByAttributionRow(
+                        video: video,
+                        isActive: isActive,
+                      ),
+                    ],
+                    // Audio attribution row (if video uses external audio)
+                    if (video.hasAudioReference) ...[
+                      const SizedBox(height: 4),
+                      AudioAttributionRow(video: video),
+                    ],
+                    const SizedBox(
+                      height: 8,
+                    ), // Bottom spacing only when description exists
                   ],
-                  // Audio attribution row (if video uses external audio)
-                  if (video.hasAudioReference) ...[
-                    const SizedBox(height: 4),
-                    AudioAttributionRow(video: video),
-                  ],
-                  const SizedBox(
-                    height: 8,
-                  ), // Bottom spacing only when description exists
                 ],
-              ],
+              ),
             ),
           ),
         ),
@@ -1648,139 +1656,141 @@ class VideoOverlayActions extends ConsumerWidget {
         Positioned(
           bottom: bottomOffset,
           right: 16,
-          child: AnimatedOpacity(
-            opacity: isActive ? 1.0 : 0.0,
-            duration: const Duration(milliseconds: 200),
-            child: IgnorePointer(
-              ignoring: false, // Action buttons SHOULD receive taps
-              child: Column(
-                children: [
-                  // Edit button (only show for owned videos when feature is enabled)
-                  // Hide in fullscreen mode since it's shown in AppBar instead
-                  if (!isFullscreen && !isPreviewMode)
-                    _VideoEditButton(video: video),
+          child: SafeArea(
+            child: AnimatedOpacity(
+              opacity: isActive ? 1.0 : 0.0,
+              duration: const Duration(milliseconds: 200),
+              child: IgnorePointer(
+                ignoring: false, // Action buttons SHOULD receive taps
+                child: Column(
+                  children: [
+                    // Edit button (only show for owned videos when feature is enabled)
+                    // Hide in fullscreen mode since it's shown in AppBar instead
+                    if (!isFullscreen && !isPreviewMode)
+                      _VideoEditButton(video: video),
 
-                  // Flag/Report button for content moderation
-                  Semantics(
-                    identifier: 'report_button',
-                    container: true,
-                    explicitChildNodes: true,
-                    button: true,
-                    label: 'Report video',
-                    child: IconButton(
-                      padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints.tightFor(
-                        width: 48,
-                        height: 48,
-                      ),
-                      style: IconButton.styleFrom(
-                        highlightColor: Colors.transparent,
-                        splashFactory: NoSplash.splashFactory,
-                      ),
-                      onPressed: () {
-                        Log.info(
-                          '🚩 Report button tapped for ${video.id}',
-                          name: 'VideoFeedItem',
-                          category: LogCategory.ui,
-                        );
-                        context.showVideoPausingDialog(
-                          builder: (context) =>
-                              ReportContentDialog(video: video),
-                        );
-                      },
-                      icon: DecoratedBox(
-                        decoration: BoxDecoration(
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              blurRadius: 15,
-                              spreadRadius: 1,
-                            ),
-                          ],
+                    // Flag/Report button for content moderation
+                    Semantics(
+                      identifier: 'report_button',
+                      container: true,
+                      explicitChildNodes: true,
+                      button: true,
+                      label: 'Report video',
+                      child: IconButton(
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints.tightFor(
+                          width: 48,
+                          height: 48,
                         ),
-                        child: SvgPicture.asset(
-                          'assets/icon/content-controls/flag.svg',
-                          width: 32,
-                          height: 32,
-                          colorFilter: const ColorFilter.mode(
-                            Colors.white,
-                            BlendMode.srcIn,
+                        style: IconButton.styleFrom(
+                          highlightColor: Colors.transparent,
+                          splashFactory: NoSplash.splashFactory,
+                        ),
+                        onPressed: () {
+                          Log.info(
+                            '🚩 Report button tapped for ${video.id}',
+                            name: 'VideoFeedItem',
+                            category: LogCategory.ui,
+                          );
+                          context.showVideoPausingDialog(
+                            builder: (context) =>
+                                ReportContentDialog(video: video),
+                          );
+                        },
+                        icon: DecoratedBox(
+                          decoration: BoxDecoration(
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 15,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: SvgPicture.asset(
+                            'assets/icon/content-controls/flag.svg',
+                            width: 32,
+                            height: 32,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.white,
+                              BlendMode.srcIn,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 4),
+                    const SizedBox(height: 4),
 
-                  // CC (subtitles) button
-                  CcActionButton(video: video),
+                    // CC (subtitles) button
+                    CcActionButton(video: video),
 
-                  const SizedBox(height: 4),
+                    const SizedBox(height: 4),
 
-                  // Share button
-                  Semantics(
-                    identifier: 'share_button',
-                    container: true,
-                    explicitChildNodes: true,
-                    button: true,
-                    label: 'Share video',
-                    child: IconButton(
-                      padding: const EdgeInsets.all(8),
-                      constraints: const BoxConstraints.tightFor(
-                        width: 48,
-                        height: 48,
-                      ),
-                      style: IconButton.styleFrom(
-                        highlightColor: Colors.transparent,
-                        splashFactory: NoSplash.splashFactory,
-                      ),
-                      onPressed: () {
-                        Log.info(
-                          '📤 Share button tapped for ${video.id}',
-                          name: 'VideoFeedItem',
-                          category: LogCategory.ui,
-                        );
-                        _showShareMenu(context, ref, video, isActive);
-                      },
-                      icon: DecoratedBox(
-                        decoration: BoxDecoration(
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.15),
-                              blurRadius: 15,
-                              spreadRadius: 1,
-                            ),
-                          ],
+                    // Share button
+                    Semantics(
+                      identifier: 'share_button',
+                      container: true,
+                      explicitChildNodes: true,
+                      button: true,
+                      label: 'Share video',
+                      child: IconButton(
+                        padding: const EdgeInsets.all(8),
+                        constraints: const BoxConstraints.tightFor(
+                          width: 48,
+                          height: 48,
                         ),
-                        child: SvgPicture.asset(
-                          'assets/icon/content-controls/share.svg',
-                          width: 32,
-                          height: 32,
-                          colorFilter: const ColorFilter.mode(
-                            Colors.white,
-                            BlendMode.srcIn,
+                        style: IconButton.styleFrom(
+                          highlightColor: Colors.transparent,
+                          splashFactory: NoSplash.splashFactory,
+                        ),
+                        onPressed: () {
+                          Log.info(
+                            '📤 Share button tapped for ${video.id}',
+                            name: 'VideoFeedItem',
+                            category: LogCategory.ui,
+                          );
+                          _showShareMenu(context, ref, video, isActive);
+                        },
+                        icon: DecoratedBox(
+                          decoration: BoxDecoration(
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.15),
+                                blurRadius: 15,
+                                spreadRadius: 1,
+                              ),
+                            ],
+                          ),
+                          child: SvgPicture.asset(
+                            'assets/icon/content-controls/share.svg',
+                            width: 32,
+                            height: 32,
+                            colorFilter: const ColorFilter.mode(
+                              Colors.white,
+                              BlendMode.srcIn,
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
 
-                  const SizedBox(height: 4),
+                    const SizedBox(height: 4),
 
-                  // Repost button
-                  RepostActionButton(video: video),
+                    // Repost button
+                    RepostActionButton(video: video),
 
-                  const SizedBox(height: 4),
+                    const SizedBox(height: 4),
 
-                  // Comment button with count
-                  _CommentActionButton(video: video, ref: ref),
+                    // Comment button with count
+                    _CommentActionButton(video: video, ref: ref),
 
-                  const SizedBox(height: 4),
+                    const SizedBox(height: 4),
 
-                  // Like button
-                  LikeActionButton(video: video),
-                ],
+                    // Like button
+                    LikeActionButton(video: video),
+                  ],
+                ),
               ),
             ),
           ),

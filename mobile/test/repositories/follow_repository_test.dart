@@ -178,8 +178,9 @@ void main() {
         await repository.initialize();
         expect(repository.isInitialized, isTrue);
 
-        // Verify subscribe was called once during first init
-        // for real-time cross-device sync subscription
+        // Verify subscribe was called twice during first init:
+        // 1. _loadFromRelay() (relay kind 3 query when list is empty)
+        // 2. _subscribeToContactList() (real-time cross-device sync)
         verify(
           () => mockNostrClient.subscribe(
             any(),
@@ -190,7 +191,7 @@ void main() {
             sendAfterAuth: any(named: 'sendAfterAuth'),
             onEose: any(named: 'onEose'),
           ),
-        ).called(1);
+        ).called(2);
       });
     });
 

@@ -265,6 +265,18 @@ void main() {
           expect(createdPlayers.length, equals(3));
         });
 
+        test('mutes cached player to prevent audio leaks', () async {
+          await pool.getPlayer('https://example.com/v1.mp4');
+
+          // Request the same URL again — pool returns cached player.
+          await pool.getPlayer('https://example.com/v1.mp4');
+
+          // The cached player should have been muted before returning.
+          verify(
+            () => createdPlayers[0].player.setVolume(0),
+          ).called(1);
+        });
+
         test('evicts LRU player when at capacity', () async {
           await pool.getPlayer('https://example.com/v1.mp4');
           await pool.getPlayer('https://example.com/v2.mp4');

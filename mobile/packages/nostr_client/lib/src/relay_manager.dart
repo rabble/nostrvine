@@ -297,6 +297,33 @@ class RelayManager {
   }
 
   // ---------------------------------------------------------------------------
+  // Per-Relay SDK Counters
+  // ---------------------------------------------------------------------------
+
+  /// Returns per-relay counters from the SDK's [RelayStatus].
+  ///
+  /// These are the actual per-relay statistics tracked by the SDK:
+  /// - `eventsReceived`: events received from this specific relay
+  /// - `queriesSent`: queries/subscriptions sent to this specific relay
+  /// - `errors`: error count for this specific relay
+  Map<String, ({int eventsReceived, int queriesSent, int errors})>
+  getRelayPoolCounters() {
+    final result =
+        <String, ({int eventsReceived, int queriesSent, int errors})>{};
+    for (final url in _configuredRelays) {
+      final relay = _relayPool.getRelay(url);
+      if (relay != null) {
+        result[url] = (
+          eventsReceived: relay.relayStatus.noteReceived,
+          queriesSent: relay.relayStatus.queryNum,
+          errors: relay.relayStatus.error,
+        );
+      }
+    }
+    return result;
+  }
+
+  // ---------------------------------------------------------------------------
   // Reconnection
   // ---------------------------------------------------------------------------
 
@@ -487,8 +514,15 @@ class RelayManager {
         );
       }
 
-      // Add to pool and connect
-      final success = await _relayPool.add(relay);
+      // Remove the old (possibly dead) relay from the pool first so that
+      // add() doesn't short-circuit on a duplicate URL. Without this,
+      // a stale relay object stays in the pool and no events flow through.
+      _relayPool.remove(url);
+
+      // Add to pool and connect – autoSubscribe ensures any active
+      // subscriptions are resent to the newly connected relay so that
+      // queries (e.g. follower counts) don't silently miss data.
+      final success = await _relayPool.add(relay, autoSubscribe: true);
       _log('Connect to $url: ${success ? 'success' : 'failed'}');
       return success;
     } on Exception catch (e) {

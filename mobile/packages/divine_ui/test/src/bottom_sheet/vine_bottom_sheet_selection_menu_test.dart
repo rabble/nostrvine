@@ -174,7 +174,9 @@ void main() {
 
   group('VineBottomSheetSelectionOptionData', () {
     test('creates with required parameters', () {
-      const data = VineBottomSheetSelectionOptionData(
+      // Use non-const to ensure constructor coverage instrumentation.
+      // ignore: prefer_const_constructors
+      final data = VineBottomSheetSelectionOptionData(
         label: 'Test',
         value: 'test_value',
       );
