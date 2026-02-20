@@ -4,6 +4,7 @@
 import 'dart:async';
 import 'package:nostr_sdk/event.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/constants/nostr_event_kinds.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Completion mode for different types of queries
@@ -281,7 +282,9 @@ class ContactListCompletionHelper {
           eventStream: eventStream,
           config: config,
           eventMapper: (event) => event,
-          eventFilter: (event) => event.kind == 3 && event.pubkey == pubkey,
+          eventFilter: (event) =>
+              event.kind == NostrEventKinds.contactList &&
+              event.pubkey == pubkey,
         );
 
     return result.items.isEmpty ? null : result.items.first;

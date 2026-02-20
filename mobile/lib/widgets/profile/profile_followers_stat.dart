@@ -72,7 +72,7 @@ class _MyFollowersStatView extends StatelessWidget {
             state.status == MyFollowersStatus.loading;
 
         return ProfileStatColumn(
-          count: isLoading ? null : state.followersPubkeys.length,
+          count: isLoading ? null : state.followerCount,
           label: 'Followers',
           isLoading: isLoading,
           onTap: () => context.push(
@@ -104,7 +104,7 @@ class _OthersFollowersStatView extends StatelessWidget {
             state.status == OthersFollowersStatus.loading;
 
         return ProfileStatColumn(
-          count: isLoading ? null : state.followersPubkeys.length,
+          count: isLoading ? null : state.followerCount,
           label: 'Followers',
           isLoading: isLoading,
           onTap: () => context.push(

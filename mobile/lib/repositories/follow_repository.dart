@@ -13,6 +13,7 @@ import 'dart:convert';
 
 import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
+import 'package:openvine/constants/nostr_event_kinds.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -34,6 +35,10 @@ typedef FetchFollowingFromApiCallback =
 typedef FetchFollowersFromApiCallback =
     Future<List<String>> Function(String pubkey);
 
+/// Callback to fetch follower count from a source with accurate counts
+/// (e.g. SocialService which uses COUNT queries to indexer relays).
+typedef FetchFollowerCountCallback = Future<int> Function(String pubkey);
+
 /// Repository for managing follow relationships.
 /// Single source of truth for follow data.
 ///
@@ -51,12 +56,16 @@ class FollowRepository {
     QueueOfflineFollowCallback? queueOfflineAction,
     FetchFollowingFromApiCallback? fetchFollowingFromApi,
     FetchFollowersFromApiCallback? fetchFollowersFromApi,
+    FetchFollowerCountCallback? fetchFollowerCount,
+    List<String>? indexerRelayUrls,
   }) : _nostrClient = nostrClient,
        _personalEventCache = personalEventCache,
        _isOnline = isOnline,
        _queueOfflineAction = queueOfflineAction,
        _fetchFollowingFromApi = fetchFollowingFromApi,
-       _fetchFollowersFromApi = fetchFollowersFromApi;
+       _fetchFollowersFromApi = fetchFollowersFromApi,
+       _fetchFollowerCount = fetchFollowerCount,
+       _indexerRelayUrls = indexerRelayUrls ?? _defaultIndexerRelayUrls;
 
   final NostrClient _nostrClient;
   final PersonalEventCacheService? _personalEventCache;
@@ -72,6 +81,19 @@ class FollowRepository {
 
   /// Callback to fetch followers list from REST API (fast, non-blocking)
   final FetchFollowersFromApiCallback? _fetchFollowersFromApi;
+
+  /// Callback to fetch accurate follower count (e.g. from SocialService)
+  final FetchFollowerCountCallback? _fetchFollowerCount;
+
+  /// Indexer relay URLs for direct WebSocket queries.
+  /// Pass empty list in tests to prevent real network connections.
+  final List<String> _indexerRelayUrls;
+
+  /// Default indexer relays that broadly index kind 3 events.
+  static const _defaultIndexerRelayUrls = [
+    'wss://relay.damus.io',
+    'wss://purplepag.es',
+  ];
 
   // BehaviorSubject replays last value to late subscribers, fixing race condition
   // where BLoC subscribes AFTER initial emission
@@ -114,14 +136,16 @@ class FollowRepository {
     return true;
   }
 
-  /// Dispose resources
+  /// Dispose resources (idempotent — safe to call multiple times).
   Future<void> dispose() async {
     _contactListSubscription?.cancel();
     if (_contactListSubscriptionId != null) {
       await _nostrClient.unsubscribe(_contactListSubscriptionId!);
       _contactListSubscriptionId = null;
     }
-    _followingSubject.close();
+    if (!_followingSubject.isClosed) {
+      _followingSubject.close();
+    }
   }
 
   /// Check if current user is following a specific pubkey
@@ -147,15 +171,45 @@ class FollowRepository {
     return _fetchFollowers(pubkey);
   }
 
+  /// Get an accurate follower count for the current user.
+  ///
+  /// Delegates to [_fetchFollowerCount] callback (typically SocialService)
+  /// which uses COUNT queries to indexer relays for accurate results.
+  /// Returns 0 if no callback is configured.
+  Future<int> getMyFollowerCount() async {
+    return getFollowerCount(_nostrClient.publicKey);
+  }
+
+  /// Get an accurate follower count for any user.
+  ///
+  /// Delegates to [_fetchFollowerCount] callback (typically SocialService)
+  /// which uses COUNT queries to indexer relays for accurate results.
+  /// Returns 0 if no callback is configured.
+  Future<int> getFollowerCount(String pubkey) async {
+    if (_fetchFollowerCount == null) return 0;
+    try {
+      return await _fetchFollowerCount(pubkey);
+    } catch (e) {
+      Log.warning(
+        'Error fetching follower count for $pubkey: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return 0;
+    }
+  }
+
   /// Timeout for fetching followers from relays
   static const _fetchFollowersTimeout = Duration(seconds: 5);
 
   /// Fetch followers for a given pubkey.
   ///
-  /// Runs REST API and relay queries in parallel and merges results.
-  /// The REST API (Funnelcake) only indexes kind 3 events seen on the
-  /// divine relay, so follower lists are often incomplete. The relay query
-  /// reaches all connected relays for broader kind 3 coverage.
+  /// Runs REST API, connected relay, and indexer relay queries in parallel
+  /// and merges results (union of pubkeys). The REST API (Funnelcake) only
+  /// indexes kind 3 events seen on the divine relay, so follower lists are
+  /// often incomplete. Connected relays may timeout. Indexer relays
+  /// (relay.damus.io, purplepag.es) maintain broad kind 3 indexes and
+  /// provide the most complete follower lists.
   ///
   /// Returns empty list on timeout or failure.
   Future<List<String>> _fetchFollowers(String pubkey) async {
@@ -163,23 +217,32 @@ class FollowRepository {
       return [];
     }
 
-    // Run REST API and relay queries in parallel for best coverage
+    // Run all three sources in parallel for best coverage
     final apiFuture = _fetchFollowersFromApi != null
         ? _fetchFollowersFromApi(pubkey).catchError((_) => <String>[])
         : Future.value(<String>[]);
 
     final relayFuture = _fetchFollowersFromRelays(pubkey);
+    final indexerFuture = _fetchFollowerPubkeysFromIndexers(
+      pubkey,
+    ).catchError((_) => <String>[]);
 
-    final results = await Future.wait([apiFuture, relayFuture]);
+    final results = await Future.wait([apiFuture, relayFuture, indexerFuture]);
     final apiFollowers = results[0];
     final relayFollowers = results[1];
+    final indexerFollowers = results[2];
 
-    // Merge both sources (union of pubkeys)
-    final merged = <String>{...apiFollowers, ...relayFollowers};
+    // Merge all sources (union of pubkeys)
+    final merged = <String>{
+      ...apiFollowers,
+      ...relayFollowers,
+      ...indexerFollowers,
+    };
 
     Log.info(
       'Followers for $pubkey: API=${apiFollowers.length}, '
-      'relays=${relayFollowers.length}, merged=${merged.length}',
+      'relays=${relayFollowers.length}, '
+      'indexers=${indexerFollowers.length}, merged=${merged.length}',
       name: 'FollowRepository',
       category: LogCategory.system,
     );
@@ -192,7 +255,7 @@ class FollowRepository {
     try {
       final events = await _nostrClient
           .queryEvents([
-            Filter(kinds: const [3], p: [pubkey]),
+            Filter(kinds: const [NostrEventKinds.contactList], p: [pubkey]),
           ])
           .timeout(
             _fetchFollowersTimeout,
@@ -220,6 +283,98 @@ class FollowRepository {
         category: LogCategory.system,
       );
       return [];
+    }
+  }
+
+  /// Query indexer relays for kind 3 events mentioning a pubkey.
+  ///
+  /// Returns actual pubkeys (not just a count) so results can be merged
+  /// with API and connected relay results.
+  Future<List<String>> _fetchFollowerPubkeysFromIndexers(String pubkey) async {
+    final allFollowers = <String>{};
+
+    final results = await Future.wait(
+      _indexerRelayUrls.map(
+        (url) => _queryIndexerForFollowerPubkeys(
+          url,
+          pubkey,
+        ).catchError((_) => <String>[]),
+      ),
+    );
+
+    for (final pubkeys in results) {
+      allFollowers.addAll(pubkeys);
+    }
+
+    Log.debug(
+      'Indexer follower pubkeys: ${allFollowers.length} for $pubkey',
+      name: 'FollowRepository',
+      category: LogCategory.system,
+    );
+
+    return allFollowers.toList();
+  }
+
+  /// Query a single indexer relay for kind 3 events mentioning pubkey.
+  /// Returns the list of follower pubkeys.
+  Future<List<String>> _queryIndexerForFollowerPubkeys(
+    String indexerUrl,
+    String pubkey,
+  ) async {
+    final relayStatus = RelayStatus(indexerUrl);
+    final relay = RelayBase(indexerUrl, relayStatus);
+    final completer = Completer<List<String>>();
+    final followerPubkeys = <String>{};
+    final subscriptionId = 'fr_${DateTime.now().millisecondsSinceEpoch}';
+
+    relay.onMessage = (relay, jsonMsg) async {
+      if (jsonMsg.isEmpty) return;
+
+      final messageType = jsonMsg[0] as String;
+
+      if (messageType == 'EVENT' && jsonMsg.length >= 3) {
+        final eventJson = jsonMsg[2] as Map<String, dynamic>;
+        final eventPubkey = eventJson['pubkey'] as String?;
+        if (eventPubkey != null) {
+          followerPubkeys.add(eventPubkey);
+        }
+      } else if (messageType == 'EOSE') {
+        if (!completer.isCompleted) {
+          completer.complete(followerPubkeys.toList());
+        }
+      }
+    };
+
+    try {
+      final filter = <String, dynamic>{
+        'kinds': <int>[NostrEventKinds.contactList],
+        '#p': <String>[pubkey],
+      };
+      relay.pendingMessages.add(<dynamic>['REQ', subscriptionId, filter]);
+
+      final connected = await relay.connect();
+      if (!connected) {
+        return [];
+      }
+
+      final result = await completer.future.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => followerPubkeys.toList(),
+      );
+
+      await relay.send(<dynamic>['CLOSE', subscriptionId]);
+      return result;
+    } catch (e) {
+      Log.warning(
+        'Error querying $indexerUrl for followers: $e',
+        name: 'FollowRepository',
+        category: LogCategory.system,
+      );
+      return followerPubkeys.toList();
+    } finally {
+      try {
+        await relay.disconnect();
+      } catch (_) {}
     }
   }
 
@@ -261,7 +416,7 @@ class FollowRepository {
           .queryEvents([
             Filter(
               authors: [pubkey],
-              kinds: const [3], // Their contact list
+              kinds: const [NostrEventKinds.contactList],
               limit: 1,
             ),
           ])
@@ -637,7 +792,9 @@ class FollowRepository {
     if (_personalEventCache?.isInitialized != true) return;
 
     try {
-      final cachedContactLists = _personalEventCache!.getEventsByKind(3);
+      final cachedContactLists = _personalEventCache!.getEventsByKind(
+        NostrEventKinds.contactList,
+      );
 
       if (cachedContactLists.isNotEmpty) {
         // Use the most recent contact list event
@@ -807,7 +964,11 @@ class FollowRepository {
   Future<Event?> _loadContactListFromConnectedRelays(String pubkey) async {
     try {
       final eventStream = _nostrClient.subscribe([
-        Filter(authors: [pubkey], kinds: const [3], limit: 1),
+        Filter(
+          authors: [pubkey],
+          kinds: const [NostrEventKinds.contactList],
+          limit: 1,
+        ),
       ]);
 
       return await ContactListCompletionHelper.queryContactList(
@@ -825,18 +986,12 @@ class FollowRepository {
     }
   }
 
-  /// Indexer relays that broadly index kind 3 events.
-  static const _contactListIndexers = [
-    'wss://purplepag.es',
-    'wss://relay.damus.io',
-  ];
-
   /// Query indexer relays directly for the user's kind 3 contact list.
   ///
   /// Connected relays may not be ready yet (relay discovery runs in
   /// background), so this provides a reliable fallback via direct WebSocket.
   Future<Event?> _loadContactListFromIndexer(String pubkey) async {
-    for (final indexerUrl in _contactListIndexers) {
+    for (final indexerUrl in _indexerRelayUrls) {
       try {
         final event = await _queryIndexerForContactList(indexerUrl, pubkey);
         if (event != null) {
@@ -897,7 +1052,7 @@ class FollowRepository {
 
     try {
       final filter = <String, dynamic>{
-        'kinds': <int>[3],
+        'kinds': <int>[NostrEventKinds.contactList],
         'authors': <String>[pubkey],
         'limit': 1,
       };
@@ -958,7 +1113,7 @@ class FollowRepository {
     final eventStream = _nostrClient.subscribe([
       Filter(
         authors: [currentUserPubkey],
-        kinds: const [3], // NIP-02 contact list
+        kinds: const [NostrEventKinds.contactList],
         limit: 1,
       ),
     ], subscriptionId: _contactListSubscriptionId);
@@ -966,7 +1121,8 @@ class FollowRepository {
     _contactListSubscription = eventStream.listen(
       (event) {
         // Only process Kind 3 events from the current user
-        if (event.kind == 3 && event.pubkey == currentUserPubkey) {
+        if (event.kind == NostrEventKinds.contactList &&
+            event.pubkey == currentUserPubkey) {
           _processContactListEvent(event);
         }
       },

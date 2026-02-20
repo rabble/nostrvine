@@ -913,6 +913,11 @@ FollowRepository? followRepository(Ref ref) {
       final result = await analyticsService.getFollowers(pubkey, limit: 5000);
       return result.pubkeys;
     },
+    fetchFollowerCount: (pubkey) async {
+      final socialService = ref.read(socialServiceProvider);
+      final stats = await socialService.getFollowerStats(pubkey);
+      return stats['followers'] ?? 0;
+    },
   );
 
   // Register executors with pending action service for sync

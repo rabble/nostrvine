@@ -111,22 +111,17 @@ Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
     final freshFollowers = followerStats['followers'] ?? 0;
     final freshFollowing = followerStats['following'] ?? 0;
 
-    // Use the higher of cached vs fresh (never downgrade counts)
-    final followers = freshFollowers > cached.followers
-        ? freshFollowers
-        : cached.followers;
-    final following = freshFollowing > cached.following
-        ? freshFollowing
-        : cached.following;
-
+    // Always use fresh follower/following data (unfollows should be
+    // reflected immediately, not masked by cached higher values).
     final stats = cached.copyWith(
-      followers: followers,
-      following: following,
+      followers: freshFollowers,
+      following: freshFollowing,
       lastUpdated: DateTime.now(),
     );
 
     // Update cache if follower counts changed
-    if (followers != cached.followers || following != cached.following) {
+    if (freshFollowers != cached.followers ||
+        freshFollowing != cached.following) {
       await _cacheProfileStats(pubkey, stats);
     }
 

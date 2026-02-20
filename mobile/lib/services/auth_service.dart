@@ -1105,8 +1105,10 @@ class AuthService implements BackgroundAwareService {
     // Cancel any existing session
     cancelNostrConnect();
 
-    // Default relays for nostrconnect:// connections
-    // Use NIP-46 compatible relays (relay.divine.video rejects Kind 24133)
+    // Default relays for nostrconnect:// connections.
+    // Use NIP-46 compatible relays (relay.divine.video rejects Kind 24133).
+    // These are public Nostr infrastructure relays — same URLs regardless of
+    // app environment (dev/staging/prod).
     final relays =
         customRelays ??
         [
@@ -1122,6 +1124,7 @@ class AuthService implements BackgroundAwareService {
       appName: 'diVine',
       appUrl: 'https://divine.video',
       appIcon: 'https://divine.video/icon.png',
+      callback: 'divine',
     );
 
     // Start the session (generates keypair and URL, connects to relays)
@@ -2076,6 +2079,8 @@ class AuthService implements BackgroundAwareService {
 
     try {
       final pubkeyHex = _currentKeyContainer!.publicKeyHex;
+      // Public Nostr indexer relay — same URL regardless of app environment
+      // (dev/staging/prod) since it indexes the global Nostr network.
       final indexerUrl = 'wss://purplepag.es';
 
       final relayStatus = RelayStatus(indexerUrl);

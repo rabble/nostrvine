@@ -8,6 +8,7 @@ import 'dart:async';
 import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/constants/nostr_event_kinds.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
@@ -296,7 +297,7 @@ class SocialService {
   /// Get following count via WebSocket (Kind 3 contact list).
   Future<int> _fetchFollowingCountViaWebSocket(String pubkey) async {
     final eventStream = _nostrService.subscribe([
-      Filter(authors: [pubkey], kinds: [3], limit: 1),
+      Filter(authors: [pubkey], kinds: [NostrEventKinds.contactList], limit: 1),
     ]);
 
     final event = await ContactListCompletionHelper.queryContactList(
@@ -321,6 +322,10 @@ class SocialService {
 
   /// Indexer relays that efficiently index kind 3 events by p-tag.
   /// User's own relays don't have other people's contact lists.
+  ///
+  /// These are public Nostr infrastructure relays — same URLs regardless of
+  /// app environment (dev/staging/prod) since they index the global Nostr
+  /// network, not our backend.
   static const _followerIndexers = [
     'wss://relay.damus.io',
     'wss://purplepag.es',
@@ -335,7 +340,15 @@ class SocialService {
   Future<int> _fetchFollowersCountViaIndexers(String pubkey) async {
     final results = await Future.wait(
       _followerIndexers.map(
-        (url) => _queryIndexerForFollowers(url, pubkey).catchError((_) => 0),
+        (url) => _queryIndexerForFollowers(url, pubkey).catchError((e) {
+          // Return 0 on error so other indexers still contribute to the max.
+          Log.warning(
+            'Indexer $url follower count query failed: $e',
+            name: 'SocialService',
+            category: LogCategory.system,
+          );
+          return 0;
+        }),
       ),
     );
 
@@ -385,7 +398,7 @@ class SocialService {
 
     try {
       final filter = <String, dynamic>{
-        'kinds': <int>[3],
+        'kinds': <int>[NostrEventKinds.contactList],
         '#p': <String>[pubkey],
       };
       relay.pendingMessages.add(<dynamic>['REQ', subscriptionId, filter]);
@@ -401,6 +414,11 @@ class SocialService {
       );
 
       await relay.send(<dynamic>['CLOSE', subscriptionId]);
+      Log.debug(
+        'Indexer $indexerUrl returned $result followers for $pubkey',
+        name: 'SocialService',
+        category: LogCategory.system,
+      );
       return result;
     } catch (e) {
       Log.warning(
@@ -412,7 +430,13 @@ class SocialService {
     } finally {
       try {
         await relay.disconnect();
-      } catch (_) {}
+      } catch (e) {
+        Log.warning(
+          'Error disconnecting from $indexerUrl: $e',
+          name: 'SocialService',
+          category: LogCategory.system,
+        );
+      }
     }
   }
 

@@ -94,6 +94,19 @@ class DeepLinkService {
     try {
       final uri = Uri.parse(url);
 
+      // Handle divine:// callback from NIP-46 signer apps.
+      // The signer opens this scheme to bring our app back to foreground
+      // after the user approves the connection. The actual NIP-46 handshake
+      // completes over relays — no action needed here beyond logging.
+      if (uri.scheme == 'divine') {
+        Log.info(
+          'Received NIP-46 signer callback: $url',
+          name: 'DeepLinkService',
+          category: LogCategory.auth,
+        );
+        return const DeepLink(type: DeepLinkType.unknown);
+      }
+
       // Only handle divine.video domain
       if (uri.host != 'divine.video') {
         Log.warning(
