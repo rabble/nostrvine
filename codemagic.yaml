@@ -507,26 +507,41 @@ workflows:
             --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
       - name: Install Maestro CLI
         script: |
+          set -e
           curl -Ls "https://get.maestro.mobile.dev" | bash
           export PATH="$PATH:$HOME/.maestro/bin"
           maestro --version
-      - name: Create and boot Android emulator
+      - name: Launch Android emulator
         script: |
-          yes | sdkmanager "platform-tools" "platforms;android-34" "emulator" "system-images;android-34;google_apis;x86_64"
-          echo "no" | avdmanager create avd -n maestro_emulator -k "system-images;android-34;google_apis;x86_64" --force
-          $ANDROID_HOME/emulator/emulator -avd maestro_emulator -no-snapshot -no-window -no-audio -no-boot-anim &
+          set -e
+          cd $ANDROID_HOME/tools
+          emulator -avd emulator &
           adb wait-for-device
+          TIMEOUT=120
+          ELAPSED=0
           while [ "$(adb shell getprop sys.boot_completed 2>/dev/null)" != "1" ]; do
-            echo "Waiting for Android emulator to boot..."
+            if [ "$ELAPSED" -ge "$TIMEOUT" ]; then
+              echo "ERROR: Android emulator failed to boot within ${TIMEOUT}s"
+              exit 1
+            fi
+            echo "Waiting for Android emulator to boot... (${ELAPSED}s/${TIMEOUT}s)"
             sleep 5
+            ELAPSED=$((ELAPSED + 5))
           done
           echo "Android emulator booted"
       - name: Install app on Android emulator
         script: |
-          adb install build/app/outputs/flutter-apk/app-debug.apk
+          set -e
+          APK_PATH="build/app/outputs/flutter-apk/app-debug.apk"
+          if [ ! -f "$APK_PATH" ]; then
+            echo "ERROR: APK not found at $APK_PATH"
+            exit 1
+          fi
+          adb install "$APK_PATH"
           echo "App installed on Android emulator"
       - name: Run Maestro Smoke Tests
         script: |
+          set -e
           export PATH="$PATH:$HOME/.maestro/bin"
           maestro test e2e/maestro/suites/smoke.yaml
     artifacts:
