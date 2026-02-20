@@ -30,7 +30,7 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
     // Batch query Nostr relays for the full events
     final filter = Filter(
       ids: idsToEnrich,
-      kinds: [34236],
+      kinds: NIP71VideoKinds.getAllVideoKinds(),
       limit: idsToEnrich.length,
     );
     final nostrEvents = await nostrService
