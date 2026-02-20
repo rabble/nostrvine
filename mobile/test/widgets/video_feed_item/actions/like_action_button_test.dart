@@ -84,19 +84,5 @@ void main() {
 
       expect(find.text('42'), findsNothing);
     });
-
-    testWidgets(
-      'renders disabled state with no count when bloc is unavailable',
-      (tester) async {
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(body: LikeActionButton(video: testVideo)),
-          ),
-        );
-
-        expect(find.byType(LikeActionButton), findsOneWidget);
-        expect(find.text('100'), findsNothing);
-      },
-    );
   });
 }

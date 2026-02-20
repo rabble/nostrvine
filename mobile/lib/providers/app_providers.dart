@@ -15,6 +15,8 @@ import 'package:nostr_client/nostr_client.dart'
     show RelayConnectionStatus, RelayState;
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/environment_provider.dart';
+import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/providers/database_provider.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
@@ -199,14 +201,20 @@ Stream<Map<String, RelayStatistics>> relayStatisticsStream(Ref ref) async* {
   yield* controller.stream;
 }
 
-/// Bridge provider that connects NostrClient relay status updates to RelayStatisticsService
-/// Must be watched at app level to activate the bridge
+/// Bridge provider that connects NostrClient relay status updates to
+/// RelayStatisticsService.
+///
+/// Tracks connection/disconnection events via the relay status stream and
+/// periodically syncs per-relay SDK counters (events received, queries sent,
+/// errors) so each relay displays its own real statistics.
+///
+/// Must be watched at app level to activate the bridge.
 @Riverpod(keepAlive: true)
 void relayStatisticsBridge(Ref ref) {
   final nostrService = ref.watch(nostrServiceProvider);
   final statsService = ref.watch(relayStatisticsServiceProvider);
 
-  // Track previous states to detect changes
+  // Track previous states to detect connection changes
   final Map<String, bool> previousStates = {};
 
   // Helper to process status updates (used for both initial state and stream)
@@ -228,17 +236,33 @@ void relayStatisticsBridge(Ref ref) {
       previousStates[url] = isConnected;
     }
 
-    // Prune entries for relays no longer in the status map to prevent memory leak
+    // Prune entries for relays no longer in the status map
     previousStates.removeWhere((url, _) => !statuses.containsKey(url));
   }
 
-  // Process current state immediately (relays may have connected before bridge started)
+  // Process current state immediately (relays may have connected before
+  // the bridge started)
   processStatuses(nostrService.relayStatuses);
 
-  // Listen to relay status stream for future updates
+  // Listen to relay status stream for future connection changes
   final subscription = nostrService.relayStatusStream.listen(processStatuses);
 
+  // Periodically sync per-relay SDK counters so each relay shows its own
+  // real statistics (not identical values distributed from app-level totals).
+  final syncTimer = Timer.periodic(const Duration(seconds: 3), (_) {
+    final counters = nostrService.getRelayPoolCounters();
+    for (final entry in counters.entries) {
+      statsService.syncSdkCounters(
+        entry.key,
+        eventsReceived: entry.value.eventsReceived,
+        queriesSent: entry.value.queriesSent,
+        errors: entry.value.errors,
+      );
+    }
+  });
+
   ref.onDispose(() {
+    syncTimer.cancel();
     subscription.cancel();
   });
 }
@@ -567,9 +591,10 @@ AuthService authService(Ref ref) {
   final pendingVerificationService = ref.watch(
     pendingVerificationServiceProvider,
   );
-  // NOTE: analyticsApiServiceProvider and sharedPreferencesProvider are
-  // resolved lazily inside the callback to avoid a circular dependency:
+  // NOTE: We construct AnalyticsApiService directly here instead of using
+  // analyticsApiServiceProvider to avoid a circular dependency:
   //   authService → analyticsApiService → nostrService → authService
+  // Using currentEnvironmentProvider is safe (no auth/nostr dependency).
   return AuthService(
     userDataCleanupService: userDataCleanupService,
     keyStorage: keyStorage,
@@ -578,11 +603,14 @@ AuthService authService(Ref ref) {
     oauthConfig: oauthConfig,
     pendingVerificationService: pendingVerificationService,
     preFetchFollowing: (pubkeyHex) async {
-      // Pre-fetch following list from funnelcake REST API during login setup.
-      // This populates SharedPreferences BEFORE auth state is set, so the
-      // router redirect has accurate cache data and sends user to /home not
-      // /explore.
-      final analyticsService = ref.read(analyticsApiServiceProvider);
+      // Pre-fetch following list from funnelcake REST API during login
+      // setup. This populates SharedPreferences BEFORE auth state is
+      // set, so the router redirect has accurate cache data and sends
+      // user to /home not /explore.
+      final environmentConfig = ref.read(currentEnvironmentProvider);
+      final analyticsService = AnalyticsApiService(
+        baseUrl: environmentConfig.apiBaseUrl,
+      );
       final prefs = ref.read(sharedPreferencesProvider);
       final result = await analyticsService.getFollowing(
         pubkeyHex,
@@ -592,8 +620,8 @@ AuthService authService(Ref ref) {
         final key = 'following_list_$pubkeyHex';
         await prefs.setString(key, jsonEncode(result.pubkeys));
         Log.info(
-          'Pre-fetched ${result.pubkeys.length} following for router '
-          'redirect cache',
+          'Pre-fetched ${result.pubkeys.length} following for '
+          'router redirect cache',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -879,6 +907,10 @@ FollowRepository? followRepository(Ref ref) {
         : null,
     fetchFollowingFromApi: (pubkey) async {
       final result = await analyticsService.getFollowing(pubkey, limit: 5000);
+      return result.pubkeys;
+    },
+    fetchFollowersFromApi: (pubkey) async {
+      final result = await analyticsService.getFollowers(pubkey, limit: 5000);
       return result.pubkeys;
     },
   );

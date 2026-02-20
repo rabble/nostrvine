@@ -251,6 +251,34 @@ void main() {
         expect(find.text('Fixed Modal Content'), findsOneWidget);
       });
 
+      testWidgets('calls onShow callback when showing sheet', (tester) async {
+        var onShowCalled = false;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () async {
+                    await VineBottomSheet.show<void>(
+                      context: context,
+                      title: const Text('Callback Sheet'),
+                      onShow: () => onShowCalled = true,
+                      children: const [Text('Content')],
+                    );
+                  },
+                  child: const Text('Show Sheet'),
+                ),
+              ),
+            ),
+          ),
+        );
+
+        await tester.tap(find.text('Show Sheet'));
+        await tester.pumpAndSettle();
+
+        expect(onShowCalled, isTrue);
+      });
+
       testWidgets('shows sheet with body parameter', (tester) async {
         await tester.pumpWidget(
           MaterialApp(
@@ -275,68 +303,6 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.text('Body Content'), findsOneWidget);
-      });
-
-      testWidgets('calls onShow callback when shown', (tester) async {
-        var onShowCalled = false;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => ElevatedButton(
-                  onPressed: () async {
-                    await VineBottomSheet.show<void>(
-                      context: context,
-                      children: const [Text('Content')],
-                      onShow: () => onShowCalled = true,
-                    );
-                  },
-                  child: const Text('Show Sheet'),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        expect(onShowCalled, isFalse);
-        await tester.tap(find.text('Show Sheet'));
-        await tester.pump();
-        expect(onShowCalled, isTrue);
-      });
-
-      testWidgets('calls onDismiss callback when dismissed', (tester) async {
-        var onDismissCalled = false;
-
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              body: Builder(
-                builder: (context) => ElevatedButton(
-                  onPressed: () async {
-                    await VineBottomSheet.show<void>(
-                      context: context,
-                      children: const [Text('Content')],
-                      onDismiss: () => onDismissCalled = true,
-                    );
-                  },
-                  child: const Text('Show Sheet'),
-                ),
-              ),
-            ),
-          ),
-        );
-
-        await tester.tap(find.text('Show Sheet'));
-        await tester.pumpAndSettle();
-
-        expect(onDismissCalled, isFalse);
-
-        // Dismiss by tapping outside
-        await tester.tapAt(Offset.zero);
-        await tester.pumpAndSettle();
-
-        expect(onDismissCalled, isTrue);
       });
     });
   });

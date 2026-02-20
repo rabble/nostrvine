@@ -82,6 +82,14 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
           as bool);
 
   @override
+  int get activeSubscriptionCount =>
+      (super.noSuchMethod(
+            Invocation.getter(#activeSubscriptionCount),
+            returnValue: 0,
+          )
+          as int);
+
+  @override
   List<String> get configuredRelays =>
       (super.noSuchMethod(
             Invocation.getter(#configuredRelays),
@@ -140,6 +148,13 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
             ),
           )
           as String);
+
+  @override
+  set statisticsObserver(_i5.NostrClientStatisticsObserver? value) =>
+      super.noSuchMethod(
+        Invocation.setter(#statisticsObserver, value),
+        returnValueForMissingStub: null,
+      );
 
   @override
   _i7.Future<void> initialize() =>
@@ -322,6 +337,16 @@ class MockNostrClient extends _i1.Mock implements _i5.NostrClient {
             returnValue: _i7.Future<bool>.value(false),
           )
           as _i7.Future<bool>);
+
+  @override
+  Map<String, ({int errors, int eventsReceived, int queriesSent})>
+  getRelayPoolCounters() =>
+      (super.noSuchMethod(
+            Invocation.method(#getRelayPoolCounters, []),
+            returnValue:
+                <String, ({int errors, int eventsReceived, int queriesSent})>{},
+          )
+          as Map<String, ({int errors, int eventsReceived, int queriesSent})>);
 
   @override
   _i7.Future<Map<String, dynamic>?> getRelayStats() =>

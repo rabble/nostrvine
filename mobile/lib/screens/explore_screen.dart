@@ -561,12 +561,17 @@ class _ExploreScreenState extends ConsumerState<ExploreScreen>
     }
 
     // Just return the video screen - tabs are shown above
+    // useLocalActiveState: true → playback controlled by local _currentPage
+    // onNavigate: keeps URL in sync for deep linking, back nav, and provider
+    // state (e.g. activeVideoIdProvider). Safe because PageController is in
+    // state (not recreated on parent rebuild).
     return ExploreVideoScreenPure(
       startingVideo: videos[startIndex],
       videoList: videos,
       contextTitle: '', // Don't show context title for general explore feed
       startingIndex: startIndex,
       useLocalActiveState: true,
+      onNavigate: (index) => context.go(ExploreScreen.pathForIndex(index)),
     );
   }
 

@@ -106,6 +106,11 @@ class PooledVideoPlayer extends StatelessWidget {
           content = Stack(
             fit: StackFit.expand,
             children: [
+              // Keep the loading placeholder behind the video so the
+              // thumbnail stays visible while the Video widget renders
+              // its first frame, preventing a black flash on transition.
+              loadingBuilder?.call(context) ??
+                  _DefaultLoadingState(thumbnailUrl: thumbnailUrl),
               videoBuilder(context, videoController, player),
               if (overlayBuilder != null)
                 overlayBuilder!(context, videoController, player),

@@ -432,20 +432,38 @@ final class RelayStatisticsStreamProvider
 String _$relayStatisticsStreamHash() =>
     r'0ab9617467aabccc62b36b0de4d79a0ce9d01c5e';
 
-/// Bridge provider that connects NostrClient relay status updates to RelayStatisticsService
-/// Must be watched at app level to activate the bridge
+/// Bridge provider that connects NostrClient relay status updates to
+/// RelayStatisticsService.
+///
+/// Tracks connection/disconnection events via the relay status stream and
+/// periodically syncs per-relay SDK counters (events received, queries sent,
+/// errors) so each relay displays its own real statistics.
+///
+/// Must be watched at app level to activate the bridge.
 
 @ProviderFor(relayStatisticsBridge)
 const relayStatisticsBridgeProvider = RelayStatisticsBridgeProvider._();
 
-/// Bridge provider that connects NostrClient relay status updates to RelayStatisticsService
-/// Must be watched at app level to activate the bridge
+/// Bridge provider that connects NostrClient relay status updates to
+/// RelayStatisticsService.
+///
+/// Tracks connection/disconnection events via the relay status stream and
+/// periodically syncs per-relay SDK counters (events received, queries sent,
+/// errors) so each relay displays its own real statistics.
+///
+/// Must be watched at app level to activate the bridge.
 
 final class RelayStatisticsBridgeProvider
     extends $FunctionalProvider<void, void, void>
     with $Provider<void> {
-  /// Bridge provider that connects NostrClient relay status updates to RelayStatisticsService
-  /// Must be watched at app level to activate the bridge
+  /// Bridge provider that connects NostrClient relay status updates to
+  /// RelayStatisticsService.
+  ///
+  /// Tracks connection/disconnection events via the relay status stream and
+  /// periodically syncs per-relay SDK counters (events received, queries sent,
+  /// errors) so each relay displays its own real statistics.
+  ///
+  /// Must be watched at app level to activate the bridge.
   const RelayStatisticsBridgeProvider._()
     : super(
         from: null,
@@ -480,7 +498,7 @@ final class RelayStatisticsBridgeProvider
 }
 
 String _$relayStatisticsBridgeHash() =>
-    r'8e5867762c8201c7244d2f44ba3bc84cbc63f012';
+    r'4c105f2e370e769b48b77ac90ca08bca6f95a385';
 
 /// Bridge provider that detects when the configured relay set changes
 /// (relays added or removed) and triggers a full feed reset+resubscribe.
@@ -1869,7 +1887,7 @@ final class AuthServiceProvider
   }
 }
 
-String _$authServiceHash() => r'50e8112a7c95a9a9ebff6f4fb649131e9874e676';
+String _$authServiceHash() => r'f02dd0b46777ee8df7d43b2adec9e16462611ac2';
 
 /// Provider that returns current auth state and rebuilds when it changes.
 /// Widgets should watch this instead of authService.authState directly
@@ -2425,7 +2443,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'dadc0598cb6bc48a4a6a1776f8c72117610aef2d';
+String _$followRepositoryHash() => r'cc2cdaa9ac69fd09c9131f43f2068f533ff3e593';
 
 /// Provider for ProfileRepository instance
 ///

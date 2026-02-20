@@ -538,28 +538,8 @@ class _UniqueIdentifier extends ConsumerWidget {
             ),
           ],
         ),
-        // Show warning for own profile when NIP-05 verification fails
-        if (isOwnProfile && hasNip05 && verificationFailed)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.warning_amber_rounded,
-                  color: Colors.orange,
-                  size: 14,
-                ),
-                const SizedBox(width: 4),
-                Flexible(
-                  child: Text(
-                    'Username not verifying - contact support',
-                    style: VineTheme.bodySmallFont(color: Colors.orange),
-                  ),
-                ),
-              ],
-            ),
-          ),
+        // NIP-05 verification failure is silently ignored for now.
+        // TODO(#1658): surface NIP-05 verification errors once backend is fixed.
       ],
     );
   }
