@@ -89,7 +89,7 @@ void main() {
     testWidgets('tapping back button triggers pop navigation', (tester) async {
       final mockGoRouter = MockGoRouter();
       when(() => mockGoRouter.canPop()).thenReturn(true);
-      when(() => mockGoRouter.pop<void>()).thenAnswer((_) async {});
+      when(() => mockGoRouter.pop<Object?>(any())).thenAnswer((_) async {});
 
       await tester.pumpWidget(
         MockGoRouterProvider(
@@ -107,7 +107,7 @@ void main() {
       await tester.tap(find.byType(VideoEditorIconButton));
       await tester.pumpAndSettle();
 
-      verify(() => mockGoRouter.pop<void>()).called(1);
+      verify(() => mockGoRouter.pop<Object?>(any())).called(1);
     });
 
     testWidgets('renders inside SafeArea with bottom: false', (tester) async {
