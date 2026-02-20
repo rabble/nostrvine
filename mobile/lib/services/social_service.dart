@@ -208,7 +208,9 @@ class SocialService {
     ]);
 
     final restResult = results[0];
-    final wsResult = results[1];
+    // wsResult is always non-null since _fetchFollowerStatsViaWebSocket
+    // never returns null, but Future.wait widens the type to nullable.
+    final wsResult = results[1]!;
 
     if (restResult == null) {
       return wsResult;
