@@ -32,15 +32,24 @@ env:
 - inputText: ${USER_EMAIL}
 - tapOn: Password
 - inputText: ${USER_PWD}
+#Android keyboard close
 - runFlow:
     when:
       visible: Back
     commands:
       - tapOn:
           id: input_method_nav_back
-- tapOn:
-    text: Sign in
-    index: 1
+      - tapOn:
+          text: Sign in
+          index: 1
+#iOS keyboard close
+- runFlow:
+    when:
+      visible: done
+    commands:
+      - tapOn:
+          id: Done
+
 - waitForAnimationToEnd
 - runFlow:
     when:
