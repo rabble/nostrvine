@@ -1442,6 +1442,22 @@ class MockFollowRepository extends _i1.Mock implements _i15.FollowRepository {
           as _i11.Future<List<String>>);
 
   @override
+  _i11.Future<int> getMyFollowerCount() =>
+      (super.noSuchMethod(
+            Invocation.method(#getMyFollowerCount, []),
+            returnValue: _i11.Future<int>.value(0),
+          )
+          as _i11.Future<int>);
+
+  @override
+  _i11.Future<int> getFollowerCount(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#getFollowerCount, [pubkey]),
+            returnValue: _i11.Future<int>.value(0),
+          )
+          as _i11.Future<int>);
+
+  @override
   _i11.Future<bool> isMutualFollow(String? pubkey) =>
       (super.noSuchMethod(
             Invocation.method(#isMutualFollow, [pubkey]),

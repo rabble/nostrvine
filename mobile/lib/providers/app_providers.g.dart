@@ -2443,7 +2443,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'cc2cdaa9ac69fd09c9131f43f2068f533ff3e593';
+String _$followRepositoryHash() => r'59ccfaf4522b9c8534a1ee5b9f51b851614f9425';
 
 /// Provider for ProfileRepository instance
 ///
