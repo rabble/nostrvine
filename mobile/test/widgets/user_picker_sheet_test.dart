@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
@@ -501,8 +502,9 @@ void main() {
         expect(find.text('Already Selected'), findsOneWidget);
         expect(find.text('Available User'), findsOneWidget);
 
-        // Check icon should be shown for excluded user
-        expect(find.byIcon(Icons.check), findsOneWidget);
+        // SVG icons shown for each user (Check.svg for excluded, plus.svg for
+        // available)
+        expect(find.byType(SvgPicture), findsNWidgets(2));
       });
     });
   });
