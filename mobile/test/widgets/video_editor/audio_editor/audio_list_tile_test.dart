@@ -153,16 +153,19 @@ void main() {
         expect(selectCalled, isFalse);
       });
 
-      testWidgets('calls onSelect when tile is tapped', (tester) async {
+      testWidgets('calls onSelect when select button is tapped', (
+        tester,
+      ) async {
         final audio = _createTestAudioEvent();
         await tester.pumpWidget(buildWidget(audio: audio));
         await tester.pumpAndSettle();
 
-        // Tap the ListTile (not the buttons)
-        await tester.tap(find.byType(ListTile));
+        // Tap the selection button (trailing icon)
+        await tester.tap(find.bySemanticsLabel('Select sound'));
         await tester.pumpAndSettle();
 
         expect(selectCalled, isTrue);
+        expect(playPauseCalled, isFalse);
       });
     });
 

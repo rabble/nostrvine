@@ -67,6 +67,8 @@ class AudioListTile extends StatelessWidget {
           ),
         ),
         trailing: VideoEditorIconButton(
+          // TODO(l10n): Replace with context.l10n when localization is added.
+          semanticLabel: 'Select sound',
           onTap: onSelect,
           iconPath: 'assets/icon/plus.svg',
           iconColor: VineTheme.onPrimary,
