@@ -11,7 +11,6 @@ import 'package:keycast_flutter/keycast_flutter.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer, SecureKeyStorage;
 import 'package:nostr_sdk/nostr_sdk.dart';
-import 'package:openvine/services/auth_service_signer.dart';
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';

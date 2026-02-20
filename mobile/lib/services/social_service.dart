@@ -5,7 +5,6 @@
 
 import 'dart:async';
 
-import 'package:nostr_sdk/filter.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/nip71_migration.dart';
 import 'package:openvine/constants/nostr_event_kinds.dart';
@@ -208,8 +207,8 @@ class SocialService {
       _fetchFollowerStatsViaWebSocket(pubkey),
     ]);
 
-    final restResult = results[0] as Map<String, int>?;
-    final wsResult = results[1] as Map<String, int>;
+    final restResult = results[0];
+    final wsResult = results[1];
 
     if (restResult == null) {
       return wsResult;
