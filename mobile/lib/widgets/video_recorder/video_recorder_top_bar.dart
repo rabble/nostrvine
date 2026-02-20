@@ -19,6 +19,9 @@ class VideoRecorderTopBar extends ConsumerWidget {
   const VideoRecorderTopBar({super.key});
 
   Future<void> _selectAudio(BuildContext context, WidgetRef ref) async {
+    final videoRecorderNotifier = ref.read(videoRecorderProvider.notifier);
+    videoRecorderNotifier.pauseRemoteRecordControl();
+
     final result = await VineBottomSheet.show<AudioEvent>(
       context: context,
       maxChildSize: 1,
@@ -27,6 +30,8 @@ class VideoRecorderTopBar extends ConsumerWidget {
       buildScrollBody: (scrollController) =>
           AudioSelectionBottomSheet(scrollController: scrollController),
     );
+
+    videoRecorderNotifier.resumeRemoteRecordControl();
 
     if (result != null) {
       ref.read(selectedSoundProvider.notifier).select(result);

@@ -30,7 +30,6 @@ class AudioListTile extends StatelessWidget {
     return Padding(
       padding: const .symmetric(vertical: 20.0),
       child: ListTile(
-        onTap: onSelect,
         minTileHeight: 48,
         leading: VideoEditorIconButton(
           // TODO(l10n): Replace with context.l10n when localization is added.
@@ -68,6 +67,7 @@ class AudioListTile extends StatelessWidget {
           ),
         ),
         trailing: VideoEditorIconButton(
+          onTap: onSelect,
           iconPath: 'assets/icon/plus.svg',
           iconColor: VineTheme.onPrimary,
           backgroundColor: VineTheme.primary,
