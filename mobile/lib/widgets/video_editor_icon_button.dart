@@ -10,19 +10,17 @@ import 'package:flutter_svg/svg.dart';
 class VideoEditorIconButton extends StatelessWidget {
   /// Creates a video editor icon button.
   const VideoEditorIconButton({
-    this.icon,
     this.iconPath,
     super.key,
     this.backgroundColor = const Color(0xFF000000),
     this.iconColor = Colors.white,
+    this.borderColor,
     this.iconSize = 32,
     this.size = 48,
+    this.borderRadius = 20,
     this.onTap,
     this.semanticLabel,
-  }) : assert(icon != null || iconPath != null, 'icon or iconPath is required');
-
-  /// The icon to display.
-  final IconData? icon;
+  });
 
   /// The path to the assets svg-icon.
   final String? iconPath;
@@ -33,11 +31,15 @@ class VideoEditorIconButton extends StatelessWidget {
   /// Color of the icon.
   final Color iconColor;
 
+  final Color? borderColor;
+
   /// Size of the icon.
   final double iconSize;
 
   /// Size of the button container.
   final double size;
+
+  final double borderRadius;
 
   /// Callback when the button is tapped.
   final VoidCallback? onTap;
@@ -58,20 +60,21 @@ class VideoEditorIconButton extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             color: backgroundColor,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: .circular(borderRadius),
+            border: borderColor != null
+                ? .all(width: 2, color: borderColor!)
+                : null,
           ),
-          child: icon != null
-              ? Icon(icon, color: iconColor, size: iconSize)
-              : Center(
-                  child: SizedBox(
-                    height: iconSize,
-                    width: iconSize,
-                    child: SvgPicture.asset(
-                      iconPath!,
-                      colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-                    ),
-                  ),
-                ),
+          child: Center(
+            child: SizedBox(
+              height: iconSize,
+              width: iconSize,
+              child: SvgPicture.asset(
+                iconPath!,
+                colorFilter: .mode(iconColor, .srcIn),
+              ),
+            ),
+          ),
         ),
       ),
     );

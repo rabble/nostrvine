@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:divine_ui/divine_ui.dart';
+import 'package:flutter/services.dart';
 import 'package:openvine/extensions/aspect_ratio_extensions.dart';
 import 'package:openvine/platform_io.dart';
 import 'package:flutter/material.dart';
@@ -96,35 +97,43 @@ class _VideoMetadataPreviewScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF000A06),
-      body: Stack(
-        children: [
-          Column(
-            spacing: 16,
-            children: [
-              // Video preview area with close button
-              Expanded(
-                child: Stack(
-                  fit: .expand,
-                  children: [
-                    _VideoPreviewContent(
-                      clip: widget.clip,
-                      controller: _controller,
-                      isInitialized: _isInitialized,
-                      isPreviewReady: _isPreviewReady,
-                    ),
-                    const _CloseButton(),
-                  ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        systemNavigationBarColor: Colors.transparent,
+        statusBarIconBrightness: .light,
+        statusBarBrightness: .dark,
+      ),
+      child: Scaffold(
+        backgroundColor: const Color(0xFF000A06),
+        body: Stack(
+          children: [
+            Column(
+              spacing: 16,
+              children: [
+                // Video preview area with close button
+                Expanded(
+                  child: Stack(
+                    fit: .expand,
+                    children: [
+                      _VideoPreviewContent(
+                        clip: widget.clip,
+                        controller: _controller,
+                        isInitialized: _isInitialized,
+                        isPreviewReady: _isPreviewReady,
+                      ),
+                      const _CloseButton(),
+                    ],
+                  ),
                 ),
-              ),
-              // Post button at bottom
-              const SafeArea(top: false, child: VideoMetadataBottomBar()),
-            ],
-          ),
+                // Post button at bottom
+                const SafeArea(top: false, child: VideoMetadataBottomBar()),
+              ],
+            ),
 
-          const VideoMetadataUploadStatus(),
-        ],
+            const VideoMetadataUploadStatus(),
+          ],
+        ),
       ),
     );
   }
@@ -150,7 +159,7 @@ class _VideoPreviewContent extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Hero animation from metadata screen
     return Hero(
-      tag: 'Video-metadata-clip-preview-video',
+      tag: VideoEditorConstants.heroMetaPreviewId,
       // Use linear flight path instead of curved arc
       createRectTween: (begin, end) => RectTween(begin: begin, end: end),
       child: Stack(
@@ -296,7 +305,7 @@ class _CloseButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Positioned(
       top: 6,
-      left: 6,
+      left: 16,
       child: SafeArea(
         child: Hero(
           tag: VideoEditorConstants.heroBackButtonId,
@@ -304,7 +313,10 @@ class _CloseButton extends StatelessWidget {
             backgroundColor: VineTheme.scrim15,
             // TODO(l10n): Replace with context.l10n when localization is added.
             semanticLabel: 'Close video recorder',
-            iconPath: 'assets/icon/CaretLeft.svg',
+            iconPath: 'assets/icon/close.svg',
+            size: 40,
+            iconSize: 24,
+            borderRadius: 16,
             onTap: () => context.pop(),
           ),
         ),

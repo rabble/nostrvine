@@ -1,0 +1,126 @@
+// ABOUTME: Tests for VideoMetadataAppBar widget
+// ABOUTME: Verifies rendering, Hero animation, and navigation behavior
+
+import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:go_router/go_router.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/widgets/video_editor_icon_button.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_app_bar.dart';
+
+import '../../helpers/go_router.dart';
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  group(VideoMetadataAppBar, () {
+    late GoRouter router;
+
+    setUp(() {
+      router = GoRouter(
+        initialLocation: '/test',
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => const Scaffold(body: Text('Home')),
+          ),
+          GoRoute(
+            path: '/test',
+            builder: (context, state) => Scaffold(
+              appBar: const VideoMetadataAppBar(),
+              body: const Text('Test'),
+            ),
+          ),
+        ],
+      );
+    });
+
+    Widget buildTestWidget() {
+      return MaterialApp.router(routerConfig: router);
+    }
+
+    testWidgets('renders $VideoMetadataAppBar', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+
+      expect(find.byType(VideoMetadataAppBar), findsOneWidget);
+    });
+
+    testWidgets('renders title text "Post details"', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+
+      expect(find.text('Post details'), findsOneWidget);
+    });
+
+    testWidgets('renders back button with $VideoEditorIconButton', (
+      tester,
+    ) async {
+      await tester.pumpWidget(buildTestWidget());
+
+      expect(find.byType(VideoEditorIconButton), findsOneWidget);
+    });
+
+    testWidgets('renders back button icon', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+
+      expect(find.byType(SvgPicture), findsOneWidget);
+    });
+
+    testWidgets('wraps back button in Hero with correct tag', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+
+      final heroFinder = find.byType(Hero);
+      expect(heroFinder, findsOneWidget);
+
+      final hero = tester.widget<Hero>(heroFinder);
+      expect(hero.tag, equals(VideoEditorConstants.heroBackButtonId));
+    });
+
+    testWidgets('implements PreferredSizeWidget with kToolbarHeight', (
+      tester,
+    ) async {
+      const header = VideoMetadataAppBar();
+
+      expect(header, isA<PreferredSizeWidget>());
+      expect(header.preferredSize.height, equals(kToolbarHeight));
+    });
+
+    testWidgets('tapping back button triggers pop navigation', (tester) async {
+      final mockGoRouter = MockGoRouter();
+      when(() => mockGoRouter.canPop()).thenReturn(true);
+      when(() => mockGoRouter.pop<void>()).thenAnswer((_) async {});
+
+      await tester.pumpWidget(
+        MockGoRouterProvider(
+          goRouter: mockGoRouter,
+          child: const MaterialApp(
+            home: Scaffold(appBar: VideoMetadataAppBar(), body: Text('Test')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Verify we're showing the app bar
+      expect(find.byType(VideoMetadataAppBar), findsOneWidget);
+
+      await tester.tap(find.byType(VideoEditorIconButton));
+      await tester.pumpAndSettle();
+
+      verify(() => mockGoRouter.pop<void>()).called(1);
+    });
+
+    testWidgets('renders inside SafeArea with bottom: false', (tester) async {
+      await tester.pumpWidget(buildTestWidget());
+
+      final safeAreaFinder = find.descendant(
+        of: find.byType(VideoMetadataAppBar),
+        matching: find.byType(SafeArea),
+      );
+      expect(safeAreaFinder, findsOneWidget);
+
+      final safeArea = tester.widget<SafeArea>(safeAreaFinder);
+      expect(safeArea.bottom, isFalse);
+    });
+  });
+}

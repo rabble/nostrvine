@@ -6,11 +6,9 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:go_router/go_router.dart';
-import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
+import 'package:openvine/widgets/video_metadata/video_metadata_app_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_clip_preview.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
@@ -82,32 +80,7 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
           children: [
             Scaffold(
               backgroundColor: VineTheme.surfaceContainerHigh,
-              appBar: AppBar(
-                backgroundColor: Colors.transparent,
-                surfaceTintColor: Colors.transparent,
-                leading: Hero(
-                  tag: VideoEditorConstants.heroBackButtonId,
-                  child: IconButton(
-                    padding: const .all(8),
-                    icon: SizedBox(
-                      width: 32,
-                      height: 32,
-                      child: Center(
-                        child: SvgPicture.asset(
-                          'assets/icon/CaretLeft.svg',
-                          colorFilter: const .mode(VineTheme.whiteText, .srcIn),
-                        ),
-                      ),
-                    ),
-                    onPressed: () => context.pop(),
-                    tooltip: 'Back',
-                  ),
-                ),
-                title: Text(
-                  'Post details',
-                  style: VineTheme.titleMediumFont(color: VineTheme.onSurface),
-                ),
-              ),
+              appBar: const VideoMetadataAppBar(),
               body: Column(
                 spacing: 12,
                 children: [

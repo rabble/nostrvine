@@ -2,6 +2,7 @@ import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -54,7 +55,7 @@ class VideoMetadataClipPreview extends ConsumerWidget {
         height: 200,
         // Hero animation to preview screen
         child: Hero(
-          tag: 'Video-metadata-clip-preview-video',
+          tag: VideoEditorConstants.heroMetaPreviewId,
           // Use linear flight path instead of curved arc
           createRectTween: (begin, end) => RectTween(begin: begin, end: end),
           child: AspectRatio(
