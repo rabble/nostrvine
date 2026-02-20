@@ -12,7 +12,7 @@ import 'package:openvine/utils/unified_logger.dart';
 /// Like action button with count display for video overlay.
 ///
 /// Shows a heart icon that toggles between filled (liked) and outline (not liked).
-/// Displays the total like count combining Nostr likes and original Vine likes.
+/// Displays the like count from the [VideoInteractionsBloc] once loaded.
 ///
 /// Requires [VideoInteractionsBloc] to be provided in the widget tree.
 /// Shows a disabled state when the bloc is not available.
@@ -26,12 +26,11 @@ class LikeActionButton extends StatelessWidget {
     final interactionsBloc = context.read<VideoInteractionsBloc?>();
 
     if (interactionsBloc == null) {
-      // No bloc available - show disabled state with original likes only
       return _buildButton(
         context: context,
         isLiked: false,
         isLikeInProgress: false,
-        totalLikes: video.originalLikes ?? 0,
+        totalLikes: 0,
         onPressed: null,
       );
     }
@@ -40,8 +39,8 @@ class LikeActionButton extends StatelessWidget {
       builder: (context, state) {
         final isLiked = state.isLiked;
         final isLikeInProgress = state.isLikeInProgress;
-        final likeCount = state.likeCount ?? 0;
-        final totalLikes = likeCount + (video.originalLikes ?? 0);
+        final hasLoaded = state.status == VideoInteractionsStatus.success;
+        final totalLikes = hasLoaded ? (state.likeCount ?? 0) : 0;
 
         return _buildButton(
           context: context,
@@ -118,7 +117,7 @@ class LikeActionButton extends StatelessWidget {
                   ),
           ),
         ),
-        // Show total like count: new likes + original Vine likes
+        // Show like count only after BLoC has loaded
         if (totalLikes > 0)
           Padding(
             padding: const EdgeInsets.only(bottom: 8),

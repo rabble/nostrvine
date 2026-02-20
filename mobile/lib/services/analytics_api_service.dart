@@ -284,7 +284,6 @@ class VideoStats {
         if (loops != null) 'loops': loops.toString(),
         if (views != null) 'views': views.toString(),
       },
-      originalLikes: reactions,
       originalComments: comments,
       originalReposts: reposts,
       originalLoops: loops,

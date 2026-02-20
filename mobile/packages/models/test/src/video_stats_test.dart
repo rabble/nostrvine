@@ -540,7 +540,7 @@ void main() {
           equals('https://example.com/avatar.jpg'),
         );
         expect(videoEvent.blurhash, equals('LEHV6nWB2yk8'));
-        expect(videoEvent.originalLikes, equals(100));
+        expect(videoEvent.originalLikes, isNull);
         expect(videoEvent.originalComments, equals(20));
         expect(videoEvent.originalReposts, equals(5));
         expect(videoEvent.originalLoops, equals(1000));
@@ -589,6 +589,27 @@ void main() {
         final videoEvent = stats.toVideoEvent();
 
         expect(videoEvent.content, equals(''));
+      });
+
+      test('does not map API reactions count to originalLikes', () {
+        final stats = VideoStats(
+          id: 'test-id',
+          pubkey: 'test-pubkey',
+          createdAt: DateTime.fromMillisecondsSinceEpoch(1700000000000),
+          kind: 34236,
+          dTag: 'test-dtag',
+          title: 'Test Video',
+          thumbnail: 'https://example.com/thumb.jpg',
+          videoUrl: 'https://example.com/video.mp4',
+          reactions: 500,
+          comments: 20,
+          reposts: 5,
+          engagementScore: 525,
+        );
+
+        final videoEvent = stats.toVideoEvent();
+
+        expect(videoEvent.originalLikes, isNull);
       });
     });
 
