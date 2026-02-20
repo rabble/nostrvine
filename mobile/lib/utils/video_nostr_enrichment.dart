@@ -16,11 +16,11 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
   if (videos.isEmpty) return videos;
 
   // Collect IDs of videos that need enrichment.
-  // REST API always includes 'id' and 'loops' tags, but not additional Nostr
-  // tags like ProofMode/C2PA verification. Check for < 3 tags to identify
+  // REST API always includes 'id', 'loops' and 'views', but not additional
+  // Nostr tags like ProofMode/C2PA verification. Check for < 4 tags to identify
   // videos missing the full tag set.
   final idsToEnrich = videos
-      .where((v) => v.rawTags.length < 3)
+      .where((v) => v.rawTags.length < 4)
       .map((v) => v.id)
       .toList();
 
