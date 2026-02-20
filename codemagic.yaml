@@ -390,3 +390,145 @@ workflows:
     artifacts:
       - build/macos/Build/Products/Release/*.dmg
       - build/macos/Build/Products/Release/*.app
+
+  e2e-smoke-ios:
+    name: E2E Smoke Tests (iOS)
+    working_directory: mobile
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.41.1
+      xcode: 16.1
+      cocoapods: default
+      groups:
+        - zendesk_credentials
+        - proofmode_credentials
+      vars:
+        DEFAULT_ENV: STAGING
+        BUNDLE_ID: co.openvine.app
+    cache:
+      cache_paths:
+        - $HOME/Library/Caches/CocoaPods
+        - $HOME/.pub-cache
+    triggering:
+      events: []
+    scripts:
+      - *install_flutterfire
+      - *enable_spm
+      - *flutter_pub_get
+      - *pod_install
+      - name: Build iOS Simulator app
+        script: |
+          flutter build ios --simulator \
+            --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
+            --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
+            --dart-define=ZENDESK_URL=$ZENDESK_URL \
+            --dart-define=DEFAULT_ENV=$DEFAULT_ENV \
+            --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
+            --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+      - name: Install Maestro CLI
+        script: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          export PATH="$PATH:$HOME/.maestro/bin"
+          maestro --version
+      - name: Boot iOS Simulator
+        script: |
+          DEVICE_UDID=$(xcrun simctl list devices available -j | \
+            python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          for runtime, devices in data['devices'].items():
+              for d in devices:
+                  if d['name'] == 'iPhone 16 Pro' and d['isAvailable']:
+                      print(d['udid'])
+                      sys.exit(0)
+          sys.exit(1)
+          ")
+          xcrun simctl boot "$DEVICE_UDID" || true
+          echo "Booted simulator: $DEVICE_UDID"
+      - name: Install app on iOS Simulator
+        script: |
+          APP_PATH="build/ios/iphonesimulator/Runner.app"
+          DEVICE_UDID=$(xcrun simctl list devices booted -j | \
+            python3 -c "
+          import json, sys
+          data = json.load(sys.stdin)
+          for runtime, devices in data['devices'].items():
+              for d in devices:
+                  if d['state'] == 'Booted':
+                      print(d['udid'])
+                      sys.exit(0)
+          sys.exit(1)
+          ")
+          xcrun simctl uninstall "$DEVICE_UDID" "$BUNDLE_ID" 2>/dev/null || true
+          xcrun simctl install "$DEVICE_UDID" "$APP_PATH"
+          echo "App installed on iOS simulator: $DEVICE_UDID"
+      - name: Run Maestro Smoke Tests
+        script: |
+          export PATH="$PATH:$HOME/.maestro/bin"
+          maestro test e2e/maestro/suites/smoke.yaml
+    artifacts:
+      - build/ios/iphonesimulator/Runner.app
+      - /tmp/xcodebuild_logs/*.log
+      - ~/.maestro/tests/**
+
+  e2e-smoke-android:
+    name: E2E Smoke Tests (Android)
+    working_directory: mobile
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      flutter: 3.41.1
+      java: 17
+      groups:
+        - zendesk_credentials
+        - proofmode_credentials
+      vars:
+        DEFAULT_ENV: STAGING
+        BUNDLE_ID: co.openvine.app
+    cache:
+      cache_paths:
+        - $HOME/.gradle/caches
+        - $HOME/.pub-cache
+    triggering:
+      events: []
+    scripts:
+      - *flutter_pub_get
+      - name: Set up local.properties
+        script: echo "flutter.sdk=$FLUTTER_ROOT" > "$CM_BUILD_DIR/mobile/android/local.properties"
+      - name: Build Android debug APK
+        script: |
+          flutter build apk --debug \
+            --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
+            --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
+            --dart-define=ZENDESK_URL=$ZENDESK_URL \
+            --dart-define=DEFAULT_ENV=$DEFAULT_ENV \
+            --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
+            --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+      - name: Install Maestro CLI
+        script: |
+          curl -Ls "https://get.maestro.mobile.dev" | bash
+          export PATH="$PATH:$HOME/.maestro/bin"
+          maestro --version
+      - name: Create and boot Android emulator
+        script: |
+          yes | sdkmanager "platform-tools" "platforms;android-34" "emulator" "system-images;android-34;google_apis;x86_64"
+          echo "no" | avdmanager create avd -n maestro_emulator -k "system-images;android-34;google_apis;x86_64" --force
+          $ANDROID_HOME/emulator/emulator -avd maestro_emulator -no-snapshot -no-window -no-audio -no-boot-anim &
+          adb wait-for-device
+          while [ "$(adb shell getprop sys.boot_completed 2>/dev/null)" != "1" ]; do
+            echo "Waiting for Android emulator to boot..."
+            sleep 5
+          done
+          echo "Android emulator booted"
+      - name: Install app on Android emulator
+        script: |
+          adb install build/app/outputs/flutter-apk/app-debug.apk
+          echo "App installed on Android emulator"
+      - name: Run Maestro Smoke Tests
+        script: |
+          export PATH="$PATH:$HOME/.maestro/bin"
+          maestro test e2e/maestro/suites/smoke.yaml
+    artifacts:
+      - build/app/outputs/flutter-apk/app-debug.apk
+      - ~/.maestro/tests/**
