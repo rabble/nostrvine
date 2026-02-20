@@ -400,6 +400,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       commentsRepository: commentsRepository,
       repostsRepository: repostsRepository,
       addressableId: addressableId,
+      initialLikeCount: widget.video.originalLikes,
     );
     // Start listening for liked/reposted IDs changes
     _interactionsBloc.add(const VideoInteractionsSubscriptionRequested());

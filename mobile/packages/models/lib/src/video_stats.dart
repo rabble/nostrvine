@@ -305,6 +305,7 @@ class VideoStats {
       authorName: authorName,
       authorAvatar: authorAvatar,
       blurhash: blurhash,
+      originalLikes: reactions,
       originalComments: comments,
       originalReposts: reposts,
       originalLoops: loops,

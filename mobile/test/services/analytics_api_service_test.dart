@@ -272,7 +272,7 @@ void main() {
         expect(event.videoUrl, 'https://example.com/video.mp4');
         expect(event.thumbnailUrl, 'https://example.com/thumb.jpg');
         expect(event.vineId, 'vine-id-789');
-        expect(event.originalLikes, isNull);
+        expect(event.originalLikes, 10);
         expect(event.originalComments, 5);
         expect(event.originalReposts, 2);
       });
@@ -535,7 +535,7 @@ void main() {
       expect(videos.first.id, 'abc123');
       expect(videos.first.pubkey, 'def456');
       expect(videos.first.title, 'Trending Video');
-      expect(videos.first.originalLikes, isNull);
+      expect(videos.first.originalLikes, 100);
     });
 
     test('getVideosByHashtag normalizes hashtag and fetches', () async {

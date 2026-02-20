@@ -43,7 +43,7 @@ void main() {
 
   group(LikeActionButton, () {
     testWidgets(
-      'displays only state.likeCount, does not add video.originalLikes',
+      'displays state.likeCount when loaded, not video.originalLikes',
       (tester) async {
         when(() => mockBloc.state).thenReturn(
           const VideoInteractionsState(
@@ -55,11 +55,22 @@ void main() {
         await tester.pumpWidget(buildSubject());
 
         expect(find.text('50'), findsOneWidget);
+        expect(find.text('100'), findsNothing);
         expect(find.text('150'), findsNothing);
       },
     );
 
-    testWidgets('hides count when likeCount is 0', (tester) async {
+    testWidgets('falls back to video.originalLikes before BLoC has loaded', (
+      tester,
+    ) async {
+      when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
+
+      await tester.pumpWidget(buildSubject());
+
+      expect(find.text('100'), findsOneWidget);
+    });
+
+    testWidgets('hides count when both sources are 0', (tester) async {
       when(() => mockBloc.state).thenReturn(
         const VideoInteractionsState(
           status: VideoInteractionsStatus.success,
@@ -70,19 +81,6 @@ void main() {
       await tester.pumpWidget(buildSubject());
 
       expect(find.text('0'), findsNothing);
-    });
-
-    testWidgets('hides count before BLoC has loaded', (tester) async {
-      when(() => mockBloc.state).thenReturn(
-        const VideoInteractionsState(
-          status: VideoInteractionsStatus.initial,
-          likeCount: 42,
-        ),
-      );
-
-      await tester.pumpWidget(buildSubject());
-
-      expect(find.text('42'), findsNothing);
     });
   });
 }

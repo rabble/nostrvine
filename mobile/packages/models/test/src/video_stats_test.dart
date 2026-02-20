@@ -540,7 +540,7 @@ void main() {
           equals('https://example.com/avatar.jpg'),
         );
         expect(videoEvent.blurhash, equals('LEHV6nWB2yk8'));
-        expect(videoEvent.originalLikes, isNull);
+        expect(videoEvent.originalLikes, equals(100));
         expect(videoEvent.originalComments, equals(20));
         expect(videoEvent.originalReposts, equals(5));
         expect(videoEvent.originalLoops, equals(1000));
@@ -591,7 +591,7 @@ void main() {
         expect(videoEvent.content, equals(''));
       });
 
-      test('does not map API reactions count to originalLikes', () {
+      test('maps API reactions count to originalLikes as fallback', () {
         final stats = VideoStats(
           id: 'test-id',
           pubkey: 'test-pubkey',
@@ -609,7 +609,7 @@ void main() {
 
         final videoEvent = stats.toVideoEvent();
 
-        expect(videoEvent.originalLikes, isNull);
+        expect(videoEvent.originalLikes, equals(500));
       });
     });
 
