@@ -100,16 +100,40 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
         category: LogCategory.video,
       );
     } else if (isOnHome && _isPausedByNavigation) {
-      _isPausedByNavigation = false;
-      // Only resume if not also paused by an overlay (drawer, modal).
-      if (!_isPausedByOverlay) {
-        _feedController?.play();
-      }
-      Log.debug(
-        'Resumed: navigated back to home ($location)',
-        name: 'HomeScreenRouter',
-        category: LogCategory.video,
-      );
+      // Defer resume to a post-frame callback. GoRouter can briefly
+      // report /home as the location during pop transitions — e.g.,
+      // popping from /video-clip-editor back to /video-recorder reports
+      // /home/0 even though the video recorder is still pushed on top.
+      // By deferring, the Navigator's route stack is fully settled and
+      // we can verify no routes are pushed above the shell.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+
+        // If the root navigator still has pushed routes on top of the
+        // shell (e.g. video-recorder), the home screen is not visible.
+        final rootNavigator = Navigator.of(context, rootNavigator: true);
+        if (rootNavigator.canPop()) {
+          Log.debug(
+            'Deferred resume skipped: root navigator still has '
+            'pushed routes — home is not visible',
+            name: 'HomeScreenRouter',
+            category: LogCategory.video,
+          );
+          return;
+        }
+
+        if (_isPausedByNavigation) {
+          _isPausedByNavigation = false;
+          if (!_isPausedByOverlay) {
+            _feedController?.play();
+          }
+          Log.debug(
+            'Resumed: navigated back to home ($location)',
+            name: 'HomeScreenRouter',
+            category: LogCategory.video,
+          );
+        }
+      });
     }
   }
 
