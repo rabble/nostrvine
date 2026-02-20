@@ -1781,12 +1781,11 @@ void main() {
             mockPlayerFactory: callbackPool.mockPlayerFactory,
           );
 
-          final videos = createTestVideos(count: 5);
+          final videos = createTestVideos();
           final controller = VideoFeedController(
             videos: videos,
             pool: bigCallbackPool,
             preloadBehind: 0,
-            preloadAhead: 2,
           );
 
           final notifier0 = controller.getIndexNotifier(0);

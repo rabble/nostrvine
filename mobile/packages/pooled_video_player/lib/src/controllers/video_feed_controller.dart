@@ -412,7 +412,7 @@ class VideoFeedController extends ChangeNotifier {
   ///
   /// Updates the widget state so the UI shows a placeholder instead of
   /// trying to render with a disposed [VideoController], which would crash
-  /// with "A ValueNotifier<int?> was used after being disposed."
+  /// with "A `ValueNotifier<int?>` was used after being disposed."
   void _onPlayerEvicted(int index, PooledPlayer evictedPlayer) {
     if (_isDisposed) return;
     // Only act if the evicted player is still the one tracked at this index.

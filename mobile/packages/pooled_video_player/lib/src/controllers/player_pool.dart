@@ -27,7 +27,7 @@ class PooledPlayer {
 
   /// Callbacks invoked synchronously when this player is disposed.
   ///
-  /// Used by [VideoFeedController] to detect pool eviction and update
+  /// Used by `VideoFeedController` to detect pool eviction and update
   /// the widget tree before Flutter rebuilds with a stale controller.
   final List<VoidCallback> _onDisposedCallbacks = [];
 
