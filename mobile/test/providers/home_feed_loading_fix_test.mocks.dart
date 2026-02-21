@@ -2200,6 +2200,12 @@ class MockAuthService extends _i1.Mock implements _i4.AuthService {
   );
 
   @override
+  void onSignerCallbackReceived() => super.noSuchMethod(
+    Invocation.method(#onSignerCallbackReceived, []),
+    returnValueForMissingStub: null,
+  );
+
+  @override
   _i14.Future<void> refreshCurrentProfile(
     _i19.UserProfileService? userProfileService,
   ) =>
