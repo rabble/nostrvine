@@ -59,6 +59,8 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
     return videos.map((video) {
       final parsed = nostrEventsMap[video.id];
       if (parsed != null) {
+        // Check if Nostr event has original Vine metric tags
+
         return video.copyWith(
           rawTags: parsed.rawTags,
           // Enrich with all missing fields from Nostr event
@@ -76,11 +78,20 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
           group: video.group ?? parsed.group,
           altText: video.altText ?? parsed.altText,
           blurhash: video.blurhash ?? parsed.blurhash,
-          /* FIXME: The audio show always a skeleton below of the video 
+          // Original Vine metrics: use Nostr values, clear if no tag exists
+          originalLoops: parsed.originalLoops,
+          originalLikes: parsed.originalLikes,
+          originalComments: parsed.originalComments,
+          originalReposts: parsed.originalReposts,
+          clearOriginalLoops: parsed.originalLoops == null,
+          clearOriginalLikes: parsed.originalLikes == null,
+          clearOriginalComments: parsed.originalComments == null,
+          clearOriginalReposts: parsed.originalReposts == null,
+          /* FIXME: The audio show always a skeleton below of the video
           description, so we don't add them for the ZapStore.
-          
+
           audioEventId: video.audioEventId? parsed.audioEventId: null
-          audioEventRelay: video.audioEventRelay ?? parsed.audioEventRelay, 
+          audioEventRelay: video.audioEventRelay ?? parsed.audioEventRelay,
           */
           collaboratorPubkeys: video.collaboratorPubkeys.isEmpty
               ? parsed.collaboratorPubkeys
