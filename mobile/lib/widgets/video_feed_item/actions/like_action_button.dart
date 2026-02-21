@@ -24,7 +24,7 @@ class LikeActionButton extends StatelessWidget {
     return BlocBuilder<VideoInteractionsBloc, VideoInteractionsState>(
       builder: (context, state) {
         final isLiked = state.isLiked;
-        final totalLikes = state.likeCount ?? video.originalLikes ?? 0;
+        final totalLikes = state.likeCount ?? video.totalLikes;
 
         return VideoActionButton(
           iconAsset: 'assets/icon/content-controls/like.svg',

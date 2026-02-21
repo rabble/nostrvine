@@ -60,7 +60,7 @@ void main() {
       },
     );
 
-    testWidgets('falls back to video.originalLikes before BLoC has loaded', (
+    testWidgets('falls back to video.totalLikes before BLoC has loaded', (
       tester,
     ) async {
       when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
@@ -68,6 +68,27 @@ void main() {
       await tester.pumpWidget(buildSubject());
 
       expect(find.text('100'), findsOneWidget);
+    });
+
+    testWidgets('falls back to combined totalLikes when video has both '
+        'originalLikes and nostrLikeCount', (tester) async {
+      when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
+
+      final vineImportVideo = VideoEvent(
+        id: 'vine-video-id-0123456789abcdef0123456789abcdef0123456789abcdef01',
+        pubkey: testPubkey,
+        createdAt: 1700000000,
+        content: '',
+        timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
+        originalLikes: 500,
+        nostrLikeCount: 3,
+      );
+
+      await tester.pumpWidget(buildSubject(video: vineImportVideo));
+
+      // totalLikes = 500 + 3 = 503
+      expect(find.text('503'), findsOneWidget);
+      expect(find.text('500'), findsNothing);
     });
 
     testWidgets('hides count when both sources are 0', (tester) async {

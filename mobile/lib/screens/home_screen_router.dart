@@ -496,7 +496,7 @@ class _HomePooledVideoItem extends ConsumerWidget {
               commentsRepository: commentsRepository,
               repostsRepository: repostsRepository,
               addressableId: addressableId,
-              initialLikeCount: video.originalLikes,
+              initialLikeCount: video.totalLikes,
             )
             ..add(const VideoInteractionsSubscriptionRequested())
             ..add(const VideoInteractionsFetchRequested()),

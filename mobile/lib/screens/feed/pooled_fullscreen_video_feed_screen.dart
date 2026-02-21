@@ -431,7 +431,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
               commentsRepository: commentsRepository,
               repostsRepository: repostsRepository,
               addressableId: addressableId,
-              initialLikeCount: video.originalLikes,
+              initialLikeCount: video.totalLikes,
             )
             ..add(const VideoInteractionsSubscriptionRequested())
             ..add(const VideoInteractionsFetchRequested()),

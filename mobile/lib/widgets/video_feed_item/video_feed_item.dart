@@ -9,34 +9,35 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory, NIP71VideoKinds;
+import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
-import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/active_video_provider.dart'; // For isVideoActiveProvider (router-driven)
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart'; // For individualVideoControllerProvider only
-import 'package:openvine/providers/overlay_visibility_provider.dart'; // For hasVisibleOverlayProvider (modal pause/resume)
 import 'package:openvine/providers/nip05_verification_provider.dart';
+import 'package:openvine/providers/overlay_visibility_provider.dart'; // For hasVisibleOverlayProvider (modal pause/resume)
+import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
-import 'package:openvine/services/nip05_verification_service.dart';
-import 'package:openvine/screens/comments/comments.dart';
-import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/router/router.dart';
+import 'package:openvine/screens/comments/comments.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
 import 'package:openvine/screens/notifications_screen.dart';
+import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
-import 'package:openvine/utils/public_identifier_normalizer.dart';
-import 'package:openvine/screens/curated_list_feed_screen.dart';
+import 'package:openvine/services/nip05_verification_service.dart';
 import 'package:openvine/services/visibility_tracker.dart';
 import 'package:openvine/ui/overlay_policy.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/pause_aware_modals.dart';
+import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/utils/string_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/badge_explanation_modal.dart';
@@ -47,7 +48,6 @@ import 'package:openvine/widgets/proofmode_badge_row.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/user_name.dart';
 import 'package:openvine/widgets/video_feed_item/actions/actions.dart';
-import 'package:openvine/providers/subtitle_providers.dart';
 import 'package:openvine/widgets/video_feed_item/audio_attribution_row.dart';
 import 'package:openvine/widgets/video_feed_item/collaborator_avatar_row.dart';
 import 'package:openvine/widgets/video_feed_item/inspired_by_attribution_row.dart';
@@ -400,7 +400,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       commentsRepository: commentsRepository,
       repostsRepository: repostsRepository,
       addressableId: addressableId,
-      initialLikeCount: widget.video.originalLikes,
+      initialLikeCount: widget.video.totalLikes,
     );
     // Start listening for liked/reposted IDs changes
     _interactionsBloc.add(const VideoInteractionsSubscriptionRequested());
