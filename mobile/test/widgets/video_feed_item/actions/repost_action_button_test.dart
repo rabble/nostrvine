@@ -1,4 +1,4 @@
-// ABOUTME: Tests for LikeActionButton widget.
+// ABOUTME: Tests for RepostActionButton widget.
 // ABOUTME: Verifies rendering in preview mode without VideoInteractionsBloc.
 
 import 'package:flutter/material.dart';
@@ -7,7 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
-import 'package:openvine/widgets/video_feed_item/actions/like_action_button.dart';
+import 'package:openvine/widgets/video_feed_item/actions/repost_action_button.dart';
 import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dart';
 
 class _MockVideoInteractionsBloc extends Mock
@@ -26,7 +26,7 @@ void main() {
       createdAt: 1757385263,
       content: 'Test video',
       timestamp: DateTime.fromMillisecondsSinceEpoch(1757385263 * 1000),
-      originalLikes: 42,
+      originalReposts: 15,
     );
   });
 
@@ -37,7 +37,7 @@ void main() {
   }) {
     final widget = MaterialApp(
       home: Scaffold(
-        body: LikeActionButton(video: video, isPreviewMode: isPreviewMode),
+        body: RepostActionButton(video: video, isPreviewMode: isPreviewMode),
       ),
     );
 
@@ -51,7 +51,7 @@ void main() {
     return widget;
   }
 
-  group(LikeActionButton, () {
+  group(RepostActionButton, () {
     group('preview mode', () {
       testWidgets(
         'renders without VideoInteractionsBloc when isPreviewMode is true',
@@ -64,19 +64,19 @@ void main() {
           );
 
           // Should render successfully without throwing ProviderNotFoundError
-          expect(find.byType(LikeActionButton), findsOneWidget);
+          expect(find.byType(RepostActionButton), findsOneWidget);
           expect(find.byType(VideoActionButton), findsOneWidget);
         },
       );
 
-      testWidgets('displays default like count of 1 in preview mode', (
+      testWidgets('displays default repost count of 1 in preview mode', (
         tester,
       ) async {
         await tester.pumpWidget(
           buildSubject(video: testVideo, isPreviewMode: true),
         );
 
-        // The default _ActionButton shows totalLikes = 1
+        // The default _ActionButton shows totalReposts = 1
         expect(find.text('1'), findsOneWidget);
       });
 
@@ -89,10 +89,10 @@ void main() {
 
         final semantics = tester.widget<Semantics>(
           find.byWidgetPredicate(
-            (w) => w is Semantics && w.properties.identifier == 'like_button',
+            (w) => w is Semantics && w.properties.identifier == 'repost_button',
           ),
         );
-        expect(semantics.properties.label, equals('Like video'));
+        expect(semantics.properties.label, equals('Repost video'));
       });
     });
 
@@ -101,89 +101,43 @@ void main() {
 
       setUp(() {
         mockBloc = _MockVideoInteractionsBloc();
+        when(
+          () => mockBloc.state,
+        ).thenReturn(const VideoInteractionsState(repostCount: 5));
         when(() => mockBloc.stream).thenAnswer((_) => const Stream.empty());
       });
 
       testWidgets(
         'renders with VideoInteractionsBloc when isPreviewMode is false',
         (tester) async {
-          when(
-            () => mockBloc.state,
-          ).thenReturn(const VideoInteractionsState(likeCount: 10));
-
           await tester.pumpWidget(
-            buildSubject(video: testVideo, bloc: mockBloc),
+            buildSubject(
+              video: testVideo,
+              isPreviewMode: false,
+              bloc: mockBloc,
+            ),
           );
 
-          expect(find.byType(LikeActionButton), findsOneWidget);
+          expect(find.byType(RepostActionButton), findsOneWidget);
           expect(find.byType(VideoActionButton), findsOneWidget);
         },
       );
 
       testWidgets(
-        'displays state.likeCount when loaded, not video.totalLikes',
+        'displays combined repost count from bloc and video metadata',
         (tester) async {
-          when(() => mockBloc.state).thenReturn(
-            const VideoInteractionsState(
-              status: VideoInteractionsStatus.success,
-              likeCount: 50,
+          // Bloc has 5 reposts, video has 15 originalReposts = 20 total
+          await tester.pumpWidget(
+            buildSubject(
+              video: testVideo,
+              isPreviewMode: false,
+              bloc: mockBloc,
             ),
           );
 
-          await tester.pumpWidget(
-            buildSubject(video: testVideo, bloc: mockBloc),
-          );
-
-          expect(find.text('50'), findsOneWidget);
-          expect(find.text('42'), findsNothing);
+          expect(find.text('20'), findsOneWidget);
         },
       );
-
-      testWidgets('falls back to video.totalLikes before BLoC has loaded', (
-        tester,
-      ) async {
-        when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
-
-        await tester.pumpWidget(buildSubject(video: testVideo, bloc: mockBloc));
-
-        expect(find.text('42'), findsOneWidget);
-      });
-
-      testWidgets('falls back to combined totalLikes when video has both '
-          'originalLikes and nostrLikeCount', (tester) async {
-        when(() => mockBloc.state).thenReturn(const VideoInteractionsState());
-
-        final vineImportVideo = VideoEvent(
-          id: 'vine-video-id-0123456789abcdef0123456789abcdef0123456789abcdef01',
-          pubkey: testPubkey,
-          createdAt: 1700000000,
-          content: '',
-          timestamp: DateTime.fromMillisecondsSinceEpoch(1700000000 * 1000),
-          originalLikes: 500,
-          nostrLikeCount: 3,
-        );
-
-        await tester.pumpWidget(
-          buildSubject(video: vineImportVideo, bloc: mockBloc),
-        );
-
-        // totalLikes = 500 + 3 = 503
-        expect(find.text('503'), findsOneWidget);
-        expect(find.text('500'), findsNothing);
-      });
-
-      testWidgets('hides count when both sources are 0', (tester) async {
-        when(() => mockBloc.state).thenReturn(
-          const VideoInteractionsState(
-            status: VideoInteractionsStatus.success,
-            likeCount: 0,
-          ),
-        );
-
-        await tester.pumpWidget(buildSubject(video: testVideo, bloc: mockBloc));
-
-        expect(find.text('0'), findsNothing);
-      });
     });
   });
 }
