@@ -3,11 +3,12 @@ import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart' show Filter;
 import 'package:openvine/utils/unified_logger.dart';
 
-/// Enrich REST API videos with raw Nostr tags for ProofMode/C2PA badges.
+/// Enrich REST API videos with full Nostr event data.
 ///
-/// REST API responses don't include the raw Nostr event tags array,
-/// so ProofMode/C2PA/verification tags are missing. This function fetches
-/// the full events from Nostr relays by ID and merges their rawTags.
+/// REST API responses may be missing fields that are present in the raw
+/// Nostr event (rawTags for ProofMode/C2PA badges, dimensions, hashtags,
+/// blurhash, etc.). This function fetches the full events from Nostr relays
+/// by ID and merges any missing fields into the REST API videos.
 Future<List<VideoEvent>> enrichVideosWithNostrTags(
   List<VideoEvent> videos, {
   required NostrClient nostrService,
@@ -39,26 +40,53 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
 
     if (nostrEvents.isEmpty) return videos;
 
-    // Build a lookup map: event ID -> rawTags from parsed VideoEvent
-    final nostrTagsMap = <String, Map<String, String>>{};
+    // Build a lookup map: event ID -> parsed VideoEvent for enrichment
+    final nostrEventsMap = <String, VideoEvent>{};
     for (final event in nostrEvents) {
       try {
         final parsed = VideoEvent.fromNostrEvent(event, permissive: true);
         if (parsed.rawTags.isNotEmpty) {
-          nostrTagsMap[parsed.id] = parsed.rawTags;
+          nostrEventsMap[parsed.id] = parsed;
         }
       } catch (_) {
         // Skip events that fail to parse
       }
     }
 
-    if (nostrTagsMap.isEmpty) return videos;
+    if (nostrEventsMap.isEmpty) return videos;
 
-    // Merge rawTags into REST API videos
+    // Merge Nostr-parsed fields into REST API videos
     return videos.map((video) {
-      final tags = nostrTagsMap[video.id];
-      if (tags != null && tags.isNotEmpty) {
-        return video.copyWith(rawTags: tags);
+      final parsed = nostrEventsMap[video.id];
+      if (parsed != null) {
+        return video.copyWith(
+          rawTags: parsed.rawTags,
+          // Enrich with all missing fields from Nostr event
+          title: video.title ?? parsed.title,
+          videoUrl: video.videoUrl ?? parsed.videoUrl,
+          thumbnailUrl: video.thumbnailUrl ?? parsed.thumbnailUrl,
+          duration: video.duration ?? parsed.duration,
+          dimensions: video.dimensions ?? parsed.dimensions,
+          mimeType: video.mimeType ?? parsed.mimeType,
+          sha256: video.sha256 ?? parsed.sha256,
+          fileSize: video.fileSize ?? parsed.fileSize,
+          hashtags: video.hashtags.isEmpty ? parsed.hashtags : video.hashtags,
+          publishedAt: video.publishedAt ?? parsed.publishedAt,
+          vineId: video.vineId ?? parsed.vineId,
+          group: video.group ?? parsed.group,
+          altText: video.altText ?? parsed.altText,
+          blurhash: video.blurhash ?? parsed.blurhash,
+          audioEventId: video.audioEventId ?? parsed.audioEventId,
+          audioEventRelay: video.audioEventRelay ?? parsed.audioEventRelay,
+          collaboratorPubkeys: video.collaboratorPubkeys.isEmpty
+              ? parsed.collaboratorPubkeys
+              : video.collaboratorPubkeys,
+          inspiredByVideo: video.inspiredByVideo ?? parsed.inspiredByVideo,
+          textTrackRef: video.textTrackRef ?? parsed.textTrackRef,
+          nostrEventTags: video.nostrEventTags.isEmpty
+              ? parsed.nostrEventTags
+              : video.nostrEventTags,
+        );
       }
       return video;
     }).toList();
