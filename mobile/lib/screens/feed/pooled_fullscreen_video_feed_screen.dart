@@ -459,7 +459,7 @@ class _PooledFullscreenItemContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isPortrait = video.dimensions != null ? video.isPortrait : true;
+    final isPortrait = video.dimensions != null ? video.isPortrait : false;
 
     return ColoredBox(
       color: Colors.black,
