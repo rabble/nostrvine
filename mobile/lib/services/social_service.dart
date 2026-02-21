@@ -11,6 +11,7 @@ import 'package:openvine/constants/nostr_event_kinds.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
+import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -327,10 +328,7 @@ class SocialService {
   /// These are public Nostr infrastructure relays — same URLs regardless of
   /// app environment (dev/staging/prod) since they index the global Nostr
   /// network, not our backend.
-  static const _followerIndexers = [
-    'wss://relay.damus.io',
-    'wss://purplepag.es',
-  ];
+  // Indexer relays come from IndexerRelayConfig.defaultIndexers.
 
   /// Get followers count by querying indexer relays directly.
   ///
@@ -340,7 +338,7 @@ class SocialService {
   /// giving accurate follower counts.
   Future<int> _fetchFollowersCountViaIndexers(String pubkey) async {
     final results = await Future.wait(
-      _followerIndexers.map(
+      IndexerRelayConfig.defaultIndexers.map(
         (url) => _queryIndexerForFollowers(url, pubkey).catchError((e) {
           // Return 0 on error so other indexers still contribute to the max.
           Log.warning(

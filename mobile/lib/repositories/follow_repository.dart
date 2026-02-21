@@ -16,6 +16,7 @@ import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/nostr_event_kinds.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
+import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -65,7 +66,8 @@ class FollowRepository {
        _fetchFollowingFromApi = fetchFollowingFromApi,
        _fetchFollowersFromApi = fetchFollowersFromApi,
        _fetchFollowerCount = fetchFollowerCount,
-       _indexerRelayUrls = indexerRelayUrls ?? _defaultIndexerRelayUrls;
+       _indexerRelayUrls =
+           indexerRelayUrls ?? IndexerRelayConfig.defaultIndexers;
 
   final NostrClient _nostrClient;
   final PersonalEventCacheService? _personalEventCache;
@@ -89,11 +91,7 @@ class FollowRepository {
   /// Pass empty list in tests to prevent real network connections.
   final List<String> _indexerRelayUrls;
 
-  /// Default indexer relays that broadly index kind 3 events.
-  static const _defaultIndexerRelayUrls = [
-    'wss://relay.damus.io',
-    'wss://purplepag.es',
-  ];
+  // Default indexer relays come from IndexerRelayConfig.defaultIndexers.
 
   // BehaviorSubject replays last value to late subscribers, fixing race condition
   // where BLoC subscribes AFTER initial emission
@@ -1083,13 +1081,12 @@ class FollowRepository {
   }
 
   /// Pick the best contact list from two sources.
-  /// Prefers the one with more p-tags (more complete list).
+  /// Prefers the newest event by createdAt since kind 3 is replaceable
+  /// (NIP-02) — a user may intentionally unfollow people, reducing p-tags.
   Event? _pickBestContactList(Event? a, Event? b) {
     if (a == null) return b;
     if (b == null) return a;
-    final aCount = a.tags.where((t) => t.isNotEmpty && t[0] == 'p').length;
-    final bCount = b.tags.where((t) => t.isNotEmpty && t[0] == 'p').length;
-    return bCount > aCount ? b : a;
+    return b.createdAt > a.createdAt ? b : a;
   }
 
   /// Subscribe to contact list for real-time sync and cross-device updates.

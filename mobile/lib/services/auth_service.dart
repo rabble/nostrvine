@@ -2078,9 +2078,7 @@ class AuthService implements BackgroundAwareService {
 
     try {
       final pubkeyHex = _currentKeyContainer!.publicKeyHex;
-      // Public Nostr indexer relay — same URL regardless of app environment
-      // (dev/staging/prod) since it indexes the global Nostr network.
-      final indexerUrl = 'wss://purplepag.es';
+      final indexerUrl = IndexerRelayConfig.defaultIndexers.first;
 
       final relayStatus = RelayStatus(indexerUrl);
       final relay = RelayBase(indexerUrl, relayStatus);
