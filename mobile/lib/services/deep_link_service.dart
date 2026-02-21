@@ -6,7 +6,7 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:app_links/app_links.dart';
 
 /// Types of deep links supported by the app
-enum DeepLinkType { video, profile, hashtag, search, unknown }
+enum DeepLinkType { video, profile, hashtag, search, signerCallback, unknown }
 
 /// Represents a parsed deep link
 class DeepLink {
@@ -38,6 +38,8 @@ class DeepLink {
         return 'DeepLink(type: hashtag, hashtag: $hashtag$indexStr)';
       case DeepLinkType.search:
         return 'DeepLink(type: search, searchTerm: $searchTerm$indexStr)';
+      case DeepLinkType.signerCallback:
+        return 'DeepLink(type: signerCallback)';
       case DeepLinkType.unknown:
         return 'DeepLink(type: unknown)';
     }
@@ -96,15 +98,15 @@ class DeepLinkService {
 
       // Handle divine:// callback from NIP-46 signer apps.
       // The signer opens this scheme to bring our app back to foreground
-      // after the user approves the connection. The actual NIP-46 handshake
-      // completes over relays — no action needed here beyond logging.
+      // after the user approves the connection. We emit signerCallback so
+      // listeners can trigger relay reconnection for the nostrconnect session.
       if (uri.scheme == 'divine') {
         Log.info(
           'Received NIP-46 signer callback: $url',
           name: 'DeepLinkService',
           category: LogCategory.auth,
         );
-        return const DeepLink(type: DeepLinkType.unknown);
+        return const DeepLink(type: DeepLinkType.signerCallback);
       }
 
       // Only handle divine.video domain

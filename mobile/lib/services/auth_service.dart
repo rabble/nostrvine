@@ -1123,7 +1123,7 @@ class AuthService implements BackgroundAwareService {
       appName: 'diVine',
       appUrl: 'https://divine.video',
       appIcon: 'https://divine.video/icon.png',
-      callback: 'divine',
+      callback: 'divine://nostrconnect',
     );
 
     // Start the session (generates keypair and URL, connects to relays)
@@ -1288,6 +1288,23 @@ class AuthService implements BackgroundAwareService {
   /// Stream of nostrconnect session state changes.
   Stream<NostrConnectState>? get nostrConnectStateStream =>
       _nostrConnectSession?.stateStream;
+
+  /// Called when a divine:// signer callback deep link is received.
+  ///
+  /// Ensures the nostrconnect session relay connections are alive so we
+  /// don't miss the bunker's response event after being brought back
+  /// from background.
+  void onSignerCallbackReceived() {
+    if (_nostrConnectSession != null &&
+        _nostrConnectSession!.state == NostrConnectState.listening) {
+      Log.info(
+        'Signer callback received - ensuring nostrconnect relays are connected',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _nostrConnectSession!.ensureConnected();
+    }
+  }
 
   /// Refresh the current user's profile from UserProfileService
   Future<void> refreshCurrentProfile(
@@ -2196,6 +2213,19 @@ class AuthService implements BackgroundAwareService {
         category: LogCategory.auth,
       );
       _bunkerSigner!.resume();
+    }
+
+    // Reconnect nostrconnect:// session relays that may have dropped
+    // while the app was in the background (e.g. user switched to Primal
+    // to approve the connection on Android).
+    if (_nostrConnectSession != null &&
+        _nostrConnectSession!.state == NostrConnectState.listening) {
+      Log.info(
+        '📱 App resumed - reconnecting nostrconnect session relays',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _nostrConnectSession!.ensureConnected();
     }
   }
 
