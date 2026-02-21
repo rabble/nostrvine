@@ -76,8 +76,12 @@ Future<List<VideoEvent>> enrichVideosWithNostrTags(
           group: video.group ?? parsed.group,
           altText: video.altText ?? parsed.altText,
           blurhash: video.blurhash ?? parsed.blurhash,
-          audioEventId: video.audioEventId ?? parsed.audioEventId,
-          audioEventRelay: video.audioEventRelay ?? parsed.audioEventRelay,
+          /* FIXME: The audio show always a skeleton below of the video 
+          description, so we don't add them for the ZapStore.
+          
+          audioEventId: video.audioEventId? parsed.audioEventId: null
+          audioEventRelay: video.audioEventRelay ?? parsed.audioEventRelay, 
+          */
           collaboratorPubkeys: video.collaboratorPubkeys.isEmpty
               ? parsed.collaboratorPubkeys
               : video.collaboratorPubkeys,
