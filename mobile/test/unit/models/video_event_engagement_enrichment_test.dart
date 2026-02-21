@@ -133,19 +133,64 @@ void main() {
       },
     );
 
-    test('totalLikes combines originalLikes and nostrLikeCount', () {
-      final video = VideoEvent(
-        id: 'abc123',
-        pubkey: 'pubkey123',
-        createdAt: 1473050841,
-        content: 'Test video',
-        timestamp: DateTime.fromMillisecondsSinceEpoch(1473050841 * 1000),
-        videoUrl: 'https://example.com/video.mp4',
-        originalLikes: 273622,
-        nostrLikeCount: 5,
-      );
+    group('totalLikes', () {
+      test('combines originalLikes and nostrLikeCount for Vine imports', () {
+        final video = VideoEvent(
+          id: 'abc123',
+          pubkey: 'pubkey123',
+          createdAt: 1473050841,
+          content: 'Test video',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1473050841 * 1000),
+          videoUrl: 'https://example.com/video.mp4',
+          originalLikes: 273622,
+          nostrLikeCount: 5,
+        );
 
-      expect(video.totalLikes, equals(273627));
+        expect(video.totalLikes, equals(273627));
+      });
+
+      test('returns only originalLikes when nostrLikeCount is null '
+          '(API-sourced video)', () {
+        final video = VideoEvent(
+          id: 'abc123',
+          pubkey: 'pubkey123',
+          createdAt: 1473050841,
+          content: 'Test video',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1473050841 * 1000),
+          videoUrl: 'https://example.com/video.mp4',
+          originalLikes: 42,
+        );
+
+        expect(video.totalLikes, equals(42));
+      });
+
+      test('returns only nostrLikeCount when originalLikes is null '
+          '(relay native video)', () {
+        final video = VideoEvent(
+          id: 'abc123',
+          pubkey: 'pubkey123',
+          createdAt: 1473050841,
+          content: 'Test video',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1473050841 * 1000),
+          videoUrl: 'https://example.com/video.mp4',
+          nostrLikeCount: 7,
+        );
+
+        expect(video.totalLikes, equals(7));
+      });
+
+      test('returns 0 when both are null', () {
+        final video = VideoEvent(
+          id: 'abc123',
+          pubkey: 'pubkey123',
+          createdAt: 1473050841,
+          content: 'Test video',
+          timestamp: DateTime.fromMillisecondsSinceEpoch(1473050841 * 1000),
+          videoUrl: 'https://example.com/video.mp4',
+        );
+
+        expect(video.totalLikes, equals(0));
+      });
     });
   });
 }
