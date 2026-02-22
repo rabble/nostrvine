@@ -2,27 +2,21 @@
 // ABOUTME: Pure presentation with no lifecycle mutations - URL is source of truth
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/features/feature_flags/models/feature_flag.dart';
-import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
 import 'package:openvine/mixins/page_controller_sync_mixin.dart';
 import 'package:openvine/mixins/video_prefetch_mixin.dart';
 import 'package:openvine/providers/home_screen_controllers.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
-import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/utils/quiet_hours.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 /// Router-driven HomeScreen - PageView syncs with URL bidirectionally
@@ -50,11 +44,6 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
   PageController? _controller;
   int? _lastUrlIndex;
   int? _lastPrefetchIndex;
-  bool _awaitingLoadMoreConfirmation = false;
-  bool _isLoadingMoreFromNudge = false;
-  int? _lastPromptedVideoCount;
-  int? _lastObservedVideoCount;
-  bool _shouldResumeAfterBreakPrompt = false;
 
   @override
   void initState() {
@@ -79,115 +68,6 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
   void dispose() {
     _controller?.dispose();
     super.dispose();
-  }
-
-  Future<void> _pauseCurrentVideoForBreakPrompt(List<VideoEvent> videos) async {
-    final currentIndex = _controller?.hasClients == true
-        ? (_controller!.page?.round() ?? 0)
-        : (_lastUrlIndex ?? 0);
-    if (currentIndex < 0 || currentIndex >= videos.length) return;
-
-    final video = videos[currentIndex];
-    final videoUrl = video.videoUrl;
-    if (videoUrl == null || videoUrl.isEmpty) return;
-
-    final params = VideoControllerParams(
-      videoId: video.id,
-      videoUrl: videoUrl,
-      videoEvent: video,
-    );
-    final controller = ref.read(individualVideoControllerProvider(params));
-    _shouldResumeAfterBreakPrompt = controller.value.isPlaying;
-    if (_shouldResumeAfterBreakPrompt) {
-      await safePause(controller, video.id);
-    }
-  }
-
-  Future<void> _resumeCurrentVideoAfterBreakPrompt(
-    List<VideoEvent> videos,
-  ) async {
-    if (!_shouldResumeAfterBreakPrompt) return;
-
-    final currentIndex = _controller?.hasClients == true
-        ? (_controller!.page?.round() ?? 0)
-        : (_lastUrlIndex ?? 0);
-    if (currentIndex < 0 || currentIndex >= videos.length) return;
-
-    final video = videos[currentIndex];
-    final videoUrl = video.videoUrl;
-    if (videoUrl == null || videoUrl.isEmpty) return;
-
-    final params = VideoControllerParams(
-      videoId: video.id,
-      videoUrl: videoUrl,
-      videoEvent: video,
-    );
-    final controller = ref.read(individualVideoControllerProvider(params));
-    await safePlay(controller, video.id);
-    _shouldResumeAfterBreakPrompt = false;
-  }
-
-  Future<void> _dismissBreakPrompt(List<VideoEvent> videos) async {
-    if (_awaitingLoadMoreConfirmation) {
-      setState(() {
-        _awaitingLoadMoreConfirmation = false;
-      });
-    }
-    await _resumeCurrentVideoAfterBreakPrompt(videos);
-  }
-
-  void _showBreakPrompt(List<VideoEvent> videos) {
-    if (_awaitingLoadMoreConfirmation ||
-        _lastPromptedVideoCount == videos.length) {
-      return;
-    }
-
-    setState(() {
-      _awaitingLoadMoreConfirmation = true;
-    });
-    _pauseCurrentVideoForBreakPrompt(videos);
-  }
-
-  Future<void> _triggerLoadMore(List<VideoEvent> videos) async {
-    if (_isLoadingMoreFromNudge) return;
-
-    await _resumeCurrentVideoAfterBreakPrompt(videos);
-
-    final currentVideoCount = videos.length;
-    setState(() {
-      _awaitingLoadMoreConfirmation = false;
-      _isLoadingMoreFromNudge = true;
-      _lastPromptedVideoCount = currentVideoCount;
-    });
-
-    try {
-      await ref.read(homePaginationControllerProvider).maybeLoadMore();
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingMoreFromNudge = false;
-      });
-    }
-  }
-
-  bool _isForwardSwipeAtFeedEnd(ScrollNotification notification) {
-    final isAtMaxExtent =
-        notification.metrics.pixels >=
-        notification.metrics.maxScrollExtent - 0.5;
-
-    if (!isAtMaxExtent) return false;
-
-    if (notification is OverscrollNotification) {
-      return notification.overscroll > 0;
-    }
-    if (notification is ScrollUpdateNotification) {
-      return (notification.scrollDelta ?? 0) > 0;
-    }
-    if (notification is UserScrollNotification) {
-      return notification.direction == ScrollDirection.reverse;
-    }
-
-    return false;
   }
 
   static int _buildCount = 0;
@@ -231,10 +111,6 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
     // videosForHomeRouteProvider gates on pageContextProvider which
     // oscillates during post-login, causing the feed to never load.
     final videosAsync = ref.watch(homeFeedProvider);
-    final nudgesEnabled = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.feedBreakNudges),
-    );
-    final useSleepCopy = isQuietHoursNow();
 
     return buildAsyncUI(
       videosAsync,
@@ -248,14 +124,6 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
 
         if (videos.isEmpty) {
           return const _EmptyHomeFeed();
-        }
-
-        if (_lastObservedVideoCount != videos.length) {
-          _lastObservedVideoCount = videos.length;
-          _awaitingLoadMoreConfirmation = false;
-          _isLoadingMoreFromNudge = false;
-          _lastPromptedVideoCount = null;
-          _shouldResumeAfterBreakPrompt = false;
         }
 
         ScreenAnalyticsService().markDataLoaded(
@@ -299,7 +167,8 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
           );
         }
 
-        // Prefetch profiles for adjacent videos (±1 index) only when URL index changes
+        // Prefetch profiles for adjacent videos (±1 index) only when URL
+        // index changes
         if (urlIndex != _lastPrefetchIndex) {
           _lastPrefetchIndex = urlIndex;
           final safeIndex = urlIndex.clamp(0, itemCount - 1);
@@ -331,103 +200,65 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
           backgroundColor: VineTheme.vineGreen,
           semanticsLabel: 'searching for more videos',
           onRefresh: () => ref.read(homeRefreshControllerProvider).refresh(),
-          child: Stack(
-            children: [
-              NotificationListener<ScrollNotification>(
-                onNotification: (notification) {
-                  final currentIndex = _controller?.page?.round() ?? urlIndex;
-                  final isAtEnd = currentIndex >= videos.length - 1;
+          child: PageView.builder(
+            key: const Key('home-video-page-view'),
+            itemCount: itemCount,
+            controller: _controller,
+            scrollDirection: Axis.vertical,
+            onPageChanged: (newIndex) {
+              // Guard: only navigate if URL doesn't match
+              if (newIndex != urlIndex) {
+                context.go(HomeScreenRouter.pathForIndex(newIndex));
+              }
 
-                  if (nudgesEnabled &&
-                      isAtEnd &&
-                      _isForwardSwipeAtFeedEnd(notification)) {
-                    if (!_awaitingLoadMoreConfirmation &&
-                        _lastPromptedVideoCount != videos.length) {
-                      _showBreakPrompt(videos);
-                    } else if (_awaitingLoadMoreConfirmation &&
-                        state.hasMoreContent) {
-                      _triggerLoadMore(videos);
-                    }
-                  }
-                  return false;
-                },
-                child: PageView.builder(
-                  key: const Key('home-video-page-view'),
-                  itemCount: itemCount,
-                  controller: _controller,
-                  scrollDirection: Axis.vertical,
-                  onPageChanged: (newIndex) {
-                    final isAtEnd = newIndex >= videos.length - 1;
+              // Load more when reaching the end
+              final isAtEnd = newIndex >= videos.length - 1;
+              if (state.hasMoreContent && isAtEnd) {
+                ref.read(homePaginationControllerProvider).maybeLoadMore();
+              }
 
-                    // Guard: only navigate if URL doesn't match
-                    if (newIndex != urlIndex) {
-                      context.go(HomeScreenRouter.pathForIndex(newIndex));
-                    }
+              // Prefetch videos around current index
+              checkForPrefetch(currentIndex: newIndex, videos: videos);
 
-                    if (!nudgesEnabled && state.hasMoreContent && isAtEnd) {
-                      ref
-                          .read(homePaginationControllerProvider)
-                          .maybeLoadMore();
-                    } else if (_awaitingLoadMoreConfirmation && !isAtEnd) {
-                      _dismissBreakPrompt(videos);
-                    }
+              // Pre-initialize controllers for adjacent videos
+              preInitializeControllers(
+                ref: ref,
+                currentIndex: newIndex,
+                videos: videos,
+              );
 
-                    // Prefetch videos around current index
-                    checkForPrefetch(currentIndex: newIndex, videos: videos);
+              // Dispose controllers outside the keep range to free memory
+              disposeControllersOutsideRange(
+                ref: ref,
+                currentIndex: newIndex,
+                videos: videos,
+              );
 
-                    // Pre-initialize controllers for adjacent videos
-                    preInitializeControllers(
-                      ref: ref,
-                      currentIndex: newIndex,
-                      videos: videos,
-                    );
+              Log.debug(
+                '📄 Page changed to index $newIndex (${videos[newIndex].id}...)',
+                name: 'HomeScreenRouter',
+                category: LogCategory.video,
+              );
+            },
+            itemBuilder: (context, index) {
+              // Use PageController as source of truth for active video,
+              // not URL index. This prevents race conditions when videos
+              // reorder and URL update is pending.
+              final currentPage = _controller?.page?.round() ?? urlIndex;
+              final isActive = index == currentPage;
 
-                    // Dispose controllers outside the keep range to free memory
-                    disposeControllersOutsideRange(
-                      ref: ref,
-                      currentIndex: newIndex,
-                      videos: videos,
-                    );
-
-                    Log.debug(
-                      '📄 Page changed to index $newIndex (${videos[newIndex].id}...)',
-                      name: 'HomeScreenRouter',
-                      category: LogCategory.video,
-                    );
-                  },
-                  itemBuilder: (context, index) {
-                    // Use PageController as source of truth for active video,
-                    // not URL index. This prevents race conditions when videos
-                    // reorder and URL update is pending.
-                    final currentPage = _controller?.page?.round() ?? urlIndex;
-                    final isActive = index == currentPage;
-
-                    return VideoFeedItem(
-                      key: ValueKey('video-${videos[index].id}'),
-                      video: videos[index],
-                      index: index,
-                      hasBottomNavigation: false,
-                      contextTitle: '', // Home feed has no context title
-                      hideFollowButtonIfFollowing:
-                          true, // Home feed only shows followed users
-                      isActiveOverride: isActive,
-                      trafficSource: ViewTrafficSource.home,
-                    );
-                  },
-                ),
-              ),
-              if (nudgesEnabled &&
-                  _awaitingLoadMoreConfirmation &&
-                  (_controller?.page?.round() ?? urlIndex) >= videos.length - 1)
-                _HomeFeedBreakOverlay(
-                  useSleepCopy: useSleepCopy,
-                  showLoadMoreAction: state.hasMoreContent,
-                  isLoadingMore: _isLoadingMoreFromNudge || state.isLoadingMore,
-                  onShowMore: () => _triggerLoadMore(videos),
-                  onDismiss: () => _dismissBreakPrompt(videos),
-                  videosSeen: videos.length,
-                ),
-            ],
+              return VideoFeedItem(
+                key: ValueKey('video-${videos[index].id}'),
+                video: videos[index],
+                index: index,
+                hasBottomNavigation: false,
+                contextTitle: '', // Home feed has no context title
+                hideFollowButtonIfFollowing:
+                    true, // Home feed only shows followed users
+                isActiveOverride: isActive,
+                trafficSource: ViewTrafficSource.home,
+              );
+            },
           ),
         );
       },
@@ -475,147 +306,6 @@ class _EmptyHomeFeed extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HomeFeedBreakOverlay extends StatelessWidget {
-  const _HomeFeedBreakOverlay({
-    required this.useSleepCopy,
-    required this.showLoadMoreAction,
-    required this.isLoadingMore,
-    required this.onShowMore,
-    required this.onDismiss,
-    required this.videosSeen,
-  });
-
-  final bool useSleepCopy;
-  final bool showLoadMoreAction;
-  final bool isLoadingMore;
-  final VoidCallback onShowMore;
-  final VoidCallback onDismiss;
-  final int videosSeen;
-
-  @override
-  Widget build(BuildContext context) {
-    final title = useSleepCopy
-        ? "You've watched a lot tonight."
-        : "You've watched a lot of videos...";
-    final subtitle = useSleepCopy
-        ? 'End of feed. Time to sleep and make tomorrow.'
-        : 'Now go MAKE some.';
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onVerticalDragUpdate: (details) {
-        if ((details.primaryDelta ?? 0) > 14) {
-          onDismiss();
-        }
-      },
-      onVerticalDragEnd: (details) {
-        if ((details.primaryVelocity ?? 0) > 220) {
-          onDismiss();
-        }
-      },
-      child: ColoredBox(
-        color: Colors.black.withValues(alpha: 0.55),
-        child: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.86),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: VineTheme.vineGreen.withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Icon(Icons.auto_awesome, color: VineTheme.vineGreen),
-                    const SizedBox(height: 12),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 20,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'You watched $videosSeen video${videosSeen == 1 ? '' : 's'} in Home.',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.72),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: onDismiss,
-                          child: const Text('Keep Watching'),
-                        ),
-                        const SizedBox(width: 8),
-                        showLoadMoreAction
-                            ? OutlinedButton(
-                                onPressed: isLoadingMore ? null : onShowMore,
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: VineTheme.vineGreen,
-                                  side: const BorderSide(
-                                    color: VineTheme.vineGreen,
-                                  ),
-                                ),
-                                child: isLoadingMore
-                                    ? const SizedBox(
-                                        width: 16,
-                                        height: 16,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                        ),
-                                      )
-                                    : const Text('Show More'),
-                              )
-                            : OutlinedButton.icon(
-                                onPressed: () => context.go(ExploreScreen.path),
-                                icon: const Icon(Icons.explore_outlined),
-                                label: const Text('Explore'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: VineTheme.vineGreen,
-                                  side: const BorderSide(
-                                    color: VineTheme.vineGreen,
-                                  ),
-                                ),
-                              ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Swipe down to dismiss this prompt.',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.62),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
         ),
       ),
     );

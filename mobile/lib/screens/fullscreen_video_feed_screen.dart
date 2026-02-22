@@ -2,7 +2,6 @@
 // ABOUTME: Displays videos with swipe navigation, used from profile/hashtag grids
 
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -15,7 +14,6 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_reposts_provider.dart';
-import 'package:openvine/utils/quiet_hours.dart';
 import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -49,8 +47,9 @@ class LikedVideosFeedSource extends VideoFeedSource {
 }
 
 /// Static feed source - for cases where we just have a list of videos
-/// Note: This source does NOT support reactive updates when loadMore fetches new videos
-/// Use this for hashtag feeds or other sources that don't have a family provider
+/// Note: This source does NOT support reactive updates when loadMore fetches
+/// new videos. Use this for hashtag feeds or other sources that don't have a
+/// family provider.
 class StaticFeedSource extends VideoFeedSource {
   const StaticFeedSource(this.videos, {this.onLoadMore});
   final List<VideoEvent> videos;
@@ -111,16 +110,12 @@ class _FullscreenVideoFeedScreenState
   late PageController _pageController;
   late int _currentIndex;
   bool _initializedPageController = false;
-  bool _awaitingLoadMoreConfirmation = false;
-  bool _isLoadingMoreFromNudge = false;
-  int? _lastPromptedVideoCount;
-  int? _lastObservedVideoCount;
-  bool _shouldResumeAfterBreakPrompt = false;
 
   @override
   void initState() {
     super.initState();
-    // We'll initialize the page controller once we have videos from the provider
+    // We'll initialize the page controller once we have videos from the
+    // provider
     _currentIndex = widget.initialIndex;
   }
 
@@ -219,7 +214,7 @@ class _FullscreenVideoFeedScreenState
         return _ResolvedFullscreenFeedState(
           videos: videos,
           supportsLoadMore: supportsLoadMore,
-          // Static sources don't expose hasMore; if loadMore exists, allow prompting.
+          // Static sources don't expose hasMore; if loadMore exists, allow it.
           hasMoreContent: supportsLoadMore,
           isLoadingMore: false,
         );
@@ -261,112 +256,9 @@ class _FullscreenVideoFeedScreenState
     }
   }
 
-  Future<void> _pauseCurrentVideoForBreakPrompt(List<VideoEvent> videos) async {
-    if (_currentIndex < 0 || _currentIndex >= videos.length) return;
-
-    final video = videos[_currentIndex];
-    final videoUrl = video.videoUrl;
-    if (videoUrl == null || videoUrl.isEmpty) return;
-
-    final params = VideoControllerParams(
-      videoId: video.id,
-      videoUrl: videoUrl,
-      videoEvent: video,
-    );
-    final controller = ref.read(individualVideoControllerProvider(params));
-    _shouldResumeAfterBreakPrompt = controller.value.isPlaying;
-    if (_shouldResumeAfterBreakPrompt) {
-      await safePause(controller, video.id);
-    }
-  }
-
-  Future<void> _resumeCurrentVideoAfterBreakPrompt(
-    List<VideoEvent> videos,
-  ) async {
-    if (!_shouldResumeAfterBreakPrompt) return;
-    if (_currentIndex < 0 || _currentIndex >= videos.length) return;
-
-    final video = videos[_currentIndex];
-    final videoUrl = video.videoUrl;
-    if (videoUrl == null || videoUrl.isEmpty) return;
-
-    final params = VideoControllerParams(
-      videoId: video.id,
-      videoUrl: videoUrl,
-      videoEvent: video,
-    );
-    final controller = ref.read(individualVideoControllerProvider(params));
-    await safePlay(controller, video.id);
-    _shouldResumeAfterBreakPrompt = false;
-  }
-
-  Future<void> _dismissBreakPrompt(List<VideoEvent> videos) async {
-    if (_awaitingLoadMoreConfirmation) {
-      setState(() {
-        _awaitingLoadMoreConfirmation = false;
-      });
-    }
-    await _resumeCurrentVideoAfterBreakPrompt(videos);
-  }
-
-  void _showBreakPrompt(List<VideoEvent> videos) {
-    if (_awaitingLoadMoreConfirmation ||
-        _lastPromptedVideoCount == videos.length) {
-      return;
-    }
-
-    setState(() {
-      _awaitingLoadMoreConfirmation = true;
-    });
-    _pauseCurrentVideoForBreakPrompt(videos);
-  }
-
-  Future<void> _triggerLoadMore(List<VideoEvent> videos) async {
-    if (_isLoadingMoreFromNudge) return;
-
-    await _resumeCurrentVideoAfterBreakPrompt(videos);
-
-    final currentVideoCount = videos.length;
-    setState(() {
-      _awaitingLoadMoreConfirmation = false;
-      _isLoadingMoreFromNudge = true;
-      _lastPromptedVideoCount = currentVideoCount;
-    });
-
-    try {
-      await _loadMore();
-    } finally {
-      if (!mounted) return;
-      setState(() {
-        _isLoadingMoreFromNudge = false;
-      });
-    }
-  }
-
-  bool _isForwardSwipeAtFeedEnd(ScrollNotification notification) {
-    final isAtMaxExtent =
-        notification.metrics.pixels >=
-        notification.metrics.maxScrollExtent - 0.5;
-
-    if (!isAtMaxExtent) return false;
-
-    if (notification is OverscrollNotification) {
-      return notification.overscroll > 0;
-    }
-    if (notification is ScrollUpdateNotification) {
-      return (notification.scrollDelta ?? 0) > 0;
-    }
-    if (notification is UserScrollNotification) {
-      return notification.direction == ScrollDirection.reverse;
-    }
-
-    return false;
-  }
-
   void _onPageChanged(
     int newIndex,
     List<VideoEvent> videos, {
-    required bool nudgesEnabled,
     required bool supportsLoadMore,
     required bool hasMoreContent,
   }) {
@@ -376,10 +268,8 @@ class _FullscreenVideoFeedScreenState
 
     final isAtEnd = newIndex >= videos.length - 1;
 
-    if (!nudgesEnabled && supportsLoadMore && hasMoreContent && isAtEnd) {
+    if (supportsLoadMore && hasMoreContent && isAtEnd) {
       _loadMore();
-    } else if (_awaitingLoadMoreConfirmation) {
-      _dismissBreakPrompt(videos);
     }
 
     // Prefetch videos around current index
@@ -457,18 +347,6 @@ class _FullscreenVideoFeedScreenState
   Widget build(BuildContext context) {
     final feedState = _watchFeedState();
     final videos = feedState.videos;
-    final nudgesEnabled = ref.watch(
-      isFeatureEnabledProvider(FeatureFlag.feedBreakNudges),
-    );
-    final useSleepCopy = isQuietHoursNow();
-
-    if (_lastObservedVideoCount != videos.length) {
-      _lastObservedVideoCount = videos.length;
-      _awaitingLoadMoreConfirmation = false;
-      _isLoadingMoreFromNudge = false;
-      _lastPromptedVideoCount = null;
-      _shouldResumeAfterBreakPrompt = false;
-    }
 
     // Initialize page controller once we have videos
     if (!_initializedPageController && videos.isNotEmpty) {
@@ -572,70 +450,33 @@ class _FullscreenVideoFeedScreenState
             ? [editButton]
             : null,
       ),
-      body: Stack(
-        children: [
-          NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              final isAtEnd = _currentIndex >= videos.length - 1;
-
-              if (nudgesEnabled &&
-                  isAtEnd &&
-                  _isForwardSwipeAtFeedEnd(notification)) {
-                if (!_awaitingLoadMoreConfirmation &&
-                    _lastPromptedVideoCount != videos.length) {
-                  _showBreakPrompt(videos);
-                } else if (_awaitingLoadMoreConfirmation &&
-                    feedState.supportsLoadMore &&
-                    feedState.hasMoreContent) {
-                  _triggerLoadMore(videos);
-                }
-              }
-              return false;
-            },
-            child: PageView.builder(
-              controller: _pageController,
-              scrollDirection: Axis.vertical,
-              itemCount: videos.length,
-              onPageChanged: (index) => _onPageChanged(
-                index,
-                videos,
-                nudgesEnabled: nudgesEnabled,
-                supportsLoadMore: feedState.supportsLoadMore,
-                hasMoreContent: feedState.hasMoreContent,
-              ),
-              itemBuilder: (context, index) {
-                final video = videos[index];
-                return VideoFeedItem(
-                  key: ValueKey('video-${video.stableId}'),
-                  video: video,
-                  index: index,
-                  hasBottomNavigation: false,
-                  contextTitle: widget.contextTitle,
-                  // Use isActiveOverride since this screen manages its own active state
-                  // (not using URL-based routing for video index)
-                  isActiveOverride: index == _currentIndex,
-                  disableTapNavigation: true,
-                  // Fullscreen mode - add extra padding to avoid back button
-                  isFullscreen: true,
-                  trafficSource: widget.trafficSource,
-                );
-              },
-            ),
-          ),
-          if (nudgesEnabled &&
-              _awaitingLoadMoreConfirmation &&
-              _currentIndex >= videos.length - 1)
-            _FullscreenFeedBreakOverlay(
-              useSleepCopy: useSleepCopy,
-              showLoadMoreAction:
-                  feedState.supportsLoadMore && feedState.hasMoreContent,
-              isLoadingMore: _isLoadingMoreFromNudge || feedState.isLoadingMore,
-              onShowMore: () => _triggerLoadMore(videos),
-              onDismiss: () => _dismissBreakPrompt(videos),
-              onDone: context.pop,
-              videosSeen: videos.length,
-            ),
-        ],
+      body: PageView.builder(
+        controller: _pageController,
+        scrollDirection: Axis.vertical,
+        itemCount: videos.length,
+        onPageChanged: (index) => _onPageChanged(
+          index,
+          videos,
+          supportsLoadMore: feedState.supportsLoadMore,
+          hasMoreContent: feedState.hasMoreContent,
+        ),
+        itemBuilder: (context, index) {
+          final video = videos[index];
+          return VideoFeedItem(
+            key: ValueKey('video-${video.stableId}'),
+            video: video,
+            index: index,
+            hasBottomNavigation: false,
+            contextTitle: widget.contextTitle,
+            // Use isActiveOverride since this screen manages its own active
+            // state (not using URL-based routing for video index)
+            isActiveOverride: index == _currentIndex,
+            disableTapNavigation: true,
+            // Fullscreen mode - add extra padding to avoid back button
+            isFullscreen: true,
+            trafficSource: widget.trafficSource,
+          );
+        },
       ),
     );
   }
@@ -653,153 +494,4 @@ class _ResolvedFullscreenFeedState {
   final bool supportsLoadMore;
   final bool hasMoreContent;
   final bool isLoadingMore;
-}
-
-class _FullscreenFeedBreakOverlay extends StatelessWidget {
-  const _FullscreenFeedBreakOverlay({
-    required this.useSleepCopy,
-    required this.showLoadMoreAction,
-    required this.isLoadingMore,
-    required this.onShowMore,
-    required this.onDismiss,
-    required this.onDone,
-    required this.videosSeen,
-  });
-
-  final bool useSleepCopy;
-  final bool showLoadMoreAction;
-  final bool isLoadingMore;
-  final VoidCallback onShowMore;
-  final VoidCallback onDismiss;
-  final VoidCallback onDone;
-  final int videosSeen;
-
-  @override
-  Widget build(BuildContext context) {
-    final title = useSleepCopy
-        ? "You've watched a lot tonight."
-        : "You've watched a lot of videos...";
-    final subtitle = useSleepCopy
-        ? 'End of feed. Time to sleep and make tomorrow.'
-        : 'Now go MAKE some.';
-    final detail =
-        'You watched $videosSeen video${videosSeen == 1 ? '' : 's'} in this run.';
-
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onVerticalDragUpdate: (details) {
-        if ((details.primaryDelta ?? 0) > 14) {
-          onDismiss();
-        }
-      },
-      onVerticalDragEnd: (details) {
-        if ((details.primaryVelocity ?? 0) > 220) {
-          onDismiss();
-        }
-      },
-      child: ColoredBox(
-        color: Colors.black.withValues(alpha: 0.55),
-        child: SafeArea(
-          child: Center(
-            child: Padding(
-              padding: const EdgeInsets.all(24),
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(22),
-                decoration: BoxDecoration(
-                  color: Colors.black.withValues(alpha: 0.86),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: Colors.greenAccent.withValues(alpha: 0.5),
-                  ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Row(
-                      children: [
-                        CircleAvatar(
-                          radius: 16,
-                          backgroundColor: Color(0x1A69F0AE),
-                          child: Icon(
-                            Icons.spa_outlined,
-                            color: Colors.greenAccent,
-                            size: 18,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 21,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.9),
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      detail,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.72),
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        TextButton(
-                          onPressed: onDismiss,
-                          child: const Text('Keep Watching'),
-                        ),
-                        const SizedBox(width: 8),
-                        TextButton(
-                          onPressed: onDone,
-                          child: const Text('Close Feed'),
-                        ),
-                        const SizedBox(width: 8),
-                        if (showLoadMoreAction)
-                          OutlinedButton(
-                            onPressed: isLoadingMore ? null : onShowMore,
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Colors.greenAccent,
-                              side: const BorderSide(color: Colors.greenAccent),
-                            ),
-                            child: isLoadingMore
-                                ? const SizedBox(
-                                    width: 16,
-                                    height: 16,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                    ),
-                                  )
-                                : const Text('Show More'),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Swipe down to keep watching the current video.',
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.62),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
 }

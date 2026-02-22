@@ -28,10 +28,6 @@ enum FeatureFlag {
   classicsHashtags(
     'Classics Trending Hashtags',
     'Show trending hashtags section on the Classics tab',
-  ),
-  feedBreakNudges(
-    'Feed Break Nudges',
-    'Show end-of-loaded-feed nudges before loading more videos',
   );
 
   const FeatureFlag(this.displayName, this.description);

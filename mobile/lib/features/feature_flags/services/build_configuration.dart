@@ -52,11 +52,6 @@ class BuildConfiguration {
           'FF_CLASSICS_HASHTAGS',
           defaultValue: false,
         );
-      case FeatureFlag.feedBreakNudges:
-        return const bool.fromEnvironment(
-          'FF_FEED_BREAK_NUDGES',
-          defaultValue: true,
-        );
     }
   }
 
@@ -87,8 +82,6 @@ class BuildConfiguration {
         return 'FF_ENABLE_VIDEO_EDITOR_V1';
       case FeatureFlag.classicsHashtags:
         return 'FF_CLASSICS_HASHTAGS';
-      case FeatureFlag.feedBreakNudges:
-        return 'FF_FEED_BREAK_NUDGES';
     }
   }
 }
