@@ -230,6 +230,53 @@ void main() {
         ).called(1);
       });
 
+      test('uses external nip05 directly when provided', () async {
+        when(() => mockProfileEvent.content).thenReturn(
+          jsonEncode({
+            'display_name': 'Test',
+            'nip05': 'alice@example.com',
+          }),
+        );
+
+        await profileRepository.saveProfileEvent(
+          displayName: 'Test',
+          nip05: 'alice@example.com',
+        );
+
+        verify(
+          () => mockNostrClient.sendProfile(
+            profileContent: {
+              'display_name': 'Test',
+              'nip05': 'alice@example.com',
+            },
+          ),
+        ).called(1);
+      });
+
+      test('external nip05 takes precedence over username', () async {
+        when(() => mockProfileEvent.content).thenReturn(
+          jsonEncode({
+            'display_name': 'Test',
+            'nip05': 'alice@example.com',
+          }),
+        );
+
+        await profileRepository.saveProfileEvent(
+          displayName: 'Test',
+          username: 'alice',
+          nip05: 'alice@example.com',
+        );
+
+        verify(
+          () => mockNostrClient.sendProfile(
+            profileContent: {
+              'display_name': 'Test',
+              'nip05': 'alice@example.com',
+            },
+          ),
+        ).called(1);
+      });
+
       test('omits null optional fields', () async {
         await profileRepository.saveProfileEvent(displayName: 'Only Name');
 

@@ -96,10 +96,15 @@ class ProfileRepository {
 
   /// Publishes profile metadata to Nostr relays and updates the local cache.
   ///
-  /// When [username] is provided, the repository constructs the NIP-05
-  /// identifier (`_@<username>.divine.video`) internally. When [username] is
-  /// `null` and a [currentProfile] is supplied, the existing NIP-05 value is
-  /// preserved from `currentProfile.rawData`.
+  /// Supports two NIP-05 modes:
+  /// - **Divine.video username**: When [username] is provided, constructs the
+  ///   NIP-05 identifier as `_@<username>.divine.video`.
+  /// - **External NIP-05**: When [nip05] is provided, uses it directly as the
+  ///   full NIP-05 identifier (e.g., `alice@example.com`).
+  ///
+  /// If both [nip05] and [username] are provided, [nip05] takes precedence.
+  /// When neither is provided and a [currentProfile] is supplied, the existing
+  /// NIP-05 value is preserved from `currentProfile.rawData`.
   ///
   /// After successful publish, the profile is cached locally for immediate
   /// subsequent reads.
@@ -109,20 +114,21 @@ class ProfileRepository {
     required String displayName,
     String? about,
     String? username,
+    String? nip05,
     String? picture,
     String? banner,
     UserProfile? currentProfile,
   }) async {
-    final normalizedUsername = username?.toLowerCase();
-    final nip05 = normalizedUsername != null
-        ? '_@$normalizedUsername.divine.video'
-        : null;
+    // External NIP-05 takes precedence when provided.
+    final resolvedNip05 =
+        nip05 ??
+        (username != null ? '_@${username.toLowerCase()}.divine.video' : null);
 
     final profileContent = {
       if (currentProfile != null) ...currentProfile.rawData,
       'display_name': displayName,
       'about': ?about,
-      'nip05': ?nip05,
+      'nip05': ?resolvedNip05,
       'picture': ?picture,
       'banner': ?banner,
     };
