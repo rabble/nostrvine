@@ -1068,28 +1068,6 @@ class BlossomUploadService {
     }
   }
 
-  /// Get file extension from audio MIME type
-  String _getAudioExtensionFromMimeType(String mimeType) {
-    switch (mimeType.toLowerCase()) {
-      case 'audio/aac':
-        return '.aac';
-      case 'audio/mp4':
-      case 'audio/m4a':
-        return '.m4a';
-      case 'audio/mpeg':
-      case 'audio/mp3':
-        return '.mp3';
-      case 'audio/ogg':
-        return '.ogg';
-      case 'audio/wav':
-        return '.wav';
-      case 'audio/webm':
-        return '.webm';
-      default:
-        return '.aac';
-    }
-  }
-
   /// Test connection to a Blossom server
   ///
   /// Returns a [BlossomHealthCheckResult] with status, latency, and any errors.
@@ -1187,31 +1165,4 @@ class BlossomUploadService {
     }
   }
 
-  /// Map MIME types to file extensions for image uploads
-  /// WORKAROUND: Blossom server returns .mp4 for all uploads, we need to fix it client-side
-  String _getImageExtensionFromMimeType(String mimeType) {
-    switch (mimeType.toLowerCase()) {
-      case 'image/jpeg':
-      case 'image/jpg':
-        return 'jpg';
-      case 'image/png':
-        return 'png';
-      case 'image/gif':
-        return 'gif';
-      case 'image/webp':
-        return 'webp';
-      case 'image/svg+xml':
-        return 'svg';
-      case 'image/bmp':
-        return 'bmp';
-      default:
-        // Default to jpg if unknown MIME type
-        Log.debug(
-          'Unknown image MIME type: $mimeType, defaulting to jpg',
-          name: 'BlossomUploadService',
-          category: LogCategory.video,
-        );
-        return 'jpg';
-    }
-  }
 }
