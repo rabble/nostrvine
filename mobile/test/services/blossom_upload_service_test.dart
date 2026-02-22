@@ -10,7 +10,6 @@ import 'package:nostr_sdk/event.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:openvine/services/auth_service.dart';
-import 'package:openvine/services/blossom_server_discovery_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:nostr_key_manager/nostr_key_manager.dart';
 
@@ -43,12 +42,6 @@ void main() {
       SharedPreferences.setMockInitialValues({});
 
       mockAuthService = MockAuthService();
-      when(
-        () => mockAuthService.hasUserBlossomServers,
-      ).thenAnswer((_) => false);
-      when(
-        () => mockAuthService.userBlossomServers,
-      ).thenAnswer((_) => <DiscoveredBlossomServer>[]);
 
       service = BlossomUploadService(authService: mockAuthService);
     });
@@ -487,12 +480,6 @@ void main() {
 
         final mockDio = MockDio();
         final mockAuthService = MockAuthService();
-        when(
-          () => mockAuthService.hasUserBlossomServers,
-        ).thenAnswer((_) => false);
-        when(
-          () => mockAuthService.userBlossomServers,
-        ).thenAnswer((_) => <DiscoveredBlossomServer>[]);
 
         final testService = BlossomUploadService(
           authService: mockAuthService,

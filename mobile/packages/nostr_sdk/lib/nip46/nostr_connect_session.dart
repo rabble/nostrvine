@@ -89,6 +89,7 @@ class NostrConnectSession {
     this.appUrl,
     this.appIcon,
     this.permissions,
+    this.callback,
     this.relayMode = RelayMode.baseMode,
   });
 
@@ -106,6 +107,9 @@ class NostrConnectSession {
 
   /// Requested permissions (defaults to standard video app permissions).
   final String? permissions;
+
+  /// Callback URL scheme for signer app to redirect back after approval.
+  final String? callback;
 
   /// Relay mode to use (base or isolate).
   final int relayMode;
@@ -156,7 +160,10 @@ class NostrConnectSession {
       );
 
       // Generate the URL
-      _connectUrl = _info!.toNostrConnectUrl(permissions: permissions);
+      _connectUrl = _info!.toNostrConnectUrl(
+        permissions: permissions,
+        callback: callback,
+      );
 
       // Create local signer from the ephemeral keypair
       _localSigner = LocalNostrSigner(Nip19.decode(_info!.nsec!));
@@ -242,9 +249,21 @@ class NostrConnectSession {
   }
 
   Future<void> _connectToRelays() async {
-    for (final relayUrl in relays) {
-      final relay = await _connectToRelay(relayUrl);
-      _relays.add(relay);
+    // Connect to all relays in parallel for speed
+    final futures = relays.map((url) async {
+      try {
+        return await _connectToRelay(url);
+      } catch (e) {
+        log('[NostrConnectSession] Failed to connect to $url: $e');
+        return null;
+      }
+    });
+    final results = await Future.wait(futures.toList());
+    for (final relay in results) {
+      if (relay != null) _relays.add(relay);
+    }
+    if (_relays.isEmpty) {
+      throw StateError('Failed to connect to any relay');
     }
   }
 

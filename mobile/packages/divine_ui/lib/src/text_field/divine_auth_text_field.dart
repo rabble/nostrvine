@@ -30,7 +30,6 @@ class DivineAuthTextField extends StatefulWidget {
   const DivineAuthTextField({
     super.key,
     this.label,
-    @Deprecated('Use label instead') this.labelText,
     this.controller,
     this.focusNode,
     this.obscureText = false,
@@ -49,19 +48,11 @@ class DivineAuthTextField extends StatefulWidget {
     this.maxLength,
     this.contentPadding,
     this.errorText,
+    this.autofillHints,
   });
 
   /// Label text shown inside the field, floats above when focused/filled.
   final String? label;
-
-  /// Deprecated: Use [label] instead.
-  @Deprecated('Use label instead')
-  final String? labelText;
-
-  /// The effective label to display (prefers [label] over deprecated
-  /// labelText).
-  // ignore: deprecated_member_use_from_same_package
-  String? get effectiveLabel => label ?? labelText;
 
   /// Controller for the text field.
   final TextEditingController? controller;
@@ -122,6 +113,12 @@ class DivineAuthTextField extends StatefulWidget {
   /// background, error-colored floating label, and the error message with a
   /// warning icon below the container.
   final String? errorText;
+
+  /// Autofill hints for password managers.
+  ///
+  /// Common values include [AutofillHints.email], [AutofillHints.password],
+  /// and [AutofillHints.newPassword].
+  final Iterable<String>? autofillHints;
 
   @override
   State<DivineAuthTextField> createState() => _DivineAuthTextFieldState();
@@ -222,7 +219,7 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
 
   @override
   Widget build(BuildContext context) {
-    final label = widget.effectiveLabel;
+    final label = widget.label;
     final hasLabel = label != null && label.isNotEmpty;
 
     return Column(
@@ -275,6 +272,7 @@ class _DivineAuthTextFieldState extends State<DivineAuthTextField> {
                         maxLength: widget.maxLength,
                         contentPadding: widget.contentPadding,
                         hasError: _hasError,
+                        autofillHints: widget.autofillHints,
                       ),
                     ),
                   ),
@@ -393,6 +391,7 @@ class _AuthTextFieldInput extends StatelessWidget {
     this.onEditingComplete,
     this.maxLength,
     this.contentPadding,
+    this.autofillHints,
   });
 
   final TextEditingController controller;
@@ -413,6 +412,7 @@ class _AuthTextFieldInput extends StatelessWidget {
   final VoidCallback? onEditingComplete;
   final int? maxLength;
   final EdgeInsetsGeometry? contentPadding;
+  final Iterable<String>? autofillHints;
 
   @override
   Widget build(BuildContext context) {
@@ -434,6 +434,7 @@ class _AuthTextFieldInput extends StatelessWidget {
       onFieldSubmitted: onSubmitted,
       onEditingComplete: onEditingComplete,
       maxLength: maxLength,
+      autofillHints: autofillHints,
       style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
       cursorColor: hasError ? VineTheme.error : VineTheme.primary,
       decoration: InputDecoration(

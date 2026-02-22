@@ -12,7 +12,6 @@ tags:
 # 4. Tap on the likes tab: Validate tab is loaded and video is listed
 
 # 1. Open 1st video of the New grid
-#- runFlow: ../utils/openSpecificVideo.yaml
 - tapOn:
     id: video_thumbnail_0
 - runFlow: ../asserts/assertVideoPlayback.yaml

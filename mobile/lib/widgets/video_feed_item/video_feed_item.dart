@@ -1778,7 +1778,10 @@ class VideoOverlayActions extends ConsumerWidget {
                     const SizedBox(height: 4),
 
                     // Repost button
-                    RepostActionButton(video: video),
+                    RepostActionButton(
+                      video: video,
+                      isPreviewMode: isPreviewMode,
+                    ),
 
                     const SizedBox(height: 4),
 
@@ -1788,7 +1791,10 @@ class VideoOverlayActions extends ConsumerWidget {
                     const SizedBox(height: 4),
 
                     // Like button
-                    LikeActionButton(video: video),
+                    LikeActionButton(
+                      video: video,
+                      isPreviewMode: isPreviewMode,
+                    ),
                   ],
                 ),
               ),

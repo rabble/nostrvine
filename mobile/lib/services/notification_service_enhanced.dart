@@ -11,6 +11,7 @@ import 'package:nostr_sdk/event_kind.dart';
 import 'package:nostr_sdk/filter.dart';
 import 'package:models/models.dart';
 import 'package:nostr_client/nostr_client.dart';
+import 'package:openvine/constants/nostr_event_kinds.dart';
 import 'package:openvine/services/user_profile_service.dart';
 import 'package:openvine/services/notification_helpers.dart';
 import 'package:openvine/services/video_event_service.dart';
@@ -174,7 +175,7 @@ class NotificationServiceEnhanced {
   /// Subscribe to follows
   void _subscribeToFollows(String userPubkey) {
     final filter = Filter(
-      kinds: [3], // Kind 3 = Contact list (follows)
+      kinds: [NostrEventKinds.contactList],
       // NO h filter - we query all relays
     );
 

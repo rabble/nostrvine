@@ -36,6 +36,7 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
   String? _errorMessage;
   StreamSubscription<NostrConnectState>? _stateSubscription;
   bool _isWaiting = false;
+  bool _switchedToBunker = false;
   final Stopwatch _elapsedTimer = Stopwatch();
   Timer? _uiTimer;
 
@@ -121,6 +122,11 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
 
     if (!mounted) return;
 
+    // If the user switched to a bunker connection via the paste dialog,
+    // ignore the nostrconnect session result to avoid interfering with
+    // the bunker auth flow.
+    if (_switchedToBunker) return;
+
     if (result.success) {
       // Navigate to home on success
       context.go(HomeScreenRouter.pathForIndex(0));
@@ -185,7 +191,9 @@ class _NostrConnectScreenState extends ConsumerState<NostrConnectScreen> {
       return;
     }
 
-    // Cancel the current nostrconnect session
+    // Cancel the current nostrconnect session and prevent its completion
+    // callback from interfering with the bunker auth flow.
+    _switchedToBunker = true;
     _authService.cancelNostrConnect();
     _stateSubscription?.cancel();
     _uiTimer?.cancel();
@@ -702,6 +710,13 @@ class _PasteBunkerSheetContentState extends State<_PasteBunkerSheetContent> {
     super.dispose();
   }
 
+  void _submit() {
+    final value = widget.controller.text.trim();
+    // Use Navigator.pop instead of context.pop (GoRouter) to ensure
+    // the value is returned to showModalBottomSheet correctly.
+    Navigator.of(context).pop(value);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -723,8 +738,10 @@ class _PasteBunkerSheetContentState extends State<_PasteBunkerSheetContent> {
             focusNode: _focusNode,
             autocorrect: false,
             keyboardType: TextInputType.url,
-            onSubmitted: (value) => context.pop(value.trim()),
+            onSubmitted: (_) => _submit(),
           ),
+          const SizedBox(height: 16),
+          DivineButton(label: 'Connect', expanded: true, onPressed: _submit),
         ],
       ),
     );
