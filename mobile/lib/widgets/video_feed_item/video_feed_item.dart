@@ -314,10 +314,43 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
           _handlePlaybackChange(effectivelyActive);
         });
 
+        // PAUSE-ONLY guard: Listen to activeVideoIdProvider reactively.
+        // PageView.builder doesn't rebuild off-screen items, so
+        // didUpdateWidget never fires with isActiveOverride=false for them.
+        // This reactive listener ensures off-screen items get paused when
+        // a different video becomes active. It only PAUSES — play is still
+        // handled by isActiveOverride via didUpdateWidget for visible items.
+        ref.listenManual(activeVideoIdProvider, (prev, next) {
+          if (!mounted) return;
+          // Only pause if another video became active (not null → avoids
+          // false pauses during provider initialization or route transitions)
+          if (next != null && next != _stableVideoId) {
+            Log.info(
+              '⏸️ VideoFeedItem reactive pause guard: active=$next, pausing ${widget.video.id}',
+              name: 'VideoFeedItem',
+              category: LogCategory.video,
+            );
+            _handlePlaybackChange(false);
+          }
+        });
+
         // Initial play if override is true and no overlay
         final hasOverlay = ref.read(hasVisibleOverlayProvider);
         if (initialOverride && !hasOverlay) {
-          _handlePlaybackChange(true);
+          // Verify this video is actually the one that should be playing.
+          // Prevents race condition where the post-frame callback fires
+          // after the user has already swiped to a different page.
+          final currentActive = ref.read(activeVideoIdProvider);
+          if (currentActive == null || currentActive == _stableVideoId) {
+            _handlePlaybackChange(true);
+          } else {
+            Log.info(
+              '⏭️ VideoFeedItem.initState: skipping play for ${widget.video.id} '
+              '(active video is $currentActive)',
+              name: 'VideoFeedItem',
+              category: LogCategory.video,
+            );
+          }
         }
         return;
       }

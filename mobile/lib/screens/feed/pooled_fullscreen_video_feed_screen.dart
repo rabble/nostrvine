@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/router/navigator_keys.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
@@ -154,21 +155,43 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
       _FullscreenFeedContentState();
 }
 
-class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent> {
+class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
+    with RouteAware {
   VideoFeedController? _controller;
   List<VideoItem>? _lastPooledVideos;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Subscribe to route changes to pause/resume when navigating away
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      routeObserver.subscribe(this, route);
+    }
     // Initialize controller if BLoC already has videos on first build
     _initializeControllerIfNeeded();
   }
 
   @override
   void dispose() {
+    routeObserver.unsubscribe(this);
     _controller?.dispose();
     super.dispose();
+  }
+
+  // RouteAware callbacks: pause when another route is pushed on top,
+  // resume when this route becomes visible again.
+
+  @override
+  void didPushNext() {
+    // Another route was pushed on top - pause playback
+    _controller?.setActive(active: false);
+  }
+
+  @override
+  void didPopNext() {
+    // Returned to this route - resume playback
+    _controller?.setActive(active: true);
   }
 
   /// Initializes the controller if not already created and videos are
