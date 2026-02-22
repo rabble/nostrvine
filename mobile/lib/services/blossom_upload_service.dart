@@ -384,7 +384,7 @@ class BlossomUploadService {
 
       // Handle 409 Conflict - file already exists
       if (response.statusCode == 409) {
-        final existingUrl = 'https://cdn.divine.video/$fileHash.mp4';
+        final existingUrl = '$defaultBlossomServer/$fileHash';
         onProgress?.call(1.0);
 
         return BlossomUploadResult(
@@ -544,23 +544,23 @@ class BlossomUploadService {
           );
 
           if (result.success) {
+            // Construct the canonical Blossom URL from server + hash
+            // Per Blossom spec (BUD-01), blobs are always at {server}/{sha256}
+            // This is deterministic and doesn't depend on server response
+            final canonicalUrl = '$defaultBlossomServer/$fileHash';
+
             Log.info(
               '✅ Video uploaded to: $serverUrl',
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
             Log.info(
-              '  Primary URL (HLS): ${result.url}',
+              '  Canonical URL: $canonicalUrl',
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
             Log.info(
-              '  Fallback URL (R2 MP4): ${result.fallbackUrl}',
-              name: 'BlossomUploadService',
-              category: LogCategory.video,
-            );
-            Log.info(
-              '  Streaming MP4: ${result.streamingMp4Url}',
+              '  Server response URL: ${result.url}',
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
@@ -574,7 +574,19 @@ class BlossomUploadService {
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
-            return result;
+
+            // Return with canonical URL to ensure we never publish
+            // a non-HTTP URL (e.g. local file path)
+            return BlossomUploadResult(
+              success: true,
+              url: canonicalUrl,
+              fallbackUrl: canonicalUrl,
+              videoId: fileHash,
+              thumbnailUrl: result.thumbnailUrl,
+              streamingMp4Url: result.streamingMp4Url,
+              streamingHlsUrl: result.streamingHlsUrl,
+              streamingStatus: result.streamingStatus,
+            );
           }
 
           lastError = result;
@@ -690,22 +702,8 @@ class BlossomUploadService {
           );
 
           if (result.success) {
-            // Use fallbackUrl if available, otherwise use url (server may return either)
-            String? correctedUrl = result.fallbackUrl ?? result.url;
-
-            // Fix file extension if needed (server bug workaround)
-            if (correctedUrl != null && correctedUrl.endsWith('.mp4')) {
-              final extension = _getImageExtensionFromMimeType(mimeType);
-              correctedUrl = correctedUrl.replaceAll(
-                RegExp(r'\.mp4$'),
-                '.$extension',
-              );
-              Log.debug(
-                'Fixed server extension: .mp4 → .$extension for MIME type: $mimeType',
-                name: 'BlossomUploadService',
-                category: LogCategory.video,
-              );
-            }
+            // Construct canonical Blossom URL from server + hash
+            final canonicalUrl = '$defaultBlossomServer/$fileHash';
 
             Log.info(
               '✅ Image uploaded to: $serverUrl',
@@ -713,15 +711,16 @@ class BlossomUploadService {
               category: LogCategory.video,
             );
             Log.info(
-              '  URL: $correctedUrl',
+              '  Canonical URL: $canonicalUrl',
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
 
             return BlossomUploadResult(
               success: true,
-              fallbackUrl: correctedUrl,
-              videoId: result.videoId,
+              url: canonicalUrl,
+              fallbackUrl: canonicalUrl,
+              videoId: fileHash,
             );
           }
 
@@ -1006,20 +1005,8 @@ class BlossomUploadService {
           );
 
           if (result.success) {
-            // Fix file extension if needed (server bug workaround)
-            String? correctedUrl = result.fallbackUrl;
-            if (correctedUrl != null && correctedUrl.endsWith('.mp4')) {
-              final extension = _getAudioExtensionFromMimeType(mimeType);
-              correctedUrl = correctedUrl.replaceAll(
-                RegExp(r'\.mp4$'),
-                extension,
-              );
-              Log.debug(
-                'Fixed server extension: .mp4 -> $extension for audio',
-                name: 'BlossomUploadService',
-                category: LogCategory.video,
-              );
-            }
+            // Construct canonical Blossom URL from server + hash
+            final canonicalUrl = '$defaultBlossomServer/$fileHash';
 
             Log.info(
               '✅ Audio uploaded to: $serverUrl',
@@ -1027,15 +1014,16 @@ class BlossomUploadService {
               category: LogCategory.video,
             );
             Log.info(
-              '  Audio URL: $correctedUrl',
+              '  Canonical URL: $canonicalUrl',
               name: 'BlossomUploadService',
               category: LogCategory.video,
             );
 
             return BlossomUploadResult(
               success: true,
-              fallbackUrl: correctedUrl,
-              videoId: result.videoId,
+              url: canonicalUrl,
+              fallbackUrl: canonicalUrl,
+              videoId: fileHash,
             );
           }
 
