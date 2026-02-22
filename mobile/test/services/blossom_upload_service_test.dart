@@ -67,8 +67,8 @@ void main() {
         await service.setBlossomServer(null);
         final retrievedUrl = await service.getBlossomServer();
 
-        // Assert - Service returns empty string when explicitly cleared
-        expect(retrievedUrl, equals(''));
+        // Assert - Clearing falls back to default server
+        expect(retrievedUrl, equals(BlossomUploadService.defaultBlossomServer));
       });
 
       test('should save and retrieve Blossom enabled state', () async {

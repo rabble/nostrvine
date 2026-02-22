@@ -115,8 +115,9 @@ class BlossomUploadService {
   Future<String?> getBlossomServer() async {
     final prefs = await SharedPreferences.getInstance();
     final stored = prefs.getString(_blossomServerKey);
-    // If nothing is stored, return default. If empty string is stored, return it.
-    return stored ?? defaultBlossomServer;
+    // If nothing is stored or empty string, return default.
+    if (stored == null || stored.isEmpty) return defaultBlossomServer;
+    return stored;
   }
 
   /// Set the Blossom server URL
