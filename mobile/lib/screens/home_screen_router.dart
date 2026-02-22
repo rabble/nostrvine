@@ -176,9 +176,13 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
             controller: _controller,
             initialIndex: safeUrlIndex,
             onActiveVideoChanged: (video, index) {
-              // Update URL when swiping
+              // Update URL when swiping — deferred to avoid triggering a
+              // rebuild of HomeScreenRouter during the swipe animation.
               if (index != urlIndex) {
-                context.go(HomeScreenRouter.pathForIndex(index));
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  context.go(HomeScreenRouter.pathForIndex(index));
+                });
               }
 
               // Prefetch profiles for adjacent videos
