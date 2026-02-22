@@ -298,7 +298,8 @@ class VideoEventPublisher {
 
     // Validate that at least one video URL is a proper HTTP/HTTPS URL
     // This prevents local file paths from being published to Nostr
-    final hasValidVideoUrl = _isHttpUrl(upload.streamingMp4Url) ||
+    final hasValidVideoUrl =
+        _isHttpUrl(upload.streamingMp4Url) ||
         _isHttpUrl(upload.fallbackUrl) ||
         _isHttpUrl(upload.streamingHlsUrl) ||
         _isHttpUrl(upload.cdnUrl);
@@ -373,8 +374,7 @@ class VideoEventPublisher {
       if (_isHttpUrl(upload.fallbackUrl)) {
         imetaComponents.add('url ${upload.fallbackUrl}');
         urlsAdded.add('MP4(R2 fallback): ${upload.fallbackUrl}');
-      } else if (upload.fallbackUrl != null &&
-          upload.fallbackUrl!.isNotEmpty) {
+      } else if (upload.fallbackUrl != null && upload.fallbackUrl!.isNotEmpty) {
         Log.error(
           '⚠️ Skipping non-HTTP fallbackUrl (possible local path): ${upload.fallbackUrl}',
           name: 'VideoEventPublisher',
