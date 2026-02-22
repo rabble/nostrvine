@@ -243,14 +243,15 @@ void main() {
           print('Upload failed with error: ${result.errorMessage}');
         }
         expect(result.success, isTrue);
-        expect(result.cdnUrl, equals('https://cdn.satellite.earth/abc123.mp4'));
-        // videoId is now the calculated SHA-256 hash of the file bytes [1,2,3,4,5]
+        // URL is now constructed client-side: {defaultBlossomServer}/{sha256}
+        // per Blossom spec (BUD-01), regardless of server response URL
+        final expectedHash =
+            '74f81fe167d99b4cb41d6d0ccda82278caee9f3e2f25d5e5a3936ff3dcec60d0';
         expect(
-          result.videoId,
-          equals(
-            '74f81fe167d99b4cb41d6d0ccda82278caee9f3e2f25d5e5a3936ff3dcec60d0',
-          ),
+          result.cdnUrl,
+          equals('https://media.divine.video/$expectedHash'),
         );
+        expect(result.videoId, equals(expectedHash));
       });
 
       test(
