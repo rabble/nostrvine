@@ -236,7 +236,7 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
             onLoadMore: () =>
                 ref.read(popularNowFeedProvider.notifier).loadMore(),
             contextTitle: 'New Videos',
-            trafficSource: ViewTrafficSource.discovery,
+            trafficSource: ViewTrafficSource.discoveryNew,
           ),
         );
       },

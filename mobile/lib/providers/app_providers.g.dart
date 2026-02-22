@@ -556,12 +556,16 @@ final class RelaySetChangeBridgeProvider
 String _$relaySetChangeBridgeHash() =>
     r'69fd17051348b968d05f92adbaf87cc6844dea05';
 
-/// Analytics service with opt-out support
+/// Analytics service with opt-out support.
+///
+/// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
 
 @ProviderFor(analyticsService)
 const analyticsServiceProvider = AnalyticsServiceProvider._();
 
-/// Analytics service with opt-out support
+/// Analytics service with opt-out support.
+///
+/// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
 
 final class AnalyticsServiceProvider
     extends
@@ -571,7 +575,9 @@ final class AnalyticsServiceProvider
           AnalyticsService
         >
     with $Provider<AnalyticsService> {
-  /// Analytics service with opt-out support
+  /// Analytics service with opt-out support.
+  ///
+  /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
   const AnalyticsServiceProvider._()
     : super(
         from: null,
@@ -605,7 +611,7 @@ final class AnalyticsServiceProvider
   }
 }
 
-String _$analyticsServiceHash() => r'8ce8c6be2430cd9f271eb66d8e7fe6fcfbae0154';
+String _$analyticsServiceHash() => r'63092a98aa600d9e6e5dd4402ee303ca9eb06c33';
 
 /// Age verification service for content creation restrictions
 /// keepAlive ensures the service persists and maintains in-memory verification state

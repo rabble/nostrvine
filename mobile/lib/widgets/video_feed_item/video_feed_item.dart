@@ -80,6 +80,7 @@ class VideoFeedItem extends ConsumerStatefulWidget {
     this.showListAttribution = false,
     this.hideFollowButtonIfFollowing = false,
     this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
   });
 
   final VideoEvent video;
@@ -115,6 +116,9 @@ class VideoFeedItem extends ConsumerStatefulWidget {
 
   /// Traffic source for view event analytics (home, discovery, profile, etc.)
   final ViewTrafficSource trafficSource;
+
+  /// Additional context for the traffic source (e.g., hashtag name).
+  final String? sourceDetail;
 
   @override
   ConsumerState<VideoFeedItem> createState() => _VideoFeedItemState();
@@ -1160,6 +1164,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                         video: video,
                         controller: controller,
                         trafficSource: widget.trafficSource,
+                        sourceDetail: widget.sourceDetail,
                         child: videoWidget,
                       )
                     : videoWidget;

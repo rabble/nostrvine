@@ -113,7 +113,7 @@ void main() {
           video: createTestVideoEvent(pubkey: creatorPubkey),
           startSeconds: 0,
           endSeconds: 5,
-          source: ViewTrafficSource.discovery,
+          source: ViewTrafficSource.discoveryNew,
         );
 
         expect(result, isTrue);
@@ -252,6 +252,18 @@ void main() {
       });
 
       test('maps all traffic sources correctly', () async {
+        const expectedStrings = {
+          ViewTrafficSource.home: 'home',
+          ViewTrafficSource.discoveryNew: 'discovery:new',
+          ViewTrafficSource.discoveryClassic: 'discovery:classic',
+          ViewTrafficSource.discoveryForYou: 'discovery:foryou',
+          ViewTrafficSource.discoveryPopular: 'discovery:popular',
+          ViewTrafficSource.profile: 'profile',
+          ViewTrafficSource.share: 'share',
+          ViewTrafficSource.search: 'search',
+          ViewTrafficSource.unknown: 'unknown',
+        };
+
         for (final source in ViewTrafficSource.values) {
           reset(mockAuth);
           reset(mockNostr);
@@ -297,7 +309,7 @@ void main() {
 
           final tags = captured[0] as List<List<String>>;
           final sourceTag = tags.firstWhere((t) => t[0] == 'source');
-          expect(sourceTag[1], equals(source.name));
+          expect(sourceTag[1], equals(expectedStrings[source]));
         }
       });
     });

@@ -15,6 +15,7 @@ import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/utils/quiet_hours.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 /// Pure explore video screen using VideoFeedItem directly in PageView
@@ -28,6 +29,8 @@ class ExploreVideoScreenPure extends ConsumerStatefulWidget {
     this.onLoadMore,
     this.onNavigate,
     this.useLocalActiveState = false,
+    this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
   });
 
   final VideoEvent startingVideo;
@@ -41,6 +44,12 @@ class ExploreVideoScreenPure extends ConsumerStatefulWidget {
   /// Used for custom contexts like lists that don't have router support.
   /// When true, videos will auto-play based on page position without URL changes.
   final bool useLocalActiveState;
+
+  /// Traffic source for view event analytics.
+  final ViewTrafficSource trafficSource;
+
+  /// Additional context for the traffic source (e.g., hashtag name).
+  final String? sourceDetail;
 
   @override
   ConsumerState<ExploreVideoScreenPure> createState() =>
@@ -319,6 +328,8 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
                   index: index,
                   hasBottomNavigation: false,
                   contextTitle: widget.contextTitle,
+                  trafficSource: widget.trafficSource,
+                  sourceDetail: widget.sourceDetail,
                   // When using local active state, override provider-based activation
                   isActiveOverride: widget.useLocalActiveState
                       ? (_currentPage == index)

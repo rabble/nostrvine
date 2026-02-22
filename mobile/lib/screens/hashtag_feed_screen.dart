@@ -418,6 +418,7 @@ class _HashtagFeedScreenState extends ConsumerState<HashtagFeedScreen> {
                     contextTitle: '#${widget.hashtag}',
                     forceShowOverlay: true,
                     trafficSource: ViewTrafficSource.search,
+                    sourceDetail: widget.hashtag,
                   ),
                 ),
               );

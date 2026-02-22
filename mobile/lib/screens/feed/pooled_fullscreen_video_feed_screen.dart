@@ -36,6 +36,7 @@ class PooledFullscreenVideoFeedArgs {
     this.onLoadMore,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
   });
 
   /// Stream of videos from the source (BLoC or provider).
@@ -52,6 +53,9 @@ class PooledFullscreenVideoFeedArgs {
 
   /// Traffic source for view event analytics.
   final ViewTrafficSource trafficSource;
+
+  /// Additional context for the traffic source (e.g., hashtag name).
+  final String? sourceDetail;
 }
 
 /// Fullscreen video feed screen using pooled_video_player.
@@ -75,6 +79,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
     this.onLoadMore,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
     super.key,
   });
 
@@ -83,6 +88,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   final VoidCallback? onLoadMore;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
+  final String? sourceDetail;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -100,6 +106,7 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
       child: FullscreenFeedContent(
         contextTitle: contextTitle,
         trafficSource: trafficSource,
+        sourceDetail: sourceDetail,
       ),
     );
   }
@@ -122,6 +129,7 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
   const FullscreenFeedContent({
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
     @visibleForTesting this.controllerFactory,
     super.key,
   });
@@ -131,6 +139,9 @@ class FullscreenFeedContent extends ConsumerStatefulWidget {
 
   /// Traffic source for view event analytics.
   final ViewTrafficSource trafficSource;
+
+  /// Additional context for the traffic source (e.g., hashtag name).
+  final String? sourceDetail;
 
   /// Optional factory for creating the [VideoFeedController].
   ///
@@ -457,6 +468,7 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent> {
                         isActive: isActive,
                         contextTitle: widget.contextTitle,
                         trafficSource: widget.trafficSource,
+                        sourceDetail: widget.sourceDetail,
                       );
                     },
                   ),
@@ -686,6 +698,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
     required this.isActive,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
   });
 
   final VideoEvent video;
@@ -693,6 +706,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
   final bool isActive;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
+  final String? sourceDetail;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -720,6 +734,7 @@ class _PooledFullscreenItem extends ConsumerWidget {
         isActive: isActive,
         contextTitle: contextTitle,
         trafficSource: trafficSource,
+        sourceDetail: sourceDetail,
       ),
     );
   }
@@ -732,6 +747,7 @@ class _PooledFullscreenItemContent extends StatelessWidget {
     required this.isActive,
     this.contextTitle,
     this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
   });
 
   final VideoEvent video;
@@ -739,6 +755,7 @@ class _PooledFullscreenItemContent extends StatelessWidget {
   final bool isActive;
   final String? contextTitle;
   final ViewTrafficSource trafficSource;
+  final String? sourceDetail;
 
   @override
   Widget build(BuildContext context) {
@@ -757,6 +774,7 @@ class _PooledFullscreenItemContent extends StatelessWidget {
               player: player,
               isActive: isActive,
               trafficSource: trafficSource,
+              sourceDetail: sourceDetail,
               child: _FittedVideoPlayer(
                 videoController: videoController,
                 isPortrait: isPortrait,

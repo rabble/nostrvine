@@ -206,7 +206,7 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent> {
                   onLoadMore: () =>
                       ref.read(classicVinesFeedProvider.notifier).loadMore(),
                   contextTitle: 'Classics',
-                  trafficSource: ViewTrafficSource.discovery,
+                  trafficSource: ViewTrafficSource.discoveryClassic,
                 ),
               );
             },

@@ -810,6 +810,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             onLoadMore: args.onLoadMore,
             contextTitle: args.contextTitle,
             trafficSource: args.trafficSource,
+            sourceDetail: args.sourceDetail,
           );
         },
       ),

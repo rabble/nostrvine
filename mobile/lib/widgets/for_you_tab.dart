@@ -163,7 +163,7 @@ class _ForYouContentState extends ConsumerState<_ForYouContent>
                     onLoadMore: () =>
                         ref.read(forYouFeedProvider.notifier).loadMore(),
                     contextTitle: 'For You',
-                    trafficSource: ViewTrafficSource.discovery,
+                    trafficSource: ViewTrafficSource.discoveryForYou,
                   ),
                 );
               },

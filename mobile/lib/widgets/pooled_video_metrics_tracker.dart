@@ -8,7 +8,8 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/services/view_event_publisher.dart'
+    show ViewTrafficSource;
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
@@ -24,6 +25,7 @@ class PooledVideoMetricsTracker extends ConsumerStatefulWidget {
     required this.isActive,
     required this.child,
     this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
     super.key,
   });
 
@@ -34,6 +36,9 @@ class PooledVideoMetricsTracker extends ConsumerStatefulWidget {
 
   /// Traffic source for analytics (home feed, discovery, profile, etc.)
   final ViewTrafficSource trafficSource;
+
+  /// Additional context for the traffic source (e.g., hashtag name).
+  final String? sourceDetail;
 
   @override
   ConsumerState<PooledVideoMetricsTracker> createState() =>
@@ -57,7 +62,6 @@ class _PooledVideoMetricsTrackerState
   dynamic _analyticsService;
   dynamic _authService;
   dynamic _seenVideosService;
-  ViewEventPublisher? _viewEventPublisher;
 
   @override
   void initState() {
@@ -65,7 +69,6 @@ class _PooledVideoMetricsTrackerState
     _analyticsService = ref.read(analyticsServiceProvider);
     _authService = ref.read(authServiceProvider);
     _seenVideosService = ref.read(seenVideosServiceProvider);
-    _viewEventPublisher = ref.read(viewEventPublisherProvider);
 
     if (widget.isActive) {
       _startTracking();
@@ -214,7 +217,7 @@ class _PooledVideoMetricsTrackerState
         // Player may be disposed
       }
 
-      // Analytics service — view end
+      // Analytics service — publishes Kind 22236 Nostr view event
       _analyticsService.trackDetailedVideoViewWithUser(
         widget.video,
         userId: _authService.currentPublicKeyHex,
@@ -229,6 +232,8 @@ class _PooledVideoMetricsTrackerState
                 videoDuration > Duration.zero &&
                 _totalWatchDuration.inMilliseconds >=
                     videoDuration.inMilliseconds * 0.9),
+        trafficSource: widget.trafficSource,
+        sourceDetail: widget.sourceDetail,
       );
 
       // Persist to local storage for "show fresh content" feature
@@ -237,9 +242,6 @@ class _PooledVideoMetricsTrackerState
         loopCount: _loopCount,
         watchDuration: _totalWatchDuration,
       );
-
-      // Publish Kind 22236 ephemeral view event
-      _publishNostrViewEvent();
 
       Log.debug(
         'Video end: duration=${_totalWatchDuration.inSeconds}s, '
@@ -254,39 +256,6 @@ class _PooledVideoMetricsTrackerState
         category: LogCategory.video,
       );
     }
-  }
-
-  /// Publish Kind 22236 ephemeral view event to Nostr relays.
-  void _publishNostrViewEvent() {
-    final viewPublisher = _viewEventPublisher;
-    if (viewPublisher == null) return;
-    if (_totalWatchDuration.inSeconds < 1) return;
-
-    // Fire-and-forget: don't await, don't block dispose
-    viewPublisher
-        .publishViewEvent(
-          video: widget.video,
-          startSeconds: 0,
-          endSeconds: _totalWatchDuration.inSeconds,
-          source: widget.trafficSource,
-        )
-        .then((success) {
-          if (success) {
-            Log.debug(
-              'Published Nostr view event for ${widget.video.id}',
-              name: 'PooledVideoMetricsTracker',
-              category: LogCategory.video,
-            );
-          }
-        })
-        .catchError((Object error) {
-          // Silently ignore errors — view events are best-effort
-          Log.debug(
-            'Failed to publish Nostr view event: $error',
-            name: 'PooledVideoMetricsTracker',
-            category: LogCategory.video,
-          );
-        });
   }
 
   void _resetTracking() {

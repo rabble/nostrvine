@@ -261,7 +261,7 @@ class _PopularVideosTrendingContentState
                     onLoadMore: () =>
                         ref.read(popularVideosFeedProvider.notifier).loadMore(),
                     contextTitle: 'Popular Videos',
-                    trafficSource: ViewTrafficSource.discovery,
+                    trafficSource: ViewTrafficSource.discoveryPopular,
                   ),
                 );
               },
