@@ -3,13 +3,6 @@
 
 import 'package:flutter/widgets.dart';
 
-/// Global [RouteObserver] for the root navigator.
-///
-/// Register this in [GoRouter.observers] so widgets can use [RouteAware]
-/// to pause/resume when another route is pushed on top.
-final RouteObserver<PageRoute<dynamic>> routeObserver =
-    RouteObserver<PageRoute<dynamic>>();
-
 /// Navigator keys for per-tab state preservation in the app shell.
 ///
 /// Each key maintains a separate navigation stack, allowing tabs to preserve

@@ -64,7 +64,9 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
       ref.listenManual(pageContextProvider, (prev, next) {
         if (!mounted) return;
         final ctx = next.asData?.value;
-        final focused = ctx?.type == RouteType.home;
+        // Skip loading/error states — don't pause on transient nulls
+        if (ctx == null) return;
+        final focused = ctx.type == RouteType.home;
         if (focused != _isHomeFocused) {
           _isHomeFocused = focused;
           // Pause/resume pooled player based on tab visibility
