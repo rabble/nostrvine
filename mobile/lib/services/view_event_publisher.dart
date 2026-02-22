@@ -74,6 +74,7 @@ class ViewEventPublisher {
     required int endSeconds,
     ViewTrafficSource source = ViewTrafficSource.unknown,
     String? sourceDetail,
+    int? loopCount,
   }) async {
     // Skip if no meaningful watch time
     if (endSeconds <= startSeconds) {
@@ -141,6 +142,8 @@ class ViewEventPublisher {
           ['source', _sourceToString(source), sourceDetail]
         else
           ['source', _sourceToString(source)],
+        // Loop count (optional, omitted if 0 or null)
+        if (loopCount != null && loopCount > 0) ['loops', loopCount.toString()],
         // Client identifier (optional)
         ['client', _clientId],
       ];

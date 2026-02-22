@@ -312,6 +312,84 @@ void main() {
           expect(sourceTag[1], equals(expectedStrings[source]));
         }
       });
+      test('includes loops tag when loopCount > 0', () async {
+        final video = createTestVideoEvent(
+          id: 'looped_video_id',
+          pubkey: creatorPubkey,
+          vineId: 'looped_vine_id',
+        );
+
+        await publisher.publishViewEvent(
+          video: video,
+          startSeconds: 0,
+          endSeconds: 30,
+          source: ViewTrafficSource.home,
+          loopCount: 5,
+        );
+
+        final captured = verify(
+          mockAuth.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: captureAnyNamed('tags'),
+          ),
+        ).captured;
+
+        final tags = captured[0] as List<List<String>>;
+        final loopsTag = tags.firstWhere((t) => t[0] == 'loops');
+        expect(loopsTag[1], equals('5'));
+      });
+
+      test('omits loops tag when loopCount is 0', () async {
+        final video = createTestVideoEvent(
+          id: 'no_loop_video_id',
+          pubkey: creatorPubkey,
+        );
+
+        await publisher.publishViewEvent(
+          video: video,
+          startSeconds: 0,
+          endSeconds: 10,
+          loopCount: 0,
+        );
+
+        final captured = verify(
+          mockAuth.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: captureAnyNamed('tags'),
+          ),
+        ).captured;
+
+        final tags = captured[0] as List<List<String>>;
+        final loopsTags = tags.where((t) => t[0] == 'loops').toList();
+        expect(loopsTags, isEmpty);
+      });
+
+      test('omits loops tag when loopCount is null', () async {
+        final video = createTestVideoEvent(
+          id: 'null_loop_video_id',
+          pubkey: creatorPubkey,
+        );
+
+        await publisher.publishViewEvent(
+          video: video,
+          startSeconds: 0,
+          endSeconds: 10,
+        );
+
+        final captured = verify(
+          mockAuth.createAndSignEvent(
+            kind: anyNamed('kind'),
+            content: anyNamed('content'),
+            tags: captureAnyNamed('tags'),
+          ),
+        ).captured;
+
+        final tags = captured[0] as List<List<String>>;
+        final loopsTags = tags.where((t) => t[0] == 'loops').toList();
+        expect(loopsTags, isEmpty);
+      });
     });
 
     group('publishViewEventWithSegments', () {

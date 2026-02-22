@@ -216,6 +216,7 @@ class AnalyticsService implements BackgroundAwareService {
         watchDuration: watchDuration,
         trafficSource: trafficSource,
         sourceDetail: sourceDetail,
+        loopCount: loopCount,
       );
     }
   }
@@ -226,6 +227,7 @@ class AnalyticsService implements BackgroundAwareService {
     required Duration watchDuration,
     required ViewTrafficSource trafficSource,
     String? sourceDetail,
+    int? loopCount,
   }) {
     final publisher = _viewEventPublisher;
     if (publisher == null) {
@@ -245,6 +247,7 @@ class AnalyticsService implements BackgroundAwareService {
           endSeconds: watchDuration.inSeconds,
           source: trafficSource,
           sourceDetail: sourceDetail,
+          loopCount: loopCount,
         )
         .then((success) {
           if (success) {
