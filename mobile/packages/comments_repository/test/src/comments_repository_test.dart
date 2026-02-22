@@ -314,6 +314,8 @@ void main() {
       test(
         'parses comment with only A tag (no E tag) from other clients',
         () async {
+          const testAddressableId = '34236:$testRootAuthorPubkey:video-dtag';
+
           // Some clients may only use A tag for addressable events
           final aTagOnlyComment = Event(
             testUserPubkey,
@@ -321,14 +323,14 @@ void main() {
             <List<String>>[
               [
                 'A',
-                '34236:$testRootAuthorPubkey:video-dtag',
+                testAddressableId,
                 '',
               ],
               ['K', _testRootEventKind.toString()],
               ['P', testRootAuthorPubkey],
               [
                 'a',
-                '34236:$testRootAuthorPubkey:video-dtag',
+                testAddressableId,
                 '',
               ],
               ['k', _testRootEventKind.toString()],
@@ -345,6 +347,7 @@ void main() {
           final result = await repository.loadComments(
             rootEventId: testRootEventId,
             rootEventKind: _testRootEventKind,
+            rootAddressableId: testAddressableId,
           );
 
           expect(result.totalCount, equals(1));
@@ -356,6 +359,184 @@ void main() {
           expect(comment.replyToEventId, isNull);
         },
       );
+
+      group('client-side filtering', () {
+        const otherVideoId =
+            'dddddddddddddddddddddddddddddddd'
+            'dddddddddddddddddddddddddddddddd';
+        const otherAddressableId = '34236:$testRootAuthorPubkey:other-video';
+
+        test(
+          'filters out comments whose E tag does not match rootEventId',
+          () async {
+            final matchingComment = _createCommentEvent(
+              id: 'matching',
+              content: 'Matching comment',
+              pubkey: testUserPubkey,
+              rootEventId: testRootEventId,
+              rootAuthorPubkey: testRootAuthorPubkey,
+              rootEventKind: _testRootEventKind,
+            );
+
+            final nonMatchingComment = _createCommentEvent(
+              id: 'nonmatching',
+              content: 'Wrong video comment',
+              pubkey: testUserPubkey,
+              rootEventId: otherVideoId,
+              rootAuthorPubkey: testRootAuthorPubkey,
+              rootEventKind: _testRootEventKind,
+            );
+
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer(
+              (_) async => [matchingComment, nonMatchingComment],
+            );
+
+            final result = await repository.loadComments(
+              rootEventId: testRootEventId,
+              rootEventKind: _testRootEventKind,
+            );
+
+            expect(result.totalCount, equals(1));
+            expect(
+              result.comments.first.content,
+              equals('Matching comment'),
+            );
+          },
+        );
+
+        test(
+          'includes comments matching via A tag when '
+          'rootAddressableId is provided',
+          () async {
+            const testAddressableId = '34236:$testRootAuthorPubkey:video-dtag';
+
+            // Event with only A tag (no matching E tag)
+            final aTagComment = Event(
+              testUserPubkey,
+              _commentKind,
+              <List<String>>[
+                ['A', testAddressableId, ''],
+                ['K', _testRootEventKind.toString()],
+                ['P', testRootAuthorPubkey],
+                ['a', testAddressableId, ''],
+                ['k', _testRootEventKind.toString()],
+                ['p', testRootAuthorPubkey],
+              ],
+              'A-tag comment',
+              createdAt: 1000,
+            )..id = 'a_tag_only';
+
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => [aTagComment]);
+
+            final result = await repository.loadComments(
+              rootEventId: testRootEventId,
+              rootEventKind: _testRootEventKind,
+              rootAddressableId: testAddressableId,
+            );
+
+            expect(result.totalCount, equals(1));
+            expect(
+              result.comments.first.content,
+              equals('A-tag comment'),
+            );
+          },
+        );
+
+        test(
+          'filters out comments with non-matching E and A tags',
+          () async {
+            const testAddressableId = '34236:$testRootAuthorPubkey:video-dtag';
+
+            // Event for a completely different video
+            final unrelatedComment = Event(
+              testUserPubkey,
+              _commentKind,
+              <List<String>>[
+                ['E', otherVideoId, '', testRootAuthorPubkey],
+                ['A', otherAddressableId, ''],
+                ['K', _testRootEventKind.toString()],
+                ['P', testRootAuthorPubkey],
+                ['e', otherVideoId, '', testRootAuthorPubkey],
+                ['k', _testRootEventKind.toString()],
+                ['p', testRootAuthorPubkey],
+              ],
+              'Unrelated comment',
+              createdAt: 1000,
+            )..id = 'unrelated';
+
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer((_) async => [unrelatedComment]);
+
+            final result = await repository.loadComments(
+              rootEventId: testRootEventId,
+              rootEventKind: _testRootEventKind,
+              rootAddressableId: testAddressableId,
+            );
+
+            expect(result.isEmpty, isTrue);
+            expect(result.totalCount, equals(0));
+          },
+        );
+
+        test(
+          'retains matching and filters non-matching from mixed results',
+          () async {
+            final matchingComment = _createCommentEvent(
+              id: 'match1',
+              content: 'Correct video',
+              pubkey: testUserPubkey,
+              rootEventId: testRootEventId,
+              rootAuthorPubkey: testRootAuthorPubkey,
+              rootEventKind: _testRootEventKind,
+            );
+
+            final wrongVideoComment = _createCommentEvent(
+              id: 'wrong1',
+              content: 'Wrong video',
+              pubkey: testUserPubkey,
+              rootEventId: otherVideoId,
+              rootAuthorPubkey: testRootAuthorPubkey,
+              rootEventKind: _testRootEventKind,
+            );
+
+            final anotherMatch = _createCommentEvent(
+              id: 'match2',
+              content: 'Also correct',
+              pubkey: testUserPubkey,
+              rootEventId: testRootEventId,
+              rootAuthorPubkey: testRootAuthorPubkey,
+              rootEventKind: _testRootEventKind,
+              createdAt: 2000,
+            );
+
+            when(
+              () => mockNostrClient.queryEvents(any()),
+            ).thenAnswer(
+              (_) async => [
+                matchingComment,
+                wrongVideoComment,
+                anotherMatch,
+              ],
+            );
+
+            final result = await repository.loadComments(
+              rootEventId: testRootEventId,
+              rootEventKind: _testRootEventKind,
+            );
+
+            expect(result.totalCount, equals(2));
+            expect(
+              result.comments.map((c) => c.content).toList(),
+              containsAll(['Correct video', 'Also correct']),
+            );
+          },
+        );
+      });
 
       test('throws LoadCommentsFailedException on error', () async {
         when(
