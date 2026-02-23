@@ -20,7 +20,7 @@ tags:
 license: MPL-2.0
 website: https://divine.video
 match: ".*arm64.*\\.apk$"
-icon: ./mobile/assets/icon/divine_icon_transparent_512.png
+icon: ./mobile/assets/icon/app_icon.png
 supported_nips:
   - "01"
   - "02"
