@@ -240,7 +240,7 @@ class _ShareVideoMenuState extends ConsumerState<ShareVideoMenu> {
       final result = await reportService.reportContent(
         eventId: widget.video.id,
         authorPubkey: widget.video.pubkey,
-        reason: ContentFilterReason.aiGenerated,
+        reason: ContentFilterReason.other,
         details: 'Suspected AI-generated content',
       );
 
@@ -2131,23 +2131,17 @@ class ReportContentDialogState extends ConsumerState<ReportContentDialog> {
   String _getReasonDisplayName(ContentFilterReason reason) {
     switch (reason) {
       case ContentFilterReason.spam:
-        return 'Spam or Unwanted Content';
+        return 'Spam';
       case ContentFilterReason.harassment:
-        return 'Harassment, Bullying, or Threats';
-      case ContentFilterReason.violence:
-        return 'Violent or Extremist Content';
-      case ContentFilterReason.sexualContent:
-        return 'Sexual or Adult Content';
-      case ContentFilterReason.copyright:
-        return 'Copyright Violation';
-      case ContentFilterReason.falseInformation:
-        return 'False Information';
-      case ContentFilterReason.csam:
-        return 'Child Safety Violation';
-      case ContentFilterReason.aiGenerated:
-        return 'AI-Generated Content';
+        return 'Harassment & Profanity';
+      case ContentFilterReason.nsfw:
+        return 'NSFW';
+      case ContentFilterReason.illegal:
+        return 'Illegal';
+      case ContentFilterReason.impersonation:
+        return 'Impersonation';
       case ContentFilterReason.other:
-        return 'Other Policy Violation';
+        return 'Other';
     }
   }
 

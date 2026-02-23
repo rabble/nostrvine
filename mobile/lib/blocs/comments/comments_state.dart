@@ -77,8 +77,8 @@ enum CommentsError {
   /// Failed to delete a comment
   deleteCommentFailed,
 
-  /// Failed to toggle like on a comment
-  likeFailed,
+  /// Failed to toggle vote on a comment
+  voteFailed,
 
   /// Failed to report a comment
   reportFailed,
@@ -119,14 +119,18 @@ final class CommentsState extends Equatable {
     this.isPosting = false,
     this.isLoadingMore = false,
     this.hasMoreContent = true,
-    this.commentLikeCounts = const {},
-    this.likedCommentIds = const {},
-    this.likeInProgressCommentId,
+    this.commentUpvoteCounts = const {},
+    this.commentDownvoteCounts = const {},
+    this.upvotedCommentIds = const {},
+    this.downvotedCommentIds = const {},
+    this.voteInProgressCommentId,
     this.sortMode = CommentsSortMode.newest,
     this.replyCountsByCommentId = const {},
     this.mentionQuery = '',
     this.mentionSuggestions = const [],
     this.activeMentions = const {},
+    this.activeEditCommentId,
+    this.editInputText = '',
   });
 
   /// The current status of the comments
@@ -150,14 +154,20 @@ final class CommentsState extends Equatable {
   /// Uses [Comment] from the repository layer.
   final Map<String, Comment> commentsById;
 
-  /// Like counts per comment ID.
-  final Map<String, int> commentLikeCounts;
+  /// Upvote counts per comment ID.
+  final Map<String, int> commentUpvoteCounts;
 
-  /// Set of comment IDs the current user has liked.
-  final Set<String> likedCommentIds;
+  /// Downvote counts per comment ID.
+  final Map<String, int> commentDownvoteCounts;
 
-  /// Comment ID currently undergoing a like toggle (prevents double-tap).
-  final String? likeInProgressCommentId;
+  /// Set of comment IDs the current user has upvoted.
+  final Set<String> upvotedCommentIds;
+
+  /// Set of comment IDs the current user has downvoted.
+  final Set<String> downvotedCommentIds;
+
+  /// Comment ID currently undergoing a vote toggle (prevents double-tap).
+  final String? voteInProgressCommentId;
 
   /// Current sort mode for the comments list.
   final CommentsSortMode sortMode;
@@ -177,6 +187,12 @@ final class CommentsState extends Equatable {
   /// to convert `@displayName` back to `nostr:npub` in the posted text.
   final Map<String, String> activeMentions;
 
+  /// ID of the comment currently being edited (null = not editing).
+  final String? activeEditCommentId;
+
+  /// Text content of the edit input buffer.
+  final String editInputText;
+
   /// All comments sorted according to [sortMode].
   List<Comment> get comments {
     final list = commentsById.values.toList();
@@ -191,13 +207,13 @@ final class CommentsState extends Equatable {
           final scoreA = CommentsBloc.engagementScore(
             comment: a,
             now: now,
-            likeCounts: commentLikeCounts,
+            likeCounts: commentUpvoteCounts,
             replyCounts: replyCountsByCommentId,
           );
           final scoreB = CommentsBloc.engagementScore(
             comment: b,
             now: now,
-            likeCounts: commentLikeCounts,
+            likeCounts: commentUpvoteCounts,
             replyCounts: replyCountsByCommentId,
           );
           return scoreB.compareTo(scoreA);
@@ -237,13 +253,13 @@ final class CommentsState extends Equatable {
             final scoreA = CommentsBloc.engagementScore(
               comment: a,
               now: now,
-              likeCounts: commentLikeCounts,
+              likeCounts: commentUpvoteCounts,
               replyCounts: replyCountsByCommentId,
             );
             final scoreB = CommentsBloc.engagementScore(
               comment: b,
               now: now,
-              likeCounts: commentLikeCounts,
+              likeCounts: commentUpvoteCounts,
               replyCounts: replyCountsByCommentId,
             );
             return scoreB.compareTo(scoreA);
@@ -320,14 +336,18 @@ final class CommentsState extends Equatable {
     bool? isPosting,
     bool? isLoadingMore,
     bool? hasMoreContent,
-    Map<String, int>? commentLikeCounts,
-    Set<String>? likedCommentIds,
-    String? likeInProgressCommentId,
+    Map<String, int>? commentUpvoteCounts,
+    Map<String, int>? commentDownvoteCounts,
+    Set<String>? upvotedCommentIds,
+    Set<String>? downvotedCommentIds,
+    String? voteInProgressCommentId,
     CommentsSortMode? sortMode,
     Map<String, int>? replyCountsByCommentId,
     String? mentionQuery,
     List<MentionSuggestion>? mentionSuggestions,
     Map<String, String>? activeMentions,
+    String? activeEditCommentId,
+    String? editInputText,
   }) {
     return CommentsState(
       status: status ?? this.status,
@@ -343,20 +363,25 @@ final class CommentsState extends Equatable {
       isPosting: isPosting ?? this.isPosting,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
       hasMoreContent: hasMoreContent ?? this.hasMoreContent,
-      commentLikeCounts: commentLikeCounts ?? this.commentLikeCounts,
-      likedCommentIds: likedCommentIds ?? this.likedCommentIds,
-      likeInProgressCommentId: likeInProgressCommentId,
+      commentUpvoteCounts: commentUpvoteCounts ?? this.commentUpvoteCounts,
+      commentDownvoteCounts:
+          commentDownvoteCounts ?? this.commentDownvoteCounts,
+      upvotedCommentIds: upvotedCommentIds ?? this.upvotedCommentIds,
+      downvotedCommentIds: downvotedCommentIds ?? this.downvotedCommentIds,
+      voteInProgressCommentId: voteInProgressCommentId,
       sortMode: sortMode ?? this.sortMode,
       replyCountsByCommentId:
           replyCountsByCommentId ?? this.replyCountsByCommentId,
       mentionQuery: mentionQuery ?? this.mentionQuery,
       mentionSuggestions: mentionSuggestions ?? this.mentionSuggestions,
       activeMentions: activeMentions ?? this.activeMentions,
+      activeEditCommentId: activeEditCommentId ?? this.activeEditCommentId,
+      editInputText: editInputText ?? this.editInputText,
     );
   }
 
   /// Creates a copy with the active reply cleared.
-  /// Preserves like data, sort mode, and reply counts.
+  /// Preserves vote data, sort mode, and reply counts.
   CommentsState clearActiveReply({
     CommentsStatus? status,
     Map<String, Comment>? commentsById,
@@ -374,13 +399,51 @@ final class CommentsState extends Equatable {
       isPosting: isPosting ?? this.isPosting,
       isLoadingMore: isLoadingMore,
       hasMoreContent: hasMoreContent,
-      commentLikeCounts: commentLikeCounts,
-      likedCommentIds: likedCommentIds,
+      commentUpvoteCounts: commentUpvoteCounts,
+      commentDownvoteCounts: commentDownvoteCounts,
+      upvotedCommentIds: upvotedCommentIds,
+      downvotedCommentIds: downvotedCommentIds,
       sortMode: sortMode,
       replyCountsByCommentId: replyCountsByCommentId,
       mentionQuery: '',
       mentionSuggestions: const [],
       activeMentions: const {},
+      activeEditCommentId: activeEditCommentId,
+      editInputText: editInputText,
+    );
+  }
+
+  /// Creates a copy with edit mode cleared.
+  /// Preserves all other state including vote data and reply state.
+  CommentsState clearEditMode({
+    CommentsStatus? status,
+    Map<String, Comment>? commentsById,
+    bool? isPosting,
+    Map<String, int>? replyCountsByCommentId,
+  }) {
+    return CommentsState(
+      status: status ?? this.status,
+      rootEventId: rootEventId,
+      rootEventKind: rootEventKind,
+      rootAuthorPubkey: rootAuthorPubkey,
+      rootAddressableId: rootAddressableId,
+      commentsById: commentsById ?? this.commentsById,
+      mainInputText: mainInputText,
+      replyInputText: replyInputText,
+      activeReplyCommentId: activeReplyCommentId,
+      isPosting: isPosting ?? this.isPosting,
+      isLoadingMore: isLoadingMore,
+      hasMoreContent: hasMoreContent,
+      commentUpvoteCounts: commentUpvoteCounts,
+      commentDownvoteCounts: commentDownvoteCounts,
+      upvotedCommentIds: upvotedCommentIds,
+      downvotedCommentIds: downvotedCommentIds,
+      sortMode: sortMode,
+      replyCountsByCommentId:
+          replyCountsByCommentId ?? this.replyCountsByCommentId,
+      mentionQuery: mentionQuery,
+      mentionSuggestions: mentionSuggestions,
+      activeMentions: activeMentions,
     );
   }
 
@@ -399,13 +462,17 @@ final class CommentsState extends Equatable {
     isPosting,
     isLoadingMore,
     hasMoreContent,
-    commentLikeCounts,
-    likedCommentIds,
-    likeInProgressCommentId,
+    commentUpvoteCounts,
+    commentDownvoteCounts,
+    upvotedCommentIds,
+    downvotedCommentIds,
+    voteInProgressCommentId,
     sortMode,
     replyCountsByCommentId,
     mentionQuery,
     mentionSuggestions,
     activeMentions,
+    activeEditCommentId,
+    editInputText,
   ];
 }
