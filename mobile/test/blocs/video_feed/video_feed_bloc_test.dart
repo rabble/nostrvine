@@ -616,6 +616,189 @@ void main() {
       );
     });
 
+    group('VideoFeedAutoRefreshRequested', () {
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'refreshes when on home mode and data is stale',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => videos);
+        },
+        build: () => VideoFeedBloc(
+          videosRepository: mockVideosRepository,
+          followRepository: mockFollowRepository,
+          autoRefreshInterval: Duration.zero,
+        ),
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.home,
+          videos: createTestVideos(3),
+        ),
+        act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
+        expect: () => [
+          const VideoFeedState(
+            status: VideoFeedStatus.loading,
+            mode: FeedMode.home,
+            videos: [],
+            hasMore: true,
+          ),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'videos count', pageSize),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'does nothing when mode is not home',
+        build: createBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.latest,
+          videos: createTestVideos(5),
+        ),
+        act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
+        expect: () => <VideoFeedState>[],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'does nothing when mode is popular',
+        build: createBloc,
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.popular,
+          videos: createTestVideos(5),
+        ),
+        act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
+        expect: () => <VideoFeedState>[],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'does nothing when data is fresh '
+        '(last refresh within auto-refresh interval)',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => videos);
+        },
+        build: () => VideoFeedBloc(
+          videosRepository: mockVideosRepository,
+          followRepository: mockFollowRepository,
+          // Large interval so data is always considered fresh
+          autoRefreshInterval: const Duration(hours: 1),
+        ),
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.home,
+          videos: createTestVideos(pageSize),
+        ),
+        act: (bloc) async {
+          // First, trigger a load so _lastRefreshedAt gets set
+          bloc.add(const VideoFeedStarted());
+          await Future<void>.delayed(Duration.zero);
+
+          // Now the auto-refresh should be skipped (data is fresh)
+          bloc.add(const VideoFeedAutoRefreshRequested());
+        },
+        skip: 2, // Skip the loading + success from VideoFeedStarted
+        expect: () => <VideoFeedState>[],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'refreshes when auto-refresh interval has elapsed',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => videos);
+        },
+        build: () => VideoFeedBloc(
+          videosRepository: mockVideosRepository,
+          followRepository: mockFollowRepository,
+          autoRefreshInterval: Duration.zero,
+        ),
+        seed: () => VideoFeedState(
+          status: VideoFeedStatus.success,
+          mode: FeedMode.home,
+          videos: createTestVideos(pageSize),
+        ),
+        act: (bloc) async {
+          // First load sets _lastRefreshedAt
+          bloc.add(const VideoFeedStarted());
+          await Future<void>.delayed(Duration.zero);
+
+          // With Duration.zero interval, this should refresh
+          bloc.add(const VideoFeedAutoRefreshRequested());
+        },
+        skip: 2, // Skip the loading + success from VideoFeedStarted
+        expect: () => [
+          const VideoFeedState(
+            status: VideoFeedStatus.loading,
+            mode: FeedMode.home,
+            videos: [],
+            hasMore: true,
+          ),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'videos count', pageSize),
+        ],
+      );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'refreshes when _lastRefreshedAt is null '
+        '(feed never loaded successfully)',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(() => mockFollowRepository.followingPubkeys).thenReturn(['a']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => videos);
+        },
+        build: createBloc,
+        seed: () => const VideoFeedState(
+          status: VideoFeedStatus.failure,
+          mode: FeedMode.home,
+          error: VideoFeedError.loadFailed,
+        ),
+        act: (bloc) => bloc.add(const VideoFeedAutoRefreshRequested()),
+        expect: () => [
+          const VideoFeedState(
+            status: VideoFeedStatus.loading,
+            mode: FeedMode.home,
+            videos: [],
+            hasMore: true,
+          ),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'videos count', pageSize),
+        ],
+      );
+    });
+
     group('close', () {
       test('cancels following subscription', () async {
         final bloc = createBloc();

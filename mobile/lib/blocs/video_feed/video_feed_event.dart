@@ -58,3 +58,16 @@ final class VideoFeedRefreshRequested extends VideoFeedEvent {
   @override
   List<Object?> get props => [];
 }
+
+/// Request an auto-refresh of the home feed.
+///
+/// Dispatched by the UI on app resume (background → foreground).
+/// The bloc will only perform the refresh if:
+/// - The current feed mode is [FeedMode.home]
+/// - Enough time has passed since the last successful load
+final class VideoFeedAutoRefreshRequested extends VideoFeedEvent {
+  const VideoFeedAutoRefreshRequested();
+
+  @override
+  List<Object?> get props => [];
+}

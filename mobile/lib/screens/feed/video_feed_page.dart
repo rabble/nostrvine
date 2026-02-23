@@ -48,7 +48,27 @@ class VideoFeedView extends StatefulWidget {
   State<VideoFeedView> createState() => _VideoFeedViewState();
 }
 
-class _VideoFeedViewState extends State<VideoFeedView> {
+class _VideoFeedViewState extends State<VideoFeedView>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      context.read<VideoFeedBloc>().add(const VideoFeedAutoRefreshRequested());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(

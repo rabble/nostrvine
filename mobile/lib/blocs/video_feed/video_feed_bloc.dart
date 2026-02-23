@@ -17,6 +17,9 @@ part 'video_feed_state.dart';
 /// Number of videos to load per page.
 const _pageSize = 5;
 
+/// Default interval between auto-refreshes of the home feed.
+const defaultAutoRefreshInterval = Duration(minutes: 10);
+
 /// BLoC for managing the unified video feed.
 ///
 /// Handles:
@@ -28,17 +31,25 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   VideoFeedBloc({
     required VideosRepository videosRepository,
     required FollowRepository followRepository,
+    Duration autoRefreshInterval = defaultAutoRefreshInterval,
   }) : _videosRepository = videosRepository,
        _followRepository = followRepository,
+       _autoRefreshInterval = autoRefreshInterval,
        super(const VideoFeedState()) {
     on<VideoFeedStarted>(_onStarted);
     on<VideoFeedModeChanged>(_onModeChanged);
     on<VideoFeedLoadMoreRequested>(_onLoadMoreRequested);
     on<VideoFeedRefreshRequested>(_onRefreshRequested);
+    on<VideoFeedAutoRefreshRequested>(_onAutoRefreshRequested);
   }
 
   final VideosRepository _videosRepository;
   final FollowRepository _followRepository;
+  final Duration _autoRefreshInterval;
+
+  /// Tracks when the last successful load completed, used by
+  /// [_onAutoRefreshRequested] to skip refreshes when data is fresh.
+  DateTime? _lastRefreshedAt;
 
   /// Handle feed started event.
   Future<void> _onStarted(
@@ -138,6 +149,36 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
     await _loadVideos(state.mode, emit);
   }
 
+  /// Handle auto-refresh request (dispatched by UI on app resume).
+  ///
+  /// Only refreshes when:
+  /// - The current feed mode is [FeedMode.home]
+  /// - The data is stale (last refresh was longer ago than
+  ///   [_autoRefreshInterval])
+  Future<void> _onAutoRefreshRequested(
+    VideoFeedAutoRefreshRequested event,
+    Emitter<VideoFeedState> emit,
+  ) async {
+    if (state.mode != FeedMode.home) return;
+
+    final lastRefresh = _lastRefreshedAt;
+    if (lastRefresh != null &&
+        DateTime.now().difference(lastRefresh) < _autoRefreshInterval) {
+      return;
+    }
+
+    emit(
+      state.copyWith(
+        status: VideoFeedStatus.loading,
+        videos: [],
+        hasMore: true,
+        clearError: true,
+      ),
+    );
+
+    await _loadVideos(state.mode, emit);
+  }
+
   /// Load videos for the specified mode.
   Future<void> _loadVideos(FeedMode mode, Emitter<VideoFeedState> emit) async {
     try {
@@ -150,6 +191,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
       if (mode == FeedMode.home &&
           validVideos.isEmpty &&
           _followRepository.followingPubkeys.isEmpty) {
+        _lastRefreshedAt = DateTime.now();
+
         emit(
           state.copyWith(
             status: VideoFeedStatus.success,
@@ -160,6 +203,8 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
         );
         return;
       }
+
+      _lastRefreshedAt = DateTime.now();
 
       emit(
         state.copyWith(
