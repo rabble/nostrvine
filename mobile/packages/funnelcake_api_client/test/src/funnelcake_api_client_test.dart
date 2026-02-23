@@ -6,7 +6,6 @@ import 'dart:async';
 import 'package:funnelcake_api_client/funnelcake_api_client.dart';
 import 'package:http/http.dart' as http;
 import 'package:mocktail/mocktail.dart';
-import 'package:models/models.dart';
 import 'package:test/test.dart';
 
 class MockHttpClient extends Mock implements http.Client {}
