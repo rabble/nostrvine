@@ -1,0 +1,28 @@
+# Zapstore publishing configuration for diVine
+# Usage: zsp publish zapstore.yaml
+# Docs: https://github.com/zapstore/zsp
+
+repository: https://github.com/divinevideo/divine-mobile
+name: diVine
+summary: Decentralized short-form video sharing powered by Nostr
+description: |
+  diVine is a decentralized vine-like video sharing app built on Nostr.
+  Create, share, and discover short looping videos with full ownership
+  of your content and social graph. No algorithms, no gatekeepers.
+tags:
+  - social
+  - video
+  - nostr
+  - decentralized
+license: MPL-2.0
+website: https://divine.video
+match: ".*arm64.*\\.apk$"
+icon: ./mobile/assets/icon/divine_icon_transparent_512.png
+supported_nips:
+  - "01"
+  - "02"
+  - "18"
+  - "25"
+  - "46"
+  - "71"
+  - "94"

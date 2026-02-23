@@ -19,6 +19,10 @@
 # 7 - Create environment variable group "proofmode_credentials" with:
 #   - PROOFMODE_SIGNING_SERVER_ENDPOINT
 #   - PROOFMODE_SIGNING_SERVER_TOKEN
+# 8 - PUBLISH_TO_GITHUB is configured via build inputs (dropdown) when starting Android builds
+#   - Set to YES to create a GitHub Release with APK artifacts (for Zapstore distribution)
+#   - Defaults to NO
+#   - Requires GITHUB_TOKEN in "github_credentials" environment variable group
 
 definitions:
   environment:
@@ -46,7 +50,7 @@ definitions:
     - &build_apk
       name: Build Android APK
       script: |
-        flutter build apk --release --build-number=$PROJECT_BUILD_NUMBER \
+        flutter build apk --release --split-per-abi --build-number=$PROJECT_BUILD_NUMBER \
           --dart-define=ZENDESK_APP_ID=$ZENDESK_APP_ID \
           --dart-define=ZENDESK_CLIENT_ID=$ZENDESK_CLIENT_ID \
           --dart-define=ZENDESK_URL=$ZENDESK_URL \
@@ -65,6 +69,23 @@ definitions:
           --dart-define=DEFAULT_ENV=${{ inputs.DEFAULT_ENV }} \
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
           --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN
+    - &publish_github_release
+      name: Publish to GitHub Release
+      script: |
+        if [ "${{ inputs.PUBLISH_TO_GITHUB }}" != "YES" ]; then
+          echo "Skipping GitHub Release (PUBLISH_TO_GITHUB != YES)"
+          exit 0
+        fi
+        VERSION=$(grep '^version:' pubspec.yaml | sed 's/version: //' | sed 's/+.*//')
+        TAG="$VERSION"
+        echo "Creating GitHub Release $TAG"
+        gh release create "$TAG" \
+          --repo "$CM_REPO_SLUG" \
+          --title "$TAG" \
+          --prerelease \
+          --generate-notes \
+          build/app/outputs/apk/release/*arm64*.apk \
+          build/app/outputs/apk/release/*armeabi*.apk
     - &build_ios
       name: Build and sign iOS
       script: |
@@ -195,6 +216,13 @@ workflows:
           - STAGING
           - TEST
           - POC
+      PUBLISH_TO_GITHUB:
+        description: Create a GitHub Release with APK artifacts (for Zapstore)
+        type: choice
+        default: "NO"
+        options:
+          - "NO"
+          - "YES"
     environment:
       flutter: 3.41.1
       java: 17
@@ -202,6 +230,7 @@ workflows:
         - zendesk_credentials
         - google_play_credentials
         - proofmode_credentials
+        - github_credentials
       android_signing:
         - divine_keystore
     cache:
@@ -214,6 +243,7 @@ workflows:
       - *setup_local_properties
       - *build_apk
       - *build_aab
+      - *publish_github_release
     artifacts:
       - build/app/outputs/apk/release/*.apk
       - build/app/outputs/bundle/release/*.aab
