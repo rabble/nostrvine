@@ -245,7 +245,7 @@ void main() {
 
       final reports = reportServiceAsync.getReportsForEvent(testVideo.id);
       expect(reports.length, equals(1));
-      expect(reports.first.reason, equals(ContentFilterReason.aiGenerated));
+      expect(reports.first.reason, equals(ContentFilterReason.other));
       expect(reports.first.details, equals('Suspected AI-generated content'));
     });
   });

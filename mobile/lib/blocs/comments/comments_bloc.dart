@@ -73,10 +73,11 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     on<CommentErrorCleared>(_onErrorCleared);
     on<CommentDeleteRequested>(_onDeleteRequested);
     // droppable() prevents concurrent processing of the SAME event type,
-    // but the manual likeInProgressCommentId guard (line 384) prevents
+    // but the manual voteInProgressCommentId guard prevents
     // rapid toggles on DIFFERENT comment IDs from racing each other.
-    on<CommentLikeToggled>(_onLikeToggled, transformer: droppable());
-    on<CommentLikeCountsFetchRequested>(_onLikeCountsFetchRequested);
+    on<CommentUpvoteToggled>(_onUpvoteToggled, transformer: droppable());
+    on<CommentDownvoteToggled>(_onDownvoteToggled, transformer: droppable());
+    on<CommentVoteCountsFetchRequested>(_onVoteCountsFetchRequested);
     on<CommentsSortModeChanged>(_onSortModeChanged);
     on<CommentReportRequested>(_onReportRequested, transformer: droppable());
     on<CommentBlockUserRequested>(
@@ -91,6 +92,9 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     on<MentionSuggestionsCleared>(_onMentionSuggestionsCleared);
     on<NewCommentReceived>(_onNewCommentReceived);
     on<NewCommentsAcknowledged>(_onNewCommentsAcknowledged);
+    on<CommentEditModeEntered>(_onEditModeEntered);
+    on<CommentEditModeCancelled>(_onEditModeCancelled);
+    on<CommentEditSubmitted>(_onEditSubmitted);
   }
 
   /// Page size for comment loading.
@@ -145,7 +149,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         ),
       );
 
-      add(const CommentLikeCountsFetchRequested());
+      add(const CommentVoteCountsFetchRequested());
       _startWatchingComments();
     } catch (e) {
       Log.error(
@@ -220,7 +224,7 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         ),
       );
 
-      add(const CommentLikeCountsFetchRequested());
+      add(const CommentVoteCountsFetchRequested());
 
       Log.info(
         'Loaded ${thread.comments.length} more comments '
@@ -239,7 +243,10 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
   }
 
   void _onTextChanged(CommentTextChanged event, Emitter<CommentsState> emit) {
-    if (event.commentId == null) {
+    // Edit mode: update edit buffer instead of main/reply input
+    if (state.activeEditCommentId != null) {
+      emit(state.copyWith(editInputText: event.text));
+    } else if (event.commentId == null) {
       emit(state.copyWith(mainInputText: event.text));
     } else {
       emit(state.copyWith(replyInputText: event.text));
@@ -376,41 +383,46 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     }
   }
 
-  Future<void> _onLikeCountsFetchRequested(
-    CommentLikeCountsFetchRequested event,
+  Future<void> _onVoteCountsFetchRequested(
+    CommentVoteCountsFetchRequested event,
     Emitter<CommentsState> emit,
   ) async {
     if (state.commentsById.isEmpty) return;
 
     try {
       final commentIds = state.commentsById.keys.toList();
-      final counts = await _likesRepository.getLikeCounts(commentIds);
 
-      // Check which comments the current user has liked (parallelized)
-      final likedResults = await Future.wait(
-        commentIds.map(
-          (id) async => (id: id, liked: await _likesRepository.isLiked(id)),
-        ),
-      );
-      final likedIds = <String>{};
-      for (final result in likedResults) {
-        if (result.liked) likedIds.add(result.id);
-      }
+      // Fetch vote counts and user vote statuses in parallel
+      final results = await Future.wait([
+        _likesRepository.getVoteCounts(commentIds),
+        _likesRepository.getUserVoteStatuses(commentIds),
+      ]);
+
+      final voteCounts =
+          results[0]
+              as ({Map<String, int> upvotes, Map<String, int> downvotes});
+      final voteStatuses =
+          results[1] as ({Set<String> upvotedIds, Set<String> downvotedIds});
 
       emit(
-        state.copyWith(commentLikeCounts: counts, likedCommentIds: likedIds),
+        state.copyWith(
+          commentUpvoteCounts: voteCounts.upvotes,
+          commentDownvoteCounts: voteCounts.downvotes,
+          upvotedCommentIds: voteStatuses.upvotedIds,
+          downvotedCommentIds: voteStatuses.downvotedIds,
+        ),
       );
     } catch (e) {
       Log.error(
-        'Error fetching comment like counts: $e',
+        'Error fetching comment vote counts: $e',
         name: 'CommentsBloc',
         category: LogCategory.ui,
       );
     }
   }
 
-  Future<void> _onLikeToggled(
-    CommentLikeToggled event,
+  Future<void> _onUpvoteToggled(
+    CommentUpvoteToggled event,
     Emitter<CommentsState> emit,
   ) async {
     if (!_authService.isAuthenticated) {
@@ -419,65 +431,177 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     }
 
     // Prevent double-tap on the same comment
-    if (state.likeInProgressCommentId == event.commentId) return;
+    if (state.voteInProgressCommentId == event.commentId) return;
 
-    final wasLiked = state.likedCommentIds.contains(event.commentId);
-    final previousCount = state.commentLikeCounts[event.commentId] ?? 0;
+    final wasUpvoted = state.upvotedCommentIds.contains(event.commentId);
+    final wasDownvoted = state.downvotedCommentIds.contains(event.commentId);
+    final prevUpCount = state.commentUpvoteCounts[event.commentId] ?? 0;
+    final prevDownCount = state.commentDownvoteCounts[event.commentId] ?? 0;
 
     // Optimistic update
-    final optimisticLikedIds = Set<String>.from(state.likedCommentIds);
-    final optimisticCounts = Map<String, int>.from(state.commentLikeCounts);
+    final upIds = Set<String>.from(state.upvotedCommentIds);
+    final downIds = Set<String>.from(state.downvotedCommentIds);
+    final upCounts = Map<String, int>.from(state.commentUpvoteCounts);
+    final downCounts = Map<String, int>.from(state.commentDownvoteCounts);
 
-    if (wasLiked) {
-      optimisticLikedIds.remove(event.commentId);
-      optimisticCounts[event.commentId] = max(0, previousCount - 1);
+    if (wasUpvoted) {
+      // Remove upvote
+      upIds.remove(event.commentId);
+      upCounts[event.commentId] = max(0, prevUpCount - 1);
     } else {
-      optimisticLikedIds.add(event.commentId);
-      optimisticCounts[event.commentId] = previousCount + 1;
+      // Add upvote
+      upIds.add(event.commentId);
+      upCounts[event.commentId] = prevUpCount + 1;
+      // Remove downvote if present
+      if (wasDownvoted) {
+        downIds.remove(event.commentId);
+        downCounts[event.commentId] = max(0, prevDownCount - 1);
+      }
     }
 
     emit(
       state.copyWith(
-        likedCommentIds: optimisticLikedIds,
-        commentLikeCounts: optimisticCounts,
-        likeInProgressCommentId: event.commentId,
+        upvotedCommentIds: upIds,
+        downvotedCommentIds: downIds,
+        commentUpvoteCounts: upCounts,
+        commentDownvoteCounts: downCounts,
+        voteInProgressCommentId: event.commentId,
       ),
     );
 
     try {
-      await _likesRepository.toggleLike(
-        eventId: event.commentId,
-        authorPubkey: event.authorPubkey,
-        targetKind: EventKind.comment,
-      );
+      if (wasUpvoted) {
+        // Remove upvote (unlike)
+        await _likesRepository.toggleLike(
+          eventId: event.commentId,
+          authorPubkey: event.authorPubkey,
+          targetKind: EventKind.comment,
+        );
+      } else {
+        // Add upvote (like with '+')
+        await _likesRepository.likeEvent(
+          eventId: event.commentId,
+          authorPubkey: event.authorPubkey,
+          targetKind: EventKind.comment,
+        );
+      }
 
-      // Clear in-progress guard: copyWith() without likeInProgressCommentId
-      // passes null, intentionally resetting the guard.
+      // Clear in-progress guard
       emit(state.copyWith());
     } catch (e) {
       Log.error(
-        'Error toggling comment like: $e',
+        'Error toggling comment upvote: $e',
         name: 'CommentsBloc',
         category: LogCategory.ui,
       );
 
       // Revert optimistic update
-      final revertedLikedIds = Set<String>.from(state.likedCommentIds);
-      final revertedCounts = Map<String, int>.from(state.commentLikeCounts);
-
-      if (wasLiked) {
-        revertedLikedIds.add(event.commentId);
-        revertedCounts[event.commentId] = previousCount;
-      } else {
-        revertedLikedIds.remove(event.commentId);
-        revertedCounts[event.commentId] = previousCount;
-      }
-
       emit(
         state.copyWith(
-          likedCommentIds: revertedLikedIds,
-          commentLikeCounts: revertedCounts,
-          error: CommentsError.likeFailed,
+          upvotedCommentIds: Set<String>.from(state.upvotedCommentIds)
+            ..addAll(wasUpvoted ? {event.commentId} : {})
+            ..removeAll(wasUpvoted ? {} : {event.commentId}),
+          downvotedCommentIds: Set<String>.from(state.downvotedCommentIds)
+            ..addAll(wasDownvoted ? {event.commentId} : {}),
+          commentUpvoteCounts: Map<String, int>.from(state.commentUpvoteCounts)
+            ..[event.commentId] = prevUpCount,
+          commentDownvoteCounts: Map<String, int>.from(
+            state.commentDownvoteCounts,
+          )..[event.commentId] = prevDownCount,
+          error: CommentsError.voteFailed,
+        ),
+      );
+    }
+  }
+
+  Future<void> _onDownvoteToggled(
+    CommentDownvoteToggled event,
+    Emitter<CommentsState> emit,
+  ) async {
+    if (!_authService.isAuthenticated) {
+      emit(state.copyWith(error: CommentsError.notAuthenticated));
+      return;
+    }
+
+    // Prevent double-tap on the same comment
+    if (state.voteInProgressCommentId == event.commentId) return;
+
+    final wasDownvoted = state.downvotedCommentIds.contains(event.commentId);
+    final wasUpvoted = state.upvotedCommentIds.contains(event.commentId);
+    final prevUpCount = state.commentUpvoteCounts[event.commentId] ?? 0;
+    final prevDownCount = state.commentDownvoteCounts[event.commentId] ?? 0;
+
+    // Optimistic update
+    final upIds = Set<String>.from(state.upvotedCommentIds);
+    final downIds = Set<String>.from(state.downvotedCommentIds);
+    final upCounts = Map<String, int>.from(state.commentUpvoteCounts);
+    final downCounts = Map<String, int>.from(state.commentDownvoteCounts);
+
+    if (wasDownvoted) {
+      // Remove downvote
+      downIds.remove(event.commentId);
+      downCounts[event.commentId] = max(0, prevDownCount - 1);
+    } else {
+      // Add downvote
+      downIds.add(event.commentId);
+      downCounts[event.commentId] = prevDownCount + 1;
+      // Remove upvote if present
+      if (wasUpvoted) {
+        upIds.remove(event.commentId);
+        upCounts[event.commentId] = max(0, prevUpCount - 1);
+      }
+    }
+
+    emit(
+      state.copyWith(
+        upvotedCommentIds: upIds,
+        downvotedCommentIds: downIds,
+        commentUpvoteCounts: upCounts,
+        commentDownvoteCounts: downCounts,
+        voteInProgressCommentId: event.commentId,
+      ),
+    );
+
+    try {
+      if (wasDownvoted) {
+        // Remove downvote — we need the reaction event ID; use unlikeEvent
+        // which handles the Kind 5 deletion
+        await _likesRepository.unlikeEvent(event.commentId);
+      } else {
+        // If upvoted, remove upvote first, then add downvote
+        if (wasUpvoted) {
+          await _likesRepository.unlikeEvent(event.commentId);
+        }
+        await _likesRepository.downvoteEvent(
+          eventId: event.commentId,
+          authorPubkey: event.authorPubkey,
+          targetKind: EventKind.comment,
+        );
+      }
+
+      // Clear in-progress guard
+      emit(state.copyWith());
+    } catch (e) {
+      Log.error(
+        'Error toggling comment downvote: $e',
+        name: 'CommentsBloc',
+        category: LogCategory.ui,
+      );
+
+      // Revert optimistic update
+      emit(
+        state.copyWith(
+          upvotedCommentIds: Set<String>.from(state.upvotedCommentIds)
+            ..addAll(wasUpvoted ? {event.commentId} : {}),
+          downvotedCommentIds: Set<String>.from(state.downvotedCommentIds)
+            ..addAll(wasDownvoted ? {event.commentId} : {})
+            ..removeAll(wasDownvoted ? {} : {event.commentId}),
+          commentUpvoteCounts: Map<String, int>.from(state.commentUpvoteCounts)
+            ..[event.commentId] = prevUpCount,
+          commentDownvoteCounts: Map<String, int>.from(
+            state.commentDownvoteCounts,
+          )..[event.commentId] = prevDownCount,
+          error: CommentsError.voteFailed,
         ),
       );
     }
@@ -543,6 +667,88 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
         category: LogCategory.ui,
       );
       emit(state.copyWith(error: CommentsError.blockFailed));
+    }
+  }
+
+  void _onEditModeEntered(
+    CommentEditModeEntered event,
+    Emitter<CommentsState> emit,
+  ) {
+    // Clear any active reply, then enter edit mode
+    emit(
+      state.clearActiveReply().copyWith(
+        activeEditCommentId: event.commentId,
+        editInputText: event.originalContent,
+      ),
+    );
+  }
+
+  void _onEditModeCancelled(
+    CommentEditModeCancelled event,
+    Emitter<CommentsState> emit,
+  ) {
+    emit(state.clearEditMode());
+  }
+
+  Future<void> _onEditSubmitted(
+    CommentEditSubmitted event,
+    Emitter<CommentsState> emit,
+  ) async {
+    final editedText = state.editInputText.trim();
+    if (editedText.isEmpty) return;
+
+    if (!_authService.isAuthenticated) {
+      emit(state.copyWith(error: CommentsError.notAuthenticated));
+      return;
+    }
+
+    final originalComment = state.commentsById[event.originalCommentId];
+    if (originalComment == null) return;
+
+    emit(state.copyWith(isPosting: true));
+
+    try {
+      // Step 1: Delete the original comment
+      await _commentsRepository.deleteComment(
+        commentId: event.originalCommentId,
+      );
+
+      // Step 2: Post new comment with same threading tags
+      final postedComment = await _commentsRepository.postComment(
+        content: editedText,
+        rootEventId: state.rootEventId,
+        rootEventKind: state.rootEventKind,
+        rootEventAuthorPubkey: state.rootAuthorPubkey,
+        rootAddressableId: state.rootAddressableId,
+        replyToEventId: originalComment.replyToEventId,
+        replyToAuthorPubkey: originalComment.replyToAuthorPubkey,
+      );
+
+      // Remove old comment, add new one
+      final updatedCommentsById = Map<String, Comment>.from(state.commentsById)
+        ..remove(event.originalCommentId)
+        ..[postedComment.id] = postedComment;
+
+      emit(
+        state.clearEditMode(
+          commentsById: updatedCommentsById,
+          isPosting: false,
+          replyCountsByCommentId: _computeReplyCounts(updatedCommentsById),
+        ),
+      );
+    } catch (e) {
+      Log.error(
+        'Error editing comment: $e',
+        name: 'CommentsBloc',
+        category: LogCategory.ui,
+      );
+
+      emit(
+        state.copyWith(
+          isPosting: false,
+          error: CommentsError.postCommentFailed,
+        ),
+      );
     }
   }
 
@@ -789,7 +995,8 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
 
   /// Computes an engagement score for ranking comments.
   ///
-  /// Score = (likes + replies*2) / (ageHours + 2)^1.2
+  /// Score = (max(0, netScore) + replies*2) / (ageHours + 2)^1.2
+  /// where netScore = upvotes - downvotes.
   /// Higher scores indicate more engaging, recent content.
   @visibleForTesting
   static double engagementScore({
@@ -798,9 +1005,9 @@ class CommentsBloc extends Bloc<CommentsEvent, CommentsState> {
     required Map<String, int> likeCounts,
     required Map<String, int> replyCounts,
   }) {
-    final likes = likeCounts[comment.id] ?? 0;
+    final netScore = likeCounts[comment.id] ?? 0;
     final replies = replyCounts[comment.id] ?? 0;
-    final engagement = likes + (replies * 2);
+    final engagement = max(0, netScore) + (replies * 2);
     final ageHours = now.difference(comment.createdAt).inMinutes / 60.0;
     return engagement / pow(ageHours + 2, 1.2);
   }

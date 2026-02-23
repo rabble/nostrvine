@@ -523,19 +523,13 @@ class ContentReportingService {
       case ContentFilterReason.spam:
         return 'This content appears to be spam or unwanted promotional material.';
       case ContentFilterReason.harassment:
-        return 'This content contains harassment, bullying, or abusive behavior.';
-      case ContentFilterReason.violence:
-        return 'This content contains violence, threats, or harmful behavior.';
-      case ContentFilterReason.sexualContent:
-        return 'This content contains inappropriate sexual or adult material.';
-      case ContentFilterReason.copyright:
-        return 'This content appears to violate copyright or intellectual property rights.';
-      case ContentFilterReason.falseInformation:
-        return 'This content contains misinformation or deliberately false information.';
-      case ContentFilterReason.csam:
-        return 'This content violates child safety policies and may contain illegal material.';
-      case ContentFilterReason.aiGenerated:
-        return 'This content appears to be AI-generated and may violate authenticity policies.';
+        return 'This content contains harassment, profanity, or abusive behavior.';
+      case ContentFilterReason.nsfw:
+        return 'This content contains nudity, pornography, or violent material.';
+      case ContentFilterReason.illegal:
+        return 'This content appears to violate the law.';
+      case ContentFilterReason.impersonation:
+        return 'This user is impersonating someone else.';
       case ContentFilterReason.other:
         return 'This content violates community guidelines.';
     }

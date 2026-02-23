@@ -152,7 +152,7 @@ void main() {
         final result = await service.reportContent(
           eventId: 'ai_video_event_id',
           authorPubkey: 'suspicious_author',
-          reason: ContentFilterReason.aiGenerated,
+          reason: ContentFilterReason.other,
           details: 'Suspected AI-generated content',
         );
 
@@ -262,7 +262,7 @@ void main() {
       final result = await service.reportContent(
         eventId: 'ai_content',
         authorPubkey: 'ai_creator',
-        reason: ContentFilterReason.aiGenerated,
+        reason: ContentFilterReason.other,
         details: 'Detected AI generation patterns',
       );
 
@@ -342,16 +342,13 @@ void main() {
       await service.reportContent(
         eventId: 'reported_event',
         authorPubkey: 'bad_actor',
-        reason: ContentFilterReason.aiGenerated,
+        reason: ContentFilterReason.other,
         details: 'AI detection',
       );
 
       // Assert
       expect(service.reportHistory, isNotEmpty);
-      expect(
-        service.reportHistory.first.reason,
-        ContentFilterReason.aiGenerated,
-      );
+      expect(service.reportHistory.first.reason, ContentFilterReason.other);
     });
 
     test('reportContent() fails when not authenticated', () async {
@@ -471,7 +468,7 @@ void main() {
       final result = await service.reportContent(
         eventId: 'test',
         authorPubkey: 'test',
-        reason: ContentFilterReason.aiGenerated,
+        reason: ContentFilterReason.other,
         details: 'test',
       );
 

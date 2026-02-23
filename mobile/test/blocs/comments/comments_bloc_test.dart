@@ -75,13 +75,13 @@ void main() {
         () => mockAuthService.currentPublicKeyHex,
       ).thenReturn(validId('currentuser'));
 
-      // Default stubs for like-related calls
-      when(
-        () => mockLikesRepository.getLikeCounts(any()),
-      ).thenAnswer((_) async => {});
-      when(
-        () => mockLikesRepository.isLiked(any()),
-      ).thenAnswer((_) async => false);
+      // Default stubs for vote-related calls
+      when(() => mockLikesRepository.getVoteCounts(any())).thenAnswer(
+        (_) async => (upvotes: <String, int>{}, downvotes: <String, int>{}),
+      );
+      when(() => mockLikesRepository.getUserVoteStatuses(any())).thenAnswer(
+        (_) async => (upvotedIds: <String>{}, downvotedIds: <String>{}),
+      );
 
       // Default stubs for mention search dependencies
       when(
@@ -896,17 +896,17 @@ void main() {
       );
     });
 
-    group('CommentLikeToggled', () {
+    group('CommentUpvoteToggled', () {
       blocTest<CommentsBloc, CommentsState>(
         'emits optimistic like update when unliked comment is toggled',
         setUp: () {
           when(
-            () => mockLikesRepository.toggleLike(
+            () => mockLikesRepository.likeEvent(
               eventId: any(named: 'eventId'),
               authorPubkey: any(named: 'authorPubkey'),
               targetKind: any(named: 'targetKind'),
             ),
-          ).thenAnswer((_) async => true);
+          ).thenAnswer((_) async => 'mock-reaction-id');
         },
         build: createBloc,
         seed: () {
@@ -921,12 +921,12 @@ void main() {
           return CommentsState(
             status: CommentsStatus.success,
             commentsById: {comment.id: comment},
-            commentLikeCounts: {comment.id: 5},
-            likedCommentIds: const {},
+            commentUpvoteCounts: {comment.id: 5},
+            upvotedCommentIds: const {},
           );
         },
         act: (bloc) => bloc.add(
-          CommentLikeToggled(
+          CommentUpvoteToggled(
             commentId: validId('likecomment'),
             authorPubkey: validId('commenter'),
           ),
@@ -935,35 +935,35 @@ void main() {
           // First emit: optimistic update with like added
           isA<CommentsState>()
               .having(
-                (s) => s.likedCommentIds.contains(validId('likecomment')),
+                (s) => s.upvotedCommentIds.contains(validId('likecomment')),
                 'liked',
                 true,
               )
               .having(
-                (s) => s.commentLikeCounts[validId('likecomment')],
+                (s) => s.commentUpvoteCounts[validId('likecomment')],
                 'count',
                 6,
               )
               .having(
-                (s) => s.likeInProgressCommentId,
-                'likeInProgressCommentId',
+                (s) => s.voteInProgressCommentId,
+                'voteInProgressCommentId',
                 validId('likecomment'),
               ),
-          // Second emit: clears likeInProgressCommentId on success
+          // Second emit: clears voteInProgressCommentId on success
           isA<CommentsState>()
               .having(
-                (s) => s.likedCommentIds.contains(validId('likecomment')),
+                (s) => s.upvotedCommentIds.contains(validId('likecomment')),
                 'liked',
                 true,
               )
               .having(
-                (s) => s.commentLikeCounts[validId('likecomment')],
+                (s) => s.commentUpvoteCounts[validId('likecomment')],
                 'count',
                 6,
               )
               .having(
-                (s) => s.likeInProgressCommentId,
-                'likeInProgressCommentId',
+                (s) => s.voteInProgressCommentId,
+                'voteInProgressCommentId',
                 null,
               ),
         ],
@@ -993,12 +993,12 @@ void main() {
           return CommentsState(
             status: CommentsStatus.success,
             commentsById: {comment.id: comment},
-            commentLikeCounts: {comment.id: 3},
-            likedCommentIds: {comment.id},
+            commentUpvoteCounts: {comment.id: 3},
+            upvotedCommentIds: {comment.id},
           );
         },
         act: (bloc) => bloc.add(
-          CommentLikeToggled(
+          CommentUpvoteToggled(
             commentId: validId('likecomment'),
             authorPubkey: validId('commenter'),
           ),
@@ -1007,30 +1007,30 @@ void main() {
           // First emit: optimistic unlike
           isA<CommentsState>()
               .having(
-                (s) => s.likedCommentIds.contains(validId('likecomment')),
+                (s) => s.upvotedCommentIds.contains(validId('likecomment')),
                 'liked',
                 false,
               )
               .having(
-                (s) => s.commentLikeCounts[validId('likecomment')],
+                (s) => s.commentUpvoteCounts[validId('likecomment')],
                 'count',
                 2,
               )
               .having(
-                (s) => s.likeInProgressCommentId,
-                'likeInProgressCommentId',
+                (s) => s.voteInProgressCommentId,
+                'voteInProgressCommentId',
                 validId('likecomment'),
               ),
-          // Second emit: clears likeInProgressCommentId on success
+          // Second emit: clears voteInProgressCommentId on success
           isA<CommentsState>()
               .having(
-                (s) => s.likedCommentIds.contains(validId('likecomment')),
+                (s) => s.upvotedCommentIds.contains(validId('likecomment')),
                 'liked',
                 false,
               )
               .having(
-                (s) => s.likeInProgressCommentId,
-                'likeInProgressCommentId',
+                (s) => s.voteInProgressCommentId,
+                'voteInProgressCommentId',
                 null,
               ),
         ],
@@ -1060,12 +1060,12 @@ void main() {
           return CommentsState(
             status: CommentsStatus.success,
             commentsById: {comment.id: comment},
-            commentLikeCounts: {comment.id: 5},
-            likedCommentIds: const {},
+            commentUpvoteCounts: {comment.id: 5},
+            upvotedCommentIds: const {},
           );
         },
         act: (bloc) => bloc.add(
-          CommentLikeToggled(
+          CommentUpvoteToggled(
             commentId: validId('likecomment'),
             authorPubkey: validId('commenter'),
           ),
@@ -1074,28 +1074,28 @@ void main() {
           // First emit: optimistic like
           isA<CommentsState>()
               .having(
-                (s) => s.likedCommentIds.contains(validId('likecomment')),
+                (s) => s.upvotedCommentIds.contains(validId('likecomment')),
                 'liked',
                 true,
               )
               .having(
-                (s) => s.commentLikeCounts[validId('likecomment')],
+                (s) => s.commentUpvoteCounts[validId('likecomment')],
                 'count',
                 6,
               ),
           // Second emit: reverted on error
           isA<CommentsState>()
               .having(
-                (s) => s.likedCommentIds.contains(validId('likecomment')),
+                (s) => s.upvotedCommentIds.contains(validId('likecomment')),
                 'liked',
                 false,
               )
               .having(
-                (s) => s.commentLikeCounts[validId('likecomment')],
+                (s) => s.commentUpvoteCounts[validId('likecomment')],
                 'count',
                 5,
               )
-              .having((s) => s.error, 'error', CommentsError.likeFailed),
+              .having((s) => s.error, 'error', CommentsError.voteFailed),
         ],
       );
 
@@ -1114,11 +1114,11 @@ void main() {
           return CommentsState(
             status: CommentsStatus.success,
             commentsById: {comment.id: comment},
-            likeInProgressCommentId: validId('likecomment'),
+            voteInProgressCommentId: validId('likecomment'),
           );
         },
         act: (bloc) => bloc.add(
-          CommentLikeToggled(
+          CommentUpvoteToggled(
             commentId: validId('likecomment'),
             authorPubkey: validId('commenter'),
           ),
@@ -1147,7 +1147,7 @@ void main() {
           );
         },
         act: (bloc) => bloc.add(
-          CommentLikeToggled(
+          CommentUpvoteToggled(
             commentId: validId('likecomment'),
             authorPubkey: validId('commenter'),
           ),
@@ -1162,19 +1162,20 @@ void main() {
       );
     });
 
-    group('CommentLikeCountsFetchRequested', () {
+    group('CommentVoteCountsFetchRequested', () {
       blocTest<CommentsBloc, CommentsState>(
-        'fetches like counts and liked status for all comments',
+        'fetches vote counts and vote status for all comments',
         setUp: () {
-          when(() => mockLikesRepository.getLikeCounts(any())).thenAnswer(
-            (_) async => {validId('comment1'): 10, validId('comment2'): 3},
+          when(() => mockLikesRepository.getVoteCounts(any())).thenAnswer(
+            (_) async => (
+              upvotes: {validId('comment1'): 10, validId('comment2'): 3},
+              downvotes: {validId('comment1'): 0, validId('comment2'): 0},
+            ),
           );
-          when(
-            () => mockLikesRepository.isLiked(validId('comment1')),
-          ).thenAnswer((_) async => true);
-          when(
-            () => mockLikesRepository.isLiked(validId('comment2')),
-          ).thenAnswer((_) async => false);
+          when(() => mockLikesRepository.getUserVoteStatuses(any())).thenAnswer(
+            (_) async =>
+                (upvotedIds: {validId('comment1')}, downvotedIds: <String>{}),
+          );
         },
         build: createBloc,
         seed: () {
@@ -1199,26 +1200,26 @@ void main() {
             commentsById: {comment1.id: comment1, comment2.id: comment2},
           );
         },
-        act: (bloc) => bloc.add(const CommentLikeCountsFetchRequested()),
+        act: (bloc) => bloc.add(const CommentVoteCountsFetchRequested()),
         expect: () => [
           isA<CommentsState>()
               .having(
-                (s) => s.commentLikeCounts[validId('comment1')],
+                (s) => s.commentUpvoteCounts[validId('comment1')],
                 'comment1 count',
                 10,
               )
               .having(
-                (s) => s.commentLikeCounts[validId('comment2')],
+                (s) => s.commentUpvoteCounts[validId('comment2')],
                 'comment2 count',
                 3,
               )
               .having(
-                (s) => s.likedCommentIds.contains(validId('comment1')),
+                (s) => s.upvotedCommentIds.contains(validId('comment1')),
                 'comment1 liked',
                 true,
               )
               .having(
-                (s) => s.likedCommentIds.contains(validId('comment2')),
+                (s) => s.upvotedCommentIds.contains(validId('comment2')),
                 'comment2 liked',
                 false,
               ),
@@ -1232,11 +1233,11 @@ void main() {
           status: CommentsStatus.success,
           commentsById: {},
         ),
-        act: (bloc) => bloc.add(const CommentLikeCountsFetchRequested()),
+        act: (bloc) => bloc.add(const CommentVoteCountsFetchRequested()),
         expect: () => <CommentsState>[],
         verify: (_) {
-          verifyNever(() => mockLikesRepository.getLikeCounts(any()));
-          verifyNever(() => mockLikesRepository.isLiked(any()));
+          verifyNever(() => mockLikesRepository.getVoteCounts(any()));
+          verifyNever(() => mockLikesRepository.getUserVoteStatuses(any()));
         },
       );
 
@@ -1244,7 +1245,7 @@ void main() {
         'handles errors gracefully',
         setUp: () {
           when(
-            () => mockLikesRepository.getLikeCounts(any()),
+            () => mockLikesRepository.getVoteCounts(any()),
           ).thenThrow(Exception('Network error'));
         },
         build: createBloc,
@@ -1262,7 +1263,7 @@ void main() {
             commentsById: {comment.id: comment},
           );
         },
-        act: (bloc) => bloc.add(const CommentLikeCountsFetchRequested()),
+        act: (bloc) => bloc.add(const CommentVoteCountsFetchRequested()),
         expect: () => <CommentsState>[],
       );
     });
@@ -2557,7 +2558,7 @@ void main() {
           lowEngagement.id: lowEngagement,
           highEngagement.id: highEngagement,
         },
-        commentLikeCounts: {lowEngagement.id: 1, highEngagement.id: 20},
+        commentUpvoteCounts: {lowEngagement.id: 1, highEngagement.id: 20},
         replyCountsByCommentId: {lowEngagement.id: 0, highEngagement.id: 5},
       );
 
@@ -2566,22 +2567,22 @@ void main() {
       expect(comments.last.id, lowEngagement.id);
     });
 
-    test('copyWith without likeInProgressCommentId clears it', () {
-      const state = CommentsState(likeInProgressCommentId: 'some-comment-id');
+    test('copyWith without voteInProgressCommentId clears it', () {
+      const state = CommentsState(voteInProgressCommentId: 'some-comment-id');
 
       final updated = state.copyWith();
 
-      expect(updated.likeInProgressCommentId, null);
+      expect(updated.voteInProgressCommentId, null);
     });
 
-    test('copyWith with likeInProgressCommentId preserves it', () {
+    test('copyWith with voteInProgressCommentId preserves it', () {
       const state = CommentsState();
 
       final updated = state.copyWith(
-        likeInProgressCommentId: 'some-comment-id',
+        voteInProgressCommentId: 'some-comment-id',
       );
 
-      expect(updated.likeInProgressCommentId, 'some-comment-id');
+      expect(updated.voteInProgressCommentId, 'some-comment-id');
     });
 
     test(
@@ -2889,7 +2890,7 @@ void main() {
           lowEngagement.id: lowEngagement,
           highEngagement.id: highEngagement,
         },
-        commentLikeCounts: {lowEngagement.id: 1, highEngagement.id: 20},
+        commentUpvoteCounts: {lowEngagement.id: 1, highEngagement.id: 20},
         replyCountsByCommentId: {lowEngagement.id: 0, highEngagement.id: 5},
       );
 
@@ -2967,8 +2968,8 @@ void main() {
         activeReplyCommentId: 'comment1',
         replyInputText: 'draft',
         sortMode: CommentsSortMode.topEngagement,
-        commentLikeCounts: const {'c1': 5},
-        likedCommentIds: const {'c1'},
+        commentUpvoteCounts: const {'c1': 5},
+        upvotedCommentIds: const {'c1'},
       );
 
       final updated = state.clearActiveReply();
@@ -2976,8 +2977,8 @@ void main() {
       expect(updated.activeReplyCommentId, null);
       expect(updated.replyInputText, '');
       expect(updated.sortMode, CommentsSortMode.topEngagement);
-      expect(updated.commentLikeCounts, {'c1': 5});
-      expect(updated.likedCommentIds, {'c1'});
+      expect(updated.commentUpvoteCounts, {'c1': 5});
+      expect(updated.upvotedCommentIds, {'c1'});
     });
 
     test('preserves mainInputText', () {
