@@ -1553,6 +1553,66 @@ class MockLikesRepository extends _i1.Mock implements _i3.LikesRepository {
           as _i8.Future<Map<String, int>>);
 
   @override
+  _i8.Future<({Map<String, int> downvotes, Map<String, int> upvotes})>
+  getVoteCounts(List<String>? eventIds) =>
+      (super.noSuchMethod(
+            Invocation.method(#getVoteCounts, [eventIds]),
+            returnValue:
+                _i8.Future<
+                  ({Map<String, int> downvotes, Map<String, int> upvotes})
+                >.value((downvotes: <String, int>{}, upvotes: <String, int>{})),
+          )
+          as _i8.Future<
+            ({Map<String, int> downvotes, Map<String, int> upvotes})
+          >);
+
+  @override
+  _i8.Future<({Set<String> downvotedIds, Set<String> upvotedIds})>
+  getUserVoteStatuses(List<String>? eventIds) =>
+      (super.noSuchMethod(
+            Invocation.method(#getUserVoteStatuses, [eventIds]),
+            returnValue:
+                _i8.Future<
+                  ({Set<String> downvotedIds, Set<String> upvotedIds})
+                >.value((downvotedIds: <String>{}, upvotedIds: <String>{})),
+          )
+          as _i8.Future<({Set<String> downvotedIds, Set<String> upvotedIds})>);
+
+  @override
+  _i8.Future<String> downvoteEvent({
+    required String? eventId,
+    required String? authorPubkey,
+    int? targetKind,
+  }) =>
+      (super.noSuchMethod(
+            Invocation.method(#downvoteEvent, [], {
+              #eventId: eventId,
+              #authorPubkey: authorPubkey,
+              #targetKind: targetKind,
+            }),
+            returnValue: _i8.Future<String>.value(
+              _i7.dummyValue<String>(
+                this,
+                Invocation.method(#downvoteEvent, [], {
+                  #eventId: eventId,
+                  #authorPubkey: authorPubkey,
+                  #targetKind: targetKind,
+                }),
+              ),
+            ),
+          )
+          as _i8.Future<String>);
+
+  @override
+  _i8.Future<void> deleteReaction(String? reactionEventId) =>
+      (super.noSuchMethod(
+            Invocation.method(#deleteReaction, [reactionEventId]),
+            returnValue: _i8.Future<void>.value(),
+            returnValueForMissingStub: _i8.Future<void>.value(),
+          )
+          as _i8.Future<void>);
+
+  @override
   _i8.Future<_i3.LikeRecord?> getLikeRecord(String? eventId) =>
       (super.noSuchMethod(
             Invocation.method(#getLikeRecord, [eventId]),
