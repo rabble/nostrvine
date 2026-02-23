@@ -266,11 +266,7 @@ class AuthService implements BackgroundAwareService {
   }
 
   /// Report a secure storage error to Crashlytics with auth context.
-  void _reportStorageError(
-    dynamic error,
-    StackTrace stack,
-    String reason,
-  ) {
+  void _reportStorageError(dynamic error, StackTrace stack, String reason) {
     final crashlytics = CrashReportingService.instance;
     crashlytics.log('Storage error during auth: $reason');
     unawaited(crashlytics.setCustomKey('auth_source', _authSource.code));
@@ -1935,11 +1931,7 @@ class AuthService implements BackgroundAwareService {
             name: 'AuthService',
             category: LogCategory.auth,
           );
-          _reportStorageError(
-            e,
-            stack,
-            '_checkExistingAuth getKeyContainer()',
-          );
+          _reportStorageError(e, stack, '_checkExistingAuth getKeyContainer()');
           _storageErrorOccurred = true;
           _lastError =
               "Couldn't load your saved identity from this device. "
@@ -1958,9 +1950,7 @@ class AuthService implements BackgroundAwareService {
           category: LogCategory.auth,
         );
         _reportStorageError(
-          StateError(
-            'hasKeys() true but getKeyContainer() returned null',
-          ),
+          StateError('hasKeys() true but getKeyContainer() returned null'),
           StackTrace.current,
           '_checkExistingAuth storage inconsistency',
         );
