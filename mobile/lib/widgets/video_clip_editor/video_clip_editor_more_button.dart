@@ -212,7 +212,7 @@ class _VideoEditorMoreButtonState
   Widget build(BuildContext context) {
     return VideoEditorIconButton(
       backgroundColor: const Color(0x00000000),
-      iconPath: 'assets/icon/more_horiz.svg',
+      icon: .moreHoriz,
       onTap: _showMoreOptions,
       // TODO(l10n): Replace with context.l10n when localization is added.
       semanticLabel: 'More options',

@@ -1,8 +1,8 @@
 // ABOUTME: Reusable rounded icon button for video editor controls
 // ABOUTME: Customizable size, colors, and shadow styling
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 
 /// Rounded icon button for video editor controls.
 ///
@@ -10,8 +10,7 @@ import 'package:flutter_svg/svg.dart';
 class VideoEditorIconButton extends StatelessWidget {
   /// Creates a video editor icon button.
   const VideoEditorIconButton({
-    this.icon,
-    this.iconPath,
+    required this.icon,
     super.key,
     this.backgroundColor = const Color(0xFF000000),
     this.iconColor = Colors.white,
@@ -19,13 +18,10 @@ class VideoEditorIconButton extends StatelessWidget {
     this.size = 48,
     this.onTap,
     this.semanticLabel,
-  }) : assert(icon != null || iconPath != null, 'icon or iconPath is required');
+  });
 
-  /// The icon to display.
-  final IconData? icon;
-
-  /// The path to the assets svg-icon.
-  final String? iconPath;
+  /// The name of the icon.
+  final DivineIconName icon;
 
   /// Background color of the button.
   final Color backgroundColor;
@@ -60,18 +56,9 @@ class VideoEditorIconButton extends StatelessWidget {
             color: backgroundColor,
             borderRadius: BorderRadius.circular(20),
           ),
-          child: icon != null
-              ? Icon(icon, color: iconColor, size: iconSize)
-              : Center(
-                  child: SizedBox(
-                    height: iconSize,
-                    width: iconSize,
-                    child: SvgPicture.asset(
-                      iconPath!,
-                      colorFilter: ColorFilter.mode(iconColor, BlendMode.srcIn),
-                    ),
-                  ),
-                ),
+          child: Center(
+            child: DivineIcon(size: iconSize, icon: icon, color: iconColor),
+          ),
         ),
       ),
     );

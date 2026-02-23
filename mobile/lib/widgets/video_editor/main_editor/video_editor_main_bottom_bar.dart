@@ -3,7 +3,6 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 
@@ -35,31 +34,31 @@ class VideoEditorMainBottomBar extends StatelessWidget {
                   _ActionButton(
                     // TODO(l10n): Replace with context.l10n when localization is added.
                     label: 'Text',
-                    iconPath: 'assets/icon/text.svg',
+                    icon: .textAa,
                     onTap: () => scope.editor?.openTextEditor(),
                   ),
                   _ActionButton(
                     // TODO(l10n): Replace with context.l10n when localization is added.
                     label: 'Draw',
-                    iconPath: 'assets/icon/draw.svg',
+                    icon: .scribble,
                     onTap: () => scope.editor?.openPaintEditor(),
                   ),
                   _ActionButton(
                     // TODO(l10n): Replace with context.l10n when localization is added.
                     label: 'Stickers',
-                    iconPath: 'assets/icon/sticker.svg',
+                    icon: .sticker,
                     onTap: scope.onAddStickers,
                   ),
                   _ActionButton(
                     // TODO(l10n): Replace with context.l10n when localization is added.
                     label: 'Effects',
-                    iconPath: 'assets/icon/tune.svg',
+                    icon: .fadersHorizontal,
                     onTap: () => scope.editor?.openFilterEditor(),
                   ),
                   _ActionButton(
                     // TODO(l10n): Replace with context.l10n when localization is added.
                     label: 'Music',
-                    iconPath: 'assets/icon/music.svg',
+                    icon: .musicNotesSimple,
                     // TODO(@hm21): Implement music editor
                     onTap: () {},
                   ),
@@ -77,15 +76,15 @@ class VideoEditorMainBottomBar extends StatelessWidget {
 class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.label,
-    required this.iconPath,
+    required this.icon,
     required this.onTap,
   });
 
   /// The text label displayed below the icon.
   final String label;
 
-  /// Path to the SVG icon asset.
-  final String iconPath;
+  /// The icon displayed above of the text.
+  final DivineIconName icon;
 
   /// Callback when the button is tapped.
   final VoidCallback onTap;
@@ -108,18 +107,10 @@ class _ActionButton extends StatelessWidget {
                 border: .all(width: 2, color: const Color(0xFF0E2B21)),
                 borderRadius: .circular(20),
               ),
-              child: SizedBox(
-                height: 24,
-                width: 24,
-                child: SvgPicture.asset(
-                  iconPath,
-                  width: 24,
-                  height: 24,
-                  colorFilter: const ColorFilter.mode(
-                    Colors.white,
-                    BlendMode.srcIn,
-                  ),
-                ),
+              child: DivineIcon(
+                icon: icon,
+                size: 24,
+                color: VineTheme.whiteText,
               ),
             ),
           ),
