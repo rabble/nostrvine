@@ -639,12 +639,8 @@ void main() {
           mode: FeedMode.home,
           videos: createTestVideos(3),
         ),
-        act: (bloc) {
-          // First emission is skipped (matches BehaviorSubject replay)
-          followingController.add([]);
-          // Second emission triggers the handler
-          followingController.add(['new-author']);
-        },
+        act: (bloc) =>
+            bloc.add(const VideoFeedFollowingListChanged(['new-author'])),
         expect: () => [
           const VideoFeedState(
             status: VideoFeedStatus.loading,
@@ -667,10 +663,8 @@ void main() {
           mode: FeedMode.latest,
           videos: createTestVideos(5),
         ),
-        act: (bloc) {
-          followingController.add([]);
-          followingController.add(['new-author']);
-        },
+        act: (bloc) =>
+            bloc.add(const VideoFeedFollowingListChanged(['new-author'])),
         expect: () => <VideoFeedState>[],
       );
 
@@ -681,10 +675,8 @@ void main() {
           status: VideoFeedStatus.loading,
           mode: FeedMode.home,
         ),
-        act: (bloc) {
-          followingController.add([]);
-          followingController.add(['new-author']);
-        },
+        act: (bloc) =>
+            bloc.add(const VideoFeedFollowingListChanged(['new-author'])),
         expect: () => <VideoFeedState>[],
       );
 
@@ -712,10 +704,8 @@ void main() {
           hasMore: false,
           error: VideoFeedError.noFollowedUsers,
         ),
-        act: (bloc) {
-          followingController.add([]);
-          followingController.add(['first-follow']);
-        },
+        act: (bloc) =>
+            bloc.add(const VideoFeedFollowingListChanged(['first-follow'])),
         expect: () => [
           const VideoFeedState(
             status: VideoFeedStatus.loading,
@@ -729,10 +719,51 @@ void main() {
               .having((s) => s.error, 'error', isNull),
         ],
       );
+
+      blocTest<VideoFeedBloc, VideoFeedState>(
+        'subscribes to followingStream via emit.onEach on startup',
+        setUp: () {
+          final videos = createTestVideos(pageSize);
+
+          when(
+            () => mockFollowRepository.followingPubkeys,
+          ).thenReturn(['author']);
+          when(
+            () => mockVideosRepository.getHomeFeedVideos(
+              authors: any(named: 'authors'),
+              limit: any(named: 'limit'),
+              until: any(named: 'until'),
+            ),
+          ).thenAnswer((_) async => videos);
+        },
+        build: createBloc,
+        act: (bloc) async {
+          bloc.add(const VideoFeedStarted());
+          // Wait for initial load to complete
+          await Future<void>.delayed(Duration.zero);
+          // First stream emission is skipped (BehaviorSubject replay)
+          followingController.add([]);
+          await Future<void>.delayed(Duration.zero);
+          // Second emission triggers the handler
+          followingController.add(['new-author']);
+        },
+        skip: 2, // Skip loading + success from VideoFeedStarted
+        expect: () => [
+          const VideoFeedState(
+            status: VideoFeedStatus.loading,
+            mode: FeedMode.home,
+            videos: [],
+            hasMore: true,
+          ),
+          isA<VideoFeedState>()
+              .having((s) => s.status, 'status', VideoFeedStatus.success)
+              .having((s) => s.videos.length, 'videos count', pageSize),
+        ],
+      );
     });
 
     group('close', () {
-      test('cancels following subscription', () async {
+      test('does not throw when stream emits after close', () async {
         final bloc = createBloc();
 
         await bloc.close();
