@@ -13,7 +13,6 @@ import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
-import 'package:openvine/screens/home_screen_router.dart';
 import 'package:openvine/screens/key_import_screen.dart';
 import 'package:openvine/screens/key_management_screen.dart';
 import 'package:openvine/screens/liked_videos_screen_router.dart';
@@ -75,7 +74,6 @@ enum RouteType {
   creatorAnalytics, // Creator analytics dashboard (profile owner)
   sound, // Sound detail screen for audio reuse
   secureAccount,
-  newVideoFeed,
   pooledVideoFeed, // Pooled fullscreen video feed (uses pooled_video_player)
   videoDetail, // Video detail screen (deep link to specific video)
 }
@@ -312,9 +310,6 @@ RouteContext parseRoute(String path) {
     case 'secure-account':
       return const RouteContext(type: RouteType.secureAccount);
 
-    case 'new-video-feed':
-      return const RouteContext(type: RouteType.newVideoFeed);
-
     case 'pooled-video-feed':
       return const RouteContext(type: RouteType.pooledVideoFeed);
 
@@ -337,7 +332,7 @@ String buildRoute(RouteContext context) {
     case RouteType.home:
       final rawIndex = context.videoIndex ?? 0;
       final index = rawIndex < 0 ? 0 : rawIndex;
-      return HomeScreenRouter.pathForIndex(index);
+      return VideoFeedPage.pathForIndex(index);
 
     case RouteType.explore:
       if (context.videoIndex != null) {
@@ -484,9 +479,6 @@ String buildRoute(RouteContext context) {
 
     case RouteType.secureAccount:
       return SecureAccountScreen.path;
-
-    case RouteType.newVideoFeed:
-      return VideoFeedPage.path;
 
     case RouteType.pooledVideoFeed:
       return PooledFullscreenVideoFeedScreen.path;

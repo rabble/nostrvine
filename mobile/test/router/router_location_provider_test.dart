@@ -7,7 +7,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 
 void main() {
   group('Router Location Provider', () {
@@ -31,7 +31,7 @@ void main() {
 
       // Get initial location
       final initial = await queue.next;
-      expect(initial, HomeScreenRouter.pathForIndex(0));
+      expect(initial, VideoFeedPage.pathForIndex(0));
     });
 
     testWidgets('emits new location when router navigates', (tester) async {
@@ -55,7 +55,7 @@ void main() {
 
       // 1) Initial location
       final initial = await queue.next;
-      expect(initial, HomeScreenRouter.pathForIndex(0));
+      expect(initial, VideoFeedPage.pathForIndex(0));
 
       // 2) Navigate to explore
       container.read(goRouterProvider).go(ExploreScreen.pathForIndex(0));

@@ -8,7 +8,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
@@ -211,6 +211,131 @@ class _SaveForLaterButton extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _onSaveForLater(BuildContext context, WidgetRef ref) async {
+    // Get the clips from clip manager
+    final finalRenderedClip = ref.read(videoEditorProvider).finalRenderedClip;
+    final recordingClips = ref.read(clipManagerProvider).clips;
+    if (recordingClips.isEmpty) {
+      Log.warning(
+        'No clips to save',
+        name: '_SaveForLaterButton',
+        category: LogCategory.video,
+      );
+      return;
+    }
+
+    bool saveSuccess = true;
+    String? gallerySaveMessage;
+
+    try {
+      // 1. Save the final rendered video to the gallery.
+      if (finalRenderedClip != null) {
+        final gallerySaveService = ref.read(gallerySaveServiceProvider);
+        final galleryResult = await gallerySaveService.saveVideoToGallery(
+          finalRenderedClip.video,
+        );
+
+        gallerySaveMessage = switch (galleryResult) {
+          GallerySaveSuccess() => 'Saved to camera roll',
+          GallerySavePermissionDenied() => 'Camera roll: permission denied',
+          GallerySaveFailure(:final reason) => 'Camera roll: $reason',
+        };
+      }
+
+      // 2. Save each clip to the clip library for the Clips tab.
+      final clipLibraryService = ref.read(clipLibraryServiceProvider);
+      final sessionId = 'save_${DateTime.now().millisecondsSinceEpoch}';
+
+      for (final clip in recordingClips) {
+        final clipPath = await clip.video.safeFilePath();
+        final savedClip = SavedClip(
+          id: 'clip_${DateTime.now().microsecondsSinceEpoch}_${clip.id}',
+          filePath: clipPath,
+          thumbnailPath: clip.thumbnailPath,
+          duration: clip.duration,
+          createdAt: DateTime.now(),
+          aspectRatio: clip.targetAspectRatio.name,
+          sessionId: sessionId,
+        );
+
+        await clipLibraryService.saveClip(savedClip);
+
+        Log.info(
+          'Saved clip to library: ${savedClip.id}',
+          name: '_SaveForLaterButton',
+          category: LogCategory.video,
+        );
+      }
+
+      // 3. Save as draft (with metadata) for the Drafts tab
+      // Note: This may delete original files, so it must happen LAST
+      final draftSuccess = await ref
+          .read(videoEditorProvider.notifier)
+          .saveAsDraft();
+      if (!draftSuccess) {
+        Log.warning(
+          'Failed to save draft',
+          name: '_SaveForLaterButton',
+          category: LogCategory.video,
+        );
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to save: $e',
+        name: '_SaveForLaterButton',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      saveSuccess = false;
+    }
+
+    if (!context.mounted) return;
+
+    // Store router reference before showing SnackBar
+    final router = GoRouter.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    // Build the status message
+    String label;
+    if (saveSuccess) {
+      label = gallerySaveMessage ?? 'Saved to library!';
+    } else {
+      label = 'Failed to save';
+    }
+
+    scaffoldMessenger.showSnackBar(
+      SnackBar(
+        padding: EdgeInsets.zero,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 5),
+        content: DivineSnackbarContainer(
+          // TODO(l10n): Replace with context.l10n when localization is added.
+          label: label,
+          error: !saveSuccess,
+          // TODO(l10n): Replace with context.l10n when localization is added.
+          actionLabel: 'Go to Library',
+          onActionPressed: () {
+            scaffoldMessenger.hideCurrentSnackBar();
+            router.push(ClipLibraryScreen.clipsPath);
+          },
+        ),
+      ),
+    );
+
+    if (saveSuccess) {
+      // Navigate first, then cleanup after the frame to avoid
+      // "Bad state: No element" errors from widgets rebuilding
+      // during the transition
+      router.go(VideoFeedPage.pathForIndex(0));
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(videoPublishProvider.notifier).clearAll();
+      });
+    }
   }
 }
 

@@ -21,7 +21,7 @@ import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/providers/environment_provider.dart';
 import 'package:openvine/utils/npub_hex.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/screens/feed/video_feed_page.dart';
 import 'package:openvine/screens/notifications_screen.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/screens/pure/search_screen_pure.dart';
@@ -141,7 +141,7 @@ class AppShell extends ConsumerWidget {
     // GoRouter handles navigation state, but we need to clear pushed routes first
     switch (tabIndex) {
       case 0:
-        return context.go(HomeScreenRouter.pathForIndex(lastIndex ?? 0));
+        return context.go(VideoFeedPage.pathForIndex(lastIndex ?? 0));
       case 1:
         // Always reset to grid mode (null) when tapping Explore tab
         // This prevents the "No videos available" bug when returning from another tab
@@ -319,7 +319,11 @@ class AppShell extends ConsumerWidget {
         // Track drawer visibility for video pause/resume
         ref.read(overlayVisibilityProvider.notifier).setDrawerOpen(isOpen);
       },
-      appBar: AppBar(
+      // Home tab uses FeedModeSwitch overlay (menu + mode dropdown + search)
+      // instead of the standard AppBar, for full-screen video UX.
+      appBar: currentIndex == 0
+          ? null
+          : AppBar(
         elevation: 0,
         scrolledUnderElevation: 0,
         toolbarHeight: 72,
@@ -421,7 +425,7 @@ class AppShell extends ConsumerWidget {
                     switch (previousTab) {
                       case 0:
                         context.go(
-                          HomeScreenRouter.pathForIndex(lastIndex ?? 0),
+                          VideoFeedPage.pathForIndex(lastIndex ?? 0),
                         );
                         break;
                       case 1:
@@ -456,7 +460,7 @@ class AppShell extends ConsumerWidget {
                   final currentTab = _tabIndexFromRouteType(ctx.type);
                   if (currentTab != null && currentTab != 0) {
                     // Go to home first
-                    return context.go(HomeScreenRouter.pathForIndex(0));
+                    return context.go(VideoFeedPage.pathForIndex(0));
                   }
 
                   // Already at home with no history - let system handle exit
