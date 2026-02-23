@@ -2632,10 +2632,54 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
       // Required 'd' tag - must use the same identifier
       tags.add(['d', widget.video.stableId]);
 
-      // Build imeta tag components (preserve existing media data)
+      // Extract ALL valid HTTP video URLs from the original imeta tag.
+      // The original event may have multiple URL entries (streaming MP4,
+      // HLS, R2 fallback, etc.) which must all be preserved.
+      final videoUrls = <String>[];
+      for (final tag in widget.video.nostrEventTags) {
+        if (tag.isEmpty || tag[0] != 'imeta') continue;
+        if (tag.length > 1 && tag[1].contains(' ')) {
+          // Old imeta format: ['imeta', 'url https://...', 'm video/mp4', ...]
+          for (var i = 1; i < tag.length; i++) {
+            final spaceIdx = tag[i].indexOf(' ');
+            if (spaceIdx > 0) {
+              final key = tag[i].substring(0, spaceIdx);
+              final value = tag[i].substring(spaceIdx + 1);
+              if (key == 'url' &&
+                  _isHttpUrl(value) &&
+                  !videoUrls.contains(value)) {
+                videoUrls.add(value);
+              }
+            }
+          }
+        } else {
+          // New imeta format: ['imeta', 'url', 'https://...', 'm', 'video/mp4', ...]
+          for (var i = 1; i < tag.length - 1; i += 2) {
+            if (tag[i] == 'url' &&
+                _isHttpUrl(tag[i + 1]) &&
+                !videoUrls.contains(tag[i + 1])) {
+              videoUrls.add(tag[i + 1]);
+            }
+          }
+        }
+      }
+
+      // Fallback: if nostrEventTags is empty (e.g., loaded from JSON cache
+      // where nostrEventTags is not serialized), use the single videoUrl.
+      if (videoUrls.isEmpty && _isHttpUrl(widget.video.videoUrl)) {
+        videoUrls.add(widget.video.videoUrl!);
+      }
+
+      // Refuse to republish if no valid HTTP video URLs can be preserved.
+      // This prevents corrupt events with local file paths from being published.
+      if (videoUrls.isEmpty) {
+        throw Exception('Cannot update video: no valid HTTP video URLs found');
+      }
+
+      // Build imeta tag components (preserve all original media URLs)
       final imetaComponents = <String>[];
-      if (widget.video.videoUrl != null) {
-        imetaComponents.add('url ${widget.video.videoUrl!}');
+      for (final url in videoUrls) {
+        imetaComponents.add('url $url');
       }
       imetaComponents.add('m video/mp4');
 
@@ -2857,6 +2901,12 @@ class _EditVideoDialogState extends ConsumerState<_EditVideoDialog> {
         );
       }
     }
+  }
+
+  /// Check if a URL is a valid HTTP/HTTPS URL (not a local file path).
+  static bool _isHttpUrl(String? url) {
+    if (url == null || url.isEmpty) return false;
+    return url.startsWith('http://') || url.startsWith('https://');
   }
 
   @override
