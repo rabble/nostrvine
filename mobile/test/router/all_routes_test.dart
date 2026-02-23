@@ -19,9 +19,7 @@ import 'package:openvine/screens/video_recorder_screen.dart';
 
 void main() {
   group('App Router - All Routes', () {
-    testWidgets('${VideoFeedPage.pathWithIndex} route works', (
-      tester,
-    ) async {
+    testWidgets('${VideoFeedPage.pathWithIndex} route works', (tester) async {
       final container = ProviderContainer();
       addTearDown(container.dispose);
 

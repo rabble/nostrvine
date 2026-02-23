@@ -168,9 +168,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
                 key: NavigatorKeys.home,
                 onGenerateRoute: (r) => MaterialPageRoute(
                   builder: (_) => const VideoFeedPage(),
-                  settings: RouteSettings(
-                    name: VideoFeedPage.routeName,
-                  ),
+                  settings: RouteSettings(name: VideoFeedPage.routeName),
                 ),
               ),
             ),

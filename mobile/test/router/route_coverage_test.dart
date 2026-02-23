@@ -116,14 +116,11 @@ void main() {
     });
 
     group('Tab routes parse correctly', () {
-      test(
-        '${VideoFeedPage.path} parses to RouteType.home with index 0',
-        () {
-          final context = parseRoute(VideoFeedPage.path);
-          expect(context.type, RouteType.home);
-          expect(context.videoIndex, 0);
-        },
-      );
+      test('${VideoFeedPage.path} parses to RouteType.home with index 0', () {
+        final context = parseRoute(VideoFeedPage.path);
+        expect(context.type, RouteType.home);
+        expect(context.videoIndex, 0);
+      });
 
       test(
         '${VideoFeedPage.pathForIndex(5)} parses to RouteType.home with index 5',

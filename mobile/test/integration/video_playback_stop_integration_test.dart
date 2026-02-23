@@ -188,10 +188,7 @@ void main() {
           ),
           videosForExploreRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
-              VideoFeedState(
-                videos: mockExploreVideos,
-                hasMoreContent: false,
-              ),
+              VideoFeedState(videos: mockExploreVideos, hasMoreContent: false),
             );
           }),
           // appForegroundProvider defaults to true (Notifier-based)
@@ -211,10 +208,7 @@ void main() {
       locationController.add(ExploreScreen.pathForIndex(0));
       await pumpEventQueue();
 
-      expect(
-        container.read(activeVideoIdProvider),
-        equals('explore-video-0'),
-      );
+      expect(container.read(activeVideoIdProvider), equals('explore-video-0'));
       expect(activeVideoIds.last, equals('explore-video-0'));
 
       // Background the app via the notifier
@@ -230,10 +224,7 @@ void main() {
       await pumpEventQueue();
 
       // Video should become active again
-      expect(
-        container.read(activeVideoIdProvider),
-        equals('explore-video-0'),
-      );
+      expect(container.read(activeVideoIdProvider), equals('explore-video-0'));
       expect(activeVideoIds.last, equals('explore-video-0'));
 
       locationController.close();
@@ -251,10 +242,7 @@ void main() {
           ),
           videosForExploreRouteProvider.overrideWith((ref) {
             return AsyncValue.data(
-              VideoFeedState(
-                videos: mockExploreVideos,
-                hasMoreContent: false,
-              ),
+              VideoFeedState(videos: mockExploreVideos, hasMoreContent: false),
             );
           }),
           // appForegroundProvider defaults to true (Notifier-based)
@@ -274,36 +262,18 @@ void main() {
       locationController.add(ExploreScreen.pathForIndex(0));
       await pumpEventQueue();
 
-      expect(
-        container.read(activeVideoIdProvider),
-        equals('explore-video-0'),
-      );
-      expect(
-        container.read(isVideoActiveProvider('explore-video-0')),
-        isTrue,
-      );
-      expect(
-        container.read(isVideoActiveProvider('explore-video-1')),
-        isFalse,
-      );
+      expect(container.read(activeVideoIdProvider), equals('explore-video-0'));
+      expect(container.read(isVideoActiveProvider('explore-video-0')), isTrue);
+      expect(container.read(isVideoActiveProvider('explore-video-1')), isFalse);
 
       // Swipe to explore video 1
       locationController.add(ExploreScreen.pathForIndex(1));
       await pumpEventQueue();
 
       // Active video should change
-      expect(
-        container.read(activeVideoIdProvider),
-        equals('explore-video-1'),
-      );
-      expect(
-        container.read(isVideoActiveProvider('explore-video-0')),
-        isFalse,
-      );
-      expect(
-        container.read(isVideoActiveProvider('explore-video-1')),
-        isTrue,
-      );
+      expect(container.read(activeVideoIdProvider), equals('explore-video-1'));
+      expect(container.read(isVideoActiveProvider('explore-video-0')), isFalse);
+      expect(container.read(isVideoActiveProvider('explore-video-1')), isTrue);
 
       // Verify we saw both videos in the active video stream
       expect(

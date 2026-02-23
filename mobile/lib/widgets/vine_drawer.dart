@@ -220,7 +220,6 @@ class _VineDrawerState extends ConsumerState<VineDrawer> {
                           color: VineTheme.outlineDisabled,
                           height: 1,
                         ),
-
                       ],
                     ),
                   ),
