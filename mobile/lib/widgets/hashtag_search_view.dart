@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/screens/hashtag_screen_router.dart';
+import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Displays hashtag search results from HashtagSearchBloc.
@@ -17,7 +18,15 @@ class HashtagSearchView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<HashtagSearchBloc, HashtagSearchState>(
+    return BlocConsumer<HashtagSearchBloc, HashtagSearchState>(
+      listener: (context, state) {
+        if (state.status == HashtagSearchStatus.success) {
+          ScreenAnalyticsService().markDataLoaded(
+            'search',
+            dataMetrics: {'hashtag_count': state.results.length},
+          );
+        }
+      },
       builder: (context, state) {
         return switch (state.status) {
           HashtagSearchStatus.initial => const _HashtagSearchEmptyState(),
