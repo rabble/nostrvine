@@ -5,7 +5,13 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
-import 'package:models/models.dart' hide LogCategory;
+import 'package:models/models.dart'
+    hide
+        BulkVideoStatsEntry,
+        LogCategory,
+        PaginatedPubkeys,
+        SocialCounts,
+        TrendingHashtag;
 import 'package:openvine/utils/hashtag_extractor.dart';
 import 'package:openvine/utils/unified_logger.dart';
 

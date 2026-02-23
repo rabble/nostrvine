@@ -8,10 +8,6 @@ import 'package:funnelcake_api_client/src/exceptions.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
 import 'package:models/models.dart';
-import 'package:models/src/bulk_video_stats_entry.dart';
-import 'package:models/src/paginated_pubkeys.dart';
-import 'package:models/src/social_counts.dart';
-import 'package:models/src/trending_hashtag.dart';
 
 /// HTTP client for the Funnelcake REST API.
 ///
