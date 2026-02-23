@@ -1182,11 +1182,9 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                             if (isActive && video.hasSubtitles)
                               Consumer(
                                 builder: (context, ref, _) {
-                                  final visibilityMap = ref.watch(
+                                  final subtitlesVisible = ref.watch(
                                     subtitleVisibilityProvider,
                                   );
-                                  final subtitlesVisible =
-                                      visibilityMap[video.id] ?? false;
                                   return SubtitleOverlay(
                                     video: video,
                                     positionMs: value.position.inMilliseconds,
