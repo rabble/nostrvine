@@ -1616,6 +1616,15 @@ class MockLikesRepository extends _i1.Mock implements _i3.LikesRepository {
           as _i9.Future<List<String>>);
 
   @override
+  _i9.Future<void> initialize() =>
+      (super.noSuchMethod(
+            Invocation.method(#initialize, []),
+            returnValue: _i9.Future<void>.value(),
+            returnValueForMissingStub: _i9.Future<void>.value(),
+          )
+          as _i9.Future<void>);
+
+  @override
   _i9.Future<void> clearCache() =>
       (super.noSuchMethod(
             Invocation.method(#clearCache, []),
