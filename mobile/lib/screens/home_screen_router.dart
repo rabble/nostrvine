@@ -68,10 +68,29 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
         if (ctx == null) return;
         final focused = ctx.type == RouteType.home;
         if (focused != _isHomeFocused) {
-          _isHomeFocused = focused;
-          // Pause/resume pooled player based on tab visibility
-          _controller?.setActive(active: focused);
-          setState(() {});
+          if (focused) {
+            // Defer resume: GoRouter can transiently report /home during
+            // pop transitions between non-home routes (e.g., clip editor
+            // → recorder). Verify the route is still home after the frame
+            // settles to avoid resuming audio while in the creation flow.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              final currentCtx = ref.read(pageContextProvider).asData?.value;
+              if (currentCtx?.type != RouteType.home) return;
+              // Verify no non-shell route is pushed on root navigator
+              final rootNav = NavigatorKeys.root.currentState;
+              if (rootNav != null && rootNav.canPop()) return;
+              if (_isHomeFocused) return;
+              _isHomeFocused = true;
+              _controller?.setActive(active: true);
+              setState(() {});
+            });
+          } else {
+            // Pause immediately — no need to defer
+            _isHomeFocused = false;
+            _controller?.setActive(active: false);
+            setState(() {});
+          }
         }
       });
     });
