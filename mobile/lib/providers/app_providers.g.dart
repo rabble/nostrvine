@@ -556,12 +556,16 @@ final class RelaySetChangeBridgeProvider
 String _$relaySetChangeBridgeHash() =>
     r'69fd17051348b968d05f92adbaf87cc6844dea05';
 
-/// Analytics service with opt-out support
+/// Analytics service with opt-out support.
+///
+/// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
 
 @ProviderFor(analyticsService)
 const analyticsServiceProvider = AnalyticsServiceProvider._();
 
-/// Analytics service with opt-out support
+/// Analytics service with opt-out support.
+///
+/// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
 
 final class AnalyticsServiceProvider
     extends
@@ -571,7 +575,9 @@ final class AnalyticsServiceProvider
           AnalyticsService
         >
     with $Provider<AnalyticsService> {
-  /// Analytics service with opt-out support
+  /// Analytics service with opt-out support.
+  ///
+  /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
   const AnalyticsServiceProvider._()
     : super(
         from: null,
@@ -605,7 +611,7 @@ final class AnalyticsServiceProvider
   }
 }
 
-String _$analyticsServiceHash() => r'8ce8c6be2430cd9f271eb66d8e7fe6fcfbae0154';
+String _$analyticsServiceHash() => r'63092a98aa600d9e6e5dd4402ee303ca9eb06c33';
 
 /// Age verification service for content creation restrictions
 /// keepAlive ensures the service persists and maintains in-memory verification state
@@ -2443,7 +2449,65 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'cc2cdaa9ac69fd09c9131f43f2068f533ff3e593';
+String _$followRepositoryHash() => r'59ccfaf4522b9c8534a1ee5b9f51b851614f9425';
+
+/// Provider for HashtagRepository instance.
+///
+/// Creates a HashtagRepository for searching hashtags via the Funnelcake API.
+
+@ProviderFor(hashtagRepository)
+const hashtagRepositoryProvider = HashtagRepositoryProvider._();
+
+/// Provider for HashtagRepository instance.
+///
+/// Creates a HashtagRepository for searching hashtags via the Funnelcake API.
+
+final class HashtagRepositoryProvider
+    extends
+        $FunctionalProvider<
+          HashtagRepository,
+          HashtagRepository,
+          HashtagRepository
+        >
+    with $Provider<HashtagRepository> {
+  /// Provider for HashtagRepository instance.
+  ///
+  /// Creates a HashtagRepository for searching hashtags via the Funnelcake API.
+  const HashtagRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'hashtagRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$hashtagRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<HashtagRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  HashtagRepository create(Ref ref) {
+    return hashtagRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(HashtagRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<HashtagRepository>(value),
+    );
+  }
+}
+
+String _$hashtagRepositoryHash() => r'7d61e9d5f99412e7f62cbb1456aeca1c12ab5b34';
 
 /// Provider for ProfileRepository instance
 ///

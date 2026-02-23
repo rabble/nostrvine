@@ -193,13 +193,15 @@ class _FormData extends ConsumerWidget {
             child: Column(
               children: [
                 // Title input field
-                DivineAuthTextField(
+                DivineTextField(
                   controller: titleController,
                   // TODO(l10n): Replace with context.l10n when localization is
                   // added.
                   label: 'Title',
                   focusNode: titleFocusNode,
                   textInputAction: .next,
+                  minLines: 1,
+                  maxLines: 5,
                   onChanged: (value) {
                     ref
                         .read(videoEditorProvider.notifier)
@@ -210,7 +212,7 @@ class _FormData extends ConsumerWidget {
                 const SizedBox(height: 12),
 
                 // Description input field
-                DivineAuthTextField(
+                DivineTextField(
                   controller: descriptionController,
                   // TODO(l10n): Replace with context.l10n when localization is
                   // added.
@@ -218,6 +220,8 @@ class _FormData extends ConsumerWidget {
                   focusNode: descriptionFocusNode,
                   keyboardType: .multiline,
                   textInputAction: .newline,
+                  minLines: 1,
+                  maxLines: 10,
                   onChanged: (value) {
                     ref
                         .read(videoEditorProvider.notifier)

@@ -48,7 +48,27 @@ class VideoFeedView extends StatefulWidget {
   State<VideoFeedView> createState() => _VideoFeedViewState();
 }
 
-class _VideoFeedViewState extends State<VideoFeedView> {
+class _VideoFeedViewState extends State<VideoFeedView>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      context.read<VideoFeedBloc>().add(const VideoFeedAutoRefreshRequested());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -92,9 +112,12 @@ class _VideoFeedViewState extends State<VideoFeedView> {
                     contextTitle: 'BLoC Test (${state.mode.name})',
                   );
                 },
-                onActiveVideoChanged: (video, index) {
-                  // Trigger pagination when near end
-                  if (state.hasMore && index >= pooledVideos.length - 2) {
+                onNearEnd: (index) {
+                  // PooledVideoFeed fires this when the user is within
+                  // nearEndThreshold (default 3) of the end, using the
+                  // controller's actual video count (not the BlocBuilder's
+                  // list length, which may differ due to deduplication).
+                  if (state.hasMore) {
                     context.read<VideoFeedBloc>().add(
                       const VideoFeedLoadMoreRequested(),
                     );

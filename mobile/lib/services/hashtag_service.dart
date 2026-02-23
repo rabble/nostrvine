@@ -46,10 +46,12 @@ class HashtagStats {
 /// REFACTORED: Removed ChangeNotifier - now uses pure state management via Riverpod
 class HashtagService {
   HashtagService(this._videoService, [this._cacheService]) {
-    // REFACTORED: Service no longer extends ChangeNotifier - use Riverpod ref.watch instead
     _updateHashtagStats();
 
-    // Update stats every minute
+    // React to new videos arriving in VideoEventService
+    _videoService.addListener(_updateHashtagStats);
+
+    // Periodic refresh as a safety net
     _updateTimer = Timer.periodic(const Duration(minutes: 1), (_) {
       _updateHashtagStats();
     });
@@ -61,7 +63,7 @@ class HashtagService {
 
   void dispose() {
     _updateTimer?.cancel();
-    // REFACTORED: Service no longer needs manual listener cleanup
+    _videoService.removeListener(_updateHashtagStats);
   }
 
   /// Force refresh hashtag statistics

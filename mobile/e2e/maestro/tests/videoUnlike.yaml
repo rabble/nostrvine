@@ -20,6 +20,7 @@ tags:
 
 # 2. Tap on 1st video of the liked tab and unlike the video: Validate video is unliked
 - tapOn: liked_video_thumbnail_0
+- waitForAnimationToEnd
 - tapOn:
     id: like_button
 - runFlow: "../asserts/assertVideounLiked.yaml"

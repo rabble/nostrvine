@@ -10,6 +10,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 /// Pure explore video screen using VideoFeedItem directly in PageView
@@ -23,6 +24,8 @@ class ExploreVideoScreenPure extends ConsumerStatefulWidget {
     this.onLoadMore,
     this.onNavigate,
     this.useLocalActiveState = false,
+    this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
   });
 
   final VideoEvent startingVideo;
@@ -36,6 +39,12 @@ class ExploreVideoScreenPure extends ConsumerStatefulWidget {
   /// Used for custom contexts like lists that don't have router support.
   /// When true, videos will auto-play based on page position without URL changes.
   final bool useLocalActiveState;
+
+  /// Traffic source for view event analytics.
+  final ViewTrafficSource trafficSource;
+
+  /// Additional context for the traffic source (e.g., hashtag name).
+  final String? sourceDetail;
 
   @override
   ConsumerState<ExploreVideoScreenPure> createState() =>
@@ -114,53 +123,45 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
             category: LogCategory.video,
           );
 
-          // Update current page for local state management
+          _currentPage = index;
           if (widget.useLocalActiveState) {
-            setState(() {
-              _currentPage = index;
-            });
+            setState(() {});
           }
 
           // Update URL to trigger reactive video playback via router
-          // Use custom navigation callback if provided, otherwise default to explore
-          // Skip URL navigation when using local active state
+          // Use custom navigation callback if provided, otherwise default
+          // to explore. Skip URL navigation when using local active state.
           if (widget.onNavigate != null) {
             widget.onNavigate!(index);
           } else if (!widget.useLocalActiveState) {
             context.go(ExploreScreen.pathForIndex(index));
           }
 
-          // Trigger pagination when near the end if callback provided
-          if (widget.onLoadMore != null) {
+          // Trigger pagination behavior
+          final onLoadMore = widget.onLoadMore;
+          if (onLoadMore != null) {
             checkForPagination(
               currentIndex: index,
               totalItems: videos.length,
-              onLoadMore: widget.onLoadMore!,
+              onLoadMore: onLoadMore,
             );
           }
 
           // Prefetch videos around current index
           checkForPrefetch(currentIndex: index, videos: videos);
 
-          // Pre-initialize controller for next video only (minimize
-          // concurrent decoders to avoid OOM on Android)
+          // Pre-initialize controllers for adjacent videos
           preInitializeControllers(
             ref: ref,
             currentIndex: index,
             videos: videos,
-            preInitBefore: 0,
-            preInitAfter: 1,
           );
 
-          // Dispose controllers outside a tight range to free memory.
-          // Android devices have limited heap and each ExoPlayer
-          // instance consumes significant native memory.
+          // Dispose controllers outside the keep range to free memory
           disposeControllersOutsideRange(
             ref: ref,
             currentIndex: index,
             videos: videos,
-            keepBefore: 2,
-            keepAfter: 3,
           );
         },
         itemBuilder: (context, index) {
@@ -170,6 +171,8 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
             index: index,
             hasBottomNavigation: false,
             contextTitle: widget.contextTitle,
+            trafficSource: widget.trafficSource,
+            sourceDetail: widget.sourceDetail,
             // When using local active state, override provider-based activation
             isActiveOverride: widget.useLocalActiveState
                 ? (_currentPage == index)

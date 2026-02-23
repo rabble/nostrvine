@@ -15,12 +15,19 @@ import 'package:openvine/widgets/video_feed_item/actions/video_action_button.dar
 ///
 /// Requires [VideoInteractionsBloc] to be provided in the widget tree.
 class RepostActionButton extends StatelessWidget {
-  const RepostActionButton({required this.video, super.key});
+  const RepostActionButton({
+    required this.video,
+    super.key,
+    this.isPreviewMode = false,
+  });
 
   final VideoEvent video;
+  final bool isPreviewMode;
 
   @override
   Widget build(BuildContext context) {
+    if (isPreviewMode) return const _ActionButton();
+
     return BlocBuilder<VideoInteractionsBloc, VideoInteractionsState>(
       builder: (context, state) {
         final isReposted = state.isReposted;
@@ -28,18 +35,39 @@ class RepostActionButton extends StatelessWidget {
             state.repostCount ?? (video.reposterPubkeys?.length ?? 0);
         final totalReposts = nostrReposts + (video.originalReposts ?? 0);
 
-        return VideoActionButton(
-          iconAsset: 'assets/icon/content-controls/repost.svg',
-          semanticIdentifier: 'repost_button',
-          semanticLabel: isReposted ? 'Remove repost' : 'Repost video',
-          iconColor: isReposted ? VineTheme.vineGreen : VineTheme.whiteText,
-          isLoading: state.isRepostInProgress,
-          count: totalReposts,
-          onPressed: () {
-            context.read<VideoInteractionsBloc>().add(
-              const VideoInteractionsRepostToggled(),
-            );
-          },
+        return _ActionButton(
+          isReposted: isReposted,
+          isRepostInProgress: state.isRepostInProgress,
+          totalReposts: totalReposts,
+        );
+      },
+    );
+  }
+}
+
+class _ActionButton extends StatelessWidget {
+  const _ActionButton({
+    this.isReposted = false,
+    this.isRepostInProgress = false,
+    this.totalReposts = 1,
+  });
+
+  final bool isReposted;
+  final bool isRepostInProgress;
+  final int totalReposts;
+
+  @override
+  Widget build(BuildContext context) {
+    return VideoActionButton(
+      iconAsset: 'assets/icon/content-controls/repost.svg',
+      semanticIdentifier: 'repost_button',
+      semanticLabel: isReposted ? 'Remove repost' : 'Repost video',
+      iconColor: isReposted ? VineTheme.vineGreen : VineTheme.whiteText,
+      isLoading: isRepostInProgress,
+      count: totalReposts,
+      onPressed: () {
+        context.read<VideoInteractionsBloc>().add(
+          const VideoInteractionsRepostToggled(),
         );
       },
     );

@@ -96,14 +96,37 @@ Future<void> clearAllProfileStatsCache() async {
 /// and proper waiting for relay events.
 @riverpod
 Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
-  // Check cache first (only use cache if video count > 0 to avoid stale zeros)
-  final cached = await _getCachedProfileStats(pubkey);
-  if (cached != null && cached.videoCount > 0) {
-    return cached;
-  }
-
   // Get the social service from app providers
   final socialService = ref.read(socialServiceProvider);
+
+  // Always fetch fresh follower stats (has its own in-memory cache).
+  // Start this immediately so it runs in parallel with cache/feed loading.
+  final followerStatsFuture = socialService.getFollowerStats(pubkey);
+
+  // Check cache for video data (video counts change rarely)
+  final cached = await _getCachedProfileStats(pubkey);
+  if (cached != null && cached.videoCount > 0) {
+    // Use cached video/likes data but always get fresh follower stats
+    final followerStats = await followerStatsFuture;
+    final freshFollowers = followerStats['followers'] ?? 0;
+    final freshFollowing = followerStats['following'] ?? 0;
+
+    // Always use fresh follower/following data (unfollows should be
+    // reflected immediately, not masked by cached higher values).
+    final stats = cached.copyWith(
+      followers: freshFollowers,
+      following: freshFollowing,
+      lastUpdated: DateTime.now(),
+    );
+
+    // Update cache if follower counts changed
+    if (freshFollowers != cached.followers ||
+        freshFollowing != cached.following) {
+      await _cacheProfileStats(pubkey, stats);
+    }
+
+    return stats;
+  }
 
   try {
     // Get video data from profileFeedProvider which properly waits for relay events.
@@ -114,7 +137,7 @@ Future<ProfileStats> fetchProfileStats(Ref ref, String pubkey) async {
     // Run feed loading and follower stats fetch in parallel
     final results = await Future.wait<Object>([
       feedStateFuture,
-      socialService.getFollowerStats(pubkey),
+      followerStatsFuture,
     ]);
 
     // Extract feed state and follower stats

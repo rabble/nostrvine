@@ -11,6 +11,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/popular_now_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
@@ -235,6 +236,7 @@ class _NewVideosContentState extends ConsumerState<_NewVideosContent> {
             onLoadMore: () =>
                 ref.read(popularNowFeedProvider.notifier).loadMore(),
             contextTitle: 'New Videos',
+            trafficSource: ViewTrafficSource.discoveryNew,
           ),
         );
       },

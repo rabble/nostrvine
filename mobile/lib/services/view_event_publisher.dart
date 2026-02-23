@@ -14,8 +14,17 @@ enum ViewTrafficSource {
   /// Video viewed from home/following feed
   home,
 
-  /// Video viewed from explore/discovery feed
-  discovery,
+  /// Video viewed from explore/discovery — new videos tab
+  discoveryNew,
+
+  /// Video viewed from explore/discovery — classic vines tab
+  discoveryClassic,
+
+  /// Video viewed from explore/discovery — for you (personalized) tab
+  discoveryForYou,
+
+  /// Video viewed from explore/discovery — popular videos tab
+  discoveryPopular,
 
   /// Video viewed from a user's profile page
   profile,
@@ -23,7 +32,7 @@ enum ViewTrafficSource {
   /// Video viewed via shared link
   share,
 
-  /// Video viewed from search results
+  /// Video viewed from search results or hashtag feed
   search,
 
   /// Unknown/unspecified source
@@ -64,6 +73,8 @@ class ViewEventPublisher {
     required int startSeconds,
     required int endSeconds,
     ViewTrafficSource source = ViewTrafficSource.unknown,
+    String? sourceDetail,
+    int? loopCount,
   }) async {
     // Skip if no meaningful watch time
     if (endSeconds <= startSeconds) {
@@ -95,13 +106,21 @@ class ViewEventPublisher {
       return false;
     }
 
-    try {
-      final dTag = (video.vineId != null && video.vineId!.isNotEmpty)
-          ? video.vineId!
-          : video.id;
+    // Skip self-views (relay would reject them anyway)
+    if (_authService.currentPublicKeyHex == video.pubkey) {
+      Log.debug(
+        'Skipping view event: self-view',
+        name: 'ViewEventPublisher',
+        category: LogCategory.video,
+      );
+      return false;
+    }
 
+    try {
       // Build the addressable coordinate (a tag)
       // Format: "34236:author_pubkey:d_tag"
+      // Use event ID as fallback if vineId (d-tag) is null
+      final dTag = video.vineId ?? video.id;
       final aTag = '34236:${video.pubkey}:$dTag';
 
       // Get relay hint
@@ -119,7 +138,12 @@ class ViewEventPublisher {
         // Watched segment (required)
         ['viewed', startSeconds.toString(), endSeconds.toString()],
         // Traffic source (optional but recommended)
-        ['source', _sourceToString(source)],
+        if (sourceDetail != null && sourceDetail.isNotEmpty)
+          ['source', _sourceToString(source), sourceDetail]
+        else
+          ['source', _sourceToString(source)],
+        // Loop count (optional, omitted if 0 or null)
+        if (loopCount != null && loopCount > 0) ['loops', loopCount.toString()],
         // Client identifier (optional)
         ['client', _clientId],
       ];
@@ -130,7 +154,7 @@ class ViewEventPublisher {
         category: LogCategory.video,
       );
       Log.verbose(
-        'View data: watched ${endSeconds - startSeconds}s, source=${_sourceToString(source)}, d=$dTag',
+        'View data: watched ${endSeconds - startSeconds}s, source=${_sourceToString(source)}',
         name: 'ViewEventPublisher',
         category: LogCategory.video,
       );
@@ -187,6 +211,7 @@ class ViewEventPublisher {
     required VideoEvent video,
     required List<(int, int)> segments,
     ViewTrafficSource source = ViewTrafficSource.unknown,
+    String? sourceDetail,
   }) async {
     // Filter out invalid segments
     final validSegments = segments
@@ -211,10 +236,18 @@ class ViewEventPublisher {
       return false;
     }
 
+    // Skip self-views (relay would reject them anyway)
+    if (_authService.currentPublicKeyHex == video.pubkey) {
+      Log.debug(
+        'Skipping view event: self-view (segments)',
+        name: 'ViewEventPublisher',
+        category: LogCategory.video,
+      );
+      return false;
+    }
+
     try {
-      final dTag = (video.vineId != null && video.vineId!.isNotEmpty)
-          ? video.vineId!
-          : video.id;
+      final dTag = video.vineId ?? video.id;
       final aTag = '34236:${video.pubkey}:$dTag';
 
       String relayHint = _defaultRelayHint;
@@ -229,7 +262,10 @@ class ViewEventPublisher {
         // Add all valid segments
         for (final segment in validSegments)
           ['viewed', segment.$1.toString(), segment.$2.toString()],
-        ['source', _sourceToString(source)],
+        if (sourceDetail != null && sourceDetail.isNotEmpty)
+          ['source', _sourceToString(source), sourceDetail]
+        else
+          ['source', _sourceToString(source)],
         ['client', _clientId],
       ];
 
@@ -270,19 +306,16 @@ class ViewEventPublisher {
 
   /// Convert traffic source enum to string for the tag.
   String _sourceToString(ViewTrafficSource source) {
-    switch (source) {
-      case ViewTrafficSource.home:
-        return 'home';
-      case ViewTrafficSource.discovery:
-        return 'discovery';
-      case ViewTrafficSource.profile:
-        return 'profile';
-      case ViewTrafficSource.share:
-        return 'share';
-      case ViewTrafficSource.search:
-        return 'search';
-      case ViewTrafficSource.unknown:
-        return 'unknown';
-    }
+    return switch (source) {
+      ViewTrafficSource.home => 'home',
+      ViewTrafficSource.discoveryNew => 'discovery:new',
+      ViewTrafficSource.discoveryClassic => 'discovery:classic',
+      ViewTrafficSource.discoveryForYou => 'discovery:foryou',
+      ViewTrafficSource.discoveryPopular => 'discovery:popular',
+      ViewTrafficSource.profile => 'profile',
+      ViewTrafficSource.share => 'share',
+      ViewTrafficSource.search => 'search',
+      ViewTrafficSource.unknown => 'unknown',
+    };
   }
 }

@@ -9,5 +9,4 @@ appId: co.openvine.app
 - assertVisible: "Terms of Service"
 - assertVisible: "Privacy Policy"
 - assertVisible: "Safety Standards"
-- assertVisible: Accept Terms to Continue
-- assertVisible: Have an account? Log In
+- assertVisible: Have an account? Sign in
