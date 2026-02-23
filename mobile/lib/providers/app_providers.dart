@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
+import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart';
@@ -946,6 +947,15 @@ FollowRepository? followRepository(Ref ref) {
   ref.onDispose(repository.dispose);
 
   return repository;
+}
+
+/// Provider for HashtagRepository instance.
+///
+/// Creates a HashtagRepository for searching hashtags via the Funnelcake API.
+@riverpod
+HashtagRepository hashtagRepository(Ref ref) {
+  final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
+  return HashtagRepository(funnelcakeApiClient: funnelcakeClient);
 }
 
 /// Provider for ProfileRepository instance

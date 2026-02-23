@@ -8,7 +8,8 @@ import 'package:funnelcake_api_client/src/exceptions.dart';
 import 'package:funnelcake_api_client/src/models/models.dart';
 import 'package:http/http.dart' as http;
 import 'package:meta/meta.dart';
-import 'package:models/models.dart' show ProfileSearchResult, VideoStats;
+import 'package:models/models.dart'
+    show HashtagSearchResult, ProfileSearchResult, VideoStats;
 
 /// HTTP client for the Funnelcake REST API.
 ///
@@ -465,15 +466,7 @@ class FunnelcakeApiClient {
     ).replace(queryParameters: queryParams);
 
     try {
-      final response = await _httpClient
-          .get(
-            uri,
-            headers: {
-              'Accept': 'application/json',
-              'User-Agent': 'OpenVine-Mobile/1.0',
-            },
-          )
-          .timeout(_timeout);
+      final response = await _get(uri);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body) as List<dynamic>;
@@ -508,6 +501,67 @@ class FunnelcakeApiClient {
       throw FunnelcakeException(
         'Failed to fetch collab videos: $e',
       );
+    }
+  }
+
+  /// Searches for hashtags matching the query.
+  ///
+  /// [query] is the search term to match against hashtag names.
+  /// When null or empty, returns popular hashtags without filtering.
+  /// [limit] is the maximum number of hashtags to return (defaults to 20).
+  ///
+  /// Returns a list of hashtag name strings sorted by popularity/trending.
+  ///
+  /// Throws:
+  /// - [FunnelcakeNotConfiguredException] if the API is not configured.
+  /// - [FunnelcakeApiException] if the request fails with a non-success status.
+  /// - [FunnelcakeTimeoutException] if the request times out.
+  /// - [FunnelcakeException] for other errors.
+  Future<List<String>> searchHashtags({
+    String? query,
+    int limit = 20,
+  }) async {
+    if (!isAvailable) {
+      throw const FunnelcakeNotConfiguredException();
+    }
+
+    final queryParams = <String, String>{
+      'limit': limit.toString(),
+      if (query != null && query.isNotEmpty) 'q': query,
+    };
+
+    final uri = Uri.parse(
+      '$_baseUrl/api/hashtags/trending',
+    ).replace(queryParameters: queryParams);
+
+    try {
+      final response = await _get(uri);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as List<dynamic>;
+
+        return data
+            .map((item) {
+              if (item is Map<String, dynamic>) {
+                return HashtagSearchResult.fromJson(item).tag;
+              }
+              return item.toString();
+            })
+            .where((tag) => tag.isNotEmpty)
+            .toList();
+      } else {
+        throw FunnelcakeApiException(
+          message: 'Failed to search hashtags',
+          statusCode: response.statusCode,
+          url: uri.toString(),
+        );
+      }
+    } on TimeoutException {
+      throw FunnelcakeTimeoutException(uri.toString());
+    } on FunnelcakeException {
+      rethrow;
+    } catch (e) {
+      throw FunnelcakeException('Failed to search hashtags: $e');
     }
   }
 

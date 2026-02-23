@@ -2451,6 +2451,64 @@ final class FollowRepositoryProvider
 
 String _$followRepositoryHash() => r'59ccfaf4522b9c8534a1ee5b9f51b851614f9425';
 
+/// Provider for HashtagRepository instance.
+///
+/// Creates a HashtagRepository for searching hashtags via the Funnelcake API.
+
+@ProviderFor(hashtagRepository)
+const hashtagRepositoryProvider = HashtagRepositoryProvider._();
+
+/// Provider for HashtagRepository instance.
+///
+/// Creates a HashtagRepository for searching hashtags via the Funnelcake API.
+
+final class HashtagRepositoryProvider
+    extends
+        $FunctionalProvider<
+          HashtagRepository,
+          HashtagRepository,
+          HashtagRepository
+        >
+    with $Provider<HashtagRepository> {
+  /// Provider for HashtagRepository instance.
+  ///
+  /// Creates a HashtagRepository for searching hashtags via the Funnelcake API.
+  const HashtagRepositoryProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'hashtagRepositoryProvider',
+        isAutoDispose: true,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$hashtagRepositoryHash();
+
+  @$internal
+  @override
+  $ProviderElement<HashtagRepository> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  HashtagRepository create(Ref ref) {
+    return hashtagRepository(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(HashtagRepository value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<HashtagRepository>(value),
+    );
+  }
+}
+
+String _$hashtagRepositoryHash() => r'7d61e9d5f99412e7f62cbb1456aeca1c12ab5b34';
+
 /// Provider for ProfileRepository instance
 ///
 /// Creates a ProfileRepository for managing user profiles (Kind 0 metadata).
