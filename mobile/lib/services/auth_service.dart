@@ -12,6 +12,7 @@ import 'package:nostr_key_manager/nostr_key_manager.dart'
     show SecureKeyContainer, SecureKeyStorage;
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/services/background_activity_manager.dart';
+import 'package:openvine/services/crash_reporting_service.dart';
 import 'package:openvine/services/pending_verification_service.dart';
 import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:openvine/services/user_data_cleanup_service.dart';
@@ -164,6 +165,7 @@ class AuthService implements BackgroundAwareService {
   SecureKeyContainer? _currentKeyContainer;
   UserProfile? _currentProfile;
   String? _lastError;
+  bool _storageErrorOccurred = false;
   KeycastRpc? _keycastSigner;
 
   // NIP-46 bunker signer state
@@ -263,12 +265,34 @@ class AuthService implements BackgroundAwareService {
     _lastError = null;
   }
 
+  /// Report a secure storage error to Crashlytics with auth context.
+  void _reportStorageError(
+    dynamic error,
+    StackTrace stack,
+    String reason,
+  ) {
+    final crashlytics = CrashReportingService.instance;
+    crashlytics.log('Storage error during auth: $reason');
+    unawaited(crashlytics.setCustomKey('auth_source', _authSource.code));
+    unawaited(crashlytics.recordError(error, stack, reason: reason));
+  }
+
   /// Check if there are saved keys on device (without authenticating)
   ///
   /// Useful for showing different UI on welcome screen when user has
   /// previously used the app vs fresh install.
   Future<bool> hasSavedKeys() async {
-    return _keyStorage.hasKeys();
+    try {
+      return await _keyStorage.hasKeys();
+    } catch (e, stack) {
+      Log.error(
+        'Secure storage error checking for saved keys: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _reportStorageError(e, stack, 'hasSavedKeys()');
+      return false;
+    }
   }
 
   /// Get the saved npub from storage (without authenticating)
@@ -276,11 +300,21 @@ class AuthService implements BackgroundAwareService {
   /// Returns null if no keys are saved. Used to show which identity
   /// will be resumed on welcome screen.
   Future<String?> getSavedNpub() async {
-    final hasKeys = await _keyStorage.hasKeys();
-    if (!hasKeys) return null;
+    try {
+      final hasKeys = await _keyStorage.hasKeys();
+      if (!hasKeys) return null;
 
-    final keyContainer = await _keyStorage.getKeyContainer();
-    return keyContainer?.npub;
+      final keyContainer = await _keyStorage.getKeyContainer();
+      return keyContainer?.npub;
+    } catch (e, stack) {
+      Log.error(
+        'Secure storage error loading saved npub: $e',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _reportStorageError(e, stack, 'getSavedNpub()');
+      return null;
+    }
   }
 
   /// Initialize the authentication service
@@ -327,16 +361,43 @@ class AuthService implements BackgroundAwareService {
 
         case AuthenticationSource.importedKeys:
           // Only restore if secure keys exist
-          final hasKeys = await _keyStorage.hasKeys();
-          if (hasKeys) {
-            final keyContainer = await _keyStorage.getKeyContainer();
-            if (keyContainer != null) {
-              await _setupUserSession(
-                keyContainer,
-                AuthenticationSource.importedKeys,
+          try {
+            final hasKeys = await _keyStorage.hasKeys();
+            if (hasKeys) {
+              final keyContainer = await _keyStorage.getKeyContainer();
+              if (keyContainer != null) {
+                await _setupUserSession(
+                  keyContainer,
+                  AuthenticationSource.importedKeys,
+                );
+                return;
+              }
+              Log.error(
+                'Imported keys: hasKeys() true but getKeyContainer() '
+                'returned null — possible storage corruption',
+                name: 'AuthService',
+                category: LogCategory.auth,
               );
-              return;
+              _reportStorageError(
+                StateError(
+                  'hasKeys() true but getKeyContainer() returned null',
+                ),
+                StackTrace.current,
+                'importedKeys storage inconsistency',
+              );
             }
+          } catch (e, stack) {
+            Log.error(
+              'Secure storage error loading imported keys: $e. '
+              'User will need to re-import their key.',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+            _reportStorageError(e, stack, 'importedKeys load');
+            _lastError =
+                "Couldn't load your saved identity from this device. "
+                'Sign in with your existing account, or continue '
+                'to create a new one.';
           }
           _setAuthState(AuthState.unauthenticated);
           return;
@@ -1806,9 +1867,45 @@ class AuthService implements BackgroundAwareService {
 
   /// Check for existing authentication
   Future<void> _checkExistingAuth() async {
-    try {
-      final hasKeys = await _keyStorage.hasKeys();
+    // If storage already failed once, the user saw the error and chose to
+    // continue anyway. Skip the storage check and create a new identity
+    // (same as a fresh install).
+    if (_storageErrorOccurred) {
+      Log.info(
+        'Storage previously failed — user chose to continue. '
+        'Creating new identity as fresh install.',
+        name: 'AuthService',
+        category: LogCategory.auth,
+      );
+      _storageErrorOccurred = false;
+      _lastError = null;
+      // Fall through to step 3 (create new identity) below
+    } else {
+      // Step 1: Check if keys exist in storage.
+      // Keep this separate so storage errors don't silently fall through
+      // to creating a new identity (which would overwrite the existing key).
+      bool hasKeys;
+      try {
+        hasKeys = await _keyStorage.hasKeys();
+      } catch (e, stack) {
+        Log.error(
+          'Secure storage error while checking for keys: $e. '
+          'NOT creating a new identity to avoid overwriting existing keys. '
+          'User will need to re-import their key.',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        _reportStorageError(e, stack, '_checkExistingAuth hasKeys()');
+        _storageErrorOccurred = true;
+        _lastError =
+            "Couldn't load your saved identity from this device. "
+            'Sign in with your existing account, or continue '
+            'to create a new one.';
+        _setAuthState(AuthState.unauthenticated);
+        return;
+      }
 
+      // Step 2: If keys exist, try to load them
       if (hasKeys) {
         Log.info(
           'Found existing secure keys, loading saved identity...',
@@ -1816,45 +1913,80 @@ class AuthService implements BackgroundAwareService {
           category: LogCategory.auth,
         );
 
-        final keyContainer = await _keyStorage.getKeyContainer();
-        if (keyContainer != null) {
-          Log.info(
-            'Loaded existing secure identity: '
-            '${NostrKeyUtils.maskKey(keyContainer.npub)}',
+        try {
+          final keyContainer = await _keyStorage.getKeyContainer();
+          if (keyContainer != null) {
+            Log.info(
+              'Loaded existing secure identity: '
+              '${NostrKeyUtils.maskKey(keyContainer.npub)}',
+              name: 'AuthService',
+              category: LogCategory.auth,
+            );
+            await _setupUserSession(
+              keyContainer,
+              AuthenticationSource.automatic,
+            );
+            return;
+          }
+        } catch (e, stack) {
+          Log.error(
+            'Failed to load key container from storage: $e. '
+            'NOT creating a new identity to avoid overwriting existing keys.',
             name: 'AuthService',
             category: LogCategory.auth,
           );
-          await _setupUserSession(keyContainer, AuthenticationSource.automatic);
+          _reportStorageError(
+            e,
+            stack,
+            '_checkExistingAuth getKeyContainer()',
+          );
+          _storageErrorOccurred = true;
+          _lastError =
+              "Couldn't load your saved identity from this device. "
+              'Sign in with your existing account, or continue '
+              'to create a new one.';
+          _setAuthState(AuthState.unauthenticated);
           return;
-        } else {
-          Log.warning(
-            'Has keys flag set but could not load secure key container',
-            name: 'AuthService',
-            category: LogCategory.auth,
-          );
         }
+
+        // hasKeys() true but getKeyContainer() returned null — storage
+        // inconsistency. Don't overwrite, let user re-import.
+        Log.error(
+          'Has keys flag set but could not load secure key container. '
+          'NOT creating a new identity to avoid overwriting existing keys.',
+          name: 'AuthService',
+          category: LogCategory.auth,
+        );
+        _reportStorageError(
+          StateError(
+            'hasKeys() true but getKeyContainer() returned null',
+          ),
+          StackTrace.current,
+          '_checkExistingAuth storage inconsistency',
+        );
+        _storageErrorOccurred = true;
+        _lastError =
+            "Couldn't load your saved identity from this device. "
+            'Sign in with your existing account, or continue '
+            'to create a new one.';
+        _setAuthState(AuthState.unauthenticated);
+        return;
       }
+    } // end else (no prior storage error)
 
-      Log.info(
-        'No existing secure keys found, creating new identity automatically...',
-        name: 'AuthService',
-        category: LogCategory.auth,
-      );
+    // Step 3: Genuinely no keys — fresh install, create new identity
+    Log.info(
+      'No existing secure keys found, creating new identity automatically...',
+      name: 'AuthService',
+      category: LogCategory.auth,
+    );
 
-      // Auto-create identity like TikTok - seamless onboarding
-      // Note: createNewIdentity() sets state to authenticating immediately, so
-      // no need to set it here
+    try {
       final result = await createNewIdentity();
       if (result.success && result.keyContainer != null) {
         Log.info(
           'Auto-created NEW secure Nostr identity: '
           '${NostrKeyUtils.maskKey(result.keyContainer!.npub)}',
-          name: 'AuthService',
-          category: LogCategory.auth,
-        );
-        Log.debug(
-          '📱 This identity is now securely saved '
-          'and will be reused on next launch',
           name: 'AuthService',
           category: LogCategory.auth,
         );
@@ -1864,16 +1996,14 @@ class AuthService implements BackgroundAwareService {
           name: 'AuthService',
           category: LogCategory.auth,
         );
-        // Set state synchronously to prevent loading screen deadlock
         _setAuthState(AuthState.unauthenticated);
       }
     } catch (e) {
       Log.error(
-        'Error checking existing auth: $e',
+        'Error creating new identity: $e',
         name: 'AuthService',
         category: LogCategory.auth,
       );
-      // Set state synchronously to prevent loading screen deadlock
       _setAuthState(AuthState.unauthenticated);
     }
   }

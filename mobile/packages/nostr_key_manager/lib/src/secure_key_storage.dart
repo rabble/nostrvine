@@ -180,16 +180,14 @@ class SecureKeyStorage {
     }
   }
 
-  /// Check if user has stored keys
+  /// Check if user has stored keys.
+  ///
+  /// Throws [SecureKeyStorageException] on storage errors so callers can
+  /// distinguish "no keys" from "storage broken" and avoid silently
+  /// regenerating a new identity.
   Future<bool> hasKeys() async {
     await _ensureInitialized();
-
-    try {
-      return await _platformStorage.hasKey(_primaryKeyId);
-    } on Exception catch (e) {
-      _log.severe('Error checking for keys: $e');
-      return false;
-    }
+    return _platformStorage.hasKey(_primaryKeyId);
   }
 
   /// Generate and store a new secure key pair

@@ -192,6 +192,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
 
     try {
       final authService = ref.read(authServiceProvider);
+      authService.clearError();
       // Accept TOS - this transitions auth state from awaitingTosAcceptance to authenticated
       // Router will automatically redirect to /explore when state changes
       await authService.signInAutomatically();
@@ -312,16 +313,21 @@ class _WelcomeActionSection extends StatelessWidget {
       return const _LoadingIndicator();
     }
 
-    if (lastError != null) {
-      return ErrorMessage(message: lastError!);
-    }
-
-    return _ActionButton(
-      enabled: canProceed && !isAccepting,
-      isLoading: isAccepting,
-      hasSavedKeys: hasSavedKeys,
-      savedNpub: savedNpub,
-      onPressed: onContinue,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (lastError != null) ...[
+          ErrorMessage(message: lastError!),
+          const SizedBox(height: 16),
+        ],
+        _ActionButton(
+          enabled: canProceed && !isAccepting,
+          isLoading: isAccepting,
+          hasSavedKeys: hasSavedKeys,
+          savedNpub: savedNpub,
+          onPressed: onContinue,
+        ),
+      ],
     );
   }
 }
