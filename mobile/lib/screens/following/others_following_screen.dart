@@ -68,6 +68,13 @@ class _OthersFollowingView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Watch blocklist at the top level for both title count and list filtering
+    ref.watch(blocklistVersionProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final currentUserPubkey = ref.watch(nostrServiceProvider).publicKey;
+    // If we blocked this profile owner, hide ourselves from their lists
+    final hasBlockedTarget = blocklistService.isBlocked(pubkey);
+
     final appBarTitle = displayName?.isNotEmpty == true
         ? "$displayName's Following"
         : 'Following';
@@ -109,22 +116,28 @@ class _OthersFollowingView extends ConsumerWidget {
         title: FollowerCountTitle<OthersFollowingBloc, OthersFollowingState>(
           title: appBarTitle,
           selector: (state) => state.status == OthersFollowingStatus.success
-              ? state.followingPubkeys.length
+              ? state.followingPubkeys
+                    .where(
+                      (pk) =>
+                          !blocklistService.isBlocked(pk) &&
+                          !(hasBlockedTarget && pk == currentUserPubkey),
+                    )
+                    .length
               : 0,
         ),
       ),
       body: BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
         builder: (context, state) {
-          // Watch blocklist to reactively filter blocked users from list
-          ref.watch(blocklistVersionProvider);
-          final blocklistService = ref.watch(contentBlocklistServiceProvider);
-
           return switch (state.status) {
             OthersFollowingStatus.initial || OthersFollowingStatus.loading =>
               const Center(child: CircularProgressIndicator()),
             OthersFollowingStatus.success => _FollowingListBody(
               following: state.followingPubkeys
-                  .where((pk) => !blocklistService.isBlocked(pk))
+                  .where(
+                    (pk) =>
+                        !blocklistService.isBlocked(pk) &&
+                        !(hasBlockedTarget && pk == currentUserPubkey),
+                  )
                   .toList(),
               targetPubkey: pubkey,
             ),

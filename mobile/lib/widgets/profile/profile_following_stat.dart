@@ -114,6 +114,9 @@ class _OthersFollowingStatView extends ConsumerWidget {
     // Watch blocklist to reactively update following count
     ref.watch(blocklistVersionProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final currentUserPubkey = ref.watch(nostrServiceProvider).publicKey;
+    // If we blocked this profile owner, hide ourselves from their count
+    final hasBlockedTarget = blocklistService.isBlocked(pubkey);
 
     return BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
       builder: (context, state) {
@@ -123,7 +126,11 @@ class _OthersFollowingStatView extends ConsumerWidget {
         final filteredCount = isLoading
             ? null
             : state.followingPubkeys
-                  .where((pk) => !blocklistService.isBlocked(pk))
+                  .where(
+                    (pk) =>
+                        !blocklistService.isBlocked(pk) &&
+                        !(hasBlockedTarget && pk == currentUserPubkey),
+                  )
                   .length;
 
         return ProfileStatColumn(

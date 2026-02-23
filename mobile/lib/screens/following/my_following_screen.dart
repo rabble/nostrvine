@@ -50,6 +50,10 @@ class _MyFollowingView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Watch blocklist at the top level for both title count and list filtering
+    ref.watch(blocklistVersionProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+
     final appBarTitle = displayName?.isNotEmpty == true
         ? "$displayName's Following"
         : 'Following';
@@ -90,10 +94,10 @@ class _MyFollowingView extends ConsumerWidget {
         ),
         title: FollowerCountTitle<MyFollowingBloc, MyFollowingState>(
           title: appBarTitle,
-          selector: (state) =>
-              state.status == MyFollowingStatus.success ||
-                  state.status == MyFollowingStatus.toggleFailure
-              ? state.followingPubkeys.length
+          selector: (state) => state.status == MyFollowingStatus.success
+              ? state.followingPubkeys
+                    .where((pk) => !blocklistService.isBlocked(pk))
+                    .length
               : 0,
         ),
       ),
@@ -117,10 +121,6 @@ class _MyFollowingView extends ConsumerWidget {
           }
         },
         builder: (context, state) {
-          // Watch blocklist to reactively filter blocked users from list
-          ref.watch(blocklistVersionProvider);
-          final blocklistService = ref.watch(contentBlocklistServiceProvider);
-
           return switch (state.status) {
             MyFollowingStatus.initial => const Center(
               child: CircularProgressIndicator(),

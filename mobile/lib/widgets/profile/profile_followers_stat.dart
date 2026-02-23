@@ -109,6 +109,11 @@ class _OthersFollowersStatView extends ConsumerWidget {
     // Watch blocklist to reactively update follower count
     ref.watch(blocklistVersionProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final currentUserPubkey = ref.watch(nostrServiceProvider).publicKey;
+    final followRepository = ref.watch(followRepositoryProvider);
+    // Hide ourselves from the target's followers if we're not actually
+    // following them (e.g. follow severed by block→unblock flow).
+    final isFollowingTarget = followRepository?.isFollowing(pubkey) ?? false;
 
     return BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
       builder: (context, state) {
@@ -118,7 +123,11 @@ class _OthersFollowersStatView extends ConsumerWidget {
         final filteredCount = isLoading
             ? null
             : state.followersPubkeys
-                  .where((pk) => !blocklistService.isBlocked(pk))
+                  .where(
+                    (pk) =>
+                        !blocklistService.isBlocked(pk) &&
+                        !(pk == currentUserPubkey && !isFollowingTarget),
+                  )
                   .length;
 
         return ProfileStatColumn(

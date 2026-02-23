@@ -9,6 +9,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/blocs/my_following/my_following_bloc.dart';
 import 'package:openvine/blocs/others_followers/others_followers_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/router/nav_extensions.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
 import 'package:openvine/widgets/profile/follower_count_title.dart';
@@ -66,6 +67,15 @@ class _OthersFollowersView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Watch blocklist at the top level for both title count and list filtering
+    ref.watch(blocklistVersionProvider);
+    final blocklistService = ref.watch(contentBlocklistServiceProvider);
+    final currentUserPubkey = ref.watch(nostrServiceProvider).publicKey;
+    final followRepository = ref.watch(followRepositoryProvider);
+    // Hide ourselves from the target's followers if we're not actually
+    // following them (e.g. follow severed by block→unblock flow).
+    final isFollowingTarget = followRepository?.isFollowing(pubkey) ?? false;
+
     final appBarTitle = displayName?.isNotEmpty == true
         ? "$displayName's Followers"
         : 'Followers';
@@ -107,22 +117,28 @@ class _OthersFollowersView extends ConsumerWidget {
         title: FollowerCountTitle<OthersFollowersBloc, OthersFollowersState>(
           title: appBarTitle,
           selector: (state) => state.status == OthersFollowersStatus.success
-              ? state.followersPubkeys.length
+              ? state.followersPubkeys
+                    .where(
+                      (pk) =>
+                          !blocklistService.isBlocked(pk) &&
+                          !(pk == currentUserPubkey && !isFollowingTarget),
+                    )
+                    .length
               : 0,
         ),
       ),
       body: BlocBuilder<OthersFollowersBloc, OthersFollowersState>(
         builder: (context, state) {
-          // Watch blocklist to reactively filter blocked users from list
-          ref.watch(blocklistVersionProvider);
-          final blocklistService = ref.watch(contentBlocklistServiceProvider);
-
           return switch (state.status) {
             OthersFollowersStatus.initial || OthersFollowersStatus.loading =>
               const Center(child: CircularProgressIndicator()),
             OthersFollowersStatus.success => _FollowersListBody(
               followers: state.followersPubkeys
-                  .where((pk) => !blocklistService.isBlocked(pk))
+                  .where(
+                    (pk) =>
+                        !blocklistService.isBlocked(pk) &&
+                        !(pk == currentUserPubkey && !isFollowingTarget),
+                  )
                   .toList(),
               targetPubkey: pubkey,
             ),
