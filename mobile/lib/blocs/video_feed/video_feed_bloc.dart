@@ -18,7 +18,7 @@ part 'video_feed_state.dart';
 const _pageSize = 5;
 
 /// Default interval between auto-refreshes of the home feed.
-const defaultAutoRefreshInterval = Duration(minutes: 10);
+const _defaultAutoRefreshMinInterval = Duration(minutes: 10);
 
 /// BLoC for managing the unified video feed.
 ///
@@ -31,10 +31,10 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   VideoFeedBloc({
     required VideosRepository videosRepository,
     required FollowRepository followRepository,
-    Duration autoRefreshInterval = defaultAutoRefreshInterval,
+    Duration autoRefreshMinInterval = _defaultAutoRefreshMinInterval,
   }) : _videosRepository = videosRepository,
        _followRepository = followRepository,
-       _autoRefreshInterval = autoRefreshInterval,
+       _autoRefreshMinInterval = autoRefreshMinInterval,
        super(const VideoFeedState()) {
     on<VideoFeedStarted>(_onStarted);
     on<VideoFeedModeChanged>(_onModeChanged);
@@ -45,7 +45,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
 
   final VideosRepository _videosRepository;
   final FollowRepository _followRepository;
-  final Duration _autoRefreshInterval;
+  final Duration _autoRefreshMinInterval;
 
   /// Tracks when the last successful load completed, used by
   /// [_onAutoRefreshRequested] to skip refreshes when data is fresh.
@@ -154,7 +154,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
   /// Only refreshes when:
   /// - The current feed mode is [FeedMode.home]
   /// - The data is stale (last refresh was longer ago than
-  ///   [_autoRefreshInterval])
+  ///   [_autoRefreshMinInterval])
   Future<void> _onAutoRefreshRequested(
     VideoFeedAutoRefreshRequested event,
     Emitter<VideoFeedState> emit,
@@ -163,7 +163,7 @@ class VideoFeedBloc extends Bloc<VideoFeedEvent, VideoFeedState> {
 
     final lastRefresh = _lastRefreshedAt;
     if (lastRefresh != null &&
-        DateTime.now().difference(lastRefresh) < _autoRefreshInterval) {
+        DateTime.now().difference(lastRefresh) < _autoRefreshMinInterval) {
       return;
     }
 

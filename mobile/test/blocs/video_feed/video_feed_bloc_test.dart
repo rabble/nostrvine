@@ -634,7 +634,7 @@ void main() {
         build: () => VideoFeedBloc(
           videosRepository: mockVideosRepository,
           followRepository: mockFollowRepository,
-          autoRefreshInterval: Duration.zero,
+          autoRefreshMinInterval: Duration.zero,
         ),
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
@@ -698,7 +698,7 @@ void main() {
           videosRepository: mockVideosRepository,
           followRepository: mockFollowRepository,
           // Large interval so data is always considered fresh
-          autoRefreshInterval: const Duration(hours: 1),
+          autoRefreshMinInterval: const Duration(hours: 1),
         ),
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
@@ -734,7 +734,7 @@ void main() {
         build: () => VideoFeedBloc(
           videosRepository: mockVideosRepository,
           followRepository: mockFollowRepository,
-          autoRefreshInterval: Duration.zero,
+          autoRefreshMinInterval: Duration.zero,
         ),
         seed: () => VideoFeedState(
           status: VideoFeedStatus.success,
