@@ -893,17 +893,119 @@ class CameraController: NSObject {
         autoFlashTorchEnabled = false
     }
     
+    /// Work item for auto-cancel focus timer
+    private var focusAutoCancelWorkItem: DispatchWorkItem?
+    
+    /// Duration in seconds before focus returns to continuous auto-focus (like TikTok)
+    private let focusLockDuration: TimeInterval = 3.0
+    
     /// Sets the focus point in normalized coordinates (0.0-1.0).
+    /// Uses combined focus + exposure + white balance for best results.
+    /// Focus is locked for 3 seconds, then returns to continuous auto-focus.
+    ///
+    /// Note: Input coordinates are in display space (portrait mode).
+    /// iOS focusPointOfInterest uses sensor coordinates (landscape),
+    /// so we transform: display (x, y) → sensor (y, 1-x) for portrait mode.
     func setFocusPoint(x: CGFloat, y: CGFloat) -> Bool {
         guard let device = videoDevice, device.isFocusPointOfInterestSupported else {
             return false
         }
         
+        // Cancel any pending auto-cancel timer from previous tap
+        focusAutoCancelWorkItem?.cancel()
+        
+        // Transform display coordinates to sensor coordinates
+        // iOS sensor coordinate system is always landscape-oriented:
+        // - (0,0) is top-left of sensor (in landscape)
+        // - For portrait mode, we need to rotate the coordinates
+        // Display (x, y) → Sensor (y, 1-x) for portrait orientation
+        let sensorPoint = CGPoint(x: y, y: 1 - x)
+        
         do {
             try device.lockForConfiguration()
-            device.focusPointOfInterest = CGPoint(x: x, y: y)
+            
+            // Set focus point and trigger one-shot auto-focus
+            device.focusPointOfInterest = sensorPoint
             if device.isFocusModeSupported(.autoFocus) {
                 device.focusMode = .autoFocus
+            }
+            
+            // Also set exposure at the same point for consistent results
+            if device.isExposurePointOfInterestSupported {
+                device.exposurePointOfInterest = sensorPoint
+                if device.isExposureModeSupported(.autoExpose) {
+                    device.exposureMode = .autoExpose
+                }
+            }
+            
+            // Also trigger white balance adjustment (iOS doesn't have point of interest for WB,
+            // but setting to auto mode will let it recalculate based on scene)
+            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                device.whiteBalanceMode = .continuousAutoWhiteBalance
+            }
+            
+            device.unlockForConfiguration()
+            
+            // Schedule return to continuous auto-focus after focusLockDuration
+            let workItem = DispatchWorkItem { [weak self] in
+                self?.returnToContinuousAutoFocus()
+            }
+            focusAutoCancelWorkItem = workItem
+            DispatchQueue.main.asyncAfter(deadline: .now() + focusLockDuration, execute: workItem)
+            
+            return true
+        } catch {
+            return false
+        }
+    }
+    
+    /// Returns focus, exposure, and white balance to continuous auto mode.
+    private func returnToContinuousAutoFocus() {
+        guard let device = videoDevice else { return }
+        
+        do {
+            try device.lockForConfiguration()
+            
+            // Return to continuous auto-focus
+            if device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusMode = .continuousAutoFocus
+            }
+            
+            // Return to continuous auto-exposure
+            if device.isExposureModeSupported(.continuousAutoExposure) {
+                device.exposureMode = .continuousAutoExposure
+            }
+            
+            // Ensure continuous auto white balance (should already be set, but ensure it)
+            if device.isWhiteBalanceModeSupported(.continuousAutoWhiteBalance) {
+                device.whiteBalanceMode = .continuousAutoWhiteBalance
+            }
+            
+            device.unlockForConfiguration()
+        } catch {
+            // Silently fail
+        }
+    }
+    
+    /// Sets the exposure point in normalized coordinates (0.0-1.0).
+    /// For exposure-only adjustment without changing focus.
+    ///
+    /// Note: Input coordinates are in display space (portrait mode).
+    /// iOS exposurePointOfInterest uses sensor coordinates (landscape),
+    /// so we transform: display (x, y) → sensor (y, 1-x) for portrait mode.
+    func setExposurePoint(x: CGFloat, y: CGFloat) -> Bool {
+        guard let device = videoDevice, device.isExposurePointOfInterestSupported else {
+            return false
+        }
+        
+        // Transform display coordinates to sensor coordinates
+        let sensorPoint = CGPoint(x: y, y: 1 - x)
+        
+        do {
+            try device.lockForConfiguration()
+            device.exposurePointOfInterest = sensorPoint
+            if device.isExposureModeSupported(.autoExpose) {
+                device.exposureMode = .autoExpose
             }
             device.unlockForConfiguration()
             return true
@@ -912,18 +1014,28 @@ class CameraController: NSObject {
         }
     }
     
-    /// Sets the exposure point in normalized coordinates (0.0-1.0).
-    func setExposurePoint(x: CGFloat, y: CGFloat) -> Bool {
-        guard let device = videoDevice, device.isExposurePointOfInterestSupported else {
-            return false
-        }
+    /// Cancels any active focus/metering lock and returns to continuous auto-focus.
+    /// Call this when you want to reset focus behavior after a tap-to-focus.
+    func cancelFocusAndMetering() -> Bool {
+        // Cancel any pending auto-cancel timer
+        focusAutoCancelWorkItem?.cancel()
+        focusAutoCancelWorkItem = nil
+        
+        guard let device = videoDevice else { return false }
         
         do {
             try device.lockForConfiguration()
-            device.exposurePointOfInterest = CGPoint(x: x, y: y)
-            if device.isExposureModeSupported(.autoExpose) {
-                device.exposureMode = .autoExpose
+            
+            // Return to continuous auto-focus
+            if device.isFocusModeSupported(.continuousAutoFocus) {
+                device.focusMode = .continuousAutoFocus
             }
+            
+            // Return to continuous auto-exposure
+            if device.isExposureModeSupported(.continuousAutoExposure) {
+                device.exposureMode = .continuousAutoExposure
+            }
+            
             device.unlockForConfiguration()
             return true
         } catch {

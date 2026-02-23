@@ -21,6 +21,7 @@ import 'package:openvine/router/router.dart';
 import 'package:openvine/repositories/follow_repository.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/user_profile_service.dart';
+import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:reposts_repository/reposts_repository.dart';
@@ -72,6 +73,8 @@ class _MockNostrClient extends Mock implements NostrClient {
 }
 
 class _MockUserProfileService extends Mock implements UserProfileService {}
+
+class _MockVideoEventService extends Mock implements VideoEventService {}
 
 void main() {
   Widget _shell(ProviderContainer c) => UncontrolledProviderScope(
@@ -244,6 +247,7 @@ void main() {
     late _MockVideosRepository mockVideosRepository;
     late _MockNostrClient mockNostrClient;
     late _MockUserProfileService mockUserProfileService;
+    late _MockVideoEventService mockVideoEventService;
 
     setUp(() {
       mockDraft = _MockVineDraft();
@@ -278,6 +282,7 @@ void main() {
       mockVideosRepository = _MockVideosRepository();
       mockNostrClient = _MockNostrClient();
       mockUserProfileService = _MockUserProfileService();
+      mockVideoEventService = _MockVideoEventService();
 
       // Stub UserProfileService methods to prevent real network calls
       when(
@@ -316,6 +321,7 @@ void main() {
           likesRepositoryProvider.overrideWithValue(mockLikesRepository),
           repostsRepositoryProvider.overrideWithValue(mockRepostsRepository),
           videosRepositoryProvider.overrideWithValue(mockVideosRepository),
+          videoEventServiceProvider.overrideWithValue(mockVideoEventService),
         ],
         child: MaterialApp(
           theme: VineTheme.theme,

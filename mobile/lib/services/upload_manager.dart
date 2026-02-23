@@ -1950,6 +1950,46 @@ class UploadManager {
       );
     }
 
+    // Validate all URLs are HTTP/HTTPS before storing
+    // This prevents local file paths from being persisted and later published
+    String? validatedCdnUrl = result.cdnUrl as String?;
+    String? validatedStreamingMp4 = result.streamingMp4Url as String?;
+    String? validatedStreamingHls = result.streamingHlsUrl as String?;
+    String? validatedFallback = result.fallbackUrl as String?;
+
+    if (validatedCdnUrl != null && !_isHttpUrl(validatedCdnUrl)) {
+      Log.error(
+        '⚠️ cdnUrl is not an HTTP URL (possible local path): $validatedCdnUrl',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
+      validatedCdnUrl = null;
+    }
+    if (validatedStreamingMp4 != null && !_isHttpUrl(validatedStreamingMp4)) {
+      Log.error(
+        '⚠️ streamingMp4Url is not an HTTP URL: $validatedStreamingMp4',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
+      validatedStreamingMp4 = null;
+    }
+    if (validatedStreamingHls != null && !_isHttpUrl(validatedStreamingHls)) {
+      Log.error(
+        '⚠️ streamingHlsUrl is not an HTTP URL: $validatedStreamingHls',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
+      validatedStreamingHls = null;
+    }
+    if (validatedFallback != null && !_isHttpUrl(validatedFallback)) {
+      Log.error(
+        '⚠️ fallbackUrl is not an HTTP URL: $validatedFallback',
+        name: 'UploadManager',
+        category: LogCategory.video,
+      );
+      validatedFallback = null;
+    }
+
     return upload.copyWith(
       status: (isProcessing && !skipProcessing)
           ? UploadStatus.processing
@@ -1958,12 +1998,10 @@ class UploadManager {
           result.videoId as String?, // Use videoId for existing systems
       videoId:
           result.videoId as String?, // Store videoId for new publishing system
-      cdnUrl:
-          result.cdnUrl
-              as String?, // Store CDN URL directly (fallbackUrl ?? url via getter)
-      streamingMp4Url: result.streamingMp4Url, // Store BunnyStream MP4 URL
-      streamingHlsUrl: result.streamingHlsUrl, // Store BunnyStream HLS URL
-      fallbackUrl: result.fallbackUrl, // Store R2 fallback MP4 URL
+      cdnUrl: validatedCdnUrl, // Store CDN URL (validated HTTP only)
+      streamingMp4Url: validatedStreamingMp4, // Store BunnyStream MP4 URL
+      streamingHlsUrl: validatedStreamingHls, // Store BunnyStream HLS URL
+      fallbackUrl: validatedFallback, // Store R2 fallback MP4 URL
       thumbnailPath: thumbnailUrl, // Store thumbnail URL
       uploadProgress: (isProcessing && !skipProcessing)
           ? 0.9
@@ -1972,6 +2010,12 @@ class UploadManager {
           ? null
           : DateTime.now(), // Mark as completed if skipping processing
     );
+  }
+
+  /// Check if a URL is a valid HTTP/HTTPS URL (not a local file path)
+  static bool _isHttpUrl(String? url) {
+    if (url == null || url.isEmpty) return false;
+    return url.startsWith('http://') || url.startsWith('https://');
   }
 
   /// Create success metrics with calculated values

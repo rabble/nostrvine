@@ -17,8 +17,8 @@ import 'package:openvine/screens/auth/reset_password.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
-import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/creator_analytics_screen.dart';
+import 'package:openvine/screens/curated_list_feed_screen.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
 import 'package:openvine/screens/discover_lists_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
@@ -52,6 +52,10 @@ import 'package:openvine/services/video_stop_navigator_observer.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/camera_permission_gate.dart';
 
+/// Global route observer for [RouteAware] subscribers (e.g. pausing video
+/// when a new route is pushed on top of the feed).
+final routeObserver = RouteObserver<ModalRoute<dynamic>>();
+
 // Track if we've done initial navigation to avoid redirect loops
 bool _hasNavigated = false;
 
@@ -72,6 +76,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
     // Start at /welcome - redirect logic will navigate to appropriate route
     initialLocation: WelcomeScreen.path,
     observers: [
+      routeObserver,
       PageLoadObserver(),
       VideoStopNavigatorObserver(),
       FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
@@ -783,6 +788,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             source: args.source,
             initialIndex: args.initialIndex,
             contextTitle: args.contextTitle,
+            trafficSource: args.trafficSource,
           );
         },
       ),
@@ -803,6 +809,8 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             initialIndex: args.initialIndex,
             onLoadMore: args.onLoadMore,
             contextTitle: args.contextTitle,
+            trafficSource: args.trafficSource,
+            sourceDetail: args.sourceDetail,
           );
         },
       ),

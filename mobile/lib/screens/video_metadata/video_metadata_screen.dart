@@ -10,6 +10,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
+import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_bottom_bar.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_clip_preview.dart';
 import 'package:openvine/widgets/video_metadata/video_metadata_expiration_selector.dart';
@@ -47,6 +48,10 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
+      // Clear any stale error/completed state from a previous publish attempt
+      // so the overlay doesn't block the new publish flow.
+      ref.read(videoPublishProvider.notifier).clearError();
+
       final editorProvider = ref.read(videoEditorProvider);
       _titleController.text = editorProvider.title;
       _descriptionController.text = editorProvider.description;
@@ -192,7 +197,7 @@ class _FormData extends ConsumerWidget {
                   controller: titleController,
                   // TODO(l10n): Replace with context.l10n when localization is
                   // added.
-                  labelText: 'Title',
+                  label: 'Title',
                   focusNode: titleFocusNode,
                   textInputAction: .next,
                   minLines: 1,
@@ -211,7 +216,7 @@ class _FormData extends ConsumerWidget {
                   controller: descriptionController,
                   // TODO(l10n): Replace with context.l10n when localization is
                   // added.
-                  labelText: 'Description',
+                  label: 'Description',
                   focusNode: descriptionFocusNode,
                   keyboardType: .multiline,
                   textInputAction: .newline,

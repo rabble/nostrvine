@@ -269,6 +269,108 @@ void main() {
         expect(result, isA<PublishError>());
         expect((result as PublishError).userMessage, 'No upload to retry.');
       });
+
+      test(
+        'returns no upload to retry after auth failure clears upload id',
+        () async {
+          // Arrange - trigger an auth failure to set _backgroundUploadId
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+          when(
+            () => mockDraftService.saveDraft(any()),
+          ).thenAnswer((_) async {});
+
+          final draft = _createTestDraft();
+          await service.publishVideo(draft: draft);
+
+          // Act - retry should fail because auth failure cleared the upload id
+          final result = await service.retryUpload(draft);
+
+          // Assert
+          expect(result, isA<PublishError>());
+          expect((result as PublishError).userMessage, 'No upload to retry.');
+        },
+      );
+
+      test(
+        'returns no upload to retry after upload failure clears upload id',
+        () async {
+          // Arrange - trigger an upload failure
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn('test_pubkey');
+          when(
+            () => mockDraftService.saveDraft(any()),
+          ).thenAnswer((_) async {});
+          when(() => mockUploadManager.isInitialized).thenReturn(true);
+          when(
+            () => mockUploadManager.startUploadFromDraft(
+              draft: any(named: 'draft'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenAnswer(
+            (_) async => _createPendingUpload(
+              status: UploadStatus.failed,
+              errorMessage: 'Network error',
+            ),
+          );
+          when(() => mockUploadManager.getUpload(any())).thenReturn(
+            _createPendingUpload(
+              status: UploadStatus.failed,
+              errorMessage: 'Network error',
+            ),
+          );
+          when(
+            () => mockBlossomService.getBlossomServer(),
+          ).thenAnswer((_) async => 'https://test.server');
+
+          final draft = _createTestDraft();
+          await service.publishVideo(draft: draft);
+
+          // Act - retry should fail because upload failure cleared the id
+          final result = await service.retryUpload(draft);
+
+          // Assert
+          expect(result, isA<PublishError>());
+          expect((result as PublishError).userMessage, 'No upload to retry.');
+        },
+      );
+
+      test(
+        'returns no upload to retry after exception clears upload id',
+        () async {
+          // Arrange - trigger an exception during publish
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockAuthService.currentPublicKeyHex,
+          ).thenReturn('test_pubkey');
+          when(
+            () => mockDraftService.saveDraft(any()),
+          ).thenAnswer((_) async {});
+          when(() => mockUploadManager.isInitialized).thenReturn(true);
+          when(
+            () => mockUploadManager.startUploadFromDraft(
+              draft: any(named: 'draft'),
+              nostrPubkey: any(named: 'nostrPubkey'),
+              onProgress: any(named: 'onProgress'),
+            ),
+          ).thenThrow(Exception('unexpected error'));
+          when(
+            () => mockBlossomService.getBlossomServer(),
+          ).thenAnswer((_) async => 'https://test.server');
+
+          final draft = _createTestDraft();
+          await service.publishVideo(draft: draft);
+
+          // Act - retry should fail because exception cleared the id
+          final result = await service.retryUpload(draft);
+
+          // Assert
+          expect(result, isA<PublishError>());
+          expect((result as PublishError).userMessage, 'No upload to retry.');
+        },
+      );
     });
 
     group('error messages', () {

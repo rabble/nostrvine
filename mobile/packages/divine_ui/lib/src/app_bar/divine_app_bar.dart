@@ -57,6 +57,7 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
     this.titleSuffix,
     this.showBackButton = false,
     this.onBackPressed,
+    this.backButtonSemanticLabel,
     this.showMenuButton = false,
     this.onMenuPressed,
     this.leadingIcon,
@@ -138,6 +139,12 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
   /// If null and [showBackButton] is true, defaults to Navigator.pop.
   final VoidCallback? onBackPressed;
 
+  /// Custom semantic label for the back button.
+  ///
+  /// When provided, overrides the default 'Go back' label and suppresses the
+  /// tooltip to avoid iOS merging both into the accessibility text.
+  final String? backButtonSemanticLabel;
+
   /// Whether to show a menu button as the leading widget.
   ///
   /// Cannot be true if [showBackButton] or [leadingIcon] is set.
@@ -199,6 +206,7 @@ class DiVineAppBar extends StatelessWidget implements PreferredSizeWidget {
       leading: DiVineAppBarLeading(
         showBackButton: showBackButton,
         onBackPressed: onBackPressed,
+        backButtonSemanticLabel: backButtonSemanticLabel,
         showMenuButton: showMenuButton,
         onMenuPressed: onMenuPressed,
         leadingIcon: leadingIcon,

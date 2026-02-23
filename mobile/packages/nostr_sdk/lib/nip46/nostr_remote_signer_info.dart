@@ -136,7 +136,7 @@ class NostrRemoteSignerInfo {
   /// Format per NIP-46:
   /// `nostrconnect://<client-pubkey>?relay=<relay>&secret=<secret>`
   /// `&name=<app-name>&url=<app-url>&image=<app-icon>&perms=<permissions>`
-  String toNostrConnectUrl({String? permissions}) {
+  String toNostrConnectUrl({String? permissions, String? callback}) {
     if (clientPubkey == null || clientPubkey!.isEmpty) {
       throw StateError('clientPubkey is required for nostrconnect:// URLs');
     }
@@ -174,6 +174,11 @@ class NostrRemoteSignerInfo {
         'sign_event:0,sign_event:1,sign_event:3,sign_event:6,sign_event:7,'
             'sign_event:34236,nip44_encrypt,nip44_decrypt';
     params.add('perms=${Uri.encodeComponent(perms)}');
+
+    // Add callback URL scheme for signer app to redirect back
+    if (callback != null && callback.isNotEmpty) {
+      params.add('callback=${Uri.encodeComponent(callback)}');
+    }
 
     buffer.write(params.join('&'));
     return buffer.toString();

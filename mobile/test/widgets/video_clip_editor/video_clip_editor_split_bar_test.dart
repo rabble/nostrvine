@@ -1,6 +1,8 @@
 // ABOUTME: Tests for VideoClipEditorSplitBar widget
 // ABOUTME: Validates split bar functionality, slider interaction, and state management
 
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -200,4 +202,263 @@ void main() {
       expect(slider.max, greaterThanOrEqualTo(0));
     });
   });
+
+  group(UniformTrackShape, () {
+    late UniformTrackShape trackShape;
+
+    setUp(() {
+      trackShape = const UniformTrackShape();
+    });
+
+    group('getPreferredRect', () {
+      test('returns rect with correct height from sliderTheme', () {
+        final parentBox = _MockRenderBox(const Size(300, 40));
+        const sliderTheme = SliderThemeData(trackHeight: 8);
+
+        final rect = trackShape.getPreferredRect(
+          parentBox: parentBox,
+          sliderTheme: sliderTheme,
+        );
+
+        expect(rect.height, equals(8));
+      });
+
+      test('returns rect with full parent width', () {
+        final parentBox = _MockRenderBox(const Size(300, 40));
+        const sliderTheme = SliderThemeData(trackHeight: 8);
+
+        final rect = trackShape.getPreferredRect(
+          parentBox: parentBox,
+          sliderTheme: sliderTheme,
+        );
+
+        expect(rect.width, equals(300));
+      });
+
+      test('centers track vertically in parent', () {
+        final parentBox = _MockRenderBox(const Size(300, 40));
+        const sliderTheme = SliderThemeData(trackHeight: 8);
+
+        final rect = trackShape.getPreferredRect(
+          parentBox: parentBox,
+          sliderTheme: sliderTheme,
+        );
+
+        // Track should be centered: (40 - 8) / 2 = 16
+        expect(rect.top, equals(16));
+      });
+
+      test('uses default track height of 8 when not specified', () {
+        final parentBox = _MockRenderBox(const Size(300, 40));
+        const sliderTheme = SliderThemeData();
+
+        final rect = trackShape.getPreferredRect(
+          parentBox: parentBox,
+          sliderTheme: sliderTheme,
+        );
+
+        expect(rect.height, equals(8));
+      });
+
+      test('applies offset correctly', () {
+        final parentBox = _MockRenderBox(const Size(300, 40));
+        const sliderTheme = SliderThemeData(trackHeight: 8);
+        const offset = Offset(10, 5);
+
+        final rect = trackShape.getPreferredRect(
+          parentBox: parentBox,
+          sliderTheme: sliderTheme,
+          offset: offset,
+        );
+
+        expect(rect.left, equals(10));
+        // Track top = offset.dy + (parentHeight - trackHeight) / 2
+        // = 5 + (40 - 8) / 2 = 5 + 16 = 21
+        expect(rect.top, equals(21));
+      });
+
+      test('handles zero track height', () {
+        final parentBox = _MockRenderBox(const Size(300, 40));
+        const sliderTheme = SliderThemeData(trackHeight: 0);
+
+        final rect = trackShape.getPreferredRect(
+          parentBox: parentBox,
+          sliderTheme: sliderTheme,
+        );
+
+        expect(rect.height, equals(0));
+        // Centered at (40 - 0) / 2 = 20
+        expect(rect.top, equals(20));
+      });
+
+      test('handles large track height', () {
+        final parentBox = _MockRenderBox(const Size(300, 40));
+        const sliderTheme = SliderThemeData(trackHeight: 40);
+
+        final rect = trackShape.getPreferredRect(
+          parentBox: parentBox,
+          sliderTheme: sliderTheme,
+        );
+
+        expect(rect.height, equals(40));
+        expect(rect.top, equals(0));
+      });
+    });
+
+    group('paint', () {
+      test('does not throw with valid parameters', () {
+        final parentBox = _MockRenderBox(const Size(300, 40));
+        const sliderTheme = SliderThemeData(
+          trackHeight: 8,
+          activeTrackColor: Colors.green,
+          inactiveTrackColor: Colors.grey,
+        );
+        const enableAnimation = AlwaysStoppedAnimation<double>(1);
+
+        expect(
+          () => trackShape.paint(
+            _MockPaintingContext(),
+            Offset.zero,
+            parentBox: parentBox,
+            sliderTheme: sliderTheme,
+            enableAnimation: enableAnimation,
+            thumbCenter: const Offset(150, 20),
+            textDirection: TextDirection.ltr,
+          ),
+          returnsNormally,
+        );
+      });
+
+      test('handles thumb at start position', () {
+        final parentBox = _MockRenderBox(const Size(300, 40));
+        const sliderTheme = SliderThemeData(
+          trackHeight: 8,
+          activeTrackColor: Colors.green,
+          inactiveTrackColor: Colors.grey,
+        );
+        const enableAnimation = AlwaysStoppedAnimation<double>(1);
+
+        expect(
+          () => trackShape.paint(
+            _MockPaintingContext(),
+            Offset.zero,
+            parentBox: parentBox,
+            sliderTheme: sliderTheme,
+            enableAnimation: enableAnimation,
+            thumbCenter: const Offset(0, 20),
+            textDirection: TextDirection.ltr,
+          ),
+          returnsNormally,
+        );
+      });
+
+      test('handles thumb at end position', () {
+        final parentBox = _MockRenderBox(const Size(300, 40));
+        const sliderTheme = SliderThemeData(
+          trackHeight: 8,
+          activeTrackColor: Colors.green,
+          inactiveTrackColor: Colors.grey,
+        );
+        const enableAnimation = AlwaysStoppedAnimation<double>(1);
+
+        expect(
+          () => trackShape.paint(
+            _MockPaintingContext(),
+            Offset.zero,
+            parentBox: parentBox,
+            sliderTheme: sliderTheme,
+            enableAnimation: enableAnimation,
+            thumbCenter: const Offset(300, 20),
+            textDirection: TextDirection.ltr,
+          ),
+          returnsNormally,
+        );
+      });
+
+      test('handles missing colors gracefully', () {
+        final parentBox = _MockRenderBox(const Size(300, 40));
+        const sliderTheme = SliderThemeData(trackHeight: 8);
+        const enableAnimation = AlwaysStoppedAnimation<double>(1);
+
+        expect(
+          () => trackShape.paint(
+            _MockPaintingContext(),
+            Offset.zero,
+            parentBox: parentBox,
+            sliderTheme: sliderTheme,
+            enableAnimation: enableAnimation,
+            thumbCenter: const Offset(150, 20),
+            textDirection: TextDirection.ltr,
+          ),
+          returnsNormally,
+        );
+      });
+
+      test('handles offset correctly', () {
+        final parentBox = _MockRenderBox(const Size(300, 40));
+        const sliderTheme = SliderThemeData(
+          trackHeight: 8,
+          activeTrackColor: Colors.green,
+          inactiveTrackColor: Colors.grey,
+        );
+        const enableAnimation = AlwaysStoppedAnimation<double>(1);
+
+        expect(
+          () => trackShape.paint(
+            _MockPaintingContext(),
+            const Offset(50, 10),
+            parentBox: parentBox,
+            sliderTheme: sliderTheme,
+            enableAnimation: enableAnimation,
+            thumbCenter: const Offset(200, 30),
+            textDirection: TextDirection.ltr,
+          ),
+          returnsNormally,
+        );
+      });
+
+      test('handles RTL text direction', () {
+        final parentBox = _MockRenderBox(const Size(300, 40));
+        const sliderTheme = SliderThemeData(
+          trackHeight: 8,
+          activeTrackColor: Colors.green,
+          inactiveTrackColor: Colors.grey,
+        );
+        const enableAnimation = AlwaysStoppedAnimation<double>(1);
+
+        expect(
+          () => trackShape.paint(
+            _MockPaintingContext(),
+            Offset.zero,
+            parentBox: parentBox,
+            sliderTheme: sliderTheme,
+            enableAnimation: enableAnimation,
+            thumbCenter: const Offset(150, 20),
+            textDirection: TextDirection.rtl,
+          ),
+          returnsNormally,
+        );
+      });
+    });
+  });
+}
+
+class _MockRenderBox extends RenderBox {
+  _MockRenderBox(this._size);
+  final Size _size;
+
+  @override
+  Size get size => _size;
+}
+
+class _MockPaintingContext implements PaintingContext {
+  _MockPaintingContext();
+
+  final _recorder = ui.PictureRecorder();
+
+  @override
+  Canvas get canvas => Canvas(_recorder);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
 }

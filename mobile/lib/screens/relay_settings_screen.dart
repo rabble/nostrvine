@@ -175,7 +175,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
                 GestureDetector(
                   onTap: () => _launchNostrWatch(),
                   child: Text(
-                    'Find public relays at nostr.watch →',
+                    'Find public relays at nostr.co.uk →',
                     style: TextStyle(
                       color: VineTheme.vineGreen,
                       fontSize: 13,
@@ -762,7 +762,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
             GestureDetector(
               onTap: () => _launchNostrWatch(),
               child: Text(
-                'Browse public relays at nostr.watch',
+                'Browse public relays at nostr.co.uk',
                 style: TextStyle(
                   color: VineTheme.vineGreen,
                   fontSize: 13,
@@ -887,7 +887,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
   }
 
   Future<void> _launchNostrWatch() async {
-    final url = Uri.parse('https://nostr.watch');
+    final url = Uri.parse('https://nostr.co.uk/relays/');
     try {
       if (await canLaunchUrl(url)) {
         await launchUrl(url, mode: LaunchMode.externalApplication);
@@ -896,7 +896,7 @@ class _RelaySettingsScreenState extends ConsumerState<RelaySettingsScreen> {
       }
     } catch (e) {
       Log.error(
-        'Failed to launch nostr.watch: $e',
+        'Failed to launch nostr.co.uk: $e',
         name: 'RelaySettingsScreen',
       );
       _showError('Failed to open link');

@@ -184,7 +184,7 @@ class _VideoMetadataTagsInputState
                     controller: _controller,
                     focusNode: _focusNode,
                     // TODO(l10n): Replace with context.l10n when localization is added.
-                    labelText: tags.isEmpty ? 'Tags' : null,
+                    label: tags.isEmpty ? 'Tags' : null,
                     contentPadding: .zero,
                     textCapitalization: .none,
                     textInputAction: .done,

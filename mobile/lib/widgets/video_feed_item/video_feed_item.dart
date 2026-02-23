@@ -55,6 +55,7 @@ import 'package:openvine/widgets/video_feed_item/list_attribution_chip.dart';
 import 'package:openvine/widgets/video_feed_item/subtitle_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_error_overlay.dart';
 import 'package:openvine/widgets/video_feed_item/video_follow_button.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/video_metrics_tracker.dart';
 import 'package:video_player/video_player.dart';
 import 'package:visibility_detector/visibility_detector.dart';
@@ -78,6 +79,8 @@ class VideoFeedItem extends ConsumerStatefulWidget {
     this.listSources,
     this.showListAttribution = false,
     this.hideFollowButtonIfFollowing = false,
+    this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
   });
 
   final VideoEvent video;
@@ -110,6 +113,12 @@ class VideoFeedItem extends ConsumerStatefulWidget {
   /// Useful for Home feed (all videos are from followed users) and
   /// Profile views of followed users.
   final bool hideFollowButtonIfFollowing;
+
+  /// Traffic source for view event analytics (home, discovery, profile, etc.)
+  final ViewTrafficSource trafficSource;
+
+  /// Additional context for the traffic source (e.g., hashtag name).
+  final String? sourceDetail;
 
   @override
   ConsumerState<VideoFeedItem> createState() => _VideoFeedItemState();
@@ -305,10 +314,43 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
           _handlePlaybackChange(effectivelyActive);
         });
 
+        // PAUSE-ONLY guard: Listen to activeVideoIdProvider reactively.
+        // PageView.builder doesn't rebuild off-screen items, so
+        // didUpdateWidget never fires with isActiveOverride=false for them.
+        // This reactive listener ensures off-screen items get paused when
+        // a different video becomes active. It only PAUSES — play is still
+        // handled by isActiveOverride via didUpdateWidget for visible items.
+        ref.listenManual(activeVideoIdProvider, (prev, next) {
+          if (!mounted) return;
+          // Only pause if another video became active (not null → avoids
+          // false pauses during provider initialization or route transitions)
+          if (next != null && next != _stableVideoId) {
+            Log.info(
+              '⏸️ VideoFeedItem reactive pause guard: active=$next, pausing ${widget.video.id}',
+              name: 'VideoFeedItem',
+              category: LogCategory.video,
+            );
+            _handlePlaybackChange(false);
+          }
+        });
+
         // Initial play if override is true and no overlay
         final hasOverlay = ref.read(hasVisibleOverlayProvider);
         if (initialOverride && !hasOverlay) {
-          _handlePlaybackChange(true);
+          // Verify this video is actually the one that should be playing.
+          // Prevents race condition where the post-frame callback fires
+          // after the user has already swiped to a different page.
+          final currentActive = ref.read(activeVideoIdProvider);
+          if (currentActive == null || currentActive == _stableVideoId) {
+            _handlePlaybackChange(true);
+          } else {
+            Log.info(
+              '⏭️ VideoFeedItem.initState: skipping play for ${widget.video.id} '
+              '(active video is $currentActive)',
+              name: 'VideoFeedItem',
+              category: LogCategory.video,
+            );
+          }
         }
         return;
       }
@@ -1154,6 +1196,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                     ? VideoMetricsTracker(
                         video: video,
                         controller: controller,
+                        trafficSource: widget.trafficSource,
+                        sourceDetail: widget.sourceDetail,
                         child: videoWidget,
                       )
                     : videoWidget;
@@ -1771,7 +1815,10 @@ class VideoOverlayActions extends ConsumerWidget {
                   const SizedBox(height: 4),
 
                   // Repost button
-                  RepostActionButton(video: video),
+                  RepostActionButton(
+                    video: video,
+                    isPreviewMode: isPreviewMode,
+                  ),
 
                   const SizedBox(height: 4),
 
@@ -1781,7 +1828,7 @@ class VideoOverlayActions extends ConsumerWidget {
                   const SizedBox(height: 4),
 
                   // Like button
-                  LikeActionButton(video: video),
+                  LikeActionButton(video: video, isPreviewMode: isPreviewMode),
                 ],
               ),
             ),

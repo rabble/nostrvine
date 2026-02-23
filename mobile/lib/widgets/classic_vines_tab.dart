@@ -12,6 +12,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -205,6 +206,7 @@ class _ClassicVinesContentState extends ConsumerState<_ClassicVinesContent> {
                   onLoadMore: () =>
                       ref.read(classicVinesFeedProvider.notifier).loadMore(),
                   contextTitle: 'Classics',
+                  trafficSource: ViewTrafficSource.discoveryClassic,
                 ),
               );
             },

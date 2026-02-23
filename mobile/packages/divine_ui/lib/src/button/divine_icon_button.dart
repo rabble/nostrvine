@@ -59,7 +59,7 @@ enum DivineIconButtonSize {
 /// )
 /// ```
 class DivineIconButton extends StatelessWidget {
-  /// Creates an icon-only button following the Divine design system.
+  /// Creates a Divine design system icon button.
   const DivineIconButton({
     required this.icon,
     required this.onPressed,

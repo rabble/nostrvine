@@ -572,6 +572,7 @@ void main() {
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
+              currentCount: 5,
             ),
           ).thenAnswer((_) async => true);
         },
@@ -606,6 +607,7 @@ void main() {
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
+              currentCount: 5,
             ),
           ).thenAnswer((_) async => false);
         },
@@ -640,6 +642,7 @@ void main() {
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
+              currentCount: 0,
             ),
           ).thenAnswer((_) async => false);
         },
@@ -700,6 +703,7 @@ void main() {
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
+              currentCount: 0,
             ),
           ).thenThrow(const AlreadyRepostedException(testAddressableId));
         },
@@ -731,6 +735,7 @@ void main() {
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
+              currentCount: 0,
             ),
           ).thenThrow(const NotRepostedException(testAddressableId));
         },
@@ -762,6 +767,7 @@ void main() {
               addressableId: testAddressableId,
               originalAuthorPubkey: testAuthorPubkey,
               eventId: testEventId,
+              currentCount: 0,
             ),
           ).thenThrow(Exception('Network error'));
         },

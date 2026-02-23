@@ -36,6 +36,7 @@ void main() {
     profileService = UserProfileService(
       mockNostrService,
       subscriptionManager: mockSubscriptionManager,
+      skipIndexerFallback: true, // Avoid real WebSocket in tests
     );
     profileService.setPersistentCache(mockCacheService);
   });

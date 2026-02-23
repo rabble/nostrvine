@@ -14,6 +14,7 @@ void main() {
       DivineIconName? leadingIcon,
       DivineIconName? trailingIcon,
       bool expanded = false,
+      bool isLoading = false,
     }) {
       return MaterialApp(
         home: Scaffold(
@@ -26,6 +27,7 @@ void main() {
               leadingIcon: leadingIcon,
               trailingIcon: trailingIcon,
               expanded: expanded,
+              isLoading: isLoading,
             ),
           ),
         ),
@@ -391,6 +393,53 @@ void main() {
           );
         }
       }
+    });
+
+    group('loading state', () {
+      testWidgets('renders CircularProgressIndicator when isLoading', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            isLoading: true,
+            onPressed: () {},
+          ),
+        );
+
+        expect(
+          find.byType(CircularProgressIndicator),
+          findsOneWidget,
+        );
+      });
+
+      testWidgets('does not render leading icon when isLoading', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            isLoading: true,
+            leadingIcon: DivineIconName.envelope,
+            onPressed: () {},
+          ),
+        );
+
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+        expect(find.byType(DivineIcon), findsNothing);
+      });
+
+      testWidgets('shows reduced opacity when isLoading', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            isLoading: true,
+            onPressed: () {},
+          ),
+        );
+
+        final animatedOpacity = tester.widget<AnimatedOpacity>(
+          find.byType(AnimatedOpacity),
+        );
+        expect(animatedOpacity.opacity, 0.32);
+      });
     });
 
     group('all types render disabled', () {

@@ -10,6 +10,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/explore_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 /// Pure explore video screen using VideoFeedItem directly in PageView
@@ -23,6 +24,8 @@ class ExploreVideoScreenPure extends ConsumerStatefulWidget {
     this.onLoadMore,
     this.onNavigate,
     this.useLocalActiveState = false,
+    this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
   });
 
   final VideoEvent startingVideo;
@@ -37,6 +40,12 @@ class ExploreVideoScreenPure extends ConsumerStatefulWidget {
   /// When true, videos will auto-play based on page position without URL changes.
   final bool useLocalActiveState;
 
+  /// Traffic source for view event analytics.
+  final ViewTrafficSource trafficSource;
+
+  /// Additional context for the traffic source (e.g., hashtag name).
+  final String? sourceDetail;
+
   @override
   ConsumerState<ExploreVideoScreenPure> createState() =>
       _ExploreVideoScreenPureState();
@@ -46,6 +55,7 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
     with PaginationMixin, VideoPrefetchMixin {
   late int _initialIndex;
   late int _currentPage; // Track current page for local active state management
+  late PageController _pageController;
 
   @override
   void initState() {
@@ -63,6 +73,7 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
     }
 
     _currentPage = _initialIndex;
+    _pageController = PageController(initialPage: _initialIndex);
 
     Log.info(
       '🎯 ExploreVideoScreenPure: Initialized with ${widget.videoList.length} videos, starting at index $_initialIndex, useLocalActiveState=${widget.useLocalActiveState}',
@@ -72,9 +83,9 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
 
   @override
   void dispose() {
-    // Router-driven state - no manual cleanup needed, URL navigation handles it
+    _pageController.dispose();
     Log.info(
-      '🛑 ExploreVideoScreenPure disposing - router handles state cleanup',
+      '🛑 ExploreVideoScreenPure disposing',
       name: 'ExploreVideoScreen',
       category: LogCategory.video,
     );
@@ -103,7 +114,7 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
       color: Colors.black,
       child: PageView.builder(
         itemCount: videos.length,
-        controller: PageController(initialPage: _initialIndex),
+        controller: _pageController,
         scrollDirection: Axis.vertical,
         onPageChanged: (index) {
           Log.debug(
@@ -112,28 +123,27 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
             category: LogCategory.video,
           );
 
-          // Update current page for local state management
+          _currentPage = index;
           if (widget.useLocalActiveState) {
-            setState(() {
-              _currentPage = index;
-            });
+            setState(() {});
           }
 
           // Update URL to trigger reactive video playback via router
-          // Use custom navigation callback if provided, otherwise default to explore
-          // Skip URL navigation when using local active state
+          // Use custom navigation callback if provided, otherwise default
+          // to explore. Skip URL navigation when using local active state.
           if (widget.onNavigate != null) {
             widget.onNavigate!(index);
           } else if (!widget.useLocalActiveState) {
             context.go(ExploreScreen.pathForIndex(index));
           }
 
-          // Trigger pagination when near the end if callback provided
-          if (widget.onLoadMore != null) {
+          // Trigger pagination behavior
+          final onLoadMore = widget.onLoadMore;
+          if (onLoadMore != null) {
             checkForPagination(
               currentIndex: index,
               totalItems: videos.length,
-              onLoadMore: widget.onLoadMore!,
+              onLoadMore: onLoadMore,
             );
           }
 
@@ -161,6 +171,8 @@ class _ExploreVideoScreenPureState extends ConsumerState<ExploreVideoScreenPure>
             index: index,
             hasBottomNavigation: false,
             contextTitle: widget.contextTitle,
+            trafficSource: widget.trafficSource,
+            sourceDetail: widget.sourceDetail,
             // When using local active state, override provider-based activation
             isActiveOverride: widget.useLocalActiveState
                 ? (_currentPage == index)

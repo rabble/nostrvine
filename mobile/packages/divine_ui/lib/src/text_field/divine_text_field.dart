@@ -27,9 +27,9 @@ import 'package:flutter/services.dart';
 class DivineTextField extends StatefulWidget {
   /// Creates a Divine styled text field.
   const DivineTextField({
-    this.label,
-    this.labelText,
     super.key,
+    this.label,
+    @Deprecated('Use label instead') this.labelText,
     this.controller,
     this.focusNode,
     this.obscureText = false,
@@ -54,8 +54,14 @@ class DivineTextField extends StatefulWidget {
   /// Label text shown inside the field, floats above when focused/filled.
   final String? label;
 
-  /// Alternative label text parameter for backward compatibility.
+  /// Deprecated: Use [label] instead.
+  @Deprecated('Use label instead')
   final String? labelText;
+
+  /// The effective label to display (prefers [label] over deprecated
+  /// labelText).
+  // ignore: deprecated_member_use_from_same_package
+  String? get effectiveLabel => label ?? labelText;
 
   /// Controller for the text field.
   final TextEditingController? controller;
@@ -113,11 +119,8 @@ class DivineTextField extends StatefulWidget {
   /// Maximum character length allowed.
   final int? maxLength;
 
-  /// Custom content padding for the input decoration.
+  /// Custom content padding for the text field.
   final EdgeInsetsGeometry? contentPadding;
-
-  /// Resolved label text, preferring [label] over [labelText].
-  String? get _resolvedLabel => label ?? labelText;
 
   @override
   State<DivineTextField> createState() => _DivineTextFieldState();
@@ -127,6 +130,10 @@ class _DivineTextFieldState extends State<DivineTextField> {
   late FocusNode _focusNode;
   late TextEditingController _controller;
   bool _isObscured = true;
+  bool _hasFocus = false;
+
+  bool get _hasText => _controller.text.isNotEmpty;
+  bool get _isFloating => _hasFocus || _hasText;
 
   @override
   void initState() {
@@ -165,70 +172,238 @@ class _DivineTextFieldState extends State<DivineTextField> {
   }
 
   void _handleFocusChange() {
-    setState(() {});
+    setState(() => _hasFocus = _focusNode.hasFocus);
   }
 
   void _handleTextChange() {
     setState(() {});
   }
 
+  void _handleContainerTap() {
+    if (widget.enabled && !widget.readOnly) {
+      _focusNode.requestFocus();
+    }
+    widget.onTap?.call();
+  }
+
   void _toggleObscured() {
     setState(() => _isObscured = !_isObscured);
   }
 
+  /// Figma specs for field height breakdown:
+  /// 16px padding + 16px label + 4px gap + 24px input + 16px padding = 76px
+  static const double _totalHeight = 76;
+  static const double _horizontalPadding = 24;
+
   @override
   Widget build(BuildContext context) {
+    final label = widget.effectiveLabel;
+    final hasLabel = label != null && label.isNotEmpty;
+
     return Container(
+      height: _totalHeight,
       decoration: BoxDecoration(
         color: VineTheme.surfaceContainer,
         borderRadius: BorderRadius.circular(24),
       ),
       child: Padding(
         padding: EdgeInsets.only(
-          left: 24,
-          right: widget.obscureText ? 8 : 24,
-          top: 16,
-          bottom: 16,
+          left: _horizontalPadding,
+          right: widget.obscureText ? 8 : _horizontalPadding,
         ),
         child: Row(
           children: [
             Expanded(
-              child: _buildTextField(),
+              child: GestureDetector(
+                onTap: _handleContainerTap,
+                behavior: HitTestBehavior.opaque,
+                child: _DivineTextFieldContent(
+                  label: label,
+                  hasLabel: hasLabel,
+                  isFloating: _isFloating,
+                  child: _DivineTextFieldInput(
+                    controller: _controller,
+                    focusNode: _focusNode,
+                    obscureText: widget.obscureText && _isObscured,
+                    enabled: widget.enabled,
+                    readOnly: widget.readOnly,
+                    autocorrect: widget.autocorrect,
+                    keyboardType: widget.keyboardType,
+                    textInputAction: widget.textInputAction,
+                    textCapitalization: widget.textCapitalization,
+                    inputFormatters: widget.inputFormatters,
+                    validator: widget.validator,
+                    onTap: widget.onTap,
+                    onChanged: widget.onChanged,
+                    onSubmitted: widget.onSubmitted,
+                    onEditingComplete: widget.onEditingComplete,
+                    minLines: widget.minLines,
+                    maxLines: widget.obscureText ? 1 : (widget.maxLines ?? 1),
+                    maxLength: widget.maxLength,
+                    contentPadding: widget.contentPadding,
+                  ),
+                ),
+              ),
             ),
-            if (widget.obscureText) _buildVisibilityToggle(),
+            if (widget.obscureText)
+              _VisibilityToggle(
+                isObscured: _isObscured,
+                hasText: _hasText,
+                onToggle: _toggleObscured,
+              ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildTextField() {
-    final showObscured = widget.obscureText && _isObscured;
+/// The animated content area with floating label and text input.
+class _DivineTextFieldContent extends StatelessWidget {
+  const _DivineTextFieldContent({
+    required this.label,
+    required this.hasLabel,
+    required this.isFloating,
+    required this.child,
+  });
 
-    return TextField(
-      controller: _controller,
-      focusNode: _focusNode,
-      obscureText: showObscured,
+  final String? label;
+  final bool hasLabel;
+  final bool isFloating;
+  final Widget child;
+
+  static const double _verticalPadding = 16;
+  static const double _labelLineHeight = 16;
+  static const double _labelGap = 4;
+  static const double _inputLineHeight = 24;
+  static const double _totalHeight = 76;
+
+  /// Duration for the floating label transition animation.
+  static const Duration _animationDuration = Duration(milliseconds: 200);
+
+  /// Label top offset when floating above the input (16px).
+  static const double _labelTopFloating = _verticalPadding;
+
+  /// Label top offset when centered with the input (26px).
+  static const double _labelTopCentered = (_totalHeight - _inputLineHeight) / 2;
+
+  /// Input top offset when the label is floating (36px).
+  static const double _inputTopFloating =
+      _verticalPadding + _labelLineHeight + _labelGap;
+
+  /// Input top offset when centered, no floating label (26px).
+  static const double _inputTopCentered = (_totalHeight - _inputLineHeight) / 2;
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        if (hasLabel)
+          AnimatedPositioned(
+            duration: _animationDuration,
+            curve: Curves.easeOut,
+            top: isFloating ? _labelTopFloating : _labelTopCentered,
+            left: 0,
+            right: 0,
+            child: AnimatedDefaultTextStyle(
+              duration: _animationDuration,
+              curve: Curves.easeOut,
+              style: isFloating
+                  ? VineTheme.labelSmallFont(
+                      color: VineTheme.primary,
+                    )
+                  : VineTheme.bodyLargeFont(
+                      color: VineTheme.onSurfaceMuted,
+                    ),
+              child: Text(label!),
+            ),
+          ),
+        AnimatedPositioned(
+          duration: _animationDuration,
+          curve: Curves.easeOut,
+          top: isFloating ? _inputTopFloating : _inputTopCentered,
+          left: 0,
+          right: 0,
+          height: _inputLineHeight,
+          child: child,
+        ),
+      ],
+    );
+  }
+}
+
+/// The inner text form field with all input configuration.
+class _DivineTextFieldInput extends StatelessWidget {
+  const _DivineTextFieldInput({
+    required this.controller,
+    required this.focusNode,
+    required this.obscureText,
+    required this.enabled,
+    required this.readOnly,
+    required this.autocorrect,
+    required this.textCapitalization,
+    required this.maxLines,
+    this.keyboardType,
+    this.textInputAction,
+    this.inputFormatters,
+    this.validator,
+    this.onTap,
+    this.onChanged,
+    this.onSubmitted,
+    this.onEditingComplete,
+    this.minLines,
+    this.maxLength,
+    this.contentPadding,
+  });
+
+  final TextEditingController controller;
+  final FocusNode focusNode;
+  final bool obscureText;
+  final bool enabled;
+  final bool readOnly;
+  final bool autocorrect;
+  final TextInputType? keyboardType;
+  final TextInputAction? textInputAction;
+  final TextCapitalization textCapitalization;
+  final List<TextInputFormatter>? inputFormatters;
+  final FormFieldValidator<String>? validator;
+  final VoidCallback? onTap;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+  final VoidCallback? onEditingComplete;
+  final int? minLines;
+  final int maxLines;
+  final int? maxLength;
+  final EdgeInsetsGeometry? contentPadding;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextFormField(
+      controller: controller,
+      focusNode: focusNode,
+      obscureText: obscureText,
       obscuringCharacter: '✱',
-      enabled: widget.enabled,
-      readOnly: widget.readOnly,
-      autocorrect: widget.autocorrect,
-      keyboardType: widget.keyboardType,
-      textInputAction: widget.textInputAction,
-      textCapitalization: widget.textCapitalization,
-      inputFormatters: widget.inputFormatters,
-      minLines: widget.minLines,
-      maxLines: widget.obscureText ? 1 : widget.maxLines,
-      maxLength: widget.maxLength,
-      onTap: widget.onTap,
-      onChanged: widget.onChanged,
-      onSubmitted: widget.onSubmitted,
-      onEditingComplete: widget.onEditingComplete,
+      enabled: enabled,
+      readOnly: readOnly,
+      autocorrect: autocorrect,
+      keyboardType: keyboardType,
+      textInputAction: textInputAction,
+      textCapitalization: textCapitalization,
+      inputFormatters: inputFormatters,
+      validator: validator,
+      onTap: onTap,
+      onChanged: onChanged,
+      onFieldSubmitted: onSubmitted,
+      onEditingComplete: onEditingComplete,
+      minLines: minLines,
+      maxLines: maxLines,
+      maxLength: maxLength,
       style: VineTheme.bodyLargeFont(color: VineTheme.onSurface),
       cursorColor: VineTheme.primary,
       decoration: InputDecoration(
         isDense: true,
-        contentPadding: widget.contentPadding ?? EdgeInsets.zero,
+        contentPadding: contentPadding ?? EdgeInsets.zero,
         border: InputBorder.none,
         enabledBorder: InputBorder.none,
         focusedBorder: InputBorder.none,
@@ -236,23 +411,53 @@ class _DivineTextFieldState extends State<DivineTextField> {
         focusedErrorBorder: InputBorder.none,
         disabledBorder: InputBorder.none,
         filled: false,
-        labelText: widget._resolvedLabel,
-        labelStyle: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceMuted),
-        floatingLabelBehavior: FloatingLabelBehavior.auto,
-        floatingLabelStyle: VineTheme.labelSmallFont(color: VineTheme.primary),
+        errorStyle: VineTheme.bodySmallFont(color: VineTheme.error),
       ),
     );
   }
+}
 
-  Widget _buildVisibilityToggle() {
-    return GestureDetector(
-      onTap: _toggleObscured,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.all(8),
-        child: DivineIcon(
-          icon: _isObscured ? DivineIconName.eye : DivineIconName.eyeSlash,
-          color: VineTheme.onSurfaceMuted,
+/// The password visibility toggle button with semantic label.
+class _VisibilityToggle extends StatelessWidget {
+  const _VisibilityToggle({
+    required this.isObscured,
+    required this.hasText,
+    required this.onToggle,
+  });
+
+  final bool isObscured;
+  final bool hasText;
+  final VoidCallback onToggle;
+
+  /// Right padding for the visibility toggle icon.
+  ///
+  /// Ensures equal spacing from the icon to all container edges
+  /// (26px): vertical = (76 - 24) / 2 = 26px,
+  /// right = 18 + parent padding 8 = 26px.
+  static const double _iconRightPadding = 18;
+
+  /// Left, top, and bottom padding for the visibility toggle.
+  static const double _iconOtherPadding = 8;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: isObscured ? 'Show password' : 'Hide password',
+      button: true,
+      child: GestureDetector(
+        onTap: onToggle,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.only(
+            left: _iconOtherPadding,
+            top: _iconOtherPadding,
+            bottom: _iconOtherPadding,
+            right: _iconRightPadding,
+          ),
+          child: DivineIcon(
+            icon: isObscured ? DivineIconName.eye : DivineIconName.eyeSlash,
+            color: hasText ? VineTheme.onSurface : VineTheme.onSurfaceMuted,
+          ),
         ),
       ),
     );

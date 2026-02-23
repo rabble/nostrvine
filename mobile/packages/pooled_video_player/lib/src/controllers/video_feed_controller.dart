@@ -154,13 +154,28 @@ class VideoFeedController extends ChangeNotifier {
   }
 
   /// Notifies the specific index's notifier of state changes.
+  ///
+  /// If the [PooledPlayer] for this index has been disposed (e.g. by pool
+  /// eviction), the state reports null controller/player to prevent the
+  /// [Video] widget from accessing disposed native resources.
   void _notifyIndex(int index) {
+    if (_isDisposed) return;
     final notifier = _indexNotifiers[index];
     if (notifier != null) {
+      final pooledPlayer = _loadedPlayers[index];
+      // A player that exists but was disposed (e.g. pool eviction) should
+      // report LoadState.none so the UI shows the placeholder, not a stale
+      // Video widget referencing disposed native resources.  When no player
+      // exists at all (error path, or not yet loaded), honour the stored
+      // _loadStates value so LoadState.error propagates correctly.
+      final isEvicted = pooledPlayer != null && pooledPlayer.isDisposed;
+      final isAlive = pooledPlayer != null && !pooledPlayer.isDisposed;
       notifier.value = VideoIndexState(
-        loadState: _loadStates[index] ?? LoadState.none,
-        videoController: _loadedPlayers[index]?.videoController,
-        player: _loadedPlayers[index]?.player,
+        loadState: isEvicted
+            ? LoadState.none
+            : (_loadStates[index] ?? LoadState.none),
+        videoController: isAlive ? pooledPlayer.videoController : null,
+        player: isAlive ? pooledPlayer.player : null,
       );
     }
   }
@@ -217,18 +232,35 @@ class VideoFeedController extends ChangeNotifier {
     _loadedPlayers.keys.toList().forEach(_releasePlayer);
   }
 
-  /// Play the current video.
+  /// Play the current video (user-initiated resume).
+  ///
+  /// Resumes from current position without seeking. Distinct from
+  /// [_playVideo] which seeks to start for swipe transitions.
   void play() {
     if (!_isActive || !isVideoReady(_currentIndex)) return;
     _isPaused = false;
-    _playVideo(_currentIndex);
+    final player = _loadedPlayers[_currentIndex]?.player;
+    if (player != null) {
+      unawaited(player.setVolume(100));
+      if (!player.state.playing) {
+        unawaited(player.play());
+      }
+      _startPositionTimer(_currentIndex);
+    }
     notifyListeners();
   }
 
-  /// Pause the current video.
+  /// Pause the current video (user-initiated).
+  ///
+  /// Actually pauses the player (not just mute). Distinct from [_pauseVideo]
+  /// which only mutes for smooth swipe transitions.
   void pause() {
     _isPaused = true;
-    _pauseVideo(_currentIndex);
+    final player = _loadedPlayers[_currentIndex]?.player;
+    if (player != null) {
+      unawaited(player.pause());
+    }
+    _stopPositionTimer(_currentIndex);
     notifyListeners();
   }
 
@@ -373,15 +405,15 @@ class VideoFeedController extends ChangeNotifier {
     onVideoReady?.call(index, player);
 
     if (index == _currentIndex && _isActive && !_isPaused) {
-      // This is the current video - play it
+      // This is the current video - play it with audio
       unawaited(player.setVolume(100));
 
       // Start position callback timer for current video
       _startPositionTimer(index);
     } else {
-      // Preloaded video - pause it
-      unawaited(player.pause());
-      unawaited(player.setVolume(100));
+      // Keep playing muted — avoids expensive pause→resume rebuffer stall
+      // in mpv. Volume is already 0 from _loadPlayer, so no audio leak.
+      // When this video becomes current, _playVideo will unmute and seek.
     }
 
     unawaited(_bufferSubscriptions[index]?.cancel());
@@ -392,17 +424,27 @@ class VideoFeedController extends ChangeNotifier {
 
   void _playVideo(int index) {
     final player = _loadedPlayers[index]?.player;
-    if (player != null && !player.state.playing) {
-      unawaited(player.setVolume(100));
+    if (player == null) return;
+
+    // Seek to start — also serves as a frame refresh trigger for media_kit's
+    // Video widget. Without it, the widget may not receive a fresh frame
+    // when first mounted, causing the video to appear frozen.
+    unawaited(player.seek(Duration.zero));
+    // Unmute — video may already be playing (muted preload) or paused.
+    unawaited(player.setVolume(100));
+    // Ensure playing regardless of current state.
+    if (!player.state.playing) {
       unawaited(player.play());
-      _startPositionTimer(index);
     }
+    _startPositionTimer(index);
   }
 
   void _pauseVideo(int index) {
     final player = _loadedPlayers[index]?.player;
-    if (player != null && player.state.playing) {
-      unawaited(player.pause());
+    if (player != null) {
+      // Mute instead of pausing — keeps the video playing silently so
+      // resuming (via _playVideo) avoids the expensive mpv rebuffer stall.
+      unawaited(player.setVolume(0));
     }
     _stopPositionTimer(index);
   }
@@ -428,6 +470,14 @@ class VideoFeedController extends ChangeNotifier {
   }
 
   void _releasePlayer(int index) {
+    // Stop audio before removing from tracking to prevent audio leaks.
+    // The player stays in the pool for reuse, but must be silent.
+    final player = _loadedPlayers[index]?.player;
+    if (player != null) {
+      unawaited(player.setVolume(0));
+      unawaited(player.pause());
+    }
+
     _stopPositionTimer(index);
     unawaited(_bufferSubscriptions[index]?.cancel());
     _bufferSubscriptions.remove(index);
@@ -440,38 +490,63 @@ class VideoFeedController extends ChangeNotifier {
   @override
   void dispose() {
     if (_isDisposed) return;
-    _isDisposed = true;
 
-    // Release all players back to pool (stops playback and removes from pool)
-    // This ensures clean state when videos are reopened.
-    for (var i = 0; i < _videos.length; i++) {
-      if (_loadedPlayers.containsKey(i)) {
-        unawaited(pool.release(_videos[i].url));
-      }
-    }
-
-    // Cancel all position timers
+    // Cancel all position timers first (they reference players).
     for (final timer in _positionTimers.values) {
       timer.cancel();
     }
     _positionTimers.clear();
 
-    // Cancel all subscriptions
+    // Cancel all buffer subscriptions.
     for (final subscription in _bufferSubscriptions.values) {
       unawaited(subscription.cancel());
     }
     _bufferSubscriptions.clear();
 
-    // Dispose index notifiers
+    // Stop audio on ALL loaded players immediately to prevent audio leaks
+    // during the async disposal that follows.
+    for (final pooledPlayer in _loadedPlayers.values) {
+      unawaited(pooledPlayer.player.setVolume(0));
+      unawaited(pooledPlayer.player.pause());
+    }
+
+    // Collect player URLs to release BEFORE clearing state, but release
+    // AFTER notifiers are disposed so no widget can rebuild with a stale
+    // VideoController.
+    final urlsToRelease = <String>[];
+    for (var i = 0; i < _videos.length; i++) {
+      if (_loadedPlayers.containsKey(i)) {
+        urlsToRelease.add(_videos[i].url);
+      }
+    }
+
+    // Clear loaded players so _notifyIndex reports null controllers.
+    _loadedPlayers.clear();
+    _loadStates.clear();
+    _loadingIndices.clear();
+
+    // Notify all index listeners that their video is gone.  This causes
+    // ValueListenableBuilder to rebuild with videoController == null,
+    // removing media_kit Video widgets from the tree BEFORE we dispose
+    // the underlying native players (which would otherwise dispose the
+    // internal ValueNotifier<int?> out from under a mounted widget).
+    for (final entry in _indexNotifiers.entries) {
+      entry.value.value = const VideoIndexState();
+    }
+
+    // Mark as disposed so no further _notifyIndex calls can fire.
+    _isDisposed = true;
+
+    // Dispose index notifiers (no widget should be listening now).
     for (final notifier in _indexNotifiers.values) {
       notifier.dispose();
     }
     _indexNotifiers.clear();
 
-    // Clear state
-    _loadedPlayers.clear();
-    _loadStates.clear();
-    _loadingIndices.clear();
+    // Now release players from pool (disposes native resources safely).
+    for (final url in urlsToRelease) {
+      unawaited(pool.release(url));
+    }
 
     super.dispose();
   }

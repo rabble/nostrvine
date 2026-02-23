@@ -432,20 +432,38 @@ final class RelayStatisticsStreamProvider
 String _$relayStatisticsStreamHash() =>
     r'0ab9617467aabccc62b36b0de4d79a0ce9d01c5e';
 
-/// Bridge provider that connects NostrClient relay status updates to RelayStatisticsService
-/// Must be watched at app level to activate the bridge
+/// Bridge provider that connects NostrClient relay status updates to
+/// RelayStatisticsService.
+///
+/// Tracks connection/disconnection events via the relay status stream and
+/// periodically syncs per-relay SDK counters (events received, queries sent,
+/// errors) so each relay displays its own real statistics.
+///
+/// Must be watched at app level to activate the bridge.
 
 @ProviderFor(relayStatisticsBridge)
 const relayStatisticsBridgeProvider = RelayStatisticsBridgeProvider._();
 
-/// Bridge provider that connects NostrClient relay status updates to RelayStatisticsService
-/// Must be watched at app level to activate the bridge
+/// Bridge provider that connects NostrClient relay status updates to
+/// RelayStatisticsService.
+///
+/// Tracks connection/disconnection events via the relay status stream and
+/// periodically syncs per-relay SDK counters (events received, queries sent,
+/// errors) so each relay displays its own real statistics.
+///
+/// Must be watched at app level to activate the bridge.
 
 final class RelayStatisticsBridgeProvider
     extends $FunctionalProvider<void, void, void>
     with $Provider<void> {
-  /// Bridge provider that connects NostrClient relay status updates to RelayStatisticsService
-  /// Must be watched at app level to activate the bridge
+  /// Bridge provider that connects NostrClient relay status updates to
+  /// RelayStatisticsService.
+  ///
+  /// Tracks connection/disconnection events via the relay status stream and
+  /// periodically syncs per-relay SDK counters (events received, queries sent,
+  /// errors) so each relay displays its own real statistics.
+  ///
+  /// Must be watched at app level to activate the bridge.
   const RelayStatisticsBridgeProvider._()
     : super(
         from: null,
@@ -480,7 +498,7 @@ final class RelayStatisticsBridgeProvider
 }
 
 String _$relayStatisticsBridgeHash() =>
-    r'8e5867762c8201c7244d2f44ba3bc84cbc63f012';
+    r'4c105f2e370e769b48b77ac90ca08bca6f95a385';
 
 /// Bridge provider that detects when the configured relay set changes
 /// (relays added or removed) and triggers a full feed reset+resubscribe.
@@ -538,12 +556,16 @@ final class RelaySetChangeBridgeProvider
 String _$relaySetChangeBridgeHash() =>
     r'69fd17051348b968d05f92adbaf87cc6844dea05';
 
-/// Analytics service with opt-out support
+/// Analytics service with opt-out support.
+///
+/// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
 
 @ProviderFor(analyticsService)
 const analyticsServiceProvider = AnalyticsServiceProvider._();
 
-/// Analytics service with opt-out support
+/// Analytics service with opt-out support.
+///
+/// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
 
 final class AnalyticsServiceProvider
     extends
@@ -553,7 +575,9 @@ final class AnalyticsServiceProvider
           AnalyticsService
         >
     with $Provider<AnalyticsService> {
-  /// Analytics service with opt-out support
+  /// Analytics service with opt-out support.
+  ///
+  /// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
   const AnalyticsServiceProvider._()
     : super(
         from: null,
@@ -587,7 +611,7 @@ final class AnalyticsServiceProvider
   }
 }
 
-String _$analyticsServiceHash() => r'8ce8c6be2430cd9f271eb66d8e7fe6fcfbae0154';
+String _$analyticsServiceHash() => r'63092a98aa600d9e6e5dd4402ee303ca9eb06c33';
 
 /// Age verification service for content creation restrictions
 /// keepAlive ensures the service persists and maintains in-memory verification state
@@ -1869,7 +1893,7 @@ final class AuthServiceProvider
   }
 }
 
-String _$authServiceHash() => r'50e8112a7c95a9a9ebff6f4fb649131e9874e676';
+String _$authServiceHash() => r'f02dd0b46777ee8df7d43b2adec9e16462611ac2';
 
 /// Provider that returns current auth state and rebuilds when it changes.
 /// Widgets should watch this instead of authService.authState directly
@@ -2425,7 +2449,7 @@ final class FollowRepositoryProvider
   }
 }
 
-String _$followRepositoryHash() => r'dadc0598cb6bc48a4a6a1776f8c72117610aef2d';
+String _$followRepositoryHash() => r'59ccfaf4522b9c8534a1ee5b9f51b851614f9425';
 
 /// Provider for HashtagRepository instance.
 ///

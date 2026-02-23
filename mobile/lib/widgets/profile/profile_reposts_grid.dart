@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_reposted_videos/profile_reposted_videos_bloc.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Grid widget displaying user's reposted videos
@@ -177,6 +178,7 @@ class _RepostGridTile extends StatelessWidget {
         extra: FullscreenVideoFeedArgs(
           source: StaticFeedSource(allVideos),
           initialIndex: index,
+          trafficSource: ViewTrafficSource.profile,
         ),
       );
 

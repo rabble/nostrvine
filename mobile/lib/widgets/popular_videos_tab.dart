@@ -10,6 +10,7 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/popular_videos_feed_provider.dart';
 import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/services/error_analytics_tracker.dart';
 import 'package:openvine/services/feed_performance_tracker.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
@@ -260,6 +261,7 @@ class _PopularVideosTrendingContentState
                     onLoadMore: () =>
                         ref.read(popularVideosFeedProvider.notifier).loadMore(),
                     contextTitle: 'Popular Videos',
+                    trafficSource: ViewTrafficSource.discoveryPopular,
                   ),
                 );
               },

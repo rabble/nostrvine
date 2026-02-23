@@ -7,7 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/providers/active_video_provider.dart';
-import 'package:openvine/providers/app_lifecycle_provider.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
+import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
@@ -78,7 +79,14 @@ void main() {
                 VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
               );
             }),
-            appForegroundProvider.overrideWith((ref) => Stream.value(true)),
+            homeFeedProvider.overrideWith(() {
+              return _TestHomeFeedNotifier(
+                AsyncData(
+                  VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
+                ),
+              );
+            }),
+            // appForegroundProvider defaults to true (Notifier-based)
           ],
         );
 
@@ -131,6 +139,13 @@ void main() {
                 VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
               );
             }),
+            homeFeedProvider.overrideWith(() {
+              return _TestHomeFeedNotifier(
+                AsyncData(
+                  VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
+                ),
+              );
+            }),
             videosForExploreRouteProvider.overrideWith((ref) {
               return AsyncValue.data(
                 VideoFeedState(
@@ -139,7 +154,7 @@ void main() {
                 ),
               );
             }),
-            appForegroundProvider.overrideWith((ref) => Stream.value(true)),
+            // appForegroundProvider defaults to true (Notifier-based)
           ],
         );
 
@@ -192,7 +207,6 @@ void main() {
     test('activeVideoId becomes null when app backgrounds', () async {
       // Verify that backgrounding the app stops video playback
       final locationController = StreamController<String>();
-      final lifecycleController = StreamController<bool>();
 
       final container = ProviderContainer(
         overrides: [
@@ -204,9 +218,14 @@ void main() {
               VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
             );
           }),
-          appForegroundProvider.overrideWith(
-            (ref) => lifecycleController.stream,
-          ),
+          homeFeedProvider.overrideWith(() {
+            return _TestHomeFeedNotifier(
+              AsyncData(
+                VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
+              ),
+            );
+          }),
+          // appForegroundProvider defaults to true (Notifier-based)
         ],
       );
 
@@ -219,16 +238,15 @@ void main() {
 
       container.listen(pageContextProvider, (_, __) {}, fireImmediately: true);
 
-      // Start with app in foreground and video playing
-      lifecycleController.add(true);
+      // Start with app in foreground (default) and navigate to video
       locationController.add(HomeScreenRouter.pathForIndex(0));
       await pumpEventQueue();
 
       expect(container.read(activeVideoIdProvider), equals('home-video-0'));
       expect(activeVideoIds.last, equals('home-video-0'));
 
-      // Background the app
-      lifecycleController.add(false);
+      // Background the app via the notifier
+      container.read(appForegroundProvider.notifier).setForeground(false);
       await pumpEventQueue();
 
       // Active video should become null
@@ -236,14 +254,13 @@ void main() {
       expect(activeVideoIds.last, isNull);
 
       // Foreground the app again
-      lifecycleController.add(true);
+      container.read(appForegroundProvider.notifier).setForeground(true);
       await pumpEventQueue();
 
       // Video should become active again
       expect(container.read(activeVideoIdProvider), equals('home-video-0'));
       expect(activeVideoIds.last, equals('home-video-0'));
 
-      lifecycleController.close();
       locationController.close();
       container.dispose();
     });
@@ -262,7 +279,14 @@ void main() {
               VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
             );
           }),
-          appForegroundProvider.overrideWith((ref) => Stream.value(true)),
+          homeFeedProvider.overrideWith(() {
+            return _TestHomeFeedNotifier(
+              AsyncData(
+                VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
+              ),
+            );
+          }),
+          // appForegroundProvider defaults to true (Notifier-based)
         ],
       );
 
@@ -303,11 +327,10 @@ void main() {
     });
 
     test(
-      'defensive behavior: defaults to background if lifecycle provider not ready',
+      'activeVideoId becomes null when app is set to background state',
       () async {
-        // Verify that if lifecycle provider hasn't emitted yet, we assume background
+        // Verify that setting foreground=false stops video playback
         final locationController = StreamController<String>();
-        final lifecycleController = StreamController<bool>();
 
         final container = ProviderContainer(
           overrides: [
@@ -319,9 +342,16 @@ void main() {
                 VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
               );
             }),
-            // Lifecycle provider stream but don't emit value yet
+            homeFeedProvider.overrideWith(() {
+              return _TestHomeFeedNotifier(
+                AsyncData(
+                  VideoFeedState(videos: mockHomeVideos, hasMoreContent: false),
+                ),
+              );
+            }),
+            // Start with foreground=false to test background state
             appForegroundProvider.overrideWith(
-              (ref) => lifecycleController.stream,
+              () => _TestAppForegroundNotifier(false),
             ),
           ],
         );
@@ -339,24 +369,55 @@ void main() {
           fireImmediately: true,
         );
 
-        // Navigate to video without lifecycle being ready
+        // Navigate to video while in background state
         locationController.add(HomeScreenRouter.pathForIndex(0));
         await pumpEventQueue();
 
-        // Should be null because lifecycle provider hasn't emitted (defensive default)
+        // Should be null because app is in background
         expect(container.read(activeVideoIdProvider), isNull);
 
-        // Now emit foreground state
-        lifecycleController.add(true);
+        // Now set foreground state
+        container.read(appForegroundProvider.notifier).setForeground(true);
         await pumpEventQueue();
 
         // Now video should be active
         expect(container.read(activeVideoIdProvider), equals('home-video-0'));
 
-        lifecycleController.close();
         locationController.close();
         container.dispose();
       },
     );
   });
+}
+
+/// Test notifier that returns a fixed state for homeFeedProvider overrides.
+class _TestHomeFeedNotifier extends HomeFeed {
+  _TestHomeFeedNotifier(this._state);
+
+  final AsyncValue<VideoFeedState> _state;
+
+  @override
+  Future<VideoFeedState> build() async {
+    return _state.when(
+      data: (data) => data,
+      loading: () => VideoFeedState(
+        videos: const [],
+        hasMoreContent: false,
+        isLoadingMore: false,
+        error: null,
+        lastUpdated: null,
+      ),
+      error: (e, s) => throw e,
+    );
+  }
+}
+
+/// Test notifier for appForegroundProvider that starts with a custom value.
+class _TestAppForegroundNotifier extends AppForeground {
+  _TestAppForegroundNotifier(this._initialValue);
+
+  final bool _initialValue;
+
+  @override
+  bool build() => _initialValue;
 }

@@ -9,6 +9,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     private var textureRegistry: FlutterTextureRegistry?
     private var messenger: FlutterBinaryMessenger?
     private var methodChannel: FlutterMethodChannel?
+    private var volumeKeyHandler: VolumeKeyHandler?
     
     public static func register(with registrar: FlutterPluginRegistrar) {
         let channel = FlutterMethodChannel(name: "divine_camera", binaryMessenger: registrar.messenger())
@@ -69,6 +70,9 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             let y = args["y"] as? Double ?? 0.5
             setExposurePoint(x: x, y: y, result: result)
             
+        case "cancelFocusAndMetering":
+            cancelFocusAndMetering(result: result)
+            
         case "setZoomLevel":
             let args = call.arguments as? [String: Any] ?? [:]
             let level = args["level"] as? Double ?? 1.0
@@ -98,6 +102,16 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         case "getCameraState":
             getCameraState(result: result)
             
+        case "setRemoteRecordControlEnabled":
+            let args = call.arguments as? [String: Any] ?? [:]
+            let enabled = args["enabled"] as? Bool ?? false
+            setRemoteRecordControlEnabled(enabled: enabled, result: result)
+            
+        case "setVolumeKeysEnabled":
+            let args = call.arguments as? [String: Any] ?? [:]
+            let enabled = args["enabled"] as? Bool ?? true
+            setVolumeKeysEnabled(enabled: enabled, result: result)
+            
         default:
             result(FlutterMethodNotImplemented)
         }
@@ -124,9 +138,34 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
     }
     
     private func disposeCamera(result: @escaping FlutterResult) {
+        volumeKeyHandler?.release()
+        volumeKeyHandler = nil
         cameraController?.release()
         cameraController = nil
         result(nil)
+    }
+    
+    private func setRemoteRecordControlEnabled(enabled: Bool, result: @escaping FlutterResult) {
+        if enabled {
+            if volumeKeyHandler == nil {
+                volumeKeyHandler = VolumeKeyHandler { [weak self] triggerType in
+                    // Send trigger event to Flutter on main thread
+                    DispatchQueue.main.async {
+                        self?.methodChannel?.invokeMethod("onRemoteRecordTrigger", arguments: triggerType)
+                    }
+                }
+            }
+            let success = volumeKeyHandler?.enable() ?? false
+            result(success)
+        } else {
+            volumeKeyHandler?.disable()
+            result(true)
+        }
+    }
+    
+    private func setVolumeKeysEnabled(enabled: Bool, result: @escaping FlutterResult) {
+        volumeKeyHandler?.setVolumeKeysEnabled(enabled)
+        result(true)
     }
     
     private func setFlashMode(mode: String, result: @escaping FlutterResult) {
@@ -153,6 +192,15 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
             return
         }
         let success = controller.setExposurePoint(x: CGFloat(x), y: CGFloat(y))
+        result(success)
+    }
+    
+    private func cancelFocusAndMetering(result: @escaping FlutterResult) {
+        guard let controller = cameraController else {
+            result(FlutterError(code: "NOT_INITIALIZED", message: "Camera not initialized", details: nil))
+            return
+        }
+        let success = controller.cancelFocusAndMetering()
         result(success)
     }
     

@@ -47,6 +47,9 @@ void main() {
           when(() => mockFollowRepository.getMyFollowers()).thenAnswer(
             (_) async => [validPubkey('follower1'), validPubkey('follower2')],
           );
+          when(
+            () => mockFollowRepository.getMyFollowerCount(),
+          ).thenAnswer((_) async => 2);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
@@ -58,6 +61,29 @@ void main() {
               validPubkey('follower1'),
               validPubkey('follower2'),
             ],
+            followerCount: 2,
+          ),
+        ],
+      );
+
+      blocTest<MyFollowersBloc, MyFollowersState>(
+        'uses higher count from service when list is incomplete',
+        setUp: () {
+          when(
+            () => mockFollowRepository.getMyFollowers(),
+          ).thenAnswer((_) async => [validPubkey('follower1')]);
+          when(
+            () => mockFollowRepository.getMyFollowerCount(),
+          ).thenAnswer((_) async => 500);
+        },
+        build: createBloc,
+        act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
+        expect: () => [
+          const MyFollowersState(status: MyFollowersStatus.loading),
+          MyFollowersState(
+            status: MyFollowersStatus.success,
+            followersPubkeys: [validPubkey('follower1')],
+            followerCount: 500,
           ),
         ],
       );
@@ -68,6 +94,9 @@ void main() {
           when(
             () => mockFollowRepository.getMyFollowers(),
           ).thenAnswer((_) async => []);
+          when(
+            () => mockFollowRepository.getMyFollowerCount(),
+          ).thenAnswer((_) async => 0);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
@@ -86,6 +115,9 @@ void main() {
           when(
             () => mockFollowRepository.getMyFollowers(),
           ).thenThrow(Exception('Network error'));
+          when(
+            () => mockFollowRepository.getMyFollowerCount(),
+          ).thenAnswer((_) async => 0);
         },
         build: createBloc,
         act: (bloc) => bloc.add(const MyFollowersListLoadRequested()),
@@ -142,11 +174,13 @@ void main() {
       const state = MyFollowersState(
         status: MyFollowersStatus.success,
         followersPubkeys: ['pubkey1'],
+        followerCount: 10,
       );
 
       expect(state.props, [
         MyFollowersStatus.success,
         ['pubkey1'],
+        10,
       ]);
     });
   });

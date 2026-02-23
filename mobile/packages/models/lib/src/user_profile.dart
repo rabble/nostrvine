@@ -184,6 +184,30 @@ class UserProfile {
   /// Check if profile has bio
   bool get hasBio => about?.isNotEmpty ?? false;
 
+  /// Extracts a divine.video username from the NIP-05 identifier.
+  ///
+  /// Supports:
+  /// - New subdomain format: `_@username.divine.video`
+  /// - Legacy formats: `username@divine.video`, `username@openvine.co`
+  ///
+  /// Returns `null` if [nip05] is null, empty, or not a recognized domain.
+  String? get divineUsername {
+    if (nip05 == null || nip05!.isEmpty) return null;
+
+    // New subdomain format: _@username.divine.video
+    final subdomainMatch = RegExp(
+      r'^_@([a-z0-9\-_.]+)\.divine\.video$',
+    ).firstMatch(nip05!);
+    if (subdomainMatch != null) return subdomainMatch.group(1);
+
+    // Legacy format: username@divine.video or username@openvine.co
+    if (nip05!.endsWith('@divine.video') || nip05!.endsWith('@openvine.co')) {
+      return nip05!.split('@')[0];
+    }
+
+    return null;
+  }
+
   /// Check if profile has verified NIP-05 identifier
   bool get hasNip05 => nip05?.isNotEmpty ?? false;
 

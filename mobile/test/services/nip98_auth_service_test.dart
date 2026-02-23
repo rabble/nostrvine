@@ -42,7 +42,7 @@ void main() {
     });
 
     group('URL normalization', () {
-      test('strips query parameters from auth token URL tag', () async {
+      test('includes query parameters in auth token URL tag', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
         _stubSignEvent(mockAuthService);
 
@@ -54,7 +54,7 @@ void main() {
 
         expect(token, isNotNull);
 
-        // relay.divine.video requires u tag WITHOUT query params
+        // NIP-98 requires u tag WITH full URL including query params
         final captured =
             verify(
                   () => mockAuthService.createAndSignEvent(
@@ -68,7 +68,10 @@ void main() {
         final urlTag = captured.firstWhere((tag) => tag[0] == 'u');
         expect(
           urlTag[1],
-          equals('https://relay.example.com/api/notifications'),
+          equals(
+            'https://relay.example.com/api/notifications'
+            '?limit=50&types=reaction',
+          ),
         );
       });
 
@@ -129,7 +132,7 @@ void main() {
         expect(urlTag[1], equals('https://relay.example.com/api/endpoint'));
       });
 
-      test('strips port and query from URL normalization', () async {
+      test('preserves port and query in URL normalization', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
         _stubSignEvent(mockAuthService);
 
@@ -149,7 +152,10 @@ void main() {
                 as List<List<String>>;
 
         final urlTag = captured.firstWhere((tag) => tag[0] == 'u');
-        expect(urlTag[1], equals('https://relay.example.com/api/endpoint'));
+        expect(
+          urlTag[1],
+          equals('https://relay.example.com:8080/api/endpoint?limit=10'),
+        );
       });
     });
 
@@ -365,7 +371,7 @@ void main() {
         expect(payloadTag.first[1], isNotEmpty);
       });
 
-      test('includes empty-string payload hash for GET requests', () async {
+      test('omits payload tag for GET requests', () async {
         when(() => mockAuthService.isAuthenticated).thenReturn(true);
         _stubSignEvent(mockAuthService);
 
@@ -385,15 +391,30 @@ void main() {
                 as List<List<String>>;
 
         final payloadTag = captured.where((tag) => tag[0] == 'payload');
-        expect(payloadTag, isNotEmpty);
-        // SHA-256 of empty string
-        expect(
-          payloadTag.first[1],
-          equals(
-            'e3b0c44298fc1c149afbf4c8996fb924'
-            '27ae41e4649b934ca495991b7852b855',
-          ),
+        expect(payloadTag, isEmpty);
+      });
+
+      test('omits payload tag for DELETE requests', () async {
+        when(() => mockAuthService.isAuthenticated).thenReturn(true);
+        _stubSignEvent(mockAuthService);
+
+        await service.createAuthToken(
+          url: 'https://relay.example.com/api/endpoint',
+          method: HttpMethod.delete,
         );
+
+        final captured =
+            verify(
+                  () => mockAuthService.createAndSignEvent(
+                    kind: any(named: 'kind'),
+                    content: any(named: 'content'),
+                    tags: captureAny(named: 'tags'),
+                  ),
+                ).captured.last
+                as List<List<String>>;
+
+        final payloadTag = captured.where((tag) => tag[0] == 'payload');
+        expect(payloadTag, isEmpty);
       });
     });
 

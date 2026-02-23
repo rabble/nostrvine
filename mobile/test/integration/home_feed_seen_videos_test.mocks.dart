@@ -879,6 +879,14 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
           as bool);
 
   @override
+  int get activeSubscriptionCount =>
+      (super.noSuchMethod(
+            Invocation.getter(#activeSubscriptionCount),
+            returnValue: 0,
+          )
+          as int);
+
+  @override
   List<String> get configuredRelays =>
       (super.noSuchMethod(
             Invocation.getter(#configuredRelays),
@@ -937,6 +945,13 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
             ),
           )
           as String);
+
+  @override
+  set statisticsObserver(_i2.NostrClientStatisticsObserver? value) =>
+      super.noSuchMethod(
+        Invocation.setter(#statisticsObserver, value),
+        returnValueForMissingStub: null,
+      );
 
   @override
   _i11.Future<void> initialize() =>
@@ -1119,6 +1134,16 @@ class MockNostrClient extends _i1.Mock implements _i2.NostrClient {
             returnValue: _i11.Future<bool>.value(false),
           )
           as _i11.Future<bool>);
+
+  @override
+  Map<String, ({int errors, int eventsReceived, int queriesSent})>
+  getRelayPoolCounters() =>
+      (super.noSuchMethod(
+            Invocation.method(#getRelayPoolCounters, []),
+            returnValue:
+                <String, ({int errors, int eventsReceived, int queriesSent})>{},
+          )
+          as Map<String, ({int errors, int eventsReceived, int queriesSent})>);
 
   @override
   _i11.Future<Map<String, dynamic>?> getRelayStats() =>
@@ -1415,6 +1440,22 @@ class MockFollowRepository extends _i1.Mock implements _i15.FollowRepository {
             returnValue: _i11.Future<List<String>>.value(<String>[]),
           )
           as _i11.Future<List<String>>);
+
+  @override
+  _i11.Future<int> getMyFollowerCount() =>
+      (super.noSuchMethod(
+            Invocation.method(#getMyFollowerCount, []),
+            returnValue: _i11.Future<int>.value(0),
+          )
+          as _i11.Future<int>);
+
+  @override
+  _i11.Future<int> getFollowerCount(String? pubkey) =>
+      (super.noSuchMethod(
+            Invocation.method(#getFollowerCount, [pubkey]),
+            returnValue: _i11.Future<int>.value(0),
+          )
+          as _i11.Future<int>);
 
   @override
   _i11.Future<bool> isMutualFollow(String? pubkey) =>

@@ -5,7 +5,10 @@
       "namespace": "android_app",
       "package_name": "co.openvine.app",
       "sha256_cert_fingerprints": [
-        "6F:36:C3:68:74:18:5E:03:B4:79:3D:82:EF:54:CE:34:26:ED:6E:C8:12:B7:CD:E2:F4:FA:9C:81:2F:C7:14:F4"
+        "6F:36:C3:68:74:18:5E:03:B4:79:3D:82:EF:54:CE:34:26:ED:6E:C8:12:B7:CD:E2:F4:FA:9C:81:2F:C7:14:F4",
+        "ED:9D:A6:BF:1A:D1:5B:D1:02:AF:0C:DB:4E:90:F0:3C:1B:8C:7F:EB:AA:9C:C8:F1:15:97:EB:9C:2C:41:B1:75",
+        "10:B8:04:F9:48:FC:91:EC:28:27:B9:67:15:C3:21:2E:AB:1A:0B:46:AF:52:1B:3A:31:6C:9D:78:BF:A4:39:6E",
+        "CF:7E:6A:A4:99:A8:00:A8:0E:93:E4:07:03:60:38:4F:2F:9C:22:81:3B:3D:7B:81:88:15:A0:1B:37:6F:ED:B1"
       ]
     }
   }
