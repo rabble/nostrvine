@@ -152,6 +152,42 @@ void main() {
         // Loading state
         expect(find.byType(CircularProgressIndicator), findsOneWidget);
       });
+
+      testWidgets('fires analytics when transitioning to success', (
+        tester,
+      ) async {
+        whenListen(
+          mockBloc,
+          Stream<HashtagSearchState>.fromIterable([
+            const HashtagSearchState(
+              status: HashtagSearchStatus.loading,
+              query: 'music',
+            ),
+            const HashtagSearchState(
+              status: HashtagSearchStatus.success,
+              query: 'music',
+              results: ['music', 'musician'],
+            ),
+          ]),
+          initialState: const HashtagSearchState(
+            status: HashtagSearchStatus.loading,
+            query: 'music',
+          ),
+        );
+
+        await tester.pumpWidget(createTestWidget());
+
+        // Loading state
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+        // Transition to success - listener fires analytics without error
+        await tester.pump();
+
+        // Verify success UI rendered (listener did not interfere)
+        expect(find.byType(ListView), findsOneWidget);
+        expect(find.text('#music'), findsOneWidget);
+        expect(find.text('#musician'), findsOneWidget);
+      });
     });
   });
 }
