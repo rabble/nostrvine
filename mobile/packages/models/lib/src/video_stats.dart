@@ -180,6 +180,13 @@ class VideoStats {
     // Normalize empty sha256 to null
     if (sha256 != null && sha256.isEmpty) sha256 = null;
 
+    // Fall back to d_tag as sha256 for Blossom-uploaded videos.
+    // The REST API doesn't return sha256 or raw tags, but d_tag IS the
+    // content hash for Blossom uploads (64 hex chars).
+    if (sha256 == null && dTag.length == 64 && _isHex(dTag)) {
+      sha256 = dTag;
+    }
+
     // Parse author_name for classic Vines
     var authorName =
         eventData['author_name']?.toString() ?? json['author_name']?.toString();
@@ -386,3 +393,8 @@ int _parseInt(dynamic value) {
   if (value is String) return int.tryParse(value) ?? 0;
   return 0;
 }
+
+final _hexPattern = RegExp(r'^[0-9a-fA-F]+$');
+
+/// Returns `true` if [value] contains only hexadecimal characters.
+bool _isHex(String value) => _hexPattern.hasMatch(value);

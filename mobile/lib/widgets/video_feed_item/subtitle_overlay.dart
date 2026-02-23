@@ -22,13 +22,16 @@ class SubtitleOverlay extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    if (!visible || !video.hasSubtitles) return const SizedBox.shrink();
+    if (!visible || !video.hasSubtitles) {
+      return const SizedBox.shrink();
+    }
 
     final cuesAsync = ref.watch(
       subtitleCuesProvider(
         videoId: video.id,
         textTrackRef: video.textTrackRef,
         textTrackContent: video.textTrackContent,
+        sha256: video.sha256,
       ),
     );
 
@@ -61,8 +64,8 @@ class SubtitleOverlay extends ConsumerWidget {
           ),
         );
       },
-      loading: () => const SizedBox.shrink(),
-      error: (_, __) => const SizedBox.shrink(),
+      loading: SizedBox.shrink,
+      error: (error, stack) => const SizedBox.shrink(),
     );
   }
 

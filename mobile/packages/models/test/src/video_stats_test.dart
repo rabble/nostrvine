@@ -503,6 +503,80 @@ void main() {
         expect(stats.blurhash, isNull);
       });
 
+      test('falls back to d_tag as sha256 when d_tag is 64-char hex', () {
+        final json = {
+          'id': 'test-id',
+          'pubkey': 'test-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag':
+              'a04b70820ef370e90aae19d23e46b1482d3af0e7c9d994d1594a1384a62d3972',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(
+          stats.sha256,
+          equals(
+            'a04b70820ef370e90aae19d23e46b1482d3af0e7c9d994d1594a1384a62d3972',
+          ),
+        );
+      });
+
+      test('does not use d_tag as sha256 when d_tag is not a hex hash', () {
+        final json = {
+          'id': 'test-id',
+          'pubkey': 'test-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag': 'my-video-slug',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 0,
+          'comments': 0,
+          'reposts': 0,
+          'engagement_score': 0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+
+        expect(stats.sha256, isNull);
+      });
+
+      test(
+        'does not override explicit sha256 with d_tag',
+        () {
+          final json = {
+            'id': 'test-id',
+            'pubkey': 'test-pubkey',
+            'created_at': 1700000000,
+            'kind': 34236,
+            'd_tag':
+                'a04b70820ef370e90aae19d23e46b1482d3af0e7c9d994d1594a1384a62d3972',
+            'sha256': 'explicit-sha256-value',
+            'title': 'Test',
+            'thumbnail': 'https://example.com/thumb.jpg',
+            'video_url': 'https://example.com/video.mp4',
+            'reactions': 0,
+            'comments': 0,
+            'reposts': 0,
+            'engagement_score': 0,
+          };
+
+          final stats = VideoStats.fromJson(json);
+
+          expect(stats.sha256, equals('explicit-sha256-value'));
+        },
+      );
+
       test('defaults kind to 34236 when missing', () {
         final json = {
           'id': 'test-id',
