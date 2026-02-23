@@ -26,6 +26,7 @@ class VideoStats {
     required this.comments,
     required this.reposts,
     required this.engagementScore,
+    this.publishedAt,
     this.description,
     this.sha256,
     this.authorName,
@@ -33,6 +34,7 @@ class VideoStats {
     this.blurhash,
     this.trendingScore,
     this.loops,
+    this.views,
     this.rawTags = const {},
   });
 
@@ -115,10 +117,21 @@ class VideoStats {
     var description = eventData['content']?.toString();
     if (description != null && description.isEmpty) description = null;
 
+    // Parse view counts from multiple possible sources
+    int? views;
+    final directViews =
+        statsData['views'] ?? json['views'] ?? json['view_count'];
+    if (directViews is int) {
+      views = directViews;
+    } else if (directViews is String) {
+      views = int.tryParse(directViews);
+    }
+
     // Also check for blurhash and summary in tags (NIP-71 standard)
     // Collect ALL tags into rawTags so nothing is lost (ProofMode, C2PA, etc.)
     String? blurhashFromTag;
     String? summaryFromTag;
+    int? publishedAt;
     final rawTags = <String, String>{};
 
     if (eventData['tags'] is List) {
@@ -146,6 +159,12 @@ class VideoStats {
           }
           if (tagName == 'summary' && summaryFromTag == null) {
             summaryFromTag = tagValue;
+          }
+          if (tagName == 'published_at' && publishedAt == null) {
+            publishedAt = int.tryParse(tagValue);
+          }
+          if (tagName == 'views' && views == null) {
+            views = int.tryParse(tagValue);
           }
         }
       }
@@ -201,6 +220,7 @@ class VideoStats {
       id: id,
       pubkey: pubkey,
       createdAt: createdAt,
+      publishedAt: publishedAt,
       kind: (eventData['kind'] as int?) ?? 34236,
       dTag: dTag,
       title: title,
@@ -221,6 +241,7 @@ class VideoStats {
         statsData['trending_score'] ?? json['trending_score'],
       ),
       loops: loops,
+      views: views,
       rawTags: rawTags,
     );
   }
@@ -233,6 +254,12 @@ class VideoStats {
 
   /// When the video was created.
   final DateTime createdAt;
+
+  /// Unix timestamp of when the video was published (`published_at` tag).
+  ///
+  /// May differ from [createdAt] when the event was updated after initial
+  /// publication.
+  final int? publishedAt;
 
   /// Nostr event kind (typically 34236 for vertical videos).
   final int kind;
@@ -282,6 +309,9 @@ class VideoStats {
   /// Original loop count for classic Vines.
   final int? loops;
 
+  /// Live/new view count from Funnelcake analytics.
+  final int? views;
+
   /// All Nostr event tags as a flat map, preserving tags (like ProofMode,
   /// C2PA, verification) that don't have dedicated fields on this model.
   final Map<String, String> rawTags;
@@ -290,17 +320,24 @@ class VideoStats {
   ///
   /// Maps the Funnelcake API response fields to the corresponding
   /// [VideoEvent] fields used throughout the application.
+  ///
+  /// Uses [publishedAt] as the effective timestamp when available,
+  /// falling back to [createdAt].
   VideoEvent toVideoEvent() {
+    final effectiveTimestamp =
+        publishedAt ?? createdAt.millisecondsSinceEpoch ~/ 1000;
+    final normalizedDTag = dTag.isNotEmpty ? dTag : id;
     return VideoEvent(
       id: id,
       pubkey: pubkey,
-      createdAt: createdAt.millisecondsSinceEpoch ~/ 1000,
+      createdAt: effectiveTimestamp,
       content: description ?? '',
-      timestamp: createdAt,
+      timestamp: DateTime.fromMillisecondsSinceEpoch(effectiveTimestamp * 1000),
       title: title.isNotEmpty ? title : null,
       videoUrl: videoUrl.isNotEmpty ? videoUrl : null,
       thumbnailUrl: thumbnail.isNotEmpty ? thumbnail : null,
-      vineId: dTag.isNotEmpty ? dTag : null,
+      vineId: normalizedDTag.isNotEmpty ? normalizedDTag : null,
+      publishedAt: publishedAt?.toString(),
       sha256: sha256,
       authorName: authorName,
       authorAvatar: authorAvatar,
@@ -309,7 +346,11 @@ class VideoStats {
       originalComments: comments,
       originalReposts: reposts,
       originalLoops: loops,
-      rawTags: rawTags,
+      rawTags: {
+        ...rawTags,
+        if (loops != null) 'loops': loops.toString(),
+        if (views != null) 'views': views.toString(),
+      },
     );
   }
 
