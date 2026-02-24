@@ -47,7 +47,6 @@ void main() {
     late _MockAuthService mockAuthService;
     late _MockLikesRepository mockLikesRepository;
     late _MockContentReportingService mockContentReportingService;
-    late _MockMuteService mockMuteService;
     late _MockContentBlocklistService mockContentBlocklistService;
     late _MockUserProfileService mockUserProfileService;
     late _MockFollowRepository mockFollowRepository;
@@ -65,7 +64,6 @@ void main() {
       mockAuthService = _MockAuthService();
       mockLikesRepository = _MockLikesRepository();
       mockContentReportingService = _MockContentReportingService();
-      mockMuteService = _MockMuteService();
       mockContentBlocklistService = _MockContentBlocklistService();
       mockUserProfileService = _MockUserProfileService();
       mockFollowRepository = _MockFollowRepository();
