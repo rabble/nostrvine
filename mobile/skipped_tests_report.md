@@ -31,12 +31,6 @@
 | `widgets/user_avatar_golden_test.dart` | 175 | 1 | `skip: true` |
 | `widgets/video_thumbnail_golden_test.dart` | 121, 160, 208 | 3 | `skip: true` |
 
-### test/ (root)
-
-| File | Lines | Tests | Reason |
-|------|-------|-------|--------|
-| `widget_test.dart` | 34 | 1 | `skip: true` |
-
 ### test/infrastructure/
 
 | File | Lines | Tests | Reason |
