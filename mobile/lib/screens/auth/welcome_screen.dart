@@ -150,7 +150,7 @@ class _NewUserLayout extends StatelessWidget {
           const SizedBox(height: 12),
 
           DivineSecondaryButton(
-            label: 'Login with a different account',
+            label: 'Sign in with a different account',
             onPressed: () => context.read<WelcomeBloc>().add(
               const WelcomeLoginOptionsRequested(),
             ),
@@ -254,7 +254,7 @@ class _ReturningUserLayout extends StatelessWidget {
 
         // Login with different account (secondary)
         DivineSecondaryButton(
-          label: 'Login with a different account',
+          label: 'Sign in with a different account',
           onPressed: isLoading
               ? null
               : () => context.read<WelcomeBloc>().add(
