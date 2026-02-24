@@ -8,7 +8,6 @@ import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/readiness_gate_providers.dart';
 import 'package:openvine/providers/video_events_providers.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_nostr_enrichment.dart';

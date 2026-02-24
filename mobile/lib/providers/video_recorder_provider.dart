@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/services/haptic_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -554,6 +555,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
     _baseZoomLevel = state.zoomLevel;
     _isStartingRecording = true;
+    unawaited(HapticService.recordingFeedback());
 
     // Handle timer countdown
     if (state.timerDuration != .off) {
@@ -583,6 +585,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         return;
       }
       state = state.copyWith(countdownValue: 0);
+      unawaited(HapticService.recordingFeedback());
 
       // Re-enable volume key interception after countdown
       // (unless a sound is selected, then keep them disabled)
@@ -664,6 +667,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
     _isStoppingRecording = true;
+
+    unawaited(HapticService.recordingFeedback());
 
     // Stop audio playback if active
     await _stopSoundPlayback();
@@ -922,7 +927,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
   /// Starts audio playback for the selected sound during recording.
   ///
   /// Configures the audio session for simultaneous recording and playback,
-  /// loads the audio from the sound's URL, and starts playback.
+  /// loads the audio from the sound's URL, seeks to the correct position
+  /// based on existing clip durations, and starts playback.
   /// Failures are logged but do not prevent recording from continuing.
   Future<void> _startSoundPlayback() async {
     final selectedSound = ref.read(selectedSoundProvider);
@@ -936,6 +942,18 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
       // Load the audio from the sound's Blossom URL
       await _audioPlaybackService!.loadAudio(selectedSound.url!);
+
+      // Seek to correct position based on existing clips
+      final clipManager = ref.read(clipManagerProvider.notifier);
+      final startPosition = clipManager.totalDuration;
+      if (startPosition > Duration.zero) {
+        await _audioPlaybackService!.seek(startPosition);
+        Log.debug(
+          'Seeking sound to position: ${startPosition.inMilliseconds}ms',
+          name: 'VideoRecorderNotifier',
+          category: LogCategory.video,
+        );
+      }
 
       // Start playback
       await _audioPlaybackService!.play();

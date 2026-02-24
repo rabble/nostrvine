@@ -1,6 +1,7 @@
 // ABOUTME: Unit tests for VideoRecorderProviderState and VideoRecorderNotifier
 // ABOUTME: Tests state getters, properties, and recording lifecycle
 
+import 'package:flutter/services.dart';
 import 'package:divine_camera/divine_camera.dart' show DivineCameraLens;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -14,6 +15,32 @@ import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../mocks/mock_camera_service.dart';
+
+/// Helper to set up haptic feedback mock and track calls.
+class HapticFeedbackTracker {
+  final List<String> hapticCalls = [];
+
+  void setUp(TestWidgetsFlutterBinding binding) {
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'HapticFeedback.vibrate') {
+          hapticCalls.add(call.arguments as String);
+        }
+        return null;
+      },
+    );
+  }
+
+  void tearDown(TestWidgetsFlutterBinding binding) {
+    binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      null,
+    );
+  }
+
+  void clear() => hapticCalls.clear();
+}
 
 /// Shared test setup for VideoRecorderNotifier tests.
 class NotifierTestSetup {
@@ -462,6 +489,79 @@ void main() {
         setup.container.read(videoRecorderProvider).recordingState,
         VideoRecorderState.idle,
       );
+    });
+  });
+
+  group('VideoRecorderNotifier - Haptic Feedback', () {
+    late NotifierTestSetup setup;
+    late HapticFeedbackTracker hapticTracker;
+    late TestWidgetsFlutterBinding binding;
+
+    setUp(() async {
+      binding = TestWidgetsFlutterBinding.ensureInitialized();
+      hapticTracker = HapticFeedbackTracker()..setUp(binding);
+      setup = NotifierTestSetup();
+      await setup.setUp();
+    });
+
+    tearDown(() {
+      hapticTracker.tearDown(binding);
+      setup.tearDown();
+    });
+
+    test('startRecording triggers lightImpact haptic feedback', () async {
+      final notifier = setup.container.read(videoRecorderProvider.notifier);
+      hapticTracker.clear();
+
+      await notifier.startRecording();
+
+      expect(
+        hapticTracker.hapticCalls,
+        contains('HapticFeedbackType.lightImpact'),
+      );
+    });
+
+    test('stopRecording triggers lightImpact haptic feedback', () async {
+      final notifier = setup.container.read(videoRecorderProvider.notifier);
+
+      // First start recording
+      await notifier.startRecording();
+      expect(
+        setup.container.read(videoRecorderProvider).recordingState,
+        VideoRecorderState.recording,
+      );
+
+      hapticTracker.clear();
+
+      // Stop recording and check haptic
+      await notifier.stopRecording();
+
+      expect(
+        hapticTracker.hapticCalls,
+        contains('HapticFeedbackType.lightImpact'),
+      );
+    });
+
+    test('haptic feedback not triggered when recording is blocked', () async {
+      final notifier = setup.container.read(videoRecorderProvider.notifier);
+
+      // Start recording first
+      await notifier.startRecording();
+      hapticTracker.clear();
+
+      // Try to start again while already recording - should be blocked
+      await notifier.startRecording();
+
+      // No additional haptic because the call was blocked
+      expect(
+        hapticTracker.hapticCalls
+            .where((c) => c == 'HapticFeedbackType.lightImpact')
+            .length,
+        equals(0),
+      );
+
+      // Cleanup
+      await notifier.stopRecording();
     });
   });
 

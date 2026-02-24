@@ -6,12 +6,8 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
-import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
-import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
-import 'package:openvine/screens/sounds_screen.dart';
 
 /// Bottom bar with record button and camera controls.
 class VideoRecorderBottomBar extends ConsumerWidget {
@@ -35,20 +31,6 @@ class VideoRecorderBottomBar extends ConsumerWidget {
         content: DivineSnackbarContainer(label: message, error: isError),
       ),
     );
-  }
-
-  /// Opens the sounds screen for sound selection.
-  void _openSoundsScreen(
-    BuildContext context,
-    VideoRecorderNotifier videoRecorderNotifier,
-  ) async {
-    videoRecorderNotifier.pauseRemoteRecordControl();
-
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const SoundsScreen()));
-
-    videoRecorderNotifier.resumeRemoteRecordControl();
   }
 
   /// Show more options menu
@@ -139,7 +121,6 @@ class VideoRecorderBottomBar extends ConsumerWidget {
     );
 
     final hasClips = ref.watch(clipManagerProvider.select((p) => p.hasClips));
-    final selectedSound = ref.watch(selectedSoundProvider);
 
     return SafeArea(
       top: false,
@@ -150,76 +131,51 @@ class VideoRecorderBottomBar extends ConsumerWidget {
           child: AnimatedOpacity(
             duration: const Duration(milliseconds: 120),
             opacity: state.isRecording ? 0 : 1,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
-                // Selected sound indicator
-                if (selectedSound != null)
-                  _SelectedSoundChip(sound: selectedSound),
+                // Flash toggle
+                _ActionButton(
+                  icon: state.flashMode.icon,
+                  // TODO(l10n): Replace with context.l10n when localization is added.
+                  tooltip: 'Toggle flash',
+                  onPressed: state.hasFlash ? notifier.toggleFlash : null,
+                ),
 
-                // Controls row
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceAround,
-                  children: [
-                    // Flash toggle
-                    _ActionButton(
-                      icon: state.flashMode.iconPath,
-                      // TODO(l10n): Replace with context.l10n
-                      // when localization is added.
-                      tooltip: 'Toggle flash',
-                      onPressed: state.hasFlash ? notifier.toggleFlash : null,
-                    ),
+                // Timer toggle
+                _ActionButton(
+                  icon: state.timer.icon,
+                  // TODO(l10n): Replace with context.l10n when localization is added.
+                  tooltip: 'Cycle timer',
+                  onPressed: notifier.cycleTimer,
+                ),
 
-                    // Timer toggle
-                    _ActionButton(
-                      icon: state.timer.icon,
-                      // TODO(l10n): Replace with context.l10n
-                      // when localization is added.
-                      tooltip: 'Cycle timer',
-                      onPressed: notifier.cycleTimer,
-                    ),
+                // Aspect-Ratio
+                _ActionButton(
+                  icon: state.aspectRatio == .square
+                      ? .cropSquare
+                      : .cropPortrait,
+                  // TODO(l10n): Replace with context.l10n when localization is added.
+                  tooltip: 'Toggle aspect ratio',
+                  onPressed: !hasClips ? notifier.toggleAspectRatio : null,
+                ),
 
-                    // Aspect-Ratio
-                    _ActionButton(
-                      icon: state.aspectRatio == .square
-                          ? .cropSquare
-                          : .cropPortrait,
-                      // TODO(l10n): Replace with context.l10n
-                      // when localization is added.
-                      tooltip: 'Toggle aspect ratio',
-                      onPressed: !hasClips ? notifier.toggleAspectRatio : null,
-                    ),
+                // Flip camera
+                _ActionButton(
+                  icon: .arrowsClockwise,
+                  // TODO(l10n): Replace with context.l10n when localization is added.
+                  tooltip: 'Switch camera',
+                  onPressed: state.canSwitchCamera
+                      ? notifier.switchCamera
+                      : null,
+                ),
 
-                    // Sound selection
-                    _ActionButton(
-                      icon: .musicNote,
-                      // TODO(l10n): Replace with context.l10n
-                      // when localization is added.
-                      tooltip: 'Select sound',
-                      onPressed: () => _openSoundsScreen(context, notifier),
-                      hasIndicator: selectedSound != null,
-                    ),
-
-                    // Flip camera
-                    _ActionButton(
-                      icon: .arrowsClockwise,
-                      // TODO(l10n): Replace with context.l10n
-                      // when localization is added.
-                      tooltip: 'Switch camera',
-                      onPressed: state.canSwitchCamera
-                          ? notifier.switchCamera
-                          : null,
-                    ),
-
-                    // More options
-                    _ActionButton(
-                      icon: .moreHoriz,
-                      // TODO(l10n): Replace with context.l10n
-                      // when localization is added.
-                      tooltip: 'More options',
-                      onPressed: () => _showMoreOptions(context, ref, notifier),
-                    ),
-                  ],
+                // More options
+                _ActionButton(
+                  icon: .moreHoriz,
+                  // TODO(l10n): Replace with context.l10n when localization is added.
+                  tooltip: 'More options',
+                  onPressed: () => _showMoreOptions(context, ref, notifier),
                 ),
               ],
             ),
@@ -235,12 +191,10 @@ class _ActionButton extends StatelessWidget {
     required this.onPressed,
     required this.tooltip,
     required this.icon,
-    this.hasIndicator = false,
   });
   final VoidCallback? onPressed;
   final String tooltip;
   final DivineIconName icon;
-  final bool hasIndicator;
 
   @override
   Widget build(BuildContext context) {
@@ -249,88 +203,10 @@ class _ActionButton extends StatelessWidget {
     return IconButton(
       onPressed: onPressed,
       tooltip: tooltip,
-      icon: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          DivineIcon(
-            icon: icon,
-            size: 32,
-            color: VineTheme.whiteText.withAlpha(isEnabled ? 255 : 80),
-          ),
-
-          if (hasIndicator)
-            Positioned(
-              top: -2,
-              right: -2,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: VineTheme.vineGreen,
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SelectedSoundChip extends ConsumerWidget {
-  const _SelectedSoundChip({required this.sound});
-
-  final AudioEvent sound;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final title = sound.title ?? 'Selected sound';
-
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: VineTheme.cardBackground,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            SvgPicture.asset(
-              'assets/icon/music_note.svg',
-              width: 14,
-              height: 14,
-              colorFilter: const ColorFilter.mode(
-                VineTheme.vineGreen,
-                BlendMode.srcIn,
-              ),
-            ),
-            const SizedBox(width: 6),
-            ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 180),
-              child: Text(
-                title,
-                style: const TextStyle(
-                  color: VineTheme.whiteText,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                ),
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
-            ),
-            const SizedBox(width: 6),
-            GestureDetector(
-              onTap: () => ref.read(selectedSoundProvider.notifier).clear(),
-              child: const Icon(
-                Icons.close,
-                size: 14,
-                color: VineTheme.onSurfaceVariant,
-              ),
-            ),
-          ],
-        ),
+      icon: DivineIcon(
+        icon: icon,
+        size: 32,
+        color: VineTheme.whiteText.withAlpha(isEnabled ? 255 : 80),
       ),
     );
   }
