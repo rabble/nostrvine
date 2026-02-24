@@ -957,7 +957,7 @@ class NostrClient {
       search: query,
     );
 
-    return queryEvents([filter]);
+    return queryEvents([filter], tempRelays: _nip50SearchRelays);
   }
 
   /// Creates a NIP-98 HTTP authentication header.

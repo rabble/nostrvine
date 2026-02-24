@@ -2634,6 +2634,38 @@ void main() {
         expect(result[0].kind, equals(EventKind.metadata));
         expect(result[1].kind, equals(EventKind.metadata));
       });
+
+      test('passes NIP-50 search relays as tempRelays', () async {
+        const query = 'alice';
+
+        when(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: any(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+          ),
+        ).thenAnswer((_) async => []);
+
+        await client.queryUsers(query);
+
+        final captured = verify(
+          () => mockNostr.queryEvents(
+            any(),
+            id: any(named: 'id'),
+            tempRelays: captureAny(named: 'tempRelays'),
+            relayTypes: any(named: 'relayTypes'),
+            sendAfterAuth: any(named: 'sendAfterAuth'),
+          ),
+        ).captured;
+
+        final tempRelays = captured.first as List<String>;
+        expect(tempRelays, contains('wss://relay.nostr.band'));
+        expect(tempRelays, contains('wss://search.nos.today'));
+        expect(tempRelays, contains('wss://nostr.wine'));
+        expect(tempRelays, hasLength(3));
+      });
     });
 
     group('countEvents', () {
