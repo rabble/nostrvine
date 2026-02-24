@@ -118,8 +118,6 @@ class VideoInteractionsBloc
           ? _repostsRepository.getRepostCount(_addressableId)
           : _repostsRepository.getRepostCountByEventId(_eventId);
 
-      // Skip relay like count query if we already have a seeded count
-      // (from Funnelcake API or legacy Vine tags) to avoid a flash.
       final likeCountFuture = state.likeCount != null
           ? Future.value(state.likeCount)
           : _likesRepository.getLikeCount(

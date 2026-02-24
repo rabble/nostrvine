@@ -2,6 +2,7 @@
 // ABOUTME: PageView syncs with URL bidirectionally, shared PlayerPool manages
 // ABOUTME: video lifecycle via VideoFeedController
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -12,14 +13,13 @@ import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
 import 'package:openvine/mixins/page_controller_sync_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/home_screen_controllers.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
+import 'package:openvine/providers/home_screen_controllers.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/app_router.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -496,8 +496,7 @@ class _HomePooledVideoItem extends ConsumerWidget {
               commentsRepository: commentsRepository,
               repostsRepository: repostsRepository,
               addressableId: addressableId,
-              initialLikeCount:
-                  video.originalLikes != null || video.nostrLikeCount != null
+              initialLikeCount: video.nostrLikeCount != null
                   ? video.totalLikes
                   : null,
             )

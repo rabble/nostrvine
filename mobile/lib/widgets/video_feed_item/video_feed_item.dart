@@ -400,9 +400,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
       commentsRepository: commentsRepository,
       repostsRepository: repostsRepository,
       addressableId: addressableId,
-      initialLikeCount:
-          widget.video.originalLikes != null ||
-              widget.video.nostrLikeCount != null
+      initialLikeCount: widget.video.nostrLikeCount != null
           ? widget.video.totalLikes
           : null,
     );
