@@ -223,7 +223,7 @@ public class DivineCameraPlugin: NSObject, FlutterPlugin {
         // iOS re-evaluates audio routing on AVCaptureSession reconfiguration,
         // which can cause connected Bluetooth devices (Apple Watch, AirPods)
         // to send spurious play/pause events that would restart recording.
-        volumeKeyHandler?.suppressTemporarily(forSeconds: 1.5)
+        volumeKeyHandler?.suppressTemporarily(forSeconds: 3.0)
         
         controller.switchCamera(lens: lens) { state, error in
             DispatchQueue.main.async {

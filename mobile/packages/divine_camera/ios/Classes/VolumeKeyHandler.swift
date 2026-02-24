@@ -22,13 +22,15 @@ class VolumeKeyHandler: NSObject {
     private var volumeChangeTimer: Timer?
     private var isInternalVolumeChange = false
     
-    // Cooldown after activation to ignore spurious Bluetooth events
+    // Cooldown after activation to ignore spurious Bluetooth events.
+    // Must be long enough to cover delayed events from AirPods/Apple Watch
+    // that arrive after audio route changes during camera initialization.
     private var enabledTimestamp: TimeInterval = 0
-    private let activationCooldownSeconds: TimeInterval = 0.8
+    private let activationCooldownSeconds: TimeInterval = 3.0
     
     // Debounce between Bluetooth triggers to prevent rapid-fire events
     private var lastBluetoothTriggerTimestamp: TimeInterval = 0
-    private let bluetoothDebounceSeconds: TimeInterval = 0.5
+    private let bluetoothDebounceSeconds: TimeInterval = 1.0
     
     // Temporary suppression during camera switch / audio route changes
     private var isSuppressed = false
@@ -58,7 +60,17 @@ class VolumeKeyHandler: NSObject {
         isEnabled = true
         volumeKeysEnabled = true
         enabledTimestamp = ProcessInfo.processInfo.systemUptime
-        NSLog("DivineCameraVolumeKeyHandler: Enabled")
+        
+        // Suppress triggers initially to absorb any spurious Bluetooth events
+        // that fire when MPRemoteCommandCenter handlers are first registered.
+        // Connected AirPods/Apple Watch may send play/pause events when they
+        // detect a new "now playing" app.
+        isSuppressed = true
+        DispatchQueue.main.asyncAfter(deadline: .now() + activationCooldownSeconds) { [weak self] in
+            self?.isSuppressed = false
+            NSLog("DivineCameraVolumeKeyHandler: Initial suppression ended")
+        }
+        NSLog("DivineCameraVolumeKeyHandler: Enabled (suppressed for \(activationCooldownSeconds)s)")
         return true
     }
     
@@ -95,7 +107,6 @@ class VolumeKeyHandler: NSObject {
     /// iOS audio route changes, which can trigger spurious Bluetooth
     /// play/pause events from connected devices (e.g. Apple Watch).
     func suppressTemporarily(forSeconds duration: TimeInterval = 1.0) {
-        guard isEnabled else { return }
         isSuppressed = true
         NSLog("DivineCameraVolumeKeyHandler: Suppressed for \(duration)s")
         DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
