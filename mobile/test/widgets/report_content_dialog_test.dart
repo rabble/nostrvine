@@ -1,122 +1,153 @@
 // ABOUTME: Unit tests for ReportContentDialog widget
-// ABOUTME: Tests Apple compliance requirements and user blocking functionality
+// ABOUTME: Tests Apple compliance requirements, reason selection, submission, and blocking
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mockito/annotations.dart';
 import 'package:mockito/mockito.dart';
 import 'package:nostr_sdk/event.dart' as nostr;
 import 'package:models/models.dart';
-import 'package:openvine/widgets/share_video_menu.dart';
+import 'package:openvine/widgets/report_content_dialog.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/mute_service.dart';
 import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/providers/app_providers.dart';
 
+import '../helpers/test_provider_overrides.dart';
+import '../helpers/test_provider_overrides.mocks.dart';
 import 'report_content_dialog_test.mocks.dart';
 
 @GenerateMocks([ContentReportingService, ContentBlocklistService, MuteService])
 void main() {
-  group('ReportContentDialog', () {
-    late VideoEvent testVideo;
-    late MockContentReportingService mockReportingService;
-    late MockContentBlocklistService mockBlocklistService;
-    late MockMuteService mockMuteService;
+  late VideoEvent testVideo;
+  late MockContentReportingService mockReportingService;
+  late MockContentBlocklistService mockBlocklistService;
+  late MockMuteService mockMuteService;
 
-    setUp(() {
-      // Create test Nostr event with valid hex pubkey
-      final testNostrEvent = nostr.Event(
-        '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738',
-        34236,
-        [
-          ['d', 'test_video_id'],
-          ['title', 'Test Video'],
-          ['imeta', 'url https://example.com/test.mp4', 'm video/mp4'],
-        ],
-        'Test video content',
-        createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-      );
-      testNostrEvent.id =
-          'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
-      testNostrEvent.sig =
-          'aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44ee55ff66aa11bb22';
+  setUp(() {
+    // Create test Nostr event with valid hex pubkey
+    final testNostrEvent = nostr.Event(
+      '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738',
+      34236,
+      [
+        ['d', 'test_video_id'],
+        ['title', 'Test Video'],
+        ['imeta', 'url https://example.com/test.mp4', 'm video/mp4'],
+      ],
+      'Test video content',
+      createdAt: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+    );
+    testNostrEvent.id =
+        'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4e5f6a1b2';
+    testNostrEvent.sig =
+        'aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44ee55ff66aa11bb22cc33dd44ee55ff66aa11bb22';
 
-      testVideo = VideoEvent.fromNostrEvent(testNostrEvent);
-      mockReportingService = MockContentReportingService();
-      mockBlocklistService = MockContentBlocklistService();
-      mockMuteService = MockMuteService();
+    testVideo = VideoEvent.fromNostrEvent(testNostrEvent);
+    mockReportingService = MockContentReportingService();
+    mockBlocklistService = MockContentBlocklistService();
+    mockMuteService = MockMuteService();
 
-      // Setup default mock behavior
-      when(
-        mockReportingService.reportContent(
-          eventId: anyNamed('eventId'),
-          authorPubkey: anyNamed('authorPubkey'),
-          reason: anyNamed('reason'),
-          details: anyNamed('details'),
-          additionalContext: anyNamed('additionalContext'),
-          hashtags: anyNamed('hashtags'),
+    // Setup default mock behavior
+    when(
+      mockReportingService.reportContent(
+        eventId: anyNamed('eventId'),
+        authorPubkey: anyNamed('authorPubkey'),
+        reason: anyNamed('reason'),
+        details: anyNamed('details'),
+        additionalContext: anyNamed('additionalContext'),
+        hashtags: anyNamed('hashtags'),
+      ),
+    ).thenAnswer((_) async => ReportResult.createSuccess('test_report_id'));
+
+    when(
+      mockReportingService.reportUser(
+        userPubkey: anyNamed('userPubkey'),
+        reason: anyNamed('reason'),
+        details: anyNamed('details'),
+        relatedEventIds: anyNamed('relatedEventIds'),
+      ),
+    ).thenAnswer(
+      (_) async => ReportResult.createSuccess('test_user_report_id'),
+    );
+
+    when(
+      mockMuteService.muteUser(
+        any,
+        reason: anyNamed('reason'),
+        duration: anyNamed('duration'),
+      ),
+    ).thenAnswer((_) async => true);
+  });
+
+  group('$ReportContentDialog rendering', () {
+    Widget buildSubject() => ProviderScope(
+      overrides: [
+        contentReportingServiceProvider.overrideWith(
+          (ref) async => mockReportingService,
         ),
-      ).thenAnswer((_) async => ReportResult.createSuccess('test_report_id'));
+      ],
+      child: MaterialApp(
+        home: Scaffold(body: ReportContentDialog(video: testVideo)),
+      ),
+    );
 
-      when(
-        mockReportingService.reportUser(
-          userPubkey: anyNamed('userPubkey'),
-          reason: anyNamed('reason'),
-          details: anyNamed('details'),
-          relatedEventIds: anyNamed('relatedEventIds'),
-        ),
-      ).thenAnswer(
-        (_) async => ReportResult.createSuccess('test_user_report_id'),
-      );
+    testWidgets('renders Report Content title', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
 
-      when(
-        mockMuteService.muteUser(
-          any,
-          reason: anyNamed('reason'),
-          duration: anyNamed('duration'),
-        ),
-      ).thenAnswer((_) async => true);
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Report Content'), findsOneWidget);
+      expect(find.text('Why are you reporting this content?'), findsOneWidget);
+    });
+
+    testWidgets('renders all report reason radio options', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Spam or Unwanted Content'), findsOneWidget);
+      expect(find.text('Harassment, Bullying, or Threats'), findsOneWidget);
+      expect(find.text('Violent or Extremist Content'), findsOneWidget);
+      expect(find.text('Sexual or Adult Content'), findsOneWidget);
+      expect(find.text('Copyright Violation'), findsOneWidget);
+      expect(find.text('False Information'), findsOneWidget);
+      expect(find.text('Child Safety Violation'), findsOneWidget);
+      expect(find.text('AI-Generated Content'), findsOneWidget);
+      expect(find.text('Other Policy Violation'), findsOneWidget);
+    });
+
+    testWidgets('renders additional details text field', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.text('Additional details (optional)'), findsOneWidget);
     });
 
     testWidgets(
       'Submit button is visible (not null) even before selecting a reason',
       (tester) async {
-        // Apple compliance requirement: submit button must always be visible
-
-        // Set larger test size to prevent overflow
         await tester.binding.setSurfaceSize(const Size(800, 1200));
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              contentReportingServiceProvider.overrideWith(
-                (ref) async => mockReportingService,
-              ),
-            ],
-            child: MaterialApp(
-              home: Scaffold(body: ReportContentDialog(video: testVideo)),
-            ),
-          ),
-        );
-
+        await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        // Find the Report button
         final reportButton = find.widgetWithText(TextButton, 'Report');
         expect(reportButton, findsOneWidget);
 
-        // Get the button widget to check if onPressed is not null
         final TextButton button = tester.widget(reportButton);
-
-        // CRITICAL: Button must be enabled (onPressed != null) even before selecting reason
-        // This is an Apple App Store requirement
         expect(
           button.onPressed,
           isNotNull,
           reason:
-              'Submit button must be visible/enabled before selecting reason (Apple requirement)',
+              'Submit button must be visible/enabled before selecting reason '
+              '(Apple requirement)',
         );
       },
     );
@@ -124,30 +155,15 @@ void main() {
     testWidgets(
       'Submit button shows error when tapped without selecting reason',
       (tester) async {
-        // Set larger test size to prevent overflow
         await tester.binding.setSurfaceSize(const Size(800, 1200));
 
-        await tester.pumpWidget(
-          ProviderScope(
-            overrides: [
-              contentReportingServiceProvider.overrideWith(
-                (ref) async => mockReportingService,
-              ),
-            ],
-            child: MaterialApp(
-              home: Scaffold(body: ReportContentDialog(video: testVideo)),
-            ),
-          ),
-        );
-
+        await tester.pumpWidget(buildSubject());
         await tester.pumpAndSettle();
 
-        // Tap the Report button without selecting a reason
         final reportButton = find.widgetWithText(TextButton, 'Report');
         await tester.tap(reportButton);
         await tester.pumpAndSettle();
 
-        // Should show an error snackbar
         expect(
           find.text('Please select a reason for reporting this content'),
           findsOneWidget,
@@ -159,7 +175,6 @@ void main() {
     testWidgets('Block user checkbox is visible and can be toggled', (
       tester,
     ) async {
-      // Set larger test size to prevent overflow
       await tester.binding.setSurfaceSize(const Size(800, 1200));
 
       await tester.pumpWidget(
@@ -181,7 +196,6 @@ void main() {
 
       await tester.pumpAndSettle();
 
-      // Find the block user checkbox
       final blockUserCheckbox = find.text('Block this user');
       expect(
         blockUserCheckbox,
@@ -189,7 +203,6 @@ void main() {
         reason: 'Block user checkbox should be visible',
       );
 
-      // Find the checkbox widget itself
       final Checkbox checkbox = tester.widget(find.byType(Checkbox));
       expect(
         checkbox.value,
@@ -197,11 +210,9 @@ void main() {
         reason: 'Checkbox should be unchecked by default',
       );
 
-      // Tap the checkbox to enable blocking
       await tester.tap(blockUserCheckbox);
       await tester.pumpAndSettle();
 
-      // Verify checkbox is now checked
       final Checkbox checkedCheckbox = tester.widget(find.byType(Checkbox));
       expect(
         checkedCheckbox.value,
@@ -209,25 +220,329 @@ void main() {
         reason: 'Checkbox should be checked after tapping',
       );
     });
+
+    testWidgets('renders correct number of report reason options', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      // Verify all ContentFilterReason values have corresponding radio tiles
+      final radios = tester.widgetList<RadioListTile<ContentFilterReason>>(
+        find.byType(RadioListTile<ContentFilterReason>),
+      );
+      expect(radios.length, equals(ContentFilterReason.values.length));
+
+      // Initially no reason is selected (check RadioGroup ancestor)
+      final radioGroup = tester.widget<RadioGroup<ContentFilterReason>>(
+        find.byType(RadioGroup<ContentFilterReason>),
+      );
+      expect(radioGroup.groupValue, isNull);
+    });
+
+    testWidgets('renders Cancel button', (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+
+      expect(find.widgetWithText(TextButton, 'Cancel'), findsOneWidget);
+    });
   });
 
-  // NOTE: Full integration test for proper Nostr event publishing when blocking
-  // users is in integration_test/report_content_flow_test.dart
-  //
-  // When user checks "Block this user" and submits report:
-  // - Creates kind 1984 (NIP-56) for the CONTENT being reported
-  // - Creates kind 1984 (NIP-56) for the USER being reported
-  // - Publishes kind 10000 (NIP-51) mute list with user added
-  //
-  // When user does NOT check "Block this user":
-  // - Only creates kind 1984 for the CONTENT
+  group('$ReportContentDialog submission', () {
+    late MockNostrClient mockNostrClient;
+
+    setUp(() {
+      mockNostrClient = createMockNostrService();
+      when(mockNostrClient.publicKey).thenReturn('test_pubkey_hex');
+    });
+
+    Widget buildSubject() {
+      // GoRouter is needed so context.pop() (GoRouter extension) works.
+      // showDialog is used so context.pop() pops the dialog route,
+      // matching production usage.
+      final router = GoRouter(
+        routes: [
+          GoRoute(
+            path: '/',
+            builder: (context, state) => Scaffold(
+              body: Builder(
+                builder: (context) => ElevatedButton(
+                  onPressed: () => showDialog<void>(
+                    context: context,
+                    builder: (_) => ReportContentDialog(video: testVideo),
+                  ),
+                  child: const Text('Open Report'),
+                ),
+              ),
+            ),
+          ),
+        ],
+      );
+
+      return testProviderScope(
+        mockUserProfileService: createMockUserProfileService(),
+        mockNostrService: mockNostrClient,
+        additionalOverrides: [
+          contentReportingServiceProvider.overrideWith(
+            (ref) async => mockReportingService,
+          ),
+          contentBlocklistServiceProvider.overrideWith(
+            (ref) => mockBlocklistService,
+          ),
+          muteServiceProvider.overrideWith((ref) async => mockMuteService),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      );
+    }
+
+    /// Opens the report dialog by tapping the trigger button.
+    Future<void> openReportDialog(WidgetTester tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Open Report'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('selecting reason and tapping Report calls reportContent', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await openReportDialog(tester);
+
+      // Select a reason
+      await tester.tap(find.text('Spam or Unwanted Content'));
+      await tester.pumpAndSettle();
+
+      // Tap Report
+      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.pumpAndSettle();
+
+      verify(
+        mockReportingService.reportContent(
+          eventId: anyNamed('eventId'),
+          authorPubkey: anyNamed('authorPubkey'),
+          reason: anyNamed('reason'),
+          details: anyNamed('details'),
+          additionalContext: anyNamed('additionalContext'),
+          hashtags: anyNamed('hashtags'),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('successful report shows $ReportConfirmationDialog', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await openReportDialog(tester);
+
+      // Select a reason
+      await tester.tap(find.text('Harassment, Bullying, or Threats'));
+      await tester.pumpAndSettle();
+
+      // Tap Report
+      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.pumpAndSettle();
+
+      // Confirmation dialog should appear
+      expect(find.text('Report Received'), findsOneWidget);
+      expect(
+        find.text('Thank you for helping keep Divine safe.'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('report with block checkbox calls reportUser and muteUser', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await openReportDialog(tester);
+
+      // Select a reason
+      await tester.tap(find.text('Harassment, Bullying, or Threats'));
+      await tester.pumpAndSettle();
+
+      // Check block user
+      await tester.tap(find.text('Block this user'));
+      await tester.pumpAndSettle();
+
+      // Tap Report
+      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.pumpAndSettle();
+
+      // Verify content report was made
+      verify(
+        mockReportingService.reportContent(
+          eventId: anyNamed('eventId'),
+          authorPubkey: anyNamed('authorPubkey'),
+          reason: anyNamed('reason'),
+          details: anyNamed('details'),
+          additionalContext: anyNamed('additionalContext'),
+          hashtags: anyNamed('hashtags'),
+        ),
+      ).called(1);
+
+      // Verify user report was made
+      verify(
+        mockReportingService.reportUser(
+          userPubkey: anyNamed('userPubkey'),
+          reason: anyNamed('reason'),
+          details: anyNamed('details'),
+          relatedEventIds: anyNamed('relatedEventIds'),
+        ),
+      ).called(1);
+
+      // Verify mute was called
+      verify(
+        mockMuteService.muteUser(
+          any,
+          reason: anyNamed('reason'),
+          duration: anyNamed('duration'),
+        ),
+      ).called(1);
+    });
+
+    testWidgets('failed report shows error snackbar', (tester) async {
+      when(
+        mockReportingService.reportContent(
+          eventId: anyNamed('eventId'),
+          authorPubkey: anyNamed('authorPubkey'),
+          reason: anyNamed('reason'),
+          details: anyNamed('details'),
+          additionalContext: anyNamed('additionalContext'),
+          hashtags: anyNamed('hashtags'),
+        ),
+      ).thenAnswer((_) async => ReportResult.failure('Server error'));
+
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await openReportDialog(tester);
+
+      // Select a reason
+      await tester.tap(find.text('Spam or Unwanted Content'));
+      await tester.pumpAndSettle();
+
+      // Tap Report
+      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Failed to report content'), findsOneWidget);
+    });
+
+    testWidgets('exception during report shows error snackbar', (tester) async {
+      when(
+        mockReportingService.reportContent(
+          eventId: anyNamed('eventId'),
+          authorPubkey: anyNamed('authorPubkey'),
+          reason: anyNamed('reason'),
+          details: anyNamed('details'),
+          additionalContext: anyNamed('additionalContext'),
+          hashtags: anyNamed('hashtags'),
+        ),
+      ).thenThrow(Exception('Network error'));
+
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await openReportDialog(tester);
+
+      await tester.tap(find.text('Spam or Unwanted Content'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('Failed to report content'), findsOneWidget);
+    });
+
+    testWidgets('additional details are passed to reportContent', (
+      tester,
+    ) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1200));
+      await openReportDialog(tester);
+
+      // Select a reason
+      await tester.tap(find.text('Spam or Unwanted Content'));
+      await tester.pumpAndSettle();
+
+      // Enter additional details
+      await tester.enterText(find.byType(TextField), 'This is spam content');
+      await tester.pumpAndSettle();
+
+      // Tap Report
+      await tester.tap(find.widgetWithText(TextButton, 'Report'));
+      await tester.pumpAndSettle();
+
+      verify(
+        mockReportingService.reportContent(
+          eventId: anyNamed('eventId'),
+          authorPubkey: anyNamed('authorPubkey'),
+          reason: anyNamed('reason'),
+          details: captureAnyNamed('details'),
+          additionalContext: anyNamed('additionalContext'),
+          hashtags: anyNamed('hashtags'),
+        ),
+      ).called(1);
+    });
+  });
+
+  group('$ReportConfirmationDialog', () {
+    testWidgets('renders success content', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => const ReportConfirmationDialog(),
+                ),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Report Received'), findsOneWidget);
+      expect(
+        find.text('Thank you for helping keep Divine safe.'),
+        findsOneWidget,
+      );
+      expect(find.text('Learn More'), findsOneWidget);
+      expect(find.text('divine.video/safety'), findsOneWidget);
+    });
+
+    testWidgets('renders Close button', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => ElevatedButton(
+                onPressed: () => showDialog<void>(
+                  context: context,
+                  builder: (_) => const ReportConfirmationDialog(),
+                ),
+                child: const Text('Open'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.tap(find.text('Open'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Close'), findsOneWidget);
+    });
+  });
 
   // Unit test for Nostr event service calls
   group('Nostr Event Publishing', () {
     test('reportUser() and muteUser() are called when blocking', () async {
-      // This is a unit test verifying the service method calls
-      // Integration test verifies actual Nostr event creation
-
       final mockReportingService = MockContentReportingService();
       final mockMuteService = MockMuteService();
 
@@ -248,7 +563,6 @@ void main() {
         ),
       ).thenAnswer((_) async => true);
 
-      // Call the service methods
       final userReportResult = await mockReportingService.reportUser(
         userPubkey:
             '78a5c21b5166dc1474b64ddf7454bf79e6b5d6b4a77148593bf1e866b73c2738',
@@ -262,7 +576,6 @@ void main() {
         reason: 'Test mute',
       );
 
-      // Verify service methods were called and succeeded
       expect(userReportResult.success, isTrue);
       expect(muteResult, isTrue);
 
