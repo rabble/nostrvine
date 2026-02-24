@@ -1,12 +1,15 @@
 appId: co.openvine.app
 ---
 - waitForAnimationToEnd # diVine logo may take some time to load
-- assertVisible: |-
-    Create and share short videos
-    on the decentralized web
-- assertVisible: "I am 16 years or older"
-- assertVisible: "I agree to the "
-- assertVisible: "Terms of Service"
-- assertVisible: "Privacy Policy"
-- assertVisible: "Safety Standards"
-- assertVisible: Have an account? Sign in
+- assertVisible: Authentic moments.
+- assertVisible: Human creativity.
+- assertVisible: Create a new Divine account
+- assertVisible: Login with a different account
+- assertVisible: "By selecting an option above, you confirm you are at least 16 years old and agree to the "
+- assertVisible: Terms of Service
+- assertVisible: ", "
+- assertVisible: Privacy Policy
+- assertVisible: ", and "
+- assertVisible: Safety Standards
+
+
