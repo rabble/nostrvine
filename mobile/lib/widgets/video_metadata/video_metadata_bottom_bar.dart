@@ -9,6 +9,7 @@ import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/screens/home_screen_router.dart';
+import 'package:openvine/services/gallery_save_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Bottom bar with "Save for Later" and "Post" buttons for video metadata.
@@ -164,7 +165,8 @@ class _SaveForLaterButton extends ConsumerWidget {
             ? 'Rendering video...'
             : isSaving
             ? 'Saving video...'
-            : 'Save video to drafts and camera roll',
+            : 'Save video to drafts and '
+                '${GallerySaveService.destinationName}',
         button: true,
         enabled: !isSaving && !isProcessing,
         child: GestureDetector(
