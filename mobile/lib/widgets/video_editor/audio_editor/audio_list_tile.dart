@@ -1,6 +1,7 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:openvine/models/audio_event.dart';
+import 'package:openvine/utils/video_editor_utils.dart';
 import 'package:openvine/widgets/video_editor_icon_button.dart';
 
 class AudioListTile extends StatelessWidget {
@@ -17,14 +18,6 @@ class AudioListTile extends StatelessWidget {
   final VoidCallback onPlayPause;
   final VoidCallback onSelect;
 
-  String _formatDuration(double? seconds) {
-    if (seconds == null) return '--:--';
-    final totalSeconds = seconds.round();
-    final mins = (totalSeconds ~/ 60).toString().padLeft(2, '0');
-    final secs = (totalSeconds % 60).toString().padLeft(2, '0');
-    return '$mins:$secs';
-  }
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -35,9 +28,7 @@ class AudioListTile extends StatelessWidget {
           // TODO(l10n): Replace with context.l10n when localization is added.
           semanticLabel: isPlaying ? 'Pause preview' : 'Play preview',
           onTap: onPlayPause,
-          iconPath: isPlaying
-              ? 'assets/icon/pause_fill.svg'
-              : 'assets/icon/play_fill.svg',
+          icon: isPlaying ? .pauseFill : .playFill,
           iconColor: VineTheme.onSurface,
           backgroundColor: VineTheme.surfaceContainer,
           iconSize: 16,
@@ -56,7 +47,7 @@ class AudioListTile extends StatelessWidget {
             style: VineTheme.bodyMediumFont(),
             children: [
               TextSpan(
-                text: _formatDuration(audio.duration),
+                text: audio.duration?.toMmSs() ?? '--:--',
                 style: const TextStyle(fontFeatures: [.tabularFigures()]),
               ),
               if (audio.source != null) ...[
@@ -70,7 +61,7 @@ class AudioListTile extends StatelessWidget {
           // TODO(l10n): Replace with context.l10n when localization is added.
           semanticLabel: 'Select sound',
           onTap: onSelect,
-          iconPath: 'assets/icon/plus.svg',
+          icon: .plus,
           iconColor: VineTheme.onPrimary,
           backgroundColor: VineTheme.primary,
           iconSize: 24,

@@ -22,8 +22,8 @@ class SoundWaveformLoading extends SoundWaveformState {
 class SoundWaveformLoaded extends SoundWaveformState {
   const SoundWaveformLoaded({
     required this.leftChannel,
-    this.rightChannel,
     required this.duration,
+    this.rightChannel,
   });
 
   /// Left channel amplitude samples.
