@@ -10,20 +10,26 @@ import 'package:openvine/services/curated_list_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:divine_ui/divine_ui.dart';
 
-// Loading indicator shared by dialogs in this file
-Widget get _buildLoadingIndicator => Padding(
-  padding: const EdgeInsets.all(12),
-  child: Center(
-    child: const SizedBox(
-      width: 16,
-      height: 16,
-      child: CircularProgressIndicator(
-        strokeWidth: 2,
-        color: VineTheme.secondaryText,
+class _LoadingIndicator extends StatelessWidget {
+  const _LoadingIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.all(12),
+      child: Center(
+        child: SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: VineTheme.secondaryText,
+          ),
+        ),
       ),
-    ),
-  ),
-);
+    );
+  }
+}
 
 /// Dialog for selecting an existing list to add a video to.
 class SelectListDialog extends StatelessWidget {
@@ -84,7 +90,7 @@ class SelectListDialog extends StatelessWidget {
             ],
           );
         },
-        loading: () => _buildLoadingIndicator,
+        loading: () => const _LoadingIndicator(),
         error: (_, __) => const Center(child: Text('Error loading lists')),
       );
     },

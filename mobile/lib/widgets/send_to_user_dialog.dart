@@ -27,7 +27,7 @@ class SendToUserDialog extends ConsumerStatefulWidget {
 class _SendToUserDialogState extends ConsumerState<SendToUserDialog> {
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _messageController = TextEditingController();
-  late final UserSearchBloc _searchBloc;
+  UserSearchBloc? _searchBloc;
   List<ShareableUser> _contacts = [];
   bool _contactsLoaded = false;
 
@@ -35,8 +35,16 @@ class _SendToUserDialogState extends ConsumerState<SendToUserDialog> {
   void initState() {
     super.initState();
     final profileRepo = ref.read(profileRepositoryProvider);
+    if (profileRepo == null) {
+      Log.error(
+        'profileRepositoryProvider is null during initState',
+        name: 'SendToUserDialog',
+        category: LogCategory.ui,
+      );
+      return;
+    }
     _searchBloc = UserSearchBloc(
-      profileRepository: profileRepo!,
+      profileRepository: profileRepo,
       hasVideos: false,
     );
     _loadUserContacts();
@@ -65,9 +73,9 @@ class _SendToUserDialogState extends ConsumerState<SendToUserDialog> {
             ),
             onChanged: (value) {
               if (value.trim().isEmpty) {
-                _searchBloc.add(const UserSearchCleared());
+                _searchBloc?.add(const UserSearchCleared());
               } else {
-                _searchBloc.add(UserSearchQueryChanged(value));
+                _searchBloc?.add(UserSearchQueryChanged(value));
               }
               setState(() {});
             },
@@ -118,10 +126,11 @@ class _SendToUserDialogState extends ConsumerState<SendToUserDialog> {
                 textAlign: TextAlign.center,
               ),
             ),
-          ] else if (_searchController.text.isNotEmpty) ...[
+          ] else if (_searchController.text.isNotEmpty &&
+              _searchBloc != null) ...[
             // Show search results from BLoC
             BlocBuilder<UserSearchBloc, UserSearchState>(
-              bloc: _searchBloc,
+              bloc: _searchBloc!,
               builder: (context, state) {
                 return switch (state.status) {
                   UserSearchStatus.loading => const Center(
@@ -312,7 +321,7 @@ class _SendToUserDialogState extends ConsumerState<SendToUserDialog> {
 
   @override
   void dispose() {
-    _searchBloc.close();
+    _searchBloc?.close();
     _searchController.dispose();
     _messageController.dispose();
     super.dispose();
