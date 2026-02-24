@@ -23,6 +23,15 @@ abstract final class _WaveformConstants {
   static const emptyBarHeight = 4.0;
   static const barRadius = Radius.circular(1);
   static const waveformHeight = 72.0;
+
+  /// Scale factor for waveform amplitude (leaves headroom at edges).
+  static const amplitudeScale = 0.9;
+
+  /// Duration for waveform entrance animation.
+  static const animationDuration = Duration(milliseconds: 400);
+
+  /// Curve for waveform entrance animation.
+  static const animationCurve = Curves.easeOutCubic;
 }
 
 /// Audio progress bar that displays waveform with recording progress.
@@ -174,24 +183,35 @@ class _AudioWaveformProgress extends ConsumerWidget {
         recordedDuration.inMilliseconds /
         _maxDuration.inMilliseconds.clamp(1, double.infinity);
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: VineTheme.scrim15,
-        borderRadius: .circular(4),
-      ),
-      child: CustomPaint(
-        size: const Size(double.infinity, _WaveformConstants.waveformHeight),
-        foregroundPainter: _WaveformProgressPainter(
-          leftChannel: leftChannel,
-          rightChannel: rightChannel,
-          progress: progress.clamp(0.0, 1.0),
-          activeColor: VineTheme.whiteText,
-          inactiveColor: VineTheme.whiteText.withValues(alpha: 0.32),
-          activeBackgroundColor: VineTheme.scrim15,
-          audioDuration: audioDuration,
-          maxDuration: _maxDuration,
-        ),
-      ),
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: _WaveformConstants.animationDuration,
+      curve: _WaveformConstants.animationCurve,
+      builder: (context, heightFactor, child) {
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: VineTheme.scrim15,
+            borderRadius: .circular(4),
+          ),
+          child: CustomPaint(
+            size: const Size(
+              double.infinity,
+              _WaveformConstants.waveformHeight,
+            ),
+            foregroundPainter: _WaveformProgressPainter(
+              leftChannel: leftChannel,
+              rightChannel: rightChannel,
+              progress: progress.clamp(0.0, 1.0),
+              activeColor: VineTheme.whiteText,
+              inactiveColor: VineTheme.whiteText.withValues(alpha: 0.32),
+              activeBackgroundColor: VineTheme.scrim15,
+              audioDuration: audioDuration,
+              maxDuration: _maxDuration,
+              heightFactor: heightFactor,
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -211,6 +231,7 @@ class _WaveformProgressPainter extends CustomPainter {
     this.activeBackgroundColor,
     required this.audioDuration,
     required this.maxDuration,
+    this.heightFactor = 1.0,
   });
 
   final Float32List leftChannel;
@@ -221,6 +242,9 @@ class _WaveformProgressPainter extends CustomPainter {
   final Color? activeBackgroundColor;
   final Duration audioDuration;
   final Duration maxDuration;
+
+  /// Multiplier for bar heights (0.0 to 1.0) used for entrance animation.
+  final double heightFactor;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -328,16 +352,15 @@ class _WaveformProgressPainter extends CustomPainter {
     required int visibleSampleCount,
     required double progressX,
   }) {
-    const barWidth = 2.0;
-    const barSpacing = 1.0;
-    const minBarHeight = 1.0; // Match empty bars minimum
-    final barStep = barWidth + barSpacing;
-    final barCount = (waveformWidth / barStep).floor();
+    final barCount = (waveformWidth / _WaveformConstants.barStep).floor();
 
     if (barCount <= 0 || visibleSampleCount <= 0) return;
 
+    final scaledHalfHeight =
+        halfHeight * _WaveformConstants.amplitudeScale * heightFactor;
+
     for (var i = 0; i < barCount; i++) {
-      final x = i * barStep;
+      final x = i * _WaveformConstants.barStep;
 
       // Map bar position to sample index within visible samples
       final sampleIndex = ((i / barCount) * visibleSampleCount).floor();
@@ -350,13 +373,13 @@ class _WaveformProgressPainter extends CustomPainter {
           ? rightSamples[sampleIndex].abs().clamp(0.0, 1.0)
           : 0.0;
 
-      // Calculate bar heights (minimum for visibility)
-      final topHeight = (leftAmp * halfHeight * 0.9).clamp(
-        minBarHeight,
+      // Calculate bar heights (minimum for visibility), scaled by animation
+      final topHeight = (leftAmp * scaledHalfHeight).clamp(
+        _WaveformConstants.minBarHeight,
         halfHeight,
       );
-      final bottomHeight = (rightAmp * halfHeight * 0.9).clamp(
-        minBarHeight,
+      final bottomHeight = (rightAmp * scaledHalfHeight).clamp(
+        _WaveformConstants.minBarHeight,
         halfHeight,
       );
 
@@ -373,8 +396,8 @@ class _WaveformProgressPainter extends CustomPainter {
       // Draw single connected bar spanning both channels
       canvas.drawRRect(
         .fromRectAndRadius(
-          .fromLTWH(x, topY, barWidth, totalHeight),
-          const .circular(1),
+          .fromLTWH(x, topY, _WaveformConstants.barWidth, totalHeight),
+          _WaveformConstants.barRadius,
         ),
         paint,
       );
@@ -389,6 +412,7 @@ class _WaveformProgressPainter extends CustomPainter {
         oldDelegate.leftChannel != leftChannel ||
         oldDelegate.rightChannel != rightChannel ||
         oldDelegate.audioDuration != audioDuration ||
-        oldDelegate.maxDuration != maxDuration;
+        oldDelegate.maxDuration != maxDuration ||
+        oldDelegate.heightFactor != heightFactor;
   }
 }
