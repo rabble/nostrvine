@@ -446,6 +446,33 @@ void main() {
         );
       });
 
+      test('handles numeric fields as doubles from REST API', () {
+        final json = {
+          'id': 'test-id',
+          'pubkey': 'test-pubkey',
+          'created_at': 1700000000,
+          'kind': 34236,
+          'd_tag': 'video-1',
+          'title': 'Test',
+          'thumbnail': 'https://example.com/thumb.jpg',
+          'video_url': 'https://example.com/video.mp4',
+          'reactions': 10.0,
+          'comments': 5.0,
+          'reposts': 2.0,
+          'engagement_score': 125.0,
+          'loops': 42.0,
+          'views': 100.0,
+        };
+
+        final stats = VideoStats.fromJson(json);
+        expect(stats.reactions, equals(10));
+        expect(stats.comments, equals(5));
+        expect(stats.reposts, equals(2));
+        expect(stats.engagementScore, equals(125));
+        expect(stats.loops, equals(42));
+        expect(stats.views, equals(100));
+      });
+
       test('normalizes empty values to null', () {
         final json = {
           'id': 'test-id',
