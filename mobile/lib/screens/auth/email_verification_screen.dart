@@ -56,6 +56,7 @@ class EmailVerificationScreen extends ConsumerStatefulWidget {
 class _EmailVerificationScreenState
     extends ConsumerState<EmailVerificationScreen> {
   bool _isTokenMode = false;
+  String? _tokenModeError;
 
   /// Get the app-level cubit provided in main.dart
   EmailVerificationCubit get _cubit => context.read<EmailVerificationCubit>();
@@ -167,7 +168,8 @@ class _EmailVerificationScreenState
         );
         if (mounted) {
           setState(() {
-            // Show error in UI
+            _tokenModeError =
+                result.error ?? result.message ?? 'Verification failed';
           });
         }
       }
@@ -177,6 +179,11 @@ class _EmailVerificationScreenState
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,
       );
+      if (mounted) {
+        setState(() {
+          _tokenModeError = 'Verification failed. Please try again.';
+        });
+      }
     }
   }
 
@@ -286,6 +293,11 @@ class _EmailVerificationScreenState
   }
 
   Widget _buildContent(EmailVerificationState state) {
+    // Token-mode error takes priority when in token mode
+    if (_isTokenMode && _tokenModeError != null) {
+      return _buildErrorContent(_tokenModeError!);
+    }
+
     switch (state.status) {
       case EmailVerificationStatus.initial:
         return _buildLoadingContent(null);
@@ -363,16 +375,14 @@ class _EmailVerificationScreenState
             ),
           ],
         ),
-        if (isPollingMode) ...[
-          const SizedBox(height: 32),
-          TextButton(
-            onPressed: _handleCancel,
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.white70, fontSize: 16),
-            ),
+        const SizedBox(height: 32),
+        TextButton(
+          onPressed: isPollingMode ? _handleCancel : _handleGoBack,
+          child: Text(
+            'Cancel',
+            style: TextStyle(color: VineTheme.onSurfaceVariant, fontSize: 16),
           ),
-        ],
+        ),
       ],
     );
   }

@@ -186,13 +186,27 @@ class AndroidNostrSigner implements NostrSigner {
     intent.putExtra("type", "get_public_key");
     intent.putExtra("permissions", jsonEncode(permissions));
 
+    developer.log(
+      '[AndroidNostrSigner] getPublicKey: sending intent '
+      'package=$_package',
+    );
+
     return _lock.synchronized(() async {
       var result = await AndroidPlugin.startForResult(intent);
+      developer.log(
+        '[AndroidNostrSigner] getPublicKey: result=${result != null ? "non-null" : "null"}',
+      );
       if (result != null) {
         var package = result.data.getExtra("package");
+        developer.log('[AndroidNostrSigner] getPublicKey: package=$package');
         _package = package;
 
         var signature = result.data.getExtra("signature");
+        developer.log(
+          '[AndroidNostrSigner] getPublicKey: '
+          'signature=${signature != null ? "${signature.runtimeType}:${(signature is String && signature.length > 10) ? "${signature.substring(0, 10)}..." : signature}" : "null"}, '
+          'result_extra=${result.data.getExtra("result")}',
+        );
         if (signature != null && signature is String) {
           if (Nip19.isPubkey(signature)) {
             // npub
@@ -202,6 +216,22 @@ class AndroidNostrSigner implements NostrSigner {
             // hex pubkey
             _pubkey = signature;
             _npub = Nip19.encodePubKey(signature);
+          }
+          return _pubkey;
+        }
+
+        // Try result extra as fallback
+        var resultExtra = result.data.getExtra("result");
+        if (resultExtra != null && resultExtra is String) {
+          developer.log(
+            '[AndroidNostrSigner] getPublicKey: using result extra as fallback',
+          );
+          if (Nip19.isPubkey(resultExtra)) {
+            _npub = resultExtra;
+            _pubkey = Nip19.decode(resultExtra);
+          } else {
+            _pubkey = resultExtra;
+            _npub = Nip19.encodePubKey(resultExtra);
           }
           return _pubkey;
         }
@@ -425,19 +455,30 @@ class AndroidNostrSigner implements NostrSigner {
     List<String> valueNames,
   ) async {
     if (StringUtil.isBlank(_package)) {
+      developer.log(
+        '[AndroidNostrSigner] _contentResolverQuery: skipping $method '
+        '- no package set',
+      );
       return {};
     }
 
     try {
+      final uri = "content://$_package.$method";
+      developer.log('[AndroidNostrSigner] _contentResolverQuery: $uri');
       var cursor = await AndroidContentResolver.instance.query(
-        uri: "content://$_package.$method",
+        uri: uri,
         projection: args,
       );
       var values = await _getValuesFromCursor(cursor, valueNames);
+      developer.log(
+        '[AndroidNostrSigner] _contentResolverQuery: $method '
+        'returned ${values.keys.join(", ")}',
+      );
       return values;
     } catch (e) {
-      developer.log("contentResolverQuery exception");
-      developer.log('$e');
+      developer.log(
+        '[AndroidNostrSigner] _contentResolverQuery: $method exception: $e',
+      );
     }
 
     return {};

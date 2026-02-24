@@ -4,7 +4,9 @@
 import 'dart:async';
 
 import 'package:app_links/app_links.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/auth/email_verification_screen.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -27,14 +29,15 @@ class EmailVerificationListener {
 
     // Handle link that launches the app from a closed state
     _appLinks.getInitialLink().then((uri) {
-      if (uri != null) _handleUri(uri);
+      if (uri != null) handleUri(uri);
     });
 
     // Handle links while app is running in background
-    _subscription = _appLinks.uriLinkStream.listen(_handleUri);
+    _subscription = _appLinks.uriLinkStream.listen(handleUri);
   }
 
-  Future<void> _handleUri(Uri uri) async {
+  @visibleForTesting
+  Future<void> handleUri(Uri uri) async {
     Log.info(
       'Callback from host ${uri.host} path: ${uri.path}',
       name: '$EmailVerificationListener',
@@ -55,7 +58,33 @@ class EmailVerificationListener {
     final params = uri.queryParameters;
 
     if (params.containsKey('token')) {
-      final token = params['token'];
+      final token = params['token']!;
+
+      // Call verifyEmail directly - this is the critical step.
+      // The router redirect blocks /verify-email for authenticated users
+      // (including anonymous), so navigation alone won't work. Calling
+      // verifyEmail here triggers the server-side flow (creates user, stores
+      // keys, puts OAuth code in Redis) which the already-running poll will
+      // detect and complete the login.
+      final oauth = ref.read(oauthClientProvider);
+      oauth
+          .verifyEmail(token: token)
+          .then((_) {
+            Log.info(
+              'verifyEmail succeeded from deep link',
+              name: '$EmailVerificationListener',
+              category: LogCategory.auth,
+            );
+          })
+          .catchError((Object e) {
+            Log.error(
+              'verifyEmail failed from deep link: $e',
+              name: '$EmailVerificationListener',
+              category: LogCategory.auth,
+            );
+          });
+
+      // Still attempt navigation in case the screen can handle it
       final router = ref.read(goRouterProvider);
       router.go('${EmailVerificationScreen.path}?token=$token');
     }

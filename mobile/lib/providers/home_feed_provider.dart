@@ -9,12 +9,14 @@ import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
+import 'package:openvine/providers/nostr_client_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/utils/video_nostr_enrichment.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'home_feed_provider.g.dart';
@@ -180,11 +182,18 @@ class HomeFeed extends _$HomeFeed {
             feedResult.videos,
           );
 
+          // Enrich REST API videos with Nostr tags for ProofMode badge
+          final nostrEnrichedVideos = await enrichVideosWithNostrTags(
+            enrichedVideos,
+            nostrService: ref.read(nostrServiceProvider),
+            callerName: 'HomeFeedProvider',
+          );
+
           _usingRestApi = true;
           _restApiSucceededOnce = true;
           _nextCursor = feedResult.nextCursor;
           _hasMoreFromApi = feedResult.hasMore;
-          followingVideosFromSource = enrichedVideos;
+          followingVideosFromSource = nostrEnrichedVideos;
 
           Log.info(
             '✅ HomeFeed: Got ${feedResult.videos.length} videos from REST API, '
@@ -835,11 +844,19 @@ class HomeFeed extends _$HomeFeed {
           );
           if (!ref.mounted) return;
 
+          // Enrich REST API videos with Nostr tags for ProofMode badge
+          final nostrEnrichedVideos = await enrichVideosWithNostrTags(
+            enrichedVideos,
+            nostrService: ref.read(nostrServiceProvider),
+            callerName: 'HomeFeedProvider',
+          );
+          if (!ref.mounted) return;
+
           // Deduplicate and merge (case-insensitive for Nostr IDs)
           final existingIds = currentState.videos
               .map((v) => v.id.toLowerCase())
               .toSet();
-          final newVideos = enrichedVideos
+          final newVideos = nostrEnrichedVideos
               .where((v) => !existingIds.contains(v.id.toLowerCase()))
               .where((v) => v.isSupportedOnCurrentPlatform)
               .toList();
@@ -989,11 +1006,19 @@ class HomeFeed extends _$HomeFeed {
         );
         if (!ref.mounted) return;
 
+        // Enrich REST API videos with Nostr tags for ProofMode badge
+        final nostrEnrichedVideos = await enrichVideosWithNostrTags(
+          enrichedVideos,
+          nostrService: ref.read(nostrServiceProvider),
+          callerName: 'HomeFeedProvider',
+        );
+        if (!ref.mounted) return;
+
         _usingRestApi = true;
         _nextCursor = feedResult.nextCursor;
         _hasMoreFromApi = feedResult.hasMore;
 
-        var videos = enrichedVideos
+        var videos = nostrEnrichedVideos
             .where((v) => v.isSupportedOnCurrentPlatform)
             .toList();
 

@@ -10,12 +10,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/hashtag_search/hashtag_search_bloc.dart';
 import 'package:openvine/blocs/user_search/user_search_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/hashtag_screen_router.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
@@ -23,6 +23,7 @@ import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/utils/search_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/composable_video_grid.dart';
+import 'package:openvine/widgets/hashtag_search_view.dart';
 import 'package:openvine/widgets/user_search_view.dart';
 
 /// Pure search screen using revolutionary single-controller Riverpod architecture
@@ -68,9 +69,9 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
   final FocusNode _searchFocusNode = FocusNode();
   late TabController _tabController;
   late UserSearchBloc _userSearchBloc;
+  late HashtagSearchBloc _hashtagSearchBloc;
 
   List<VideoEvent> _videoResults = [];
-  List<String> _hashtagResults = [];
 
   bool _isSearching = false;
   bool _isSearchingExternal = false;
@@ -85,6 +86,9 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     _tabController = TabController(length: 3, vsync: this);
     _userSearchBloc = UserSearchBloc(
       profileRepository: ref.read(profileRepositoryProvider)!,
+    );
+    _hashtagSearchBloc = HashtagSearchBloc(
+      hashtagRepository: ref.read(hashtagRepositoryProvider),
     );
     _searchController.addListener(_onSearchChanged);
 
@@ -123,6 +127,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     _tabController.dispose();
     _debounceTimer?.cancel();
     _userSearchBloc.close();
+    _hashtagSearchBloc.close();
     super.dispose();
 
     Log.info('🔍 SearchScreenPure: Disposed', category: LogCategory.video);
@@ -134,6 +139,7 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     if (query == _currentQuery) return;
 
     _userSearchBloc.add(UserSearchQueryChanged(query));
+    _hashtagSearchBloc.add(HashtagSearchQueryChanged(query));
 
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 300), () {
@@ -150,13 +156,13 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
 
       setState(() {
         _videoResults = [];
-        _hashtagResults = [];
         _isSearching = false;
         _isSearchingExternal = false;
         _isSearchingWebSocket = false;
         _currentQuery = '';
       });
       _userSearchBloc.add(const UserSearchCleared());
+      _hashtagSearchBloc.add(const HashtagSearchCleared());
       return;
     }
 
@@ -199,33 +205,18 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
         return score >= 0.3;
       }).toList();
 
-      // Extract unique hashtags from local results
-      final hashtags = <String>{};
-
-      for (final video in filteredVideos) {
-        for (final tag in video.hashtags) {
-          if (tag.toLowerCase().contains(query.toLowerCase())) {
-            hashtags.add(tag);
-          }
-        }
-      }
-
       filteredVideos.sort(VideoEvent.compareByLoopsThenTime);
 
       if (mounted) {
         setState(() {
           _videoResults = filteredVideos;
-          _hashtagResults = hashtags.take(20).toList();
           _isSearching = false;
         });
         ref.read(searchScreenVideosProvider.notifier).state = filteredVideos;
 
         ScreenAnalyticsService().markDataLoaded(
           'search',
-          dataMetrics: {
-            'video_count': filteredVideos.length,
-            'hashtag_count': hashtags.length,
-          },
+          dataMetrics: {'video_count': filteredVideos.length},
         );
       }
 
@@ -423,20 +414,8 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     // Sort: by loops then time
     uniqueVideos.sort(VideoEvent.compareByLoopsThenTime);
 
-    // Extract all unique hashtags from combined results
-    final allHashtags = <String>{};
-
-    for (final video in uniqueVideos) {
-      for (final tag in video.hashtags) {
-        if (tag.toLowerCase().contains(querySnapshot.toLowerCase())) {
-          allHashtags.add(tag);
-        }
-      }
-    }
-
     setState(() {
       _videoResults = uniqueVideos;
-      _hashtagResults = allHashtags.take(20).toList();
     });
     // Update provider so active video system can access merged search results
     ref.read(searchScreenVideosProvider.notifier).state = uniqueVideos;
@@ -523,27 +502,33 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       bloc: _userSearchBloc,
       builder: (context, userSearchState) {
         final userCount = userSearchState.results.length;
-        return TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabAlignment: TabAlignment.start,
-          padding: const EdgeInsets.only(left: 16),
-          indicatorColor: VineTheme.tabIndicatorGreen,
-          indicatorWeight: 4,
-          indicatorSize: TabBarIndicatorSize.tab,
-          dividerColor: Colors.transparent,
-          labelColor: VineTheme.whiteText,
-          unselectedLabelColor: VineTheme.tabIconInactive,
-          labelPadding: const EdgeInsets.symmetric(horizontal: 14),
-          labelStyle: VineTheme.tabTextStyle(),
-          unselectedLabelStyle: VineTheme.tabTextStyle(
-            color: VineTheme.tabIconInactive,
-          ),
-          tabs: [
-            Tab(text: 'Videos (${_videoResults.length})'),
-            Tab(text: 'Users ($userCount)'),
-            Tab(text: 'Hashtags (${_hashtagResults.length})'),
-          ],
+        return BlocBuilder<HashtagSearchBloc, HashtagSearchState>(
+          bloc: _hashtagSearchBloc,
+          builder: (context, hashtagSearchState) {
+            final hashtagCount = hashtagSearchState.results.length;
+            return TabBar(
+              controller: _tabController,
+              isScrollable: true,
+              tabAlignment: TabAlignment.start,
+              padding: const EdgeInsets.only(left: 16),
+              indicatorColor: VineTheme.tabIndicatorGreen,
+              indicatorWeight: 4,
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelColor: VineTheme.whiteText,
+              unselectedLabelColor: VineTheme.tabIconInactive,
+              labelPadding: const EdgeInsets.symmetric(horizontal: 14),
+              labelStyle: VineTheme.tabTextStyle(),
+              unselectedLabelStyle: VineTheme.tabTextStyle(
+                color: VineTheme.tabIconInactive,
+              ),
+              tabs: [
+                Tab(text: 'Videos (${_videoResults.length})'),
+                Tab(text: 'Users ($userCount)'),
+                Tab(text: 'Hashtags ($hashtagCount)'),
+              ],
+            );
+          },
         );
       },
     );
@@ -553,14 +538,17 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
       children: [
         _buildVideosTab(),
         const UserSearchView(),
-        _buildHashtagsTab(),
+        const HashtagSearchView(),
       ],
     );
 
     // Embedded mode: return content without scaffold
     if (widget.embedded) {
-      return BlocProvider.value(
-        value: _userSearchBloc,
+      return MultiBlocProvider(
+        providers: [
+          BlocProvider.value(value: _userSearchBloc),
+          BlocProvider.value(value: _hashtagSearchBloc),
+        ],
         child: Material(
           color: VineTheme.backgroundColor,
           child: Column(
@@ -579,8 +567,11 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
     }
 
     // Standalone mode: return full scaffold with app bar
-    return BlocProvider.value(
-      value: _userSearchBloc,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider.value(value: _userSearchBloc),
+        BlocProvider.value(value: _hashtagSearchBloc),
+      ],
       child: Scaffold(
         backgroundColor: VineTheme.backgroundColor,
         appBar: AppBar(
@@ -731,83 +722,6 @@ class _SearchScreenPureState extends ConsumerState<SearchScreenPure>
           ),
         ),
       ],
-    );
-  }
-
-  Widget _buildHashtagsTab() {
-    if (_isSearching) {
-      return Center(
-        child: CircularProgressIndicator(color: VineTheme.vineGreen),
-      );
-    }
-
-    if (_currentQuery.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.tag, size: 64, color: VineTheme.secondaryText),
-            const SizedBox(height: 16),
-            Text(
-              'Search for hashtags',
-              style: TextStyle(color: VineTheme.primaryText, fontSize: 18),
-            ),
-            Text(
-              'Discover trending topics and content',
-              style: TextStyle(color: VineTheme.secondaryText),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_hashtagResults.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.tag_outlined, size: 64, color: VineTheme.secondaryText),
-            const SizedBox(height: 16),
-            Text(
-              'No hashtags found for "$_currentQuery"',
-              style: TextStyle(color: VineTheme.primaryText, fontSize: 18),
-            ),
-          ],
-        ),
-      );
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: _hashtagResults.length,
-      itemBuilder: (context, index) {
-        final hashtag = _hashtagResults[index];
-        return Card(
-          color: VineTheme.cardBackground,
-          child: ListTile(
-            leading: Icon(Icons.tag, color: VineTheme.vineGreen),
-            title: Text(
-              '#$hashtag',
-              style: TextStyle(
-                color: VineTheme.primaryText,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            subtitle: Text(
-              'Tap to view videos with this hashtag',
-              style: TextStyle(color: VineTheme.secondaryText),
-            ),
-            onTap: () {
-              Log.info(
-                '🔍 SearchScreenPure: Tapped hashtag: $hashtag',
-                category: LogCategory.video,
-              );
-              // Navigate using GoRouter
-              context.go(HashtagScreenRouter.pathForTag(hashtag));
-            },
-          ),
-        );
-      },
     );
   }
 }

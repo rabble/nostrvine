@@ -896,6 +896,14 @@ class _DivineAppState extends ConsumerState<DivineApp> {
                 );
               }
               break;
+            case DeepLinkType.signerCallback:
+              Log.info(
+                '📱 Signer callback - triggering relay reconnection',
+                name: 'DeepLinkHandler',
+                category: LogCategory.auth,
+              );
+              ref.read(authServiceProvider).onSignerCallbackReceived();
+              break;
             case DeepLinkType.unknown:
               Log.warning(
                 '📱 Unknown deep link type',
@@ -983,7 +991,13 @@ class _DivineAppState extends ConsumerState<DivineApp> {
           // Go back to explore
           router.go(ExploreScreen.path);
           return true; // Handled
-
+        case RouteType.videoRecorder:
+        case RouteType.videoClipEditor:
+        case RouteType.videoEditor:
+        case RouteType.videoMetadata:
+          // Pop the video editing flow screens
+          router.pop();
+          return true; // Handled
         default:
           break;
       }

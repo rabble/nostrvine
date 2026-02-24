@@ -89,11 +89,15 @@ void main() {
       ];
     }
 
-    Widget buildSubject({FullscreenFeedState? state}) {
+    Widget buildSubject({
+      FullscreenFeedState? state,
+      List<dynamic>? additionalOverrides,
+    }) {
       final effectiveState = state ?? const FullscreenFeedState();
       when(() => mockBloc.state).thenReturn(effectiveState);
 
       return testMaterialApp(
+        additionalOverrides: additionalOverrides,
         home: BlocProvider<FullscreenFeedBloc>.value(
           value: mockBloc,
           child: const FullscreenFeedContent(),
@@ -221,6 +225,7 @@ void main() {
               status: FullscreenFeedStatus.ready,
               videos: videos,
               currentIndex: 0,
+              canLoadMore: true,
             ),
           ),
         );
