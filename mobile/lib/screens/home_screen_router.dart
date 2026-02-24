@@ -1,6 +1,7 @@
 // ABOUTME: Router-driven HomeScreen using pooled_video_player (media_kit)
 // ABOUTME: Matches explore feed architecture for consistent video playback
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,7 +21,6 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 /// Router-driven HomeScreen - uses pooled_video_player for playback
@@ -431,13 +431,19 @@ class _EmptyHomeFeed extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
-            FilledButton(
+            FilledButton.icon(
               onPressed: () => context.go(ExploreScreen.path),
               style: FilledButton.styleFrom(
-                backgroundColor: VineTheme.vineGreen,
+                backgroundColor: VineTheme.surfaceContainer,
                 foregroundColor: VineTheme.primary,
+                padding: const EdgeInsets.only(left: 24, right: 16),
               ),
-              child: const Text('Go explore'),
+              icon: const Icon(Icons.arrow_forward, size: 24),
+              iconAlignment: IconAlignment.end,
+              label: Text(
+                'Go explore',
+                style: VineTheme.titleMediumFont(color: VineTheme.primary),
+              ),
             ),
           ],
         ),
