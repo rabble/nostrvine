@@ -5,6 +5,7 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/video_publish/video_publish_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
 
 part 'background_publish_event.dart';
 part 'background_publish_state.dart';
@@ -53,6 +54,12 @@ class BackgroundPublishBloc
     try {
       result = await event.publishmentProcess;
     } catch (e, stackTrace) {
+      Log.error(
+        'Publish process threw an exception: $e',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
       addError(e, stackTrace);
       result = const PublishError('Failed to publish video. Please try again.');
     }
