@@ -102,7 +102,6 @@
 | `profile_stats_provider_test.dart` | 96, 127 | 2 | `skip: true` |
 | `readiness_gate_providers_test.dart` | 110 | 1 | `skip: true` |
 | `seen_videos_notifier_test.dart` | 155 | 1 | `skip: true` |
-| `user_profile_provider_test.dart` | 187, 254, 286, 358, 391, 479, 525 | 7 | `skip: true` |
 | `video_controller_lifecycle_test.dart` | 198 | 1 | `skip: true` |
 | `video_events_listener_simple_test.dart` | 78, 115, 205, 242 | 4 | `skip: true` |
 | `video_events_provider_fresh_test.dart` | 158 | 1 | `skip: true` |
@@ -324,4 +323,3 @@ These files have some tests commented out while others remain active.
 | `test/services/curation_service_create_test.dart` | 7 |
 | `test/services/video_event_service_deduplication_test.dart` | 7 |
 | `test/unit/services/video_event_service_deduplication_test.dart` | 7 |
-| `test/providers/user_profile_provider_test.dart` | 7 |
