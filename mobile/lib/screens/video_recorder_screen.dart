@@ -45,19 +45,16 @@ class VideoRecorderScreen extends ConsumerStatefulWidget {
 class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     with WidgetsBindingObserver {
   VideoRecorderNotifier? _notifier;
-  late final SoundWaveformBloc _soundWaveformBloc;
   ProviderSubscription<AudioEvent?>? _soundSubscription;
 
   @override
   void initState() {
     super.initState();
-    _soundWaveformBloc = SoundWaveformBloc();
     WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _initializeCamera();
       _checkAutosavedChanges();
-      _setupSoundWaveformListener();
     });
     Log.info('📹 Initialized', name: 'VideoRecorderScreen', category: .video);
   }
@@ -146,7 +143,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
   }
 
   /// Listens to sound selection changes and extracts waveform data.
-  void _setupSoundWaveformListener() {
+  void _setupSoundWaveformListener(SoundWaveformBloc bloc) {
     Log.info(
       '🎵 _setupSoundWaveformListener called',
       name: 'VideoRecorderScreen',
@@ -160,7 +157,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
       name: 'VideoRecorderScreen',
       category: LogCategory.video,
     );
-    _triggerWaveformExtraction(initialSound);
+    _triggerWaveformExtraction(bloc, initialSound);
 
     // Listen for future changes using listenManual (works outside build phase)
     _soundSubscription = ref.listenManual<AudioEvent?>(selectedSoundProvider, (
@@ -172,12 +169,12 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
         name: 'VideoRecorderScreen',
         category: LogCategory.video,
       );
-      _triggerWaveformExtraction(next);
+      _triggerWaveformExtraction(bloc, next);
     });
   }
 
   /// Triggers waveform extraction for the given sound.
-  void _triggerWaveformExtraction(AudioEvent? sound) {
+  void _triggerWaveformExtraction(SoundWaveformBloc bloc, AudioEvent? sound) {
     Log.info(
       '🎵 _triggerWaveformExtraction: ${sound?.id ?? 'null'}, '
       'isBundled: ${sound?.isBundled}, url: ${sound?.url}',
@@ -186,7 +183,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     );
 
     if (sound == null) {
-      _soundWaveformBloc.add(const SoundWaveformClear());
+      bloc.add(const SoundWaveformClear());
       return;
     }
 
@@ -199,7 +196,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
         category: LogCategory.video,
       );
       if (assetPath != null) {
-        _soundWaveformBloc.add(
+        bloc.add(
           SoundWaveformExtract(
             path: assetPath,
             soundId: sound.id,
@@ -212,9 +209,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
 
     // Handle network sounds
     if (sound.url != null) {
-      _soundWaveformBloc.add(
-        SoundWaveformExtract(path: sound.url!, soundId: sound.id),
-      );
+      bloc.add(SoundWaveformExtract(path: sound.url!, soundId: sound.id));
     }
   }
 
@@ -228,7 +223,6 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
   @override
   Future<void> dispose() async {
     unawaited(_notifier?.destroy());
-    unawaited(_soundWaveformBloc.close());
     _soundSubscription?.close();
 
     WidgetsBinding.instance.removeObserver(this);
@@ -242,8 +236,13 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
   Widget build(BuildContext context) {
     const backgroundColor = Color(0xFF000A06);
 
-    return BlocProvider<SoundWaveformBloc>.value(
-      value: _soundWaveformBloc,
+    return BlocProvider<SoundWaveformBloc>(
+      create: (context) {
+        final bloc = SoundWaveformBloc();
+        _setupSoundWaveformListener(bloc);
+
+        return bloc;
+      },
       child: const AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle(
           statusBarColor: backgroundColor,
