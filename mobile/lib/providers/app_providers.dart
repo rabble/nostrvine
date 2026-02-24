@@ -452,6 +452,7 @@ FlutterSecureStorage flutterSecureStorage(Ref ref) => FlutterSecureStorage(
     resetOnError: true,
   ),
   mOptions: MacOsOptions(useDataProtectionKeyChain: false),
+  lOptions: const LinuxOptions(),
 );
 
 @Riverpod(keepAlive: true)
