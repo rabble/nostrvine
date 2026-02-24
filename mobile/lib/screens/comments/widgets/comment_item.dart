@@ -318,17 +318,30 @@ class _CommentHeader extends ConsumerWidget {
 
 /// Returns true if [text] contains only emoji characters (up to 3 grapheme
 /// clusters) with no text, mentions, or other content.
+///
+/// Handles compound emojis correctly: Dart's `.characters` segments ZWJ
+/// sequences (e.g. 👨‍👩‍👧‍👦), skin-tone variants (👋🏿), flags (🇺🇸),
+/// and keycap sequences (1️⃣) as single grapheme clusters. The regex then
+/// validates that each grapheme consists only of emoji-related code points.
 bool _isEmojiOnly(String text) {
   final trimmed = text.trim();
   if (trimmed.isEmpty) return false;
   final graphemes = trimmed.characters;
   if (graphemes.length > 3) return false;
-  // Check each grapheme is emoji (no ASCII text, no nostr: mentions)
+  // Check each grapheme is emoji (no ASCII text, no nostr: mentions).
+  // Includes Emoji_Component for keycap (\u20e3) and tag sequences,
+  // and Regional_Indicator for flag emojis.
   final emojiRegex = RegExp(
-    r'^[\p{Emoji_Presentation}\p{Emoji}\u200d\ufe0f]+$',
+    r'^[\p{Emoji_Presentation}\p{Emoji}\p{Emoji_Component}'
+    r'\u200d\ufe0f\u20e3\p{Regional_Indicator}]+$',
     unicode: true,
   );
-  return graphemes.every((g) => emojiRegex.hasMatch(g));
+  // Exclude bare ASCII digits/symbols that have \p{Emoji} but aren't
+  // visually emoji (e.g. "0"-"9", "#", "*").
+  final asciiTextRegex = RegExp(r'^[0-9#*]$');
+  return graphemes.every(
+    (g) => emojiRegex.hasMatch(g) && !asciiTextRegex.hasMatch(g),
+  );
 }
 
 /// Font size for emoji-only comments (1-3 emoji with no text).
@@ -561,7 +574,7 @@ class _CommentVoteButtons extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2),
                 child: Text(
-                  _formatScore(netScore),
+                  netScore.formatScore,
                   style: VineTheme.bodyFont(
                     fontSize: 12,
                     color: voteState.isUpvoted
@@ -613,18 +626,20 @@ class _CommentVoteButtons extends StatelessWidget {
       },
     );
   }
+}
 
-  /// Formats a score with k/M suffix for large numbers.
-  static String _formatScore(int score) {
-    final abs = score.abs();
-    final prefix = score < 0 ? '-' : '';
+/// Formats an [int] score with k/M suffix for large numbers.
+extension _ScoreFormatting on int {
+  String get formatScore {
+    final abs = this.abs();
+    final prefix = this < 0 ? '-' : '';
     if (abs >= 1000000) {
       return '$prefix${(abs / 1000000).toStringAsFixed(1)}M';
     }
     if (abs >= 1000) {
       return '$prefix${(abs / 1000).toStringAsFixed(1)}k';
     }
-    return '$score';
+    return '$this';
   }
 }
 

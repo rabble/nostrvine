@@ -376,11 +376,7 @@ class _MainCommentInputState extends ConsumerState<_MainCommentInput> {
           },
           onSubmit: () {
             if (isEditMode) {
-              context.read<CommentsBloc>().add(
-                CommentEditSubmitted(
-                  originalCommentId: state.activeEditCommentId!,
-                ),
-              );
+              context.read<CommentsBloc>().add(const CommentEditSubmitted());
             } else if (isReplyMode) {
               context.read<CommentsBloc>().add(
                 CommentSubmitted(

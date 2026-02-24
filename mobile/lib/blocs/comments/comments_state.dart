@@ -198,17 +198,16 @@ final class CommentsState extends Equatable {
   /// Text content of the edit input buffer.
   final String editInputText;
 
-  /// All comments sorted according to [sortMode].
-  List<Comment> get comments {
-    final list = commentsById.values.toList();
+  /// Returns a comparator for sorting comments based on [sortMode].
+  Comparator<Comment> get _commentComparator {
     switch (sortMode) {
       case CommentsSortMode.newest:
-        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return (a, b) => b.createdAt.compareTo(a.createdAt);
       case CommentsSortMode.oldest:
-        list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        return (a, b) => a.createdAt.compareTo(b.createdAt);
       case CommentsSortMode.topEngagement:
         final now = DateTime.now();
-        list.sort((a, b) {
+        return (a, b) {
           final scoreA = CommentsBloc.engagementScore(
             comment: a,
             now: now,
@@ -222,10 +221,13 @@ final class CommentsState extends Equatable {
             replyCounts: replyCountsByCommentId,
           );
           return scoreB.compareTo(scoreA);
-        });
+        };
     }
-    return list;
   }
+
+  /// All comments sorted according to [sortMode].
+  List<Comment> get comments =>
+      commentsById.values.toList()..sort(_commentComparator);
 
   /// Threaded comments as a flat display list with depth info.
   /// Root comments and orphaned replies appear at depth 0.
@@ -245,36 +247,11 @@ final class CommentsState extends Equatable {
       }
     }
 
-    // Sort function based on current sortMode
-    int Function(Comment, Comment) sorter() {
-      switch (sortMode) {
-        case CommentsSortMode.newest:
-          return (a, b) => b.createdAt.compareTo(a.createdAt);
-        case CommentsSortMode.oldest:
-          return (a, b) => a.createdAt.compareTo(b.createdAt);
-        case CommentsSortMode.topEngagement:
-          final now = DateTime.now();
-          return (a, b) {
-            final scoreA = CommentsBloc.engagementScore(
-              comment: a,
-              now: now,
-              likeCounts: commentUpvoteCounts,
-              replyCounts: replyCountsByCommentId,
-            );
-            final scoreB = CommentsBloc.engagementScore(
-              comment: b,
-              now: now,
-              likeCounts: commentUpvoteCounts,
-              replyCounts: replyCountsByCommentId,
-            );
-            return scoreB.compareTo(scoreA);
-          };
-      }
-    }
+    final sorter = _commentComparator;
 
     // Build tree recursively
     List<CommentNode> buildNodes(List<Comment> comments, int depth) {
-      final sorted = List<Comment>.from(comments)..sort(sorter());
+      final sorted = List<Comment>.from(comments)..sort(sorter);
       return sorted.map((comment) {
         final children = childrenMap[comment.id] ?? [];
         return CommentNode(

@@ -85,12 +85,12 @@ final class CommentEditModeCancelled extends CommentsEvent {
   const CommentEditModeCancelled();
 }
 
-/// Submit edited comment (delete old + post new)
+/// Submit edited comment (delete old + post new).
+///
+/// Uses [CommentsState.activeEditCommentId] to identify the comment being
+/// edited, so no parameters are needed.
 final class CommentEditSubmitted extends CommentsEvent {
-  const CommentEditSubmitted({required this.originalCommentId});
-
-  /// The ID of the original comment to replace
-  final String originalCommentId;
+  const CommentEditSubmitted();
 }
 
 /// Toggle upvote on a comment (optimistic update + relay publish)
