@@ -282,7 +282,7 @@ class _FilterSegmentedControl extends StatelessWidget {
                 : () => onChanged(ContentFilterPreference.warn),
           ),
           _buildSegment(
-            label: 'Hide',
+            label: 'Filter Out',
             selected: value == ContentFilterPreference.hide,
             onTap: locked
                 ? null
