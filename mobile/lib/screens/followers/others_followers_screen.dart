@@ -67,13 +67,11 @@ class _OthersFollowersView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch blocklist at the top level for both title count and list filtering
     ref.watch(blocklistVersionProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
     final currentUserPubkey = ref.watch(nostrServiceProvider).publicKey;
     final followRepository = ref.watch(followRepositoryProvider);
-    // Hide ourselves from the target's followers if we're not actually
-    // following them (e.g. follow severed by block→unblock flow).
+
     final isFollowingTarget = followRepository?.isFollowing(pubkey) ?? false;
 
     final appBarTitle = displayName?.isNotEmpty == true

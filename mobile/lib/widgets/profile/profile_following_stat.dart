@@ -71,7 +71,6 @@ class _MyFollowingStatView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch blocklist to reactively update following count
     ref.watch(blocklistVersionProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
 
@@ -111,12 +110,14 @@ class _OthersFollowingStatView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch blocklist to reactively update following count
     ref.watch(blocklistVersionProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
     final currentUserPubkey = ref.watch(nostrServiceProvider).publicKey;
-    // If we blocked this profile owner, hide ourselves from their count
-    final hasBlockedTarget = blocklistService.isBlocked(pubkey);
+
+    // Hide ourselves from target's following count if we blocked them
+    final hideCurrentUser =
+        blocklistService.isBlocked(pubkey) ||
+        blocklistService.isFollowSevered(pubkey);
 
     return BlocBuilder<OthersFollowingBloc, OthersFollowingState>(
       builder: (context, state) {
@@ -129,7 +130,7 @@ class _OthersFollowingStatView extends ConsumerWidget {
                   .where(
                     (pk) =>
                         !blocklistService.isBlocked(pk) &&
-                        !(hasBlockedTarget && pk == currentUserPubkey),
+                        !(hideCurrentUser && pk == currentUserPubkey),
                   )
                   .length;
 

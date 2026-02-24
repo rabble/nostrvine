@@ -673,7 +673,6 @@ class _DivineAppState extends ConsumerState<DivineApp> {
             category: LogCategory.system,
           );
 
-          // Also sync kind 30000 block lists from other users
           final authService = ref.read(authServiceProvider);
           await blocklistService.syncBlockListsInBackground(
             nostrService,

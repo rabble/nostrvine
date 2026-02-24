@@ -14,6 +14,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 /// SharedPreferences key for persisted block list
 const _blockedUsersPrefsKey = 'blocked_users_list';
 
+/// SharedPreferences key for severed followers (follow broken by block)
+const _severedFollowersPrefsKey = 'severed_followers_list';
+
 /// Service for managing content blocklist
 ///
 /// This service maintains an internal blocklist of npubs whose content
@@ -27,6 +30,7 @@ class ContentBlocklistService {
     // Initialize with the specific npub requested
     _addInitialBlockedContent();
     _loadBlockedUsers();
+    _loadSeveredFollowers();
     Log.info(
       'ContentBlocklistService initialized with $totalBlockedCount blocked accounts',
       name: 'ContentBlocklistService',
@@ -49,6 +53,11 @@ class ContentBlocklistService {
 
   // Users who have blocked us (populated from kind 30000 events with d=block)
   final Set<String> _blockedByOthers = <String>{};
+
+  // Followers whose follow relationship was severed by a block.
+  // Persists across unblocking so these users remain hidden from our
+  // followers list until they explicitly re-follow.
+  final Set<String> _severedFollowers = <String>{};
 
   // Subscription tracking for mutual mutes
   String? _mutualMuteSubscriptionId;
@@ -103,6 +112,70 @@ class ContentBlocklistService {
     } catch (e) {
       Log.error(
         'Failed to persist blocked users: $e',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Load persisted severed followers from SharedPreferences
+  void _loadSeveredFollowers() {
+    final prefs = _prefs;
+    if (prefs == null) return;
+
+    final stored = prefs.getString(_severedFollowersPrefsKey);
+    if (stored == null || stored.isEmpty) return;
+
+    try {
+      final list = (jsonDecode(stored) as List<dynamic>).cast<String>();
+      _severedFollowers.addAll(list);
+      Log.info(
+        'Loaded ${list.length} severed followers from persistence',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    } catch (e) {
+      Log.error(
+        'Failed to load persisted severed followers: $e',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Save severed followers to SharedPreferences
+  void _saveSeveredFollowers() {
+    final prefs = _prefs;
+    if (prefs == null) return;
+
+    try {
+      final json = jsonEncode(_severedFollowers.toList());
+      prefs.setString(_severedFollowersPrefsKey, json);
+    } catch (e) {
+      Log.error(
+        'Failed to persist severed followers: $e',
+        name: 'ContentBlocklistService',
+        category: LogCategory.system,
+      );
+    }
+  }
+
+  /// Check if a follower's relationship was severed by a block
+  ///
+  /// Returns true if the pubkey was added to severed followers when blocked.
+  /// This persists across unblocking so the user stays hidden from our
+  /// followers list until they explicitly re-follow.
+  bool isFollowSevered(String pubkey) => _severedFollowers.contains(pubkey);
+
+  /// Remove a pubkey from the severed followers set
+  ///
+  /// Call this when the user explicitly re-follows to restore them
+  /// in the followers list.
+  void removeSeveredFollower(String pubkey) {
+    if (_severedFollowers.remove(pubkey)) {
+      _saveSeveredFollowers();
+      Log.debug(
+        'Removed severed follower: $pubkey',
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
@@ -235,6 +308,13 @@ class ContentBlocklistService {
         name: 'ContentBlocklistService',
         category: LogCategory.system,
       );
+    }
+
+    // Track as severed follower so they stay hidden from our followers
+    // list even after unblocking (until they explicitly re-follow).
+    if (!_severedFollowers.contains(pubkey)) {
+      _severedFollowers.add(pubkey);
+      _saveSeveredFollowers();
     }
   }
 

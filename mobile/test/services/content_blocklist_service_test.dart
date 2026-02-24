@@ -490,6 +490,76 @@ void main() {
     );
   });
 
+  group('ContentBlocklistService - Severed Followers', () {
+    test('blockUser adds pubkey to severed followers', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistService(prefs: prefs);
+
+      const pubkey = 'severed_follower_pubkey';
+
+      service.blockUser(pubkey);
+
+      expect(service.isFollowSevered(pubkey), isTrue);
+    });
+
+    test('unblockUser does NOT remove from severed followers', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistService(prefs: prefs);
+
+      const pubkey = 'severed_follower_pubkey';
+
+      service.blockUser(pubkey);
+      service.unblockUser(pubkey);
+
+      // No longer blocked, but still severed
+      expect(service.isBlocked(pubkey), isFalse);
+      expect(service.isFollowSevered(pubkey), isTrue);
+    });
+
+    test('severed followers persist to SharedPreferences', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistService(prefs: prefs);
+
+      service.blockUser('pubkey_1');
+      service.blockUser('pubkey_2');
+
+      // Verify persisted
+      final stored = prefs.getString('severed_followers_list');
+      expect(stored, isNotNull);
+      final list = (jsonDecode(stored!) as List<dynamic>).cast<String>();
+      expect(list, containsAll(['pubkey_1', 'pubkey_2']));
+
+      // Create new service with same prefs — should load severed followers
+      final service2 = ContentBlocklistService(prefs: prefs);
+      expect(service2.isFollowSevered('pubkey_1'), isTrue);
+      expect(service2.isFollowSevered('pubkey_2'), isTrue);
+    });
+
+    test('removeSeveredFollower clears the entry', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final service = ContentBlocklistService(prefs: prefs);
+
+      const pubkey = 'severed_follower_pubkey';
+
+      service.blockUser(pubkey);
+      expect(service.isFollowSevered(pubkey), isTrue);
+
+      service.removeSeveredFollower(pubkey);
+      expect(service.isFollowSevered(pubkey), isFalse);
+    });
+
+    test('isFollowSevered returns false for unknown pubkey', () {
+      SharedPreferences.setMockInitialValues({});
+      final service = ContentBlocklistService();
+
+      expect(service.isFollowSevered('unknown_pubkey'), isFalse);
+    });
+  });
+
   group('ContentBlocklistService - Block List Sync (kind 30000)', () {
     late ContentBlocklistService service;
     late MockNostrClient mockNostrClient;

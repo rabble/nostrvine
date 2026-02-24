@@ -61,7 +61,6 @@ class _MyFollowersView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch blocklist at the top level for both title count and list filtering
     ref.watch(blocklistVersionProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
 
@@ -107,7 +106,11 @@ class _MyFollowersView extends ConsumerWidget {
           title: appBarTitle,
           selector: (state) => state.status == MyFollowersStatus.success
               ? state.followersPubkeys
-                    .where((pk) => !blocklistService.isBlocked(pk))
+                    .where(
+                      (pk) =>
+                          !blocklistService.isBlocked(pk) &&
+                          !blocklistService.isFollowSevered(pk),
+                    )
                     .length
               : 0,
         ),
@@ -127,7 +130,11 @@ class _MyFollowersView extends ConsumerWidget {
               const Center(child: CircularProgressIndicator()),
             MyFollowersStatus.success => _FollowersListBody(
               followers: state.followersPubkeys
-                  .where((pk) => !blocklistService.isBlocked(pk))
+                  .where(
+                    (pk) =>
+                        !blocklistService.isBlocked(pk) &&
+                        !blocklistService.isFollowSevered(pk),
+                  )
                   .toList(),
             ),
             MyFollowersStatus.failure => _FollowersErrorBody(

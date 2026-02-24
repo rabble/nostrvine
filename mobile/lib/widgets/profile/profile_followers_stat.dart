@@ -77,7 +77,11 @@ class _MyFollowersStatView extends ConsumerWidget {
         final filteredCount = isLoading
             ? null
             : state.followersPubkeys
-                  .where((pk) => !blocklistService.isBlocked(pk))
+                  .where(
+                    (pk) =>
+                        !blocklistService.isBlocked(pk) &&
+                        !blocklistService.isFollowSevered(pk),
+                  )
                   .length;
 
         return ProfileStatColumn(

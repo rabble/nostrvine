@@ -68,12 +68,15 @@ class _OthersFollowingView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch blocklist at the top level for both title count and list filtering
     ref.watch(blocklistVersionProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
     final currentUserPubkey = ref.watch(nostrServiceProvider).publicKey;
-    // If we blocked this profile owner, hide ourselves from their lists
-    final hasBlockedTarget = blocklistService.isBlocked(pubkey);
+
+    // Hide ourselves from target's following list if we blocked them
+    // (currently or previously via severed follow).
+    final hideCurrentUser =
+        blocklistService.isBlocked(pubkey) ||
+        blocklistService.isFollowSevered(pubkey);
 
     final appBarTitle = displayName?.isNotEmpty == true
         ? "$displayName's Following"
@@ -105,7 +108,7 @@ class _OthersFollowingView extends ConsumerWidget {
               width: 32,
               height: 32,
               colorFilter: const ColorFilter.mode(
-                Colors.white,
+                VineTheme.whiteText,
                 BlendMode.srcIn,
               ),
             ),
@@ -120,7 +123,7 @@ class _OthersFollowingView extends ConsumerWidget {
                     .where(
                       (pk) =>
                           !blocklistService.isBlocked(pk) &&
-                          !(hasBlockedTarget && pk == currentUserPubkey),
+                          !(hideCurrentUser && pk == currentUserPubkey),
                     )
                     .length
               : 0,
@@ -136,7 +139,7 @@ class _OthersFollowingView extends ConsumerWidget {
                   .where(
                     (pk) =>
                         !blocklistService.isBlocked(pk) &&
-                        !(hasBlockedTarget && pk == currentUserPubkey),
+                        !(hideCurrentUser && pk == currentUserPubkey),
                   )
                   .toList(),
               targetPubkey: pubkey,

@@ -224,7 +224,6 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
           ourPubkey: nostrClient.publicKey,
         );
 
-        // Unfollow the blocked user if currently following
         final followRepository = ref.read(followRepositoryProvider);
         if (followRepository != null &&
             followRepository.isFollowing(widget.pubkey)) {
@@ -238,6 +237,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               .value;
           final name =
               profile?.bestDisplayName ?? widget.displayNameHint ?? 'User';
+          // TODO(SofiaRey): revisit when designs are ready
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('Blocked $name')));
@@ -253,6 +253,7 @@ class _OtherProfileViewState extends ConsumerState<OtherProfileView> {
               .value;
           final name =
               profile?.bestDisplayName ?? widget.displayNameHint ?? 'User';
+          // TODO(SofiaRey): revisit when designs are ready
           ScaffoldMessenger.of(
             context,
           ).showSnackBar(SnackBar(content: Text('Unblocked $name')));

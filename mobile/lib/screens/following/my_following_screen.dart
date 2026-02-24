@@ -50,7 +50,6 @@ class _MyFollowingView extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Watch blocklist at the top level for both title count and list filtering
     ref.watch(blocklistVersionProvider);
     final blocklistService = ref.watch(contentBlocklistServiceProvider);
 
