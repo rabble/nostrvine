@@ -679,6 +679,52 @@ class AnalyticsApiService {
     }
   }
 
+  /// Fetch raw Nostr event JSON by event ID via GET /api/event/{id}
+  ///
+  /// Returns the raw event JSON map as returned by the relay/API,
+  /// or null if unavailable (404, error, timeout).
+  Future<Map<String, dynamic>?> getRawEvent(String eventId) async {
+    if (!isAvailable || eventId.isEmpty) return null;
+
+    try {
+      final url = '$_baseUrl/api/event/$eventId';
+      Log.debug(
+        'Fetching raw event from Funnelcake: $url',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+
+      final response = await _httpClient
+          .get(
+            Uri.parse(url),
+            headers: {
+              'Accept': 'application/json',
+              'User-Agent': 'OpenVine-Mobile/1.0',
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        return data;
+      } else {
+        Log.debug(
+          'Raw event not found: ${response.statusCode}',
+          name: 'AnalyticsApiService',
+          category: LogCategory.video,
+        );
+        return null;
+      }
+    } catch (e) {
+      Log.debug(
+        'Error fetching raw event: $e',
+        name: 'AnalyticsApiService',
+        category: LogCategory.video,
+      );
+      return null;
+    }
+  }
+
   /// Get stats for a specific video
   Future<VideoStats?> getVideoStats(String eventId) async {
     if (!isAvailable || eventId.isEmpty) return null;
