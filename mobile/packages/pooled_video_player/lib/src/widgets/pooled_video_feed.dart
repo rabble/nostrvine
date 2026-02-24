@@ -121,10 +121,6 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
 
   void _onControllerChanged() {
     if (_controller.videoCount != _videoCount) {
-      debugPrint(
-        'PooledVideoFeed: videoCount changed $_videoCount → '
-        '${_controller.videoCount}',
-      );
       setState(() {
         _videoCount = _controller.videoCount;
       });

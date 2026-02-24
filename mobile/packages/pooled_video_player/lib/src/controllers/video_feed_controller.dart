@@ -303,12 +303,7 @@ class VideoFeedController extends ChangeNotifier {
   /// current index), they will be preloaded automatically.
   void addVideos(List<VideoItem> newVideos) {
     if (newVideos.isEmpty || _isDisposed) return;
-    final oldCount = _videos.length;
     _videos.addAll(newVideos);
-    debugPrint(
-      'VideoFeedController.addVideos: +${newVideos.length} videos '
-      '($oldCount → ${_videos.length}), currentIndex=$_currentIndex',
-    );
 
     if (_isActive) {
       _updatePreloadWindow(_currentIndex);
@@ -436,11 +431,6 @@ class VideoFeedController extends ChangeNotifier {
     // After _releasePlayer or a subsequent _loadPlayer, _loadedPlayers[index]
     // will either be null or a different player, making this callback stale.
     if (_loadedPlayers[index] != evictedPlayer) return;
-
-    debugPrint(
-      'VideoFeedController: player evicted at index $index '
-      '(currentIndex=$_currentIndex)',
-    );
 
     _stopPositionTimer(index);
     unawaited(_bufferSubscriptions[index]?.cancel());

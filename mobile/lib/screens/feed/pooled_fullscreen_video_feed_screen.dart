@@ -221,12 +221,6 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
         .toList();
 
     if (newVideos.isNotEmpty) {
-      debugPrint(
-        'FullscreenFeed._handleVideosChanged: '
-        '+${newVideos.length} new pooled videos, '
-        'total state.videos=${state.videos.length}, '
-        'pooledVideos=${state.pooledVideos.length}',
-      );
       controller.addVideos(newVideos);
     }
     _lastPooledVideos = state.pooledVideos;
