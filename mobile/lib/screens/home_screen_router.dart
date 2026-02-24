@@ -413,37 +413,31 @@ class _EmptyHomeFeed extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32.0),
+        padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.people_outline, size: 80, color: Colors.grey),
-            const SizedBox(height: 24),
-            const Text(
-              'Your Home Feed is Empty',
-              style: TextStyle(
-                fontSize: 22,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+            const DivineSticker(
+              sticker: DivineStickerName.vintageTvTestPattern,
+              size: 132,
             ),
-            const SizedBox(height: 12),
-            const Text(
-              'Follow creators to see their videos here',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+            const SizedBox(height: 32),
+            Text('Gloriously empty', style: VineTheme.headlineSmallFont()),
+            const SizedBox(height: 8),
+            Text(
+              'No ads. No AI slop. No one telling you what to '
+              'watch. Fix that last part yourself.',
+              style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
-            ElevatedButton.icon(
+            FilledButton(
               onPressed: () => context.go(ExploreScreen.path),
-              icon: const Icon(Icons.explore),
-              label: const Text('Explore Videos'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
+              style: FilledButton.styleFrom(
+                backgroundColor: VineTheme.vineGreen,
+                foregroundColor: VineTheme.primary,
               ),
+              child: const Text('Go explore'),
             ),
           ],
         ),
