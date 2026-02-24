@@ -1,6 +1,8 @@
 // ABOUTME: Video feed item using individual controller architecture
 // ABOUTME: Each video gets its own controller with automatic lifecycle management via Riverpod autoDispose
 
+import 'dart:ui' as ui;
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -495,6 +497,13 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
   /// Handle playback state changes with generation counter to prevent race conditions
   void _handlePlaybackChange(bool shouldPlay) {
+    // Don't autoplay videos behind a content warning overlay
+    if (shouldPlay &&
+        widget.video.shouldShowWarning &&
+        !_contentWarningRevealed) {
+      return;
+    }
+
     final gen = ++_playbackGeneration;
 
     // Get stack trace to understand why playback is changing
@@ -1213,6 +1222,8 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
                   setState(() {
                     _contentWarningRevealed = true;
                   });
+                  // Start playback now that the warning is dismissed
+                  _handlePlaybackChange(true);
                 },
               ),
 
@@ -2612,54 +2623,61 @@ class _ContentWarningOverlay extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
-      child: DecoratedBox(
-        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.85)),
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(
-                  Icons.warning_amber_rounded,
-                  color: Color(0xFFFFB84D),
-                  size: 48,
-                ),
-                const SizedBox(height: 16),
-                const Text(
-                  'Sensitive Content',
-                  style: TextStyle(
-                    color: VineTheme.whiteText,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  labels.map(_ContentWarningBadge._humanize).join(', '),
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: VineTheme.secondaryText,
-                    fontSize: 14,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                OutlinedButton(
-                  onPressed: onReveal,
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: VineTheme.whiteText,
-                    side: const BorderSide(color: VineTheme.onSurfaceMuted),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 12,
+      child: ClipRect(
+        child: BackdropFilter(
+          filter: ui.ImageFilter.blur(sigmaX: 30, sigmaY: 30),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.black.withValues(alpha: 0.6),
+            ),
+            child: Center(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.warning_amber_rounded,
+                      color: Color(0xFFFFB84D),
+                      size: 48,
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(24),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Sensitive Content',
+                      style: TextStyle(
+                        color: VineTheme.whiteText,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
-                  ),
-                  child: const Text('View Anyway'),
+                    const SizedBox(height: 8),
+                    Text(
+                      labels.map(_ContentWarningBadge._humanize).join(', '),
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: VineTheme.secondaryText,
+                        fontSize: 14,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    OutlinedButton(
+                      onPressed: onReveal,
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: VineTheme.whiteText,
+                        side: const BorderSide(color: VineTheme.onSurfaceMuted),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 12,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(24),
+                        ),
+                      ),
+                      child: const Text('View Anyway'),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
           ),
         ),

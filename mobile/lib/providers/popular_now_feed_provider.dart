@@ -99,10 +99,10 @@ class PopularNowFeed extends _$PopularNowFeed {
             category: LogCategory.video,
           );
 
-          // Filter for platform compatibility
-          final filteredVideos = apiVideos
-              .where((v) => v.isSupportedOnCurrentPlatform)
-              .toList();
+          // Filter for platform compatibility and content preferences
+          final filteredVideos = videoEventService.filterVideoList(
+            apiVideos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+          );
 
           // Enrich REST API videos with Nostr tags for ProofMode badge
           final enrichedVideos = await enrichVideosWithNostrTags(
@@ -150,7 +150,10 @@ class PopularNowFeed extends _$PopularNowFeed {
       getVideos: (service) => service.popularNowVideos,
       filterVideos: (videos) {
         // Filter out WebM videos on iOS/macOS (not supported by AVPlayer)
-        return videos.where((v) => v.isSupportedOnCurrentPlatform).toList();
+        // and filter by user content preferences
+        return videoEventService.filterVideoList(
+          videos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+        );
       },
       sortVideos: (videos) {
         final sorted = List<VideoEvent>.from(videos);
@@ -228,6 +231,8 @@ class PopularNowFeed extends _$PopularNowFeed {
     state = AsyncData(currentState.copyWith(isLoadingMore: true));
 
     try {
+      final videoEventService = ref.read(videoEventServiceProvider);
+
       // If using REST API, load more using cursor-based pagination
       if (_usingRestApi) {
         final analyticsService = ref.read(analyticsApiServiceProvider);
@@ -251,10 +256,12 @@ class PopularNowFeed extends _$PopularNowFeed {
           final existingIds = currentState.videos
               .map((v) => v.id.toLowerCase())
               .toSet();
-          final newVideos = apiVideos
-              .where((v) => !existingIds.contains(v.id.toLowerCase()))
-              .where((v) => v.isSupportedOnCurrentPlatform)
-              .toList();
+          final newVideos = videoEventService.filterVideoList(
+            apiVideos
+                .where((v) => !existingIds.contains(v.id.toLowerCase()))
+                .where((v) => v.isSupportedOnCurrentPlatform)
+                .toList(),
+          );
 
           // Update cursor for next pagination
           _nextCursor = _getOldestTimestamp(apiVideos);
@@ -309,7 +316,6 @@ class PopularNowFeed extends _$PopularNowFeed {
       }
 
       // Nostr mode - load more from relay
-      final videoEventService = ref.read(videoEventServiceProvider);
       final eventCountBefore = videoEventService.getEventCount(
         SubscriptionType.popularNow,
       );
@@ -369,9 +375,9 @@ class PopularNowFeed extends _$PopularNowFeed {
     var updatedVideos = videoEventService.popularNowVideos.toList();
 
     // Apply same filtering as build()
-    updatedVideos = updatedVideos
-        .where((v) => v.isSupportedOnCurrentPlatform)
-        .toList();
+    updatedVideos = videoEventService.filterVideoList(
+      updatedVideos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+    );
 
     // Sort by timestamp (newest first)
     updatedVideos.sort((a, b) {
@@ -399,6 +405,8 @@ class PopularNowFeed extends _$PopularNowFeed {
       category: LogCategory.video,
     );
 
+    final videoEventService = ref.read(videoEventServiceProvider);
+
     // If using REST API, try to refresh from there first
     if (_usingRestApi) {
       try {
@@ -415,9 +423,9 @@ class PopularNowFeed extends _$PopularNowFeed {
           // Reset cursor for pagination
           _nextCursor = _getOldestTimestamp(apiVideos);
 
-          final filteredVideos = apiVideos
-              .where((v) => v.isSupportedOnCurrentPlatform)
-              .toList();
+          final filteredVideos = videoEventService.filterVideoList(
+            apiVideos.where((v) => v.isSupportedOnCurrentPlatform).toList(),
+          );
 
           // Enrich REST API videos with Nostr tags for ProofMode badge
           final enrichedVideos = await enrichVideosWithNostrTags(
