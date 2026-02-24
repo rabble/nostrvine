@@ -1519,15 +1519,12 @@ void main() {
                 'Pool should evict LRU player (video 0) when loading video 2',
           );
 
-          // State is still LoadState.loading because buffer hasn't fired.
-          expect(controller.getLoadState(0), equals(LoadState.loading));
+          // The isDisposed check in _loadPlayer detects the eviction
+          // immediately after storing the player, cleaning up _loadStates
+          // and _loadedPlayers before the buffer stream even fires.
+          expect(controller.getLoadState(0), equals(LoadState.none));
 
-          // Simulate buffer completion on the evicted player. This triggers
-          // _onBufferReady(0) → _notifyIndex(0) → eviction detection.
-          evictionSetups[videos[0].url]!.bufferingController.add(false);
-          await Future<void>.delayed(const Duration(milliseconds: 50));
-
-          // Notifier must report evicted state.
+          // Notifier reports evicted state with null controller/player.
           expect(notifier0.value.loadState, equals(LoadState.none));
           expect(notifier0.value.videoController, isNull);
           expect(notifier0.value.player, isNull);
@@ -1567,8 +1564,8 @@ void main() {
       );
 
       test(
-        'notifier overrides $LoadState.ready with $LoadState.none '
-        'when _loadStates says ready but player is evicted',
+        'buffer-ready on evicted player is a no-op because '
+        '_loadPlayer already cleaned up the index',
         () async {
           final videos = createTestVideos(count: 3);
           final controller = VideoFeedController(
@@ -1581,16 +1578,19 @@ void main() {
 
           await Future<void>.delayed(const Duration(milliseconds: 100));
 
-          // Fire buffer on evicted player — _onBufferReady sets
-          // _loadStates[0] = LoadState.ready before _notifyIndex runs.
+          // The isDisposed check in _loadPlayer already cleared index 0.
+          expect(controller.getLoadState(0), equals(LoadState.none));
+
+          // Fire buffer-ready on the evicted player's stream.
+          // _onBufferReady checks _loadedPlayers[0]?.player → null,
+          // so it returns without mutation.
           evictionSetups[videos[0].url]!.bufferingController.add(false);
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          // Raw getLoadState reflects what _loadStates stores (ready),
-          // but the notifier overrides it to none because the player is
-          // disposed.
-          expect(controller.getLoadState(0), equals(LoadState.ready));
+          // State remains none — buffer-ready had no effect.
+          expect(controller.getLoadState(0), equals(LoadState.none));
           expect(notifier0.value.loadState, equals(LoadState.none));
+          expect(notifier0.value.videoController, isNull);
 
           controller.dispose();
         },
@@ -1667,6 +1667,221 @@ void main() {
           // Notifier retains the empty state from disposal — the guard
           // prevented any post-disposal mutation.
           expect(notifier0.value, equals(valueAfterDispose));
+        },
+      );
+    });
+
+    group('eviction callback (_onPlayerEvicted)', () {
+      // Tests that the onDisposedCallback mechanism on PooledPlayer
+      // correctly triggers _onPlayerEvicted in the controller, updating
+      // the widget state BEFORE Flutter rebuilds with a stale controller.
+      // This prevents "A ValueNotifier<int?> was used after being disposed".
+
+      late Map<String, bool> callbackDisposedState;
+      late Map<String, MockPlayerSetup> callbackSetups;
+      late Map<String, List<VoidCallback>> playerCallbacks;
+      late TestablePlayerPool callbackPool;
+
+      setUp(() {
+        callbackDisposedState = {};
+        callbackSetups = {};
+        playerCallbacks = {};
+
+        callbackPool = TestablePlayerPool(
+          maxPlayers: 2,
+          mockPlayerFactory: (url) {
+            final setup = createMockPlayerSetup(isBuffering: true);
+            callbackSetups[url] = setup;
+            callbackDisposedState[url] = false;
+            playerCallbacks[url] = <VoidCallback>[];
+
+            final mockPooledPlayer = _MockPooledPlayer();
+            when(() => mockPooledPlayer.player).thenReturn(setup.player);
+            when(
+              () => mockPooledPlayer.videoController,
+            ).thenReturn(createMockVideoController());
+            when(
+              () => mockPooledPlayer.isDisposed,
+            ).thenAnswer((_) => callbackDisposedState[url]!);
+
+            // Track disposal callbacks (mirrors real PooledPlayer behavior).
+            when(
+              () => mockPooledPlayer.addOnDisposedCallback(any()),
+            ).thenAnswer((invocation) {
+              final callback =
+                  invocation.positionalArguments[0] as VoidCallback;
+              playerCallbacks[url]!.add(callback);
+            });
+            when(
+              () => mockPooledPlayer.removeOnDisposedCallback(any()),
+            ).thenAnswer((invocation) {
+              final callback =
+                  invocation.positionalArguments[0] as VoidCallback;
+              playerCallbacks[url]!.remove(callback);
+            });
+
+            // Dispose fires callbacks synchronously (mirrors real behavior).
+            when(mockPooledPlayer.dispose).thenAnswer((_) async {
+              callbackDisposedState[url] = true;
+              for (final cb in List<VoidCallback>.of(playerCallbacks[url]!)) {
+                cb();
+              }
+              playerCallbacks[url]!.clear();
+            });
+
+            return mockPooledPlayer;
+          },
+        );
+      });
+
+      tearDown(() async {
+        for (final setup in callbackSetups.values) {
+          await setup.dispose();
+        }
+        await callbackPool.dispose();
+      });
+
+      test(
+        'eviction callback updates index notifier to $LoadState.none '
+        'when pool evicts a tracked player',
+        () async {
+          // Pool has capacity 2. With preloadAhead=2, preloadBehind=0,
+          // indices 0, 1, 2 are loaded. Loading index 2 evicts index 0.
+          final videos = createTestVideos(count: 3);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: callbackPool,
+            preloadBehind: 0,
+          );
+
+          final notifier0 = controller.getIndexNotifier(0);
+
+          // Wait for all loads to complete.
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          // Pool evicted index 0's player when loading index 2.
+          // The onDisposedCallback should have fired _onPlayerEvicted,
+          // updating the notifier immediately.
+          expect(callbackDisposedState[videos[0].url], isTrue);
+          expect(notifier0.value.loadState, equals(LoadState.none));
+          expect(notifier0.value.videoController, isNull);
+          expect(notifier0.value.player, isNull);
+
+          controller.dispose();
+        },
+      );
+
+      test(
+        'eviction callback is ignored when player was already released '
+        'by the controller (_loadedPlayers identity check)',
+        () async {
+          // With capacity 3, no eviction happens during initial load of
+          // 3 videos. We then navigate to release index 0 normally, and
+          // manually trigger its dispose to simulate late pool eviction.
+          final bigCallbackPool = TestablePlayerPool(
+            maxPlayers: 3,
+            mockPlayerFactory: callbackPool.mockPlayerFactory,
+          );
+
+          final videos = createTestVideos();
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: bigCallbackPool,
+            preloadBehind: 0,
+          );
+
+          final notifier0 = controller.getIndexNotifier(0);
+
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          // Index 0 is loaded.
+          expect(controller.getLoadState(0), equals(LoadState.loading));
+
+          // Navigate away — _releasePlayer(0) removes from _loadedPlayers.
+          controller.onPageChanged(4);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // notifier0 should already show none (released by controller).
+          expect(notifier0.value.loadState, equals(LoadState.none));
+
+          // Now simulate pool evicting the old player for index 0's URL.
+          // The callback should fire but be ignored (identity check fails).
+          final callbacks = playerCallbacks[videos[0].url];
+          if (callbacks != null) {
+            for (final cb in List<VoidCallback>.of(callbacks)) {
+              cb();
+            }
+          }
+
+          // Notifier state should remain unchanged (no crash, no mutation).
+          expect(notifier0.value.loadState, equals(LoadState.none));
+          expect(notifier0.value.videoController, isNull);
+
+          controller.dispose();
+          await bigCallbackPool.dispose();
+        },
+      );
+
+      test(
+        'eviction callback is no-op after controller disposal',
+        () async {
+          final videos = createTestVideos(count: 3);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: callbackPool,
+            preloadBehind: 0,
+          );
+
+          final notifier0 = controller.getIndexNotifier(0);
+
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          // Dispose controller first.
+          controller.dispose();
+
+          expect(notifier0.value.loadState, equals(LoadState.none));
+          final stateAfterDispose = notifier0.value;
+
+          // Fire any remaining callbacks — should be no-ops.
+          for (final callbacks in playerCallbacks.values) {
+            for (final cb in List<VoidCallback>.of(callbacks)) {
+              cb();
+            }
+          }
+
+          // State should remain exactly as dispose left it.
+          expect(notifier0.value, equals(stateAfterDispose));
+        },
+      );
+
+      test(
+        'non-evicted player in same pool retains its state '
+        'when sibling is evicted',
+        () async {
+          final videos = createTestVideos(count: 3);
+          final controller = VideoFeedController(
+            videos: videos,
+            pool: callbackPool,
+            preloadBehind: 0,
+          );
+
+          final notifier1 = controller.getIndexNotifier(1);
+
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+
+          // Video 1 should NOT be evicted.
+          expect(callbackDisposedState[videos[1].url], isFalse);
+
+          // Fire buffer ready for video 1.
+          callbackSetups[videos[1].url]!.bufferingController.add(false);
+          await Future<void>.delayed(const Duration(milliseconds: 50));
+
+          // Video 1 should be ready with non-null controller.
+          expect(notifier1.value.loadState, equals(LoadState.ready));
+          expect(notifier1.value.videoController, isNotNull);
+          expect(notifier1.value.player, isNotNull);
+
+          controller.dispose();
         },
       );
     });

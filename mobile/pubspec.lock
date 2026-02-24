@@ -57,6 +57,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.5.2"
+  android_intent_plus:
+    dependency: "direct main"
+    description:
+      name: android_intent_plus
+      sha256: "14a9f94c5825a528e8c38ee89a33dbeba947efbbf76f066c174f4f3ae4f48feb"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.0.0"
   ansi_styles:
     dependency: transitive
     description:
@@ -2213,6 +2221,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.4.0"
+  unique_names_generator:
+    dependency: transitive
+    description:
+      name: unique_names_generator
+      sha256: "7fae54454369a80cd35aa82038426f8af595a58e63f21ece969d0352c5fd3fa6"
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.0"
   universal_io:
     dependency: transitive
     description:
@@ -2550,5 +2566,5 @@ packages:
     source: hosted
     version: "2.1.0"
 sdks:
-  dart: ">=3.11.0 <4.0.0"
+  dart: ">=3.11.0 <3.16.0"
   flutter: ">=3.41.1 <4.0.0"

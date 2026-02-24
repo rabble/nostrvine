@@ -13,7 +13,6 @@ import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
 import 'package:openvine/models/video_recorder/video_recorder_provider_state.dart';
 import 'package:openvine/models/video_recorder/video_recorder_timer_duration.dart';
-import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/providers/sounds_providers.dart';
@@ -721,17 +720,6 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       '📊 Video duration: ${metadata.duration.inMilliseconds}ms',
       name: 'VideoRecorderNotifier',
       category: .video,
-    );
-
-    // Save clip to device gallery (fire-and-forget)
-    unawaited(
-      ref
-          .read(gallerySaveServiceProvider)
-          .saveVideoToGallery(
-            videoResult,
-            aspectRatio: state.aspectRatio,
-            metadata: metadata,
-          ),
     );
 
     // Generate and attach thumbnail.

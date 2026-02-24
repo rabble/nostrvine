@@ -1,37 +1,47 @@
 // ABOUTME: Bottom sheet for previewing video clips with playback controls
-// ABOUTME: Shows looping video player with clip info and delete action
+// ABOUTME: Shows looping video player with clip info, save-to-gallery,
+// ABOUTME: and dismiss
 
 import 'dart:io';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/models/saved_clip.dart';
+import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/services/gallery_save_service.dart';
+import 'package:openvine/utils/unified_logger.dart';
+import 'package:pro_video_editor/pro_video_editor.dart';
 import 'package:video_player/video_player.dart';
 
 /// Preview sheet for playing a video clip in a modal bottom sheet.
 ///
 /// Displays a looping video player with the clip's duration information
 /// and a delete button. The video automatically starts playing when opened.
-class VideoClipPreviewSheet extends StatefulWidget {
+class VideoClipPreviewSheet extends ConsumerStatefulWidget {
   const VideoClipPreviewSheet({super.key, required this.clip});
 
   /// The clip to preview, containing file path, duration, and other metadata.
   final SavedClip clip;
 
   @override
-  State<VideoClipPreviewSheet> createState() => _VideoClipPreviewSheetState();
+  ConsumerState<VideoClipPreviewSheet> createState() =>
+      _VideoClipPreviewSheetState();
 }
 
 /// State for [VideoClipPreviewSheet].
 ///
 /// Manages video player initialization and playback lifecycle.
-class _VideoClipPreviewSheetState extends State<VideoClipPreviewSheet> {
+class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreviewSheet> {
   /// Video player controller for the clip, null until initialized.
   VideoPlayerController? _controller;
 
   /// Whether the video player has completed initialization and is ready to play.
   bool _isInitialized = false;
+
+  /// Whether a gallery save operation is currently in progress.
+  bool _isSaving = false;
 
   @override
   void initState() {
@@ -67,6 +77,63 @@ class _VideoClipPreviewSheetState extends State<VideoClipPreviewSheet> {
   void dispose() {
     _controller?.dispose();
     super.dispose();
+  }
+
+  /// Saves the current clip to the device gallery/camera roll.
+  ///
+  /// Shows a snackbar with the result and handles permission denied.
+  Future<void> _saveToGallery() async {
+    if (_isSaving) return;
+
+    setState(() => _isSaving = true);
+
+    try {
+      final gallerySaveService = ref.read(gallerySaveServiceProvider);
+      final video = EditorVideo.file(widget.clip.filePath);
+      final result = await gallerySaveService.saveVideoToGallery(video);
+
+      if (!mounted) return;
+
+      final destination = GallerySaveService.destinationName;
+      final message = switch (result) {
+        GallerySaveSuccess() => 'Clip saved to $destination',
+        GallerySavePermissionDenied() => '$destination permission denied',
+        GallerySaveFailure(:final reason) => 'Failed to save clip: $reason',
+      };
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          behavior: SnackBarBehavior.floating,
+          content: DivineSnackbarContainer(
+            label: message,
+            error: result is! GallerySaveSuccess,
+          ),
+        ),
+      );
+    } catch (e, s) {
+      UnifiedLogger.error(
+        'Failed to save clip to gallery',
+        error: e,
+        stackTrace: s,
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            behavior: SnackBarBehavior.floating,
+            content: const DivineSnackbarContainer(
+              label: 'Failed to save clip',
+              error: true,
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
   }
 
   @override
@@ -129,6 +196,16 @@ class _VideoClipPreviewSheetState extends State<VideoClipPreviewSheet> {
                               )
                             : SizedBox.shrink(),
                       ),
+
+                      // Save to gallery button
+                      Positioned(
+                        right: 8,
+                        bottom: 8,
+                        child: _SaveToGalleryButton(
+                          isSaving: _isSaving,
+                          onPressed: _saveToGallery,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -136,6 +213,44 @@ class _VideoClipPreviewSheetState extends State<VideoClipPreviewSheet> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Button to save a clip to the device gallery/camera roll.
+///
+/// Shows a loading indicator while saving, and a download icon otherwise.
+/// Absorbs taps on the surrounding [GestureDetector] to prevent dismissal.
+class _SaveToGalleryButton extends StatelessWidget {
+  const _SaveToGalleryButton({required this.isSaving, required this.onPressed});
+
+  /// Whether a save operation is currently in progress.
+  final bool isSaving;
+
+  /// Called when the button is tapped.
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      // Absorb taps so the preview sheet doesn't dismiss.
+      onTap: () {},
+      child: IconButton(
+        onPressed: isSaving ? null : onPressed,
+        style: IconButton.styleFrom(
+          backgroundColor: VineTheme.iconButtonBackground,
+        ),
+        tooltip: 'Save to ${GallerySaveService.destinationName}',
+        icon: isSaving
+            ? SizedBox.square(
+                dimension: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: VineTheme.whiteText,
+                ),
+              )
+            : Icon(Icons.download_rounded, color: VineTheme.whiteText),
       ),
     );
   }

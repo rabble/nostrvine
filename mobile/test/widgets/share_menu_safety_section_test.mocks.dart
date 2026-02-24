@@ -5,18 +5,19 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i5;
 
-import 'package:keycast_flutter/keycast_flutter.dart' as _i12;
+import 'package:keycast_flutter/keycast_flutter.dart' as _i13;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i10;
 import 'package:nostr_client/nostr_client.dart' as _i8;
-import 'package:nostr_sdk/event.dart' as _i13;
+import 'package:nostr_sdk/event.dart' as _i14;
 import 'package:nostr_sdk/nostr_sdk.dart' as _i4;
+import 'package:openvine/models/known_account.dart' as _i11;
 import 'package:openvine/services/auth_service.dart' as _i3;
 import 'package:openvine/services/content_blocklist_service.dart' as _i7;
 import 'package:openvine/services/content_moderation_service.dart' as _i6;
 import 'package:openvine/services/content_reporting_service.dart' as _i2;
 import 'package:openvine/services/relay_discovery_service.dart' as _i9;
-import 'package:openvine/services/user_profile_service.dart' as _i11;
+import 'package:openvine/services/user_profile_service.dart' as _i12;
 
 // ignore_for_file: type=lint
 // ignore_for_file: avoid_redundant_argument_values
@@ -485,6 +486,46 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i5.Future<_i3.AuthResult>);
 
   @override
+  _i5.Future<void> createAnonymousAccount() =>
+      (super.noSuchMethod(
+            Invocation.method(#createAnonymousAccount, []),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<List<_i11.KnownAccount>> getKnownAccounts() =>
+      (super.noSuchMethod(
+            Invocation.method(#getKnownAccounts, []),
+            returnValue: _i5.Future<List<_i11.KnownAccount>>.value(
+              <_i11.KnownAccount>[],
+            ),
+          )
+          as _i5.Future<List<_i11.KnownAccount>>);
+
+  @override
+  _i5.Future<void> removeKnownAccount(String? pubkeyHex) =>
+      (super.noSuchMethod(
+            Invocation.method(#removeKnownAccount, [pubkeyHex]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
+  _i5.Future<void> signInForAccount(
+    String? pubkeyHex,
+    _i3.AuthenticationSource? authSource,
+  ) =>
+      (super.noSuchMethod(
+            Invocation.method(#signInForAccount, [pubkeyHex, authSource]),
+            returnValue: _i5.Future<void>.value(),
+            returnValueForMissingStub: _i5.Future<void>.value(),
+          )
+          as _i5.Future<void>);
+
+  @override
   _i5.Future<_i3.AuthResult> connectWithAmber() =>
       (super.noSuchMethod(
             Invocation.method(#connectWithAmber, []),
@@ -607,7 +648,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
 
   @override
   _i5.Future<void> refreshCurrentProfile(
-    _i11.UserProfileService? userProfileService,
+    _i12.UserProfileService? userProfileService,
   ) =>
       (super.noSuchMethod(
             Invocation.method(#refreshCurrentProfile, [userProfileService]),
@@ -617,16 +658,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i5.Future<void>);
 
   @override
-  _i5.Future<void> signInAutomatically() =>
-      (super.noSuchMethod(
-            Invocation.method(#signInAutomatically, []),
-            returnValue: _i5.Future<void>.value(),
-            returnValueForMissingStub: _i5.Future<void>.value(),
-          )
-          as _i5.Future<void>);
-
-  @override
-  _i5.Future<void> signInWithDivineOAuth(_i12.KeycastSession? session) =>
+  _i5.Future<void> signInWithDivineOAuth(_i13.KeycastSession? session) =>
       (super.noSuchMethod(
             Invocation.method(#signInWithDivineOAuth, [session]),
             returnValue: _i5.Future<void>.value(),
@@ -672,7 +704,7 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
           as _i5.Future<String?>);
 
   @override
-  _i5.Future<_i13.Event?> createAndSignEvent({
+  _i5.Future<_i14.Event?> createAndSignEvent({
     required int? kind,
     required String? content,
     List<List<String>>? tags,
@@ -687,9 +719,9 @@ class MockAuthService extends _i1.Mock implements _i3.AuthService {
               #biometricPrompt: biometricPrompt,
               #createdAt: createdAt,
             }),
-            returnValue: _i5.Future<_i13.Event?>.value(),
+            returnValue: _i5.Future<_i14.Event?>.value(),
           )
-          as _i5.Future<_i13.Event?>);
+          as _i5.Future<_i14.Event?>);
 
   @override
   _i5.Future<void> acceptTerms() =>

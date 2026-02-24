@@ -8,7 +8,12 @@ class HeadlessRegisterResult {
   final bool verificationRequired;
   final String? deviceCode;
   final String? email;
-  final String? error;
+
+  /// OAuth error code (e.g., 'email_exists', 'invalid_password')
+  final String? errorCode;
+
+  /// Human-readable error description from server
+  final String? errorDescription;
 
   HeadlessRegisterResult({
     required this.success,
@@ -16,7 +21,8 @@ class HeadlessRegisterResult {
     required this.verificationRequired,
     this.deviceCode,
     this.email,
-    this.error,
+    this.errorCode,
+    this.errorDescription,
   });
 
   factory HeadlessRegisterResult.fromJson(Map<String, dynamic> json) {
@@ -26,16 +32,19 @@ class HeadlessRegisterResult {
       verificationRequired: json['verification_required'] as bool? ?? true,
       deviceCode: json['device_code'] as String?,
       email: json['email'] as String?,
-      error: json['error'] as String?,
+      errorCode: json['error'] as String?,
+      errorDescription:
+          json['error_description'] as String? ?? json['message'] as String?,
     );
   }
 
-  factory HeadlessRegisterResult.error(String message) {
+  factory HeadlessRegisterResult.error(String message, {String? code}) {
     return HeadlessRegisterResult(
       success: false,
       pubkey: '',
       verificationRequired: false,
-      error: message,
+      errorCode: code ?? 'client_error',
+      errorDescription: message,
     );
   }
 }

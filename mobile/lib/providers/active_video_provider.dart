@@ -116,7 +116,6 @@ final activeVideoIdProvider = Provider<String?>((ref) {
     case RouteType.welcome:
     case RouteType.developerOptions:
     case RouteType.loginOptions:
-    case RouteType.authNative:
     case RouteType.followers:
     case RouteType.following:
     case RouteType.profileView:

@@ -358,7 +358,30 @@ class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
               onNearEnd: (index) => _onNearEnd(state, index),
               nearEndThreshold: 0,
               itemBuilder: (context, video, index, {required isActive}) {
-                final originalEvent = state.videos[index];
+                // Look up by video ID instead of index, because
+                // pooledVideos filters out null-URL entries and indices
+                // may diverge from state.videos.
+                if (state.videos.isEmpty) {
+                  debugPrint(
+                    'FullscreenFeed: itemBuilder called with empty '
+                    'state.videos! index=$index, video.id=${video.id}',
+                  );
+                  return const ColoredBox(color: VineTheme.backgroundColor);
+                }
+                final originalEvent = state.videos.firstWhere(
+                  (v) => v.id == video.id,
+                  orElse: () {
+                    final clamped = index.clamp(0, state.videos.length - 1);
+                    debugPrint(
+                      'FullscreenFeed: video ID lookup miss! '
+                      'video.id=${video.id}, index=$index, '
+                      'clamped=$clamped, '
+                      'state.videos.length=${state.videos.length}, '
+                      'pooledVideos.length=${state.pooledVideos.length}',
+                    );
+                    return state.videos[clamped];
+                  },
+                );
                 return _PooledFullscreenItem(
                   video: originalEvent,
                   index: index,

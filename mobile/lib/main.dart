@@ -573,11 +573,6 @@ Future<void> _initializeCoreServices(ProviderContainer container) async {
     bandwidthTracker.initialize(),
     container.read(uploadManagerProvider).initialize(),
   ]);
-  Log.info(
-    '[INIT] ✅ SeenVideosService, BandwidthTracker, UploadManager initialized',
-    name: 'Main',
-    category: LogCategory.system,
-  );
 
   Log.info(
     '[INIT] ✅ All critical services initialized',

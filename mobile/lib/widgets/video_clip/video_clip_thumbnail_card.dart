@@ -198,7 +198,7 @@ class _DurationBadge extends StatelessWidget {
           style: const TextStyle(
             color: Colors.white,
             fontSize: 14,
-            fontFamily: 'BricolageGrotesque',
+            fontFamily: VineTheme.fontFamilyBricolage,
             fontWeight: .w800,
             height: 1.43,
             letterSpacing: 0.10,
