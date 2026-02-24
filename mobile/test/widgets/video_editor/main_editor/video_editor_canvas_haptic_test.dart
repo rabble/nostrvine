@@ -3,6 +3,7 @@
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/services/haptic_service.dart';
 
 /// Helper to set up haptic feedback mock and track calls.
 class _HapticFeedbackTracker {
@@ -46,7 +47,7 @@ Future<bool> simulateRemoveAreaCheck({
   required bool wasOverRemoveArea,
 }) async {
   if (isOverRemoveArea && !wasOverRemoveArea) {
-    await HapticFeedback.heavyImpact();
+    await HapticService.destructiveZoneFeedback();
   }
   return isOverRemoveArea;
 }
@@ -73,7 +74,7 @@ void main() {
       hapticTracker.clear();
 
       // Simulate what the canvas does when entering remove area
-      await HapticFeedback.heavyImpact();
+      await HapticService.destructiveZoneFeedback();
 
       expect(hapticTracker.heavyImpactCount, equals(1));
     });
@@ -82,7 +83,7 @@ void main() {
       hapticTracker.clear();
 
       // Simulate what helper lines do when hit
-      await HapticFeedback.lightImpact();
+      await HapticService.snapFeedback();
 
       expect(hapticTracker.lightImpactCount, equals(1));
     });

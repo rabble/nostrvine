@@ -6,8 +6,8 @@ import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/services/haptic_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as model show AspectRatio;
@@ -426,7 +426,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
 
             // Trigger haptic feedback when entering the remove area
             if (isOverRemoveArea && !_wasOverRemoveArea) {
-              unawaited(HapticFeedback.heavyImpact());
+              unawaited(HapticService.destructiveZoneFeedback());
             }
             _wasOverRemoveArea = isOverRemoveArea;
 
@@ -471,7 +471,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           onCreateTextLayer: scope.onAddEditTextLayer,
           onEditTextLayer: scope.onAddEditTextLayer,
           helperLines: HelperLinesCallbacks(
-            onLineHit: () => unawaited(HapticFeedback.lightImpact()),
+            onLineHit: () => unawaited(HapticService.snapFeedback()),
           ),
         ),
         paintEditorCallbacks: PaintEditorCallbacks(

@@ -3,6 +3,7 @@
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:openvine/services/haptic_service.dart';
 
 /// Helper to set up haptic feedback mock and track calls.
 class _HapticFeedbackTracker {
@@ -42,7 +43,7 @@ Future<bool> simulateDeleteZoneCheck({
   required bool wasOverDeleteZone,
 }) async {
   if (isOverDeleteZone && !wasOverDeleteZone) {
-    await HapticFeedback.heavyImpact();
+    await HapticService.destructiveZoneFeedback();
   }
   return isOverDeleteZone;
 }
@@ -69,7 +70,7 @@ void main() {
       hapticTracker.clear();
 
       // Simulate what the gallery does when entering delete zone
-      await HapticFeedback.heavyImpact();
+      await HapticService.destructiveZoneFeedback();
 
       expect(hapticTracker.heavyImpactCount, equals(1));
     });

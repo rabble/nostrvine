@@ -4,8 +4,8 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/services/haptic_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/recording_clip.dart';
@@ -143,7 +143,7 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
 
     // Trigger haptic feedback when entering the delete zone
     if (isOverDeleteZone && !_wasOverDeleteZone) {
-      unawaited(HapticFeedback.heavyImpact());
+      unawaited(HapticService.destructiveZoneFeedback());
     }
     _wasOverDeleteZone = isOverDeleteZone;
 
