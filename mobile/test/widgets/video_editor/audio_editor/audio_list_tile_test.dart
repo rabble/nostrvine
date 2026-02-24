@@ -186,14 +186,14 @@ void main() {
         expect(find.textContaining('01:30'), findsOneWidget);
       });
 
-      testWidgets('rounds fractional seconds', (tester) async {
+      testWidgets('truncates fractional seconds', (tester) async {
         final audio = _createTestAudioEvent(
           duration: 65.7,
-        ); // rounds to 66 = 1:06
+        ); // 65.7s = 1 min 5.7s → 01:05
         await tester.pumpWidget(buildWidget(audio: audio));
         await tester.pumpAndSettle();
 
-        expect(find.textContaining('01:06'), findsOneWidget);
+        expect(find.textContaining('01:05'), findsOneWidget);
       });
     });
   });
