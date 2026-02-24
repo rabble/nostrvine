@@ -16,6 +16,7 @@ class VideoEditorIconButton extends StatelessWidget {
     this.iconColor = Colors.white,
     this.iconSize = 32,
     this.size = 48,
+    this.radius = 20,
     this.onTap,
     this.semanticLabel,
   });
@@ -41,6 +42,8 @@ class VideoEditorIconButton extends StatelessWidget {
   /// Semantic label for accessibility.
   final String? semanticLabel;
 
+  final double radius;
+
   @override
   Widget build(BuildContext context) {
     return Semantics(
@@ -54,7 +57,7 @@ class VideoEditorIconButton extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             color: backgroundColor,
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(radius),
           ),
           child: Center(
             child: DivineIcon(size: iconSize, icon: icon, color: iconColor),

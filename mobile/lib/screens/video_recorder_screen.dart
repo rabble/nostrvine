@@ -6,18 +6,23 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/blocs/sound_waveform/sound_waveform_bloc.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
+import 'package:openvine/models/audio_event.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_recorder_provider.dart';
 import 'package:openvine/services/draft_storage_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
+import 'package:openvine/providers/sounds_providers.dart';
 import 'package:openvine/widgets/video_clip_editor/sheets/video_editor_restore_autosave_sheet.dart';
 import 'package:openvine/widgets/video_recorder/preview/video_recorder_camera_preview.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_bottom_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_countdown_overlay.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_record_button.dart';
+import 'package:openvine/widgets/video_recorder/video_recorder_audio_progress_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_segment_bar.dart';
 import 'package:openvine/widgets/video_recorder/video_recorder_top_bar.dart';
 
@@ -40,6 +45,7 @@ class VideoRecorderScreen extends ConsumerStatefulWidget {
 class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     with WidgetsBindingObserver {
   VideoRecorderNotifier? _notifier;
+  ProviderSubscription<AudioEvent?>? _soundSubscription;
 
   @override
   void initState() {
@@ -136,6 +142,77 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
     }
   }
 
+  /// Listens to sound selection changes and extracts waveform data.
+  void _setupSoundWaveformListener(SoundWaveformBloc bloc) {
+    Log.info(
+      '🎵 _setupSoundWaveformListener called',
+      name: 'VideoRecorderScreen',
+      category: LogCategory.video,
+    );
+
+    // Handle initial sound if already selected
+    final initialSound = ref.read(selectedSoundProvider);
+    Log.info(
+      '🎵 initialSound: ${initialSound?.id ?? 'null'}',
+      name: 'VideoRecorderScreen',
+      category: LogCategory.video,
+    );
+    _triggerWaveformExtraction(bloc, initialSound);
+
+    // Listen for future changes using listenManual (works outside build phase)
+    _soundSubscription = ref.listenManual<AudioEvent?>(selectedSoundProvider, (
+      previous,
+      next,
+    ) {
+      Log.info(
+        '🎵 Sound changed: ${previous?.id ?? 'null'} → ${next?.id ?? 'null'}',
+        name: 'VideoRecorderScreen',
+        category: LogCategory.video,
+      );
+      _triggerWaveformExtraction(bloc, next);
+    });
+  }
+
+  /// Triggers waveform extraction for the given sound.
+  void _triggerWaveformExtraction(SoundWaveformBloc bloc, AudioEvent? sound) {
+    Log.info(
+      '🎵 _triggerWaveformExtraction: ${sound?.id ?? 'null'}, '
+      'isBundled: ${sound?.isBundled}, url: ${sound?.url}',
+      name: 'VideoRecorderScreen',
+      category: LogCategory.video,
+    );
+
+    if (sound == null) {
+      bloc.add(const SoundWaveformClear());
+      return;
+    }
+
+    // Handle bundled sounds (from app assets)
+    if (sound.isBundled) {
+      final assetPath = sound.assetPath;
+      Log.info(
+        '🎵 Bundled sound assetPath: $assetPath',
+        name: 'VideoRecorderScreen',
+        category: LogCategory.video,
+      );
+      if (assetPath != null) {
+        bloc.add(
+          SoundWaveformExtract(
+            path: assetPath,
+            soundId: sound.id,
+            isAsset: true,
+          ),
+        );
+      }
+      return;
+    }
+
+    // Handle network sounds
+    if (sound.url != null) {
+      bloc.add(SoundWaveformExtract(path: sound.url!, soundId: sound.id));
+    }
+  }
+
   @override
   Future<void> didChangeAppLifecycleState(AppLifecycleState state) async {
     await ref
@@ -146,6 +223,7 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
   @override
   Future<void> dispose() async {
     unawaited(_notifier?.destroy());
+    _soundSubscription?.close();
 
     WidgetsBinding.instance.removeObserver(this);
 
@@ -158,47 +236,58 @@ class _VideoRecorderScreenState extends ConsumerState<VideoRecorderScreen>
   Widget build(BuildContext context) {
     const backgroundColor = Color(0xFF000A06);
 
-    return const AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle(
-        statusBarColor: backgroundColor,
-        statusBarIconBrightness: .light,
-        statusBarBrightness: .dark,
-      ),
-      child: Scaffold(
-        backgroundColor: backgroundColor,
-        resizeToAvoidBottomInset: false,
-        body: Stack(
-          fit: .expand,
-          children: [
-            Column(
-              spacing: 12,
-              children: [
-                Expanded(
-                  child: Stack(
-                    fit: .expand,
-                    children: [
-                      // Camera preview
-                      VideoRecorderCameraPreview(),
+    return BlocProvider<SoundWaveformBloc>(
+      create: (context) {
+        final bloc = SoundWaveformBloc();
+        _setupSoundWaveformListener(bloc);
 
-                      // Segment bar
-                      VideoRecorderSegmentBar(),
+        return bloc;
+      },
+      child: const AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle(
+          statusBarColor: backgroundColor,
+          statusBarIconBrightness: .light,
+          statusBarBrightness: .dark,
+        ),
+        child: Scaffold(
+          backgroundColor: backgroundColor,
+          resizeToAvoidBottomInset: false,
+          body: Stack(
+            fit: .expand,
+            children: [
+              Column(
+                spacing: 12,
+                children: [
+                  Expanded(
+                    child: Stack(
+                      fit: .expand,
+                      children: [
+                        // Camera preview
+                        VideoRecorderCameraPreview(),
 
-                      // Top bar with close-button and confirm-button
-                      VideoRecorderTopBar(),
+                        // Audio progress bar (shows during recording with sound)
+                        VideoRecorderAudioProgressBar(),
 
-                      /// Record button
-                      RecordButton(),
-                    ],
+                        // Segment bar
+                        VideoRecorderSegmentBar(),
+
+                        // Top bar with close-button and confirm-button
+                        VideoRecorderTopBar(),
+
+                        /// Record button
+                        RecordButton(),
+                      ],
+                    ),
                   ),
-                ),
-                // Bottom controls
-                VideoRecorderBottomBar(),
-              ],
-            ),
+                  // Bottom controls
+                  VideoRecorderBottomBar(),
+                ],
+              ),
 
-            // Countdown overlay
-            VideoRecorderCountdownOverlay(),
-          ],
+              // Countdown overlay
+              VideoRecorderCountdownOverlay(),
+            ],
+          ),
         ),
       ),
     );

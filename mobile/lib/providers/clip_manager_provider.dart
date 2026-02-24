@@ -44,11 +44,15 @@ class ClipManagerNotifier extends Notifier<ClipManagerState> {
   /// Returns the difference between [maxDuration] and the sum of all clip
   /// durations.
   Duration get remainingDuration {
-    final totalDuration = _clips.fold<Duration>(
+    return VideoEditorConstants.maxDuration - totalDuration;
+  }
+
+  /// Calculates the total duration of all recorded clips.
+  Duration get totalDuration {
+    return _clips.fold<Duration>(
       Duration.zero,
       (sum, clip) => sum + clip.duration,
     );
-    return VideoEditorConstants.maxDuration - totalDuration;
   }
 
   @override
