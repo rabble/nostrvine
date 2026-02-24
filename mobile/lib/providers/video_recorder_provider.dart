@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/services/haptic_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as model show AspectRatio;
 import 'package:openvine/constants/video_editor_constants.dart';
@@ -554,6 +555,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
 
     _baseZoomLevel = state.zoomLevel;
     _isStartingRecording = true;
+    unawaited(HapticService.recordingFeedback());
 
     // Handle timer countdown
     if (state.timerDuration != .off) {
@@ -583,6 +585,7 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
         return;
       }
       state = state.copyWith(countdownValue: 0);
+      unawaited(HapticService.recordingFeedback());
 
       // Re-enable volume key interception after countdown
       // (unless a sound is selected, then keep them disabled)
@@ -664,6 +667,8 @@ class VideoRecorderNotifier extends Notifier<VideoRecorderProviderState> {
       category: .video,
     );
     _isStoppingRecording = true;
+
+    unawaited(HapticService.recordingFeedback());
 
     // Stop audio playback if active
     await _stopSoundPlayback();
