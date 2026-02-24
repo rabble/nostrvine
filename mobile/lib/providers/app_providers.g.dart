@@ -1149,7 +1149,7 @@ final class FlutterSecureStorageProvider
 }
 
 String _$flutterSecureStorageHash() =>
-    r'5be8817de87a006e56f25bca80abfc39a48777cd';
+    r'903085f91b6d90816a6d87fa98f580de863a012f';
 
 @ProviderFor(secureKeycastStorage)
 const secureKeycastStorageProvider = SecureKeycastStorageProvider._();
