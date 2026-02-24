@@ -374,6 +374,15 @@ class CameraController: NSObject {
     
     /// Sets up the camera session.
     private func setupCamera(completion: @escaping ([String: Any]?, String?) -> Void) {
+        // Configure audio session for video recording.
+        // Using .playAndRecord allows simultaneous recording and playback.
+        // .allowBluetooth and .allowBluetoothA2DP prevent iOS from resetting
+        // audio routing when Bluetooth devices reconnect or during session
+        // reconfiguration (e.g. camera switch), which would otherwise trigger
+        // spurious MPRemoteCommandCenter events on connected devices like
+        // Apple Watch.
+        configureAudioSession()
+        
         // Create capture session
         let session = AVCaptureSession()
         session.beginConfiguration()
@@ -566,6 +575,32 @@ class CameraController: NSObject {
             } catch {
                 print("DivineCamera: Pre-warm failed (non-critical): \(error.localizedDescription)")
             }
+        }
+    }
+    
+    // MARK: - Audio Session Configuration
+    
+    /// Configures the AVAudioSession for video recording with Bluetooth support.
+    ///
+    /// This prevents iOS from triggering audio route changes during camera
+    /// switch, which would cause connected Bluetooth devices (Apple Watch,
+    /// AirPods) to send spurious MPRemoteCommandCenter play/pause events.
+    private func configureAudioSession() {
+        do {
+            let audioSession = AVAudioSession.sharedInstance()
+            try audioSession.setCategory(
+                .playAndRecord,
+                mode: .videoRecording,
+                options: [
+                    .defaultToSpeaker,
+                    .allowBluetooth,
+                    .allowBluetoothA2DP
+                ]
+            )
+            try audioSession.setActive(true)
+            print("DivineCamera: Audio session configured for video recording with Bluetooth support")
+        } catch {
+            print("DivineCamera: Failed to configure audio session (non-critical): \(error.localizedDescription)")
         }
     }
     

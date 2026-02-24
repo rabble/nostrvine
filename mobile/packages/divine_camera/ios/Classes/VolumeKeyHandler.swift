@@ -22,6 +22,17 @@ class VolumeKeyHandler: NSObject {
     private var volumeChangeTimer: Timer?
     private var isInternalVolumeChange = false
     
+    // Cooldown after activation to ignore spurious Bluetooth events
+    private var enabledTimestamp: TimeInterval = 0
+    private let activationCooldownSeconds: TimeInterval = 0.8
+    
+    // Debounce between Bluetooth triggers to prevent rapid-fire events
+    private var lastBluetoothTriggerTimestamp: TimeInterval = 0
+    private let bluetoothDebounceSeconds: TimeInterval = 0.5
+    
+    // Temporary suppression during camera switch / audio route changes
+    private var isSuppressed = false
+    
     init(onTrigger: @escaping (String) -> Void) {
         self.onTrigger = onTrigger
         super.init()
@@ -46,6 +57,7 @@ class VolumeKeyHandler: NSObject {
         
         isEnabled = true
         volumeKeysEnabled = true
+        enabledTimestamp = ProcessInfo.processInfo.systemUptime
         NSLog("DivineCameraVolumeKeyHandler: Enabled")
         return true
     }
@@ -77,6 +89,21 @@ class VolumeKeyHandler: NSObject {
         return isEnabled
     }
     
+    /// Temporarily suppress all triggers for the given duration.
+    ///
+    /// Used during camera switch and other operations that cause
+    /// iOS audio route changes, which can trigger spurious Bluetooth
+    /// play/pause events from connected devices (e.g. Apple Watch).
+    func suppressTemporarily(forSeconds duration: TimeInterval = 1.0) {
+        guard isEnabled else { return }
+        isSuppressed = true
+        NSLog("DivineCameraVolumeKeyHandler: Suppressed for \(duration)s")
+        DispatchQueue.main.asyncAfter(deadline: .now() + duration) { [weak self] in
+            self?.isSuppressed = false
+            NSLog("DivineCameraVolumeKeyHandler: Suppression ended")
+        }
+    }
+    
     /// Cleanup resources.
     func release() {
         disable()
@@ -91,21 +118,21 @@ class VolumeKeyHandler: NSObject {
         // Play/Pause toggle (most common on Bluetooth headphones)
         commandCenter.togglePlayPauseCommand.addTarget { [weak self] _ in
             NSLog("DivineCameraVolumeKeyHandler: Bluetooth toggle play/pause")
-            self?.onTrigger?("bluetooth")
+            self?.handleBluetoothTrigger()
             return .success
         }
         
         // Play command
         commandCenter.playCommand.addTarget { [weak self] _ in
             NSLog("DivineCameraVolumeKeyHandler: Bluetooth play")
-            self?.onTrigger?("bluetooth")
+            self?.handleBluetoothTrigger()
             return .success
         }
         
         // Pause command
         commandCenter.pauseCommand.addTarget { [weak self] _ in
             NSLog("DivineCameraVolumeKeyHandler: Bluetooth pause")
-            self?.onTrigger?("bluetooth")
+            self?.handleBluetoothTrigger()
             return .success
         }
         
@@ -130,6 +157,42 @@ class VolumeKeyHandler: NSObject {
         commandCenter.pauseCommand.removeTarget(nil)
         
         MPNowPlayingInfoCenter.default().nowPlayingInfo = nil
+    }
+    
+    // MARK: - Bluetooth Trigger Handling
+    
+    /// Handles a Bluetooth remote trigger with cooldown and debounce protection.
+    ///
+    /// Filters out:
+    /// - Events during activation cooldown (spurious events when enabling)
+    /// - Events during temporary suppression (camera switch / route changes)
+    /// - Rapid-fire duplicate events (debounce)
+    private func handleBluetoothTrigger() {
+        let now = ProcessInfo.processInfo.systemUptime
+        
+        // Check suppression (camera switch in progress)
+        if isSuppressed {
+            NSLog("DivineCameraVolumeKeyHandler: Bluetooth trigger ignored - suppressed")
+            return
+        }
+        
+        // Check activation cooldown
+        let timeSinceEnabled = now - enabledTimestamp
+        if timeSinceEnabled < activationCooldownSeconds {
+            NSLog("DivineCameraVolumeKeyHandler: Bluetooth trigger ignored - within \(String(format: "%.0f", activationCooldownSeconds * 1000))ms activation cooldown (\(String(format: "%.0f", timeSinceEnabled * 1000))ms since enabled)")
+            return
+        }
+        
+        // Check debounce between triggers
+        let timeSinceLastTrigger = now - lastBluetoothTriggerTimestamp
+        if timeSinceLastTrigger < bluetoothDebounceSeconds {
+            NSLog("DivineCameraVolumeKeyHandler: Bluetooth trigger ignored - debounce (\(String(format: "%.0f", timeSinceLastTrigger * 1000))ms since last)")
+            return
+        }
+        
+        lastBluetoothTriggerTimestamp = now
+        NSLog("DivineCameraVolumeKeyHandler: Bluetooth trigger accepted")
+        onTrigger?("bluetooth")
     }
     
     // MARK: - Volume Button Detection
