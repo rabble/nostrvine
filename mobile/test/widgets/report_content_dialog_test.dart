@@ -17,7 +17,6 @@ import 'package:openvine/services/content_moderation_service.dart';
 import 'package:openvine/providers/app_providers.dart';
 
 import '../helpers/test_provider_overrides.dart';
-import '../helpers/test_provider_overrides.mocks.dart';
 import 'report_content_dialog_test.mocks.dart';
 
 @GenerateMocks([ContentReportingService, ContentBlocklistService, MuteService])
