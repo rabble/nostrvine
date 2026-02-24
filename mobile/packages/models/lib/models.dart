@@ -8,6 +8,7 @@ export 'src/curation_publish_status.dart';
 export 'src/curation_set.dart';
 export 'src/divine_filter.dart';
 export 'src/feed_type.dart';
+export 'src/hashtag_search_result.dart';
 export 'src/log_entry.dart';
 export 'src/logging_types.dart';
 export 'src/native_proof_data.dart';

@@ -6,6 +6,7 @@ import 'dart:convert';
 import 'dart:core';
 
 import 'package:comments_repository/comments_repository.dart';
+import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart';
@@ -28,6 +29,7 @@ import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
+import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/blocklist_content_filter.dart';
@@ -346,10 +348,13 @@ bool _setsEqual<T>(Set<T> a, Set<T> b) {
   return a.containsAll(b);
 }
 
-/// Analytics service with opt-out support
+/// Analytics service with opt-out support.
+///
+/// Publishes Kind 22236 ephemeral Nostr view events via [ViewEventPublisher].
 @Riverpod(keepAlive: true) // Keep alive to maintain singleton behavior
 AnalyticsService analyticsService(Ref ref) {
-  final service = AnalyticsService();
+  final viewPublisher = ref.watch(viewEventPublisherProvider);
+  final service = AnalyticsService(viewEventPublisher: viewPublisher);
 
   // Ensure cleanup on disposal
   ref.onDispose(() {
@@ -357,7 +362,6 @@ AnalyticsService analyticsService(Ref ref) {
   });
 
   // Initialize asynchronously but don't block the provider
-  // Use a microtask to avoid blocking the provider creation
   Future.microtask(() => service.initialize());
 
   return service;
@@ -387,6 +391,16 @@ AudioSharingPreferenceService audioSharingPreferenceService(Ref ref) {
 @Riverpod(keepAlive: true)
 AudioDevicePreferenceService audioDevicePreferenceService(Ref ref) {
   final service = AudioDevicePreferenceService();
+  service.initialize(); // Initialize asynchronously
+  return service;
+}
+
+/// Language preference service for managing the user's preferred content
+/// language. Used for NIP-32 self-labeling on published video events.
+/// keepAlive ensures setting persists across widget rebuilds.
+@Riverpod(keepAlive: true)
+LanguagePreferenceService languagePreferenceService(Ref ref) {
+  final service = LanguagePreferenceService();
   service.initialize(); // Initialize asynchronously
   return service;
 }
@@ -913,6 +927,11 @@ FollowRepository? followRepository(Ref ref) {
       final result = await analyticsService.getFollowers(pubkey, limit: 5000);
       return result.pubkeys;
     },
+    fetchFollowerCount: (pubkey) async {
+      final socialService = ref.read(socialServiceProvider);
+      final stats = await socialService.getFollowerStats(pubkey);
+      return stats['followers'] ?? 0;
+    },
   );
 
   // Register executors with pending action service for sync
@@ -939,6 +958,15 @@ FollowRepository? followRepository(Ref ref) {
   ref.onDispose(repository.dispose);
 
   return repository;
+}
+
+/// Provider for HashtagRepository instance.
+///
+/// Creates a HashtagRepository for searching hashtags via the Funnelcake API.
+@riverpod
+HashtagRepository hashtagRepository(Ref ref) {
+  final funnelcakeClient = ref.watch(funnelcakeApiClientProvider);
+  return HashtagRepository(funnelcakeApiClient: funnelcakeClient);
 }
 
 /// Provider for ProfileRepository instance

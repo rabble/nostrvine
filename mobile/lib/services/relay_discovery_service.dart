@@ -1,11 +1,10 @@
 // ABOUTME: Service for discovering user relays via NIP-65 (kind 10002)
-// ABOUTME: Queries indexer relays to find where users publish their relay lists
+// ABOUTME: Queries indexer relays via direct WebSocket to find relay lists
 // ABOUTME: Caches discovered relay lists by npub for quick access
 
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:nostr_client/nostr_client.dart';
 import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,6 +16,7 @@ class IndexerRelayConfig {
   static const List<String> defaultIndexers = [
     'wss://purplepag.es', // Purple Pages - primary NIP-65 indexer
     'wss://user.kindpag.es', // Kind Pages - specialized user metadata indexer
+    'wss://relay.damus.io', // Damus relay - broad indexer fallback
   ];
 }
 
@@ -82,7 +82,11 @@ class RelayDiscoveryResult {
   bool get hasRelays => relays.isNotEmpty;
 }
 
-/// Service for discovering and caching user relay lists via NIP-65
+/// Service for discovering and caching user relay lists via NIP-65.
+///
+/// Uses direct WebSocket connections to indexer relays - no NostrClient needed.
+/// This eliminates temp client overhead and avoids relay pool / storage
+/// side-effects that caused discovery to fail silently.
 class RelayDiscoveryService {
   RelayDiscoveryService({List<String>? indexerRelays})
     : _indexerRelays = indexerRelays ?? IndexerRelayConfig.defaultIndexers;
@@ -91,46 +95,34 @@ class RelayDiscoveryService {
   static const String _cachePrefix = 'relay_discovery_';
   static const Duration _cacheExpiry = Duration(hours: 24);
 
-  /// Discover relay list for a given npub
+  /// Discover relay list for a given npub.
   ///
   /// Steps:
   /// 1. Check cache for recent discovery
-  /// 2. If not cached, query indexer relays for kind 10002
-  /// 3. Parse relay list from event content/tags
-  /// 4. Cache result for future use
-  /// 5. Return list of relays with read/write flags
+  /// 2. If not cached, open direct WebSocket connections to indexer relays
+  /// 3. Query for kind 10002 (NIP-65 relay list)
+  /// 4. Parse relay list from event tags
+  /// 5. Cache result for future use
+  /// 6. Return list of relays with read/write flags
   ///
-  /// If [nostrClient] is provided, uses it to query indexers directly.
-  /// Otherwise returns cached results only (if available).
-  Future<RelayDiscoveryResult> discoverRelays(
-    String npub, {
-    NostrClient? nostrClient,
-  }) async {
+  /// Does NOT require a NostrClient - uses direct WebSocket connections to
+  /// indexer relays for a clean, self-contained query.
+  Future<RelayDiscoveryResult> discoverRelays(String npub) async {
     Log.info(
-      'Starting relay discovery for npub: ${_maskNpub(npub)}',
+      '🔍 Starting relay discovery for $npub',
       name: 'RelayDiscoveryService',
-      category: LogCategory.relay,
+      category: LogCategory.auth,
     );
 
-    // Check cache first
+    // Check cache first (only use if non-empty)
     final cached = await _getCachedRelays(npub);
-    if (cached != null) {
+    if (cached != null && cached.isNotEmpty) {
       Log.info(
-        'Found ${cached.length} cached relays for ${_maskNpub(npub)}',
+        '✅ Found ${cached.length} cached relays for $npub',
         name: 'RelayDiscoveryService',
-        category: LogCategory.relay,
+        category: LogCategory.auth,
       );
       return RelayDiscoveryResult.success(cached, 'cache');
-    }
-
-    // If no NostrClient provided, can't query - return failure
-    if (nostrClient == null) {
-      Log.warning(
-        'No NostrClient provided - cannot query indexers',
-        name: 'RelayDiscoveryService',
-        category: LogCategory.relay,
-      );
-      return RelayDiscoveryResult.failure('NostrClient required for discovery');
     }
 
     // Query indexers for kind 10002 (NIP-65 relay list)
@@ -140,22 +132,22 @@ class RelayDiscoveryService {
         return RelayDiscoveryResult.failure('Invalid npub format');
       }
 
-      Log.debug(
-        'Querying ${_indexerRelays.length} indexers in parallel for kind 10002...',
+      Log.info(
+        '🔍 Querying ${_indexerRelays.length} indexers for kind 10002...',
         name: 'RelayDiscoveryService',
-        category: LogCategory.relay,
+        category: LogCategory.auth,
       );
 
       // Query all indexers in parallel - first success wins
       final results = await Future.wait(
         _indexerRelays.map((indexerUrl) async {
           try {
-            return await _queryIndexer(indexerUrl, pubkeyHex, nostrClient);
+            return await _queryIndexerDirect(indexerUrl, pubkeyHex);
           } catch (e) {
             Log.warning(
-              'Failed to query indexer $indexerUrl: $e',
+              '⚠️ Failed to query indexer $indexerUrl: $e',
               name: 'RelayDiscoveryService',
-              category: LogCategory.relay,
+              category: LogCategory.auth,
             );
             return <DiscoveredRelay>[];
           }
@@ -167,9 +159,9 @@ class RelayDiscoveryService {
         if (results[i].isNotEmpty) {
           final indexerUrl = _indexerRelays[i];
           Log.info(
-            'Found ${results[i].length} relays on indexer: $indexerUrl',
+            '✅ Found ${results[i].length} relays on indexer: $indexerUrl',
             name: 'RelayDiscoveryService',
-            category: LogCategory.relay,
+            category: LogCategory.auth,
           );
 
           // Cache the result
@@ -181,173 +173,155 @@ class RelayDiscoveryService {
 
       // No relay list found on any indexer
       Log.warning(
-        'No relay list found for ${_maskNpub(npub)} on any indexer',
+        '⚠️ No relay list found for $npub on any indexer',
         name: 'RelayDiscoveryService',
-        category: LogCategory.relay,
+        category: LogCategory.auth,
       );
       return RelayDiscoveryResult.failure('No relay list found');
     } catch (e) {
       Log.error(
-        'Relay discovery failed: $e',
+        '❌ Relay discovery failed: $e',
         name: 'RelayDiscoveryService',
-        category: LogCategory.relay,
+        category: LogCategory.auth,
       );
       return RelayDiscoveryResult.failure('Discovery failed: $e');
     }
   }
 
-  /// Discover relay list for a given npub, skipping if user already has
-  /// configured relays.
+  /// Query a specific indexer relay for kind 10002 event via direct WebSocket.
   ///
-  /// This is the preferred method for automatic discovery during login.
-  /// If configured_relays already exists in SharedPreferences, it means the
-  /// user has a relay configuration (either from previous discovery or manual
-  /// edits), so we skip NIP-65 discovery to preserve it.
-  ///
-  /// Returns a failure result with specific message if:
-  /// - User already has configured relays (preserves existing config)
-  ///
-  /// Otherwise proceeds with normal [discoverRelays] behavior.
-  Future<RelayDiscoveryResult> discoverRelaysIfNotConfigured(
-    String npub, {
-    NostrClient? nostrClient,
-  }) async {
-    // Check if user already has configured relays
-    final prefs = await SharedPreferences.getInstance();
-    final configuredRelays = prefs.getStringList('configured_relays');
-    final hasConfiguredRelays =
-        configuredRelays != null && configuredRelays.isNotEmpty;
-
-    if (hasConfiguredRelays) {
-      Log.info(
-        'User already has ${configuredRelays.length} configured relays - '
-        'skipping NIP-65 discovery for ${_maskNpub(npub)}',
-        name: 'RelayDiscoveryService',
-        category: LogCategory.relay,
-      );
-
-      // Return failure result - user's configured relays should be used instead
-      return RelayDiscoveryResult.failure('User has configured relays');
-    }
-
-    // Proceed with normal discovery
-    return discoverRelays(npub, nostrClient: nostrClient);
-  }
-
-  /// Query a specific indexer relay for kind 10002 event using NostrClient
-  Future<List<DiscoveredRelay>> _queryIndexer(
+  /// Opens a direct WebSocket connection to the indexer, sends a REQ for the
+  /// user's kind 10002 event, waits for EVENT/EOSE, and disconnects.
+  /// This is self-contained - no NostrClient or relay pool needed.
+  Future<List<DiscoveredRelay>> _queryIndexerDirect(
     String indexerUrl,
     String pubkeyHex,
-    NostrClient client,
   ) async {
-    Log.debug(
-      'Querying indexer: $indexerUrl for kind 10002',
+    Log.info(
+      '  Querying indexer: $indexerUrl',
       name: 'RelayDiscoveryService',
-      category: LogCategory.relay,
+      category: LogCategory.auth,
     );
 
-    try {
-      // Temporarily add the indexer relay with timeout to prevent hanging
-      final added = await client
-          .addRelay(indexerUrl)
-          .timeout(
-            const Duration(seconds: 5),
-            onTimeout: () {
-              Log.warning(
-                'Timeout adding indexer relay: $indexerUrl',
-                name: 'RelayDiscoveryService',
-                category: LogCategory.relay,
-              );
-              return false;
-            },
-          );
-      if (!added) {
+    final relayStatus = RelayStatus(indexerUrl);
+    final relay = RelayBase(indexerUrl, relayStatus);
+    final completer = Completer<List<DiscoveredRelay>>();
+    final events = <Map<String, dynamic>>[];
+    final subscriptionId = 'rd_${DateTime.now().millisecondsSinceEpoch}';
+
+    // Set up message handler before connecting
+    relay.onMessage = (relay, json) async {
+      if (json.isEmpty) return;
+
+      final messageType = json[0] as String;
+
+      if (messageType == 'EVENT' && json.length >= 3) {
+        // Collect the raw event JSON
+        final eventJson = json[2] as Map<String, dynamic>;
+        events.add(eventJson);
+      } else if (messageType == 'EOSE') {
+        // All stored events received - parse and complete
+        if (!completer.isCompleted) {
+          if (events.isEmpty) {
+            completer.complete(<DiscoveredRelay>[]);
+          } else {
+            // Parse the most recent event's relay list
+            final relays = _parseRelayListFromJson(events.first);
+            completer.complete(relays);
+          }
+        }
+      } else if (messageType == 'NOTICE') {
         Log.warning(
-          'Failed to add indexer relay: $indexerUrl',
+          '  NOTICE from $indexerUrl: ${json.length > 1 ? json[1] : ""}',
           name: 'RelayDiscoveryService',
-          category: LogCategory.relay,
+          category: LogCategory.auth,
+        );
+      }
+    };
+
+    try {
+      // Add the REQ message to pending (will be sent when connection opens)
+      final filter = <String, dynamic>{
+        'kinds': <int>[10002],
+        'authors': <String>[pubkeyHex],
+        'limit': 1,
+      };
+      relay.pendingMessages.add(<dynamic>['REQ', subscriptionId, filter]);
+
+      // Connect - this opens WebSocket and sends the pending REQ
+      final connected = await relay.connect();
+      if (!connected) {
+        Log.warning(
+          '  Failed to connect to $indexerUrl',
+          name: 'RelayDiscoveryService',
+          category: LogCategory.auth,
         );
         return [];
       }
 
-      // Create filter for kind 10002 (NIP-65 relay list)
-      final filter = Filter(
-        kinds: [10002],
-        authors: [pubkeyHex],
-        limit: 1, // Only need the most recent
+      // Wait for EOSE (or timeout)
+      final result = await completer.future.timeout(
+        const Duration(seconds: 10),
+        onTimeout: () {
+          Log.warning(
+            '  Timeout querying indexer: $indexerUrl',
+            name: 'RelayDiscoveryService',
+            category: LogCategory.auth,
+          );
+          return <DiscoveredRelay>[];
+        },
       );
 
-      // Query with timeout (2s is sufficient - indexers respond in <1s typically)
-      final events = await client
-          .queryEvents([filter])
-          .timeout(
-            const Duration(seconds: 2),
-            onTimeout: () {
-              Log.warning(
-                'Timeout querying indexer: $indexerUrl',
-                name: 'RelayDiscoveryService',
-                category: LogCategory.relay,
-              );
-              return <Event>[];
-            },
-          );
-
-      // Remove the indexer relay after querying
-      await client.removeRelay(indexerUrl);
-
-      if (events.isEmpty) {
-        Log.debug(
-          'No kind 10002 event found on $indexerUrl',
-          name: 'RelayDiscoveryService',
-          category: LogCategory.relay,
-        );
-        return [];
-      }
-
-      // Parse the relay list from the event
-      final event = events.first;
-      final relays = _parseRelayList(event);
+      // Send CLOSE before disconnecting
+      await relay.send(<dynamic>['CLOSE', subscriptionId]);
 
       Log.info(
-        'Successfully parsed ${relays.length} relays from $indexerUrl',
+        '  Got ${result.length} relays from $indexerUrl',
         name: 'RelayDiscoveryService',
-        category: LogCategory.relay,
+        category: LogCategory.auth,
       );
 
-      return relays;
+      return result;
     } catch (e) {
       Log.error(
-        'Error querying indexer $indexerUrl: $e',
+        '  Error querying indexer $indexerUrl: $e',
         name: 'RelayDiscoveryService',
-        category: LogCategory.relay,
+        category: LogCategory.auth,
       );
-
-      // Try to remove the relay on error
-      try {
-        await client.removeRelay(indexerUrl);
-      } catch (_) {
-        // Ignore cleanup errors
-      }
-
       return [];
+    } finally {
+      try {
+        await relay.disconnect();
+      } catch (_) {}
     }
   }
 
-  /// Parse relay list from kind 10002 event
+  /// Parse relay list from kind 10002 event JSON.
   ///
   /// NIP-65 format:
-  /// Tags: [["r", "<relay-url>"], ["r", "<relay-url>", "read"], ["r", "<relay-url>", "write"]]
-  List<DiscoveredRelay> _parseRelayList(Event event) {
+  /// Tags: [["r", "<relay-url>"], ["r", "<relay-url>", "read"],
+  ///        ["r", "<relay-url>", "write"]]
+  List<DiscoveredRelay> _parseRelayListFromJson(Map<String, dynamic> json) {
     final relays = <DiscoveredRelay>[];
+    final tags = json['tags'] as List<dynamic>? ?? [];
 
-    for (final tag in event.tags) {
-      if (tag.isEmpty || tag[0] != 'r') continue;
-
+    for (final tag in tags) {
+      if (tag is! List || tag.isEmpty || tag[0] != 'r') continue;
       if (tag.length < 2) continue;
 
-      final url = tag[1];
-      // tag[2] can be "read" or "write" or omitted (meaning both)
-      final permission = tag.length > 2 ? tag[2] : null;
+      final url = tag[1] as String;
+
+      // Only accept WebSocket URLs (wss:// or ws://)
+      if (!url.startsWith('wss://') && !url.startsWith('ws://')) {
+        Log.warning(
+          '  Skipping non-WebSocket relay URL: $url',
+          name: 'RelayDiscoveryService',
+          category: LogCategory.auth,
+        );
+        continue;
+      }
+
+      final permission = tag.length > 2 ? tag[2] as String? : null;
 
       final relay = DiscoveredRelay(
         url: url,
@@ -359,9 +333,9 @@ class RelayDiscoveryService {
     }
 
     Log.info(
-      'Parsed ${relays.length} relays from kind 10002 event',
+      '  Parsed ${relays.length} relays from kind 10002 event',
       name: 'RelayDiscoveryService',
-      category: LogCategory.relay,
+      category: LogCategory.auth,
     );
 
     return relays;
@@ -379,17 +353,11 @@ class RelayDiscoveryService {
       };
 
       await prefs.setString(cacheKey, json.encode(cacheData));
-
-      Log.debug(
-        'Cached ${relays.length} relays for ${_maskNpub(npub)}',
-        name: 'RelayDiscoveryService',
-        category: LogCategory.relay,
-      );
     } catch (e) {
       Log.warning(
         'Failed to cache relays: $e',
         name: 'RelayDiscoveryService',
-        category: LogCategory.relay,
+        category: LogCategory.auth,
       );
     }
   }
@@ -409,23 +377,19 @@ class RelayDiscoveryService {
       // Check if cache is expired
       final cacheAge = DateTime.now().millisecondsSinceEpoch - timestamp;
       if (cacheAge > _cacheExpiry.inMilliseconds) {
-        Log.debug(
-          'Cache expired for ${_maskNpub(npub)}',
-          name: 'RelayDiscoveryService',
-          category: LogCategory.relay,
-        );
         return null;
       }
 
       final relaysList = cacheData['relays'] as List<dynamic>;
       return relaysList
           .map((r) => DiscoveredRelay.fromJson(r as Map<String, dynamic>))
+          .where((r) => r.url.startsWith('wss://') || r.url.startsWith('ws://'))
           .toList();
     } catch (e) {
       Log.warning(
         'Failed to read cached relays: $e',
         name: 'RelayDiscoveryService',
-        category: LogCategory.relay,
+        category: LogCategory.auth,
       );
       return null;
     }
@@ -437,17 +401,11 @@ class RelayDiscoveryService {
       final prefs = await SharedPreferences.getInstance();
       final cacheKey = '$_cachePrefix$npub';
       await prefs.remove(cacheKey);
-
-      Log.debug(
-        'Cleared relay cache for ${_maskNpub(npub)}',
-        name: 'RelayDiscoveryService',
-        category: LogCategory.relay,
-      );
     } catch (e) {
       Log.warning(
         'Failed to clear relay cache: $e',
         name: 'RelayDiscoveryService',
-        category: LogCategory.relay,
+        category: LogCategory.auth,
       );
     }
   }
@@ -455,22 +413,14 @@ class RelayDiscoveryService {
   /// Convert npub to hex format
   String? _npubToHex(String npub) {
     try {
-      // Use nostr_sdk's Bech32 decoding - returns hex pubkey directly
       return Nip19.decode(npub);
     } catch (e) {
       Log.error(
         'Failed to decode npub: $e',
         name: 'RelayDiscoveryService',
-        category: LogCategory.relay,
+        category: LogCategory.auth,
       );
       return null;
     }
-  }
-
-  /// Mask npub for logging (show first 8 and last 4 characters)
-  String _maskNpub(String npub) {
-    if (npub.length <= 12) return npub;
-    final lastFour = npub.substring(npub.length - 4);
-    return '${npub.substring(0, 8)}...$lastFour';
   }
 }

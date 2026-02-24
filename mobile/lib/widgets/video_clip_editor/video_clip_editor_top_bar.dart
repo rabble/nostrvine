@@ -3,9 +3,9 @@
 
 import 'dart:async';
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -130,21 +130,11 @@ class _BackToCameraButton extends StatelessWidget {
         child: Row(
           spacing: 6,
           children: [
-            SizedBox(
-              height: 32,
-              width: 32,
-              child: SvgPicture.asset(
-                'assets/icon/CaretLeft.svg',
-                colorFilter: const ColorFilter.mode(Colors.white, .srcIn),
-              ),
-            ),
-            SizedBox(
-              height: 32,
-              width: 32,
-              child: SvgPicture.asset(
-                'assets/icon/video_camera.svg',
-                colorFilter: const ColorFilter.mode(Colors.white, .srcIn),
-              ),
+            DivineIcon(icon: .caretLeft, size: 32, color: VineTheme.whiteText),
+            DivineIcon(
+              icon: .videoCamera,
+              size: 22,
+              color: VineTheme.whiteText,
             ),
           ],
         ),
@@ -166,14 +156,7 @@ class _CloseButton extends StatelessWidget {
       label: 'Close video editor',
       child: GestureDetector(
         onTap: onTap,
-        child: SizedBox(
-          height: 32,
-          width: 32,
-          child: SvgPicture.asset(
-            'assets/icon/close.svg',
-            colorFilter: const ColorFilter.mode(Colors.white, .srcIn),
-          ),
-        ),
+        child: DivineIcon(icon: .x, size: 32, color: VineTheme.whiteText),
       ),
     );
   }

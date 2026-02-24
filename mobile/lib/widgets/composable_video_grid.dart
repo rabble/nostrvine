@@ -40,8 +40,8 @@ class ComposableVideoGrid extends ConsumerStatefulWidget {
   final int crossAxisCount;
   final double thumbnailAspectRatio;
 
-  /// When true, each item determines its own aspect ratio from video dimensions.
-  /// Square videos use 1:1, vertical videos use 2:3.
+  /// When true, each item determines its own aspect ratio from video
+  /// dimensions. Square videos use 1:1, vertical videos use 2:3.
   final bool useMasonryLayout;
   final EdgeInsets? padding;
   final Widget Function()? emptyBuilder;
@@ -99,6 +99,7 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
 
   Future<void> _triggerLoadMore() async {
     if (_isLoadingTriggered) return;
+
     _isLoadingTriggered = true;
 
     try {
@@ -145,7 +146,8 @@ class _ComposableVideoGridState extends ConsumerState<ComposableVideoGrid> {
     // Get subscribed list cache to check if videos are in lists
     final subscribedListCache = ref.watch(subscribedListVideoCacheProvider);
 
-    // Responsive column count: 3 for tablets/desktop (width >= 600), 2 for phones
+    // Responsive column count: 3 for tablets/desktop (width >= 600),
+    // 2 for phones
     final screenWidth = MediaQuery.of(context).size.width;
     final responsiveCrossAxisCount = screenWidth >= 600
         ? 3
@@ -522,8 +524,9 @@ class _VideoInfoSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasDescription = (video.title ?? video.content).isNotEmpty;
 
-    // Always show the info section with username (using bestDisplayName fallback)
-    // UserName.fromPubKey handles fallback to truncated npub when no profile name
+    // Always show the info section with username (using bestDisplayName
+    // fallback). UserName.fromPubKey handles fallback to truncated npub when
+    // no profile name.
     return Container(
       padding: const EdgeInsets.only(left: 8, right: 8, bottom: 8, top: 50),
       decoration: const BoxDecoration(

@@ -7,14 +7,16 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:openvine/router/app_router.dart';
 import 'package:models/models.dart';
 import 'package:openvine/blocs/fullscreen_feed/fullscreen_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/features/feature_flags/models/feature_flag.dart';
 import 'package:openvine/features/feature_flags/providers/feature_flag_providers.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/router/app_router.dart';
 import 'package:openvine/services/openvine_media_cache.dart';
+import 'package:openvine/services/view_event_publisher.dart';
+import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
@@ -32,6 +34,8 @@ class PooledFullscreenVideoFeedArgs {
     required this.initialIndex,
     this.onLoadMore,
     this.contextTitle,
+    this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
   });
 
   /// Stream of videos from the source (BLoC or provider).
@@ -45,6 +49,12 @@ class PooledFullscreenVideoFeedArgs {
 
   /// Optional title for context display.
   final String? contextTitle;
+
+  /// Traffic source for view event analytics.
+  final ViewTrafficSource trafficSource;
+
+  /// Additional context for the traffic source (e.g., hashtag name).
+  final String? sourceDetail;
 }
 
 /// Fullscreen video feed screen using pooled_video_player.
@@ -67,6 +77,8 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
     required this.initialIndex,
     this.onLoadMore,
     this.contextTitle,
+    this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
     super.key,
   });
 
@@ -74,6 +86,8 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
   final int initialIndex;
   final VoidCallback? onLoadMore;
   final String? contextTitle;
+  final ViewTrafficSource trafficSource;
+  final String? sourceDetail;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -88,7 +102,11 @@ class PooledFullscreenVideoFeedScreen extends ConsumerWidget {
         mediaCache: mediaCache,
         blossomAuthService: blossomAuthService,
       )..add(const FullscreenFeedStarted()),
-      child: FullscreenFeedContent(contextTitle: contextTitle),
+      child: FullscreenFeedContent(
+        contextTitle: contextTitle,
+        trafficSource: trafficSource,
+        sourceDetail: sourceDetail,
+      ),
     );
   }
 }
@@ -104,17 +122,25 @@ typedef VideoFeedControllerFactory =
 /// Manages the [VideoFeedController] lifecycle and wires hooks to dispatch
 /// BLoC events for caching and loop enforcement.
 @visibleForTesting
-class FullscreenFeedContent extends StatefulWidget {
+class FullscreenFeedContent extends ConsumerStatefulWidget {
   /// Creates fullscreen feed content.
   @visibleForTesting
   const FullscreenFeedContent({
     this.contextTitle,
+    this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
     @visibleForTesting this.controllerFactory,
     super.key,
   });
 
   /// Optional title for context display.
   final String? contextTitle;
+
+  /// Traffic source for view event analytics.
+  final ViewTrafficSource trafficSource;
+
+  /// Additional context for the traffic source (e.g., hashtag name).
+  final String? sourceDetail;
 
   /// Optional factory for creating the [VideoFeedController].
   ///
@@ -125,10 +151,11 @@ class FullscreenFeedContent extends StatefulWidget {
   final VideoFeedControllerFactory? controllerFactory;
 
   @override
-  State<FullscreenFeedContent> createState() => _FullscreenFeedContentState();
+  ConsumerState<FullscreenFeedContent> createState() =>
+      _FullscreenFeedContentState();
 }
 
-class _FullscreenFeedContentState extends State<FullscreenFeedContent>
+class _FullscreenFeedContentState extends ConsumerState<FullscreenFeedContent>
     with RouteAware {
   VideoFeedController? _controller;
   List<VideoItem>? _lastPooledVideos;
@@ -136,9 +163,11 @@ class _FullscreenFeedContentState extends State<FullscreenFeedContent>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Subscribe to route changes so we pause when a route is pushed on top
-    // (e.g. profile page) and resume when the user pops back.
-    routeObserver.subscribe(this, ModalRoute.of(context)!);
+    // Subscribe to route changes to pause/resume when navigating away
+    final route = ModalRoute.of(context);
+    if (route is PageRoute) {
+      routeObserver.subscribe(this, route);
+    }
     // Initialize controller if BLoC already has videos on first build
     _initializeControllerIfNeeded();
   }
@@ -150,21 +179,23 @@ class _FullscreenFeedContentState extends State<FullscreenFeedContent>
     super.dispose();
   }
 
-  // -- RouteAware callbacks --------------------------------------------------
+  // RouteAware callbacks: pause when another route is pushed on top,
+  // resume when this route becomes visible again.
 
   @override
   void didPushNext() {
-    // Another route was pushed on top (e.g. profile page) — pause playback.
-    _controller?.pause();
+    // Another route was pushed on top - pause playback
+    _controller?.setActive(active: false);
   }
 
   @override
   void didPopNext() {
-    // A route was popped back to us — resume playback.
-    _controller?.play();
+    // Returned to this route - resume playback
+    _controller?.setActive(active: true);
   }
 
-  /// Initializes the controller if not already created and videos are available.
+  /// Initializes the controller if not already created and videos are
+  /// available.
   ///
   /// Called from [didChangeDependencies] for initial setup and from
   /// [BlocListener] when videos become available asynchronously.
@@ -204,6 +235,23 @@ class _FullscreenFeedContentState extends State<FullscreenFeedContent>
     context.read<FullscreenFeedBloc>().add(
       const FullscreenFeedSeekCommandHandled(),
     );
+  }
+
+  void _triggerLoadMore() {
+    context.read<FullscreenFeedBloc>().add(
+      const FullscreenFeedLoadMoreRequested(),
+    );
+  }
+
+  void _onNearEnd(FullscreenFeedState state, int index) {
+    if (!state.canLoadMore) {
+      return;
+    }
+
+    final isAtEnd = index >= state.videos.length - 1;
+    if (isAtEnd) {
+      _triggerLoadMore();
+    }
   }
 
   /// Creates a VideoFeedController with hooks wired to dispatch BLoC events.
@@ -303,38 +351,21 @@ class _FullscreenFeedContentState extends State<FullscreenFeedContent>
               controller: _controller,
               initialIndex: state.currentIndex,
               onActiveVideoChanged: (video, index) {
-                // Resolve the actual index in state.videos by ID,
-                // since pooledVideos filters out null-URL videos and
-                // indices may not match.
-                final actualIndex = state.videos.indexWhere(
-                  (v) => v.id == video.id,
-                );
                 context.read<FullscreenFeedBloc>().add(
-                  FullscreenFeedIndexChanged(
-                    actualIndex >= 0 ? actualIndex : index,
-                  ),
+                  FullscreenFeedIndexChanged(index),
                 );
               },
-              onNearEnd: (_) {
-                context.read<FullscreenFeedBloc>().add(
-                  const FullscreenFeedLoadMoreRequested(),
-                );
-              },
-              nearEndThreshold: 2,
+              onNearEnd: (index) => _onNearEnd(state, index),
+              nearEndThreshold: 0,
               itemBuilder: (context, video, index, {required isActive}) {
-                // Look up by video ID instead of index, because
-                // pooledVideos filters out null-URL entries and indices
-                // may diverge from state.videos.
-                final originalEvent = state.videos.firstWhere(
-                  (v) => v.id == video.id,
-                  orElse: () =>
-                      state.videos[index.clamp(0, state.videos.length - 1)],
-                );
+                final originalEvent = state.videos[index];
                 return _PooledFullscreenItem(
                   video: originalEvent,
                   index: index,
                   isActive: isActive,
                   contextTitle: widget.contextTitle,
+                  trafficSource: widget.trafficSource,
+                  sourceDetail: widget.sourceDetail,
                 );
               },
             ),
@@ -351,7 +382,7 @@ class _FullscreenAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final VideoEvent? currentVideo;
 
   static const _style = DiVineAppBarStyle(
-    iconButtonBackgroundColor: VineTheme.scrim30,
+    iconButtonBackgroundColor: Color(0x4D000000), // black with 0.3 alpha
   );
 
   @override
@@ -363,7 +394,6 @@ class _FullscreenAppBar extends ConsumerWidget implements PreferredSizeWidget {
       titleWidget: const SizedBox.shrink(),
       showBackButton: true,
       onBackPressed: context.pop,
-      backButtonSemanticLabel: 'Close video player',
       backgroundMode: DiVineAppBarBackgroundMode.transparent,
       style: _style,
       actions: _buildEditAction(context, ref),
@@ -407,12 +437,16 @@ class _PooledFullscreenItem extends ConsumerWidget {
     required this.index,
     required this.isActive,
     this.contextTitle,
+    this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
   });
 
   final VideoEvent video;
   final int index;
   final bool isActive;
   final String? contextTitle;
+  final ViewTrafficSource trafficSource;
+  final String? sourceDetail;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -439,6 +473,8 @@ class _PooledFullscreenItem extends ConsumerWidget {
         index: index,
         isActive: isActive,
         contextTitle: contextTitle,
+        trafficSource: trafficSource,
+        sourceDetail: sourceDetail,
       ),
     );
   }
@@ -450,16 +486,20 @@ class _PooledFullscreenItemContent extends StatelessWidget {
     required this.index,
     required this.isActive,
     this.contextTitle,
+    this.trafficSource = ViewTrafficSource.unknown,
+    this.sourceDetail,
   });
 
   final VideoEvent video;
   final int index;
   final bool isActive;
   final String? contextTitle;
+  final ViewTrafficSource trafficSource;
+  final String? sourceDetail;
 
   @override
   Widget build(BuildContext context) {
-    final isPortrait = video.dimensions != null ? video.isPortrait : true;
+    final isPortrait = video.dimensions != null ? video.isPortrait : false;
 
     return ColoredBox(
       color: Colors.black,
@@ -467,27 +507,31 @@ class _PooledFullscreenItemContent extends StatelessWidget {
         index: index,
         thumbnailUrl: video.thumbnailUrl,
         enableTapToPause: isActive,
-        videoBuilder: (context, videoController, player) => _FittedVideoPlayer(
-          videoController: videoController,
-          isPortrait: isPortrait,
-        ),
+        videoBuilder: (context, videoController, player) =>
+            PooledVideoMetricsTracker(
+              key: ValueKey('metrics-${video.id}'),
+              video: video,
+              player: player,
+              isActive: isActive,
+              trafficSource: trafficSource,
+              sourceDetail: sourceDetail,
+              child: _FittedVideoPlayer(
+                videoController: videoController,
+                isPortrait: isPortrait,
+              ),
+            ),
         loadingBuilder: (context) => _VideoLoadingPlaceholder(
           thumbnailUrl: video.thumbnailUrl,
           isPortrait: isPortrait,
         ),
         overlayBuilder: (context, videoController, player) =>
-            // Restore original system view padding that may have been
-            // consumed by SafeArea or other widgets up the tree.
-            MediaQuery(
-              data: MediaQueryData.fromView(View.of(context)),
-              child: VideoOverlayActions(
-                video: video,
-                isVisible: isActive,
-                isActive: isActive,
-                hasBottomNavigation: false,
-                contextTitle: contextTitle,
-                isFullscreen: true,
-              ),
+            VideoOverlayActions(
+              video: video,
+              isVisible: isActive,
+              isActive: isActive,
+              hasBottomNavigation: false,
+              contextTitle: contextTitle,
+              isFullscreen: true,
             ),
       ),
     );
@@ -510,10 +554,6 @@ class _FittedVideoPlayer extends StatelessWidget {
     return Video(
       controller: videoController,
       fit: boxFit,
-      // Transparent fill so the loading placeholder behind the Video widget
-      // stays visible until the first video frame renders, preventing a
-      // black flash during the loading → playing transition.
-      fill: Colors.transparent,
       filterQuality: FilterQuality.high,
       controls: NoVideoControls,
     );

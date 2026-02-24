@@ -48,7 +48,7 @@ class VideoRecorderTopBar extends ConsumerWidget {
                         backgroundColor: Color(0x26000000),
                         // TODO(l10n): Replace with context.l10n when localization is added.
                         semanticLabel: 'Close video recorder',
-                        iconPath: 'assets/icon/close.svg',
+                        icon: .x,
                         onTap: () => notifier.closeVideoRecorder(context),
                       ),
 

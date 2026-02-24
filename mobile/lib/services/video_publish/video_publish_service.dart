@@ -10,6 +10,7 @@ import 'package:openvine/models/vine_draft.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/blossom_upload_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/upload_manager.dart';
 import 'package:openvine/services/video_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -48,6 +49,7 @@ class VideoPublishService {
     required this.blossomService,
     required this.draftService,
     required this.onProgressChanged,
+    this.languagePreferenceService,
   });
 
   /// Manages background video uploads.
@@ -67,6 +69,9 @@ class VideoPublishService {
 
   /// Callback when upload progress changes.
   final OnProgressChanged onProgressChanged;
+
+  /// Language preference for NIP-32 tagging.
+  final LanguagePreferenceService? languagePreferenceService;
 
   /// Tracks the current background upload ID.
   String? _backgroundUploadId;
@@ -140,6 +145,7 @@ class VideoPublishService {
         inspiredByNpub: draft.inspiredByNpub,
         selectedAudioEventId: draft.selectedAudioEventId,
         selectedAudioRelay: draft.selectedAudioRelay,
+        language: languagePreferenceService?.contentLanguage,
       );
 
       if (!published) {

@@ -9,6 +9,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 
 /// Fullscreen video feed view for profile screens.
@@ -131,14 +132,14 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView>
     }
   }
 
-  void _handlePageChanged(int newIndex) {
+  void _handlePageChanged(int newIndex, {required bool hasMoreContent}) {
     // Update URL when swiping
     if (newIndex != widget.videoIndex) {
       widget.onPageChanged(newIndex);
     }
 
-    // Trigger pagination near end
-    if (newIndex >= widget.videos.length - 2) {
+    final isAtEnd = newIndex >= widget.videos.length - 1;
+    if (hasMoreContent && isAtEnd) {
       ref.read(profileFeedProvider(widget.userIdHex).notifier).loadMore();
     }
 
@@ -168,15 +169,21 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView>
 
   @override
   Widget build(BuildContext context) {
+    final profileFeedState = ref
+        .watch(profileFeedProvider(widget.userIdHex))
+        .asData
+        ?.value;
+    final hasMoreContent = profileFeedState?.hasMoreContent ?? false;
+    final itemCount = widget.videos.length;
+
     return PageView.builder(
       key: const Key('profile-video-page-view'),
       controller: _pageController,
       scrollDirection: Axis.vertical,
-      itemCount: widget.videos.length,
-      onPageChanged: _handlePageChanged,
+      itemCount: itemCount,
+      onPageChanged: (index) =>
+          _handlePageChanged(index, hasMoreContent: hasMoreContent),
       itemBuilder: (context, index) {
-        if (index >= widget.videos.length) return const SizedBox.shrink();
-
         // Use PageController as source of truth for active video
         final currentPage = _pageController?.page?.round() ?? widget.videoIndex;
         final isActive = index == currentPage;
@@ -195,6 +202,7 @@ class _ProfileVideoFeedViewState extends ConsumerState<ProfileVideoFeedView>
               ?.betterDisplayName('Profile'),
           hideFollowButtonIfFollowing:
               true, // Hide if already following this profile's user
+          trafficSource: ViewTrafficSource.profile,
         );
       },
     );

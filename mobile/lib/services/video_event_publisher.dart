@@ -254,6 +254,7 @@ class VideoEventPublisher {
     String? inspiredByNpub,
     String? selectedAudioEventId,
     String? selectedAudioRelay,
+    String? language,
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -272,6 +273,7 @@ class VideoEventPublisher {
       inspiredByNpub: inspiredByNpub,
       selectedAudioEventId: selectedAudioEventId,
       selectedAudioRelay: selectedAudioRelay,
+      language: language,
     );
   }
 
@@ -286,10 +288,30 @@ class VideoEventPublisher {
     String? inspiredByNpub,
     String? selectedAudioEventId,
     String? selectedAudioRelay,
+    String? language,
   }) async {
     if (upload.videoId == null || upload.cdnUrl == null) {
       Log.error(
         'Cannot publish upload - missing videoId or cdnUrl',
+        name: 'VideoEventPublisher',
+        category: LogCategory.video,
+      );
+      return false;
+    }
+
+    // Validate that at least one video URL is a proper HTTP/HTTPS URL
+    // This prevents local file paths from being published to Nostr
+    final hasValidVideoUrl =
+        _isHttpUrl(upload.streamingMp4Url) ||
+        _isHttpUrl(upload.fallbackUrl) ||
+        _isHttpUrl(upload.streamingHlsUrl) ||
+        _isHttpUrl(upload.cdnUrl);
+    if (!hasValidVideoUrl) {
+      Log.error(
+        '❌ Cannot publish - no valid HTTP video URLs found. '
+        'cdnUrl=${upload.cdnUrl}, fallbackUrl=${upload.fallbackUrl}, '
+        'streamingMp4Url=${upload.streamingMp4Url}, '
+        'streamingHlsUrl=${upload.streamingHlsUrl}',
         name: 'VideoEventPublisher',
         category: LogCategory.video,
       );
@@ -327,8 +349,7 @@ class VideoEventPublisher {
       // Validate BunnyStream MP4 URL - must have quality suffix (e.g., play_360p.mp4)
       // Invalid: .../play.mp4 (returns 404)
       // Valid: .../play_360p.mp4, .../play_480p.mp4, etc.
-      if (upload.streamingMp4Url != null &&
-          upload.streamingMp4Url!.isNotEmpty) {
+      if (_isHttpUrl(upload.streamingMp4Url)) {
         final isValidBunnyMp4 =
             upload.streamingMp4Url!.contains('stream.divine.video')
             ? upload.streamingMp4Url!.contains(RegExp(r'play_\d+p\.mp4'))
@@ -344,25 +365,50 @@ class VideoEventPublisher {
             category: LogCategory.video,
           );
         }
+      } else if (upload.streamingMp4Url != null &&
+          upload.streamingMp4Url!.isNotEmpty) {
+        Log.error(
+          '⚠️ Skipping non-HTTP streamingMp4Url (possible local path): ${upload.streamingMp4Url}',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
       }
 
-      if (upload.fallbackUrl != null && upload.fallbackUrl!.isNotEmpty) {
+      if (_isHttpUrl(upload.fallbackUrl)) {
         imetaComponents.add('url ${upload.fallbackUrl}');
         urlsAdded.add('MP4(R2 fallback): ${upload.fallbackUrl}');
+      } else if (upload.fallbackUrl != null && upload.fallbackUrl!.isNotEmpty) {
+        Log.error(
+          '⚠️ Skipping non-HTTP fallbackUrl (possible local path): ${upload.fallbackUrl}',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
       }
 
-      if (upload.streamingHlsUrl != null &&
-          upload.streamingHlsUrl!.isNotEmpty) {
+      if (_isHttpUrl(upload.streamingHlsUrl)) {
         imetaComponents.add('url ${upload.streamingHlsUrl}');
         urlsAdded.add('HLS: ${upload.streamingHlsUrl}');
+      } else if (upload.streamingHlsUrl != null &&
+          upload.streamingHlsUrl!.isNotEmpty) {
+        Log.error(
+          '⚠️ Skipping non-HTTP streamingHlsUrl (possible local path): ${upload.streamingHlsUrl}',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
       }
 
       // Fallback to legacy cdnUrl if no Blossom-specific URLs
-      if (urlsAdded.isEmpty &&
-          upload.cdnUrl != null &&
-          upload.cdnUrl!.isNotEmpty) {
+      if (urlsAdded.isEmpty && _isHttpUrl(upload.cdnUrl)) {
         imetaComponents.add('url ${upload.cdnUrl}');
         urlsAdded.add('Legacy CDN: ${upload.cdnUrl}');
+      } else if (urlsAdded.isEmpty &&
+          upload.cdnUrl != null &&
+          upload.cdnUrl!.isNotEmpty) {
+        Log.error(
+          '⚠️ Skipping non-HTTP cdnUrl (possible local path): ${upload.cdnUrl}',
+          name: 'VideoEventPublisher',
+          category: LogCategory.video,
+        );
       }
 
       if (urlsAdded.isNotEmpty) {
@@ -373,10 +419,12 @@ class VideoEventPublisher {
         );
       } else {
         Log.error(
-          '❌ No video URLs available from upload',
+          '❌ No valid HTTP video URLs available - refusing to publish. '
+          'This prevents local file paths from leaking into Nostr events.',
           name: 'VideoEventPublisher',
           category: LogCategory.video,
         );
+        return false;
       }
 
       imetaComponents.add('m video/mp4');
@@ -518,6 +566,12 @@ class VideoEventPublisher {
         for (final hashtag in upload.hashtags!) {
           tags.add(['t', hashtag]);
         }
+      }
+
+      // Add NIP-32 language self-labeling tags
+      if (language != null && language.isNotEmpty) {
+        tags.add(['L', 'ISO-639-1']);
+        tags.add(['l', language, 'ISO-639-1']);
       }
 
       // Add client tag
@@ -1228,6 +1282,12 @@ class VideoEventPublisher {
 
     // Publish to relays
     return _publishEventToNostr(event);
+  }
+
+  /// Check if a URL is a valid HTTP/HTTPS URL (not a local file path)
+  static bool _isHttpUrl(String? url) {
+    if (url == null || url.isEmpty) return false;
+    return url.startsWith('http://') || url.startsWith('https://');
   }
 
   void dispose() {

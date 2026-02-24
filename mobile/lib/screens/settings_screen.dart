@@ -4,6 +4,7 @@
 
 import 'dart:async';
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:camera_macos_plus/camera_macos.dart';
 import 'package:flutter/foundation.dart';
@@ -24,6 +25,7 @@ import 'package:openvine/screens/relay_settings_screen.dart';
 import 'package:openvine/screens/safety_settings_screen.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/draft_storage_service.dart';
+import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/zendesk_support_service.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
@@ -160,6 +162,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onTap: () => context.push(SafetySettingsScreen.path),
               ),
               _buildAudioSharingToggle(),
+              _buildLanguageSetting(),
               // Audio device selector (macOS only - shows when multiple mics)
               if (!kIsWeb && Platform.isMacOS) _buildAudioDeviceSelector(),
 
@@ -320,6 +323,152 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
       ),
       activeThumbColor: VineTheme.vineGreen,
       secondary: const Icon(Icons.music_note, color: VineTheme.vineGreen),
+    );
+  }
+
+  Widget _buildLanguageSetting() {
+    final languageService = ref.watch(languagePreferenceServiceProvider);
+    final currentCode = languageService.contentLanguage;
+    final isCustom = languageService.isCustomLanguageSet;
+    final displayName = LanguagePreferenceService.displayNameFor(currentCode);
+    final subtitle = isCustom ? displayName : '$displayName (device default)';
+
+    return ListTile(
+      leading: const Icon(Icons.language, color: VineTheme.vineGreen),
+      title: const Text(
+        'Content Language',
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      subtitle: Text(
+        subtitle,
+        style: const TextStyle(color: Colors.grey, fontSize: 14),
+      ),
+      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+      onTap: _showLanguagePicker,
+    );
+  }
+
+  Future<void> _showLanguagePicker() async {
+    final languageService = ref.read(languagePreferenceServiceProvider);
+    final currentCode = languageService.contentLanguage;
+    final isCustom = languageService.isCustomLanguageSet;
+
+    await showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: VineTheme.cardBackground,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      isScrollControlled: true,
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.85,
+        minChildSize: 0.3,
+        expand: false,
+        builder: (context, scrollController) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.all(16),
+                child: Text(
+                  'Content Language',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(horizontal: 16),
+                child: Text(
+                  'Tag your videos with a language so viewers can filter content.',
+                  style: TextStyle(color: Colors.grey, fontSize: 13),
+                ),
+              ),
+              const SizedBox(height: 8),
+              const Divider(color: Colors.grey, height: 1),
+              // Device default option
+              ListTile(
+                leading: Icon(
+                  !isCustom
+                      ? Icons.radio_button_checked
+                      : Icons.radio_button_off,
+                  color: VineTheme.vineGreen,
+                ),
+                title: const Text(
+                  'Use device language (default)',
+                  style: TextStyle(color: Colors.white),
+                ),
+                subtitle: Text(
+                  LanguagePreferenceService.displayNameFor(
+                    PlatformDispatcher.instance.locale.languageCode,
+                  ),
+                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                ),
+                onTap: () async {
+                  await languageService.clearContentLanguage();
+                  if (mounted) {
+                    setState(() {});
+                    Navigator.pop(context);
+                  }
+                },
+              ),
+              const Divider(color: Colors.grey, height: 1),
+              // Language list
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount:
+                      LanguagePreferenceService.supportedLanguages.length,
+                  itemBuilder: (context, index) {
+                    final entry = LanguagePreferenceService
+                        .supportedLanguages
+                        .entries
+                        .elementAt(index);
+                    final code = entry.key;
+                    final name = entry.value;
+                    final isSelected = isCustom && currentCode == code;
+
+                    return ListTile(
+                      leading: Icon(
+                        isSelected
+                            ? Icons.radio_button_checked
+                            : Icons.radio_button_off,
+                        color: VineTheme.vineGreen,
+                      ),
+                      title: Text(
+                        name,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                      subtitle: Text(
+                        code.toUpperCase(),
+                        style: const TextStyle(
+                          color: Colors.grey,
+                          fontSize: 12,
+                        ),
+                      ),
+                      onTap: () async {
+                        await languageService.setContentLanguage(code);
+                        if (mounted) {
+                          setState(() {});
+                          Navigator.pop(context);
+                        }
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 

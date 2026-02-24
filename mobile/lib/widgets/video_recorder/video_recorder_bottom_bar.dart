@@ -163,7 +163,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
                   children: [
                     // Flash toggle
                     _ActionButton(
-                      iconPath: state.flashMode.iconPath,
+                      icon: state.flashMode.iconPath,
                       // TODO(l10n): Replace with context.l10n
                       // when localization is added.
                       tooltip: 'Toggle flash',
@@ -172,7 +172,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
 
                     // Timer toggle
                     _ActionButton(
-                      iconPath: state.timer.iconPath,
+                      icon: state.timer.icon,
                       // TODO(l10n): Replace with context.l10n
                       // when localization is added.
                       tooltip: 'Cycle timer',
@@ -181,9 +181,9 @@ class VideoRecorderBottomBar extends ConsumerWidget {
 
                     // Aspect-Ratio
                     _ActionButton(
-                      iconPath: state.aspectRatio == .square
-                          ? 'assets/icon/crop_square.svg'
-                          : 'assets/icon/crop_portrait.svg',
+                      icon: state.aspectRatio == .square
+                          ? .cropSquare
+                          : .cropPortrait,
                       // TODO(l10n): Replace with context.l10n
                       // when localization is added.
                       tooltip: 'Toggle aspect ratio',
@@ -192,7 +192,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
 
                     // Sound selection
                     _ActionButton(
-                      iconPath: 'assets/icon/music_note.svg',
+                      icon: .musicNote,
                       // TODO(l10n): Replace with context.l10n
                       // when localization is added.
                       tooltip: 'Select sound',
@@ -202,7 +202,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
 
                     // Flip camera
                     _ActionButton(
-                      iconPath: 'assets/icon/refresh.svg',
+                      icon: .arrowsClockwise,
                       // TODO(l10n): Replace with context.l10n
                       // when localization is added.
                       tooltip: 'Switch camera',
@@ -213,7 +213,7 @@ class VideoRecorderBottomBar extends ConsumerWidget {
 
                     // More options
                     _ActionButton(
-                      iconPath: 'assets/icon/more_horiz.svg',
+                      icon: .moreHoriz,
                       // TODO(l10n): Replace with context.l10n
                       // when localization is added.
                       tooltip: 'More options',
@@ -234,12 +234,12 @@ class _ActionButton extends StatelessWidget {
   const _ActionButton({
     required this.onPressed,
     required this.tooltip,
-    required this.iconPath,
+    required this.icon,
     this.hasIndicator = false,
   });
   final VoidCallback? onPressed;
   final String tooltip;
-  final String iconPath;
+  final DivineIconName icon;
   final bool hasIndicator;
 
   @override
@@ -252,17 +252,12 @@ class _ActionButton extends StatelessWidget {
       icon: Stack(
         clipBehavior: Clip.none,
         children: [
-          SizedBox(
-            height: 32,
-            width: 32,
-            child: SvgPicture.asset(
-              iconPath,
-              colorFilter: ColorFilter.mode(
-                Color.fromRGBO(255, 255, 255, isEnabled ? 1.0 : 0.3),
-                BlendMode.srcIn,
-              ),
-            ),
+          DivineIcon(
+            icon: icon,
+            size: 32,
+            color: VineTheme.whiteText.withAlpha(isEnabled ? 255 : 80),
           ),
+
           if (hasIndicator)
             Positioned(
               top: -2,

@@ -5,11 +5,13 @@
 
 import 'dart:async';
 
-import 'package:nostr_sdk/filter.dart';
+import 'package:nostr_sdk/nostr_sdk.dart';
 import 'package:openvine/constants/nip71_migration.dart';
+import 'package:openvine/constants/nostr_event_kinds.dart';
 import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/services/immediate_completion_helper.dart';
+import 'package:openvine/services/relay_discovery_service.dart';
 import 'package:nostr_client/nostr_client.dart';
 import 'package:openvine/services/personal_event_cache_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
@@ -193,32 +195,48 @@ class SocialService {
 
   /// Fetch follower stats from the network.
   ///
-  /// Tries the REST API first (instant response) and falls back to
-  /// WebSocket queries if the REST API is unavailable or returns
-  /// `following: 0` (which may indicate unindexed kind 3 data).
+  /// Runs REST API and WebSocket queries in parallel, then uses the
+  /// higher count from each source. The REST API (Funnelcake) only
+  /// indexes kind 3 events seen on the divine relay, so follower counts
+  /// are often undercounted. WebSocket queries reach all connected relays
+  /// for broader coverage. Both queries use short timeouts (3s) to keep
+  /// profile loading fast.
   Future<Map<String, int>> _fetchFollowerStats(String pubkey) async {
-    // 1. Try REST API first (fast, non-blocking)
-    final restResult = await _fetchFollowerStatsViaRest(pubkey);
-    if (restResult != null) {
-      // If REST reports 0 following, verify via WebSocket. The REST API
-      // may not have indexed the user's kind 3 contact list yet.
-      if (restResult['following'] == 0) {
-        final wsFollowing = await _fetchFollowingCountViaWebSocket(pubkey);
-        if (wsFollowing > 0) {
-          Log.debug(
-            'REST reported 0 following but relay has $wsFollowing '
-            '— using relay data for $pubkey',
-            name: 'SocialService',
-            category: LogCategory.system,
-          );
-          return {...restResult, 'following': wsFollowing};
-        }
-      }
-      return restResult;
+    // Run REST and WebSocket queries in parallel for best coverage
+    final results = await Future.wait([
+      _fetchFollowerStatsViaRest(pubkey),
+      _fetchFollowerStatsViaWebSocket(pubkey),
+    ]);
+
+    final restResult = results[0];
+    // wsResult is always non-null since _fetchFollowerStatsViaWebSocket
+    // never returns null, but Future.wait widens the type to nullable.
+    final wsResult = results[1]!;
+
+    if (restResult == null) {
+      return wsResult;
     }
 
-    // 2. Fall back to WebSocket queries (run in parallel)
-    return _fetchFollowerStatsViaWebSocket(pubkey);
+    // Use the higher count from each source
+    final followers = restResult['followers']! > wsResult['followers']!
+        ? restResult['followers']!
+        : wsResult['followers']!;
+    final following = restResult['following']! > wsResult['following']!
+        ? restResult['following']!
+        : wsResult['following']!;
+
+    if (followers != restResult['followers'] ||
+        following != restResult['following']) {
+      Log.info(
+        'Follower stats merged: REST=${restResult["followers"]}/'
+        '${restResult["following"]}, WS=${wsResult["followers"]}/'
+        '${wsResult["following"]} → using $followers/$following',
+        name: 'SocialService',
+        category: LogCategory.system,
+      );
+    }
+
+    return {'followers': followers, 'following': following};
   }
 
   /// Try fetching follower stats via the Funnelcake REST API.
@@ -264,7 +282,7 @@ class SocialService {
       // Run both queries in parallel using Future.wait
       final results = await Future.wait([
         _fetchFollowingCountViaWebSocket(pubkey),
-        _fetchFollowersCountViaWebSocket(pubkey),
+        _fetchFollowersCountViaIndexers(pubkey),
       ]);
 
       return {'following': results[0], 'followers': results[1]};
@@ -281,13 +299,13 @@ class SocialService {
   /// Get following count via WebSocket (Kind 3 contact list).
   Future<int> _fetchFollowingCountViaWebSocket(String pubkey) async {
     final eventStream = _nostrService.subscribe([
-      Filter(authors: [pubkey], kinds: [3], limit: 1),
+      Filter(authors: [pubkey], kinds: [NostrEventKinds.contactList], limit: 1),
     ]);
 
     final event = await ContactListCompletionHelper.queryContactList(
       eventStream: eventStream,
       pubkey: pubkey,
-      fallbackTimeoutSeconds: 8,
+      fallbackTimeoutSeconds: 3,
     );
 
     if (event != null) {
@@ -304,51 +322,121 @@ class SocialService {
     return 0;
   }
 
-  /// Get followers count via WebSocket (Kind 3 events mentioning pubkey).
-  Future<int> _fetchFollowersCountViaWebSocket(String pubkey) async {
-    final eventStream = _nostrService.subscribe([
-      Filter(kinds: [3], p: [pubkey]),
-    ]);
+  /// Indexer relays that efficiently index kind 3 events by p-tag.
+  /// User's own relays don't have other people's contact lists.
+  ///
+  /// These are public Nostr infrastructure relays — same URLs regardless of
+  /// app environment (dev/staging/prod) since they index the global Nostr
+  /// network, not our backend.
+  // Indexer relays come from IndexerRelayConfig.defaultIndexers.
 
-    final config = CompletionConfig(
-      mode: CompletionMode.exhaustive,
-      fallbackTimeoutSeconds: 8,
-      serviceName: 'FollowersQuery',
-      logCategory: LogCategory.system,
+  /// Get followers count by querying indexer relays directly.
+  ///
+  /// User's connected relays only have their own events, not other
+  /// people's kind 3 contact lists. Indexer relays like relay.nostr.band
+  /// and purplepag.es maintain broad indexes of kind 3 events by p-tag,
+  /// giving accurate follower counts.
+  Future<int> _fetchFollowersCountViaIndexers(String pubkey) async {
+    final results = await Future.wait(
+      IndexerRelayConfig.defaultIndexers.map(
+        (url) => _queryIndexerForFollowers(url, pubkey).catchError((e) {
+          // Return 0 on error so other indexers still contribute to the max.
+          Log.warning(
+            'Indexer $url follower count query failed: $e',
+            name: 'SocialService',
+            category: LogCategory.system,
+          );
+          return 0;
+        }),
+      ),
     );
 
-    final followerPubkeys = <String>{};
+    // Use the highest count from any indexer
+    var best = 0;
+    for (final count in results) {
+      if (count > best) best = count;
+    }
+
+    Log.info(
+      'Indexer followers counts: $results, using $best for $pubkey',
+      name: 'SocialService',
+      category: LogCategory.system,
+    );
+
+    return best;
+  }
+
+  /// Query a single indexer relay for kind 3 events mentioning pubkey.
+  Future<int> _queryIndexerForFollowers(
+    String indexerUrl,
+    String pubkey,
+  ) async {
+    final relayStatus = RelayStatus(indexerUrl);
+    final relay = RelayBase(indexerUrl, relayStatus);
     final completer = Completer<int>();
+    final followerPubkeys = <String>{};
+    final subscriptionId = 'fc_${DateTime.now().millisecondsSinceEpoch}';
 
-    ImmediateCompletionHelper.createImmediateSubscription(
-      eventStream: eventStream,
-      config: config,
-      onEvent: (event) {
-        followerPubkeys.add(event.pubkey);
-      },
-      onComplete: (result) {
-        Log.debug(
-          'WebSocket followers count: ${followerPubkeys.length} for $pubkey',
-          name: 'SocialService',
-          category: LogCategory.system,
-        );
+    relay.onMessage = (relay, jsonMsg) async {
+      if (jsonMsg.isEmpty) return;
+
+      final messageType = jsonMsg[0] as String;
+
+      if (messageType == 'EVENT' && jsonMsg.length >= 3) {
+        final eventJson = jsonMsg[2] as Map<String, dynamic>;
+        final eventPubkey = eventJson['pubkey'] as String?;
+        if (eventPubkey != null) {
+          followerPubkeys.add(eventPubkey);
+        }
+      } else if (messageType == 'EOSE') {
         if (!completer.isCompleted) {
           completer.complete(followerPubkeys.length);
         }
-      },
-      onError: (error) {
-        Log.error(
-          'Error fetching followers count via WebSocket: $error',
+      }
+    };
+
+    try {
+      final filter = <String, dynamic>{
+        'kinds': <int>[NostrEventKinds.contactList],
+        '#p': <String>[pubkey],
+      };
+      relay.pendingMessages.add(<dynamic>['REQ', subscriptionId, filter]);
+
+      final connected = await relay.connect();
+      if (!connected) {
+        return 0;
+      }
+
+      final result = await completer.future.timeout(
+        const Duration(seconds: 5),
+        onTimeout: () => followerPubkeys.length,
+      );
+
+      await relay.send(<dynamic>['CLOSE', subscriptionId]);
+      Log.debug(
+        'Indexer $indexerUrl returned $result followers for $pubkey',
+        name: 'SocialService',
+        category: LogCategory.system,
+      );
+      return result;
+    } catch (e) {
+      Log.warning(
+        'Error querying $indexerUrl for followers: $e',
+        name: 'SocialService',
+        category: LogCategory.system,
+      );
+      return followerPubkeys.length;
+    } finally {
+      try {
+        await relay.disconnect();
+      } catch (e) {
+        Log.warning(
+          'Error disconnecting from $indexerUrl: $e',
           name: 'SocialService',
           category: LogCategory.system,
         );
-        if (!completer.isCompleted) {
-          completer.complete(followerPubkeys.length);
-        }
-      },
-    );
-
-    return completer.future;
+      }
+    }
   }
 
   // === FOLLOW SETS MANAGEMENT (NIP-51 Kind 30000) ===

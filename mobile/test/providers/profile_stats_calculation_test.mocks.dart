@@ -10,7 +10,7 @@ import 'package:likes_repository/likes_repository.dart' as _i10;
 import 'package:mockito/mockito.dart' as _i1;
 import 'package:mockito/src/dummies.dart' as _i6;
 import 'package:models/models.dart' as _i5;
-import 'package:nostr_sdk/event.dart' as _i11;
+import 'package:nostr_sdk/nostr_sdk.dart' as _i11;
 import 'package:openvine/services/age_verification_service.dart' as _i9;
 import 'package:openvine/services/content_blocklist_service.dart' as _i8;
 import 'package:openvine/services/social_service.dart' as _i2;

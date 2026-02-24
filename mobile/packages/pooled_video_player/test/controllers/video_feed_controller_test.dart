@@ -957,14 +957,16 @@ void main() {
         verify(playerSetup.player.pause).called(1);
       });
 
-      test('pause does not call player.pause when not playing', () async {
+      test('pause calls player.pause even when not playing', () async {
         when(() => playerSetup.state.playing).thenReturn(false);
 
         controller.pause();
 
         await Future<void>.delayed(const Duration(milliseconds: 10));
 
-        verifyNever(playerSetup.player.pause);
+        // User-initiated pause always calls pause() to ensure deterministic
+        // state, regardless of the (potentially stale) playing flag.
+        verify(playerSetup.player.pause).called(1);
       });
     });
 
@@ -1671,7 +1673,7 @@ void main() {
 
     group('audio leak prevention', () {
       test(
-        'non-current video is paused without volume when buffer ready',
+        'non-current video keeps playing muted when buffer ready',
         () async {
           // preloadBehind=0, preloadAhead=2 → loads indices 0, 1, 2.
           // Default isBuffering=false means _onBufferReady fires during load.
@@ -1687,8 +1689,9 @@ void main() {
           // Video 1 is a preloaded (non-current) video.
           final setup1 = playerSetups[videos[1].url]!;
 
-          // Non-current video should be paused by _onBufferReady.
-          verify(setup1.player.pause).called(1);
+          // Non-current video should NOT be paused — keeps playing muted
+          // to avoid expensive pause→resume rebuffer stall in mpv.
+          verifyNever(setup1.player.pause);
 
           // Volume should never have been set to 100 — only setVolume(0)
           // during the loading phase.
@@ -1744,8 +1747,10 @@ void main() {
           controller.onPageChanged(5);
           await Future<void>.delayed(const Duration(milliseconds: 50));
 
-          // _releasePlayer should mute and pause before removing.
-          verify(() => setup0.player.setVolume(0)).called(1);
+          // setVolume(0) called twice: once by _pauseVideo (mute on swipe)
+          // and once by _releasePlayer (safety mute before pool return).
+          verify(() => setup0.player.setVolume(0)).called(2);
+          // pause() called once by _releasePlayer (full stop before return).
           verify(setup0.player.pause).called(1);
 
           controller.dispose();

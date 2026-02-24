@@ -39,6 +39,7 @@ final class FullscreenFeedState extends Equatable {
     this.videos = const [],
     this.currentIndex = 0,
     this.isLoadingMore = false,
+    this.canLoadMore = false,
     this.seekCommand,
   });
 
@@ -53,6 +54,9 @@ final class FullscreenFeedState extends Equatable {
 
   /// Whether a load more operation is in progress.
   final bool isLoadingMore;
+
+  /// Whether this feed supports pagination.
+  final bool canLoadMore;
 
   /// Seek command for widget to execute.
   ///
@@ -87,6 +91,7 @@ final class FullscreenFeedState extends Equatable {
     List<VideoEvent>? videos,
     int? currentIndex,
     bool? isLoadingMore,
+    bool? canLoadMore,
     SeekCommand? seekCommand,
     bool clearSeekCommand = false,
   }) {
@@ -95,6 +100,7 @@ final class FullscreenFeedState extends Equatable {
       videos: videos ?? this.videos,
       currentIndex: currentIndex ?? this.currentIndex,
       isLoadingMore: isLoadingMore ?? this.isLoadingMore,
+      canLoadMore: canLoadMore ?? this.canLoadMore,
       seekCommand: clearSeekCommand ? null : (seekCommand ?? this.seekCommand),
     );
   }
@@ -105,6 +111,7 @@ final class FullscreenFeedState extends Equatable {
     videos,
     currentIndex,
     isLoadingMore,
+    canLoadMore,
     seekCommand,
   ];
 }

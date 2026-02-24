@@ -4,8 +4,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart';
-import 'package:openvine/providers/app_lifecycle_provider.dart';
 import 'package:openvine/providers/active_video_provider.dart';
+import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
@@ -88,10 +88,6 @@ void main() {
     });
 
     test('modal open/close cycle returns to false', () {
-      // This test verifies the behavior that override mode videos depend on:
-      // When a modal (like comments) opens, hasVisibleOverlay becomes true.
-      // When the modal closes, hasVisibleOverlay returns to false.
-      // VideoFeedItem with isActiveOverride listens to this provider directly.
       final container = ProviderContainer();
       addTearDown(container.dispose);
 
@@ -128,112 +124,110 @@ void main() {
       ];
     });
 
-    test(
-      'activeVideoIdProvider returns video ID when no overlays are visible',
-      () {
-        final container = ProviderContainer(
-          overrides: [
-            appForegroundProvider.overrideWithValue(
-              const AsyncValue.data(true),
+    /// Creates a ProviderContainer with standard overrides for
+    /// activeVideoIdProvider integration tests.
+    ProviderContainer createTestContainer(List<VideoEvent> videos) {
+      return ProviderContainer(
+        overrides: [
+          // appForegroundProvider defaults to true (Notifier-based)
+          pageContextProvider.overrideWithValue(
+            const AsyncValue.data(
+              RouteContext(type: RouteType.home, videoIndex: 0),
             ),
-            pageContextProvider.overrideWithValue(
-              const AsyncValue.data(
-                RouteContext(type: RouteType.home, videoIndex: 0),
+          ),
+          videosForHomeRouteProvider.overrideWith((ref) {
+            return AsyncValue.data(
+              VideoFeedState(
+                videos: videos,
+                hasMoreContent: false,
+                isLoadingMore: false,
               ),
-            ),
-            videosForHomeRouteProvider.overrideWith((ref) {
-              return AsyncValue.data(
+            );
+          }),
+          homeFeedProvider.overrideWith(() {
+            return _TestHomeFeedNotifier(
+              AsyncData(
                 VideoFeedState(
-                  videos: mockVideos,
+                  videos: videos,
                   hasMoreContent: false,
                   isLoadingMore: false,
                 ),
-              );
-            }),
-          ],
-        );
+              ),
+            );
+          }),
+        ],
+      );
+    }
+
+    test(
+      'activeVideoIdProvider returns video ID when no overlays are visible',
+      () async {
+        final container = createTestContainer(mockVideos);
         addTearDown(container.dispose);
+
+        // Create active subscription to force reactive chain evaluation
+        container.listen(
+          activeVideoIdProvider,
+          (_, __) {},
+          fireImmediately: true,
+        );
+
+        // Allow async homeFeedProvider to resolve
+        await pumpEventQueue();
 
         // No overlays - video should play
         expect(container.read(activeVideoIdProvider), 'v0');
       },
     );
 
-    test('activeVideoIdProvider returns null when drawer is open', () {
-      final container = ProviderContainer(
-        overrides: [
-          appForegroundProvider.overrideWithValue(const AsyncValue.data(true)),
-          pageContextProvider.overrideWithValue(
-            const AsyncValue.data(
-              RouteContext(type: RouteType.home, videoIndex: 0),
-            ),
-          ),
-          videosForHomeRouteProvider.overrideWith((ref) {
-            return AsyncValue.data(
-              VideoFeedState(
-                videos: mockVideos,
-                hasMoreContent: false,
-                isLoadingMore: false,
-              ),
-            );
-          }),
-        ],
-      );
+    test('activeVideoIdProvider returns null when drawer is open', () async {
+      final container = createTestContainer(mockVideos);
       addTearDown(container.dispose);
+
+      // Create active subscription to force reactive chain evaluation
+      container.listen(
+        activeVideoIdProvider,
+        (_, __) {},
+        fireImmediately: true,
+      );
+
+      await pumpEventQueue();
 
       // Open drawer - video should pause (return null)
       container.read(overlayVisibilityProvider.notifier).setDrawerOpen(true);
       expect(container.read(activeVideoIdProvider), isNull);
     });
 
-    test('activeVideoIdProvider returns null when modal is open', () {
-      final container = ProviderContainer(
-        overrides: [
-          appForegroundProvider.overrideWithValue(const AsyncValue.data(true)),
-          pageContextProvider.overrideWithValue(
-            const AsyncValue.data(
-              RouteContext(type: RouteType.home, videoIndex: 0),
-            ),
-          ),
-          videosForHomeRouteProvider.overrideWith((ref) {
-            return AsyncValue.data(
-              VideoFeedState(
-                videos: mockVideos,
-                hasMoreContent: false,
-                isLoadingMore: false,
-              ),
-            );
-          }),
-        ],
-      );
+    test('activeVideoIdProvider returns null when modal is open', () async {
+      final container = createTestContainer(mockVideos);
       addTearDown(container.dispose);
+
+      // Create active subscription to force reactive chain evaluation
+      container.listen(
+        activeVideoIdProvider,
+        (_, __) {},
+        fireImmediately: true,
+      );
+
+      await pumpEventQueue();
 
       // Open modal - video should pause (return null)
       container.read(overlayVisibilityProvider.notifier).setModalOpen(true);
       expect(container.read(activeVideoIdProvider), isNull);
     });
 
-    test('video resumes when overlay is closed', () {
-      final container = ProviderContainer(
-        overrides: [
-          appForegroundProvider.overrideWithValue(const AsyncValue.data(true)),
-          pageContextProvider.overrideWithValue(
-            const AsyncValue.data(
-              RouteContext(type: RouteType.home, videoIndex: 0),
-            ),
-          ),
-          videosForHomeRouteProvider.overrideWith((ref) {
-            return AsyncValue.data(
-              VideoFeedState(
-                videos: mockVideos,
-                hasMoreContent: false,
-                isLoadingMore: false,
-              ),
-            );
-          }),
-        ],
-      );
+    test('video resumes when overlay is closed', () async {
+      final container = createTestContainer(mockVideos);
       addTearDown(container.dispose);
+
+      // Create active subscription to force reactive chain evaluation
+      container.listen(
+        activeVideoIdProvider,
+        (_, __) {},
+        fireImmediately: true,
+      );
+
+      await pumpEventQueue();
 
       // Initially video plays
       expect(container.read(activeVideoIdProvider), 'v0');
@@ -247,4 +241,26 @@ void main() {
       expect(container.read(activeVideoIdProvider), 'v0');
     });
   });
+}
+
+/// Test notifier that returns a fixed state for homeFeedProvider overrides.
+class _TestHomeFeedNotifier extends HomeFeed {
+  _TestHomeFeedNotifier(this._state);
+
+  final AsyncValue<VideoFeedState> _state;
+
+  @override
+  Future<VideoFeedState> build() async {
+    return _state.when(
+      data: (data) => data,
+      loading: () => VideoFeedState(
+        videos: const [],
+        hasMoreContent: false,
+        isLoadingMore: false,
+        error: null,
+        lastUpdated: null,
+      ),
+      error: (e, s) => throw e,
+    );
+  }
 }

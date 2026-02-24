@@ -1028,6 +1028,10 @@ class VideoEvent {
   }
 
   /// Create a copy with updated fields
+  ///
+  /// Use [clearOriginalLoops], [clearOriginalLikes], [clearOriginalComments],
+  /// and [clearOriginalReposts] to explicitly set those fields to null.
+  /// This is needed because passing null normally keeps the existing value.
   VideoEvent copyWith({
     String? id,
     String? pubkey,
@@ -1060,6 +1064,10 @@ class VideoEvent {
     int? originalLikes,
     int? originalComments,
     int? originalReposts,
+    bool clearOriginalLoops = false,
+    bool clearOriginalLikes = false,
+    bool clearOriginalComments = false,
+    bool clearOriginalReposts = false,
     int? expirationTimestamp,
     String? audioEventId,
     String? audioEventRelay,
@@ -1100,10 +1108,18 @@ class VideoEvent {
     repostedAt: repostedAt ?? this.repostedAt,
     isFlaggedContent: isFlaggedContent ?? this.isFlaggedContent,
     moderationStatus: moderationStatus ?? this.moderationStatus,
-    originalLoops: originalLoops ?? this.originalLoops,
-    originalLikes: originalLikes ?? this.originalLikes,
-    originalComments: originalComments ?? this.originalComments,
-    originalReposts: originalReposts ?? this.originalReposts,
+    originalLoops: clearOriginalLoops
+        ? null
+        : (originalLoops ?? this.originalLoops),
+    originalLikes: clearOriginalLikes
+        ? null
+        : (originalLikes ?? this.originalLikes),
+    originalComments: clearOriginalComments
+        ? null
+        : (originalComments ?? this.originalComments),
+    originalReposts: clearOriginalReposts
+        ? null
+        : (originalReposts ?? this.originalReposts),
     expirationTimestamp: expirationTimestamp ?? this.expirationTimestamp,
     audioEventId: audioEventId ?? this.audioEventId,
     audioEventRelay: audioEventRelay ?? this.audioEventRelay,

@@ -55,6 +55,13 @@ class BackButtonHandler {
         // Go back to explore
         _router!.go(ExploreScreen.path);
         return true; // Handled
+      case RouteType.videoRecorder:
+      case RouteType.videoClipEditor:
+      case RouteType.videoEditor:
+      case RouteType.videoMetadata:
+        // Pop the video editing flow screens
+        _router!.pop();
+        return true; // Handled
       default:
         break;
     }

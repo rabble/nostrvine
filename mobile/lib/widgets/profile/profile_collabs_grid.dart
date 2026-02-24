@@ -2,8 +2,6 @@
 // ABOUTME: Shows 3-column grid with thumbnails for videos where user
 // ABOUTME: is tagged as a collaborator
 
-import 'dart:async';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
@@ -12,9 +10,9 @@ import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
-import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:rxdart/rxdart.dart';
 
 /// Grid widget displaying user's collab videos.
 ///
@@ -32,19 +30,6 @@ class ProfileCollabsGrid extends StatefulWidget {
 class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
     with GridPrefetchMixin {
   List<VideoEvent>? _lastPrefetchedVideos;
-  late final StreamController<List<VideoEvent>> _videosStreamController;
-
-  @override
-  void initState() {
-    super.initState();
-    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
-  }
-
-  @override
-  void dispose() {
-    _videosStreamController.close();
-    super.dispose();
-  }
 
   void _prefetchIfNeeded(List<VideoEvent> videos) {
     if (videos.isEmpty || videos == _lastPrefetchedVideos) return;
@@ -63,113 +48,102 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
     prefetchAroundIndex(index, allVideos);
 
     context.push(
-      PooledFullscreenVideoFeedScreen.path,
-      extra: PooledFullscreenVideoFeedArgs(
-        videosStream: _videosStreamController.stream.startWith(allVideos),
+      FullscreenVideoFeedScreen.path,
+      extra: FullscreenVideoFeedArgs(
+        source: StaticFeedSource(allVideos),
         initialIndex: index,
-        onLoadMore: () => context.read<ProfileCollabVideosBloc>().add(
-          const ProfileCollabVideosLoadMoreRequested(),
-        ),
-        contextTitle: 'Collabs',
+        trafficSource: ViewTrafficSource.profile,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<ProfileCollabVideosBloc, ProfileCollabVideosState>(
-      listener: (context, state) {
-        if (state.status == ProfileCollabVideosStatus.success) {
-          _videosStreamController.add(state.videos);
+    return BlocBuilder<ProfileCollabVideosBloc, ProfileCollabVideosState>(
+      builder: (context, state) {
+        if (state.status == ProfileCollabVideosStatus.initial ||
+            state.status == ProfileCollabVideosStatus.loading) {
+          return const Center(
+            child: CircularProgressIndicator(color: VineTheme.vineGreen),
+          );
         }
-      },
-      child: BlocBuilder<ProfileCollabVideosBloc, ProfileCollabVideosState>(
-        builder: (context, state) {
-          if (state.status == ProfileCollabVideosStatus.initial ||
-              state.status == ProfileCollabVideosStatus.loading) {
-            return const Center(
-              child: CircularProgressIndicator(color: VineTheme.vineGreen),
-            );
-          }
 
-          if (state.status == ProfileCollabVideosStatus.failure) {
-            return const Center(
-              child: Text(
-                'Error loading collab videos',
-                style: TextStyle(color: VineTheme.whiteText),
-              ),
-            );
-          }
+        if (state.status == ProfileCollabVideosStatus.failure) {
+          return const Center(
+            child: Text(
+              'Error loading collab videos',
+              style: TextStyle(color: VineTheme.whiteText),
+            ),
+          );
+        }
 
-          final collabVideos = state.videos;
+        final collabVideos = state.videos;
 
-          if (collabVideos.isEmpty) {
-            return _CollabsEmptyState(isOwnProfile: widget.isOwnProfile);
-          }
+        if (collabVideos.isEmpty) {
+          return _CollabsEmptyState(isOwnProfile: widget.isOwnProfile);
+        }
 
-          // Prefetch visible grid videos
-          _prefetchIfNeeded(collabVideos);
+        // Prefetch visible grid videos
+        _prefetchIfNeeded(collabVideos);
 
-          return NotificationListener<ScrollNotification>(
-            onNotification: (notification) {
-              // Trigger load more when near the bottom
-              if (notification is ScrollUpdateNotification) {
-                final pixels = notification.metrics.pixels;
-                final maxExtent = notification.metrics.maxScrollExtent;
-                // Load more when within 200 pixels of the bottom
-                if (pixels >= maxExtent - 200 &&
-                    state.hasMoreContent &&
-                    !state.isLoadingMore) {
-                  context.read<ProfileCollabVideosBloc>().add(
-                    const ProfileCollabVideosLoadMoreRequested(),
-                  );
-                }
+        return NotificationListener<ScrollNotification>(
+          onNotification: (notification) {
+            // Trigger load more when near the bottom
+            if (notification is ScrollUpdateNotification) {
+              final pixels = notification.metrics.pixels;
+              final maxExtent = notification.metrics.maxScrollExtent;
+              // Load more when within 200 pixels of the bottom
+              if (pixels >= maxExtent - 200 &&
+                  state.hasMoreContent &&
+                  !state.isLoadingMore) {
+                context.read<ProfileCollabVideosBloc>().add(
+                  const ProfileCollabVideosLoadMoreRequested(),
+                );
               }
-              return false;
-            },
-            child: CustomScrollView(
-              slivers: [
-                SliverPadding(
-                  padding: const EdgeInsets.all(2),
-                  sliver: SliverGrid(
-                    gridDelegate:
-                        const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 3,
-                          crossAxisSpacing: 2,
-                          mainAxisSpacing: 2,
-                          childAspectRatio: 1,
-                        ),
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      if (index >= collabVideos.length) {
-                        return const SizedBox.shrink();
-                      }
-
-                      final videoEvent = collabVideos[index];
-                      return _CollabGridTile(
-                        videoEvent: videoEvent,
-                        index: index,
-                        onTap: () => _onVideoTapped(index, collabVideos),
-                      );
-                    }, childCount: collabVideos.length),
+            }
+            return false;
+          },
+          child: CustomScrollView(
+            slivers: [
+              SliverPadding(
+                padding: const EdgeInsets.all(2),
+                sliver: SliverGrid(
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 2,
+                    mainAxisSpacing: 2,
+                    childAspectRatio: 1,
                   ),
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    if (index >= collabVideos.length) {
+                      return const SizedBox.shrink();
+                    }
+
+                    final videoEvent = collabVideos[index];
+                    return _CollabGridTile(
+                      videoEvent: videoEvent,
+                      index: index,
+                      onTap: () => _onVideoTapped(index, collabVideos),
+                    );
+                  }, childCount: collabVideos.length),
                 ),
-                // Loading indicator at the bottom
-                if (state.isLoadingMore)
-                  const SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.all(16),
-                      child: Center(
-                        child: CircularProgressIndicator(
-                          color: VineTheme.vineGreen,
-                        ),
+              ),
+              // Loading indicator at the bottom
+              if (state.isLoadingMore)
+                const SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        color: VineTheme.vineGreen,
                       ),
                     ),
                   ),
-              ],
-            ),
-          );
-        },
-      ),
+                ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

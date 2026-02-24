@@ -1,7 +1,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/recording_clip.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -81,6 +80,7 @@ class VideoMetadataClipPreview extends ConsumerWidget {
                               alignment: .center,
                               children: [...previousChildren, ?currentChild],
                             ),
+
                         duration: const Duration(milliseconds: 150),
                         child: clip.thumbnailPath != null
                             ? // Video thumbnail image
@@ -99,42 +99,21 @@ class VideoMetadataClipPreview extends ConsumerWidget {
                       VideoClipEditorProcessingOverlay(
                         clip: clip,
                         isProcessing: state.isProcessing,
-                        inactivePlaceholder: _PlayIndicator(clip: clip),
+                        inactivePlaceholder: Center(
+                          child: DivineIconButton(
+                            icon: .play,
+                            type: .ghost,
+                            size: .small,
+                            onPressed: () =>
+                                _openPreview(context, state.finalRenderedClip!),
+                          ),
+                        ),
                       ),
                     ],
                   ),
                 ),
               ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Play button indicator overlay for opening the preview screen.
-class _PlayIndicator extends StatelessWidget {
-  /// Creates a play indicator.
-  const _PlayIndicator({required this.clip});
-
-  final RecordingClip clip;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Container(
-        padding: const .all(12),
-        decoration: ShapeDecoration(
-          color: Colors.black.withValues(alpha: 0.65),
-          shape: RoundedRectangleBorder(borderRadius: .circular(20)),
-        ),
-        child: SizedBox(
-          width: 24,
-          height: 24,
-          child: SvgPicture.asset(
-            'assets/icon/play.svg',
-            colorFilter: const .mode(VineTheme.whiteText, .srcIn),
           ),
         ),
       ),

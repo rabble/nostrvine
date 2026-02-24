@@ -1,7 +1,6 @@
 // ABOUTME: Grid widget displaying user's videos on profile page
 // ABOUTME: Shows 3-column grid with thumbnails, handles empty state and navigation
 
-import 'dart:async';
 import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -14,10 +13,10 @@ import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/screens/feed/pooled_fullscreen_video_feed_screen.dart';
+import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/utils/unified_logger.dart';
-import 'package:rxdart/rxdart.dart';
 
 /// Internal class that represents a video entry in the grid
 /// It can be a video event or an uploading video
@@ -61,12 +60,10 @@ class ProfileVideosGrid extends ConsumerStatefulWidget {
 class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     with GridPrefetchMixin {
   List<VideoEvent>? _lastPrefetchedVideos;
-  late final StreamController<List<VideoEvent>> _videosStreamController;
 
   @override
   void initState() {
     super.initState();
-    _videosStreamController = StreamController<List<VideoEvent>>.broadcast();
     // Prefetch visible grid videos after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
@@ -82,12 +79,6 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     if (oldWidget.videos != widget.videos) {
       _prefetchIfNeeded();
     }
-  }
-
-  @override
-  void dispose() {
-    _videosStreamController.close();
-    super.dispose();
   }
 
   void _prefetchIfNeeded() {
@@ -109,26 +100,17 @@ class _ProfileVideosGridState extends ConsumerState<ProfileVideosGrid>
     prefetchAroundIndex(index, videos);
 
     context.push(
-      PooledFullscreenVideoFeedScreen.path,
-      extra: PooledFullscreenVideoFeedArgs(
-        videosStream: _videosStreamController.stream.startWith(videos),
+      FullscreenVideoFeedScreen.path,
+      extra: FullscreenVideoFeedArgs(
+        source: ProfileFeedSource(widget.userIdHex),
         initialIndex: index,
-        onLoadMore: () =>
-            ref.read(profileFeedProvider(widget.userIdHex).notifier).loadMore(),
-        contextTitle: 'Videos',
+        trafficSource: ViewTrafficSource.profile,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    // Pipe profile feed updates into the stream for fullscreen feed sync
-    ref.listen(profileFeedProvider(widget.userIdHex), (previous, next) {
-      if (next.hasValue && next.value != null) {
-        _videosStreamController.add(next.value!.videos);
-      }
-    });
-
     final backgroundPublish = context.watch<BackgroundPublishBloc>();
     final isOwnProfile =
         ref.read(authServiceProvider).currentPublicKeyHex == widget.userIdHex;
