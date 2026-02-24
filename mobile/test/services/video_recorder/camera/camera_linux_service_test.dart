@@ -1,5 +1,4 @@
-import 'package:divine_camera/divine_camera.dart'
-    show DivineCameraLens, DivineVideoQuality;
+import 'package:divine_camera/divine_camera.dart' show DivineCameraLens;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openvine/models/video_recorder/video_recorder_flash_mode.dart';
