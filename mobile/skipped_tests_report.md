@@ -221,7 +221,7 @@
 | `composable_video_grid_test.dart` | 107, 136, 198, 228, 254 | 5 | `skip: true` |
 | `comprehensive_age_verification_dialog_test.dart` | 40, 75, 110, 144, 179, 214, 314, 404, 458 | 9 | `skip: true` |
 | `comprehensive_clickable_hashtag_text_test.dart` | 180, 234, 261, 304 | 4 | `skip: true` |
-| `comprehensive_user_avatar_test.dart` | 40, 61, 86, 124, 135, 146, 157, 172, 345, 360, 371, 383, 396, 407, 420, 466, 495, 515, 560, 601 | 20 | `skip: true` |
+| `comprehensive_user_avatar_test.dart` | golden group | 4 | `skip: 'Golden tests require golden file generation and are maintained separately'` |
 | `original_content_badge_test.dart` | 157, 228 | 2 | `skip: true` |
 | `profile_menu_drafts_test.dart` | 133 | 1 | `skip: true` |
 | `proofmode_badge_test.dart` | 177 | 1 | `skip: true` |
@@ -311,7 +311,7 @@ These files have some tests commented out while others remain active.
 
 | File | Skipped |
 |------|---------|
-| `test/widgets/comprehensive_user_avatar_test.dart` | 20 |
+| `test/widgets/comprehensive_user_avatar_test.dart` | 4 (golden tests only) |
 | `test/widgets/tabbed_settings_screen_test.dart` | 17 |
 | `test/services/curation_publish_test.dart` | 12 |
 | `test/widgets/comprehensive_age_verification_dialog_test.dart` | 9 |
