@@ -166,7 +166,7 @@ class _SaveForLaterButton extends ConsumerWidget {
             : isSaving
             ? 'Saving video...'
             : 'Save video to drafts and '
-                '${GallerySaveService.destinationName}',
+                  '${GallerySaveService.destinationName}',
         button: true,
         enabled: !isSaving && !isProcessing,
         child: GestureDetector(

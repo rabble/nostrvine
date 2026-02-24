@@ -33,8 +33,7 @@ class VideoClipPreviewSheet extends ConsumerStatefulWidget {
 /// State for [VideoClipPreviewSheet].
 ///
 /// Manages video player initialization and playback lifecycle.
-class _VideoClipPreviewSheetState
-    extends ConsumerState<VideoClipPreviewSheet> {
+class _VideoClipPreviewSheetState extends ConsumerState<VideoClipPreviewSheet> {
   /// Video player controller for the clip, null until initialized.
   VideoPlayerController? _controller;
 
@@ -98,10 +97,8 @@ class _VideoClipPreviewSheetState
       final destination = GallerySaveService.destinationName;
       final message = switch (result) {
         GallerySaveSuccess() => 'Clip saved to $destination',
-        GallerySavePermissionDenied() =>
-          '$destination permission denied',
-        GallerySaveFailure(:final reason) =>
-          'Failed to save clip: $reason',
+        GallerySavePermissionDenied() => '$destination permission denied',
+        GallerySaveFailure(:final reason) => 'Failed to save clip: $reason',
       };
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -226,10 +223,7 @@ class _VideoClipPreviewSheetState
 /// Shows a loading indicator while saving, and a download icon otherwise.
 /// Absorbs taps on the surrounding [GestureDetector] to prevent dismissal.
 class _SaveToGalleryButton extends StatelessWidget {
-  const _SaveToGalleryButton({
-    required this.isSaving,
-    required this.onPressed,
-  });
+  const _SaveToGalleryButton({required this.isSaving, required this.onPressed});
 
   /// Whether a save operation is currently in progress.
   final bool isSaving;
@@ -256,10 +250,7 @@ class _SaveToGalleryButton extends StatelessWidget {
                   color: VineTheme.whiteText,
                 ),
               )
-            : Icon(
-                Icons.download_rounded,
-                color: VineTheme.whiteText,
-              ),
+            : Icon(Icons.download_rounded, color: VineTheme.whiteText),
       ),
     );
   }

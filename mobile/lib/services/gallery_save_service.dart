@@ -52,9 +52,7 @@ class GallerySaveService {
   ///
   /// Returns "Camera Roll" on iOS and "Gallery" on Android.
   static String get destinationName =>
-      defaultTargetPlatform == TargetPlatform.iOS
-          ? 'Camera Roll'
-          : 'Gallery';
+      defaultTargetPlatform == TargetPlatform.iOS ? 'Camera Roll' : 'Gallery';
 
   /// Saves a video file to the device's camera roll/gallery.
   ///
