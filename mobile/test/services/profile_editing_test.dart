@@ -7,7 +7,6 @@ import 'package:nostr_sdk/event.dart';
 import 'package:models/models.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:nostr_client/nostr_client.dart';
-import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/user_profile_service.dart';
 
 class _MockNostrClient extends Mock implements NostrClient {}
@@ -15,8 +14,6 @@ class _MockNostrClient extends Mock implements NostrClient {}
 class _MockAuthService extends Mock implements AuthService {}
 
 class _MockUserProfileService extends Mock implements UserProfileService {}
-
-class _MockSubscriptionManager extends Mock implements SubscriptionManager {}
 
 void main() {
   setUpAll(() {
@@ -158,7 +155,7 @@ void main() {
 
       // Assert - publishEvent returns non-null on success
       expect(publishResult, isNotNull);
-      verify(() => mockNostrService.publishEvent(event!)).called(1);
+      verify(() => mockNostrService.publishEvent(event)).called(1);
     });
 
     test('should handle publish failure gracefully', () async {
