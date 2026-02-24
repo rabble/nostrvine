@@ -1,7 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/creator_analytics/creator_analytics_repository.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 
 class _FakeCreatorAnalyticsApi implements CreatorAnalyticsApi {
   _FakeCreatorAnalyticsApi({

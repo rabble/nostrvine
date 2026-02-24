@@ -12,7 +12,6 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/creator_analytics_providers.dart';
 import 'package:openvine/screens/video_detail_screen.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 import 'package:openvine/utils/string_utils.dart';
 
 /// Profile-accessible analytics dashboard for creators.

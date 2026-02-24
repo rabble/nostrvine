@@ -6,7 +6,6 @@ import 'package:flutter_riverpod/legacy.dart';
 import 'package:models/models.dart';
 import 'package:openvine/features/creator_analytics/creator_analytics_repository.dart';
 import 'package:openvine/providers/curation_providers.dart';
-import 'package:openvine/services/analytics_api_service.dart';
 
 /// Enables fixture analytics payload for local UI development.
 final useFixtureCreatorAnalyticsProvider = StateProvider<bool>((_) => false);
