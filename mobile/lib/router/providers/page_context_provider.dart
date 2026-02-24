@@ -2,8 +2,6 @@
 // ABOUTME: Single source of truth for "what page are we on?" with route types and parsing
 
 import 'package:openvine/router/router.dart';
-import 'package:openvine/screens/auth/divine_auth_screen.dart';
-import 'package:openvine/screens/auth/login_options_screen.dart';
 import 'package:openvine/screens/auth/secure_account_screen.dart';
 import 'package:openvine/screens/blossom_settings_screen.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
@@ -35,7 +33,7 @@ import 'package:openvine/screens/video_editor/video_clip_editor_screen.dart';
 import 'package:openvine/screens/video_editor/video_editor_screen.dart';
 import 'package:openvine/screens/video_metadata/video_metadata_screen.dart';
 import 'package:openvine/screens/video_recorder_screen.dart';
-import 'package:openvine/screens/welcome_screen.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:riverpod/riverpod.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/screens/developer_options_screen.dart';
@@ -66,7 +64,6 @@ enum RouteType {
   welcome, // Welcome/onboarding screen
   developerOptions, // Developer options (hidden, unlock by tapping version 7x)
   loginOptions, // Login options screen (choose login method)
-  authNative, // Native email/password auth screen
   following, // Following list screen
   followers, // Followers list screen
   videoFeed, // Fullscreen video feed (pushed from grids)
@@ -265,16 +262,14 @@ RouteContext parseRoute(String path) {
       return const RouteContext(type: RouteType.importKey);
 
     case 'welcome':
+      // /welcome/login-options → loginOptions
+      if (segments.length > 1 && segments[1] == 'login-options') {
+        return const RouteContext(type: RouteType.loginOptions);
+      }
       return const RouteContext(type: RouteType.welcome);
 
     case 'developer-options':
       return const RouteContext(type: RouteType.developerOptions);
-
-    case 'login-options':
-      return const RouteContext(type: RouteType.loginOptions);
-
-    case 'auth-native':
-      return const RouteContext(type: RouteType.authNative);
     case 'following':
       final followingPubkey = Uri.decodeComponent(segments[1]);
       return RouteContext(type: RouteType.following, npub: followingPubkey);
@@ -452,10 +447,7 @@ String buildRoute(RouteContext context) {
       return DeveloperOptionsScreen.path;
 
     case RouteType.loginOptions:
-      return LoginOptionsScreen.path;
-
-    case RouteType.authNative:
-      return DivineAuthScreen.path;
+      return WelcomeScreen.loginOptionsPath;
 
     case RouteType.following:
       return FollowingScreenRouter.pathForPubkey(context.npub ?? '');

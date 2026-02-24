@@ -8,6 +8,7 @@ import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
 import 'package:openvine/services/clip_library_service.dart';
+import 'package:openvine/widgets/video_clip/video_clip_thumbnail_card.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -87,12 +88,12 @@ void main() {
         await tester.pumpWidget(buildTestWidget());
         await tester.pumpAndSettle();
 
-        // Find the clip card by its GestureDetector and tap it
-        final clipCard = find.byType(GestureDetector).first;
+        // Find the clip card by its thumbnail card and tap it
+        final clipCard = find.byType(VideoClipThumbnailCard).first;
         await tester.tap(clipCard);
         await tester.pump();
 
-        expect(find.byIcon(Icons.delete_outline), findsOneWidget);
+        expect(find.byTooltip('Delete selected clips'), findsOneWidget);
       });
 
       testWidgets('shows confirmation dialog on delete tap', (tester) async {
@@ -101,12 +102,12 @@ void main() {
         await tester.pumpAndSettle();
 
         // Select clip
-        final clipCard = find.byType(GestureDetector).first;
+        final clipCard = find.byType(VideoClipThumbnailCard).first;
         await tester.tap(clipCard);
         await tester.pump();
 
         // Tap delete button
-        await tester.tap(find.byIcon(Icons.delete_outline));
+        await tester.tap(find.byTooltip('Delete selected clips'));
         await tester.pumpAndSettle();
 
         expect(find.text('Delete Clips'), findsOneWidget);
@@ -120,12 +121,12 @@ void main() {
         await tester.pumpAndSettle();
 
         // Select clip
-        final clipCard = find.byType(GestureDetector).first;
+        final clipCard = find.byType(VideoClipThumbnailCard).first;
         await tester.tap(clipCard);
         await tester.pump();
 
         // Tap delete button
-        await tester.tap(find.byIcon(Icons.delete_outline));
+        await tester.tap(find.byTooltip('Delete selected clips'));
         await tester.pumpAndSettle();
 
         // Tap confirm button in dialog
@@ -145,12 +146,12 @@ void main() {
         await tester.pumpAndSettle();
 
         // Select clip
-        final clipCard = find.byType(GestureDetector).first;
+        final clipCard = find.byType(VideoClipThumbnailCard).first;
         await tester.tap(clipCard);
         await tester.pump();
 
         // Tap delete button
-        await tester.tap(find.byIcon(Icons.delete_outline));
+        await tester.tap(find.byTooltip('Delete selected clips'));
         await tester.pumpAndSettle();
 
         // Tap cancel
@@ -167,7 +168,7 @@ void main() {
         await tester.pumpAndSettle();
 
         // Find the clip card
-        final clipCard = find.byType(GestureDetector).first;
+        final clipCard = find.byType(VideoClipThumbnailCard).first;
 
         // Select
         await tester.tap(clipCard);

@@ -311,7 +311,7 @@ Future<void> executeAccountDeletion({
           const SnackBar(
             content: Text(
               'Your account has been deleted',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: VineTheme.backgroundColor),
             ),
             backgroundColor: VineTheme.vineGreen,
           ),

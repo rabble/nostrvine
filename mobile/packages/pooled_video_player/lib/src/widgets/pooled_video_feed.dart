@@ -218,9 +218,19 @@ class PooledVideoFeedState extends State<PooledVideoFeed> {
         onPageChanged: _onPageChanged,
         itemCount: _videoCount,
         itemBuilder: (context, index) {
+          final videos = _controller.videos;
+          if (index < 0 || index >= videos.length) {
+            debugPrint(
+              'PooledVideoFeed: INDEX OUT OF BOUNDS! '
+              'index=$index, videos.length=${videos.length}, '
+              '_videoCount=$_videoCount, '
+              'controller.videoCount=${_controller.videoCount}',
+            );
+            return const ColoredBox(color: Color(0xFF000000));
+          }
           return widget.itemBuilder(
             context,
-            _controller.videos[index],
+            videos[index],
             index,
             isActive: index == _currentIndex,
           );
