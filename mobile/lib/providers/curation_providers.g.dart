@@ -475,7 +475,7 @@ const trendingHashtagsProvider = TrendingHashtagsProvider._();
 
 /// Provider for trending hashtags
 final class TrendingHashtagsProvider
-    extends $NotifierProvider<TrendingHashtags, List<dynamic>> {
+    extends $NotifierProvider<TrendingHashtags, List<TrendingHashtag>> {
   /// Provider for trending hashtags
   const TrendingHashtagsProvider._()
     : super(
@@ -496,10 +496,10 @@ final class TrendingHashtagsProvider
   TrendingHashtags create() => TrendingHashtags();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(List<dynamic> value) {
+  Override overrideWithValue(List<TrendingHashtag> value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<List<dynamic>>(value),
+      providerOverride: $SyncValueProvider<List<TrendingHashtag>>(value),
     );
   }
 }
@@ -508,18 +508,18 @@ String _$trendingHashtagsHash() => r'3946913e36f7c8e8e59be05f1db16665bd2f3367';
 
 /// Provider for trending hashtags
 
-abstract class _$TrendingHashtags extends $Notifier<List<dynamic>> {
-  List<dynamic> build();
+abstract class _$TrendingHashtags extends $Notifier<List<TrendingHashtag>> {
+  List<TrendingHashtag> build();
   @$mustCallSuper
   @override
   void runBuild() {
     final created = build();
-    final ref = this.ref as $Ref<List<dynamic>, List<dynamic>>;
+    final ref = this.ref as $Ref<List<TrendingHashtag>, List<TrendingHashtag>>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<List<dynamic>, List<dynamic>>,
-              List<dynamic>,
+              AnyNotifier<List<TrendingHashtag>, List<TrendingHashtag>>,
+              List<TrendingHashtag>,
               Object?,
               Object?
             >;
