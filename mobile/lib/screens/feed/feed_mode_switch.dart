@@ -67,27 +67,26 @@ class FeedModeSwitch extends StatelessWidget {
                             children: [
                               Text(
                                 feedModeLabels[state.mode] ?? state.mode.name,
-                                style: VineTheme.titleFont(fontSize: 28)
-                                    .copyWith(
-                                      shadows: [
-                                        const Shadow(
-                                          color: Color(0x1A000000),
-                                          offset: Offset(1, 1),
-                                          blurRadius: 1,
-                                        ),
-                                        const Shadow(
-                                          color: Color(0x1A000000),
-                                          offset: Offset(0.4, 0.4),
-                                          blurRadius: 0.6,
-                                        ),
-                                      ],
+                                style: VineTheme.headlineSmallFont().copyWith(
+                                  shadows: [
+                                    const Shadow(
+                                      color: Color(0x1A000000),
+                                      offset: Offset(1, 1),
+                                      blurRadius: 1,
                                     ),
+                                    const Shadow(
+                                      color: Color(0x1A000000),
+                                      offset: Offset(0.4, 0.4),
+                                      blurRadius: 0.6,
+                                    ),
+                                  ],
+                                ),
                               ),
-                              const SizedBox(width: 8),
+                              const SizedBox(width: 12),
                               SvgPicture.asset(
                                 'assets/icon/CaretDown.svg',
-                                width: 32,
-                                height: 32,
+                                width: 24,
+                                height: 24,
                                 colorFilter: const ColorFilter.mode(
                                   VineTheme.whiteText,
                                   BlendMode.srcIn,
@@ -142,6 +141,7 @@ class _MenuButton extends StatelessWidget {
     return DiVineAppBarIconButton(
       icon: const SvgIconSource('assets/icon/menu.svg'),
       onPressed: onTap,
+      iconSize: 24,
       semanticLabel: 'Open menu',
       backgroundColor: VineTheme.scrim30,
     );
@@ -158,6 +158,7 @@ class _SearchButton extends StatelessWidget {
     return DiVineAppBarIconButton(
       icon: const SvgIconSource('assets/icon/search.svg'),
       onPressed: onTap,
+      iconSize: 24,
       semanticLabel: 'Search',
       backgroundColor: VineTheme.scrim30,
     );

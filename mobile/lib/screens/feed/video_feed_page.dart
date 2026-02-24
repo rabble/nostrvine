@@ -124,7 +124,12 @@ class _VideoFeedViewState extends ConsumerState<VideoFeedView>
 
           // Empty state
           if (state.isEmpty) {
-            return FeedEmptyWidget(state: state);
+            return Stack(
+              children: [
+                FeedEmptyWidget(state: state),
+                const FeedModeSwitch(),
+              ],
+            );
           }
 
           // Wrap videos for pool compatibility
