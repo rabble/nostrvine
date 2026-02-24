@@ -254,6 +254,7 @@ class VideoEventPublisher {
     String? inspiredByNpub,
     String? selectedAudioEventId,
     String? selectedAudioRelay,
+    String? language,
   }) async {
     // Create a temporary upload with updated metadata
     final updatedUpload = upload.copyWith(
@@ -272,6 +273,7 @@ class VideoEventPublisher {
       inspiredByNpub: inspiredByNpub,
       selectedAudioEventId: selectedAudioEventId,
       selectedAudioRelay: selectedAudioRelay,
+      language: language,
     );
   }
 
@@ -286,6 +288,7 @@ class VideoEventPublisher {
     String? inspiredByNpub,
     String? selectedAudioEventId,
     String? selectedAudioRelay,
+    String? language,
   }) async {
     if (upload.videoId == null || upload.cdnUrl == null) {
       Log.error(
@@ -563,6 +566,12 @@ class VideoEventPublisher {
         for (final hashtag in upload.hashtags!) {
           tags.add(['t', hashtag]);
         }
+      }
+
+      // Add NIP-32 language self-labeling tags
+      if (language != null && language.isNotEmpty) {
+        tags.add(['L', 'ISO-639-1']);
+        tags.add(['l', language, 'ISO-639-1']);
       }
 
       // Add client tag
