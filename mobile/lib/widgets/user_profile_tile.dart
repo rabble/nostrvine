@@ -8,6 +8,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:divine_ui/divine_ui.dart';
+import 'package:models/models.dart';
 import 'package:openvine/services/image_cache_manager.dart';
 import 'package:openvine/widgets/unfollow_confirmation_sheet.dart';
 
@@ -61,7 +62,9 @@ class UserProfileTile extends ConsumerWidget {
         // wrapping with Semantics for testability and accessibility
         // Get display name or truncated npub (fallback for users without Kind 0)
         final truncatedNpub = NostrKeyUtils.truncateNpub(pubkey);
-        final displayName = profile?.bestDisplayName ?? truncatedNpub;
+        final displayName =
+            profile?.bestDisplayName ??
+            UserProfile.defaultDisplayNameFor(pubkey);
 
         // Get unique identifier: NIP-05 if available, otherwise truncated npub
         final uniqueIdentifier = profile?.displayNip05?.isNotEmpty == true

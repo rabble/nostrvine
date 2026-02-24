@@ -788,6 +788,65 @@ final class AudioDevicePreferenceServiceProvider
 String _$audioDevicePreferenceServiceHash() =>
     r'9880cf38a5d5ae812a798e7a5c4fa96ffa3578d6';
 
+/// Language preference service for managing the user's preferred content
+/// language. Used for NIP-32 self-labeling on published video events.
+/// keepAlive ensures setting persists across widget rebuilds.
+
+@ProviderFor(languagePreferenceService)
+const languagePreferenceServiceProvider = LanguagePreferenceServiceProvider._();
+
+/// Language preference service for managing the user's preferred content
+/// language. Used for NIP-32 self-labeling on published video events.
+/// keepAlive ensures setting persists across widget rebuilds.
+
+final class LanguagePreferenceServiceProvider
+    extends
+        $FunctionalProvider<
+          LanguagePreferenceService,
+          LanguagePreferenceService,
+          LanguagePreferenceService
+        >
+    with $Provider<LanguagePreferenceService> {
+  /// Language preference service for managing the user's preferred content
+  /// language. Used for NIP-32 self-labeling on published video events.
+  /// keepAlive ensures setting persists across widget rebuilds.
+  const LanguagePreferenceServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'languagePreferenceServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$languagePreferenceServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<LanguagePreferenceService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  LanguagePreferenceService create(Ref ref) {
+    return languagePreferenceService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(LanguagePreferenceService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<LanguagePreferenceService>(value),
+    );
+  }
+}
+
+String _$languagePreferenceServiceHash() =>
+    r'96dfa1a85d20ef92361b088de547a934ca5ccbb7';
+
 /// Geo-blocking service for regional compliance
 
 @ProviderFor(geoBlockingService)

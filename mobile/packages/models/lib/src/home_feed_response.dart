@@ -1,7 +1,4 @@
-// ABOUTME: Response model for the home feed endpoint.
-// ABOUTME: Contains videos with cursor-based pagination info.
-
-import 'package:models/models.dart' show VideoStats;
+import 'package:models/src/video_stats.dart';
 
 /// Response from the home feed endpoint.
 ///

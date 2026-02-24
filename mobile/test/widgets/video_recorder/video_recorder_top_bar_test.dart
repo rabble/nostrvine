@@ -54,9 +54,7 @@ void main() {
       // Pump to allow AnimatedSwitcher to finish
       await tester.pumpAndSettle();
 
-      // The next button is only shown when hasClips is true
-      // Since we're not mocking clipManagerProvider, it defaults to false
-      expect(find.bySemanticsLabel('Continue to video editor'), findsNothing);
+      expect(find.bySemanticsLabel('Continue to video editor'), findsOneWidget);
     });
 
     testWidgets('is aligned at top center', (tester) async {

@@ -295,10 +295,8 @@ void main() {
         await profileService.initialize();
         final displayName = profileService.getDisplayName(testPubkey);
 
-        // Assert - Verify fallback display name is truncated npub format
-        // NostrKeyUtils.truncateNpub returns "npub1xxxx...yyyyyy" format
-        expect(displayName, startsWith('npub1'));
-        expect(displayName, contains('...'));
+        // Assert - Verify fallback display name is a generated name
+        expect(displayName, equals('Integral Cicada 66'));
         expect(profileService.hasProfile(testPubkey), isFalse);
       },
     );

@@ -29,6 +29,7 @@ import 'package:openvine/services/api_service.dart';
 import 'package:openvine/services/audio_device_preference_service.dart';
 import 'package:openvine/services/audio_playback_service.dart';
 import 'package:openvine/services/audio_sharing_preference_service.dart';
+import 'package:openvine/services/language_preference_service.dart';
 import 'package:openvine/services/auth_service.dart' hide UserProfile;
 import 'package:openvine/services/background_activity_manager.dart';
 import 'package:openvine/services/blocklist_content_filter.dart';
@@ -390,6 +391,16 @@ AudioSharingPreferenceService audioSharingPreferenceService(Ref ref) {
 @Riverpod(keepAlive: true)
 AudioDevicePreferenceService audioDevicePreferenceService(Ref ref) {
   final service = AudioDevicePreferenceService();
+  service.initialize(); // Initialize asynchronously
+  return service;
+}
+
+/// Language preference service for managing the user's preferred content
+/// language. Used for NIP-32 self-labeling on published video events.
+/// keepAlive ensures setting persists across widget rebuilds.
+@Riverpod(keepAlive: true)
+LanguagePreferenceService languagePreferenceService(Ref ref) {
+  final service = LanguagePreferenceService();
   service.initialize(); // Initialize asynchronously
   return service;
 }

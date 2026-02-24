@@ -4,7 +4,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' show StickerData;
 import 'package:openvine/blocs/video_editor/sticker/video_editor_sticker_bloc.dart';
@@ -177,12 +176,7 @@ class _SearchBarState extends State<_SearchBar> {
             contentPadding: const .symmetric(horizontal: 16, vertical: 12),
             prefixIcon: Padding(
               padding: const .only(left: 16, right: 12),
-              child: SvgPicture.asset(
-                'assets/icon/search.svg',
-                width: 24,
-                height: 24,
-                colorFilter: const .mode(_iconColor, .srcIn),
-              ),
+              child: DivineIcon(icon: .search, color: _iconColor),
             ),
             prefixIconConstraints: const BoxConstraints(
               minWidth: 24,

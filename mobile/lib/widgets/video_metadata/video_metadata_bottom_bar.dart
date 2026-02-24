@@ -1,10 +1,10 @@
+import 'dart:async';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:openvine/models/saved_clip.dart';
 import 'package:openvine/providers/app_providers.dart';
-import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
 import 'package:openvine/providers/video_publish_provider.dart';
 import 'package:openvine/screens/clip_library_screen.dart';
@@ -15,12 +15,94 @@ import 'package:openvine/utils/unified_logger.dart';
 /// Bottom bar with "Save for Later" and "Post" buttons for video metadata.
 ///
 /// Buttons are disabled with reduced opacity when metadata is invalid.
-class VideoMetadataBottomBar extends StatelessWidget {
+/// Handles shared gallery-save logic for both actions (DRY).
+class VideoMetadataBottomBar extends ConsumerWidget {
   /// Creates a video metadata bottom bar.
   const VideoMetadataBottomBar({super.key});
 
+  /// Saves the final rendered video to the device gallery.
+  Future<void> _saveToGallery(WidgetRef ref) async {
+    final finalRenderedClip = ref.read(videoEditorProvider).finalRenderedClip;
+    if (finalRenderedClip == null) return null;
+
+    final gallerySaveService = ref.read(gallerySaveServiceProvider);
+    await gallerySaveService.saveVideoToGallery(finalRenderedClip.video);
+  }
+
+  Future<void> _onSaveForLater(BuildContext context, WidgetRef ref) async {
+    var saveSuccess = true;
+
+    // Save the final rendered video to the gallery (non-blocking).
+    unawaited(_saveToGallery(ref));
+
+    try {
+      // Save the draft to the library.
+      final draftSuccess = await ref
+          .read(videoEditorProvider.notifier)
+          .saveAsDraft();
+      if (!draftSuccess) {
+        throw StateError('Failed to save draft');
+      }
+    } catch (e, stackTrace) {
+      Log.error(
+        'Failed to save: $e',
+        name: 'VideoMetadataBottomBar',
+        category: LogCategory.video,
+        error: e,
+        stackTrace: stackTrace,
+      );
+      saveSuccess = false;
+    }
+
+    if (!context.mounted) return;
+
+    // Store router reference before showing SnackBar
+    final router = GoRouter.of(context);
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+
+    // Build the status message
+    // TODO(l10n): Replace with context.l10n when localization is added.
+    final label = saveSuccess ? 'Saved to library' : 'Failed to save';
+
+    scaffoldMessenger.showSnackBar(
+      SnackBar(
+        padding: EdgeInsets.zero,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 5),
+        content: DivineSnackbarContainer(
+          label: label,
+          error: !saveSuccess,
+          // TODO(l10n): Replace with context.l10n when localization is added.
+          actionLabel: 'Go to Library',
+          onActionPressed: () {
+            scaffoldMessenger.hideCurrentSnackBar();
+            router.push(ClipLibraryScreen.clipsPath);
+          },
+        ),
+      ),
+    );
+
+    if (saveSuccess) {
+      router.go(HomeScreenRouter.pathForIndex(0));
+      // Clear editor state after navigation animation completes (~600ms)
+      Future.delayed(
+        const Duration(milliseconds: 600),
+        ref.read(videoPublishProvider.notifier).clearAll,
+      );
+    }
+  }
+
+  Future<void> _onPost(BuildContext context, WidgetRef ref) async {
+    // Save the final rendered video to the gallery (non-blocking).
+    unawaited(_saveToGallery(ref));
+
+    await ref.read(videoEditorProvider.notifier).postVideo(context);
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 4),
       child: Container(
@@ -37,12 +119,16 @@ class VideoMetadataBottomBar extends StatelessWidget {
             ),
           ],
         ),
-        child: const Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
+        child: Row(
+          crossAxisAlignment: .end,
+          spacing: 10,
           children: [
-            Expanded(child: _SaveForLaterButton()),
-            SizedBox(width: 10),
-            Expanded(child: _PostButton()),
+            Expanded(
+              child: _SaveForLaterButton(
+                onTap: () => _onSaveForLater(context, ref),
+              ),
+            ),
+            Expanded(child: _PostButton(onTap: () => _onPost(context, ref))),
           ],
         ),
       ),
@@ -53,7 +139,10 @@ class VideoMetadataBottomBar extends StatelessWidget {
 /// Outlined button to save the video to drafts and gallery without publishing.
 class _SaveForLaterButton extends ConsumerWidget {
   /// Creates a save for later button.
-  const _SaveForLaterButton();
+  const _SaveForLaterButton({required this.onTap});
+
+  /// Called when the button is tapped.
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -76,13 +165,12 @@ class _SaveForLaterButton extends ConsumerWidget {
             ? 'Rendering video...'
             : isSaving
             ? 'Saving video...'
-            : 'Save video to drafts and camera roll',
+            : 'Save video to drafts and '
+                  '${GallerySaveService.destinationName}',
         button: true,
         enabled: !isSaving && !isProcessing,
         child: GestureDetector(
-          onTap: isSaving || isProcessing
-              ? null
-              : () => _onSaveForLater(context, ref),
+          onTap: isSaving || isProcessing ? null : onTap,
           child: AnimatedOpacity(
             duration: const Duration(milliseconds: 200),
             opacity: isSaving ? 0.6 : 1.0,
@@ -124,137 +212,15 @@ class _SaveForLaterButton extends ConsumerWidget {
       ),
     );
   }
-
-  Future<void> _onSaveForLater(BuildContext context, WidgetRef ref) async {
-    // Get the clips from clip manager
-    final finalRenderedClip = ref.read(videoEditorProvider).finalRenderedClip;
-    final recordingClips = ref.read(clipManagerProvider).clips;
-    if (recordingClips.isEmpty) {
-      Log.warning(
-        'No clips to save',
-        name: '_SaveForLaterButton',
-        category: LogCategory.video,
-      );
-      return;
-    }
-
-    bool saveSuccess = true;
-    String? gallerySaveMessage;
-
-    try {
-      // 1. Save the final rendered video to the gallery.
-      if (finalRenderedClip != null) {
-        final gallerySaveService = ref.read(gallerySaveServiceProvider);
-        final galleryResult = await gallerySaveService.saveVideoToGallery(
-          finalRenderedClip.video,
-        );
-
-        gallerySaveMessage = switch (galleryResult) {
-          GallerySaveSuccess() => 'Saved to camera roll',
-          GallerySavePermissionDenied() => 'Camera roll: permission denied',
-          GallerySaveFailure(:final reason) => 'Camera roll: $reason',
-        };
-      }
-
-      // 2. Save each clip to the clip library for the Clips tab.
-      final clipLibraryService = ref.read(clipLibraryServiceProvider);
-      final sessionId = 'save_${DateTime.now().millisecondsSinceEpoch}';
-
-      for (final clip in recordingClips) {
-        final clipPath = await clip.video.safeFilePath();
-        final savedClip = SavedClip(
-          id: 'clip_${DateTime.now().microsecondsSinceEpoch}_${clip.id}',
-          filePath: clipPath,
-          thumbnailPath: clip.thumbnailPath,
-          duration: clip.duration,
-          createdAt: DateTime.now(),
-          aspectRatio: clip.targetAspectRatio.name,
-          sessionId: sessionId,
-        );
-
-        await clipLibraryService.saveClip(savedClip);
-
-        Log.info(
-          'Saved clip to library: ${savedClip.id}',
-          name: '_SaveForLaterButton',
-          category: LogCategory.video,
-        );
-      }
-
-      // 3. Save as draft (with metadata) for the Drafts tab
-      // Note: This may delete original files, so it must happen LAST
-      final draftSuccess = await ref
-          .read(videoEditorProvider.notifier)
-          .saveAsDraft();
-      if (!draftSuccess) {
-        Log.warning(
-          'Failed to save draft',
-          name: '_SaveForLaterButton',
-          category: LogCategory.video,
-        );
-      }
-    } catch (e, stackTrace) {
-      Log.error(
-        'Failed to save: $e',
-        name: '_SaveForLaterButton',
-        category: LogCategory.video,
-        error: e,
-        stackTrace: stackTrace,
-      );
-      saveSuccess = false;
-    }
-
-    if (!context.mounted) return;
-
-    // Store router reference before showing SnackBar
-    final router = GoRouter.of(context);
-    final scaffoldMessenger = ScaffoldMessenger.of(context);
-
-    // Build the status message
-    String label;
-    if (saveSuccess) {
-      label = gallerySaveMessage ?? 'Saved to library!';
-    } else {
-      label = 'Failed to save';
-    }
-
-    scaffoldMessenger.showSnackBar(
-      SnackBar(
-        padding: EdgeInsets.zero,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 5),
-        content: DivineSnackbarContainer(
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          label: label,
-          error: !saveSuccess,
-          // TODO(l10n): Replace with context.l10n when localization is added.
-          actionLabel: 'Go to Library',
-          onActionPressed: () {
-            scaffoldMessenger.hideCurrentSnackBar();
-            router.push(ClipLibraryScreen.clipsPath);
-          },
-        ),
-      ),
-    );
-
-    if (saveSuccess) {
-      // Navigate first, then cleanup after the frame to avoid
-      // "Bad state: No element" errors from widgets rebuilding
-      // during the transition
-      router.go(HomeScreenRouter.pathForIndex(0));
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        ref.read(videoPublishProvider.notifier).clearAll();
-      });
-    }
-  }
 }
 
 /// Filled button to publish the video to the feed.
 class _PostButton extends ConsumerWidget {
   /// Creates a post button.
-  const _PostButton();
+  const _PostButton({required this.onTap});
+
+  /// Called when the button is tapped.
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -276,9 +242,7 @@ class _PostButton extends ConsumerWidget {
         button: true,
         enabled: isValidToPost,
         child: GestureDetector(
-          onTap: isValidToPost
-              ? () => ref.read(videoEditorProvider.notifier).postVideo(context)
-              : null,
+          onTap: isValidToPost ? onTap : null,
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: const LinearGradient(

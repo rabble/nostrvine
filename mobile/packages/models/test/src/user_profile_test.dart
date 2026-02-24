@@ -320,7 +320,7 @@ void main() {
         expect(profile.bestDisplayName, equals('username'));
       });
 
-      test('falls back to truncated pubkey when no names available', () {
+      test('falls back to generated name when no names available', () {
         final profile = UserProfile(
           pubkey: testPubkey,
           rawData: const {},
@@ -328,13 +328,10 @@ void main() {
           eventId: testEventId,
         );
 
-        final expectedName =
-            '${testPubkey.substring(0, 8)}...'
-            '${testPubkey.substring(testPubkey.length - 6)}';
-        expect(profile.bestDisplayName, equals(expectedName));
+        expect(profile.bestDisplayName, equals('Integral Cicada 66'));
       });
 
-      test('returns full pubkey when pubkey is short', () {
+      test('returns generated name for short pubkey', () {
         const shortPubkey = 'short123';
         final profile = UserProfile(
           pubkey: shortPubkey,
@@ -343,7 +340,26 @@ void main() {
           eventId: testEventId,
         );
 
-        expect(profile.bestDisplayName, equals(shortPubkey));
+        expect(profile.bestDisplayName, equals('Olympic Rodent 91'));
+      });
+
+      test('generated name is deterministic for same pubkey', () {
+        final profile1 = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: testCreatedAt,
+          eventId: testEventId,
+        );
+        final profile2 = UserProfile(
+          pubkey: testPubkey,
+          rawData: const {},
+          createdAt: DateTime(2025),
+          eventId:
+              'different_event_id_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'
+              'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+        );
+
+        expect(profile1.bestDisplayName, equals(profile2.bestDisplayName));
       });
     });
 

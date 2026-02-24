@@ -1,6 +1,7 @@
 // ABOUTME: Tests for SecureAccountScreen
 // ABOUTME: Verifies registration form, validation, and email verification flow
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -19,7 +20,7 @@ import '../../helpers/test_provider_overrides.dart';
 import 'secure_account_screen_test.mocks.dart';
 
 void main() {
-  group('SecureAccountScreen', () {
+  group(SecureAccountScreen, () {
     late MockKeycastOAuth mockOAuth;
     late MockAuthService mockAuthService;
 
@@ -62,35 +63,43 @@ void main() {
         await tester.pumpWidget(buildTestWidget());
         await tester.pumpAndSettle();
 
-        expect(find.text('Email'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Email'),
+            matching: find.byType(TextField),
+          ),
+          findsOneWidget,
+        );
       });
 
       testWidgets('displays password field', (tester) async {
         await tester.pumpWidget(buildTestWidget());
         await tester.pumpAndSettle();
 
-        expect(find.text('Password'), findsOneWidget);
+        expect(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Password'),
+            matching: find.byType(TextField),
+          ),
+          findsOneWidget,
+        );
       });
 
-      testWidgets('displays confirm password field', (tester) async {
+      testWidgets('displays Secure account button', (tester) async {
         await tester.pumpWidget(buildTestWidget());
         await tester.pumpAndSettle();
 
-        expect(find.text('Confirm Password'), findsOneWidget);
-      });
-
-      testWidgets('displays Create Account button', (tester) async {
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
-
-        expect(find.text('Create Account'), findsOneWidget);
+        expect(
+          find.widgetWithText(ElevatedButton, 'Secure account'),
+          findsOneWidget,
+        );
       });
 
       testWidgets('displays back button', (tester) async {
         await tester.pumpWidget(buildTestWidget());
         await tester.pumpAndSettle();
 
-        expect(find.byIcon(Icons.arrow_back), findsOneWidget);
+        expect(find.byIcon(Icons.chevron_left), findsOneWidget);
       });
     });
 
@@ -101,47 +110,26 @@ void main() {
 
         // Enter invalid email
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Email'),
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Email'),
+            matching: find.byType(TextField),
+          ),
           'invalid-email',
         );
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Password'),
-          'password123',
-        );
-        await tester.enterText(
-          find.widgetWithText(TextFormField, 'Confirm Password'),
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Password'),
+            matching: find.byType(TextField),
+          ),
           'password123',
         );
 
         // Tap submit
-        await tester.tap(find.text('Create Account'));
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Secure account'));
         await tester.pumpAndSettle();
 
         // Should show validation error
         expect(find.textContaining('valid email'), findsOneWidget);
-      });
-
-      testWidgets('shows error for mismatched passwords', (tester) async {
-        await tester.pumpWidget(buildTestWidget());
-        await tester.pumpAndSettle();
-
-        await tester.enterText(
-          find.widgetWithText(TextFormField, 'Email'),
-          'test@example.com',
-        );
-        await tester.enterText(
-          find.widgetWithText(TextFormField, 'Password'),
-          'password123',
-        );
-        await tester.enterText(
-          find.widgetWithText(TextFormField, 'Confirm Password'),
-          'different456',
-        );
-
-        await tester.tap(find.text('Create Account'));
-        await tester.pumpAndSettle();
-
-        expect(find.text('Passwords do not match'), findsOneWidget);
       });
     });
 
@@ -150,16 +138,31 @@ void main() {
         await tester.pumpWidget(buildTestWidget());
         await tester.pumpAndSettle();
 
-        // Find password visibility toggle buttons (there are 2: one for each password field)
-        final visibilityButtons = find.byIcon(Icons.visibility_off);
-        expect(visibilityButtons, findsNWidgets(2));
+        // DivineAuthTextField uses DivineIcon (SVG) for the toggle, not
+        // Material Icons. Find it by type — there's exactly one.
+        expect(find.byType(DivineIcon), findsOneWidget);
 
-        // Tap the first visibility toggle
-        await tester.tap(visibilityButtons.first);
+        // Password should be obscured initially
+        final textField = tester.widget<TextField>(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Password'),
+            matching: find.byType(TextField),
+          ),
+        );
+        expect(textField.obscureText, isTrue);
+
+        // Tap the visibility toggle (GestureDetector wrapping DivineIcon)
+        await tester.tap(find.byType(DivineIcon));
         await tester.pumpAndSettle();
 
-        // Should now show visibility icon (password visible)
-        expect(find.byIcon(Icons.visibility), findsOneWidget);
+        // Password should now be visible
+        final textFieldAfter = tester.widget<TextField>(
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Password'),
+            matching: find.byType(TextField),
+          ),
+        );
+        expect(textFieldAfter.obscureText, isFalse);
       });
     });
 
@@ -191,19 +194,21 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Email'),
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Email'),
+            matching: find.byType(TextField),
+          ),
           'test@example.com',
         );
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Password'),
-          'SecurePass123!',
-        );
-        await tester.enterText(
-          find.widgetWithText(TextFormField, 'Confirm Password'),
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Password'),
+            matching: find.byType(TextField),
+          ),
           'SecurePass123!',
         );
 
-        await tester.tap(find.text('Create Account'));
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Secure account'));
         // Use pump() instead of pumpAndSettle() to avoid timer issues
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
@@ -239,19 +244,21 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Email'),
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Email'),
+            matching: find.byType(TextField),
+          ),
           'existing@example.com',
         );
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Password'),
-          'SecurePass123!',
-        );
-        await tester.enterText(
-          find.widgetWithText(TextFormField, 'Confirm Password'),
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Password'),
+            matching: find.byType(TextField),
+          ),
           'SecurePass123!',
         );
 
-        await tester.tap(find.text('Create Account'));
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Secure account'));
         await tester.pumpAndSettle();
 
         expect(find.text('Email already registered'), findsOneWidget);
@@ -264,19 +271,21 @@ void main() {
         await tester.pumpAndSettle();
 
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Email'),
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Email'),
+            matching: find.byType(TextField),
+          ),
           'test@example.com',
         );
         await tester.enterText(
-          find.widgetWithText(TextFormField, 'Password'),
-          'SecurePass123!',
-        );
-        await tester.enterText(
-          find.widgetWithText(TextFormField, 'Confirm Password'),
+          find.descendant(
+            of: find.widgetWithText(DivineAuthTextField, 'Password'),
+            matching: find.byType(TextField),
+          ),
           'SecurePass123!',
         );
 
-        await tester.tap(find.text('Create Account'));
+        await tester.tap(find.widgetWithText(ElevatedButton, 'Secure account'));
         await tester.pumpAndSettle();
 
         expect(

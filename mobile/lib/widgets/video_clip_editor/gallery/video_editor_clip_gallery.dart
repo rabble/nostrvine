@@ -5,6 +5,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:openvine/services/haptic_service.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/models/recording_clip.dart';
@@ -35,6 +36,10 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
   late AnimationController _dragResetController;
   final _reorderController = ClipReorderController();
   int _lastClipIndex = 0;
+
+  /// Tracks whether pointer was over delete zone in the previous frame.
+  /// Used to deduplicate haptic feedback so it only fires once on entry.
+  bool _wasOverDeleteZone = false;
 
   @override
   void initState() {
@@ -135,6 +140,13 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
     );
 
     final isOverDeleteZone = _isPointerOverDeleteButton(event.position);
+
+    // Trigger haptic feedback when entering the delete zone
+    if (isOverDeleteZone && !_wasOverDeleteZone) {
+      unawaited(HapticService.destructiveZoneFeedback());
+    }
+    _wasOverDeleteZone = isOverDeleteZone;
+
     ref.read(videoEditorProvider.notifier).setOverDeleteZone(isOverDeleteZone);
 
     return isLeavingClipArea || isOverDeleteZone;
@@ -258,6 +270,7 @@ class _VideoEditorClipsState extends ConsumerState<VideoEditorClipGallery>
 
     // Exit reorder mode (after animation completes)
     ref.read(videoEditorProvider.notifier).stopClipReordering();
+    _wasOverDeleteZone = false;
 
     Future.delayed(VideoEditorGalleryConstants.scaleAnimationDuration, () {
       if (mounted) _reorderController.disableTweenOffset();

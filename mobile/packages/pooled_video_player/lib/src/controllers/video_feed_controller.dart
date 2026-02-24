@@ -350,9 +350,32 @@ class VideoFeedController extends ChangeNotifier {
       final video = _videos[index];
       final pooledPlayer = await pool.getPlayer(video.url);
 
-      if (_isDisposed) return;
+      // Guard: index may have been released during the await (e.g., the
+      // preload window shifted while we were waiting for the pool).
+      if (_isDisposed || !_loadingIndices.contains(index)) return;
 
       _loadedPlayers[index] = pooledPlayer;
+
+      // Register a callback so we learn when the pool evicts this player.
+      // The identity check in _onPlayerEvicted ensures stale callbacks
+      // (from previously-released indices that loaded the same player)
+      // are ignored.
+      pooledPlayer.addOnDisposedCallback(
+        () => _onPlayerEvicted(index, pooledPlayer),
+      );
+
+      // The pool may have already evicted (and disposed) this player during
+      // a concurrent _loadPlayer call. For example, with maxPlayers=2 and
+      // three concurrent loads, _loadPlayer(2) can evict url0 before
+      // _loadPlayer(0) resumes to store its result. The eviction callback
+      // fires as a no-op (identity check fails because _loadedPlayers[0]
+      // was still null), so we must catch it here.
+      if (pooledPlayer.isDisposed) {
+        _loadedPlayers.remove(index);
+        _loadStates.remove(index);
+        _notifyIndex(index);
+        return;
+      }
 
       // Resolve media source via hook (for caching)
       final resolvedSource = mediaSourceResolver?.call(video) ?? video.url;
@@ -361,7 +384,8 @@ class VideoFeedController extends ChangeNotifier {
       await pooledPlayer.player.open(Media(resolvedSource), play: false);
       await pooledPlayer.player.setPlaylistMode(PlaylistMode.single);
 
-      if (_isDisposed) return;
+      // Guard: index may have been released during open/setPlaylistMode.
+      if (_isDisposed || !_loadingIndices.contains(index)) return;
 
       // Set up buffer subscription
       unawaited(_bufferSubscriptions[index]?.cancel());
@@ -381,8 +405,11 @@ class VideoFeedController extends ChangeNotifier {
       if (!pooledPlayer.player.state.buffering) {
         _onBufferReady(index);
       }
-    } on Exception catch (e) {
-      debugPrint('PooledVideoPlayer: Failed to load video at index $index: $e');
+    } on Exception catch (e, stack) {
+      debugPrint(
+        'VideoFeedController: Failed to load index $index '
+        '(videoCount=${_videos.length}): $e\n$stack',
+      );
       if (!_isDisposed) {
         _loadStates[index] = LoadState.error;
         _notifyIndex(index);
@@ -390,6 +417,28 @@ class VideoFeedController extends ChangeNotifier {
     } finally {
       _loadingIndices.remove(index);
     }
+  }
+
+  /// Called when a [PooledPlayer] is disposed externally (e.g., by pool
+  /// eviction while loading a different video).
+  ///
+  /// Updates the widget state so the UI shows a placeholder instead of
+  /// trying to render with a disposed [VideoController], which would crash
+  /// with "A `ValueNotifier<int?>` was used after being disposed."
+  void _onPlayerEvicted(int index, PooledPlayer evictedPlayer) {
+    if (_isDisposed) return;
+    // Only act if the evicted player is still the one tracked at this index.
+    // After _releasePlayer or a subsequent _loadPlayer, _loadedPlayers[index]
+    // will either be null or a different player, making this callback stale.
+    if (_loadedPlayers[index] != evictedPlayer) return;
+
+    _stopPositionTimer(index);
+    unawaited(_bufferSubscriptions[index]?.cancel());
+    _bufferSubscriptions.remove(index);
+    _loadedPlayers.remove(index);
+    _loadStates.remove(index);
+    _loadingIndices.remove(index);
+    _notifyIndex(index);
   }
 
   void _onBufferReady(int index) {
