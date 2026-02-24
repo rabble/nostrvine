@@ -1,11 +1,13 @@
 // ABOUTME: Canvas widget wrapping ProImageEditor for the video editor.
 // ABOUTME: Handles layer manipulation callbacks and editor configuration.
 
+import 'dart:async';
 import 'dart:math';
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:openvine/services/haptic_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:models/models.dart' as model show AspectRatio;
@@ -91,6 +93,10 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
   bool get _isLayerBeingTransformed => _selectedLayer != null;
 
   Layer? _selectedLayer;
+
+  /// Tracks whether pointer was over remove area in the previous frame.
+  /// Used to deduplicate haptic feedback so it only fires once on entry.
+  bool _wasOverRemoveArea = false;
 
   @override
   void initState() {
@@ -417,6 +423,13 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           onScaleUpdate: (details) {
             if (!_isLayerBeingTransformed) return;
             final isOverRemoveArea = scope.isOverRemoveArea(details.focalPoint);
+
+            // Trigger haptic feedback when entering the remove area
+            if (isOverRemoveArea && !_wasOverRemoveArea) {
+              unawaited(HapticService.destructiveZoneFeedback());
+            }
+            _wasOverRemoveArea = isOverRemoveArea;
+
             bloc.add(
               VideoEditorLayerOverRemoveAreaChanged(isOver: isOverRemoveArea),
             );
@@ -436,6 +449,7 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
               _selectedLayer = null;
             }
 
+            _wasOverRemoveArea = false;
             bloc.add(const VideoEditorLayerInteractionEnded());
           },
           onAddLayer: (layer) {
@@ -456,6 +470,9 @@ class _VideoEditorState extends ConsumerState<_VideoEditor> {
           },
           onCreateTextLayer: scope.onAddEditTextLayer,
           onEditTextLayer: scope.onAddEditTextLayer,
+          helperLines: HelperLinesCallbacks(
+            onLineHit: () => unawaited(HapticService.snapFeedback()),
+          ),
         ),
         paintEditorCallbacks: PaintEditorCallbacks(
           onInit: () {

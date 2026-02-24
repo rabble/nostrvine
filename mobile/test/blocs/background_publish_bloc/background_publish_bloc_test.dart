@@ -196,6 +196,73 @@ void main() {
           ),
         ],
       );
+
+      blocTest(
+        'ignores progress when it is less than current progress',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+        ),
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draft, result: null, progress: 0.5),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          BackgroundPublishProgressChanged(draftId: draftId, progress: .3),
+        ),
+        expect: () => <BackgroundPublishState>[],
+      );
+
+      blocTest(
+        'ignores progress when it is equal to the current progress',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+        ),
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(draft: draft, result: null, progress: 0.5),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          BackgroundPublishProgressChanged(draftId: draftId, progress: .5),
+        ),
+        expect: () => <BackgroundPublishState>[],
+      );
+
+      blocTest(
+        'ignores progress when the upload already has a result',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+        ),
+        seed: () => BackgroundPublishState(
+          uploads: [
+            BackgroundUpload(
+              draft: draft,
+              result: const PublishError('error'),
+              progress: 1.0,
+            ),
+          ],
+        ),
+        act: (bloc) => bloc.add(
+          BackgroundPublishProgressChanged(draftId: draftId, progress: .5),
+        ),
+        expect: () => <BackgroundPublishState>[],
+      );
+
+      blocTest(
+        'ignores progress when the draft is not found',
+        build: () => BackgroundPublishBloc(
+          videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+        ),
+        seed: () => const BackgroundPublishState(),
+        act: (bloc) => bloc.add(
+          BackgroundPublishProgressChanged(
+            draftId: 'non-existent',
+            progress: .5,
+          ),
+        ),
+        expect: () => <BackgroundPublishState>[],
+      );
     });
 
     group('BackgroundPublishVanished', () {

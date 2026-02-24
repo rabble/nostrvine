@@ -567,7 +567,8 @@ void main() {
         expect(videoEvent.title, isNull);
         expect(videoEvent.videoUrl, isNull);
         expect(videoEvent.thumbnailUrl, isNull);
-        expect(videoEvent.vineId, isNull);
+        // When dTag is empty, vineId falls back to the event id.
+        expect(videoEvent.vineId, equals('test-id'));
       });
 
       test('handles null description', () {

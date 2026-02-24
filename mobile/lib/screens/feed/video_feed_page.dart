@@ -6,6 +6,7 @@ import 'package:models/models.dart' hide AspectRatio;
 import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
+import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
 import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
@@ -41,15 +42,17 @@ class VideoFeedPage extends ConsumerWidget {
 }
 
 @visibleForTesting
-class VideoFeedView extends StatefulWidget {
+class VideoFeedView extends ConsumerStatefulWidget {
   const VideoFeedView({super.key});
 
   @override
-  State<VideoFeedView> createState() => _VideoFeedViewState();
+  ConsumerState<VideoFeedView> createState() => _VideoFeedViewState();
 }
 
-class _VideoFeedViewState extends State<VideoFeedView>
+class _VideoFeedViewState extends ConsumerState<VideoFeedView>
     with WidgetsBindingObserver {
+  int? _lastPrefetchIndex;
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +69,30 @@ class _VideoFeedViewState extends State<VideoFeedView>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
       context.read<VideoFeedBloc>().add(const VideoFeedAutoRefreshRequested());
+    }
+  }
+
+  void _prefetchProfiles(List<VideoEvent> videos, int index) {
+    if (index == _lastPrefetchIndex) return;
+    _lastPrefetchIndex = index;
+
+    final safeIndex = index.clamp(0, videos.length - 1);
+    final pubkeys = <String>[];
+
+    if (safeIndex > 0) {
+      pubkeys.add(videos[safeIndex - 1].pubkey);
+    }
+    if (safeIndex < videos.length - 1) {
+      pubkeys.add(videos[safeIndex + 1].pubkey);
+    }
+
+    if (pubkeys.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref
+            .read(userProfileProvider.notifier)
+            .prefetchProfilesImmediately(pubkeys);
+      });
     }
   }
 
@@ -111,6 +138,9 @@ class _VideoFeedViewState extends State<VideoFeedView>
                     isActive: isActive,
                     contextTitle: 'BLoC Test (${state.mode.name})',
                   );
+                },
+                onActiveVideoChanged: (video, index) {
+                  _prefetchProfiles(state.videos, index);
                 },
                 onNearEnd: (index) {
                   // PooledVideoFeed fires this when the user is within

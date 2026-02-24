@@ -71,6 +71,20 @@ class BackgroundPublishBloc
     BackgroundPublishProgressChanged event,
     Emitter<BackgroundPublishState> emit,
   ) {
+    final upload = state.uploads.cast<BackgroundUpload?>().firstWhere(
+      (upload) => upload!.draft.id == event.draftId,
+      orElse: () => null,
+    );
+
+    // Disregard progress events if the upload already has a result
+    // or if the progress is not greater than the current value,
+    // since events can arrive out of order.
+    if (upload == null ||
+        upload.result != null ||
+        event.progress <= upload.progress) {
+      return;
+    }
+
     final updatedUploads = state.uploads.map((upload) {
       if (upload.draft.id == event.draftId) {
         return upload.copyWith(progress: event.progress);
