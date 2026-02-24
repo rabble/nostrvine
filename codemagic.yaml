@@ -23,6 +23,8 @@
 #   - Set to YES to create a GitHub Release with APK artifacts (for Zapstore distribution)
 #   - Defaults to NO
 #   - Requires GITHUB_TOKEN in "github_credentials" environment variable group
+# 9 - Create environment variable group "firebase_credentials" with:
+#   - FIREBASE_TOKEN (generate via `firebase login:ci` on a machine with browser access)
 
 definitions:
   environment:
@@ -110,6 +112,27 @@ definitions:
           --dart-define=PROOFMODE_SIGNING_SERVER_ENDPOINT=$PROOFMODE_SIGNING_SERVER_ENDPOINT \
           --dart-define=PROOFMODE_SIGNING_SERVER_TOKEN=$PROOFMODE_SIGNING_SERVER_TOKEN \
           --export-options-plist=/Users/builder/export_options.plist
+    - &install_firebase_cli
+      name: Install Firebase CLI
+      script: curl -sL https://firebase.tools | bash
+    - &upload_dsyms_to_crashlytics
+      name: Upload dSYMs to Firebase Crashlytics
+      script: |
+        DSYM_DIR="build/ios/archive/Runner.xcarchive/dSYMs"
+
+        if [ ! -d "$DSYM_DIR" ]; then
+          echo "ERROR: dSYM directory not found at $DSYM_DIR"
+          find build/ios -name "*.dSYM" -type d 2>/dev/null || true
+          exit 1
+        fi
+
+        echo "Found dSYMs:"
+        ls -la "$DSYM_DIR"
+
+        firebase --token "$FIREBASE_TOKEN" \
+          crashlytics:symbols:upload \
+          --app=1:972941478875:ios:f61272b3cf485df244b5fe \
+          "$DSYM_DIR"
     - &build_ios_simulator
       name: Build iOS Simulator app
       script: |
@@ -145,6 +168,7 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
+        - firebase_credentials
       vars:
         BUNDLE_ID: co.openvine.app
       ios_signing:
@@ -162,8 +186,11 @@ workflows:
       - *enable_spm
       - *pod_install
       - *build_ios
+      - *install_firebase_cli
+      - *upload_dsyms_to_crashlytics
     artifacts:
       - build/ios/ipa/*.ipa
+      - build/ios/archive/Runner.xcarchive/dSYMs/**
       - /tmp/xcodebuild_logs/*.log
       - flutter_drive.log
     publishing:
