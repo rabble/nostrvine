@@ -103,23 +103,11 @@ void main() {
       );
     });
 
-    testWidgets('displays sound selection button', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
-
-      // Sound button should be visible
-      expect(
-        find.byWidgetPredicate(
-          (widget) => widget is IconButton && widget.tooltip == 'Select sound',
-        ),
-        findsOneWidget,
-      );
-    });
-
-    testWidgets('has 6 control buttons', (tester) async {
+    testWidgets('has 5 control buttons', (tester) async {
       await tester.pumpWidget(buildTestWidget());
 
       // Flash, Timer, Aspect Ratio, Sound, Flip Camera, More Options
-      expect(find.byType(IconButton), findsNWidgets(6));
+      expect(find.byType(IconButton), findsNWidgets(5));
     });
 
     testWidgets('uses SafeArea for bottom positioning', (tester) async {

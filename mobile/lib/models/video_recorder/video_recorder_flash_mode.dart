@@ -14,8 +14,8 @@ enum DivineFlashMode {
   /// Flash off mode.
   off;
 
-  /// Path to SVG asset representing the flash mode.
-  DivineIconName get iconPath => switch (this) {
+  /// Icon representing the flash mode.
+  DivineIconName get icon => switch (this) {
     .off => .lightningSlash,
     .torch => .lightning,
     .auto => .lightningA,

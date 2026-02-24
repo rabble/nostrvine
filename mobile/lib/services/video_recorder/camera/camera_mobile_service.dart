@@ -26,17 +26,19 @@ class CameraMobileService extends CameraService {
   @override
   Future<void> initialize({
     DivineVideoQuality videoQuality = DivineVideoQuality.fhd,
+    DivineCameraLens initialLens = DivineCameraLens.front,
   }) async {
     // Clear any previous error
     _initializationError = null;
 
     Log.info(
-      '📷 Initializing mobile camera with quality: ${videoQuality.value}',
+      '📷 Initializing mobile camera with quality: ${videoQuality.value}, '
+      'lens: ${initialLens.displayName}',
       name: 'CameraMobileService',
       category: .video,
     );
     try {
-      await _camera.initialize(lens: .front, videoQuality: videoQuality);
+      await _camera.initialize(lens: initialLens, videoQuality: videoQuality);
       _camera.onRecordingAutoStopped = (result) {
         onAutoStopped(EditorVideo.file(result.filePath));
       };

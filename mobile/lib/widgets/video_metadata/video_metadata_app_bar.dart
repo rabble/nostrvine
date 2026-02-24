@@ -36,7 +36,7 @@ class VideoMetadataAppBar extends StatelessWidget
                 iconColor: VineTheme.primary,
                 size: 40,
                 iconSize: 24,
-                borderRadius: 16,
+                radius: 16,
                 onTap: () => context.pop(),
               ),
             ),

@@ -17,7 +17,7 @@ class VideoEditorIconButton extends StatelessWidget {
     this.borderColor,
     this.iconSize = 32,
     this.size = 48,
-    this.borderRadius = 20,
+    this.radius = 20,
     this.onTap,
     this.semanticLabel,
   });
@@ -39,7 +39,7 @@ class VideoEditorIconButton extends StatelessWidget {
   /// Size of the button container.
   final double size;
 
-  final double borderRadius;
+  final double radius;
 
   /// Callback when the button is tapped.
   final VoidCallback? onTap;
@@ -60,7 +60,7 @@ class VideoEditorIconButton extends StatelessWidget {
           height: size,
           decoration: BoxDecoration(
             color: backgroundColor,
-            borderRadius: .circular(borderRadius),
+            borderRadius: .circular(radius),
             border: borderColor != null
                 ? .all(width: 2, color: borderColor!)
                 : null,
