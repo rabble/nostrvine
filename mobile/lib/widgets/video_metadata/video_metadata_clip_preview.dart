@@ -88,8 +88,8 @@ class VideoMetadataClipPreview extends ConsumerWidget {
                             : // Fallback placeholder
                               ColoredBox(
                                 color: VineTheme.onSurfaceMuted,
-                                child: const Icon(
-                                  Icons.play_circle_outline,
+                                child: const DivineIcon(
+                                  icon: .playCircle,
                                   size: 64,
                                   color: VineTheme.whiteText,
                                 ),

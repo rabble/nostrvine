@@ -30,7 +30,7 @@ class VideoMetadataAppBar extends StatelessWidget
             Hero(
               tag: VideoEditorConstants.heroBackButtonId,
               child: VideoEditorIconButton(
-                iconPath: 'assets/icon/CaretLeft.svg',
+                icon: .caretLeft,
                 borderColor: VineTheme.outlineMuted,
                 backgroundColor: VineTheme.surfaceContainer,
                 iconColor: VineTheme.primary,
