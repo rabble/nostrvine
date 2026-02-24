@@ -22,7 +22,7 @@ const _defaultReactionFetchLimit = 500;
 const _likeContent = '+';
 
 /// NIP-25 reaction content for a downvote.
-const downvoteContent = '-';
+const _downvoteContent = '-';
 
 /// Callback to check if the device is currently online
 typedef IsOnlineCallback = bool Function();
@@ -600,7 +600,7 @@ class LikesRepository {
         if (tag is List && tag.isNotEmpty && tag[0] == 'e' && tag.length > 1) {
           final targetId = tag[1] as String;
           if (upvotes.containsKey(targetId)) {
-            if (event.content == downvoteContent) {
+            if (event.content == _downvoteContent) {
               downvotes[targetId] = downvotes[targetId]! + 1;
             } else {
               // '+' and any other content counts as upvote
@@ -656,7 +656,7 @@ class LikesRepository {
       final targetId = _extractTargetEventId(event);
       if (targetId == null || !eventIds.contains(targetId)) continue;
 
-      if (event.content == downvoteContent) {
+      if (event.content == _downvoteContent) {
         downvotedIds.add(targetId);
       } else {
         upvotedIds.add(targetId);
@@ -678,7 +678,7 @@ class LikesRepository {
   }) async {
     final reactionEvent = await _nostrClient.sendLike(
       eventId,
-      content: downvoteContent,
+      content: _downvoteContent,
       targetAuthorPubkey: authorPubkey,
       targetKind: targetKind,
     );

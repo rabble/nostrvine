@@ -876,6 +876,301 @@ void main() {
       );
     });
 
+    group('CommentEditModeEntered', () {
+      blocTest<CommentsBloc, CommentsState>(
+        'sets activeEditCommentId and pre-populates editInputText',
+        build: createBloc,
+        seed: () {
+          final comment = Comment(
+            id: validId('editcomment'),
+            content: 'Original text',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {comment.id: comment},
+          );
+        },
+        act: (bloc) => bloc.add(
+          CommentEditModeEntered(
+            commentId: validId('editcomment'),
+            originalContent: 'Original text',
+          ),
+        ),
+        expect: () => [
+          isA<CommentsState>()
+              .having(
+                (s) => s.activeEditCommentId,
+                'activeEditCommentId',
+                validId('editcomment'),
+              )
+              .having((s) => s.editInputText, 'editInputText', 'Original text'),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'clears active reply when entering edit mode',
+        build: createBloc,
+        seed: () {
+          final comment = Comment(
+            id: validId('editcomment'),
+            content: 'Comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {comment.id: comment},
+            activeReplyCommentId: validId('othercomment'),
+            replyInputText: 'Some reply',
+          );
+        },
+        act: (bloc) => bloc.add(
+          CommentEditModeEntered(
+            commentId: validId('editcomment'),
+            originalContent: 'Comment',
+          ),
+        ),
+        expect: () => [
+          isA<CommentsState>()
+              .having(
+                (s) => s.activeEditCommentId,
+                'activeEditCommentId',
+                validId('editcomment'),
+              )
+              .having(
+                (s) => s.activeReplyCommentId,
+                'activeReplyCommentId',
+                isNull,
+              ),
+        ],
+      );
+    });
+
+    group('CommentEditModeCancelled', () {
+      blocTest<CommentsBloc, CommentsState>(
+        'clears edit mode state',
+        build: createBloc,
+        seed: () => CommentsState(
+          status: CommentsStatus.success,
+          activeEditCommentId: validId('editcomment'),
+          editInputText: 'Edited text',
+        ),
+        act: (bloc) => bloc.add(const CommentEditModeCancelled()),
+        expect: () => [
+          isA<CommentsState>()
+              .having(
+                (s) => s.activeEditCommentId,
+                'activeEditCommentId',
+                isNull,
+              )
+              .having((s) => s.editInputText, 'editInputText', isEmpty),
+        ],
+      );
+    });
+
+    group('CommentEditSubmitted', () {
+      blocTest<CommentsBloc, CommentsState>(
+        'deletes original and posts new comment with edited text',
+        setUp: () {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+
+          when(
+            () => mockCommentsRepository.deleteComment(
+              commentId: any(named: 'commentId'),
+            ),
+          ).thenAnswer((_) async {});
+
+          final editedComment = Comment(
+            id: validId('newcomment'),
+            content: 'Edited text',
+            authorPubkey: validId('currentuser'),
+            createdAt: DateTime.now(),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          when(
+            () => mockCommentsRepository.postComment(
+              content: any(named: 'content'),
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+            ),
+          ).thenAnswer((_) async => editedComment);
+        },
+        build: createBloc,
+        seed: () {
+          final original = Comment(
+            id: validId('editcomment'),
+            content: 'Original text',
+            authorPubkey: validId('currentuser'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {original.id: original},
+            activeEditCommentId: original.id,
+            editInputText: 'Edited text',
+          );
+        },
+        act: (bloc) => bloc.add(const CommentEditSubmitted()),
+        expect: () => [
+          // First emit: isPosting = true
+          isA<CommentsState>().having((s) => s.isPosting, 'isPosting', true),
+          // Second emit: old comment removed, new comment added, edit mode cleared
+          isA<CommentsState>()
+              .having((s) => s.isPosting, 'isPosting', false)
+              .having(
+                (s) => s.commentsById.containsKey(validId('editcomment')),
+                'old comment removed',
+                false,
+              )
+              .having(
+                (s) => s.commentsById.containsKey(validId('newcomment')),
+                'new comment added',
+                true,
+              )
+              .having(
+                (s) => s.activeEditCommentId,
+                'activeEditCommentId',
+                isNull,
+              ),
+        ],
+        verify: (_) {
+          verify(
+            () => mockCommentsRepository.deleteComment(
+              commentId: validId('editcomment'),
+            ),
+          ).called(1);
+          verify(
+            () => mockCommentsRepository.postComment(
+              content: 'Edited text',
+              rootEventId: any(named: 'rootEventId'),
+              rootEventKind: any(named: 'rootEventKind'),
+              rootEventAuthorPubkey: any(named: 'rootEventAuthorPubkey'),
+              replyToEventId: any(named: 'replyToEventId'),
+              replyToAuthorPubkey: any(named: 'replyToAuthorPubkey'),
+              rootAddressableId: any(named: 'rootAddressableId'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'does nothing when edit text is empty',
+        build: createBloc,
+        seed: () {
+          final original = Comment(
+            id: validId('editcomment'),
+            content: 'Original',
+            authorPubkey: validId('currentuser'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {original.id: original},
+            activeEditCommentId: original.id,
+            editInputText: '   ',
+          );
+        },
+        act: (bloc) => bloc.add(const CommentEditSubmitted()),
+        expect: () => <CommentsState>[],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'does nothing when activeEditCommentId is null',
+        build: createBloc,
+        seed: () => const CommentsState(
+          status: CommentsStatus.success,
+          editInputText: 'Some text',
+        ),
+        act: (bloc) => bloc.add(const CommentEditSubmitted()),
+        expect: () => <CommentsState>[],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'emits error when not authenticated',
+        setUp: () {
+          when(() => mockAuthService.isAuthenticated).thenReturn(false);
+        },
+        build: createBloc,
+        seed: () {
+          final original = Comment(
+            id: validId('editcomment'),
+            content: 'Original',
+            authorPubkey: validId('currentuser'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {original.id: original},
+            activeEditCommentId: original.id,
+            editInputText: 'Edited',
+          );
+        },
+        act: (bloc) => bloc.add(const CommentEditSubmitted()),
+        expect: () => [
+          isA<CommentsState>().having(
+            (s) => s.error,
+            'error',
+            CommentsError.notAuthenticated,
+          ),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'emits error on repository failure',
+        setUp: () {
+          when(() => mockAuthService.isAuthenticated).thenReturn(true);
+          when(
+            () => mockCommentsRepository.deleteComment(
+              commentId: any(named: 'commentId'),
+            ),
+          ).thenThrow(Exception('Network error'));
+        },
+        build: createBloc,
+        seed: () {
+          final original = Comment(
+            id: validId('editcomment'),
+            content: 'Original',
+            authorPubkey: validId('currentuser'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {original.id: original},
+            activeEditCommentId: original.id,
+            editInputText: 'Edited',
+          );
+        },
+        act: (bloc) => bloc.add(const CommentEditSubmitted()),
+        expect: () => [
+          // First emit: isPosting = true
+          isA<CommentsState>().having((s) => s.isPosting, 'isPosting', true),
+          // Second emit: error
+          isA<CommentsState>()
+              .having((s) => s.isPosting, 'isPosting', false)
+              .having((s) => s.error, 'error', CommentsError.postCommentFailed),
+        ],
+      );
+    });
+
     group('CommentUpvoteToggled', () {
       blocTest<CommentsBloc, CommentsState>(
         'emits optimistic like update when unliked comment is toggled',
@@ -1107,6 +1402,101 @@ void main() {
       );
 
       blocTest<CommentsBloc, CommentsState>(
+        'removes existing downvote when upvoting a downvoted comment',
+        setUp: () {
+          when(
+            () => mockLikesRepository.unlikeEvent(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockLikesRepository.likeEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => 'mock-reaction-id');
+        },
+        build: createBloc,
+        seed: () {
+          final comment = Comment(
+            id: validId('likecomment'),
+            content: 'Downvoted comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {comment.id: comment},
+            commentUpvoteCounts: {comment.id: 0},
+            commentDownvoteCounts: {comment.id: 3},
+            upvotedCommentIds: const {},
+            downvotedCommentIds: {comment.id},
+          );
+        },
+        act: (bloc) => bloc.add(
+          CommentUpvoteToggled(
+            commentId: validId('likecomment'),
+            authorPubkey: validId('commenter'),
+          ),
+        ),
+        expect: () => [
+          // First emit: optimistic update — upvote added, downvote removed
+          isA<CommentsState>()
+              .having(
+                (s) => s.upvotedCommentIds.contains(validId('likecomment')),
+                'upvoted',
+                true,
+              )
+              .having(
+                (s) => s.downvotedCommentIds.contains(validId('likecomment')),
+                'downvoted',
+                false,
+              )
+              .having(
+                (s) => s.commentUpvoteCounts[validId('likecomment')],
+                'upvote count',
+                1,
+              )
+              .having(
+                (s) => s.commentDownvoteCounts[validId('likecomment')],
+                'downvote count',
+                2,
+              ),
+          // Second emit: clears voteInProgressCommentId on success
+          isA<CommentsState>()
+              .having(
+                (s) => s.upvotedCommentIds.contains(validId('likecomment')),
+                'upvoted',
+                true,
+              )
+              .having(
+                (s) => s.downvotedCommentIds.contains(validId('likecomment')),
+                'downvoted',
+                false,
+              )
+              .having(
+                (s) => s.voteInProgressCommentId,
+                'voteInProgressCommentId',
+                null,
+              ),
+        ],
+        verify: (_) {
+          // Verify downvote was removed before upvote was added
+          verify(
+            () => mockLikesRepository.unlikeEvent(validId('likecomment')),
+          ).called(1);
+          verify(
+            () => mockLikesRepository.likeEvent(
+              eventId: validId('likecomment'),
+              authorPubkey: validId('commenter'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
         'emits error when not authenticated',
         setUp: () {
           when(() => mockAuthService.isAuthenticated).thenReturn(false);
@@ -1138,6 +1528,233 @@ void main() {
             'error',
             CommentsError.notAuthenticated,
           ),
+        ],
+      );
+    });
+
+    group('CommentDownvoteToggled', () {
+      blocTest<CommentsBloc, CommentsState>(
+        'emits optimistic downvote update when unvoted comment is toggled',
+        setUp: () {
+          when(
+            () => mockLikesRepository.downvoteEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => 'mock-reaction-id');
+        },
+        build: createBloc,
+        seed: () {
+          final comment = Comment(
+            id: validId('downcomment'),
+            content: 'Downvoteable comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {comment.id: comment},
+            commentDownvoteCounts: {comment.id: 2},
+            downvotedCommentIds: const {},
+          );
+        },
+        act: (bloc) => bloc.add(
+          CommentDownvoteToggled(
+            commentId: validId('downcomment'),
+            authorPubkey: validId('commenter'),
+          ),
+        ),
+        expect: () => [
+          // First emit: optimistic downvote added
+          isA<CommentsState>()
+              .having(
+                (s) => s.downvotedCommentIds.contains(validId('downcomment')),
+                'downvoted',
+                true,
+              )
+              .having(
+                (s) => s.commentDownvoteCounts[validId('downcomment')],
+                'count',
+                3,
+              )
+              .having(
+                (s) => s.voteInProgressCommentId,
+                'voteInProgressCommentId',
+                validId('downcomment'),
+              ),
+          // Second emit: clears voteInProgressCommentId on success
+          isA<CommentsState>()
+              .having(
+                (s) => s.downvotedCommentIds.contains(validId('downcomment')),
+                'downvoted',
+                true,
+              )
+              .having(
+                (s) => s.voteInProgressCommentId,
+                'voteInProgressCommentId',
+                null,
+              ),
+        ],
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'removes existing upvote when downvoting an upvoted comment',
+        setUp: () {
+          when(
+            () => mockLikesRepository.unlikeEvent(any()),
+          ).thenAnswer((_) async {});
+          when(
+            () => mockLikesRepository.downvoteEvent(
+              eventId: any(named: 'eventId'),
+              authorPubkey: any(named: 'authorPubkey'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).thenAnswer((_) async => 'mock-reaction-id');
+        },
+        build: createBloc,
+        seed: () {
+          final comment = Comment(
+            id: validId('downcomment'),
+            content: 'Upvoted comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {comment.id: comment},
+            commentUpvoteCounts: {comment.id: 5},
+            commentDownvoteCounts: {comment.id: 0},
+            upvotedCommentIds: {comment.id},
+            downvotedCommentIds: const {},
+          );
+        },
+        act: (bloc) => bloc.add(
+          CommentDownvoteToggled(
+            commentId: validId('downcomment'),
+            authorPubkey: validId('commenter'),
+          ),
+        ),
+        expect: () => [
+          // First emit: optimistic update — downvote added, upvote removed
+          isA<CommentsState>()
+              .having(
+                (s) => s.downvotedCommentIds.contains(validId('downcomment')),
+                'downvoted',
+                true,
+              )
+              .having(
+                (s) => s.upvotedCommentIds.contains(validId('downcomment')),
+                'upvoted',
+                false,
+              )
+              .having(
+                (s) => s.commentDownvoteCounts[validId('downcomment')],
+                'downvote count',
+                1,
+              )
+              .having(
+                (s) => s.commentUpvoteCounts[validId('downcomment')],
+                'upvote count',
+                4,
+              ),
+          // Second emit: clears voteInProgressCommentId on success
+          isA<CommentsState>()
+              .having(
+                (s) => s.downvotedCommentIds.contains(validId('downcomment')),
+                'downvoted',
+                true,
+              )
+              .having(
+                (s) => s.upvotedCommentIds.contains(validId('downcomment')),
+                'upvoted',
+                false,
+              )
+              .having(
+                (s) => s.voteInProgressCommentId,
+                'voteInProgressCommentId',
+                null,
+              ),
+        ],
+        verify: (_) {
+          // Verify upvote was removed before downvote was added
+          verify(
+            () => mockLikesRepository.unlikeEvent(validId('downcomment')),
+          ).called(1);
+          verify(
+            () => mockLikesRepository.downvoteEvent(
+              eventId: validId('downcomment'),
+              authorPubkey: validId('commenter'),
+              targetKind: any(named: 'targetKind'),
+            ),
+          ).called(1);
+        },
+      );
+
+      blocTest<CommentsBloc, CommentsState>(
+        'emits optimistic un-downvote when downvoted comment is toggled',
+        setUp: () {
+          when(
+            () => mockLikesRepository.unlikeEvent(any()),
+          ).thenAnswer((_) async {});
+        },
+        build: createBloc,
+        seed: () {
+          final comment = Comment(
+            id: validId('downcomment'),
+            content: 'Already downvoted comment',
+            authorPubkey: validId('commenter'),
+            createdAt: DateTime.fromMillisecondsSinceEpoch(1000000000),
+            rootEventId: validId('root'),
+            rootAuthorPubkey: validId('author'),
+          );
+          return CommentsState(
+            status: CommentsStatus.success,
+            commentsById: {comment.id: comment},
+            commentDownvoteCounts: {comment.id: 3},
+            downvotedCommentIds: {comment.id},
+          );
+        },
+        act: (bloc) => bloc.add(
+          CommentDownvoteToggled(
+            commentId: validId('downcomment'),
+            authorPubkey: validId('commenter'),
+          ),
+        ),
+        expect: () => [
+          // First emit: optimistic un-downvote
+          isA<CommentsState>()
+              .having(
+                (s) => s.downvotedCommentIds.contains(validId('downcomment')),
+                'downvoted',
+                false,
+              )
+              .having(
+                (s) => s.commentDownvoteCounts[validId('downcomment')],
+                'count',
+                2,
+              )
+              .having(
+                (s) => s.voteInProgressCommentId,
+                'voteInProgressCommentId',
+                validId('downcomment'),
+              ),
+          // Second emit: clears voteInProgressCommentId on success
+          isA<CommentsState>()
+              .having(
+                (s) => s.downvotedCommentIds.contains(validId('downcomment')),
+                'downvoted',
+                false,
+              )
+              .having(
+                (s) => s.voteInProgressCommentId,
+                'voteInProgressCommentId',
+                null,
+              ),
         ],
       );
     });
