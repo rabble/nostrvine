@@ -211,7 +211,6 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: VineTheme.surfaceBackground,
-      resizeToAvoidBottomInset: false,
       body: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         behavior: HitTestBehavior.opaque,

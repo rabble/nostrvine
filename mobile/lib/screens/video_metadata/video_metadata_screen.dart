@@ -6,7 +6,6 @@ import 'dart:async';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -96,14 +95,12 @@ class _VideoMetadataScreenState extends ConsumerState<VideoMetadataScreen> {
                         borderRadius: BorderRadius.circular(14),
                         border: Border.all(color: VineTheme.outlineVariant),
                       ),
-                      child: SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: Center(
-                          child: SvgPicture.asset(
-                            'assets/icon/CaretLeft.svg',
-                            colorFilter: const .mode(Colors.white, .srcIn),
-                          ),
+                      child: Padding(
+                        padding: const .all(4.0),
+                        child: DivineIcon(
+                          size: 32,
+                          icon: .caretLeft,
+                          color: VineTheme.whiteText,
                         ),
                       ),
                     ),
@@ -193,13 +190,15 @@ class _FormData extends ConsumerWidget {
             child: Column(
               children: [
                 // Title input field
-                DivineAuthTextField(
+                DivineTextField(
                   controller: titleController,
                   // TODO(l10n): Replace with context.l10n when localization is
                   // added.
                   label: 'Title',
                   focusNode: titleFocusNode,
                   textInputAction: .next,
+                  minLines: 1,
+                  maxLines: 5,
                   onChanged: (value) {
                     ref
                         .read(videoEditorProvider.notifier)
@@ -210,7 +209,7 @@ class _FormData extends ConsumerWidget {
                 const SizedBox(height: 12),
 
                 // Description input field
-                DivineAuthTextField(
+                DivineTextField(
                   controller: descriptionController,
                   // TODO(l10n): Replace with context.l10n when localization is
                   // added.
@@ -218,6 +217,8 @@ class _FormData extends ConsumerWidget {
                   focusNode: descriptionFocusNode,
                   keyboardType: .multiline,
                   textInputAction: .newline,
+                  minLines: 1,
+                  maxLines: 10,
                   onChanged: (value) {
                     ref
                         .read(videoEditorProvider.notifier)

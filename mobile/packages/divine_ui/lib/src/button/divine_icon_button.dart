@@ -66,6 +66,7 @@ class DivineIconButton extends StatelessWidget {
     this.type = DivineIconButtonType.primary,
     this.size = DivineIconButtonSize.base,
     this.semanticLabel,
+    this.semanticValue,
     super.key,
   });
 
@@ -85,6 +86,9 @@ class DivineIconButton extends StatelessWidget {
   /// Semantic label for accessibility.
   final String? semanticLabel;
 
+  /// Semantic value for accessibility (e.g. a count or status).
+  final String? semanticValue;
+
   @override
   Widget build(BuildContext context) {
     return _DivineIconButtonContent(
@@ -93,6 +97,7 @@ class DivineIconButton extends StatelessWidget {
       type: type,
       size: size,
       semanticLabel: semanticLabel,
+      semanticValue: semanticValue,
     );
   }
 }
@@ -104,6 +109,7 @@ class _DivineIconButtonContent extends StatelessWidget {
     required this.type,
     required this.size,
     this.semanticLabel,
+    this.semanticValue,
   });
 
   final DivineIconName icon;
@@ -111,6 +117,7 @@ class _DivineIconButtonContent extends StatelessWidget {
   final DivineIconButtonType type;
   final DivineIconButtonSize size;
   final String? semanticLabel;
+  final String? semanticValue;
 
   bool get _isEnabled => onPressed != null;
 
@@ -158,8 +165,12 @@ class _DivineIconButtonContent extends StatelessWidget {
   };
 
   List<BoxShadow>? get _boxShadow {
-    // Disabled buttons have no shadow (except for some types)
-    if (!_isEnabled && type == DivineIconButtonType.primary) return null;
+    // Disabled buttons have no shadow (except for some types).
+    if ((!_isEnabled && type == .primary) ||
+        type == .ghost ||
+        type == .ghostSecondary) {
+      return null;
+    }
 
     return const [
       BoxShadow(
@@ -194,6 +205,7 @@ class _DivineIconButtonContent extends StatelessWidget {
 
     return Semantics(
       label: semanticLabel,
+      value: semanticValue,
       button: true,
       enabled: _isEnabled,
       child: AnimatedOpacity(

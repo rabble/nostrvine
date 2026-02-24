@@ -141,6 +141,10 @@ class NostrConnectSession {
   Timer? _timeoutTimer;
   bool _isClosed = false;
 
+  /// The since timestamp used for subscriptions, captured once at session start
+  /// so reconnections use the same timestamp.
+  int? _subscriptionSinceTimestamp;
+
   /// Start the session - generates keypair and begins listening on relays.
   Future<void> start() async {
     if (_state != NostrConnectState.idle) {
@@ -222,6 +226,34 @@ class NostrConnectSession {
     _cleanup();
   }
 
+  /// Ensure all relay connections are alive. Reconnects any that dropped.
+  ///
+  /// Call this when the app returns from background to recover connections
+  /// that Android may have killed.
+  Future<void> ensureConnected() async {
+    if (_isClosed || _state != NostrConnectState.listening) return;
+
+    log(
+      '[NostrConnectSession] ensureConnected: checking ${_relays.length} '
+      'relays + ${relays.length} configured',
+    );
+
+    // Reconnect any disconnected relays
+    final disconnected = _relays
+        .where((r) => r.relayStatus.connected != ClientConnected.connected)
+        .toList();
+
+    for (final relay in disconnected) {
+      await _reconnectRelay(relay);
+    }
+
+    // If all relays were lost, try to reconnect from scratch
+    if (_relays.isEmpty) {
+      log('[NostrConnectSession] All relays lost, reconnecting from scratch');
+      await _connectToRelays();
+    }
+  }
+
   /// Clean up resources.
   void dispose() {
     _cleanup();
@@ -276,7 +308,6 @@ class NostrConnectSession {
       if (_isClosed) return;
       if (relayStatus.connected == ClientConnected.disconnect) {
         log('[NostrConnectSession] Relay $relayAddr disconnected');
-        // Could implement reconnection here if needed
       }
     };
 
@@ -289,18 +320,37 @@ class NostrConnectSession {
     return relay;
   }
 
+  Future<void> _reconnectRelay(Relay relay) async {
+    final addr = relay.relayStatus.addr;
+    log('[NostrConnectSession] Reconnecting to $addr');
+
+    try {
+      // Re-add the subscription filter so it is sent on connect
+      await _addSubscription(relay);
+      final connected = await relay.connect();
+      if (connected) {
+        log('[NostrConnectSession] Reconnected to $addr');
+      } else {
+        log('[NostrConnectSession] Failed to reconnect to $addr');
+      }
+    } catch (e) {
+      log('[NostrConnectSession] Reconnection error for $addr: $e');
+    }
+  }
+
   Future<void> _addSubscription(Relay relay) async {
     final pubkey = await _localSigner!.getPublicKey();
     if (pubkey == null) {
       throw StateError('Failed to get client pubkey');
     }
 
-    // Listen for Kind 24133 events addressed to our client pubkey
-    // Use a since timestamp slightly in the past to account for clock skew
-    final sinceTimestamp = (DateTime.now().millisecondsSinceEpoch ~/ 1000) - 30;
+    // Capture the since timestamp once at session start so reconnections
+    // use the same value and don't miss events sent while disconnected.
+    _subscriptionSinceTimestamp ??=
+        (DateTime.now().millisecondsSinceEpoch ~/ 1000) - 30;
 
     final filter = Filter(
-      since: sinceTimestamp,
+      since: _subscriptionSinceTimestamp!,
       p: [pubkey],
       kinds: [EventKind.nostrRemoteSigning],
     );

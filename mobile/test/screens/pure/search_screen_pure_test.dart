@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:hashtag_repository/hashtag_repository.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:mockito/mockito.dart' as mockito;
 import 'package:models/models.dart';
@@ -21,6 +22,8 @@ class _MockProfileRepository extends Mock implements ProfileRepository {}
 
 class _MockContentBlocklistService extends Mock
     implements ContentBlocklistService {}
+
+class _MockHashtagRepository extends Mock implements HashtagRepository {}
 
 class _FakeVideoEventService extends ChangeNotifier
     implements VideoEventService {
@@ -48,15 +51,17 @@ class _FakeVideoEventService extends ChangeNotifier
 }
 
 void main() {
-  group('SearchScreenPure', () {
+  group(SearchScreenPure, () {
     late _MockProfileRepository mockProfileRepository;
     late _MockContentBlocklistService mockBlocklistService;
     late _FakeVideoEventService fakeVideoEventService;
+    late _MockHashtagRepository mockHashtagRepository;
 
     setUp(() {
       mockProfileRepository = _MockProfileRepository();
       mockBlocklistService = _MockContentBlocklistService();
       fakeVideoEventService = _FakeVideoEventService();
+      mockHashtagRepository = _MockHashtagRepository();
 
       when(
         () => mockBlocklistService.shouldFilterFromFeeds(any()),
@@ -70,6 +75,14 @@ void main() {
           hasVideos: any(named: 'hasVideos'),
         ),
       ).thenAnswer((_) async => <UserProfile>[]);
+
+      // Default HashtagRepository stub
+      when(
+        () => mockHashtagRepository.searchHashtags(
+          query: any(named: 'query'),
+          limit: any(named: 'limit'),
+        ),
+      ).thenAnswer((_) async => []);
     });
 
     Widget createTestWidget({List<VideoEvent>? videos}) {
@@ -94,6 +107,7 @@ void main() {
           contentBlocklistServiceProvider.overrideWithValue(
             mockBlocklistService,
           ),
+          hashtagRepositoryProvider.overrideWithValue(mockHashtagRepository),
           pageContextProvider.overrideWith((ref) {
             return Stream.value(const RouteContext(type: RouteType.search));
           }),
@@ -194,11 +208,19 @@ void main() {
           ),
         ];
 
+        // Stub HashtagRepository to return 'flutter' for this query
+        when(
+          () =>
+              mockHashtagRepository.searchHashtags(query: 'flutter', limit: 20),
+        ).thenAnswer((_) async => ['flutter']);
+
         await tester.pumpWidget(createTestWidget(videos: testVideos));
 
         final textField = find.byType(TextField);
         await tester.enterText(textField, 'flutter');
 
+        // Wait for debounce (300ms) + BLoC debounce (300ms) + processing
+        await tester.pump(const Duration(milliseconds: 400));
         await tester.pump(const Duration(milliseconds: 400));
         await tester.pump();
 

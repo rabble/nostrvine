@@ -96,14 +96,17 @@ class VineTheme {
       );
 
   /// Title medium: Bricolage Grotesque 800 18/24/0.15
-  static TextStyle titleMediumFont({Color color = whiteText}) =>
-      GoogleFonts.bricolageGrotesque(
-        fontSize: 18,
-        fontWeight: FontWeight.w800,
-        height: 24 / 18,
-        letterSpacing: 0.15,
-        color: color,
-      );
+  static TextStyle titleMediumFont({
+    Color color = whiteText,
+    double fontSize = 18,
+    double height = 24 / 18,
+  }) => GoogleFonts.bricolageGrotesque(
+    fontSize: fontSize,
+    fontWeight: FontWeight.w800,
+    height: height,
+    letterSpacing: 0.15,
+    color: color,
+  );
 
   /// Title small: Bricolage Grotesque 800 14/20/0.1
   static TextStyle titleSmallFont({Color color = whiteText}) =>

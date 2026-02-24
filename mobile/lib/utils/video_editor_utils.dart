@@ -17,4 +17,23 @@ extension VideoEditorTimeUtils on Duration {
   String toFormattedSeconds() {
     return (inMilliseconds / 1000).toStringAsFixed(2);
   }
+
+  /// Formats duration as MM:SS.
+  ///
+  /// Example: Duration(minutes: 1, seconds: 5) → "01:05"
+  String toMmSs() {
+    final mins = inMinutes.toString().padLeft(2, '0');
+    final secs = (inSeconds % 60).toString().padLeft(2, '0');
+    return '$mins:$secs';
+  }
+}
+
+/// Extension on [num] for converting seconds to formatted time strings.
+extension SecondsFormatting on num {
+  /// Converts a value in seconds to a MM:SS string.
+  ///
+  /// Example: `65.3.toMmSs()` → "01:05"
+  String toMmSs() {
+    return Duration(milliseconds: (this * 1000).round()).toMmSs();
+  }
 }

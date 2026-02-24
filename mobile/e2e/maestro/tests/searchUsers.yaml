@@ -31,7 +31,7 @@ appId: co.openvine.app
 
 # 4. Tap on the user listed: validate user profile is displayed
 - tapOn:
-    point: 50%,28%
+    point: 50%,32%
 - runFlow: ../asserts/assertUserProfile.yaml
 - runFlow: ../asserts/assertSpecificUserProfile.yaml
 - tapOn: Back

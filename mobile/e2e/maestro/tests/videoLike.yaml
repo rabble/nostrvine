@@ -20,7 +20,26 @@ tags:
 - tapOn:
     id: like_button
 - runFlow: "../asserts/assertVideoLiked.yaml"
-- tapOn: Close video player
+
+- runFlow:
+    when:
+      visible: |-
+        Go back
+        Back
+    commands:
+      - assertVisible: |-
+          Go back
+          Back
+      - tapOn: |-
+          Go back
+          Back
+
+- runFlow:
+    when:
+      visible: Go back
+    commands:
+      - assertVisible: Go back
+      - tapOn: Go back
 
 # 3. Tap on the profile: Validate profile is loaded
 - tapOn:

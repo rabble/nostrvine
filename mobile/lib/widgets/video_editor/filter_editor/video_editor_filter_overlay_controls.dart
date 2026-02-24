@@ -6,7 +6,6 @@ import 'dart:math';
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:openvine/blocs/video_editor/filter_editor/video_editor_filter_bloc.dart';
 import 'package:openvine/widgets/video_editor/main_editor/video_editor_scope.dart';
 import 'package:openvine/widgets/video_editor/video_editor_vertical_slider.dart';
@@ -111,12 +110,17 @@ class _TopBarContent extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             // Close button
-            _CloseButton(
-              onTap: () {
+            DivineIconButton(
+              icon: .x,
+              semanticLabel: 'Close',
+              type: .ghostSecondary,
+              size: .small,
+              onPressed: () {
                 bloc.add(const VideoEditorFilterCancelled());
                 scope.filterEditor?.close();
               },
             ),
+
             // Done button
             _DoneButton(
               onTap: () {
@@ -124,37 +128,6 @@ class _TopBarContent extends StatelessWidget {
               },
             ),
           ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Close button with scrim background.
-class _CloseButton extends StatelessWidget {
-  const _CloseButton({required this.onTap});
-
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: 'Close',
-      button: true,
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          padding: const .all(8),
-          decoration: BoxDecoration(
-            color: VineTheme.scrim15,
-            borderRadius: .circular(16),
-          ),
-          child: SvgPicture.asset(
-            'assets/icon/close.svg',
-            width: 24,
-            height: 24,
-            colorFilter: const .mode(Colors.white, .srcIn),
-          ),
         ),
       ),
     );

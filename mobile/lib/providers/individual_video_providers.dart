@@ -618,11 +618,6 @@ VideoPlayerController individualVideoController(
 
             // Enforce loop at 6.3s mark
             if (controller.value.position >= maxPlaybackDuration) {
-              Log.debug(
-                '🔄 Loop enforcement: ${params.videoId} at ${controller.value.position.inMilliseconds}ms → seeking to 0',
-                name: 'LoopEnforcement',
-                category: LogCategory.video,
-              );
               safeSeekTo(controller, params.videoId, Duration.zero);
             }
           });
