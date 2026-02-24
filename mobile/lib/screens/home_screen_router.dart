@@ -1,6 +1,7 @@
 // ABOUTME: Router-driven HomeScreen using pooled_video_player (media_kit)
 // ABOUTME: Matches explore feed architecture for consistent video playback
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -20,7 +21,6 @@ import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 /// Router-driven HomeScreen - uses pooled_video_player for playback
@@ -413,36 +413,36 @@ class _EmptyHomeFeed extends StatelessWidget {
   Widget build(BuildContext context) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32.0),
+        padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.people_outline, size: 80, color: Colors.grey),
-            const SizedBox(height: 24),
-            const Text(
-              'Your Home Feed is Empty',
-              style: TextStyle(
-                fontSize: 22,
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-              ),
+            const DivineSticker(
+              sticker: DivineStickerName.vintageTvTestPattern,
+              size: 132,
             ),
-            const SizedBox(height: 12),
-            const Text(
-              'Follow creators to see their videos here',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+            const SizedBox(height: 32),
+            Text('Gloriously empty', style: VineTheme.headlineSmallFont()),
+            const SizedBox(height: 8),
+            Text(
+              'No ads. No AI slop. No one telling you what to '
+              'watch. Fix that last part yourself.',
+              style: VineTheme.bodyLargeFont(color: VineTheme.onSurfaceVariant),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 32),
-            ElevatedButton.icon(
+            FilledButton.icon(
               onPressed: () => context.go(ExploreScreen.path),
-              icon: const Icon(Icons.explore),
-              label: const Text('Explore Videos'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
+              style: FilledButton.styleFrom(
+                backgroundColor: VineTheme.surfaceContainer,
+                foregroundColor: VineTheme.primary,
+                padding: const EdgeInsets.only(left: 24, right: 16),
+              ),
+              icon: const Icon(Icons.arrow_forward, size: 24),
+              iconAlignment: IconAlignment.end,
+              label: Text(
+                'Go explore',
+                style: VineTheme.titleMediumFont(color: VineTheme.primary),
               ),
             ),
           ],
