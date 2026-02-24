@@ -2,6 +2,13 @@
 // ABOUTME: Supports polling mode (after registration) and token mode (from deep link)
 // ABOUTME: Supports auto-login on cold start via persisted verification data
 
+import 'dart:async';
+import 'dart:io';
+import 'dart:math';
+
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:android_intent_plus/flag.dart';
+
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -10,9 +17,12 @@ import 'package:go_router/go_router.dart';
 import 'package:openvine/blocs/email_verification/email_verification_cubit.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
+import 'package:openvine/screens/auth/welcome_screen.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:openvine/screens/welcome_screen.dart';
+import 'package:openvine/services/auth_service.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/widgets/divine_primary_button.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class EmailVerificationScreen extends ConsumerStatefulWidget {
   /// Route name for navigation
@@ -56,18 +66,41 @@ class EmailVerificationScreen extends ConsumerStatefulWidget {
 class _EmailVerificationScreenState
     extends ConsumerState<EmailVerificationScreen> {
   bool _isTokenMode = false;
-  String? _tokenModeError;
-
-  /// Get the app-level cubit provided in main.dart
-  EmailVerificationCubit get _cubit => context.read<EmailVerificationCubit>();
+  StreamSubscription<AuthState>? _authSubscription;
+  late final EmailVerificationCubit _cubit;
 
   @override
   void initState() {
     super.initState();
+    _cubit = context.read<EmailVerificationCubit>();
 
     // Use post-frame callback to access context safely
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _initializeVerification();
+      _listenForAuthState();
+    });
+  }
+
+  /// Listen for auth state changes and navigate away when authenticated.
+  ///
+  /// GoRouter's `refreshListenable` redirect is unreliable for navigating
+  /// away from this screen after sign-in completes. This listener provides
+  /// an explicit, reliable navigation path.
+  void _listenForAuthState() {
+    final authService = ref.read(authServiceProvider);
+    _authSubscription = authService.authStateStream.listen((authState) {
+      if (authState == AuthState.authenticated && mounted) {
+        Log.info(
+          'Auth state became authenticated, navigating to explore '
+          '(cubit=${_cubit.hashCode})',
+          name: 'EmailVerificationScreen',
+          category: LogCategory.auth,
+        );
+        _cubit.stopPolling();
+        ref.read(pendingVerificationServiceProvider).clear();
+        ref.read(forceExploreTabNameProvider.notifier).state = 'popular';
+        context.go(ExploreScreen.path);
+      }
     });
   }
 
@@ -75,7 +108,7 @@ class _EmailVerificationScreenState
     // Start the appropriate verification mode
     if (widget.isPollingMode) {
       Log.info(
-        'Starting polling mode verification',
+        'Starting polling mode verification (cubit=${_cubit.hashCode})',
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,
       );
@@ -114,7 +147,8 @@ class _EmailVerificationScreenState
         category: LogCategory.auth,
       );
 
-      // Verify the email first via OAuth client, then start polling to complete login
+      // Verify the email first via OAuth client, then start polling to
+      // complete login
       final oauth = ref.read(oauthClientProvider);
       try {
         await oauth.verifyEmail(token: widget.token!);
@@ -166,12 +200,9 @@ class _EmailVerificationScreenState
           name: 'EmailVerificationScreen',
           category: LogCategory.auth,
         );
-        if (mounted) {
-          setState(() {
-            _tokenModeError =
-                result.error ?? result.message ?? 'Verification failed';
-          });
-        }
+        _cubit.emitFailure(
+          result.error ?? 'This verification link is no longer valid.',
+        );
       }
     } catch (e) {
       Log.error(
@@ -179,11 +210,9 @@ class _EmailVerificationScreenState
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,
       );
-      if (mounted) {
-        setState(() {
-          _tokenModeError = 'Verification failed. Please try again.';
-        });
-      }
+      _cubit.emitFailure(
+        'Unable to verify email. Please check your connection and try again.',
+      );
     }
   }
 
@@ -192,7 +221,8 @@ class _EmailVerificationScreenState
     super.didUpdateWidget(oldWidget);
 
     // If we receive a token via deep link while polling, verify it
-    // This marks the email as verified on the server, allowing the poll to complete
+    // This marks the email as verified on the server, allowing the poll to
+    // complete
     if (widget.isTokenMode && !oldWidget.isTokenMode) {
       Log.info(
         'Token received via deep link, calling verifyEmail',
@@ -204,24 +234,31 @@ class _EmailVerificationScreenState
     }
   }
 
-  // Note: We don't close the cubit in dispose() because it's owned by
-  // the app-level BlocProvider in main.dart and needs to survive navigation
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    // Stop polling when the screen is disposed (e.g., router redirect after
+    // auth). The cubit is app-level so we don't close() it, but we must stop
+    // its timers to prevent zombie polling.
+    _cubit.stopPolling();
+    super.dispose();
+  }
 
   void _handleSuccess() {
     // Clear persisted verification data on successful login
     ref.read(pendingVerificationServiceProvider).clear();
 
     if (!_isTokenMode) {
-      // Polling mode: navigate to explore screen (Popular tab) after verification
+      // Polling mode: navigate to explore screen (Popular tab) after
+      // verification
       Log.info(
         'Email verification succeeded, navigating to explore (Popular tab)',
         name: 'EmailVerificationScreen',
         category: LogCategory.auth,
       );
-      // Set tab by NAME (not index) because indices shift when Classics/ForYou
-      // tabs become available asynchronously
+      // Set tab by NAME (not index) because indices shift when
+      // Classics/ForYou tabs become available asynchronously
       ref.read(forceExploreTabNameProvider.notifier).state = 'popular';
-      context.go(ExploreScreen.path);
     } else {
       // Token mode: redirect to login screen
       _handleTokenModeSuccess();
@@ -240,7 +277,7 @@ class _EmailVerificationScreenState
       ),
     );
     // Redirect to login screen
-    context.go(WelcomeScreen.authNativePath);
+    context.go(WelcomeScreen.loginOptionsPath);
   }
 
   void _handleCancel() {
@@ -256,200 +293,402 @@ class _EmailVerificationScreenState
     }
   }
 
-  void _handleGoBack() {
+  void _handleStartOver() {
     context.go('/');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [VineTheme.vineGreen, Color(0xFF2D8B6F)],
-          ),
-        ),
-        child: SafeArea(
-          child: BlocConsumer<EmailVerificationCubit, EmailVerificationState>(
-            listener: (context, state) {
-              if (state.status == EmailVerificationStatus.success) {
-                _handleSuccess();
-              }
-            },
-            builder: (context, state) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: _buildContent(state),
+      backgroundColor: VineTheme.backgroundColor,
+      resizeToAvoidBottomInset: false,
+      body: SafeArea(
+        child: BlocConsumer<EmailVerificationCubit, EmailVerificationState>(
+          listener: (context, state) {
+            if (state.status == EmailVerificationStatus.success) {
+              _handleSuccess();
+            }
+          },
+          builder: (context, state) {
+            final showCloseButton =
+                state.status != EmailVerificationStatus.success;
+            return Column(
+              children: [
+                // Close button (hidden on success)
+                if (showCloseButton)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: _CloseButton(
+                        onPressed:
+                            state.status == EmailVerificationStatus.failure
+                            ? _handleStartOver
+                            : _handleCancel,
+                      ),
+                    ),
+                  )
+                else
+                  const SizedBox(height: 76),
+
+                // Main content
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: switch (state.status) {
+                      EmailVerificationStatus.initial => _PollingContent(
+                        email: null,
+                        isPollingMode: widget.isPollingMode || !_isTokenMode,
+                      ),
+                      EmailVerificationStatus.polling => _PollingContent(
+                        email: state.pendingEmail,
+                        isPollingMode: widget.isPollingMode || !_isTokenMode,
+                      ),
+                      EmailVerificationStatus.success =>
+                        const _SuccessContent(),
+                      EmailVerificationStatus.failure => _ErrorContent(
+                        onStartOver: _handleStartOver,
+                      ),
+                    },
+                  ),
                 ),
-              );
-            },
-          ),
+              ],
+            );
+          },
         ),
       ),
     );
   }
+}
 
-  Widget _buildContent(EmailVerificationState state) {
-    // Token-mode error takes priority when in token mode
-    if (_isTokenMode && _tokenModeError != null) {
-      return _buildErrorContent(_tokenModeError!);
-    }
+/// Close button (X) for the verification screen.
+class _CloseButton extends StatelessWidget {
+  const _CloseButton({required this.onPressed});
 
-    switch (state.status) {
-      case EmailVerificationStatus.initial:
-        return _buildLoadingContent(null);
-      case EmailVerificationStatus.polling:
-        return _buildLoadingContent(state.pendingEmail);
-      case EmailVerificationStatus.success:
-        return _buildSuccessContent();
-      case EmailVerificationStatus.failure:
-        return _buildErrorContent(state.error ?? 'Verification failed');
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onPressed,
+      child: Container(
+        width: 36,
+        height: 36,
+        decoration: BoxDecoration(
+          color: VineTheme.surfaceContainer,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(
+          Icons.close,
+          color: VineTheme.vineGreenLight,
+          size: 20,
+        ),
+      ),
+    );
+  }
+}
+
+/// Status button with a spinner (non-interactive).
+class _StatusButton extends StatelessWidget {
+  const _StatusButton({required this.label});
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(vertical: 16),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: VineTheme.vineGreenDark.withValues(alpha: 0.5),
+          width: 1.5,
+        ),
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: VineTheme.vineGreenDark.withValues(alpha: 0.5),
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w500,
+              color: VineTheme.whiteText,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Polling/loading content shown while waiting for email verification.
+class _PollingContent extends StatelessWidget {
+  const _PollingContent({required this.email, required this.isPollingMode});
+
+  final String? email;
+  final bool isPollingMode;
+
+  Future<void> _openEmailApp() async {
+    Log.info(
+      'Opening email app (platform=${Platform.operatingSystem})',
+      name: 'EmailVerification',
+      category: LogCategory.auth,
+    );
+
+    try {
+      if (Platform.isAndroid) {
+        // Use AndroidIntent to fire ACTION_MAIN + APP_EMAIL which opens
+        // the default email app's inbox (not compose).
+        const intent = AndroidIntent(
+          action: 'android.intent.action.MAIN',
+          category: 'android.intent.category.APP_EMAIL',
+          flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
+        );
+        await intent.launch();
+        Log.info(
+          'Android email intent launched successfully',
+          name: 'EmailVerification',
+          category: LogCategory.auth,
+        );
+      } else {
+        // iOS: 'message://' opens the Mail inbox directly
+        final launched = await launchUrl(
+          Uri.parse('message://'),
+          mode: LaunchMode.externalApplication,
+        );
+        Log.info(
+          'iOS message:// launch result: $launched',
+          name: 'EmailVerification',
+          category: LogCategory.auth,
+        );
+      }
+    } catch (e) {
+      Log.warning(
+        'Primary email launch failed: $e',
+        name: 'EmailVerification',
+        category: LogCategory.auth,
+      );
+      // Fallback: mailto: opens the email app (compose view)
+      try {
+        await launchUrl(
+          Uri(scheme: 'mailto'),
+          mode: LaunchMode.externalApplication,
+        );
+        Log.info(
+          'Fallback mailto: launched',
+          name: 'EmailVerification',
+          category: LogCategory.auth,
+        );
+      } catch (fallbackError) {
+        Log.warning(
+          'Fallback mailto: also failed: $fallbackError',
+          name: 'EmailVerification',
+          category: LogCategory.auth,
+        );
+      }
     }
   }
 
-  Widget _buildLoadingContent(String? email) {
-    final isPollingMode = widget.isPollingMode || !_isTokenMode;
-
+  @override
+  Widget build(BuildContext context) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.email_outlined, color: Colors.white, size: 80),
-        const SizedBox(height: 24),
-        Text(
-          isPollingMode ? 'Verify Your Email' : 'Verifying...',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+        const Spacer(),
+
+        // Email sticker
+        Transform.rotate(
+          angle: -8 * pi / 180,
+          child: const DivineSticker(
+            sticker: DivineStickerName.email,
+            size: 120,
           ),
         ),
-        const SizedBox(height: 12),
-        if (isPollingMode && email != null && email.isNotEmpty) ...[
-          const Text(
+        const SizedBox(height: 32),
+
+        // Title
+        Text(
+          isPollingMode ? 'Complete your registration' : 'Verifying...',
+          style: const TextStyle(
+            fontFamily: VineTheme.fontFamilyBricolage,
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            color: VineTheme.whiteText,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 16),
+
+        if (isPollingMode && email != null && email!.isNotEmpty) ...[
+          Text(
             'We sent a verification link to:',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
+            style: TextStyle(
+              fontSize: 16,
+              color: VineTheme.secondaryText,
+              height: 1.4,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 4),
+          Text(
+            email!,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: VineTheme.whiteText,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 8),
           Text(
-            email,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
+            'Please click the link in your email to\ncomplete your '
+            'registration.',
+            style: TextStyle(
+              fontSize: 14,
+              color: VineTheme.secondaryText,
+              height: 1.4,
             ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'Click the link in your email to complete registration.',
-            style: TextStyle(color: Colors.white70, fontSize: 14),
             textAlign: TextAlign.center,
           ),
         ] else ...[
-          const Text(
+          Text(
             'Please wait while we verify your email...',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
+            style: TextStyle(
+              fontSize: 16,
+              color: VineTheme.secondaryText,
+              height: 1.4,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
-        const SizedBox(height: 32),
-        const Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: Colors.white,
-              ),
-            ),
-            SizedBox(width: 12),
-            Text(
-              'Waiting for verification...',
-              style: TextStyle(color: Colors.white, fontSize: 14),
-            ),
-          ],
-        ),
-        const SizedBox(height: 32),
-        TextButton(
-          onPressed: isPollingMode ? _handleCancel : _handleGoBack,
-          child: Text(
-            'Cancel',
-            style: TextStyle(color: VineTheme.onSurfaceVariant, fontSize: 16),
+
+        const Spacer(),
+
+        // Status + action buttons at bottom
+        Padding(
+          padding: const EdgeInsets.only(bottom: 32),
+          child: Column(
+            children: [
+              const _StatusButton(label: 'Waiting for verification'),
+              if (isPollingMode) ...[
+                const SizedBox(height: 20),
+                DivinePrimaryButton(
+                  label: 'Open email app',
+                  onPressed: _openEmailApp,
+                ),
+              ],
+            ],
           ),
         ),
       ],
     );
   }
+}
 
-  Widget _buildSuccessContent() {
+/// Success content shown briefly when email is verified.
+class _SuccessContent extends StatelessWidget {
+  const _SuccessContent();
+
+  @override
+  Widget build(BuildContext context) {
     // Navigation happens automatically via BlocConsumer listener
     // This UI is shown briefly during the transition
-    return const Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Icon(Icons.check_circle_outline, color: Colors.white, size: 80),
-        SizedBox(height: 24),
-        Text(
-          'Email Verified!',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        SizedBox(height: 12),
-        Text(
-          'Signing you in...',
-          style: TextStyle(color: Colors.white70, fontSize: 16),
-          textAlign: TextAlign.center,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildErrorContent(String errorMessage) {
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
-        const Icon(Icons.error_outline, color: Colors.white, size: 80),
-        const SizedBox(height: 24),
+        const Spacer(),
+
+        // Shaka sticker (celebration)
+        const DivineSticker(sticker: DivineStickerName.hangLoose, size: 120),
+        const SizedBox(height: 32),
+
         const Text(
-          'Verification Failed',
+          'Welcome to Divine!',
           style: TextStyle(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+            fontFamily: VineTheme.fontFamilyBricolage,
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            color: VineTheme.whiteText,
           ),
+          textAlign: TextAlign.center,
         ),
         const SizedBox(height: 12),
         Text(
-          errorMessage,
-          style: const TextStyle(color: Colors.white70, fontSize: 16),
+          'Your email has been verified.',
+          style: TextStyle(
+            fontSize: 16,
+            color: VineTheme.secondaryText,
+            height: 1.4,
+          ),
           textAlign: TextAlign.center,
         ),
+
+        const Spacer(),
+
+        // Signing you in status button
+        const Padding(
+          padding: EdgeInsets.only(bottom: 32),
+          child: _StatusButton(label: 'Signing you in'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Error content shown when verification fails.
+class _ErrorContent extends StatelessWidget {
+  const _ErrorContent({required this.onStartOver});
+
+  final VoidCallback onStartOver;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const Spacer(),
+
+        // Siren sticker
+        const DivineSticker(sticker: DivineStickerName.policeSiren, size: 120),
         const SizedBox(height: 32),
-        SizedBox(
-          width: double.infinity,
-          height: 50,
-          child: ElevatedButton(
-            onPressed: _handleGoBack,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: VineTheme.vineGreen,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-            ),
-            child: const Text(
-              'Go Back',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
+
+        const Text(
+          'Uh oh.',
+          style: TextStyle(
+            fontFamily: VineTheme.fontFamilyBricolage,
+            fontSize: 28,
+            fontWeight: FontWeight.w700,
+            color: VineTheme.whiteText,
+          ),
+          textAlign: TextAlign.center,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'We failed to verify your email.\nPlease try again.',
+          style: TextStyle(
+            fontSize: 16,
+            color: VineTheme.secondaryText,
+            height: 1.4,
+          ),
+          textAlign: TextAlign.center,
+        ),
+
+        const Spacer(),
+
+        // Start over button
+        Padding(
+          padding: const EdgeInsets.only(bottom: 32),
+          child: DivinePrimaryButton(
+            label: 'Start over',
+            onPressed: onStartOver,
           ),
         ),
       ],
