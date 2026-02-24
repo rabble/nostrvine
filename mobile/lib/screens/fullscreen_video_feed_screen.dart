@@ -14,6 +14,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/individual_video_providers.dart';
 import 'package:openvine/providers/profile_feed_provider.dart';
 import 'package:openvine/providers/profile_reposts_provider.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/widgets/share_video_menu.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:video_player/video_player.dart';
@@ -46,8 +47,9 @@ class LikedVideosFeedSource extends VideoFeedSource {
 }
 
 /// Static feed source - for cases where we just have a list of videos
-/// Note: This source does NOT support reactive updates when loadMore fetches new videos
-/// Use this for hashtag feeds or other sources that don't have a family provider
+/// Note: This source does NOT support reactive updates when loadMore fetches
+/// new videos. Use this for hashtag feeds or other sources that don't have a
+/// family provider.
 class StaticFeedSource extends VideoFeedSource {
   const StaticFeedSource(this.videos, {this.onLoadMore});
   final List<VideoEvent> videos;
@@ -60,11 +62,13 @@ class FullscreenVideoFeedArgs {
     required this.source,
     required this.initialIndex,
     this.contextTitle,
+    this.trafficSource = ViewTrafficSource.unknown,
   });
 
   final VideoFeedSource source;
   final int initialIndex;
   final String? contextTitle;
+  final ViewTrafficSource trafficSource;
 }
 
 /// Generic fullscreen video feed screen.
@@ -86,12 +90,14 @@ class FullscreenVideoFeedScreen extends ConsumerStatefulWidget {
     required this.source,
     required this.initialIndex,
     this.contextTitle,
+    this.trafficSource = ViewTrafficSource.unknown,
     super.key,
   });
 
   final VideoFeedSource source;
   final int initialIndex;
   final String? contextTitle;
+  final ViewTrafficSource trafficSource;
 
   @override
   ConsumerState<FullscreenVideoFeedScreen> createState() =>
@@ -108,7 +114,8 @@ class _FullscreenVideoFeedScreenState
   @override
   void initState() {
     super.initState();
-    // We'll initialize the page controller once we have videos from the provider
+    // We'll initialize the page controller once we have videos from the
+    // provider
     _currentIndex = widget.initialIndex;
   }
 
@@ -128,7 +135,7 @@ class _FullscreenVideoFeedScreenState
 
   /// Schedule pause for after the current frame to avoid build conflicts
   void _schedulePauseCurrentVideo() {
-    final videos = _getVideos();
+    final videos = _readCurrentVideos();
     if (_currentIndex < 0 || _currentIndex >= videos.length) {
       return;
     }
@@ -173,16 +180,54 @@ class _FullscreenVideoFeedScreenState
     super.dispose();
   }
 
-  /// Get videos from the appropriate source
-  List<VideoEvent> _getVideos() {
+  _ResolvedFullscreenFeedState _watchFeedState() {
     final source = widget.source;
     switch (source) {
       case ProfileFeedSource(:final userId):
         final feedState = ref.watch(profileFeedProvider(userId));
-        return feedState.asData?.value.videos ?? [];
+        final value = feedState.asData?.value;
+        return _ResolvedFullscreenFeedState(
+          videos: value?.videos ?? const [],
+          supportsLoadMore: true,
+          hasMoreContent: value?.hasMoreContent ?? false,
+          isLoadingMore: value?.isLoadingMore ?? false,
+        );
       case ProfileRepostsFeedSource(:final userId):
         final repostsState = ref.watch(profileRepostsProvider(userId));
-        return repostsState.asData?.value ?? [];
+        final profileFeedState = ref.watch(profileFeedProvider(userId));
+        final profileFeedValue = profileFeedState.asData?.value;
+        return _ResolvedFullscreenFeedState(
+          videos: repostsState.asData?.value ?? const [],
+          supportsLoadMore: true,
+          hasMoreContent: profileFeedValue?.hasMoreContent ?? false,
+          isLoadingMore: profileFeedValue?.isLoadingMore ?? false,
+        );
+      case LikedVideosFeedSource(:final videos):
+        return _ResolvedFullscreenFeedState(
+          videos: videos,
+          supportsLoadMore: false,
+          hasMoreContent: false,
+          isLoadingMore: false,
+        );
+      case StaticFeedSource(:final videos, :final onLoadMore):
+        final supportsLoadMore = onLoadMore != null;
+        return _ResolvedFullscreenFeedState(
+          videos: videos,
+          supportsLoadMore: supportsLoadMore,
+          // Static sources don't expose hasMore; if loadMore exists, allow it.
+          hasMoreContent: supportsLoadMore,
+          isLoadingMore: false,
+        );
+    }
+  }
+
+  List<VideoEvent> _readCurrentVideos() {
+    final source = widget.source;
+    switch (source) {
+      case ProfileFeedSource(:final userId):
+        return ref.read(profileFeedProvider(userId)).asData?.value.videos ?? [];
+      case ProfileRepostsFeedSource(:final userId):
+        return ref.read(profileRepostsProvider(userId)).asData?.value ?? [];
       case LikedVideosFeedSource(:final videos):
         return videos;
       case StaticFeedSource(:final videos):
@@ -191,30 +236,39 @@ class _FullscreenVideoFeedScreenState
   }
 
   /// Trigger load more for the appropriate source
-  void _loadMore() {
+  Future<void> _loadMore() async {
     final source = widget.source;
     switch (source) {
       case ProfileFeedSource(:final userId):
-        ref.read(profileFeedProvider(userId).notifier).loadMore();
+        await ref.read(profileFeedProvider(userId).notifier).loadMore();
+        return;
       case ProfileRepostsFeedSource(:final userId):
         // Reposts come from the same profile feed, so load more from there
-        ref.read(profileFeedProvider(userId).notifier).loadMore();
+        await ref.read(profileFeedProvider(userId).notifier).loadMore();
+        return;
       case LikedVideosFeedSource():
         // Liked videos are static - no pagination support
-        break;
+        return;
       case StaticFeedSource(:final onLoadMore):
         // Static source uses callback for loading more
         onLoadMore?.call();
+        return;
     }
   }
 
-  void _onPageChanged(int newIndex, List<VideoEvent> videos) {
+  void _onPageChanged(
+    int newIndex,
+    List<VideoEvent> videos, {
+    required bool supportsLoadMore,
+    required bool hasMoreContent,
+  }) {
     setState(() {
       _currentIndex = newIndex;
     });
 
-    // Trigger pagination near end
-    if (newIndex >= videos.length - 2) {
+    final isAtEnd = newIndex >= videos.length - 1;
+
+    if (supportsLoadMore && hasMoreContent && isAtEnd) {
       _loadMore();
     }
 
@@ -291,7 +345,8 @@ class _FullscreenVideoFeedScreenState
 
   @override
   Widget build(BuildContext context) {
-    final videos = _getVideos();
+    final feedState = _watchFeedState();
+    final videos = feedState.videos;
 
     // Initialize page controller once we have videos
     if (!_initializedPageController && videos.isNotEmpty) {
@@ -391,16 +446,21 @@ class _FullscreenVideoFeedScreenState
           ),
           onPressed: context.pop,
         ),
-        actions: editButton != null ? [editButton] : null,
+        actions: (_currentIndex < videos.length && editButton != null)
+            ? [editButton]
+            : null,
       ),
       body: PageView.builder(
         controller: _pageController,
         scrollDirection: Axis.vertical,
         itemCount: videos.length,
-        onPageChanged: (index) => _onPageChanged(index, videos),
+        onPageChanged: (index) => _onPageChanged(
+          index,
+          videos,
+          supportsLoadMore: feedState.supportsLoadMore,
+          hasMoreContent: feedState.hasMoreContent,
+        ),
         itemBuilder: (context, index) {
-          if (index >= videos.length) return const SizedBox.shrink();
-
           final video = videos[index];
           return VideoFeedItem(
             key: ValueKey('video-${video.stableId}'),
@@ -408,15 +468,30 @@ class _FullscreenVideoFeedScreenState
             index: index,
             hasBottomNavigation: false,
             contextTitle: widget.contextTitle,
-            // Use isActiveOverride since this screen manages its own active state
-            // (not using URL-based routing for video index)
+            // Use isActiveOverride since this screen manages its own active
+            // state (not using URL-based routing for video index)
             isActiveOverride: index == _currentIndex,
             disableTapNavigation: true,
             // Fullscreen mode - add extra padding to avoid back button
             isFullscreen: true,
+            trafficSource: widget.trafficSource,
           );
         },
       ),
     );
   }
+}
+
+class _ResolvedFullscreenFeedState {
+  const _ResolvedFullscreenFeedState({
+    required this.videos,
+    required this.supportsLoadMore,
+    required this.hasMoreContent,
+    required this.isLoadingMore,
+  });
+
+  final List<VideoEvent> videos;
+  final bool supportsLoadMore;
+  final bool hasMoreContent;
+  final bool isLoadingMore;
 }

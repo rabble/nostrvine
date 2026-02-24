@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  group('DivineTextField', () {
+  group(DivineTextField, () {
     Widget buildTestWidget({
       String label = 'Test Label',
       TextEditingController? controller,
@@ -37,219 +37,439 @@ void main() {
       );
     }
 
-    testWidgets('renders with label text', (tester) async {
-      await tester.pumpWidget(buildTestWidget(label: 'Username'));
+    group('renders', () {
+      testWidgets('renders with label text', (tester) async {
+        await tester.pumpWidget(
+          buildTestWidget(label: 'Username'),
+        );
 
-      expect(find.text('Username'), findsOneWidget);
-    });
+        expect(find.text('Username'), findsOneWidget);
+      });
 
-    testWidgets('renders with container styling', (tester) async {
-      await tester.pumpWidget(buildTestWidget());
+      testWidgets('renders with container styling', (
+        tester,
+      ) async {
+        await tester.pumpWidget(buildTestWidget());
 
-      // Find the container with the surfaceContainer background
-      final container = tester.widget<Container>(
-        find.ancestor(
-          of: find.byType(TextField),
-          matching: find.byType(Container),
-        ),
-      );
-      final decoration = container.decoration as BoxDecoration?;
-      expect(decoration?.color, equals(VineTheme.surfaceContainer));
-      expect(decoration?.borderRadius, equals(BorderRadius.circular(24)));
-    });
+        final container = tester.widget<Container>(
+          find.ancestor(
+            of: find.byType(TextField),
+            matching: find.byType(Container),
+          ),
+        );
+        final decoration = container.decoration as BoxDecoration?;
+        expect(
+          decoration?.color,
+          equals(VineTheme.surfaceContainer),
+        );
+        expect(
+          decoration?.borderRadius,
+          equals(BorderRadius.circular(24)),
+        );
+      });
 
-    testWidgets('accepts text input', (tester) async {
-      final controller = TextEditingController();
-      await tester.pumpWidget(buildTestWidget(controller: controller));
+      testWidgets(
+        'renders visibility toggle when obscureText is true',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(obscureText: true),
+          );
 
-      await tester.enterText(find.byType(TextField), 'Hello World');
-      expect(controller.text, equals('Hello World'));
-    });
-
-    testWidgets('calls onChanged when text changes', (tester) async {
-      String? changedValue;
-      await tester.pumpWidget(
-        buildTestWidget(onChanged: (value) => changedValue = value),
-      );
-
-      await tester.enterText(find.byType(TextField), 'Test');
-      expect(changedValue, equals('Test'));
-    });
-
-    testWidgets('calls onSubmitted when submitted', (tester) async {
-      String? submittedValue;
-      await tester.pumpWidget(
-        buildTestWidget(onSubmitted: (value) => submittedValue = value),
+          expect(find.byType(DivineIcon), findsOneWidget);
+        },
       );
 
-      await tester.enterText(find.byType(TextField), 'Submit Test');
-      await tester.testTextInput.receiveAction(TextInputAction.done);
-      expect(submittedValue, equals('Submit Test'));
-    });
+      testWidgets(
+        'does not render visibility toggle '
+        'when obscureText is false',
+        (tester) async {
+          await tester.pumpWidget(buildTestWidget());
 
-    testWidgets('calls onTap when tapped', (tester) async {
-      var tapped = false;
-      await tester.pumpWidget(buildTestWidget(onTap: () => tapped = true));
-
-      await tester.tap(find.byType(TextField));
-      expect(tapped, isTrue);
-    });
-
-    testWidgets('respects readOnly property', (tester) async {
-      final controller = TextEditingController(text: 'Initial');
-      await tester.pumpWidget(
-        buildTestWidget(controller: controller, readOnly: true),
+          expect(find.byType(DivineIcon), findsNothing);
+        },
       );
 
-      final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.readOnly, isTrue);
+      testWidgets('uses asterisk as obscuring character', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(obscureText: true),
+        );
+
+        final textField = tester.widget<TextField>(
+          find.byType(TextField),
+        );
+        expect(
+          textField.obscuringCharacter,
+          equals('✱'),
+        );
+      });
+
+      testWidgets('label floats when text is entered', (
+        tester,
+      ) async {
+        final controller = TextEditingController();
+        await tester.pumpWidget(
+          buildTestWidget(controller: controller),
+        );
+
+        await tester.enterText(
+          find.byType(TextField),
+          'Test',
+        );
+        await tester.pump();
+
+        expect(find.text('Test Label'), findsOneWidget);
+      });
     });
 
-    testWidgets('respects enabled property', (tester) async {
-      await tester.pumpWidget(buildTestWidget(enabled: false));
+    group('interactions', () {
+      testWidgets('accepts text input', (tester) async {
+        final controller = TextEditingController();
+        await tester.pumpWidget(
+          buildTestWidget(controller: controller),
+        );
 
-      final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.enabled, isFalse);
-    });
+        await tester.enterText(
+          find.byType(TextField),
+          'Hello World',
+        );
+        expect(controller.text, equals('Hello World'));
+      });
 
-    testWidgets('respects obscureText for passwords', (tester) async {
-      await tester.pumpWidget(buildTestWidget(obscureText: true));
+      testWidgets('calls onChanged when text changes', (
+        tester,
+      ) async {
+        String? changedValue;
+        await tester.pumpWidget(
+          buildTestWidget(
+            onChanged: (value) => changedValue = value,
+          ),
+        );
 
-      final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.obscureText, isTrue);
-    });
+        await tester.enterText(
+          find.byType(TextField),
+          'Test',
+        );
+        expect(changedValue, equals('Test'));
+      });
 
-    testWidgets('shows visibility toggle when obscureText is true', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildTestWidget(obscureText: true));
+      testWidgets('calls onSubmitted when submitted', (
+        tester,
+      ) async {
+        String? submittedValue;
+        await tester.pumpWidget(
+          buildTestWidget(
+            onSubmitted: (value) => submittedValue = value,
+          ),
+        );
 
-      // Should find an eye icon
-      expect(find.byType(DivineIcon), findsOneWidget);
-    });
+        await tester.enterText(
+          find.byType(TextField),
+          'Submit Test',
+        );
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        expect(submittedValue, equals('Submit Test'));
+      });
 
-    testWidgets('toggles password visibility when eye icon tapped', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildTestWidget(obscureText: true));
+      testWidgets('calls onTap when tapped', (
+        tester,
+      ) async {
+        var tapped = false;
+        await tester.pumpWidget(
+          buildTestWidget(onTap: () => tapped = true),
+        );
 
-      // Initially obscured
-      var textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.obscureText, isTrue);
+        await tester.tap(find.byType(DivineTextField));
+        await tester.pump();
+        expect(tapped, isTrue);
+      });
 
-      // Tap the eye icon
-      await tester.tap(find.byType(DivineIcon));
-      await tester.pump();
+      testWidgets(
+        'focuses field when container area is tapped',
+        (tester) async {
+          final focusNode = FocusNode();
+          await tester.pumpWidget(
+            buildTestWidget(focusNode: focusNode),
+          );
 
-      // Now should be visible
-      textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.obscureText, isFalse);
-    });
+          expect(focusNode.hasFocus, isFalse);
 
-    testWidgets('does not show visibility toggle when obscureText is false', (
-      tester,
-    ) async {
-      await tester.pumpWidget(buildTestWidget());
+          // Tap the top of the Container (padding area above
+          // the TextField) to trigger _handleContainerTap and
+          // exercise the requestFocus path.
+          final containerFinder = find.byType(Container).first;
+          final topLeft = tester.getTopLeft(containerFinder);
+          await tester.tapAt(topLeft + const Offset(30, 5));
+          await tester.pump();
 
-      expect(find.byType(DivineIcon), findsNothing);
-    });
+          expect(focusNode.hasFocus, isTrue);
 
-    testWidgets('respects keyboardType property', (tester) async {
-      await tester.pumpWidget(
-        buildTestWidget(keyboardType: TextInputType.emailAddress),
+          focusNode.dispose();
+        },
       );
 
-      final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.keyboardType, equals(TextInputType.emailAddress));
+      testWidgets('does not focus when disabled', (
+        tester,
+      ) async {
+        final focusNode = FocusNode();
+        await tester.pumpWidget(
+          buildTestWidget(
+            focusNode: focusNode,
+            enabled: false,
+          ),
+        );
+
+        await tester.tap(find.byType(DivineTextField));
+        await tester.pump();
+
+        expect(focusNode.hasFocus, isFalse);
+
+        focusNode.dispose();
+      });
+
+      testWidgets(
+        'toggles password visibility when eye icon tapped',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(obscureText: true),
+          );
+
+          var textField = tester.widget<TextField>(
+            find.byType(TextField),
+          );
+          expect(textField.obscureText, isTrue);
+
+          await tester.tap(
+            find
+                .ancestor(
+                  of: find.byType(DivineIcon),
+                  matching: find.byType(GestureDetector),
+                )
+                .first,
+          );
+          await tester.pump();
+
+          textField = tester.widget<TextField>(
+            find.byType(TextField),
+          );
+          expect(textField.obscureText, isFalse);
+        },
+      );
     });
 
-    testWidgets('respects textInputAction property', (tester) async {
-      await tester.pumpWidget(
-        buildTestWidget(textInputAction: TextInputAction.search),
+    group('properties', () {
+      testWidgets('respects readOnly property', (
+        tester,
+      ) async {
+        final controller = TextEditingController(text: 'Initial');
+        await tester.pumpWidget(
+          buildTestWidget(
+            controller: controller,
+            readOnly: true,
+          ),
+        );
+
+        final textField = tester.widget<TextField>(
+          find.byType(TextField),
+        );
+        expect(textField.readOnly, isTrue);
+      });
+
+      testWidgets('respects enabled property', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(enabled: false),
+        );
+
+        final textField = tester.widget<TextField>(
+          find.byType(TextField),
+        );
+        expect(textField.enabled, isFalse);
+      });
+
+      testWidgets('respects obscureText for passwords', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(obscureText: true),
+        );
+
+        final textField = tester.widget<TextField>(
+          find.byType(TextField),
+        );
+        expect(textField.obscureText, isTrue);
+      });
+
+      testWidgets('respects keyboardType property', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            keyboardType: TextInputType.emailAddress,
+          ),
+        );
+
+        final textField = tester.widget<TextField>(
+          find.byType(TextField),
+        );
+        expect(
+          textField.keyboardType,
+          equals(TextInputType.emailAddress),
+        );
+      });
+
+      testWidgets('respects textInputAction property', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          buildTestWidget(
+            textInputAction: TextInputAction.search,
+          ),
+        );
+
+        final textField = tester.widget<TextField>(
+          find.byType(TextField),
+        );
+        expect(
+          textField.textInputAction,
+          equals(TextInputAction.search),
+        );
+      });
+
+      testWidgets('uses focus node when provided', (
+        tester,
+      ) async {
+        final focusNode = FocusNode();
+        await tester.pumpWidget(
+          buildTestWidget(focusNode: focusNode),
+        );
+
+        final textField = tester.widget<TextField>(
+          find.byType(TextField),
+        );
+        expect(textField.focusNode, equals(focusNode));
+
+        focusNode.dispose();
+      });
+
+      testWidgets('uses controller when provided', (
+        tester,
+      ) async {
+        final controller = TextEditingController(text: 'Initial Value');
+        await tester.pumpWidget(
+          buildTestWidget(controller: controller),
+        );
+
+        final textField = tester.widget<TextField>(
+          find.byType(TextField),
+        );
+        expect(textField.controller, equals(controller));
+        expect(controller.text, equals('Initial Value'));
+
+        controller.dispose();
+      });
+    });
+
+    group('accessibility', () {
+      testWidgets(
+        'visibility toggle has semantic label for obscured',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(obscureText: true),
+          );
+
+          expect(
+            find.bySemanticsLabel('Show password'),
+            findsOneWidget,
+          );
+        },
       );
 
-      final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.textInputAction, equals(TextInputAction.search));
-    });
+      testWidgets(
+        'visibility toggle has semantic label for visible',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(obscureText: true),
+          );
 
-    testWidgets('uses focus node when provided', (tester) async {
-      final focusNode = FocusNode();
-      await tester.pumpWidget(buildTestWidget(focusNode: focusNode));
+          await tester.tap(
+            find
+                .ancestor(
+                  of: find.byType(DivineIcon),
+                  matching: find.byType(GestureDetector),
+                )
+                .first,
+          );
+          await tester.pump();
 
-      final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.focusNode, equals(focusNode));
-
-      focusNode.dispose();
-    });
-
-    testWidgets('uses controller when provided', (tester) async {
-      final controller = TextEditingController(text: 'Initial Value');
-      await tester.pumpWidget(buildTestWidget(controller: controller));
-
-      final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.controller, equals(controller));
-      expect(controller.text, equals('Initial Value'));
-
-      controller.dispose();
-    });
-
-    testWidgets('uses asterisk as obscuring character', (tester) async {
-      await tester.pumpWidget(buildTestWidget(obscureText: true));
-
-      final textField = tester.widget<TextField>(find.byType(TextField));
-      expect(textField.obscuringCharacter, equals('✱'));
+          expect(
+            find.bySemanticsLabel('Hide password'),
+            findsOneWidget,
+          );
+        },
+      );
     });
 
     group('didUpdateWidget', () {
-      testWidgets('updates when focusNode changes', (tester) async {
+      testWidgets('updates when focusNode changes', (
+        tester,
+      ) async {
         final focusNode1 = FocusNode();
         final focusNode2 = FocusNode();
 
-        await tester.pumpWidget(buildTestWidget(focusNode: focusNode1));
+        await tester.pumpWidget(
+          buildTestWidget(focusNode: focusNode1),
+        );
 
-        var textField = tester.widget<TextField>(find.byType(TextField));
+        var textField = tester.widget<TextField>(
+          find.byType(TextField),
+        );
         expect(textField.focusNode, equals(focusNode1));
 
-        await tester.pumpWidget(buildTestWidget(focusNode: focusNode2));
+        await tester.pumpWidget(
+          buildTestWidget(focusNode: focusNode2),
+        );
         await tester.pump();
 
-        textField = tester.widget<TextField>(find.byType(TextField));
+        textField = tester.widget<TextField>(
+          find.byType(TextField),
+        );
         expect(textField.focusNode, equals(focusNode2));
 
         focusNode1.dispose();
         focusNode2.dispose();
       });
 
-      testWidgets('updates when controller changes', (tester) async {
+      testWidgets('updates when controller changes', (
+        tester,
+      ) async {
         final controller1 = TextEditingController(text: 'First');
         final controller2 = TextEditingController(text: 'Second');
 
-        await tester.pumpWidget(buildTestWidget(controller: controller1));
+        await tester.pumpWidget(
+          buildTestWidget(controller: controller1),
+        );
 
-        var textField = tester.widget<TextField>(find.byType(TextField));
+        var textField = tester.widget<TextField>(
+          find.byType(TextField),
+        );
         expect(textField.controller, equals(controller1));
 
-        await tester.pumpWidget(buildTestWidget(controller: controller2));
+        await tester.pumpWidget(
+          buildTestWidget(controller: controller2),
+        );
         await tester.pump();
 
-        textField = tester.widget<TextField>(find.byType(TextField));
+        textField = tester.widget<TextField>(
+          find.byType(TextField),
+        );
         expect(textField.controller, equals(controller2));
 
         controller1.dispose();
         controller2.dispose();
       });
-    });
-
-    testWidgets('label floats when text is entered', (tester) async {
-      final controller = TextEditingController();
-      await tester.pumpWidget(buildTestWidget(controller: controller));
-
-      // Enter text
-      await tester.enterText(find.byType(TextField), 'Test');
-      await tester.pump();
-
-      // Label should now be floating (visible in different position/style)
-      expect(find.text('Test Label'), findsOneWidget);
     });
   });
 }

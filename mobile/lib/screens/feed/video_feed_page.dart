@@ -7,9 +7,10 @@ import 'package:openvine/blocs/video_feed/video_feed_bloc.dart';
 import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/screens/feed/feed_mode_switch.dart';
+import 'package:openvine/screens/feed/feed_video_overlay.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
 import 'package:openvine/widgets/branded_loading_scaffold.dart';
-import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:openvine/widgets/vine_drawer.dart';
 import 'package:pooled_video_player/pooled_video_player.dart';
 
 class VideoFeedPage extends ConsumerWidget {
@@ -47,12 +48,33 @@ class VideoFeedView extends StatefulWidget {
   State<VideoFeedView> createState() => _VideoFeedViewState();
 }
 
-class _VideoFeedViewState extends State<VideoFeedView> {
+class _VideoFeedViewState extends State<VideoFeedView>
+    with WidgetsBindingObserver {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      context.read<VideoFeedBloc>().add(const VideoFeedAutoRefreshRequested());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       extendBodyBehindAppBar: true,
+      drawer: const VineDrawer(),
       body: BlocBuilder<VideoFeedBloc, VideoFeedState>(
         builder: (context, state) {
           // Loading state (including initial state before first load)
@@ -90,9 +112,12 @@ class _VideoFeedViewState extends State<VideoFeedView> {
                     contextTitle: 'BLoC Test (${state.mode.name})',
                   );
                 },
-                onActiveVideoChanged: (video, index) {
-                  // Trigger pagination when near end
-                  if (state.hasMore && index >= pooledVideos.length - 2) {
+                onNearEnd: (index) {
+                  // PooledVideoFeed fires this when the user is within
+                  // nearEndThreshold (default 3) of the end, using the
+                  // controller's actual video count (not the BlocBuilder's
+                  // list length, which may differ due to deduplication).
+                  if (state.hasMore) {
                     context.read<VideoFeedBloc>().add(
                       const VideoFeedLoadMoreRequested(),
                     );
@@ -273,13 +298,7 @@ class _PooledVideoFeedItemContent extends StatelessWidget {
           isPortrait: isPortrait,
         ),
         overlayBuilder: (context, videoController, player) =>
-            VideoOverlayActions(
-              video: video,
-              isVisible: isActive,
-              isActive: isActive,
-              hasBottomNavigation: false,
-              contextTitle: contextTitle,
-            ),
+            FeedVideoOverlay(video: video, isActive: isActive),
       ),
     );
   }

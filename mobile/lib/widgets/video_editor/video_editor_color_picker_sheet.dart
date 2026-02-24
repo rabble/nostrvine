@@ -3,7 +3,6 @@
 
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/widgets/video_editor/video_editor_blurred_panel.dart';
 
@@ -181,14 +180,10 @@ class _ColorButton extends StatelessWidget {
               ),
               child: isColorPicker
                   ? Center(
-                      child: SvgPicture.asset(
-                        'assets/icon/paint_brush.svg',
-                        colorFilter: const ColorFilter.mode(
-                          Color(0xFF00452D),
-                          BlendMode.srcIn,
-                        ),
-                        width: 28,
-                        height: 28,
+                      child: DivineIcon(
+                        icon: .paintBrush,
+                        color: VineTheme.inverseOnSurface,
+                        size: 28,
                       ),
                     )
                   : null,

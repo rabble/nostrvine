@@ -159,6 +159,55 @@ void main() {
 
       expect(url.contains('perms=sign_event%3A0'), isTrue);
     });
+
+    test('toNostrConnectUrl includes callback when provided', () {
+      final info = NostrRemoteSignerInfo.generateNostrConnectUrl(
+        relays: ['wss://relay.example.com'],
+      );
+
+      final url = info.toNostrConnectUrl(callback: 'divine');
+
+      expect(url.contains('callback=divine'), isTrue);
+    });
+
+    test('toNostrConnectUrl URL-encodes callback value', () {
+      final info = NostrRemoteSignerInfo.generateNostrConnectUrl(
+        relays: ['wss://relay.example.com'],
+      );
+
+      final url = info.toNostrConnectUrl(
+        callback: 'https://example.com/callback',
+      );
+
+      expect(
+        url.contains(
+          'callback=${Uri.encodeComponent("https://example.com/callback")}',
+        ),
+        isTrue,
+      );
+      // Should not contain the raw unencoded URL
+      expect(url.contains('callback=https://example.com/callback'), isFalse);
+    });
+
+    test('toNostrConnectUrl omits callback when null', () {
+      final info = NostrRemoteSignerInfo.generateNostrConnectUrl(
+        relays: ['wss://relay.example.com'],
+      );
+
+      final url = info.toNostrConnectUrl();
+
+      expect(url.contains('callback'), isFalse);
+    });
+
+    test('toNostrConnectUrl omits callback when empty', () {
+      final info = NostrRemoteSignerInfo.generateNostrConnectUrl(
+        relays: ['wss://relay.example.com'],
+      );
+
+      final url = info.toNostrConnectUrl(callback: '');
+
+      expect(url.contains('callback'), isFalse);
+    });
   });
 
   group('NostrConnectSession', () {

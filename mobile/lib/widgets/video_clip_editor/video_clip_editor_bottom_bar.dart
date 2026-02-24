@@ -4,7 +4,6 @@
 import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:flutter_svg/svg.dart';
 import 'package:openvine/constants/video_editor_constants.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
 import 'package:openvine/providers/video_editor_provider.dart';
@@ -105,9 +104,7 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                     children: [
                       VideoEditorIconButton(
                         backgroundColor: const Color(0x00000000),
-                        iconPath: state.isPlaying
-                            ? 'assets/icon/pause.svg'
-                            : 'assets/icon/play.svg',
+                        icon: state.isPlaying ? .pause : .play,
                         onTap: notifier.togglePlayPause,
                         // TODO(l10n): Replace with context.l10n when localization is added.
                         semanticLabel: 'Play or pause video',
@@ -115,7 +112,7 @@ class VideoClipEditorBottomBar extends ConsumerWidget {
                       if (state.isEditing)
                         VideoEditorIconButton(
                           backgroundColor: const Color(0x00000000),
-                          iconPath: 'assets/icon/trim.svg',
+                          icon: .scissors,
                           onTap: () => _handleSplitClip(context, ref),
                           // TODO(l10n): Replace with context.l10n when localization is added.
                           semanticLabel: 'Crop',
@@ -203,13 +200,10 @@ class _ClipRemoveArea extends ConsumerWidget {
             color: const Color(0xFFF44336),
             shape: RoundedRectangleBorder(borderRadius: .circular(20)),
           ),
-          child: SizedBox(
-            height: 28,
-            width: 28,
-            child: SvgPicture.asset(
-              'assets/icon/delete.svg',
-              colorFilter: const .mode(Color(0xFF000000), .srcIn),
-            ),
+          child: DivineIcon(
+            icon: .trash,
+            size: 28,
+            color: VineTheme.backgroundColor,
           ),
         ),
       ),

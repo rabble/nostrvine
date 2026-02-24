@@ -1,24 +1,29 @@
-// ABOUTME: Router-driven HomeScreen implementation (clean room)
-// ABOUTME: Pure presentation with no lifecycle mutations - URL is source of truth
+// ABOUTME: Router-driven HomeScreen using pooled_video_player (media_kit)
+// ABOUTME: Matches explore feed architecture for consistent video playback
 
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:models/models.dart' hide LogCategory;
+import 'package:openvine/blocs/video_interactions/video_interactions_bloc.dart';
 import 'package:openvine/mixins/async_value_ui_helpers_mixin.dart';
-import 'package:openvine/mixins/page_controller_sync_mixin.dart';
-import 'package:openvine/mixins/video_prefetch_mixin.dart';
-import 'package:openvine/providers/home_screen_controllers.dart';
+import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/home_feed_provider.dart';
+import 'package:openvine/providers/home_screen_controllers.dart';
 import 'package:openvine/providers/user_profile_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/explore_screen.dart';
-import 'package:divine_ui/divine_ui.dart';
 import 'package:openvine/services/screen_analytics_service.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/widgets/branded_loading_indicator.dart';
+import 'package:openvine/widgets/pooled_video_metrics_tracker.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
+import 'package:divine_ui/divine_ui.dart';
+import 'package:pooled_video_player/pooled_video_player.dart';
 
-/// Router-driven HomeScreen - PageView syncs with URL bidirectionally
+/// Router-driven HomeScreen - uses pooled_video_player for playback
 class HomeScreenRouter extends ConsumerStatefulWidget {
   /// Route name for this screen.
   static const routeName = 'home';
@@ -39,27 +44,54 @@ class HomeScreenRouter extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
-    with VideoPrefetchMixin, PageControllerSyncMixin, AsyncValueUIHelpersMixin {
-  PageController? _controller;
-  int? _lastUrlIndex;
+    with AsyncValueUIHelpersMixin {
+  VideoFeedController? _controller;
+  List<VideoItem>? _lastPooledVideos;
+  bool _isHomeFocused = true;
   int? _lastPrefetchIndex;
-  int _currentPageIndex = 0;
 
   @override
   void initState() {
     super.initState();
 
-    final videosAsync = ref.read(homeFeedProvider);
-
-    // Pre-initialize controllers on next frame (don't redirect - respect URL)
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // Initial build pre initialization
-      videosAsync.whenData((state) {
-        preInitializeControllers(
-          ref: ref,
-          currentIndex: 0,
-          videos: state.videos,
-        );
+      if (!mounted) return;
+
+      // Listen to route changes to detect tab switches.
+      // Uses ref.listenManual (imperative) instead of ref.watch (reactive) to
+      // avoid triggering full rebuilds on every URL change (swipe).
+      // Only updates local state when the focused-tab status actually changes.
+      ref.listenManual(pageContextProvider, (prev, next) {
+        if (!mounted) return;
+        final ctx = next.asData?.value;
+        // Skip loading/error states — don't pause on transient nulls
+        if (ctx == null) return;
+        final focused = ctx.type == RouteType.home;
+        if (focused != _isHomeFocused) {
+          if (focused) {
+            // Defer resume: GoRouter can transiently report /home during
+            // pop transitions between non-home routes (e.g., clip editor
+            // → recorder). Verify the route is still home after the frame
+            // settles to avoid resuming audio while in the creation flow.
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!mounted) return;
+              final currentCtx = ref.read(pageContextProvider).asData?.value;
+              if (currentCtx?.type != RouteType.home) return;
+              // Verify no non-shell route is pushed on root navigator
+              final rootNav = NavigatorKeys.root.currentState;
+              if (rootNav != null && rootNav.canPop()) return;
+              if (_isHomeFocused) return;
+              _isHomeFocused = true;
+              _controller?.setActive(active: true);
+              setState(() {});
+            });
+          } else {
+            // Pause immediately — no need to defer
+            _isHomeFocused = false;
+            _controller?.setActive(active: false);
+            setState(() {});
+          }
+        }
       });
     });
   }
@@ -70,46 +102,57 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
     super.dispose();
   }
 
-  static int _buildCount = 0;
-  static DateTime? _lastBuildTime;
+  /// Read URL index synchronously from GoRouter.
+  int _readUrlIndex() {
+    final router = ref.read(goRouterProvider);
+    final location = router.routeInformationProvider.value.uri.toString();
+    final segments = location.split('/').where((s) => s.isNotEmpty).toList();
+    if (segments.length > 1 && segments[0] == 'home') {
+      final idx = int.tryParse(segments[1]) ?? 0;
+      return idx < 0 ? 0 : idx;
+    }
+    return 0;
+  }
+
+  /// Convert VideoEvents to VideoItems for the pooled player.
+  List<VideoItem> _toPooledVideos(List<VideoEvent> videos) {
+    return videos
+        .where((v) => v.videoUrl != null)
+        .map((e) => VideoItem(id: e.id, url: e.videoUrl!))
+        .toList();
+  }
+
+  /// Initialize or update the VideoFeedController.
+  void _ensureController(List<VideoItem> pooledVideos, int initialIndex) {
+    if (_controller == null) {
+      final safeIndex = initialIndex.clamp(0, pooledVideos.length - 1);
+      _controller = VideoFeedController(
+        videos: pooledVideos,
+        pool: PlayerPool.instance,
+        initialIndex: safeIndex,
+      );
+      _lastPooledVideos = pooledVideos;
+      _controller!.setActive(active: _isHomeFocused);
+      return;
+    }
+
+    // Handle new videos from pagination/refresh
+    if (_lastPooledVideos != null) {
+      final newVideos = pooledVideos
+          .where((v) => !_lastPooledVideos!.any((old) => old.id == v.id))
+          .toList();
+      if (newVideos.isNotEmpty) {
+        _controller!.addVideos(newVideos);
+      }
+    }
+    _lastPooledVideos = pooledVideos;
+  }
 
   @override
   Widget build(BuildContext context) {
-    _buildCount++;
-    final now = DateTime.now();
-    final timeSinceLastBuild = _lastBuildTime != null
-        ? now.difference(_lastBuildTime!).inMilliseconds
-        : null;
-    if (timeSinceLastBuild != null && timeSinceLastBuild < 100) {
-      Log.warning(
-        '⚠️ HomeScreenRouter: RAPID REBUILD #$_buildCount! Only ${timeSinceLastBuild}ms since last build',
-        name: 'HomeScreenRouter',
-        category: LogCategory.video,
-      );
-    }
-    _lastBuildTime = now;
-
-    // Read the URL index synchronously from GoRouter instead of the
-    // pageContextProvider stream. The stream oscillates during post-login
-    // transitions (emitting stale /welcome/* locations after /home/0),
-    // which prevents the home feed from ever loading.
-    // HomeScreenRouter KNOWS it's the home screen — it's only mounted at
-    // /home/:index — so it doesn't need route-type gating.
-    final router = ref.read(goRouterProvider);
-    final location = router.routeInformationProvider.value.uri.toString();
-    final locationSegments = location
-        .split('/')
-        .where((s) => s.isNotEmpty)
-        .toList();
-    int urlIndex = 0;
-    if (locationSegments.length > 1 && locationSegments[0] == 'home') {
-      urlIndex = int.tryParse(locationSegments[1]) ?? 0;
-      if (urlIndex < 0) urlIndex = 0;
-    }
+    final urlIndex = _readUrlIndex();
 
     // Watch homeFeedProvider directly — no route-type gate needed.
-    // videosForHomeRouteProvider gates on pageContextProvider which
-    // oscillates during post-login, causing the feed to never load.
     final videosAsync = ref.watch(homeFeedProvider);
 
     return buildAsyncUI(
@@ -131,142 +174,234 @@ class _HomeScreenRouterState extends ConsumerState<HomeScreenRouter>
           dataMetrics: {'video_count': videos.length},
         );
 
-        // Clamp URL index to valid range
-        urlIndex = urlIndex.clamp(0, videos.length - 1);
-
-        final itemCount = videos.length;
-
-        // Initialize controller once with URL index
-        if (_controller == null) {
-          final safeIndex = urlIndex.clamp(0, itemCount - 1);
-          _controller = PageController(initialPage: safeIndex);
-          _lastUrlIndex = safeIndex;
-          _currentPageIndex = safeIndex;
+        final pooledVideos = _toPooledVideos(videos);
+        if (pooledVideos.isEmpty) {
+          return const _EmptyHomeFeed();
         }
 
-        // Sync controller when URL changes externally (back/forward/deeplink)
-        final shouldSyncNow = shouldSync(
-          urlIndex: urlIndex,
-          lastUrlIndex: _lastUrlIndex,
-          controller: _controller,
-          targetIndex: urlIndex.clamp(0, itemCount - 1),
-        );
+        final safeUrlIndex = urlIndex.clamp(0, pooledVideos.length - 1);
 
-        if (shouldSyncNow) {
-          Log.debug(
-            '🔄 SYNCING PageController: urlIndex=$urlIndex, lastUrlIndex=$_lastUrlIndex, currentPage=${_controller?.page?.round()}',
-            name: 'HomeScreenRouter',
-            category: LogCategory.video,
-          );
-          _lastUrlIndex = urlIndex;
-          syncPageController(
-            controller: _controller!,
-            targetIndex: urlIndex,
-            itemCount: itemCount,
-          );
-        }
-
-        // Prefetch profiles for adjacent videos (±1 index) only when URL index changes
-        if (urlIndex != _lastPrefetchIndex) {
-          _lastPrefetchIndex = urlIndex;
-          final safeIndex = urlIndex.clamp(0, itemCount - 1);
-          final pubkeysToPrefetech = <String>[];
-
-          // Prefetch previous video's profile
-          if (safeIndex > 0) {
-            pubkeysToPrefetech.add(videos[safeIndex - 1].pubkey);
-          }
-
-          // Prefetch next video's profile
-          if (safeIndex < itemCount - 1) {
-            pubkeysToPrefetech.add(videos[safeIndex + 1].pubkey);
-          }
-
-          // Schedule prefetch for next frame to avoid doing work during build
-          if (pubkeysToPrefetech.isNotEmpty) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              if (!mounted) return;
-              ref
-                  .read(userProfileProvider.notifier)
-                  .prefetchProfilesImmediately(pubkeysToPrefetech);
-            });
-          }
-        }
+        // Initialize or update controller
+        _ensureController(pooledVideos, safeUrlIndex);
 
         return RefreshIndicator(
           color: VineTheme.onPrimary,
           backgroundColor: VineTheme.vineGreen,
           semanticsLabel: 'searching for more videos',
           onRefresh: () => ref.read(homeRefreshControllerProvider).refresh(),
-          child: PageView.builder(
+          child: PooledVideoFeed(
             key: const Key('home-video-page-view'),
-            itemCount: videos.length,
+            videos: pooledVideos,
             controller: _controller,
-            scrollDirection: Axis.vertical,
-            // Pre-builds adjacent pages to prevent black flash during swipe
-            allowImplicitScrolling: true,
-            onPageChanged: (newIndex) {
-              // Update current page state to trigger rebuild with correct
-              // isActive values for all visible VideoFeedItems.
-              // Without this, itemBuilder never re-runs after swipe because
-              // nothing watched by this widget changes on scroll.
-              setState(() {
-                _currentPageIndex = newIndex;
-              });
-
-              // Guard: only navigate if URL doesn't match
-              if (newIndex != urlIndex) {
-                context.go(HomeScreenRouter.pathForIndex(newIndex));
+            initialIndex: safeUrlIndex,
+            onActiveVideoChanged: (video, index) {
+              // Update URL when swiping — deferred to avoid triggering a
+              // rebuild of HomeScreenRouter during the swipe animation.
+              if (index != urlIndex) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (!mounted) return;
+                  context.go(HomeScreenRouter.pathForIndex(index));
+                });
               }
 
-              // Trigger pagination near end
-              if (newIndex >= itemCount - 2) {
-                ref.read(homePaginationControllerProvider).maybeLoadMore();
-              }
-
-              // Prefetch videos around current index
-              checkForPrefetch(currentIndex: newIndex, videos: videos);
-
-              // Pre-initialize controllers for adjacent videos
-              preInitializeControllers(
-                ref: ref,
-                currentIndex: newIndex,
-                videos: videos,
-              );
-
-              // Dispose controllers outside the keep range to free memory
-              disposeControllersOutsideRange(
-                ref: ref,
-                currentIndex: newIndex,
-                videos: videos,
-              );
+              // Prefetch profiles for adjacent videos
+              _prefetchProfiles(videos, index);
 
               Log.debug(
-                '📄 Page changed to index $newIndex (${videos[newIndex].id}...)',
+                'Home page changed to index $index (${video.id})',
                 name: 'HomeScreenRouter',
                 category: LogCategory.video,
               );
             },
-            itemBuilder: (context, index) {
-              final isActive = index == _currentPageIndex;
+            onNearEnd: (index) {
+              // Load more when reaching the end
+              final isAtEnd = index >= videos.length - 1;
+              if (state.hasMoreContent && isAtEnd) {
+                ref.read(homePaginationControllerProvider).maybeLoadMore();
+              }
+            },
+            nearEndThreshold: 1,
+            itemBuilder: (context, video, index, {required isActive}) {
+              // Only mark video as active when home tab is focused.
+              final effectiveActive = _isHomeFocused && isActive;
+              final originalEvent = videos[index];
 
-              return ClipRRect(
-                child: VideoFeedItem(
-                  key: ValueKey('video-${videos[index].id}'),
-                  video: videos[index],
-                  index: index,
-                  hasBottomNavigation: false,
-                  forceShowOverlay: true,
-                  contextTitle: '', // Home feed has no context title
-                  hideFollowButtonIfFollowing:
-                      true, // Home feed only shows followed users
-                  isActiveOverride: isActive,
-                ),
+              return _HomePooledItem(
+                video: originalEvent,
+                index: index,
+                isActive: effectiveActive,
               );
             },
           ),
         );
       },
+    );
+  }
+
+  void _prefetchProfiles(List<VideoEvent> videos, int index) {
+    if (index == _lastPrefetchIndex) return;
+    _lastPrefetchIndex = index;
+
+    final safeIndex = index.clamp(0, videos.length - 1);
+    final pubkeys = <String>[];
+
+    if (safeIndex > 0) {
+      pubkeys.add(videos[safeIndex - 1].pubkey);
+    }
+    if (safeIndex < videos.length - 1) {
+      pubkeys.add(videos[safeIndex + 1].pubkey);
+    }
+
+    if (pubkeys.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        ref
+            .read(userProfileProvider.notifier)
+            .prefetchProfilesImmediately(pubkeys);
+      });
+    }
+  }
+}
+
+/// Individual home feed item using pooled video player.
+class _HomePooledItem extends ConsumerWidget {
+  const _HomePooledItem({
+    required this.video,
+    required this.index,
+    required this.isActive,
+  });
+
+  final VideoEvent video;
+  final int index;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final likesRepository = ref.read(likesRepositoryProvider);
+    final commentsRepository = ref.read(commentsRepositoryProvider);
+    final repostsRepository = ref.read(repostsRepositoryProvider);
+
+    final addressableId = video.addressableId;
+
+    return BlocProvider<VideoInteractionsBloc>(
+      create: (_) =>
+          VideoInteractionsBloc(
+              eventId: video.id,
+              authorPubkey: video.pubkey,
+              likesRepository: likesRepository,
+              commentsRepository: commentsRepository,
+              repostsRepository: repostsRepository,
+              addressableId: addressableId,
+            )
+            ..add(const VideoInteractionsSubscriptionRequested())
+            ..add(const VideoInteractionsFetchRequested()),
+      child: _HomePooledItemContent(
+        video: video,
+        index: index,
+        isActive: isActive,
+      ),
+    );
+  }
+}
+
+class _HomePooledItemContent extends StatelessWidget {
+  const _HomePooledItemContent({
+    required this.video,
+    required this.index,
+    required this.isActive,
+  });
+
+  final VideoEvent video;
+  final int index;
+  final bool isActive;
+
+  @override
+  Widget build(BuildContext context) {
+    final isPortrait = video.dimensions != null ? video.isPortrait : true;
+
+    return ColoredBox(
+      color: Colors.black,
+      child: PooledVideoPlayer(
+        index: index,
+        thumbnailUrl: video.thumbnailUrl,
+        enableTapToPause: isActive,
+        videoBuilder: (context, videoController, player) =>
+            PooledVideoMetricsTracker(
+              key: ValueKey('metrics-${video.id}'),
+              video: video,
+              player: player,
+              isActive: isActive,
+              trafficSource: ViewTrafficSource.home,
+              child: _FittedVideoPlayer(
+                videoController: videoController,
+                isPortrait: isPortrait,
+              ),
+            ),
+        loadingBuilder: (context) => _VideoLoadingPlaceholder(
+          thumbnailUrl: video.thumbnailUrl,
+          isPortrait: isPortrait,
+        ),
+        overlayBuilder: (context, videoController, player) =>
+            VideoOverlayActions(
+              video: video,
+              isVisible: isActive,
+              isActive: isActive,
+              hasBottomNavigation: false,
+              contextTitle: '',
+              hideFollowButtonIfFollowing: true,
+            ),
+      ),
+    );
+  }
+}
+
+class _FittedVideoPlayer extends StatelessWidget {
+  const _FittedVideoPlayer({
+    required this.videoController,
+    this.isPortrait = true,
+  });
+
+  final VideoController videoController;
+  final bool isPortrait;
+
+  @override
+  Widget build(BuildContext context) {
+    final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
+
+    return Video(
+      controller: videoController,
+      fit: boxFit,
+      filterQuality: FilterQuality.high,
+      controls: NoVideoControls,
+    );
+  }
+}
+
+class _VideoLoadingPlaceholder extends StatelessWidget {
+  const _VideoLoadingPlaceholder({this.thumbnailUrl, this.isPortrait = true});
+
+  final String? thumbnailUrl;
+  final bool isPortrait;
+
+  @override
+  Widget build(BuildContext context) {
+    final boxFit = isPortrait ? BoxFit.cover : BoxFit.contain;
+    final url = thumbnailUrl;
+
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (url != null && url.isNotEmpty)
+          Image.network(
+            url,
+            fit: boxFit,
+            alignment: Alignment.center,
+            errorBuilder: (_, __, ___) => const ColoredBox(color: Colors.black),
+          )
+        else
+          const ColoredBox(color: Colors.black),
+        const Center(child: BrandedLoadingIndicator(size: 60)),
+      ],
     );
   }
 }

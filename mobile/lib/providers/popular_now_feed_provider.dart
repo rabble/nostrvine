@@ -4,7 +4,6 @@
 import 'package:openvine/constants/app_constants.dart';
 import 'package:openvine/helpers/video_feed_builder.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:nostr_sdk/nostr_sdk.dart' show Filter;
 import 'package:openvine/extensions/video_event_extensions.dart';
 import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/curation_providers.dart';
@@ -14,6 +13,7 @@ import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_filter_builder.dart';
 import 'package:openvine/state/video_feed_state.dart';
 import 'package:openvine/utils/unified_logger.dart';
+import 'package:openvine/utils/video_nostr_enrichment.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'popular_now_feed_provider.g.dart';
@@ -105,7 +105,11 @@ class PopularNowFeed extends _$PopularNowFeed {
               .toList();
 
           // Enrich REST API videos with Nostr tags for ProofMode badge
-          final enrichedVideos = await _enrichWithNostrTags(filteredVideos);
+          final enrichedVideos = await enrichVideosWithNostrTags(
+            filteredVideos,
+            nostrService: ref.read(nostrServiceProvider),
+            callerName: 'PopularNowFeedProvider',
+          );
 
           return VideoFeedState(
             videos: enrichedVideos,
@@ -257,7 +261,11 @@ class PopularNowFeed extends _$PopularNowFeed {
 
           if (newVideos.isNotEmpty) {
             // Enrich REST API videos with Nostr tags for ProofMode badge
-            final enrichedNewVideos = await _enrichWithNostrTags(newVideos);
+            final enrichedNewVideos = await enrichVideosWithNostrTags(
+              newVideos,
+              nostrService: ref.read(nostrServiceProvider),
+              callerName: 'PopularNowFeedProvider',
+            );
             final allVideos = [...currentState.videos, ...enrichedNewVideos];
             Log.info(
               '🆕 PopularNowFeed: Loaded ${enrichedNewVideos.length} new videos from REST API (total: ${allVideos.length})',
@@ -412,7 +420,11 @@ class PopularNowFeed extends _$PopularNowFeed {
               .toList();
 
           // Enrich REST API videos with Nostr tags for ProofMode badge
-          final enrichedVideos = await _enrichWithNostrTags(filteredVideos);
+          final enrichedVideos = await enrichVideosWithNostrTags(
+            filteredVideos,
+            nostrService: ref.read(nostrServiceProvider),
+            callerName: 'PopularNowFeedProvider',
+          );
 
           state = AsyncData(
             VideoFeedState(
@@ -452,71 +464,6 @@ class PopularNowFeed extends _$PopularNowFeed {
   int? _getOldestTimestamp(List<VideoEvent> videos) {
     if (videos.isEmpty) return null;
     return videos.map((v) => v.createdAt).reduce((a, b) => a < b ? a : b);
-  }
-
-  /// Enrich REST API videos with raw Nostr tags for ProofMode/C2PA badges.
-  ///
-  /// REST API responses don't include the raw Nostr event tags array,
-  /// so ProofMode/C2PA/verification tags are missing. This method fetches
-  /// the full events from Nostr relays by ID and merges their rawTags.
-  Future<List<VideoEvent>> _enrichWithNostrTags(List<VideoEvent> videos) async {
-    if (videos.isEmpty) return videos;
-
-    // Collect IDs of videos that have empty rawTags
-    final idsToEnrich = videos
-        .where((v) => v.rawTags.isEmpty)
-        .map((v) => v.id)
-        .toList();
-
-    if (idsToEnrich.isEmpty) return videos;
-
-    try {
-      final nostrService = ref.read(nostrServiceProvider);
-
-      // Batch query Nostr relays for the full events
-      final filter = Filter(
-        ids: idsToEnrich,
-        kinds: [34236],
-        limit: idsToEnrich.length,
-      );
-      final nostrEvents = await nostrService
-          .queryEvents([filter])
-          .timeout(const Duration(seconds: 5));
-
-      if (nostrEvents.isEmpty) return videos;
-
-      // Build a lookup map: event ID -> rawTags from parsed VideoEvent
-      final nostrTagsMap = <String, Map<String, String>>{};
-      for (final event in nostrEvents) {
-        try {
-          final parsed = VideoEvent.fromNostrEvent(event, permissive: true);
-          if (parsed.rawTags.isNotEmpty) {
-            nostrTagsMap[parsed.id] = parsed.rawTags;
-          }
-        } catch (_) {
-          // Skip events that fail to parse
-        }
-      }
-
-      if (nostrTagsMap.isEmpty) return videos;
-
-      // Merge rawTags into REST API videos
-      return videos.map((video) {
-        final tags = nostrTagsMap[video.id];
-        if (tags != null && tags.isNotEmpty) {
-          return video.copyWith(rawTags: tags);
-        }
-        return video;
-      }).toList();
-    } catch (e) {
-      // Non-fatal: return original videos if enrichment fails
-      Log.warning(
-        'PopularNowFeed: Failed to enrich with Nostr tags: $e',
-        name: 'PopularNowFeedProvider',
-        category: LogCategory.video,
-      );
-      return videos;
-    }
   }
 }
 

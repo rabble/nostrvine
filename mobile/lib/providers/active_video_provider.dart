@@ -3,11 +3,12 @@
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:models/models.dart' hide LogCategory;
-import 'package:openvine/providers/app_lifecycle_provider.dart';
+import 'package:openvine/providers/app_foreground_provider.dart';
 import 'package:openvine/providers/hashtag_feed_providers.dart';
 import 'package:openvine/providers/liked_videos_state_bridge.dart';
 import 'package:openvine/providers/overlay_visibility_provider.dart';
 import 'package:openvine/providers/profile_feed_providers.dart';
+import 'package:openvine/providers/home_feed_provider.dart';
 import 'package:openvine/providers/route_feed_providers.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/state/video_feed_state.dart';
@@ -18,13 +19,11 @@ import 'package:openvine/utils/video_controller_cleanup.dart';
 /// Returns null when app is backgrounded, overlay is visible, or no valid video at current index
 /// Route-aware: switches feed provider based on route type
 final activeVideoIdProvider = Provider<String?>((ref) {
-  // Check app foreground state - be defensive and require explicit foreground signal
-  final isFg = ref
-      .watch(appForegroundProvider)
-      .maybeWhen(
-        data: (v) => v,
-        orElse: () => false, // Default to background if provider not ready
-      );
+  // Check app foreground state using the Notifier-based provider that
+  // defaults to true immediately (no stream delay). The old StreamProvider
+  // defaulted to false when the stream hadn't emitted yet, causing all
+  // videos to pause on startup until the stream caught up.
+  final isFg = ref.watch(appForegroundProvider);
   if (!isFg) {
     Log.debug(
       '[ACTIVE] ❌ App not in foreground',
@@ -66,7 +65,12 @@ final activeVideoIdProvider = Provider<String?>((ref) {
   AsyncValue<VideoFeedState> videosAsync;
   switch (ctx.type) {
     case RouteType.home:
-      videosAsync = ref.watch(videosForHomeRouteProvider);
+      // Use homeFeedProvider directly instead of videosForHomeRouteProvider.
+      // videosForHomeRouteProvider gates on pageContextProvider which
+      // oscillates during post-login transitions, causing the active video
+      // to flicker between null and the correct value. homeFeedProvider
+      // has no such dependency and provides a stable video list.
+      videosAsync = ref.watch(homeFeedProvider);
       break;
     case RouteType.profile:
       videosAsync = ref.watch(videosForProfileRouteProvider);

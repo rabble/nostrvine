@@ -13,6 +13,8 @@ import 'package:openvine/providers/shared_preferences_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/profile_screen_router.dart';
 import 'package:openvine/services/analytics_service.dart';
+import 'package:openvine/services/view_event_publisher.dart'
+    show ViewTrafficSource;
 import 'package:openvine/services/subscription_manager.dart';
 import 'package:openvine/services/video_event_service.dart';
 import 'package:openvine/services/video_prewarmer.dart';
@@ -221,6 +223,8 @@ class NoopAnalyticsService extends AnalyticsService {
     totalDuration,
     loopCount,
     completedVideo,
+    trafficSource = ViewTrafficSource.unknown,
+    String? sourceDetail,
   }) async {
     // No-op - prevent network calls in tests
   }
@@ -235,6 +239,8 @@ class NoopAnalyticsService extends AnalyticsService {
     totalDuration,
     loopCount,
     completedVideo,
+    trafficSource = ViewTrafficSource.unknown,
+    String? sourceDetail,
   }) async {
     // No-op - prevent network calls in tests
   }

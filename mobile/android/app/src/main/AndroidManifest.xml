@@ -122,6 +122,13 @@
                 <data android:pathPrefix="/reset-password"/>
                 <data android:pathPrefix="/verify-email"/>
             </intent-filter>
+            <!-- NIP-46 callback: signer apps open divine:// to return to our app -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="divine" />
+            </intent-filter>
 
 
         </activity>

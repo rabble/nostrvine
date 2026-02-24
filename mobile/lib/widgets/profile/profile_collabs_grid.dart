@@ -11,6 +11,7 @@ import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/blocs/profile_collab_videos/profile_collab_videos_bloc.dart';
 import 'package:openvine/mixins/grid_prefetch_mixin.dart';
 import 'package:openvine/screens/fullscreen_video_feed_screen.dart';
+import 'package:openvine/services/view_event_publisher.dart';
 import 'package:openvine/utils/unified_logger.dart';
 
 /// Grid widget displaying user's collab videos.
@@ -51,6 +52,7 @@ class _ProfileCollabsGridState extends State<ProfileCollabsGrid>
       extra: FullscreenVideoFeedArgs(
         source: StaticFeedSource(allVideos),
         initialIndex: index,
+        trafficSource: ViewTrafficSource.profile,
       ),
     );
   }

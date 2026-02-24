@@ -83,7 +83,12 @@ void main() {
     // Set up default mock behavior
     when(() => mockRelayPool.activeRelays()).thenReturn([]);
     when(() => mockRelayPool.getRelay(any())).thenReturn(null);
-    when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+    when(
+      () => mockRelayPool.add(
+        any(),
+        autoSubscribe: any(named: 'autoSubscribe'),
+      ),
+    ).thenAnswer((_) async => true);
     when(() => mockRelayPool.remove(any())).thenReturn(null);
 
     manager = RelayManager(
@@ -191,7 +196,12 @@ void main() {
         await manager.initialize();
 
         // Should only add relay once
-        verify(() => mockRelayPool.add(any())).called(1);
+        verify(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).called(1);
       });
 
       test('connects to all configured relays', () async {
@@ -209,7 +219,12 @@ void main() {
         await managerWithStorage.initialize();
 
         // Should connect to default + 2 custom relays
-        verify(() => mockRelayPool.add(any())).called(3);
+        verify(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).called(3);
       });
 
       test('initializes status for all configured relays', () async {
@@ -247,7 +262,12 @@ void main() {
       test('connects to the relay via RelayPool', () async {
         await manager.addRelay(testCustomRelayUrl);
 
-        verify(() => mockRelayPool.add(any())).called(greaterThan(1));
+        verify(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).called(greaterThan(1));
       });
 
       test('returns false for empty URL', () async {
@@ -298,7 +318,12 @@ void main() {
       });
 
       test('updates status to connected on success', () async {
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => true);
 
         await manager.addRelay(testCustomRelayUrl);
 
@@ -307,7 +332,12 @@ void main() {
       });
 
       test('updates status to error on failure', () async {
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => false);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => false);
 
         await manager.addRelay(testCustomRelayUrl);
 
@@ -351,7 +381,12 @@ void main() {
       });
 
       test('emits both connecting and final error state on failure', () async {
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => false);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => false);
 
         final statusUpdates = <Map<String, RelayConnectionStatus>>[];
         manager.statusStream.listen(statusUpdates.add);
@@ -392,6 +427,7 @@ void main() {
       });
 
       test('disconnects from the relay via RelayPool', () async {
+        clearInteractions(mockRelayPool);
         await manager.removeRelay(testCustomRelayUrl);
 
         verify(() => mockRelayPool.remove(testCustomRelayUrl)).called(1);
@@ -486,14 +522,24 @@ void main() {
       });
 
       test('returns true for connected relay', () async {
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => true);
         await manager.addRelay(testCustomRelayUrl);
 
         expect(manager.isRelayConnected(testCustomRelayUrl), isTrue);
       });
 
       test('returns false for disconnected relay', () async {
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => false);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => false);
         await manager.addRelay(testCustomRelayUrl);
 
         expect(manager.isRelayConnected(testCustomRelayUrl), isFalse);
@@ -577,7 +623,12 @@ void main() {
 
       test('returns empty when all relays fail to connect', () async {
         // Create manager where connection fails
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => false);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => false);
 
         final failingManager = RelayManager(
           config: config,
@@ -596,23 +647,48 @@ void main() {
 
       test('retries connection to disconnected relays', () async {
         // First connection fails
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => false);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => false);
         await manager.addRelay(testCustomRelayUrl);
 
         // Reset and make retry succeed
         clearInteractions(mockRelayPool);
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => true);
 
         await manager.retryDisconnectedRelays();
 
-        verify(() => mockRelayPool.add(any())).called(greaterThan(0));
+        verify(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).called(greaterThan(0));
       });
 
       test('updates status after successful retry', () async {
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => false);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => false);
         await manager.addRelay(testCustomRelayUrl);
 
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => true);
         await manager.retryDisconnectedRelays();
 
         final status = manager.getRelayStatus(testCustomRelayUrl);
@@ -620,13 +696,23 @@ void main() {
       });
 
       test('emits status updates during retry', () async {
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => false);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => false);
         await manager.addRelay(testCustomRelayUrl);
 
         final statusUpdates = <Map<String, RelayConnectionStatus>>[];
         manager.statusStream.listen(statusUpdates.add);
 
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => true);
         await manager.retryDisconnectedRelays();
         await Future<void>.delayed(Duration.zero);
 
@@ -642,16 +728,32 @@ void main() {
 
       test('disconnects and reconnects to relay', () async {
         clearInteractions(mockRelayPool);
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => true);
 
         await manager.reconnectRelay(testCustomRelayUrl);
 
-        verify(() => mockRelayPool.remove(testCustomRelayUrl)).called(1);
-        verify(() => mockRelayPool.add(any())).called(1);
+        // Called twice: once by reconnectRelay and once by _connectToRelay
+        verify(() => mockRelayPool.remove(testCustomRelayUrl)).called(2);
+        verify(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).called(1);
       });
 
       test('returns true on successful reconnection', () async {
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => true);
 
         final result = await manager.reconnectRelay(testCustomRelayUrl);
 
@@ -659,7 +761,12 @@ void main() {
       });
 
       test('returns false on failed reconnection', () async {
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => false);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => false);
 
         final result = await manager.reconnectRelay(testCustomRelayUrl);
 
@@ -687,7 +794,12 @@ void main() {
           }
         });
 
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => true);
         await manager.reconnectRelay(testCustomRelayUrl);
         await Future<void>.delayed(Duration.zero);
 
@@ -704,28 +816,49 @@ void main() {
 
       test('disconnects all relays before reconnecting', () async {
         clearInteractions(mockRelayPool);
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => true);
 
         await manager.forceReconnectAll();
 
-        // Should remove all 3 relays (default + 2 custom)
-        verify(() => mockRelayPool.remove(testDefaultRelayUrl)).called(1);
-        verify(() => mockRelayPool.remove(testCustomRelayUrl)).called(1);
-        verify(() => mockRelayPool.remove(testCustomRelayUrl2)).called(1);
+        // Each relay is removed twice: once by forceReconnectAll and once
+        // by _connectToRelay (which clears the stale pool entry before add).
+        verify(() => mockRelayPool.remove(testDefaultRelayUrl)).called(2);
+        verify(() => mockRelayPool.remove(testCustomRelayUrl)).called(2);
+        verify(() => mockRelayPool.remove(testCustomRelayUrl2)).called(2);
       });
 
       test('reconnects all relays after disconnecting', () async {
         clearInteractions(mockRelayPool);
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => true);
 
         await manager.forceReconnectAll();
 
         // Should reconnect all 3 relays
-        verify(() => mockRelayPool.add(any())).called(3);
+        verify(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).called(3);
       });
 
       test('updates status to connected on successful reconnection', () async {
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => true);
 
         await manager.forceReconnectAll();
 
@@ -744,7 +877,12 @@ void main() {
       });
 
       test('updates status to error on failed reconnection', () async {
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => false);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => false);
 
         await manager.forceReconnectAll();
 
@@ -767,7 +905,12 @@ void main() {
           }
         });
 
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async => true);
         await manager.forceReconnectAll();
         await Future<void>.delayed(Duration.zero);
 
@@ -778,7 +921,12 @@ void main() {
       test('handles mixed success and failure', () async {
         // First relay succeeds, second fails
         var callCount = 0;
-        when(() => mockRelayPool.add(any())).thenAnswer((_) async {
+        when(
+          () => mockRelayPool.add(
+            any(),
+            autoSubscribe: any(named: 'autoSubscribe'),
+          ),
+        ).thenAnswer((_) async {
           callCount++;
           return callCount != 2; // Fail on second call
         });
@@ -1072,7 +1220,12 @@ void main() {
       mockRelayPool = _MockRelayPool();
       when(() => mockRelayPool.activeRelays()).thenReturn([]);
       when(() => mockRelayPool.getRelay(any())).thenReturn(null);
-      when(() => mockRelayPool.add(any())).thenAnswer((_) async => true);
+      when(
+        () => mockRelayPool.add(
+          any(),
+          autoSubscribe: any(named: 'autoSubscribe'),
+        ),
+      ).thenAnswer((_) async => true);
       when(() => mockRelayPool.remove(any())).thenReturn(null);
     });
 

@@ -210,7 +210,7 @@ class _UserPickerSheetState extends ConsumerState<UserPickerSheet> {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: DivineTextField(
             controller: _searchController,
-            labelText: _useLocalSearch ? 'Filter by name' : 'Search by name',
+            label: _useLocalSearch ? 'Filter by name' : 'Search by name',
             textInputAction: TextInputAction.search,
             onChanged: _onSearchChanged,
           ),

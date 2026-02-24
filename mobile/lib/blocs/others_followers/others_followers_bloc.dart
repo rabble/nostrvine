@@ -1,6 +1,8 @@
 // ABOUTME: BLoC for displaying another user's followers list
 // ABOUTME: Fetches Kind 3 events that mention target user in 'p' tags
 
+import 'dart:math';
+
 import 'package:equatable/equatable.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:openvine/repositories/follow_repository.dart';
@@ -52,13 +54,22 @@ class OthersFollowersBloc
     );
 
     try {
-      final followers = await _followRepository.getFollowers(
-        event.targetPubkey,
-      );
+      // Fetch the follower list and accurate count in parallel.
+      // The list is limited by relay result caps, so the count
+      // (from COUNT queries) is more accurate for display.
+      final results = await Future.wait([
+        _followRepository.getFollowers(event.targetPubkey),
+        _followRepository.getFollowerCount(event.targetPubkey),
+      ]);
+      final followers = results[0] as List<String>;
+      final countFromService = results[1] as int;
+      final followerCount = max(followers.length, countFromService);
+
       emit(
         state.copyWith(
           status: OthersFollowersStatus.success,
           followersPubkeys: followers,
+          followerCount: followerCount,
           lastFetchedAt: DateTime.now(),
         ),
       );
@@ -82,6 +93,7 @@ class OthersFollowersBloc
       emit(
         state.copyWith(
           followersPubkeys: [...state.followersPubkeys, event.followerPubkey],
+          followerCount: state.followerCount + 1,
         ),
       );
       Log.debug(
@@ -104,6 +116,7 @@ class OthersFollowersBloc
           followersPubkeys: state.followersPubkeys
               .where((pubkey) => pubkey != event.followerPubkey)
               .toList(),
+          followerCount: max(0, state.followerCount - 1),
         ),
       );
       Log.debug(
