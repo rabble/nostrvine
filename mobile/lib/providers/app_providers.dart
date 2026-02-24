@@ -41,6 +41,7 @@ import 'package:openvine/services/bug_report_service.dart';
 import 'package:openvine/services/clip_library_service.dart';
 import 'package:openvine/services/connection_status_service.dart';
 import 'package:openvine/services/content_blocklist_service.dart';
+import 'package:openvine/services/content_filter_service.dart';
 import 'package:openvine/services/content_deletion_service.dart';
 import 'package:openvine/services/content_reporting_service.dart';
 import 'package:openvine/services/curated_list_service.dart';
@@ -373,6 +374,18 @@ AnalyticsService analyticsService(Ref ref) {
 @Riverpod(keepAlive: true)
 AgeVerificationService ageVerificationService(Ref ref) {
   final service = AgeVerificationService();
+  service.initialize(); // Initialize asynchronously
+  return service;
+}
+
+/// Content filter service for per-category Show/Warn/Hide preferences.
+/// keepAlive ensures preferences persist and are consistent across the app.
+@Riverpod(keepAlive: true)
+ContentFilterService contentFilterService(Ref ref) {
+  final ageVerificationService = ref.watch(ageVerificationServiceProvider);
+  final service = ContentFilterService(
+    ageVerificationService: ageVerificationService,
+  );
   service.initialize(); // Initialize asynchronously
   return service;
 }
@@ -814,6 +827,7 @@ VideoEventService videoEventService(Ref ref) {
   service.setBlocklistService(blocklistService);
   service.setAgeVerificationService(ageVerificationService);
   service.setLikesRepository(likesRepository);
+  service.setContentFilterService(ref.watch(contentFilterServiceProvider));
   return service;
 }
 

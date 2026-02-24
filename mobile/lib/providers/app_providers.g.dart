@@ -672,6 +672,62 @@ final class AgeVerificationServiceProvider
 String _$ageVerificationServiceHash() =>
     r'e866f0341e541ba27ba2b4e4278ed4b35edb8d8b';
 
+/// Content filter service for per-category Show/Warn/Hide preferences.
+/// keepAlive ensures preferences persist and are consistent across the app.
+
+@ProviderFor(contentFilterService)
+const contentFilterServiceProvider = ContentFilterServiceProvider._();
+
+/// Content filter service for per-category Show/Warn/Hide preferences.
+/// keepAlive ensures preferences persist and are consistent across the app.
+
+final class ContentFilterServiceProvider
+    extends
+        $FunctionalProvider<
+          ContentFilterService,
+          ContentFilterService,
+          ContentFilterService
+        >
+    with $Provider<ContentFilterService> {
+  /// Content filter service for per-category Show/Warn/Hide preferences.
+  /// keepAlive ensures preferences persist and are consistent across the app.
+  const ContentFilterServiceProvider._()
+    : super(
+        from: null,
+        argument: null,
+        retry: null,
+        name: r'contentFilterServiceProvider',
+        isAutoDispose: false,
+        dependencies: null,
+        $allTransitiveDependencies: null,
+      );
+
+  @override
+  String debugGetCreateSourceHash() => _$contentFilterServiceHash();
+
+  @$internal
+  @override
+  $ProviderElement<ContentFilterService> $createElement(
+    $ProviderPointer pointer,
+  ) => $ProviderElement(pointer);
+
+  @override
+  ContentFilterService create(Ref ref) {
+    return contentFilterService(ref);
+  }
+
+  /// {@macro riverpod.override_with_value}
+  Override overrideWithValue(ContentFilterService value) {
+    return $ProviderOverride(
+      origin: this,
+      providerOverride: $SyncValueProvider<ContentFilterService>(value),
+    );
+  }
+}
+
+String _$contentFilterServiceHash() =>
+    r'd63237c1b948dffd85a0a7244b0f39d3ce111f68';
+
 /// Audio sharing preference service for managing whether audio is available
 /// for reuse by default. keepAlive ensures setting persists across widget rebuilds.
 
@@ -2290,7 +2346,7 @@ final class VideoEventServiceProvider
   }
 }
 
-String _$videoEventServiceHash() => r'2e58eabbb8807979c479042abb7adc1bbb3bfade';
+String _$videoEventServiceHash() => r'd6953220eb702b4924a85f03e34a7ce6370080f5';
 
 /// Hashtag service depends on Video event service and cache service
 

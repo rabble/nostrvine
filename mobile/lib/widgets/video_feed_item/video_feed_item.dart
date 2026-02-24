@@ -139,6 +139,7 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
 
   // State for double-tap heart animation
   bool _showDoubleTapHeart = false;
+  bool _contentWarningRevealed = false;
   double _heartScale = 0.0;
   double _heartOpacity = 1.0;
 
@@ -1204,6 +1205,17 @@ class _VideoFeedItemState extends ConsumerState<VideoFeedItem> {
               },
             ),
 
+            // Content warning overlay for videos with warn labels
+            if (video.shouldShowWarning && !_contentWarningRevealed)
+              _ContentWarningOverlay(
+                labels: video.warnLabels,
+                onReveal: () {
+                  setState(() {
+                    _contentWarningRevealed = true;
+                  });
+                },
+              ),
+
             // Video overlay with actions (badges, title, action buttons)
             // Wrap with VideoInteractionsBloc if available
             BlocProvider<VideoInteractionsBloc>.value(
@@ -1390,6 +1402,21 @@ class VideoOverlayActions extends ConsumerWidget {
             ),
           ),
         ),
+        // Content warning badge below back button area
+        if (video.hasContentWarning)
+          Positioned(
+            top: MediaQuery.viewPaddingOf(context).top + topOffset + 56,
+            left: 16,
+            child: GestureDetector(
+              onTap: () => _showContentWarningDetails(
+                context,
+                ref,
+                video.contentWarningLabels,
+                isActive,
+              ),
+              child: _ContentWarningBadge(labels: video.contentWarningLabels),
+            ),
+          ),
         // ProofMode and Vine badges in upper right corner (tappable)
         if (!isPreviewMode)
           Positioned(
@@ -1885,6 +1912,18 @@ class VideoOverlayActions extends ConsumerWidget {
     // Video resumes when modal closes via overlay visibility provider
   }
 
+  Future<void> _showContentWarningDetails(
+    BuildContext context,
+    WidgetRef ref,
+    List<String> labels,
+    bool isActive,
+  ) async {
+    await context.showVideoPausingDialog<void>(
+      barrierDismissible: true,
+      builder: (context) => _ContentWarningDetailsSheet(labels: labels),
+    );
+  }
+
   Future<void> _showBadgeExplanationModal(
     BuildContext context,
     WidgetRef ref,
@@ -2322,6 +2361,308 @@ class _Nip05Badge extends ConsumerWidget {
           shape: BoxShape.circle,
         ),
         child: const Icon(Icons.check, color: Colors.white, size: 10),
+      ),
+    );
+  }
+}
+
+/// Small badge shown on videos that have NIP-32 content-warning self-labels.
+class _ContentWarningBadge extends StatelessWidget {
+  const _ContentWarningBadge({required this.labels});
+
+  final List<String> labels;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: VineTheme.backgroundColor.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: const Color(0xFFFFB84D).withValues(alpha: 0.6),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(
+            Icons.warning_amber_rounded,
+            color: Color(0xFFFFB84D),
+            size: 14,
+          ),
+          const SizedBox(width: 4),
+          Text(
+            labels.length == 1 ? _humanize(labels.first) : 'Content Warning',
+            style: const TextStyle(
+              color: Color(0xFFFFB84D),
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Convert a NIP-32 label value to a human-readable string.
+  static String _humanize(String label) {
+    switch (label) {
+      case 'nudity':
+        return 'Nudity';
+      case 'sexual':
+        return 'Sexual Content';
+      case 'porn':
+        return 'Pornography';
+      case 'graphic-media':
+        return 'Graphic Media';
+      case 'violence':
+        return 'Violence';
+      case 'self-harm':
+        return 'Self-Harm';
+      case 'drugs':
+        return 'Drug Use';
+      case 'alcohol':
+        return 'Alcohol';
+      case 'tobacco':
+        return 'Tobacco';
+      case 'gambling':
+        return 'Gambling';
+      case 'profanity':
+        return 'Profanity';
+      case 'flashing-lights':
+        return 'Flashing Lights';
+      case 'ai-generated':
+        return 'AI-Generated';
+      case 'spoiler':
+        return 'Spoiler';
+      case 'content-warning':
+        return 'Sensitive Content';
+      default:
+        return 'Content Warning';
+    }
+  }
+
+  /// Return a description for a NIP-32 content-warning label.
+  static String _describe(String label) {
+    switch (label) {
+      case 'nudity':
+        return 'Contains nudity or partial nudity';
+      case 'sexual':
+        return 'Contains sexual content';
+      case 'porn':
+        return 'Contains explicit pornographic content';
+      case 'graphic-media':
+        return 'Contains graphic or disturbing imagery';
+      case 'violence':
+        return 'Contains violent content';
+      case 'self-harm':
+        return 'Contains references to self-harm';
+      case 'drugs':
+        return 'Contains drug-related content';
+      case 'alcohol':
+        return 'Contains alcohol-related content';
+      case 'tobacco':
+        return 'Contains tobacco-related content';
+      case 'gambling':
+        return 'Contains gambling-related content';
+      case 'profanity':
+        return 'Contains strong language';
+      case 'flashing-lights':
+        return 'Contains flashing lights (photosensitivity warning)';
+      case 'ai-generated':
+        return 'This content was generated by AI';
+      case 'spoiler':
+        return 'Contains spoilers';
+      case 'content-warning':
+        return 'Creator marked this as sensitive';
+      default:
+        return 'Creator flagged this content';
+    }
+  }
+}
+
+/// Bottom sheet showing content warning label details with descriptions.
+class _ContentWarningDetailsSheet extends StatelessWidget {
+  const _ContentWarningDetailsSheet({required this.labels});
+
+  final List<String> labels;
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: VineTheme.cardBackground,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header
+            Row(
+              children: [
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Color(0xFFFFB84D),
+                  size: 22,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  'Content Warnings',
+                  style: VineTheme.titleFont(
+                    fontSize: 18,
+                    color: VineTheme.whiteText,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'The creator applied these labels:',
+              style: TextStyle(color: VineTheme.secondaryText, fontSize: 13),
+            ),
+            const SizedBox(height: 16),
+            // Label list
+            ...labels.map(
+              (label) => Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      margin: const EdgeInsets.only(top: 6, right: 10),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFFFB84D),
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _ContentWarningBadge._humanize(label),
+                            style: const TextStyle(
+                              color: VineTheme.whiteText,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _ContentWarningBadge._describe(label),
+                            style: TextStyle(
+                              color: VineTheme.secondaryText,
+                              fontSize: 13,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Divider(color: VineTheme.outlineVariant),
+            const SizedBox(height: 8),
+            // Manage content filters button
+            SizedBox(
+              width: double.infinity,
+              child: TextButton.icon(
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  context.push('/content-filters');
+                },
+                icon: const Icon(
+                  Icons.tune,
+                  size: 18,
+                  color: VineTheme.vineGreen,
+                ),
+                label: const Text(
+                  'Manage content filters',
+                  style: TextStyle(
+                    color: VineTheme.vineGreen,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Full-screen content warning overlay for videos with warn-level labels.
+///
+/// Shows a blurred overlay with warning text and matched content labels.
+/// User can tap "View Anyway" to reveal the video.
+class _ContentWarningOverlay extends StatelessWidget {
+  const _ContentWarningOverlay({required this.labels, required this.onReveal});
+
+  final List<String> labels;
+  final VoidCallback onReveal;
+
+  @override
+  Widget build(BuildContext context) {
+    return Positioned.fill(
+      child: DecoratedBox(
+        decoration: BoxDecoration(color: Colors.black.withValues(alpha: 0.85)),
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 32),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Color(0xFFFFB84D),
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Sensitive Content',
+                  style: TextStyle(
+                    color: VineTheme.whiteText,
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  labels.map(_ContentWarningBadge._humanize).join(', '),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: VineTheme.secondaryText,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                OutlinedButton(
+                  onPressed: onReveal,
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: VineTheme.whiteText,
+                    side: const BorderSide(color: VineTheme.onSurfaceMuted),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 12,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24),
+                    ),
+                  ),
+                  child: const Text('View Anyway'),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
