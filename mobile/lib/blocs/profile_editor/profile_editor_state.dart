@@ -99,6 +99,9 @@ enum ExternalNip05ValidationError {
   /// Valid local-part characters: a-z, 0-9, -, _, . (lowercase only per
   /// NIP-05 spec). Domain must be a valid DNS name.
   invalidFormat,
+
+  /// Domain belongs to divine.video or openvine.co — use divine mode instead.
+  divineDomain,
 }
 
 /// State for the ProfileEditorBloc.

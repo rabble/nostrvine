@@ -277,6 +277,21 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
       return;
     }
 
+    // Reject divine.video / openvine.co domains — use divine mode instead
+    final domain = nip05.split('@').last;
+    if (domain == 'divine.video' ||
+        domain.endsWith('.divine.video') ||
+        domain == 'openvine.co' ||
+        domain.endsWith('.openvine.co')) {
+      emit(
+        state.copyWith(
+          externalNip05: nip05,
+          externalNip05Error: ExternalNip05ValidationError.divineDomain,
+        ),
+      );
+      return;
+    }
+
     // Valid format — no API check needed for external NIP-05
     emit(state.copyWith(externalNip05: nip05, externalNip05Error: null));
   }
@@ -297,10 +312,14 @@ class ProfileEditorBloc extends Bloc<ProfileEditorEvent, ProfileEditorState> {
 
     final displayName = event.displayName.trim();
     final about = (event.about?.trim().isEmpty ?? true) ? null : event.about;
-    final username = (event.username?.trim().isEmpty ?? true)
+
+    // Bloc decides which NIP-05 value to use based on current mode
+    final isExternal = state.nip05Mode == Nip05Mode.external_;
+    final username = isExternal || (event.username?.trim().isEmpty ?? true)
         ? null
         : event.username;
-    final externalNip05 = (event.externalNip05?.trim().isEmpty ?? true)
+    final externalNip05 =
+        !isExternal || (event.externalNip05?.trim().isEmpty ?? true)
         ? null
         : event.externalNip05?.trim().toLowerCase();
     final picture = (event.picture?.trim().isEmpty ?? true)

@@ -1029,20 +1029,13 @@ class _ProfileSetupScreenViewState
                               _nameController.text.trim().isNotEmpty &&
                               profileEditorState.isSaveReady,
                           onSave: () {
-                            final isExternal =
-                                profileEditorState.nip05Mode ==
-                                Nip05Mode.external_;
                             context.read<ProfileEditorBloc>().add(
                               ProfileSaved(
                                 pubkey: pubkey,
                                 displayName: _nameController.text,
                                 about: _bioController.text,
-                                username: isExternal
-                                    ? null
-                                    : _nip05Controller.text,
-                                externalNip05: isExternal
-                                    ? _externalNip05Controller.text
-                                    : null,
+                                username: _nip05Controller.text,
+                                externalNip05: _externalNip05Controller.text,
                                 picture: _pictureController.text,
                                 banner: _selectedProfileColor != null
                                     ? '0x${_selectedProfileColor!.toARGB32().toRadixString(16).substring(2)}'
@@ -1925,9 +1918,13 @@ class _ExternalNip05Section extends StatelessWidget {
                 final newMode = isExternal
                     ? Nip05Mode.divine
                     : Nip05Mode.external_;
-                context.read<ProfileEditorBloc>().add(
-                  Nip05ModeChanged(newMode),
-                );
+                context.read<ProfileEditorBloc>()
+                  ..add(Nip05ModeChanged(newMode))
+                  ..add(
+                    ExternalNip05Changed(
+                      newMode == Nip05Mode.external_ ? controller.text : '',
+                    ),
+                  );
               },
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -2000,9 +1997,13 @@ class _ExternalNip05Section extends StatelessWidget {
                   ),
                   contentPadding: const EdgeInsets.all(16),
                   errorMaxLines: 2,
-                  errorText: state.externalNip05Error != null
-                      ? 'Invalid NIP-05 format (e.g., name@domain.com)'
-                      : null,
+                  errorText: switch (state.externalNip05Error) {
+                    ExternalNip05ValidationError.invalidFormat =>
+                      'Invalid NIP-05 format (e.g., name@domain.com)',
+                    ExternalNip05ValidationError.divineDomain =>
+                      'Use the username field above for divine.video',
+                    null => null,
+                  },
                 ),
                 keyboardType: TextInputType.emailAddress,
                 textInputAction: TextInputAction.next,

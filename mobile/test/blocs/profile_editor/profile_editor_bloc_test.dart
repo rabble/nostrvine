@@ -1206,6 +1206,45 @@ void main() {
           ),
         ],
       );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'rejects divine.video domain',
+        build: createBloc,
+        act: (bloc) =>
+            bloc.add(const ExternalNip05Changed('_@user.divine.video')),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.externalNip05,
+                'externalNip05',
+                '_@user.divine.video',
+              )
+              .having(
+                (s) => s.externalNip05Error,
+                'externalNip05Error',
+                ExternalNip05ValidationError.divineDomain,
+              ),
+        ],
+      );
+
+      blocTest<ProfileEditorBloc, ProfileEditorState>(
+        'rejects openvine.co domain',
+        build: createBloc,
+        act: (bloc) => bloc.add(const ExternalNip05Changed('user@openvine.co')),
+        expect: () => [
+          isA<ProfileEditorState>()
+              .having(
+                (s) => s.externalNip05,
+                'externalNip05',
+                'user@openvine.co',
+              )
+              .having(
+                (s) => s.externalNip05Error,
+                'externalNip05Error',
+                ExternalNip05ValidationError.divineDomain,
+              ),
+        ],
+      );
     });
 
     group('InitialExternalNip05Set', () {
@@ -1242,6 +1281,7 @@ void main() {
           ).thenAnswer((_) async => createTestProfile());
         },
         build: createBloc,
+        seed: () => const ProfileEditorState(nip05Mode: Nip05Mode.external_),
         act: (bloc) => bloc.add(
           const ProfileSaved(
             pubkey: testPubkey,
