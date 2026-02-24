@@ -143,6 +143,43 @@ void main() {
         );
       });
 
+      group('when the publish process throws an exception', () {
+        blocTest<BackgroundPublishBloc, BackgroundPublishState>(
+          'transitions the upload to error state',
+          build: () => BackgroundPublishBloc(
+            videoPublishServiceFactory: defaultVieoPublishServiceFactory,
+          ),
+          act: (bloc) => bloc.add(
+            BackgroundPublishRequested(
+              draft: draft,
+              publishmentProcess: Future<PublishResult>.delayed(
+                Duration.zero,
+                () => throw Exception('Network connection lost'),
+              ),
+            ),
+          ),
+          errors: () => [isA<Exception>()],
+          expect: () => [
+            BackgroundPublishState(
+              uploads: [
+                BackgroundUpload(draft: draft, result: null, progress: 0),
+              ],
+            ),
+            BackgroundPublishState(
+              uploads: [
+                BackgroundUpload(
+                  draft: draft,
+                  result: const PublishError(
+                    'Failed to publish video. Please try again.',
+                  ),
+                  progress: 1.0,
+                ),
+              ],
+            ),
+          ],
+        );
+      });
+
       group('when the draft is already uploading', () {
         blocTest(
           'does not add duplicate upload',
