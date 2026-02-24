@@ -203,7 +203,25 @@ class VolumeKeyHandler: NSObject {
         
         lastBluetoothTriggerTimestamp = now
         NSLog("DivineCameraVolumeKeyHandler: Bluetooth trigger accepted")
+        
+        // Refresh now playing info so iOS keeps routing remote events to us.
+        // Without this, audio session changes during recording start/stop can
+        // cause iOS to disassociate our app from MPNowPlayingInfoCenter,
+        // making AirPods stop sending events to our command handlers.
+        refreshNowPlayingInfo()
+        
         onTrigger?("bluetooth")
+    }
+    
+    /// Refreshes MPNowPlayingInfoCenter to keep our app as the active
+    /// "now playing" app. Without this, iOS may stop routing AirPods/Apple
+    /// Watch button presses to our MPRemoteCommandCenter handlers after
+    /// audio session changes (e.g. recording start/stop).
+    private func refreshNowPlayingInfo() {
+        var nowPlayingInfo = MPNowPlayingInfoCenter.default().nowPlayingInfo ?? [String: Any]()
+        nowPlayingInfo[MPMediaItemPropertyTitle] = "Recording"
+        nowPlayingInfo[MPNowPlayingInfoPropertyPlaybackRate] = 1.0
+        MPNowPlayingInfoCenter.default().nowPlayingInfo = nowPlayingInfo
     }
     
     // MARK: - Volume Button Detection
