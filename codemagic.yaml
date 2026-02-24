@@ -23,8 +23,10 @@
 #   - Set to YES to create a GitHub Release with APK artifacts (for Zapstore distribution)
 #   - Defaults to NO
 #   - Requires GITHUB_TOKEN in "github_credentials" environment variable group
-# 9 - Create environment variable group "firebase_credentials" with:
-#   - FIREBASE_TOKEN (generate via `firebase login:ci` on a machine with browser access)
+# 9 - Ensure environment variable group "firebase" contains:
+#   - FIREBASE_SERVICE_ACCOUNT (Google service account JSON key with Firebase Crashlytics access)
+#   - FIREBASE_IOS_APP_ID (Firebase iOS app ID, e.g. 1:123456:ios:abc123)
+#   - FIREBASE_ANDROID_APP_ID (Firebase Android app ID)
 
 definitions:
   environment:
@@ -129,10 +131,15 @@ definitions:
         echo "Found dSYMs:"
         ls -la "$DSYM_DIR"
 
-        firebase --token "$FIREBASE_TOKEN" \
-          crashlytics:symbols:upload \
-          --app=1:972941478875:ios:f61272b3cf485df244b5fe \
+        # Authenticate via service account
+        echo "$FIREBASE_SERVICE_ACCOUNT" > /tmp/firebase-sa.json
+        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-sa.json
+
+        firebase crashlytics:symbols:upload \
+          --app="$FIREBASE_IOS_APP_ID" \
           "$DSYM_DIR"
+
+        rm -f /tmp/firebase-sa.json
     - &build_ios_simulator
       name: Build iOS Simulator app
       script: |
@@ -168,7 +175,7 @@ workflows:
       groups:
         - zendesk_credentials
         - proofmode_credentials
-        - firebase_credentials
+        - firebase
       vars:
         BUNDLE_ID: co.openvine.app
       ios_signing:
