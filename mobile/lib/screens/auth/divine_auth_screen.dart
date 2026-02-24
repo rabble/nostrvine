@@ -124,9 +124,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen> {
     );
 
     if (!result.success || result.code == null) {
-      _setErrorMessage(
-        result.errorDescription ?? result.error ?? 'Login failed',
-      );
+      _setErrorMessage(result.errorDescription ?? 'Login failed');
       return;
     }
 
@@ -145,7 +143,7 @@ class _DivineAuthScreenState extends ConsumerState<DivineAuthScreen> {
     );
 
     if (!result.success) {
-      _setErrorMessage(result.error ?? 'Registration failed');
+      _setErrorMessage(result.errorDescription ?? 'Registration failed');
       return;
     }
 

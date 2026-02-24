@@ -1,6 +1,7 @@
 // ABOUTME: Top bar widget for video recorder screen
 // ABOUTME: Contains close button, segment-bar, and forward button
 
+import 'package:divine_ui/divine_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:openvine/providers/clip_manager_provider.dart';
@@ -101,7 +102,7 @@ class _NextButton extends StatelessWidget {
             // TODO(l10n): Replace with context.l10n when localization is added.
             'Next',
             style: TextStyle(
-              fontFamily: 'BricolageGrotesque',
+              fontFamily: VineTheme.fontFamilyBricolage,
               fontSize: 18,
               fontWeight: .w800,
               height: 1.33,

@@ -256,6 +256,7 @@ class KeycastOAuth {
         return (
           HeadlessRegisterResult.error(
             'Registration endpoint not available. Please try again later.',
+            code: 'endpoint_not_found',
           ),
           verifier,
         );
@@ -265,6 +266,7 @@ class KeycastOAuth {
         return (
           HeadlessRegisterResult.error(
             'Server error (${response.statusCode}). Please try again later.',
+            code: 'server_error',
           ),
           verifier,
         );
@@ -278,6 +280,7 @@ class KeycastOAuth {
         return (
           HeadlessRegisterResult.error(
             'Invalid server response. Status: ${response.statusCode}',
+            code: 'invalid_response',
           ),
           verifier,
         );
@@ -287,25 +290,33 @@ class KeycastOAuth {
         return (HeadlessRegisterResult.fromJson(json), verifier);
       }
 
-      // Handle error responses
-      final error = json['error'] as String? ?? 'registration_failed';
+      // Handle error responses - preserve error code for client-side handling
+      String errorCode = json['code'] as String? ?? 'registration_failed';
       final description =
-          json['error_description'] as String? ??
-          json['message'] as String? ??
-          'Registration failed';
+          json['error'] as String? ?? json['message'] as String? ?? errorCode;
 
-      return (HeadlessRegisterResult.error('$error: $description'), verifier);
+      return (
+        HeadlessRegisterResult.error(description, code: errorCode),
+        verifier,
+      );
     } catch (e) {
       if (e.toString().contains('SocketException') ||
           e.toString().contains('Connection refused')) {
         return (
           HeadlessRegisterResult.error(
             'Cannot connect to server. Check your internet connection.',
+            code: 'connection_error',
           ),
           verifier,
         );
       }
-      return (HeadlessRegisterResult.error('Network error: $e'), verifier);
+      return (
+        HeadlessRegisterResult.error(
+          'Network error: $e',
+          code: 'network_error',
+        ),
+        verifier,
+      );
     }
   }
 

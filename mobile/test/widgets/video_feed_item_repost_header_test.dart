@@ -4,7 +4,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/annotations.dart';
 import 'package:models/models.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/widgets/video_feed_item/video_feed_item.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -140,14 +139,14 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 100));
 
-        // Expect to find truncated npub (e.g., "npub1abc...xyz")
-        final truncatedNpub = NostrKeyUtils.truncateNpub(
+        // Expect to find generated name for reposter
+        final generatedName = UserProfile.generatedNameFor(
           repostedVideo.reposterPubkey!,
         );
         expect(
-          find.textContaining(truncatedNpub),
+          find.textContaining(generatedName),
           findsOneWidget,
-          reason: 'Repost header should show truncated npub for reposter',
+          reason: 'Repost header should show generated name for reposter',
         );
       });
     });

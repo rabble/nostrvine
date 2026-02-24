@@ -11,6 +11,7 @@ import 'package:openvine/providers/list_providers.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
 import 'package:openvine/screens/pure/explore_video_screen_pure.dart';
 import 'package:openvine/services/user_list_service.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/utils/nostr_key_utils.dart';
 import 'package:openvine/utils/unified_logger.dart';
 import 'package:openvine/utils/video_controller_cleanup.dart';
@@ -407,7 +408,7 @@ class _PeopleCarousel extends ConsumerWidget {
 
                 final displayName =
                     profile?.bestDisplayName ??
-                    NostrKeyUtils.truncateNpub(pubkey);
+                    UserProfile.defaultDisplayNameFor(pubkey);
 
                 return Semantics(
                   label: 'View profile for $displayName',

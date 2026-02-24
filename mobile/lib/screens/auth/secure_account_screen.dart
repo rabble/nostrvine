@@ -126,7 +126,7 @@ class _SecureAccountScreenState extends ConsumerState<SecureAccountScreen> {
     );
 
     if (!result.success) {
-      _setErrorMessage(result.error ?? 'Registration failed');
+      _setErrorMessage(result.errorDescription ?? 'Registration failed');
       return;
     }
 

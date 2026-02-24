@@ -850,7 +850,7 @@ class _AddClipButton extends StatelessWidget {
               style: TextStyle(
                 color: Color(0xFF002C1C),
                 fontSize: 18,
-                fontFamily: 'BricolageGrotesque',
+                fontFamily: VineTheme.fontFamilyBricolage,
                 fontWeight: FontWeight.w800,
                 height: 1.33,
                 letterSpacing: 0.15,

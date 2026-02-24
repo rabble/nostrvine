@@ -9,7 +9,7 @@ import 'package:openvine/providers/app_providers.dart';
 import 'package:openvine/providers/classic_vines_provider.dart';
 import 'package:openvine/router/router.dart';
 import 'package:openvine/screens/other_profile_screen.dart';
-import 'package:openvine/utils/nostr_key_utils.dart';
+import 'package:models/models.dart' hide LogCategory;
 import 'package:openvine/utils/public_identifier_normalizer.dart';
 import 'package:openvine/widgets/user_avatar.dart';
 
@@ -133,7 +133,7 @@ class _VinerAvatar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     // Use authorName from classic Vine data, clean up social media prefixes
     final rawName =
-        viner.authorName ?? NostrKeyUtils.truncateNpub(viner.pubkey);
+        viner.authorName ?? UserProfile.defaultDisplayNameFor(viner.pubkey);
     final displayName = _cleanDisplayName(rawName);
 
     // Get avatar URL: try REST API first, then fallback to Nostr profile

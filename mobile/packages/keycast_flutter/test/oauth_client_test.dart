@@ -423,7 +423,7 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, contains('not available'));
+        expect(result.errorDescription, contains('not available'));
       });
 
       test('returns error on 500+ server error', () async {
@@ -438,8 +438,8 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, contains('Server error'));
-        expect(result.error, contains('500'));
+        expect(result.errorDescription, contains('Server error'));
+        expect(result.errorDescription, contains('500'));
       });
 
       test('returns error on invalid JSON response', () async {
@@ -454,15 +454,15 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, contains('Invalid server response'));
+        expect(result.errorDescription, contains('Invalid server response'));
       });
 
       test('returns error with error/message fields from response', () async {
         final mockClient = MockClient((request) async {
           return http.Response(
             jsonEncode({
-              'error': 'email_taken',
-              'error_description': 'Email already registered',
+              'code': 'CONFLICT',
+              'error': 'Email already registered',
             }),
             400,
           );
@@ -475,7 +475,8 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, contains('email_taken'));
+        expect(result.errorCode, contains('CONFLICT'));
+        expect(result.errorDescription, contains('Email already registered'));
       });
 
       test('returns error on SocketException', () async {
@@ -490,7 +491,7 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, contains('Cannot connect to server'));
+        expect(result.errorDescription, contains('Cannot connect to server'));
       });
 
       test('returns error on other network errors', () async {
@@ -505,7 +506,7 @@ void main() {
         );
 
         expect(result.success, isFalse);
-        expect(result.error, contains('Network error'));
+        expect(result.errorDescription, contains('Network error'));
       });
     });
 
