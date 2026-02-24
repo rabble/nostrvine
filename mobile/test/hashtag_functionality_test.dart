@@ -72,7 +72,8 @@ void main() {
       // counts (e.g. {'vine': 1000, 'comedy': 800, 'dance': 600}) with
       // locally observed counts (e.g. {'vine': 50, 'local': 100,
       // 'dance': 700}) and sort by the combined total.
-      skip: 'Feature not yet implemented — explore screen only uses '
+      skip:
+          'Feature not yet implemented — explore screen only uses '
           'TopHashtagsService',
       () {},
     );

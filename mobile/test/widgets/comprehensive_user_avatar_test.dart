@@ -36,10 +36,7 @@ void main() {
 
         // Verify ClipRRect border radius
         final clipRRect = tester.widget<ClipRRect>(find.byType(ClipRRect));
-        expect(
-          clipRRect.borderRadius,
-          BorderRadius.circular(44 * 0.286),
-        );
+        expect(clipRRect.borderRadius, BorderRadius.circular(44 * 0.286));
       });
 
       testWidgets('applies custom size correctly', (tester) async {
@@ -115,76 +112,67 @@ void main() {
         expect(find.byType(CachedNetworkImage), findsNothing);
       });
 
-      testWidgets(
-        'shows default asset image fallback when name is provided',
-        (tester) async {
-          await tester.pumpWidget(
-            const MaterialApp(
-              home: Scaffold(body: UserAvatar(name: 'John Doe')),
-            ),
-          );
+      testWidgets('shows default asset image fallback when name is provided', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: UserAvatar(name: 'John Doe')),
+          ),
+        );
 
-          // Should show fallback asset image, not initials
-          expect(find.byType(CachedNetworkImage), findsNothing);
-          expect(find.byType(Image), findsOneWidget);
-        },
-      );
+        // Should show fallback asset image, not initials
+        expect(find.byType(CachedNetworkImage), findsNothing);
+        expect(find.byType(Image), findsOneWidget);
+      });
 
-      testWidgets(
-        'shows default asset image when no name is provided',
-        (tester) async {
-          await tester.pumpWidget(
-            const MaterialApp(home: Scaffold(body: UserAvatar())),
-          );
+      testWidgets('shows default asset image when no name is provided', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          const MaterialApp(home: Scaffold(body: UserAvatar())),
+        );
 
-          expect(find.byType(CachedNetworkImage), findsNothing);
-          expect(find.byType(Image), findsOneWidget);
-        },
-      );
+        expect(find.byType(CachedNetworkImage), findsNothing);
+        expect(find.byType(Image), findsOneWidget);
+      });
 
-      testWidgets(
-        'shows same fallback regardless of name value',
-        (tester) async {
-          await tester.pumpWidget(
-            const MaterialApp(
-              home: Scaffold(body: UserAvatar(name: 'Madonna')),
-            ),
-          );
+      testWidgets('shows same fallback regardless of name value', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: UserAvatar(name: 'Madonna')),
+          ),
+        );
 
-          // Fallback is always the asset image, name is only for semantics
-          expect(find.byType(Image), findsOneWidget);
-        },
-      );
+        // Fallback is always the asset image, name is only for semantics
+        expect(find.byType(Image), findsOneWidget);
+      });
 
-      testWidgets(
-        'shows fallback for empty name',
-        (tester) async {
-          await tester.pumpWidget(
-            const MaterialApp(
-              home: Scaffold(body: UserAvatar(name: '')),
-            ),
-          );
+      testWidgets('shows fallback for empty name', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(body: UserAvatar(name: '')),
+          ),
+        );
 
-          expect(find.byType(Image), findsOneWidget);
-        },
-      );
+        expect(find.byType(Image), findsOneWidget);
+      });
 
-      testWidgets(
-        'shows fallback for long names',
-        (tester) async {
-          await tester.pumpWidget(
-            const MaterialApp(
-              home: Scaffold(
-                body: UserAvatar(
-                  name: 'Very Long First Name And Very Long Last Name',
-                ),
+      testWidgets('shows fallback for long names', (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: UserAvatar(
+                name: 'Very Long First Name And Very Long Last Name',
               ),
             ),
-          );
+          ),
+        );
 
-          expect(find.byType(Image), findsOneWidget);
-        },
-      );
+        expect(find.byType(Image), findsOneWidget);
+      });
     });
 
     group('Image Error Handling', () {
@@ -283,8 +271,7 @@ void main() {
         await tester.pumpWidget(
           MaterialApp(
             home: Scaffold(
-              body:
-                  UserAvatar(name: 'Test User', onTap: () => tapped = true),
+              body: UserAvatar(name: 'Test User', onTap: () => tapped = true),
             ),
           ),
         );
@@ -339,9 +326,7 @@ void main() {
         expect(sizedBox.height, largeSize);
       });
 
-      testWidgets('CachedNetworkImage respects size parameter', (
-        tester,
-      ) async {
+      testWidgets('CachedNetworkImage respects size parameter', (tester) async {
         const customSize = 60.0;
         const testImageUrl = 'https://example.com/avatar.jpg';
 
@@ -369,10 +354,7 @@ void main() {
           ),
         );
 
-        expect(
-          find.bySemanticsLabel('Test User avatar'),
-          findsOneWidget,
-        );
+        expect(find.bySemanticsLabel('Test User avatar'), findsOneWidget);
       });
 
       testWidgets('provides default semantics without name', (tester) async {
@@ -383,9 +365,7 @@ void main() {
         expect(find.bySemanticsLabel('User avatar'), findsOneWidget);
       });
 
-      testWidgets('uses custom semantic label when provided', (
-        tester,
-      ) async {
+      testWidgets('uses custom semantic label when provided', (tester) async {
         await tester.pumpWidget(
           const MaterialApp(
             home: Scaffold(
@@ -491,16 +471,14 @@ void main() {
     // Golden Tests Section - kept skipped as they require golden file generation
     group(
       'Golden Tests',
-      skip: 'Golden tests require golden file generation '
+      skip:
+          'Golden tests require golden file generation '
           'and are maintained separately',
       () {
         testGoldens('UserAvatar - different states visual test', (
           tester,
         ) async {
-          final builder = GoldenBuilder.grid(
-            columns: 3,
-            widthToHeightRatio: 1,
-          )
+          final builder = GoldenBuilder.grid(columns: 3, widthToHeightRatio: 1)
             ..addScenario(
               'With Name',
               const UserAvatar(name: 'John Doe', size: 60),
@@ -527,33 +505,13 @@ void main() {
           await screenMatchesGolden(tester, 'user_avatar_states_integrated');
         });
 
-        testGoldens('UserAvatar - size variations visual test', (
-          tester,
-        ) async {
-          final builder = GoldenBuilder.grid(
-            columns: 4,
-            widthToHeightRatio: 1,
-          )
-            ..addScenario(
-              'XS (16px)',
-              const UserAvatar(name: 'User', size: 16),
-            )
-            ..addScenario(
-              'S (24px)',
-              const UserAvatar(name: 'User', size: 24),
-            )
-            ..addScenario(
-              'M (40px)',
-              const UserAvatar(name: 'User', size: 40),
-            )
-            ..addScenario(
-              'L (60px)',
-              const UserAvatar(name: 'User', size: 60),
-            )
-            ..addScenario(
-              'XL (80px)',
-              const UserAvatar(name: 'User', size: 80),
-            )
+        testGoldens('UserAvatar - size variations visual test', (tester) async {
+          final builder = GoldenBuilder.grid(columns: 4, widthToHeightRatio: 1)
+            ..addScenario('XS (16px)', const UserAvatar(name: 'User', size: 16))
+            ..addScenario('S (24px)', const UserAvatar(name: 'User', size: 24))
+            ..addScenario('M (40px)', const UserAvatar(name: 'User', size: 40))
+            ..addScenario('L (60px)', const UserAvatar(name: 'User', size: 60))
+            ..addScenario('XL (80px)', const UserAvatar(name: 'User', size: 80))
             ..addScenario(
               'XXL (100px)',
               const UserAvatar(name: 'User', size: 100),
@@ -623,10 +581,7 @@ void main() {
             ),
           );
 
-          await tester.pumpWidgetBuilder(
-            widget,
-            wrapper: materialAppWrapper(),
-          );
+          await tester.pumpWidgetBuilder(widget, wrapper: materialAppWrapper());
 
           await multiScreenGolden(
             tester,

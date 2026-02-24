@@ -116,9 +116,7 @@ void main() {
       when(() => mockEvent.pubkey).thenReturn(pubkey);
       when(() => mockEvent.id).thenReturn('event-id-456');
       when(() => mockEvent.createdAt).thenReturn(1234567890);
-      when(
-        () => mockEvent.content,
-      ).thenReturn('{"name":"Notifier Test User"}');
+      when(() => mockEvent.content).thenReturn('{"name":"Notifier Test User"}');
       when(() => mockEvent.tags).thenReturn([]);
 
       // Override subscription manager to deliver the profile event
@@ -398,9 +396,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          userProfileServiceProvider.overrideWithValue(
-            mockUserProfileService,
-          ),
+          userProfileServiceProvider.overrideWithValue(mockUserProfileService),
           profileRepositoryProvider.overrideWithValue(mockProfileRepo),
         ],
       );
@@ -433,9 +429,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          userProfileServiceProvider.overrideWithValue(
-            mockUserProfileService,
-          ),
+          userProfileServiceProvider.overrideWithValue(mockUserProfileService),
           profileRepositoryProvider.overrideWithValue(mockProfileRepo),
         ],
       );
@@ -446,8 +440,9 @@ void main() {
       );
 
       expect(profile, isNull);
-      verify(() => mockUserProfileService.markProfileAsMissing(pubkey))
-          .called(1);
+      verify(
+        () => mockUserProfileService.markProfileAsMissing(pubkey),
+      ).called(1);
     });
 
     test('should return null when repository is not ready', () async {
@@ -457,9 +452,7 @@ void main() {
 
       final container = ProviderContainer(
         overrides: [
-          userProfileServiceProvider.overrideWithValue(
-            mockUserProfileService,
-          ),
+          userProfileServiceProvider.overrideWithValue(mockUserProfileService),
           profileRepositoryProvider.overrideWithValue(null),
         ],
       );
