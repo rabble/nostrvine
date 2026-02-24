@@ -86,7 +86,7 @@ class VideoMetadataBottomBar extends ConsumerWidget {
 
     if (saveSuccess) {
       router.go(HomeScreenRouter.pathForIndex(0));
-      // Clear editor state after navigation animation completes (~350ms)
+      // Clear editor state after navigation animation completes (~600ms)
       Future.delayed(
         const Duration(milliseconds: 600),
         ref.read(videoPublishProvider.notifier).clearAll,

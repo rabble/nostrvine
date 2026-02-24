@@ -538,8 +538,9 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
                         ? [
                             // Save to gallery button
                             IconButton(
-                              icon: const Icon(
-                                Icons.download_rounded,
+                              icon: DivineIcon(
+                                icon: .downloadSimple,
+                                size: 24,
                                 color: VineTheme.whiteText,
                               ),
                               onPressed: _saveSelectedClipsToGallery,
@@ -547,9 +548,10 @@ class _ClipLibraryScreenState extends ConsumerState<ClipLibraryScreen> {
                             ),
                             // Delete button
                             IconButton(
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                color: Colors.red,
+                              icon: DivineIcon(
+                                icon: .trash,
+                                size: 24,
+                                color: VineTheme.error,
                               ),
                               onPressed: _showDeleteConfirmationDialog,
                               tooltip: 'Delete selected clips',
